@@ -1,0 +1,67 @@
+{
+  "name": "cortex-memory-mcp",
+  "version": "1.0.0",
+  "description": "Minimal two-tool MCP server for cross-session memory with PostgreSQL SoT",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "cortex-memory": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:smoke": "tsx tests/functional/run-smoke-test.ts",
+    "test:functional": "vitest run tests/functional",
+    "test:functional:watch": "vitest tests/functional",
+    "test:functional:coverage": "vitest run tests/functional --coverage",
+    "test:report": "vitest run tests/functional --reporter=html && open coverage/index.html",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:watch": "vitest",
+    "lint": "eslint src tests --ext .ts",
+    "lint:fix": "eslint src tests --ext .ts --fix",
+    "autofix": "tsx scripts/add-db-types.ts",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "knowledge-management",
+    "postgresql",
+    "ai-agent"
+  ],
+  "author": "Cortex Memory Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.29.0",
+    "pg": "^8.11.0",
+    "pino": "^8.16.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.37.0",
+    "@faker-js/faker": "^9.0.0",
+    "@testcontainers/postgresql": "^10.28.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.27.0",
+    "eslint": "^9.37.0",
+    "globals": "^15.15.0",
+    "prettier": "^3.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^2.1.0"
+  }
+}

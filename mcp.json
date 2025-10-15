@@ -1,0 +1,167 @@
+{
+  "name": "cortex-memory",
+  "version": "1.1.0",
+  "description": "Long-term memory MCP server for AI agents - stores and retrieves cross-session knowledge with branch isolation, immutability governance, and constitutional ranking",
+  "command": "node",
+  "args": ["debug-server.js"],
+  "cwd": "D:\\WORKSPACE\\tools-node\\mcp-cortex",
+  "transport": "stdio",
+  "capabilities": {
+    "tools": true,
+    "resources": false,
+    "prompts": false
+  },
+  "tools": [
+    {
+      "name": "memory.find",
+      "description": "Search across all knowledge types with optional scope filtering, type restrictions, and configurable search depth",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language search query",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "scope": {
+            "type": "object",
+            "description": "Hierarchical scope filter (defaults to current branch isolation)",
+            "properties": {
+              "org": { "type": "string", "description": "Organization identifier" },
+              "project": { "type": "string", "description": "Project name" },
+              "service": { "type": "string", "description": "Service/component name" },
+              "branch": { "type": "string", "description": "Git branch (defaults to current branch)" },
+              "sprint": { "type": "string", "description": "Sprint identifier" },
+              "tenant": { "type": "string", "description": "Tenant/customer identifier" }
+            },
+            "additionalProperties": false
+          },
+          "types": {
+            "type": "array",
+            "description": "Filter by knowledge types",
+            "items": {
+              "type": "string",
+              "enum": ["section", "runbook", "change", "issue", "decision", "todo", "release_note", "ddl", "pr_context", "entity", "relation", "observation"]
+            },
+            "uniqueItems": true
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Maximum number of results to return",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          },
+          "mode": {
+            "type": "string",
+            "description": "Search routing strategy (server chooses algorithm)",
+            "enum": ["auto", "fast", "deep"],
+            "default": "auto"
+          },
+          "time_range": {
+            "type": "object",
+            "description": "Filter by temporal range",
+            "properties": {
+              "since": { "type": "string", "format": "date-time", "description": "ISO 8601 timestamp (inclusive)" },
+              "until": { "type": "string", "format": "date-time", "description": "ISO 8601 timestamp (inclusive)" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "memory.store",
+      "description": "Store one or more knowledge items with automatic chunking, deduplication, indexing, and audit logging",
+      "inputSchema": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Knowledge items to store",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": ["kind", "scope", "data"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "description": "Knowledge type discriminator",
+                  "enum": ["section", "runbook", "change", "issue", "decision", "todo", "release_note", "ddl", "pr_context", "entity", "relation", "observation"]
+                },
+                "scope": {
+                  "type": "object",
+                  "description": "Hierarchical scope classification",
+                  "required": ["project", "branch"],
+                  "properties": {
+                    "org": { "type": "string" },
+                    "project": { "type": "string" },
+                    "service": { "type": "string" },
+                    "branch": { "type": "string" },
+                    "sprint": { "type": "string" },
+                    "tenant": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                },
+                "data": {
+                  "type": "object",
+                  "description": "Type-specific payload (validated per kind)",
+                  "additionalProperties": true
+                },
+                "tags": {
+                  "type": "object",
+                  "description": "Freeform metadata (JSONB)",
+                  "additionalProperties": true
+                },
+                "source": {
+                  "type": "object",
+                  "description": "Origin tracking metadata",
+                  "properties": {
+                    "actor": { "type": "string" },
+                    "tool": { "type": "string" },
+                    "timestamp": { "type": "string", "format": "date-time" }
+                  }
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "description": "Client-supplied deduplication key (optional, server computes content hash if absent)",
+                  "maxLength": 256
+                },
+                "ttl_policy": {
+                  "type": "string",
+                  "description": "Retention policy",
+                  "enum": ["default", "short", "long", "permanent"],
+                  "default": "default"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ],
+  "author": "Cortex Memory Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cortex-memory/mcp-cortex"
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "knowledge-management",
+    "ai-agent",
+    "long-term-memory",
+    "context-retrieval",
+    "branch-isolation",
+    "immutability",
+    "audit-trail"
+  ]
+}
