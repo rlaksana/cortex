@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { config } from 'dotenv';
+import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   ListToolsRequestSchema,
@@ -10,14 +11,14 @@ import { memoryStore } from './services/memory-store.js';
 import { memoryFind } from './services/memory-find.js';
 import { logger } from './utils/logger.js';
 import { loadEnv } from './config/env.js';
-import { closePool } from './db/pool.js';
+import { dbPool } from './db/pool.js';
+
+// Load environment variables from .env file
+config();
 
 loadEnv();
 
-const server = new Server(
-  { name: 'cortex-memory', version: '1.0.0' },
-  { capabilities: { tools: {} } }
-);
+const server = new Server({ name: 'cortex', version: '1.0.0' }, { capabilities: { tools: {} } });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
@@ -104,7 +105,7 @@ UPDATE (omit operation, include id): Modify existing
 DELETE (operation="delete"): Remove permanently
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-12 KNOWLEDGE TYPES
+16 KNOWLEDGE TYPES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - section: Documentation chunks with markdown/text body
 - runbook: Operational procedures and playbooks
@@ -115,6 +116,10 @@ DELETE (operation="delete"): Remove permanently
 - release_note: Release documentation and changelogs
 - ddl: Database schema changes (DDL history)
 - pr_context: Pull request metadata and context
+- incident: Incident reports with impact, severity, timeline, and RCA
+- release: Release management with scope, version, and deployment metadata
+- risk: Risk identification with impact probability and mitigation strategies
+- assumption: Assumption tracking with validation status and dependencies
 
 **Immutability Enforcement:**
 - ADR decisions: Once status='accepted', content fields (title, rationale, component) become immutable
@@ -409,10 +414,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToo
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  logger.info({ transport: 'stdio' }, 'Cortex Memory MCP server started');
+  logger.info({ transport: 'stdio' }, 'Cortex MCP server started');
 
   process.on('SIGINT', async () => {
-    await closePool();
+    await dbPool.shutdown();
     process.exit(0);
   });
 }

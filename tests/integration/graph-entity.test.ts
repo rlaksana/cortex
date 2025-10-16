@@ -5,20 +5,19 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
 import { memoryFind } from '../../src/services/memory-find.js';
-import { getPool, closePool } from '../../src/db/pool.js';
+import { dbPool } from '../../src/db/pool.js';
 
 describe('Entity Storage Integration Tests', () => {
   beforeAll(async () => {
     // Ensure database connection
-    const pool = getPool();
-    await pool.query('SELECT 1');
+    await dbPool.query('SELECT 1');
   });
 
   afterAll(async () => {
     // Cleanup test data
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('DELETE FROM knowledge_entity WHERE tags @> \'{"test": true}\'::jsonb');
-    await closePool();
+    // Don't close the shared pool in tests
   });
 
   it('should store a flexible entity with user-defined schema', async () => {
@@ -165,7 +164,7 @@ describe('Entity Storage Integration Tests', () => {
           entity_type: 'project',
           name: 'test_project_1',
           data: {
-            name: 'cortex-memory',
+            name: 'cortex',
             description: 'Knowledge graph for AI agents',
             tech_stack: ['TypeScript', 'PostgreSQL'],
           },
@@ -176,7 +175,7 @@ describe('Entity Storage Integration Tests', () => {
 
     // Search by data content
     const result = await memoryFind({
-      query: 'cortex-memory',
+      query: 'cortex',
       types: ['entity'],
     });
 

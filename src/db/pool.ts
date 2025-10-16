@@ -123,7 +123,9 @@ class DatabasePool {
     try {
       // Test connection with a simple query
       const result = await this.query('SELECT NOW() as current_time');
-      logger.info(`Database pool initialized successfully. Current time: ${result.rows[0].current_time}`);
+      logger.info(
+        `Database pool initialized successfully. Current time: ${result.rows[0].current_time}`
+      );
 
       this.isInitialized = true;
 
@@ -190,7 +192,9 @@ class DatabasePool {
         // For connection errors, wait before retrying
         if (this.isConnectionError(error)) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff
-          logger.warn(`Connection error, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+          logger.warn(
+            `Connection error, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
+          );
           await this.sleep(delay);
         } else {
           // For non-connection errors, don't retry
@@ -259,7 +263,9 @@ class DatabasePool {
       await this.query('SELECT NOW() as current_time');
 
       // Get database version and info
-      const versionResult = await this.query('SELECT version() as version, current_database() as database, current_schema() as schema');
+      const versionResult = await this.query(
+        'SELECT version() as version, current_database() as database, current_schema() as schema'
+      );
 
       // Get pool statistics
       const poolStats = {
@@ -367,14 +373,14 @@ class DatabasePool {
     ];
 
     const errorMessage = error?.message?.toLowerCase() || '';
-    return connectionErrorMessages.some(msg => errorMessage.includes(msg));
+    return connectionErrorMessages.some((msg) => errorMessage.includes(msg));
   }
 
   /**
    * Sleep for a specified duration
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

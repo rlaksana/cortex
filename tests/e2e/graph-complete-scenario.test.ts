@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
 import { memoryFind } from '../../src/services/memory-find.js';
-import { getPool, closePool } from '../../src/db/pool.js';
+import { dbPool } from '../../src/db/pool.js';
 
 describe('E2E: Complete Graph Scenario', () => {
   let userId: string;
@@ -24,7 +24,7 @@ describe('E2E: Complete Graph Scenario', () => {
 
   afterAll(async () => {
     // Cleanup all test data
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query(
       "DELETE FROM knowledge_observation WHERE entity_type IN ('entity', 'decision', 'issue', 'todo')"
     );
@@ -33,7 +33,7 @@ describe('E2E: Complete Graph Scenario', () => {
     await pool.query('DELETE FROM adr_decision WHERE tags @> \'{"e2e": true}\'::jsonb');
     await pool.query('DELETE FROM issue_log WHERE tags @> \'{"e2e": true}\'::jsonb');
     await pool.query('DELETE FROM todo_log WHERE tags @> \'{"e2e": true}\'::jsonb');
-    await closePool();
+    // Don't close the shared pool in tests;
   });
 
   it('Step 1: Create user entity (flexible type)', async () => {
@@ -275,7 +275,7 @@ describe('E2E: Complete Graph Scenario', () => {
   });
 
   it('Step 10: Query all observations for task (audit trail)', async () => {
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await pool.query(
       'SELECT observation, observation_type, created_at FROM knowledge_observation WHERE entity_type = $1 AND entity_id = $2 AND deleted_at IS NULL ORDER BY created_at DESC',
       ['todo', taskId]
@@ -291,7 +291,7 @@ describe('E2E: Complete Graph Scenario', () => {
   });
 
   it('Step 11: Find all work by user (author relation)', async () => {
-    const pool = getPool();
+    const pool = dbPool;
     const authoredWork = await pool.query(
       `SELECT kr.to_entity_type, kr.to_entity_id, kr.relation_type
        FROM knowledge_relation kr
@@ -322,7 +322,7 @@ describe('E2E: Complete Graph Scenario', () => {
     expect(deleteResult.stored[0].id).toBe(taskId);
 
     // Verify soft delete
-    const pool = getPool();
+    const pool = dbPool;
     const check = await pool.query('SELECT deleted_at FROM todo_log WHERE id = $1', [taskId]);
     expect(check.rows[0].deleted_at).not.toBeNull();
 
@@ -330,7 +330,7 @@ describe('E2E: Complete Graph Scenario', () => {
   });
 
   it('Step 13: Verify audit trail completeness', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Check all entities have audit entries
     const auditEntries = await pool.query(

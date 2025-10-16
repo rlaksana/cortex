@@ -35,7 +35,7 @@ describe('ADR Immutability Enforcement', () => {
       alternatives_considered: ['Session cookies', 'OAuth only'],
     };
 
-    const scope = { project: 'cortex-memory', branch: 'test' };
+    const scope = { project: 'cortex', branch: 'test' };
     const adrId = await storeDecision(pool, adrData, scope);
 
     // Update should succeed for proposed status
@@ -58,7 +58,7 @@ describe('ADR Immutability Enforcement', () => {
       alternatives_considered: ['Session cookies'],
     };
 
-    const scope = { project: 'cortex-memory', branch: 'test' };
+    const scope = { project: 'cortex', branch: 'test' };
     const adrId = await storeDecision(pool, adrData, scope);
 
     // Attempt to update accepted ADR should fail
@@ -94,7 +94,7 @@ describe('ADR Immutability Enforcement', () => {
       alternatives_considered: [],
     };
 
-    const scope = { project: 'cortex-memory', branch: 'test' };
+    const scope = { project: 'cortex', branch: 'test' };
     const originalId = await storeDecision(pool, originalAdr, scope);
 
     // Create new ADR that supersedes the original

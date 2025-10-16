@@ -1,79 +1,55 @@
 /**
  * Database Row Type Definitions
- * Auto-generated to fix @typescript-eslint/no-unsafe-* errors
+ * Updated to match PostgreSQL 18 schema with all 16 knowledge types and 8-LOG SYSTEM
  */
+
+// ============================================================================
+// CORE TABLES - Knowledge Storage
+// ============================================================================
 
 export interface DocumentRow {
   id: string;
-  type: 'spec' | 'doc' | 'guide' | 'other';
   title: string;
-  tags: Record<string, unknown>;
-  approved_at: Date | null;
+  description: string | null;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface SectionRow {
   id: string;
   document_id: string | null;
-  heading: string | null;
-  body_jsonb: { text: string };
-  body_text: string;
-  content_hash: string;
-  tags: Record<string, unknown>;
+  heading: string;
+  body_md: string | null;
+  body_text: string | null;
+  title: string;
   citation_count: number;
-  last_verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  body_jsonb: { text: string; markdown?: string };
+  ts: string; // Full-text search vector
 }
 
 export interface RunbookRow {
   id: string;
   service: string;
-  steps_jsonb: Array<{ step: number; action: string }>;
-  last_verified_at: Date | null;
-  owner: string | null;
-  tags: Record<string, unknown>;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface PRContextRow {
-  id: string;
-  pr_number: number;
   title: string;
   description: string | null;
-  author: string;
-  status: 'open' | 'merged' | 'closed' | 'draft';
-  base_branch: string;
-  head_branch: string;
-  merged_at: Date | null;
-  expires_at: Date | null;
-  tags: Record<string, unknown>;
+  steps_jsonb: Array<{
+    step_number: number;
+    description: string;
+    command?: string;
+    expected_outcome?: string;
+  }>;
+  triggers: string[] | null;
+  last_verified_at: Date | null;
   created_at: Date;
   updated_at: Date;
-}
-
-export interface DDLHistoryRow {
-  id: string;
-  migration_id: string;
-  ddl_text: string;
-  checksum: string;
-  applied_at: Date;
-  description: string | null;
-}
-
-export interface ReleaseNoteRow {
-  id: string;
-  version: string;
-  release_date: Date;
-  summary: string;
-  breaking_changes: unknown;
-  new_features: unknown;
-  bug_fixes: unknown;
-  deprecations: unknown;
   tags: Record<string, unknown>;
-  created_at: Date;
+  metadata: Record<string, unknown>;
 }
 
 export interface ChangeLogRow {
@@ -89,13 +65,13 @@ export interface ChangeLogRow {
   subject_ref: string;
   summary: string;
   details: string | null;
-  content_hash: string;
-  affected_files: unknown;
+  affected_files: string[] | null;
   author: string | null;
   commit_sha: string | null;
-  tags: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface IssueLogRow {
@@ -103,14 +79,15 @@ export interface IssueLogRow {
   tracker: string;
   external_id: string;
   title: string;
-  status: 'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix';
   description: string | null;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix';
   assignee: string | null;
-  labels: unknown;
+  labels: string[] | null;
   url: string | null;
-  tags: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface ADRDecisionRow {
@@ -119,12 +96,13 @@ export interface ADRDecisionRow {
   status: 'proposed' | 'accepted' | 'rejected' | 'deprecated' | 'superseded';
   title: string;
   rationale: string;
-  alternatives_considered: unknown;
+  alternatives_considered: string[] | null;
   consequences: string | null;
   supersedes: string | null;
-  tags: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface TodoLogRow {
@@ -137,31 +115,70 @@ export interface TodoLogRow {
   assignee: string | null;
   due_date: Date | null;
   closed_at: Date | null;
-  tags: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
-export interface EventAuditRow {
-  id: number;
-  entity_type: string;
-  entity_id: string;
-  operation: 'INSERT' | 'UPDATE' | 'DELETE';
-  actor: string | null;
-  change_summary: unknown;
+export interface ReleaseNoteRow {
+  id: string;
+  version: string;
+  release_date: Date;
+  summary: string;
+  breaking_changes: string[] | null;
+  new_features: string[] | null;
+  bug_fixes: string[] | null;
+  deprecations: string[] | null;
   created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
+
+export interface DDLHistoryRow {
+  id: string;
+  migration_id: string;
+  ddl_text: string;
+  checksum: string;
+  applied_at: Date;
+  description: string | null;
+  status: 'pending' | 'applied' | 'failed' | 'rolled_back';
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+export interface PRContextRow {
+  id: string;
+  pr_number: number;
+  title: string;
+  description: string | null;
+  author: string;
+  status: 'open' | 'merged' | 'closed' | 'draft';
+  base_branch: string;
+  head_branch: string;
+  merged_at: Date | null;
+  expires_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+// ============================================================================
+// GRAPH EXTENSION TABLES - Entity-Relationship Model
+// ============================================================================
 
 export interface KnowledgeEntityRow {
   id: string;
   entity_type: string;
   name: string;
   data: Record<string, unknown>;
-  tags: Record<string, unknown>;
-  content_hash: string;
-  deleted_at: Date | null;
   created_at: Date;
   updated_at: Date;
+  deleted_at: Date | null;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
 }
 
 export interface KnowledgeRelationRow {
@@ -171,11 +188,10 @@ export interface KnowledgeRelationRow {
   to_entity_type: string;
   to_entity_id: string;
   relation_type: string;
-  metadata: Record<string, unknown> | null;
-  tags: Record<string, unknown>;
-  deleted_at: Date | null;
+  metadata: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
+  tags: Record<string, unknown>;
 }
 
 export interface KnowledgeObservationRow {
@@ -184,10 +200,119 @@ export interface KnowledgeObservationRow {
   entity_id: string;
   observation: string;
   observation_type: string | null;
-  metadata: Record<string, unknown> | null;
-  deleted_at: Date | null;
+  metadata: Record<string, unknown>;
   created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
 }
+
+// ============================================================================
+// 8-LOG SYSTEM TABLES - Session Persistence
+// ============================================================================
+
+export interface IncidentLogRow {
+  id: string;
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  impact: string;
+  timeline: Array<{ timestamp: string; event: string; actor?: string }> | null;
+  root_cause_analysis: string | null;
+  resolution_status: 'open' | 'investigating' | 'resolved' | 'closed';
+  affected_services: string[] | null;
+  business_impact: string | null;
+  recovery_actions: string[] | null;
+  follow_up_required: boolean;
+  incident_commander: string | null;
+  created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+export interface ReleaseLogRow {
+  id: string;
+  version: string;
+  release_type: 'major' | 'minor' | 'patch' | 'hotfix';
+  scope: string;
+  release_date: Date | null;
+  status: 'planned' | 'in_progress' | 'completed' | 'rolled_back';
+  ticket_references: string[] | null;
+  included_changes: string[] | null;
+  deployment_strategy: string | null;
+  rollback_plan: string | null;
+  testing_status: string | null;
+  approvers: string[] | null;
+  release_notes: string | null;
+  post_release_actions: string[] | null;
+  created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+export interface RiskLogRow {
+  id: string;
+  title: string;
+  category: 'technical' | 'business' | 'operational' | 'security' | 'compliance';
+  risk_level: 'critical' | 'high' | 'medium' | 'low';
+  probability: 'very_likely' | 'likely' | 'possible' | 'unlikely' | 'very_unlikely';
+  impact_description: string;
+  trigger_events: string[] | null;
+  mitigation_strategies: string[] | null;
+  owner: string | null;
+  review_date: Date | null;
+  status: 'active' | 'mitigated' | 'accepted' | 'closed';
+  related_decisions: string[] | null;
+  monitoring_indicators: string[] | null;
+  contingency_plans: string | null;
+  created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+export interface AssumptionLogRow {
+  id: string;
+  title: string;
+  description: string;
+  category: 'technical' | 'business' | 'user' | 'market' | 'resource';
+  validation_status: 'validated' | 'assumed' | 'invalidated' | 'needs_validation';
+  impact_if_invalid: string;
+  validation_criteria: string[] | null;
+  validation_date: Date | null;
+  owner: string | null;
+  related_assumptions: string[] | null;
+  dependencies: string[] | null;
+  monitoring_approach: string | null;
+  review_frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'as_needed' | null;
+  created_at: Date;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+// ============================================================================
+// AUDIT TRAIL TABLE
+// ============================================================================
+
+export interface EventAuditRow {
+  id: number;
+  event_id: string;
+  event_type: string;
+  table_name: string;
+  record_id: string;
+  operation: 'INSERT' | 'UPDATE' | 'DELETE';
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
+  changed_by: string;
+  changed_at: Date;
+  tags: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+// ============================================================================
+// AUTO-MAINTENANCE TABLE
+// ============================================================================
 
 export interface PurgeMetadataRow {
   id: number;
@@ -202,7 +327,52 @@ export interface PurgeMetadataRow {
   updated_at: Date;
 }
 
-// Generic query result row for counts/stats
+// ============================================================================
+// VIEW TYPES
+// ============================================================================
+
+export interface ActiveKnowledgeRow {
+  type: string;
+  id: string;
+  name: string;
+  updated_at: Date;
+  tags: Record<string, unknown>;
+}
+
+export interface GraphRelationshipsRow {
+  from_entity_type: string;
+  from_entity_id: string;
+  to_entity_type: string;
+  to_entity_id: string;
+  relation_type: string;
+  metadata: Record<string, unknown>;
+  created_at: Date;
+}
+
+export interface RecentActivityRow {
+  type: string;
+  id: string;
+  description: string;
+  timestamp: Date;
+  tags: Record<string, unknown>;
+}
+
+export interface TableStatisticsRow {
+  table_name: string;
+  total_rows: number;
+  table_size: number;
+  index_size: number;
+  total_size: number;
+  last_vacuum: Date | null;
+  last_autovacuum: Date | null;
+  last_analyze: Date | null;
+  last_autoanalyze: Date | null;
+}
+
+// ============================================================================
+// GENERIC QUERY RESULT ROWS
+// ============================================================================
+
 export interface CountRow {
   count: string;
   total?: string;
@@ -212,3 +382,29 @@ export interface StatsRow {
   entity_type: string;
   count: string;
 }
+
+// ============================================================================
+// UNION TYPES FOR CONVENIENCE
+// ============================================================================
+
+export type KnowledgeTableRow =
+  | SectionRow
+  | RunbookRow
+  | ChangeLogRow
+  | IssueLogRow
+  | ADRDecisionRow
+  | TodoLogRow
+  | ReleaseNoteRow
+  | DDLHistoryRow
+  | PRContextRow
+  | KnowledgeEntityRow
+  | KnowledgeRelationRow
+  | KnowledgeObservationRow
+  | IncidentLogRow
+  | ReleaseLogRow
+  | RiskLogRow
+  | AssumptionLogRow;
+
+export type GraphTableRow = KnowledgeEntityRow | KnowledgeRelationRow | KnowledgeObservationRow;
+
+export type SessionLogTableRow = IncidentLogRow | ReleaseLogRow | RiskLogRow | AssumptionLogRow;

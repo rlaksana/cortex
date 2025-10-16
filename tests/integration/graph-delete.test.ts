@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
-import { getPool, closePool } from '../../src/db/pool.js';
+import { dbPool } from '../../src/db/pool.js';
 import { softDelete, undelete } from '../../src/services/delete-operations.js';
 import { softDeleteEntity } from '../../src/services/knowledge/entity.js';
 import { relationExists } from '../../src/services/knowledge/relation.js';
@@ -15,7 +15,7 @@ describe('Delete Operations Integration Tests', () => {
   let testDecisionId: string;
 
   beforeAll(async () => {
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('SELECT 1');
 
     // Create test entities
@@ -68,7 +68,7 @@ describe('Delete Operations Integration Tests', () => {
   });
 
   afterAll(async () => {
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query(
       'DELETE FROM knowledge_relation WHERE tags @> \'{"test": true, "delete_test": true}\'::jsonb'
     );
@@ -78,7 +78,7 @@ describe('Delete Operations Integration Tests', () => {
     await pool.query(
       'DELETE FROM adr_decision WHERE tags @> \'{"test": true, "delete_test": true}\'::jsonb'
     );
-    await closePool();
+    // Don't close the shared pool in tests;
   });
 
   it('should soft delete an entity via memory.store', async () => {
@@ -110,7 +110,7 @@ describe('Delete Operations Integration Tests', () => {
     expect(deleteResult.stored[0].id).toBe(entityId);
 
     // Verify soft delete (deleted_at set)
-    const pool = getPool();
+    const pool = dbPool;
     const check = await pool.query('SELECT deleted_at FROM knowledge_entity WHERE id = $1', [
       entityId,
     ]);
@@ -147,7 +147,7 @@ describe('Delete Operations Integration Tests', () => {
     expect(deleteResult.stored[0].id).toBe(relationId);
 
     // Verify deleted
-    const pool = getPool();
+    const pool = dbPool;
     const check = await pool.query('SELECT deleted_at FROM knowledge_relation WHERE id = $1', [
       relationId,
     ]);
@@ -215,7 +215,7 @@ describe('Delete Operations Integration Tests', () => {
     expect(deleteResult.stored[0].id).toBe(entityId);
 
     // Verify relations were cascaded
-    const pool = getPool();
+    const pool = dbPool;
     const outExists = await relationExists(
       pool,
       'entity',
@@ -239,7 +239,7 @@ describe('Delete Operations Integration Tests', () => {
 
   it('should prevent deleting accepted ADRs (immutability)', async () => {
     // Update decision to accepted status
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('UPDATE adr_decision SET status = $1 WHERE id = $2', [
       'accepted',
       testDecisionId,
@@ -314,7 +314,7 @@ describe('Delete Operations Integration Tests', () => {
     ]);
 
     // Undelete
-    const pool = getPool();
+    const pool = dbPool;
     const restored = await undelete(pool, 'entity', entityId);
 
     expect(restored).toBe(true);
@@ -367,7 +367,7 @@ describe('Delete Operations Integration Tests', () => {
     ]);
 
     // Check audit trail
-    const pool = getPool();
+    const pool = dbPool;
     const audit = await pool.query(
       'SELECT * FROM event_audit WHERE entity_type = $1 AND entity_id = $2 AND operation = $3',
       ['entity', entityId, 'DELETE']
@@ -404,7 +404,7 @@ describe('Delete Operations Integration Tests', () => {
     ]);
 
     // Verify data still exists (just marked deleted)
-    const pool = getPool();
+    const pool = dbPool;
     const check = await pool.query('SELECT data, deleted_at FROM knowledge_entity WHERE id = $1', [
       entityId,
     ]);
@@ -444,7 +444,7 @@ describe('Delete Operations Integration Tests', () => {
     expect(deleteResult.stored.length).toBe(3);
 
     // Verify all deleted
-    const pool = getPool();
+    const pool = dbPool;
     for (const id of entities) {
       const check = await pool.query('SELECT deleted_at FROM knowledge_entity WHERE id = $1', [id]);
       expect(check.rows[0].deleted_at).not.toBeNull();

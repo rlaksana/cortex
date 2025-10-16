@@ -14,8 +14,8 @@ export interface DeepSearchResult {
  * Perform deep search using both FTS and pg_trgm trigram similarity
  *
  * Deep mode combines:
- * - Full-text search (ts_rank) - 70% weight
- * - Trigram similarity - 30% weight
+ * - Full-text search (weighted match) - 60% weight
+ * - Trigram similarity - 40% weight
  *
  * Use when:
  * - Fast mode returns poor results
@@ -46,9 +46,11 @@ export async function deepSearch(
         'section' AS kind,
         heading AS title,
         LEFT(body_text, 200) AS snippet,
-        ts_rank(ts, plainto_tsquery('english', $1)) AS fts_score,
+        (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
+         0.4 * similarity(COALESCE(heading, ''), $1)) AS fts_score,
         similarity(body_text, $1) AS similarity_score,
-        (0.7 * ts_rank(ts, plainto_tsquery('english', $1)) + 0.3 * similarity(body_text, $1)) AS combined_score
+        (0.4 * (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END + 0.4 * similarity(COALESCE(heading, ''), $1)) +
+         0.6 * similarity(body_text, $1)) AS combined_score
       FROM section
       WHERE
         ts @@ plainto_tsquery('english', $1)

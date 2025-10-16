@@ -146,6 +146,10 @@ export async function memoryFind(params: {
           'pr_context',
           'ddl',
           'entity',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
         ]);
 
   // Build scope filter SQL
@@ -164,13 +168,17 @@ export async function memoryFind(params: {
   // Search section table (has FTS)
   if (searchTypes.includes('section')) {
     const sectionQuery = scopeFilter
-      ? `SELECT id, heading, body_jsonb, ts_rank(ts, to_tsquery('english', $1)) as fts_score,
+      ? `SELECT id, heading, body_jsonb,
+                (0.6 * CASE WHEN ts @@ to_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
+                 0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
                 tags, updated_at, citation_count
          FROM section
          WHERE ts @@ to_tsquery('english', $1) ${scopeFilter}
          ORDER BY fts_score DESC
          LIMIT $3`
-      : `SELECT id, heading, body_jsonb, ts_rank(ts, to_tsquery('english', $1)) as fts_score,
+      : `SELECT id, heading, body_jsonb,
+                (0.6 * CASE WHEN ts @@ to_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
+                 0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
                 tags, updated_at, citation_count
          FROM section
          WHERE ts @@ to_tsquery('english', $1)
@@ -521,6 +529,150 @@ export async function memoryFind(params: {
         updated_at: row.updated_at,
         route_used: mode,
         confidence: 0.7,
+      });
+    }
+  }
+
+  // Search incident_log table (8-LOG SYSTEM)
+  if (searchTypes.includes('incident')) {
+    const incidentQuery = scopeFilter
+      ? `SELECT id, title, severity, impact, resolution_status, tags, updated_at
+         FROM incident_log
+         WHERE (title ILIKE $1 OR impact ILIKE $1 OR root_cause_analysis ILIKE $1) ${scopeFilter}
+         LIMIT $3`
+      : `SELECT id, title, severity, impact, resolution_status, tags, updated_at
+         FROM incident_log
+         WHERE (title ILIKE $1 OR impact ILIKE $1 OR root_cause_analysis ILIKE $1)
+         LIMIT $2`;
+
+    const incidentParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
+    const incidentResult = await pool.query(incidentQuery, incidentParams);
+    totalCandidates += incidentResult.rows.length;
+
+    for (const row of incidentResult.rows) {
+      const ftsScore = 0.8; // Incidents are high-value
+      const recencyScore = calculateRecency(row.updated_at);
+      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      allHits.push({
+        kind: 'incident',
+        id: row.id,
+        title: `INCIDENT: ${row.title} (${row.severity})`,
+        snippet: (row.impact || '').substring(0, 150) + '...',
+        score: finalScore,
+        scope: row.tags,
+        updated_at: row.updated_at,
+        route_used: mode,
+        confidence: 0.85,
+      });
+    }
+  }
+
+  // Search release_log table (8-LOG SYSTEM)
+  if (searchTypes.includes('release')) {
+    const releaseQuery = scopeFilter
+      ? `SELECT id, version, release_type, scope, status, tags, updated_at
+         FROM release_log
+         WHERE (version ILIKE $1 OR scope ILIKE $1 OR release_notes ILIKE $1) ${scopeFilter}
+         LIMIT $3`
+      : `SELECT id, version, release_type, scope, status, tags, updated_at
+         FROM release_log
+         WHERE (version ILIKE $1 OR scope ILIKE $1 OR release_notes ILIKE $1)
+         LIMIT $2`;
+
+    const releaseParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
+    const releaseResult = await pool.query(releaseQuery, releaseParams);
+    totalCandidates += releaseResult.rows.length;
+
+    for (const row of releaseResult.rows) {
+      const ftsScore = 0.7; // Releases are high-value
+      const recencyScore = calculateRecency(row.updated_at);
+      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      allHits.push({
+        kind: 'release',
+        id: row.id,
+        title: `RELEASE: ${row.version} (${row.release_type})`,
+        snippet: (row.scope || '').substring(0, 150) + '...',
+        score: finalScore,
+        scope: row.tags,
+        updated_at: row.updated_at,
+        route_used: mode,
+        confidence: 0.8,
+      });
+    }
+  }
+
+  // Search risk_log table (8-LOG SYSTEM)
+  if (searchTypes.includes('risk')) {
+    const riskQuery = scopeFilter
+      ? `SELECT id, title, category, risk_level, impact_description, tags, updated_at
+         FROM risk_log
+         WHERE (title ILIKE $1 OR impact_description ILIKE $1 OR mitigation_strategies::text ILIKE $1) ${scopeFilter}
+         LIMIT $3`
+      : `SELECT id, title, category, risk_level, impact_description, tags, updated_at
+         FROM risk_log
+         WHERE (title ILIKE $1 OR impact_description ILIKE $1 OR mitigation_strategies::text ILIKE $1)
+         LIMIT $2`;
+
+    const riskParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
+    const riskResult = await pool.query(riskQuery, riskParams);
+    totalCandidates += riskResult.rows.length;
+
+    for (const row of riskResult.rows) {
+      const ftsScore = 0.75; // Risks are high-value
+      const recencyScore = calculateRecency(row.updated_at);
+      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      allHits.push({
+        kind: 'risk',
+        id: row.id,
+        title: `RISK: ${row.title} (${row.risk_level})`,
+        snippet: (row.impact_description || '').substring(0, 150) + '...',
+        score: finalScore,
+        scope: row.tags,
+        updated_at: row.updated_at,
+        route_used: mode,
+        confidence: 0.8,
+      });
+    }
+  }
+
+  // Search assumption_log table (8-LOG SYSTEM)
+  if (searchTypes.includes('assumption')) {
+    const assumptionQuery = scopeFilter
+      ? `SELECT id, title, description, category, validation_status, tags, updated_at
+         FROM assumption_log
+         WHERE (title ILIKE $1 OR description ILIKE $1 OR impact_if_invalid ILIKE $1) ${scopeFilter}
+         LIMIT $3`
+      : `SELECT id, title, description, category, validation_status, tags, updated_at
+         FROM assumption_log
+         WHERE (title ILIKE $1 OR description ILIKE $1 OR impact_if_invalid ILIKE $1)
+         LIMIT $2`;
+
+    const assumptionParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
+    const assumptionResult = await pool.query(assumptionQuery, assumptionParams);
+    totalCandidates += assumptionResult.rows.length;
+
+    for (const row of assumptionResult.rows) {
+      const ftsScore = 0.6; // Assumptions are moderate value
+      const recencyScore = calculateRecency(row.updated_at);
+      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      allHits.push({
+        kind: 'assumption',
+        id: row.id,
+        title: `ASSUMPTION: ${row.title} (${row.validation_status})`,
+        snippet: (row.description || '').substring(0, 150) + '...',
+        score: finalScore,
+        scope: row.tags,
+        updated_at: row.updated_at,
+        route_used: mode,
+        confidence: 0.75,
       });
     }
   }

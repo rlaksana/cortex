@@ -23,7 +23,11 @@ export interface SectionData {
 export interface RunbookData {
   service: string;
   steps: unknown;
+  title?: string;
+  description?: string;
+  triggers?: unknown;
   owner?: string;
+  last_verified_at?: string;
 }
 
 export interface ChangeData {

@@ -90,7 +90,7 @@ describe('Golden Path: Store → Find Round-Trip', () => {
           {
             kind: 'section',
             scope: {
-              project: 'cortex-memory',
+              project: 'cortex',
               branch: 'e2e-test',
             },
             data: {

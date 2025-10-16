@@ -46,7 +46,7 @@ describe('Auto-Purge Service', () => {
 
       // Verify increment query was called
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('UPDATE _purge_metadata SET operations_since_purge')
+        expect.stringContaining('UPDATE purge_metadata SET operations_since_purge')
       );
     });
 

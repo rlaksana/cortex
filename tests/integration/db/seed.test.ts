@@ -12,7 +12,7 @@ import { seedDatabase } from '../../../scripts/seed.js';
  * - 1 ADR (status="accepted")
  * - 1 issue (status="open")
  * - 1 todo (status="open")
- * All with scope {project: "cortex-memory", branch: "main"}
+ * All with scope {project: "cortex", branch: "main"}
  */
 
 describe('Seed Data', () => {
@@ -86,7 +86,7 @@ describe('Seed Data', () => {
         SELECT tags->>'project' as project, tags->>'branch' as branch
         FROM ${table} LIMIT 1
       `);
-      expect(result.rows[0].project).toBe('cortex-memory');
+      expect(result.rows[0].project).toBe('cortex');
       expect(result.rows[0].branch).toBe('main');
     }
   });

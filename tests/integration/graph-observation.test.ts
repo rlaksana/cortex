@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
-import { getPool, closePool } from '../../src/db/pool.js';
+import { dbPool } from '../../src/db/pool.js';
 import {
   getObservations,
   searchObservations,
@@ -17,7 +17,7 @@ describe('Observation Management Integration Tests', () => {
 
   beforeAll(async () => {
     // Setup: Create a test task
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('SELECT 1');
 
     const taskResult = await memoryStore([
@@ -38,10 +38,10 @@ describe('Observation Management Integration Tests', () => {
 
   afterAll(async () => {
     // Cleanup
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('DELETE FROM knowledge_observation WHERE entity_id = $1', [testTaskId]);
     await pool.query('DELETE FROM todo_log WHERE id = $1', [testTaskId]);
-    await closePool();
+    // Don't close the shared pool in tests;
   });
 
   it('should add an observation to an entity', async () => {
@@ -97,7 +97,7 @@ describe('Observation Management Integration Tests', () => {
     ]);
 
     // Retrieve all observations
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await getObservations(pool, 'todo', testTaskId);
 
     // Should have multiple observations (append-only)
@@ -134,7 +134,7 @@ describe('Observation Management Integration Tests', () => {
     ]);
 
     // Query with filter
-    const pool = getPool();
+    const pool = dbPool;
     const notes = await getObservations(pool, 'todo', testTaskId, 'note');
 
     expect(notes.every((o) => o.observation_type === 'note')).toBe(true);
@@ -164,7 +164,7 @@ describe('Observation Management Integration Tests', () => {
     expect(result.stored[0].status).toBe('inserted');
 
     // Retrieve and verify metadata
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await getObservations(pool, 'todo', testTaskId, 'priority');
 
     const priorityObs = observations.find((o) => o.observation.includes('priority: high'));
@@ -192,7 +192,7 @@ describe('Observation Management Integration Tests', () => {
     ]);
 
     // Search
-    const pool = getPool();
+    const pool = dbPool;
     const results = await searchObservations(pool, 'authentication OAuth2');
 
     expect(results.length).toBeGreaterThan(0);
@@ -200,7 +200,7 @@ describe('Observation Management Integration Tests', () => {
   });
 
   it('should count observations for an entity', async () => {
-    const pool = getPool();
+    const pool = dbPool;
     const count = await getObservationCount(pool, 'todo', testTaskId);
 
     expect(count).toBeGreaterThan(0); // Should have multiple observations from previous tests
@@ -235,7 +235,7 @@ describe('Observation Management Integration Tests', () => {
     expect(deleteResult.stored[0].id).toBe(obsId);
 
     // Verify it's deleted (not returned in queries)
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await getObservations(pool, 'todo', testTaskId, 'temp');
 
     expect(observations.every((o) => o.observation !== 'temporary observation')).toBe(true);
@@ -260,7 +260,7 @@ describe('Observation Management Integration Tests', () => {
     ]);
 
     // Delete by text
-    const pool = getPool();
+    const pool = dbPool;
     const deletedCount = await deleteObservationsByText(pool, 'todo', testTaskId, textToDelete);
 
     expect(deletedCount).toBeGreaterThan(0);
@@ -271,7 +271,7 @@ describe('Observation Management Integration Tests', () => {
   });
 
   it('should order observations by created_at DESC (newest first)', async () => {
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await getObservations(pool, 'todo', testTaskId);
 
     // Check ordering (assuming observations have different timestamps)
@@ -329,7 +329,7 @@ describe('Observation Management Integration Tests', () => {
     expect(results.every((r) => r.stored.length === 1)).toBe(true);
 
     // Verify all were stored
-    const pool = getPool();
+    const pool = dbPool;
     const observations = await getObservations(pool, 'todo', testTaskId, 'concurrent');
     expect(observations.length).toBe(5);
   });

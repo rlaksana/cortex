@@ -1,15 +1,15 @@
 /**
  * Cortex Memory MCP - Knowledge Type Schemas
  *
- * Zod runtime validation schemas for all 9 knowledge types.
+ * Zod runtime validation schemas for all 16 knowledge types.
  * Uses discriminated union pattern for type-safe parsing.
  *
  * Constitutional Requirements:
  * - Type Safety (Principle VII): Compile-time + runtime validation
- * - Minimal API (Principle I): 9 core types, extensible via tags
+ * - Minimal API (Principle I): 16 core types, extensible via tags
  * - Immutability (Principle IV): ADR content immutable, approved specs write-locked
  *
- * @version 1.0.0
+ * @version 2.1.0 - Updated for PostgreSQL 18 schema alignment with 8-LOG SYSTEM
  */
 
 import { z } from 'zod';
@@ -26,6 +26,7 @@ export const ScopeSchema = z
     branch: z.string().min(1, 'branch is required'),
     sprint: z.string().optional(),
     tenant: z.string().optional(),
+    environment: z.string().optional(),
   })
   .strict();
 
@@ -46,10 +47,13 @@ export const TTLPolicySchema = z.enum(['default', 'short', 'long', 'permanent'])
 export const SectionDataSchema = z
   .object({
     id: z.string().uuid().optional(), // For update operations
-    title: z.string().min(1, 'title is required'),
+    title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
     body_md: z.string().optional(),
     body_text: z.string().optional(),
-    heading: z.string().optional(),
+    heading: z
+      .string()
+      .min(1, 'heading is required')
+      .max(300, 'heading must be 300 characters or less'),
     document_id: z.string().uuid().optional(),
     citation_count: z.number().int().nonnegative().optional(),
   })
@@ -76,7 +80,10 @@ export const SectionSchema = z
 
 export const RunbookDataSchema = z
   .object({
-    service: z.string().min(1, 'service is required'),
+    service: z
+      .string()
+      .min(1, 'service is required')
+      .max(200, 'service must be 200 characters or less'),
     steps: z
       .array(
         z.object({
@@ -87,7 +94,7 @@ export const RunbookDataSchema = z
         })
       )
       .min(1, 'At least one step is required'),
-    title: z.string().min(1, 'title is required'),
+    title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
     description: z.string().optional(),
     triggers: z.array(z.string()).optional(),
     last_verified_at: z.string().datetime().optional(),
@@ -121,7 +128,10 @@ export const ChangeDataSchema = z
       'config_change',
       'dependency_update',
     ]),
-    subject_ref: z.string().min(1, 'subject_ref is required (e.g., commit SHA, PR number)'),
+    subject_ref: z
+      .string()
+      .min(1, 'subject_ref is required (e.g., commit SHA, PR number)')
+      .max(200, 'subject_ref must be 200 characters or less'),
     summary: z.string().min(1, 'summary is required'),
     details: z.string().optional(),
     affected_files: z.array(z.string()).optional(),
@@ -148,9 +158,15 @@ export const ChangeSchema = z
 
 export const IssueDataSchema = z
   .object({
-    tracker: z.string().min(1, 'tracker is required (e.g., github, jira, linear)'),
-    external_id: z.string().min(1, 'external_id is required (e.g., GH-123, PROJ-456)'),
-    title: z.string().min(1, 'title is required'),
+    tracker: z
+      .string()
+      .min(1, 'tracker is required (e.g., github, jira, linear)')
+      .max(100, 'tracker must be 100 characters or less'),
+    external_id: z
+      .string()
+      .min(1, 'external_id is required (e.g., GH-123, PROJ-456)')
+      .max(100, 'external_id must be 100 characters or less'),
+    title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
     status: z.enum(['open', 'in_progress', 'resolved', 'closed', 'wont_fix']),
     description: z.string().optional(),
     assignee: z.string().optional(),
@@ -178,9 +194,12 @@ export const IssueSchema = z
 export const DecisionDataSchema = z
   .object({
     id: z.string().uuid().optional(), // For update operations
-    component: z.string().min(1, 'component is required'),
+    component: z
+      .string()
+      .min(1, 'component is required')
+      .max(200, 'component must be 200 characters or less'),
     status: z.enum(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded']),
-    title: z.string().min(1, 'title is required'),
+    title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
     rationale: z.string().min(1, 'rationale is required'),
     alternatives_considered: z.array(z.string()).optional(),
     consequences: z.string().optional(),
@@ -206,7 +225,10 @@ export const DecisionSchema = z
 
 export const TodoDataSchema = z
   .object({
-    scope: z.string().min(1, 'scope is required (e.g., task, epic, story)'),
+    scope: z
+      .string()
+      .min(1, 'scope is required (e.g., task, epic, story)')
+      .max(200, 'scope must be 200 characters or less'),
     todo_type: z.enum(['task', 'bug', 'epic', 'story', 'spike']),
     text: z.string().min(1, 'text is required'),
     status: z.enum(['open', 'in_progress', 'done', 'cancelled', 'archived']),
@@ -235,7 +257,10 @@ export const TodoSchema = z
 
 export const ReleaseNoteDataSchema = z
   .object({
-    version: z.string().min(1, 'version is required (e.g., 1.2.3, v2024.10.09)'),
+    version: z
+      .string()
+      .min(1, 'version is required (e.g., 1.2.3, v2024.10.09)')
+      .max(100, 'version must be 100 characters or less'),
     release_date: z.string().datetime(),
     summary: z.string().min(1, 'summary is required'),
     breaking_changes: z.array(z.string()).optional(),
@@ -263,9 +288,15 @@ export const ReleaseNoteSchema = z
 
 export const DDLDataSchema = z
   .object({
-    migration_id: z.string().min(1, 'migration_id is required (e.g., 001_initial_schema)'),
+    migration_id: z
+      .string()
+      .min(1, 'migration_id is required (e.g., 001_initial_schema)')
+      .max(200, 'migration_id must be 200 characters or less'),
     ddl_text: z.string().min(1, 'ddl_text is required (SQL DDL statements)'),
-    checksum: z.string().min(1, 'checksum is required (SHA-256 hash for integrity)'),
+    checksum: z
+      .string()
+      .min(64, 'checksum must be 64 characters (SHA-256 hash)')
+      .max(64, 'checksum must be 64 characters (SHA-256 hash)'),
     applied_at: z.string().datetime().optional(),
     description: z.string().optional(),
   })
@@ -290,12 +321,21 @@ export const DDLSchema = z
 export const PRContextDataSchema = z
   .object({
     pr_number: z.number().int().positive(),
-    title: z.string().min(1, 'title is required'),
+    title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
     description: z.string().optional(),
-    author: z.string().min(1, 'author is required'),
+    author: z
+      .string()
+      .min(1, 'author is required')
+      .max(200, 'author must be 200 characters or less'),
     status: z.enum(['open', 'merged', 'closed', 'draft']),
-    base_branch: z.string().min(1, 'base_branch is required'),
-    head_branch: z.string().min(1, 'head_branch is required'),
+    base_branch: z
+      .string()
+      .min(1, 'base_branch is required')
+      .max(200, 'base_branch must be 200 characters or less'),
+    head_branch: z
+      .string()
+      .min(1, 'head_branch is required')
+      .max(200, 'head_branch must be 200 characters or less'),
     merged_at: z.string().datetime().optional(),
     expires_at: z.string().datetime().optional(), // TTL: 30d post-merge
   })
@@ -321,8 +361,12 @@ export const EntityDataSchema = z
   .object({
     entity_type: z
       .string()
-      .min(1, 'entity_type is required (e.g., user, organization, goal, preference)'),
-    name: z.string().min(1, 'name is required (unique identifier within entity_type)'),
+      .min(1, 'entity_type is required (e.g., user, organization, goal, preference)')
+      .max(100, 'entity_type must be 100 characters or less'),
+    name: z
+      .string()
+      .min(1, 'name is required (unique identifier within entity_type)')
+      .max(500, 'name must be 500 characters or less'),
     data: z.record(z.unknown()), // Flexible schema - no validation constraints
   })
   .strict();
@@ -347,13 +391,18 @@ export const RelationDataSchema = z
   .object({
     from_entity_type: z
       .string()
-      .min(1, 'from_entity_type is required (e.g., decision, section, entity)'),
+      .min(1, 'from_entity_type is required (e.g., decision, section, entity)')
+      .max(100, 'from_entity_type must be 100 characters or less'),
     from_entity_id: z.string().uuid('from_entity_id must be a valid UUID'),
-    to_entity_type: z.string().min(1, 'to_entity_type is required'),
+    to_entity_type: z
+      .string()
+      .min(1, 'to_entity_type is required')
+      .max(100, 'to_entity_type must be 100 characters or less'),
     to_entity_id: z.string().uuid('to_entity_id must be a valid UUID'),
     relation_type: z
       .string()
-      .min(1, 'relation_type is required (e.g., resolves, supersedes, references, implements)'),
+      .min(1, 'relation_type is required (e.g., resolves, supersedes, references, implements)')
+      .max(100, 'relation_type must be 100 characters or less'),
     metadata: z.record(z.unknown()).optional(), // Optional: { weight: 1.0, confidence: 0.85, since: "2025-01-01" }
   })
   .strict();
@@ -376,7 +425,10 @@ export const RelationSchema = z
 
 export const ObservationDataSchema = z
   .object({
-    entity_type: z.string().min(1, 'entity_type is required (e.g., decision, section, entity)'),
+    entity_type: z
+      .string()
+      .min(1, 'entity_type is required (e.g., decision, section, entity)')
+      .max(100, 'entity_type must be 100 characters or less'),
     entity_id: z.string().uuid('entity_id must be a valid UUID'),
     observation: z
       .string()
@@ -391,6 +443,161 @@ export const ObservationSchema = z
     kind: z.literal('observation'),
     scope: ScopeSchema,
     data: ObservationDataSchema,
+    tags: z.record(z.unknown()).optional(),
+    source: SourceSchema.optional(),
+    idempotency_key: z.string().max(256).optional(),
+    ttl_policy: TTLPolicySchema.optional(),
+  })
+  .strict();
+
+// ============================================================================
+// Knowledge Type: incident (8-LOG SYSTEM - Incident Management)
+// ============================================================================
+
+export const IncidentDataSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'incident title is required')
+      .max(500, 'title must be 500 characters or less'),
+    severity: z.enum(['critical', 'high', 'medium', 'low'], {
+      required_error: 'incident severity is required',
+    }),
+    impact: z.string().min(1, 'incident impact description is required'),
+    timeline: z
+      .array(
+        z.object({
+          timestamp: z.string().datetime(),
+          event: z.string(),
+          actor: z.string().optional(),
+        })
+      )
+      .optional(),
+    root_cause_analysis: z.string().optional(),
+    resolution_status: z.enum(['open', 'investigating', 'resolved', 'closed']),
+    affected_services: z.array(z.string()).optional(),
+    business_impact: z.string().optional(),
+    recovery_actions: z.array(z.string()).optional(),
+    follow_up_required: z.boolean().optional(),
+    incident_commander: z.string().optional(),
+  })
+  .strict();
+
+export const IncidentSchema = z
+  .object({
+    kind: z.literal('incident'),
+    scope: ScopeSchema,
+    data: IncidentDataSchema,
+    tags: z.record(z.unknown()).optional(),
+    source: SourceSchema.optional(),
+    idempotency_key: z.string().max(256).optional(),
+    ttl_policy: TTLPolicySchema.optional(),
+  })
+  .strict();
+
+// ============================================================================
+// Knowledge Type: release (8-LOG SYSTEM - Release Management)
+// ============================================================================
+
+export const ReleaseDataSchema = z
+  .object({
+    version: z
+      .string()
+      .min(1, 'release version is required')
+      .max(100, 'version must be 100 characters or less'),
+    release_type: z.enum(['major', 'minor', 'patch', 'hotfix']),
+    scope: z.string().min(1, 'release scope description is required'),
+    release_date: z.string().datetime().optional(),
+    status: z.enum(['planned', 'in_progress', 'completed', 'rolled_back']),
+    ticket_references: z.array(z.string()).optional(),
+    included_changes: z.array(z.string()).optional(),
+    deployment_strategy: z.string().optional(),
+    rollback_plan: z.string().optional(),
+    testing_status: z.string().optional(),
+    approvers: z.array(z.string()).optional(),
+    release_notes: z.string().optional(),
+    post_release_actions: z.array(z.string()).optional(),
+  })
+  .strict();
+
+export const ReleaseSchema = z
+  .object({
+    kind: z.literal('release'),
+    scope: ScopeSchema,
+    data: ReleaseDataSchema,
+    tags: z.record(z.unknown()).optional(),
+    source: SourceSchema.optional(),
+    idempotency_key: z.string().max(256).optional(),
+    ttl_policy: TTLPolicySchema.optional(),
+  })
+  .strict();
+
+// ============================================================================
+// Knowledge Type: risk (8-LOG SYSTEM - Risk Management)
+// ============================================================================
+
+export const RiskDataSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'risk title is required')
+      .max(500, 'title must be 500 characters or less'),
+    category: z.enum(['technical', 'business', 'operational', 'security', 'compliance']),
+    risk_level: z.enum(['critical', 'high', 'medium', 'low']),
+    probability: z.enum(['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely']),
+    impact_description: z.string().min(1, 'impact description is required'),
+    trigger_events: z.array(z.string()).optional(),
+    mitigation_strategies: z.array(z.string()).optional(),
+    owner: z.string().optional(),
+    review_date: z.string().datetime().optional(),
+    status: z.enum(['active', 'mitigated', 'accepted', 'closed']),
+    related_decisions: z.array(z.string().uuid()).optional(),
+    monitoring_indicators: z.array(z.string()).optional(),
+    contingency_plans: z.string().optional(),
+  })
+  .strict();
+
+export const RiskSchema = z
+  .object({
+    kind: z.literal('risk'),
+    scope: ScopeSchema,
+    data: RiskDataSchema,
+    tags: z.record(z.unknown()).optional(),
+    source: SourceSchema.optional(),
+    idempotency_key: z.string().max(256).optional(),
+    ttl_policy: TTLPolicySchema.optional(),
+  })
+  .strict();
+
+// ============================================================================
+// Knowledge Type: assumption (8-LOG SYSTEM - Assumption Management)
+// ============================================================================
+
+export const AssumptionDataSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'assumption title is required')
+      .max(500, 'title must be 500 characters or less'),
+    description: z.string().min(1, 'assumption description is required'),
+    category: z.enum(['technical', 'business', 'user', 'market', 'resource']),
+    validation_status: z.enum(['validated', 'assumed', 'invalidated', 'needs_validation']),
+    impact_if_invalid: z.string().min(1, 'impact description is required'),
+    validation_criteria: z.array(z.string()).optional(),
+    validation_date: z.string().datetime().optional(),
+    owner: z.string().optional(),
+    related_assumptions: z.array(z.string().uuid()).optional(),
+    dependencies: z.array(z.string()).optional(),
+    monitoring_approach: z.string().optional(),
+    review_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'as_needed']).optional(),
+  })
+  .strict();
+
+export const AssumptionSchema = z
+  .object({
+    kind: z.literal('assumption'),
+    scope: ScopeSchema,
+    data: AssumptionDataSchema,
     tags: z.record(z.unknown()).optional(),
     source: SourceSchema.optional(),
     idempotency_key: z.string().max(256).optional(),
@@ -415,6 +622,10 @@ export const KnowledgeItemSchema = z.discriminatedUnion('kind', [
   EntitySchema, // 10th knowledge type - flexible entity storage
   RelationSchema, // 11th knowledge type - entity relationships
   ObservationSchema, // 12th knowledge type - fine-grained facts
+  IncidentSchema, // 13th knowledge type - incident management (8-LOG SYSTEM)
+  ReleaseSchema, // 14th knowledge type - release management (8-LOG SYSTEM)
+  RiskSchema, // 15th knowledge type - risk management (8-LOG SYSTEM)
+  AssumptionSchema, // 16th knowledge type - assumption management (8-LOG SYSTEM)
 ]);
 
 export type KnowledgeItem = z.infer<typeof KnowledgeItemSchema>;
@@ -430,6 +641,10 @@ export type PRContextItem = z.infer<typeof PRContextSchema>;
 export type EntityItem = z.infer<typeof EntitySchema>;
 export type RelationItem = z.infer<typeof RelationSchema>;
 export type ObservationItem = z.infer<typeof ObservationSchema>;
+export type IncidentItem = z.infer<typeof IncidentSchema>;
+export type ReleaseItem = z.infer<typeof ReleaseSchema>;
+export type RiskItem = z.infer<typeof RiskSchema>;
+export type AssumptionItem = z.infer<typeof AssumptionSchema>;
 
 // ============================================================================
 // Validation Helpers

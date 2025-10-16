@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
-import { getPool, closePool } from '../../src/db/pool.js';
+import { dbPool } from '../../src/db/pool.js';
 import {
   getOutgoingRelations,
   getIncomingRelations,
@@ -18,7 +18,7 @@ describe('Relation Storage Integration Tests', () => {
 
   beforeAll(async () => {
     // Setup: Create test entities
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('SELECT 1');
 
     // Create test decision
@@ -56,11 +56,11 @@ describe('Relation Storage Integration Tests', () => {
 
   afterAll(async () => {
     // Cleanup
-    const pool = getPool();
+    const pool = dbPool;
     await pool.query('DELETE FROM knowledge_relation WHERE tags @> \'{"test": true}\'::jsonb');
     await pool.query('DELETE FROM adr_decision WHERE tags @> \'{"test": true}\'::jsonb');
     await pool.query('DELETE FROM issue_log WHERE tags @> \'{"test": true}\'::jsonb');
-    await closePool();
+    // Don't close the shared pool in tests;
   });
 
   it('should create a relation between two entities', async () => {
@@ -110,7 +110,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query outgoing relations from an entity', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Create relation
     await memoryStore([
@@ -139,7 +139,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query incoming relations to an entity', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Create relation
     await memoryStore([
@@ -168,7 +168,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query all relations (bidirectional)', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Query all relations for decision
     const relations = await getAllRelations(pool, 'decision', testDecisionId);
@@ -178,7 +178,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should filter relations by relation_type', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Create multiple relation types
     await memoryStore([
@@ -203,7 +203,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should check relation existence', async () => {
-    const pool = getPool();
+    const pool = dbPool;
 
     // Create relation
     await memoryStore([
@@ -259,7 +259,7 @@ describe('Relation Storage Integration Tests', () => {
     expect(result.stored[0].status).toBe('inserted');
 
     // Query and verify metadata
-    const pool = getPool();
+    const pool = dbPool;
     const relations = await getOutgoingRelations(pool, 'decision', testDecisionId, 'depends_on');
     const relation = relations.find((r) => r.relation_type === 'depends_on');
 
@@ -306,7 +306,7 @@ describe('Relation Storage Integration Tests', () => {
     expect(result.stored[0].status).toBe('inserted');
 
     // Verify polymorphic relation
-    const pool = getPool();
+    const pool = dbPool;
     const relations = await getOutgoingRelations(pool, 'entity', userId);
     expect(relations.some((r) => r.to_entity_type === 'decision')).toBe(true);
   });

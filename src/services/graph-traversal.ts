@@ -283,7 +283,7 @@ export async function enrichGraphNodes(pool: Pool, nodes: GraphNode[]): Promise<
     if (!nodesByType.has(node.entity_type)) {
       nodesByType.set(node.entity_type, []);
     }
-    nodesByType.get(node.entity_type)!.push(node);
+    nodesByType.get(node.entity_type).push(node);
   }
 
   // Fetch data for each entity type

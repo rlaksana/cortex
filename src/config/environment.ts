@@ -12,10 +12,10 @@ dotenv.config();
 
 // Database configuration schema
 const DatabaseConfigSchema = z.object({
-  DB_HOST: z.string().min(1, "DB_HOST is required").default('localhost'),
+  DB_HOST: z.string().min(1, 'DB_HOST is required').default('localhost'),
   DB_PORT: z.string().transform(Number).pipe(z.number().int().min(1).max(65535)).default('5432'),
-  DB_NAME: z.string().min(1, "DB_NAME is required").default('cortex_prod'),
-  DB_USER: z.string().min(1, "DB_USER is required").default('cortex'),
+  DB_NAME: z.string().min(1, 'DB_NAME is required').default('cortex_prod'),
+  DB_USER: z.string().min(1, 'DB_USER is required').default('cortex'),
   DB_PASSWORD: z.string().default(''),
   DATABASE_URL: z.string().url().optional(),
 });
@@ -29,8 +29,8 @@ const AppConfigSchema = z.object({
 
 // Security configuration schema
 const SecurityConfigSchema = z.object({
-  JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters").optional(),
-  ENCRYPTION_KEY: z.string().min(32, "ENCRYPTION_KEY must be at least 32 characters").optional(),
+  JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters').optional(),
+  ENCRYPTION_KEY: z.string().min(32, 'ENCRYPTION_KEY must be at least 32 characters').optional(),
   CORS_ORIGIN: z.string().url().optional(),
 });
 
@@ -38,7 +38,11 @@ const SecurityConfigSchema = z.object({
 const McpConfigSchema = z.object({
   MCP_SERVER_NAME: z.string().min(1).default('cortex-memory'),
   MCP_SERVER_VERSION: z.string().min(1).default('1.0.0'),
-  MCP_MAX_BATCH_SIZE: z.string().transform(Number).pipe(z.number().int().min(1).max(1000)).default('100'),
+  MCP_MAX_BATCH_SIZE: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(1000))
+    .default('100'),
 });
 
 // Complete configuration schema
@@ -58,7 +62,7 @@ function validateConfig(): AppConfig {
   const result = ConfigSchema.safeParse(process.env);
 
   if (!result.success) {
-    const errors = result.error.errors.map(err => ({
+    const errors = result.error.errors.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
       received: process.env[err.path[0] as string],
@@ -67,7 +71,7 @@ function validateConfig(): AppConfig {
     logger.error({ errors }, 'Configuration validation failed');
 
     throw new Error(
-      `Configuration validation failed:\n${errors.map(e => `  ${e.field}: ${e.message} (received: ${e.received || 'undefined'})`).join('\n')}`
+      `Configuration validation failed:\n${errors.map((e) => `  ${e.field}: ${e.message} (received: ${e.received || 'undefined'})`).join('\n')}`
     );
   }
 
@@ -87,14 +91,17 @@ export class EnvironmentConfig {
     this.encryptionKey = this.getOrCreateEncryptionKey();
 
     // Log configuration (without sensitive data)
-    logger.info({
-      environment: this.config.NODE_ENV,
-      dbHost: this.config.DB_HOST,
-      dbPort: this.config.DB_PORT,
-      dbName: this.config.DB_NAME,
-      dbUser: this.config.DB_USER,
-      logLevel: this.config.LOG_LEVEL,
-    }, 'Environment configuration loaded successfully');
+    logger.info(
+      {
+        environment: this.config.NODE_ENV,
+        dbHost: this.config.DB_HOST,
+        dbPort: this.config.DB_PORT,
+        dbName: this.config.DB_NAME,
+        dbUser: this.config.DB_USER,
+        logLevel: this.config.LOG_LEVEL,
+      },
+      'Environment configuration loaded successfully'
+    );
   }
 
   public static getInstance(): EnvironmentConfig {
@@ -115,8 +122,8 @@ export class EnvironmentConfig {
     const { DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DATABASE_URL } = this.config;
 
     // Use explicit DATABASE_URL if provided, otherwise construct it
-    const databaseUrl = DATABASE_URL ||
-      `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+    const databaseUrl =
+      DATABASE_URL || `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
 
     return {
       host: DB_HOST,
@@ -172,7 +179,9 @@ export class EnvironmentConfig {
     // Create a new encryption key for development
     if (this.config.NODE_ENV === 'development') {
       const key = crypto.randomBytes(32).toString('hex');
-      logger.warn('Generated new encryption key for development. Set ENCRYPTION_KEY in production for security.');
+      logger.warn(
+        'Generated new encryption key for development. Set ENCRYPTION_KEY in production for security.'
+      );
       return Buffer.from(key, 'hex');
     }
 
@@ -201,8 +210,8 @@ export class EnvironmentConfig {
 
       logger.info('Database connection validation successful');
       return true;
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'Database connection validation failed');
+    } catch (error: unknown) {
+      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Database connection validation failed');
       return false;
     }
   }
@@ -238,12 +247,5 @@ export class EnvironmentConfig {
 export const config = EnvironmentConfig.getInstance();
 
 // Export configuration values for backward compatibility
-export const {
-  NODE_ENV,
-  LOG_LEVEL,
-  DB_HOST,
-  DB_PORT,
-  DB_NAME,
-  DB_USER,
-  DB_PASSWORD,
-} = config.getConfig();
+export const { NODE_ENV, LOG_LEVEL, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } =
+  config.getConfig();

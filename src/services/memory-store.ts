@@ -25,7 +25,12 @@ import { storePRContext } from './knowledge/pr_context.js';
 import { storeEntity } from './knowledge/entity.js';
 import { storeRelation } from './knowledge/relation.js';
 import { addObservation } from './knowledge/observation.js';
-import { storeIncident, storeRelease, storeRisk, storeAssumption } from './knowledge/session-logs.js';
+import {
+  storeIncident,
+  storeRelease,
+  storeRisk,
+  storeAssumption,
+} from './knowledge/session-logs.js';
 import { softDelete, type DeleteRequest } from './delete-operations.js';
 import { checkAndPurge } from './auto-purge.js';
 import { findSimilar } from './similarity.js';
@@ -79,14 +84,14 @@ export async function memoryStore(items: unknown[]): Promise<{
         recommendation: 'Fix validation errors before retrying',
         reasoning: 'Request failed validation',
         user_message_suggestion: '❌ Request validation failed',
-      }
+      },
     };
   }
 
   // Validate individual items with comprehensive checks
   const validation = validateKnowledgeItems(items);
   if (validation.errors.length > 0) {
-    const errors: StoreError[] = validation.errors.map(err => ({
+    const errors: StoreError[] = validation.errors.map((err) => ({
       index: err.index,
       error_code: err.code as any,
       message: err.message,
@@ -103,7 +108,7 @@ export async function memoryStore(items: unknown[]): Promise<{
         recommendation: 'Fix individual item validation errors',
         reasoning: `Found ${validation.errors.length} validation errors`,
         user_message_suggestion: `❌ ${validation.errors.length} validation errors found`,
-      }
+      },
     };
   }
 
@@ -264,7 +269,6 @@ export async function memoryStore(items: unknown[]): Promise<{
             kind: 'section',
             created_at: result.createdAt.toISOString(),
           });
-
         } catch (prismaError) {
           // Convert Prisma errors to our error format
           if (prismaError instanceof Error) {

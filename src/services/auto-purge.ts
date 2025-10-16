@@ -46,11 +46,11 @@ export async function checkAndPurge(
 ): Promise<void> {
   // Increment operation counter
   await pool.query(
-    'UPDATE _purge_metadata SET operations_since_purge = operations_since_purge + 1 WHERE id = 1'
+    'UPDATE purge_metadata SET operations_since_purge = operations_since_purge + 1 WHERE id = 1'
   );
 
   // Get current state
-  const result = await pool.query<PurgeMetadata>('SELECT * FROM _purge_metadata WHERE id = 1');
+  const result = await pool.query<PurgeMetadata>('SELECT * FROM purge_metadata WHERE id = 1');
   const meta = result.rows[0];
 
   if (!meta) {
@@ -102,6 +102,12 @@ export async function checkAndPurge(
  * - pr_context: 30 days after merge
  * - issue_log: 90 days after closure
  * - knowledge_entity: 90 days after soft delete
+ * - knowledge_relation: 90 days after soft delete
+ * - knowledge_observation: 90 days after soft delete
+ * - incident_log: 90 days after resolution
+ * - release_log: 90 days after completion
+ * - risk_log: 90 days after closure
+ * - assumption_log: 90 days after validation
  *
  * @param pool - PostgreSQL connection pool
  * @param triggeredBy - Which threshold was exceeded
@@ -180,12 +186,48 @@ async function runPurge(
     `);
     deletedCounts.observation = r7.rowCount || 0;
 
+    // Rule 8: Delete resolved incidents > 90 days
+    const r8 = await pool.query(`
+      DELETE FROM incident_log
+      WHERE resolution_status IN ('resolved', 'closed')
+        AND updated_at < NOW() - INTERVAL '90 days'
+      RETURNING id
+    `);
+    deletedCounts.incident = r8.rowCount || 0;
+
+    // Rule 9: Delete completed releases > 90 days
+    const r9 = await pool.query(`
+      DELETE FROM release_log
+      WHERE status IN ('completed', 'rolled_back')
+        AND updated_at < NOW() - INTERVAL '90 days'
+      RETURNING id
+    `);
+    deletedCounts.release = r9.rowCount || 0;
+
+    // Rule 10: Delete closed risks > 90 days
+    const r10 = await pool.query(`
+      DELETE FROM risk_log
+      WHERE status IN ('closed', 'accepted')
+        AND updated_at < NOW() - INTERVAL '90 days'
+      RETURNING id
+    `);
+    deletedCounts.risk = r10.rowCount || 0;
+
+    // Rule 11: Delete validated assumptions > 90 days
+    const r11 = await pool.query(`
+      DELETE FROM assumption_log
+      WHERE validation_status = 'validated'
+        AND updated_at < NOW() - INTERVAL '90 days'
+      RETURNING id
+    `);
+    deletedCounts.assumption = r11.rowCount || 0;
+
     const durationMs = Date.now() - startTime;
     const totalDeleted = Object.values(deletedCounts).reduce((sum, n) => sum + n, 0);
 
     // Update purge metadata
     await pool.query(
-      `UPDATE _purge_metadata
+      `UPDATE purge_metadata
        SET last_purge_at = NOW(),
            operations_since_purge = 0,
            deleted_counts = $1,
@@ -236,7 +278,7 @@ export async function manualPurge(pool: Pool): Promise<PurgeResult> {
  * @returns Purge metadata
  */
 export async function getPurgeStatus(pool: Pool) {
-  const result = await pool.query<PurgeMetadata>('SELECT * FROM _purge_metadata WHERE id = 1');
+  const result = await pool.query<PurgeMetadata>('SELECT * FROM purge_metadata WHERE id = 1');
   const meta = result.rows[0];
 
   if (!meta) {

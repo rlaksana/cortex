@@ -104,7 +104,7 @@ async function runSmokeTests() {
   // Test 3: Simple Query
   section('[3/5] SIMPLE QUERY');
   try {
-    const result = await client!.query('SELECT version()');
+    const result = await client.query('SELECT version()');
     success(`Query executed: PostgreSQL ${result.rows[0].version.split(',')[0]}`);
     testsPassed++;
   } catch (err) {
