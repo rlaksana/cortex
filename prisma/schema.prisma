@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Section table for documentation chunks
+model Section {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId      String?   @map("document_id") @db.Uuid
+  heading         String    @db.VarChar(300)
+  title           String    @db.VarChar(500)
+  bodyMd          String?   @map("body_md") @db.Text
+  bodyText        String?   @map("body_text") @db.Text
+  bodyJsonb       Json      @map("body_jsonb") @default(dbgenerated("{\"text\": COALESCE(body_text, ''), \"markdown\": COALESCE(body_md, '')}"))
+  citationCount   Int       @default(0) @map("citation_count")
+  contentHash     String?   @map("content_hash") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags            Json      @default("{}") @db.JsonB
+  metadata        Json      @default("{}") @db.JsonB
+
+  // Indexes
+  @@index([contentHash], map: "idx_section_content_hash")
+  @@index([tags], map: "idx_section_tags", type: Hash)
+  @@index([createdAt], map: "idx_section_created_at")
+  @@index([title], map: "idx_section_title", type: BTree)
+  @@map("section")
+}
+
+// ADR Decision table
+model AdrDecision {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  component             String    @db.VarChar(200)
+  status                String    @db.VarChar(50)
+  title                 String    @db.VarChar(500)
+  rationale             String    @db.Text
+  alternativesConsidered String[]
+  consequences          String?   @db.Text
+  supersedes            String?   @db.Uuid
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags                  Json      @default("{}") @db.JsonB
+  metadata              Json      @default("{}") @db.JsonB
+
+  @@index([status], map: "idx_adr_decision_status")
+  @@index([component], map: "idx_adr_decision_component")
+  @@map("adr_decision")
+}
+
+// Issue tracking table
+model IssueLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tracker     String    @db.VarChar(100)
+  externalId  String    @map("external_id") @db.VarChar(100)
+  title       String    @db.VarChar(500)
+  description String?   @db.Text
+  severity    String?   @db.VarChar(50)
+  status      String?   @db.VarChar(50)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags        Json      @default("{}") @db.JsonB
+  metadata    Json      @default("{}") @db.JsonB
+
+  @@unique([tracker, externalId], map: "unique_issue_tracker_external")
+  @@index([status], map: "idx_issue_status")
+  @@index([severity], map: "idx_issue_severity")
+  @@map("issue_log")
+}
+
+// Todo tracking table
+model TodoLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String    @db.VarChar(500)
+  description String?   @db.Text
+  status      String    @db.VarChar(50)
+  priority    String?   @db.VarChar(50)
+  dueDate     DateTime? @map("due_date") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags        Json      @default("{}") @db.JsonB
+  metadata    Json      @default("{}") @db.JsonB
+
+  @@index([status], map: "idx_todo_status")
+  @@index([priority], map: "idx_todo_priority")
+  @@index([dueDate], map: "idx_todo_due_date")
+  @@map("todo_log")
+}
+
+// Add other models as needed...
+model ChangeLog {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  changeType  String    @map("change_type") @db.VarChar(100)
+  subjectRef  String    @map("subject_ref") @db.VarChar(200)
+  summary     String    @db.Text
+  details     String?   @db.Text
+  affectedFiles String[] @map("affected_files")
+  author      String    @db.VarChar(200)
+  commitSha   String?   @map("commit_sha") @db.VarChar(100)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags        Json      @default("{}") @db.JsonB
+  metadata    Json      @default("{}") @db.JsonB
+
+  @@index([changeType], map: "idx_change_type")
+  @@index([commitSha], map: "idx_change_commit_sha")
+  @@map("change_log")
+}

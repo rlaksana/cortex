@@ -1,0 +1,223 @@
+name: Continuous Integration - Enhanced Quality Gates
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+env:
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '18'
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npm run typecheck
+
+  validation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run enhanced validation tests
+        run: npm run test tests/validation/
+        env:
+          NODE_ENV: test
+
+  test-unit:
+    runs-on: ubuntu-latest
+    needs: validation-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test
+
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: cortex_test
+          POSTGRES_USER: cortex
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+
+  database-schema-validation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        env:
+          POSTGRES_DB: cortex_test
+          POSTGRES_USER: cortex
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run database migration
+        run: node run-migration.js
+        env:
+          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+
+      - name: Validate database schema
+        run: |
+          node -e "
+          const { Pool } = require('pg');
+
+          async function validateSchema() {
+            const pool = new Pool({
+              host: 'localhost',
+              port: 5432,
+              database: 'cortex_test',
+              user: 'cortex',
+              password: 'test_password',
+            });
+
+            const result = await pool.query(\`
+              SELECT column_name, data_type, is_nullable, character_maximum_length
+              FROM information_schema.columns
+              WHERE table_name = 'section'
+              AND column_name IN ('title', 'heading', 'content_hash', 'body_jsonb')
+              ORDER BY column_name
+            \`);
+
+            console.log('📋 Section table validation:');
+            result.rows.forEach(col => {
+              console.log(\`  \${col.column_name}: \${col.data_type} (\${col.is_nullable}) \${col.character_maximum_length ? 'max: ' + col.character_maximum_length : ''}\`);
+            });
+
+            // Verify required columns exist and are NOT NULL
+            const requiredColumns = ['title', 'heading'];
+            result.rows.forEach(col => {
+              if (requiredColumns.includes(col.column_name) && col.is_nullable !== 'NO') {
+                throw new Error(\`Column \${col.column_name} must be NOT NULL\`);
+              }
+            });
+
+            console.log('✅ Database schema validation passed');
+            await pool.end();
+          }
+
+          validateSchema().catch(console.error);
+          "
+
+      - name: Test database operations
+        run: |
+          node -e "
+          const { Pool } = require('pg');
+
+          async function testOperations() {
+            const pool = new Pool({
+              host: 'localhost',
+              port: 5432,
+              database: 'cortex_test',
+              user: 'cortex',
+              password: 'test_password',
+            });
+
+            // Test INSERT with both title and heading (our fix)
+            const result = await pool.query(
+              'INSERT INTO section (title, heading, body_jsonb, tags) VALUES (\$1, \$2, \$3, \$4) RETURNING id, title, heading',
+              ['CI/CD Test', 'CI/CD Test', '{\"text\": \"Test content\"}', '{\"test\": \"ci\"}']
+            );
+
+            console.log('✅ Database INSERT test successful');
+            console.log(\`  ID: \${result.rows[0].id}\`);
+            console.log(\`  Title: \${result.rows[0].title}\`);
+            console.log(\`  Heading: \${result.rows[0].heading}\`);
+
+            await pool.end();
+          }
+
+          testOperations().catch(console.error);
+          "
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, validation-tests, test-unit, database-schema-validation]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Check build artifacts
+        run: |
+          if [ ! -f "dist/index.js" ]; then
+            echo "Build failed: dist/index.js not found"
+            exit 1
+          fi

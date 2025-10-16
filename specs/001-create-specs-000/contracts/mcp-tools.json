@@ -1,0 +1,346 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cortex Memory MCP Tools",
+  "description": "JSON schemas for memory.find and memory.store MCP tools",
+  "version": "1.0.0",
+  "tools": {
+    "memory.find": {
+      "description": "Search across all knowledge types with optional scope filtering, type restrictions, and configurable search depth",
+      "inputSchema": {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language search query",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "scope": {
+            "type": "object",
+            "description": "Hierarchical scope filter (defaults to current branch isolation)",
+            "properties": {
+              "org": {
+                "type": "string",
+                "description": "Organization identifier"
+              },
+              "project": {
+                "type": "string",
+                "description": "Project name"
+              },
+              "service": {
+                "type": "string",
+                "description": "Service/component name"
+              },
+              "branch": {
+                "type": "string",
+                "description": "Git branch (defaults to current branch)"
+              },
+              "sprint": {
+                "type": "string",
+                "description": "Sprint identifier"
+              },
+              "tenant": {
+                "type": "string",
+                "description": "Tenant/customer identifier"
+              }
+            },
+            "additionalProperties": false
+          },
+          "types": {
+            "type": "array",
+            "description": "Filter by knowledge types",
+            "items": {
+              "type": "string",
+              "enum": [
+                "section",
+                "runbook",
+                "change",
+                "issue",
+                "decision",
+                "todo",
+                "release_note",
+                "ddl",
+                "pr_context"
+              ]
+            },
+            "uniqueItems": true
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Maximum number of results to return",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          },
+          "mode": {
+            "type": "string",
+            "description": "Search routing strategy (server chooses algorithm)",
+            "enum": ["auto", "fast", "deep"],
+            "default": "auto"
+          },
+          "time_range": {
+            "type": "object",
+            "description": "Filter by temporal range",
+            "properties": {
+              "since": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp (inclusive)"
+              },
+              "until": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp (inclusive)"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["hits"],
+        "properties": {
+          "hits": {
+            "type": "array",
+            "description": "Ranked search results",
+            "items": {
+              "type": "object",
+              "required": ["kind", "id", "title", "snippet", "score"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "description": "Knowledge type",
+                  "enum": [
+                    "section",
+                    "runbook",
+                    "change",
+                    "issue",
+                    "decision",
+                    "todo",
+                    "release_note",
+                    "ddl",
+                    "pr_context"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "description": "Unique identifier (UUID v7)",
+                  "format": "uuid"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Human-readable title/heading"
+                },
+                "snippet": {
+                  "type": "string",
+                  "description": "Contextual excerpt with matched terms"
+                },
+                "score": {
+                  "type": "number",
+                  "description": "Relevance score (0.0-1.0)",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "scope": {
+                  "type": "object",
+                  "description": "Origin scope metadata",
+                  "properties": {
+                    "org": { "type": "string" },
+                    "project": { "type": "string" },
+                    "service": { "type": "string" },
+                    "branch": { "type": "string" },
+                    "sprint": { "type": "string" },
+                    "tenant": { "type": "string" }
+                  }
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Last modification timestamp"
+                },
+                "route_used": {
+                  "type": "string",
+                  "description": "Search algorithm used",
+                  "enum": ["fts", "semantic", "graph"]
+                },
+                "confidence": {
+                  "type": "number",
+                  "description": "Algorithm confidence (0.0-1.0)",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "description": "Query suggestions when recall is low",
+            "items": {
+              "type": "string"
+            }
+          },
+          "debug": {
+            "type": "object",
+            "description": "Optional debug metadata",
+            "properties": {
+              "query_duration_ms": { "type": "number" },
+              "total_candidates": { "type": "integer" },
+              "filters_applied": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "memory.store": {
+      "description": "Store one or more knowledge items with automatic chunking, deduplication, indexing, and audit logging",
+      "inputSchema": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "Knowledge items to store",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "object",
+              "required": ["kind", "scope", "data"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "description": "Knowledge type discriminator",
+                  "enum": [
+                    "section",
+                    "runbook",
+                    "change",
+                    "issue",
+                    "decision",
+                    "todo",
+                    "release_note",
+                    "ddl",
+                    "pr_context"
+                  ]
+                },
+                "scope": {
+                  "type": "object",
+                  "description": "Hierarchical scope classification",
+                  "required": ["project", "branch"],
+                  "properties": {
+                    "org": { "type": "string" },
+                    "project": { "type": "string" },
+                    "service": { "type": "string" },
+                    "branch": { "type": "string" },
+                    "sprint": { "type": "string" },
+                    "tenant": { "type": "string" }
+                  },
+                  "additionalProperties": false
+                },
+                "data": {
+                  "type": "object",
+                  "description": "Type-specific payload (validated per kind)",
+                  "additionalProperties": true
+                },
+                "tags": {
+                  "type": "object",
+                  "description": "Freeform metadata (JSONB)",
+                  "additionalProperties": true
+                },
+                "source": {
+                  "type": "object",
+                  "description": "Origin tracking metadata",
+                  "properties": {
+                    "actor": { "type": "string" },
+                    "tool": { "type": "string" },
+                    "timestamp": { "type": "string", "format": "date-time" }
+                  }
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "description": "Client-supplied deduplication key (optional, server computes content hash if absent)",
+                  "maxLength": 256
+                },
+                "ttl_policy": {
+                  "type": "string",
+                  "description": "Retention policy",
+                  "enum": ["default", "short", "long", "permanent"],
+                  "default": "default"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["stored"],
+        "properties": {
+          "stored": {
+            "type": "array",
+            "description": "Successfully stored items",
+            "items": {
+              "type": "object",
+              "required": ["id", "status"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Assigned UUID v7",
+                  "format": "uuid"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "Operation outcome",
+                  "enum": ["inserted", "updated", "skipped_dedupe"]
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "Knowledge type"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "errors": {
+            "type": "array",
+            "description": "Failed items with diagnostic details",
+            "items": {
+              "type": "object",
+              "required": ["index", "error_code", "message"],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "description": "Position in input items array"
+                },
+                "error_code": {
+                  "type": "string",
+                  "description": "Machine-readable error code",
+                  "examples": [
+                    "INVALID_SCHEMA",
+                    "MISSING_REQUIRED_FIELD",
+                    "IMMUTABILITY_VIOLATION",
+                    "WRITE_LOCK_VIOLATION"
+                  ]
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Human-readable error explanation"
+                },
+                "field": {
+                  "type": "string",
+                  "description": "Field path for validation errors"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

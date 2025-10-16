@@ -1,0 +1,47 @@
+# ============================================================================
+# CORTEX MEMORY MCP - 2-LAYER ARCHITECTURE (PostgreSQL 18 Only)
+# ============================================================================
+# ARCHITECTURE: Local Node.js MCP Server + Docker PostgreSQL (simplified from 3-layer)
+# - Local Node.js connects directly to Docker PostgreSQL on localhost:5433
+# - Eliminates WSL Docker server layer for improved performance (0-5ms vs 10-20ms)
+# - PostgreSQL 18 is MANDATORY - do NOT downgrade to any other version
+# - Uses gen_random_uuid() from pgcrypto extension (NOT uuid-ossp)
+# - Requires PostgreSQL 18-specific performance features and syntax
+# - Changing database version will cause system failure and inconsistencies
+# ============================================================================
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cortex-postgres
+    environment:
+      POSTGRES_DB: cortex_prod
+      POSTGRES_USER: cortex
+      POSTGRES_PASSWORD: cortex_pg18_secure_2025_key
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "5433:5432"  # Exposed for local Node.js MCP server (host:5433 -> container:5432)
+    volumes:
+      - cortex_data:/var/lib/postgresql/data
+      - ./scripts/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf
+      - ./scripts/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
+      - ./migrations/001_complete_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - cortex_network
+    restart: unless-stopped
+    # WSL2 specific optimizations
+    shm_size: 128m
+
+volumes:
+  cortex_data:
+    driver: local
+
+networks:
+  cortex_network:
+    driver: bridge
