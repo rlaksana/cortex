@@ -1,15 +1,27 @@
-import { PrismaClient } from '../generated/prisma';
+import * as crypto from 'crypto';
+// Dynamic import to handle CommonJS/ES Module interop
+let PrismaClient: any;
+
+// We'll initialize this in the getPrismaClient function
+async function initializePrismaClient() {
+  if (!PrismaClient) {
+    const prismaModule = await import('../generated/prisma/index.js');
+    PrismaClient = prismaModule.PrismaClient;
+  }
+  return PrismaClient;
+}
 
 // Global variable to store the Prisma client instance
-let globalPrisma: PrismaClient | null = null;
+let globalPrisma: any = null;
 
 /**
  * Creates a new Prisma client instance or returns the existing one
  * Uses a singleton pattern to avoid multiple connections in development
  */
-export function getPrismaClient(): PrismaClient {
+export async function getPrismaClient() {
   if (!globalPrisma) {
-    globalPrisma = new PrismaClient({
+    const PrismaClientConstructor = await initializePrismaClient();
+    globalPrisma = new PrismaClientConstructor({
       log: ['warn', 'error'],
       errorFormat: 'pretty',
     });
@@ -31,7 +43,9 @@ export async function disconnectPrisma(): Promise<void> {
  * Type-safe section operations using Prisma
  */
 export class SectionService {
-  private prisma = getPrismaClient();
+  private async getPrisma() {
+    return await getPrismaClient();
+  }
 
   /**
    * Creates a new section with proper type safety
@@ -44,6 +58,7 @@ export class SectionService {
     tags?: Record<string, any>;
     metadata?: Record<string, any>;
   }) {
+    const prisma = await this.getPrisma();
     const bodyJsonb = {
       text: data.bodyText || data.bodyMd || '',
       markdown: data.bodyMd || null,
@@ -51,7 +66,7 @@ export class SectionService {
 
     const contentHash = this.generateContentHash(data.title, data.bodyMd || data.bodyText);
 
-    return await this.prisma.section.create({
+    return await prisma.section.create({
       data: {
         title: data.title,
         heading: data.heading,
@@ -68,11 +83,8 @@ export class SectionService {
   /**
    * Finds sections by title or content with type safety
    */
-  async findSections(criteria: {
-    title?: string;
-    limit?: number;
-    offset?: number;
-  }) {
+  async findSections(criteria: { title?: string; limit?: number; offset?: number }) {
+    const prisma = await this.getPrisma();
     const where = criteria.title
       ? {
           OR: [
@@ -82,7 +94,7 @@ export class SectionService {
         }
       : {};
 
-    return await this.prisma.section.findMany({
+    return await prisma.section.findMany({
       where,
       take: criteria.limit,
       skip: criteria.offset,
@@ -104,7 +116,8 @@ export class SectionService {
    * Finds sections by scope tags
    */
   async findSectionsByScope(scope: Record<string, any>) {
-    return await this.prisma.section.findMany({
+    const prisma = await this.getPrisma();
+    return await prisma.section.findMany({
       where: {
         tags: {
           path: [],
@@ -128,6 +141,7 @@ export class SectionService {
       tags?: Record<string, any>;
     }
   ) {
+    const prisma = await this.getPrisma();
     const updateData: any = { ...data };
 
     if (data.bodyMd !== undefined || data.bodyText !== undefined) {
@@ -137,7 +151,7 @@ export class SectionService {
       };
     }
 
-    return await this.prisma.section.update({
+    return await prisma.section.update({
       where: { id },
       data: updateData,
     });
@@ -147,7 +161,8 @@ export class SectionService {
    * Checks for duplicate content by hash
    */
   async findByContentHash(contentHash: string) {
-    return await this.prisma.section.findFirst({
+    const prisma = await this.getPrisma();
+    return await prisma.section.findFirst({
       where: { contentHash },
     });
   }
@@ -156,7 +171,6 @@ export class SectionService {
    * Generates a consistent content hash
    */
   private generateContentHash(title: string, content?: string): string {
-    const crypto = require('crypto');
     const hashInput = `${title}:${content || ''}`;
     return crypto.createHash('sha256').update(hashInput).digest('hex');
   }
@@ -166,7 +180,9 @@ export class SectionService {
  * Type-safe decision operations using Prisma
  */
 export class DecisionService {
-  private prisma = getPrismaClient();
+  private async getPrisma() {
+    return await getPrismaClient();
+  }
 
   async createDecision(data: {
     component: string;
@@ -178,26 +194,32 @@ export class DecisionService {
     supersedes?: string;
     tags?: Record<string, any>;
   }) {
-    return await this.prisma.adrDecision.create({
+    const prisma = await this.getPrisma();
+    return await prisma.adrDecision.create({
       data,
     });
   }
 
-  async updateDecision(id: string, data: Partial<{
-    status: string;
-    title: string;
-    rationale: string;
-    alternativesConsidered: string[];
-    consequences: string;
-  }>) {
-    return await this.prisma.adrDecision.update({
+  async updateDecision(
+    id: string,
+    data: Partial<{
+      status: string;
+      title: string;
+      rationale: string;
+      alternativesConsidered: string[];
+      consequences: string;
+    }>
+  ) {
+    const prisma = await this.getPrisma();
+    return await prisma.adrDecision.update({
       where: { id },
       data,
     });
   }
 
   async findDecision(id: string) {
-    return await this.prisma.adrDecision.findUnique({
+    const prisma = await this.getPrisma();
+    return await prisma.adrDecision.findUnique({
       where: { id },
     });
   }

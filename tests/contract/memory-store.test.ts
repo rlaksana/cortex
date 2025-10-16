@@ -16,13 +16,12 @@ describe('memory.store contract validation', () => {
     const validSection = {
       kind: 'section' as const,
       scope: {
-        project: 'cortex-memory',
+        project: 'cortex',
         branch: 'main',
       },
       data: {
-        document_id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Authentication Overview',
         heading: 'Authentication Overview',
-        body_jsonb: { content: 'JWT-based authentication system' },
         body_text: 'JWT-based authentication system',
       },
     };
@@ -31,7 +30,7 @@ describe('memory.store contract validation', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.kind).toBe('section');
-      expect(result.data.scope.project).toBe('cortex-memory');
+      expect(result.data.scope.project).toBe('cortex');
     }
   });
 
@@ -39,13 +38,12 @@ describe('memory.store contract validation', () => {
     const invalidSection = {
       kind: 'section' as const,
       scope: {
-        project: 'cortex-memory',
+        project: 'cortex',
         branch: 'main',
       },
       data: {
-        document_id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Test Section',
         // heading missing
-        body_jsonb: { content: 'Some content' },
         body_text: 'Some content',
       },
     };
@@ -66,9 +64,8 @@ describe('memory.store contract validation', () => {
         branch: 'main',
       },
       data: {
-        document_id: '123e4567-e89b-12d3-a456-426614174000',
+        title: 'Test Section',
         heading: 'Test',
-        body_jsonb: { content: 'Test content' },
         body_text: 'Test content',
       },
     };
@@ -98,38 +95,59 @@ describe('memory.store contract validation', () => {
     const knowledgeTypes = [
       {
         kind: 'section',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
-          document_id: '123e4567-e89b-12d3-a456-426614174000',
+          title: 'Test Section',
           heading: 'Test',
-          body_jsonb: {},
           body_text: 'Test',
         },
       },
       {
         kind: 'runbook',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           service: 'api',
           title: 'Restart Service',
-          steps_jsonb: [],
+          steps: [{ step_number: 1, description: 'Stop service' }],
         },
       },
       {
         kind: 'change',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
+          subject_ref: 'PR-123',
           summary: 'Updated API',
-          change_type: 'feature',
+          change_type: 'feature_add',
         },
       },
       {
         kind: 'issue',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           tracker: 'github',
           external_id: 'GH-123',
           title: 'Bug fix',
+          status: 'resolved',
         },
       },
       {
         kind: 'decision',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           component: 'auth',
           status: 'proposed',
@@ -140,35 +158,55 @@ describe('memory.store contract validation', () => {
       },
       {
         kind: 'todo',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           scope: 'BRANCH90d',
           todo_type: 'task',
           text: 'Implement feature',
+          status: 'open',
         },
       },
       {
         kind: 'release_note',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           version: '1.0.0',
-          release_date: '2025-01-01',
-          highlights: 'Initial release',
+          release_date: '2025-01-01T00:00:00Z',
+          summary: 'Initial release',
         },
       },
       {
         kind: 'ddl',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           migration_id: '001',
-          script_path: 'migrations/001.sql',
-          checksum: 'abc123',
+          ddl_text: 'CREATE TABLE test (id UUID);',
+          checksum: 'a'.repeat(64),
           applied_at: '2025-01-01T00:00:00Z',
         },
       },
       {
         kind: 'pr_context',
+        scope: {
+          project: 'test',
+          branch: 'main',
+        },
         data: {
           pr_number: 123,
           title: 'Add feature',
           author: 'dev',
+          status: 'merged',
+          base_branch: 'main',
+          head_branch: 'feature-branch',
           merged_at: '2025-01-01T00:00:00Z',
         },
       },
