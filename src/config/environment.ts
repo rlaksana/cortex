@@ -4,8 +4,7 @@ import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 
 // Load environment variables
-dotenv.config();
-
+void dotenv.config();
 /**
  * Enhanced environment configuration with validation and security
  */
@@ -68,10 +67,9 @@ function validateConfig(): AppConfig {
       received: process.env[err.path[0] as string],
     }));
 
-    logger.error({ errors }, 'Configuration validation failed');
-
+    void logger.error({ errors }, 'Configuration validation failed');
     throw new Error(
-      `Configuration validation failed:\n${errors.map((e) => `  ${e.field}: ${e.message} (received: ${e.received || 'undefined'})`).join('\n')}`
+      `Configuration validation failed:\n${errors.map((e) => `  ${e.field}: ${e.message} (received: ${e.received ?? 'undefined'})`).join('\n')}`
     );
   }
 
@@ -91,7 +89,7 @@ export class EnvironmentConfig {
     this.encryptionKey = this.getOrCreateEncryptionKey();
 
     // Log configuration (without sensitive data)
-    logger.info(
+    void logger.info(
       {
         environment: this.config.NODE_ENV,
         dbHost: this.config.DB_HOST,
@@ -123,7 +121,7 @@ export class EnvironmentConfig {
 
     // Use explicit DATABASE_URL if provided, otherwise construct it
     const databaseUrl =
-      DATABASE_URL || `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
+      DATABASE_URL ?? `postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
 
     return {
       host: DB_HOST,
@@ -145,7 +143,7 @@ export class EnvironmentConfig {
     let encrypted = cipher.update(value, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    return iv.toString('hex') + ':' + encrypted;
+    return `${iv.toString('hex')  }:${  encrypted}`;
   }
 
   /**
@@ -179,7 +177,7 @@ export class EnvironmentConfig {
     // Create a new encryption key for development
     if (this.config.NODE_ENV === 'development') {
       const key = crypto.randomBytes(32).toString('hex');
-      logger.warn(
+      void logger.warn(
         'Generated new encryption key for development. Set ENCRYPTION_KEY in production for security.'
       );
       return Buffer.from(key, 'hex');
@@ -208,7 +206,7 @@ export class EnvironmentConfig {
       await pool.query('SELECT 1 as health_check');
       await pool.end();
 
-      logger.info('Database connection validation successful');
+      void logger.info('Database connection validation successful');
       return true;
     } catch (error: unknown) {
       logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Database connection validation failed');
@@ -247,5 +245,6 @@ export class EnvironmentConfig {
 export const config = EnvironmentConfig.getInstance();
 
 // Export configuration values for backward compatibility
-export const { NODE_ENV, LOG_LEVEL, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } =
-  config.getConfig();
+const { NODE_ENV, LOG_LEVEL, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD } = config.getConfig();
+
+export { NODE_ENV, LOG_LEVEL, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD };

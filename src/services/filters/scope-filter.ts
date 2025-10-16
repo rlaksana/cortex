@@ -1,8 +1,10 @@
-export function buildScopeFilter(scope?: Record<string, string>): { where: string; params: any[] } {
+import type { Scope } from '../../utils/scope.js';
+
+export function buildScopeFilter(scope?: Scope): { where: string; params: unknown[] } {
   if (!scope) return { where: '', params: [] };
 
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let paramIndex = 1;
 
   if (scope.org) {
@@ -24,7 +26,7 @@ export function buildScopeFilter(scope?: Record<string, string>): { where: strin
   };
 }
 
-export function computeScopeProximity(hitScope: any, queryScope: any): number {
+export function computeScopeProximity(hitScope: Scope, queryScope: Scope): number {
   if (!hitScope || !queryScope) return 0.2;
 
   if (hitScope.branch === queryScope.branch && hitScope.project === queryScope.project) return 1.0;

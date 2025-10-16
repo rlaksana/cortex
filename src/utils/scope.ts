@@ -3,45 +3,47 @@ import { loadEnv } from '../config/env.js';
 import { logger } from './logger.js';
 
 export interface Scope {
-  org?: string;
-  project?: string;
-  branch?: string;
+  org?: string | undefined;
+  project?: string | undefined;
+  branch?: string | undefined;
 }
 
 let cachedScope: Scope | null = null;
 
 export function inferScope(): Scope {
-  if (cachedScope) return cachedScope;
+  if (cachedScope !== null) return cachedScope;
 
   const env = loadEnv();
 
   cachedScope = {
-    org: env.CORTEX_ORG,
-    project: env.CORTEX_PROJECT,
-    branch: env.CORTEX_BRANCH,
+    org: env.CORTEX_ORG ?? undefined,
+    project: env.CORTEX_PROJECT ?? undefined,
+    branch: env.CORTEX_BRANCH ?? undefined,
   };
 
-  if (!cachedScope.branch) {
+  if (cachedScope.branch === undefined || cachedScope.branch === '') {
     try {
       cachedScope.branch = execSync('git rev-parse --abbrev-ref HEAD', {
         encoding: 'utf8',
       }).trim();
     } catch (err) {
-      logger.warn('Failed to infer branch from git');
+      void logger.warn('Failed to infer branch from git');
+      cachedScope.branch = 'main';
     }
   }
 
-  if (!cachedScope.project) {
+  if (cachedScope.project === undefined || cachedScope.project === '') {
     try {
       const gitRoot = execSync('git rev-parse --show-toplevel', {
         encoding: 'utf8',
       }).trim();
-      cachedScope.project = gitRoot.split('/').pop() || 'unknown';
+      cachedScope.project = gitRoot.split('/').pop() ?? 'unknown';
     } catch (err) {
-      logger.warn('Failed to infer project from git');
+      void logger.warn('Failed to infer project from git');
+      cachedScope.project = 'unknown';
     }
   }
 
-  logger.info({ scope: cachedScope }, 'Inferred scope from environment/git');
+  void logger.info({ scope: cachedScope }, 'Inferred scope from environment/git');
   return cachedScope;
 }

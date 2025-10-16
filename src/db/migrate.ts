@@ -58,12 +58,12 @@ class DatabaseMigrator {
     const { dryRun = false, force = false, targetVersion, step } = options;
     const results: MigrationResult[] = [];
 
-    logger.info('Starting database migration', {
+    logger.info({
       dryRun,
       force,
       targetVersion,
       step,
-    });
+    }, "Starting database migration");
 
     try {
       // Ensure DDL history table exists
@@ -77,10 +77,7 @@ class DatabaseMigrator {
       const appliedMigrations = await this.getAppliedMigrations();
 
       // Determine which migrations to run
-      const migrationsToRun = this.getMigrationsToRun(availableMigrations, appliedMigrations, {
-        targetVersion,
-        step,
-      });
+      const migrationsToRun = this.getMigrationsToRun(availableMigrations, appliedMigrations, { targetVersion, step });
 
       if (migrationsToRun.length === 0) {
         logger.info('No migrations to run');
@@ -113,17 +110,17 @@ class DatabaseMigrator {
       const failedCount = results.filter((r) => r.status === 'failed').length;
       const skippedCount = results.filter((r) => r.status === 'skipped').length;
 
-      logger.info('Migration completed', {
+      logger.info({
         total: results.length,
         success: successCount,
         failed: failedCount,
         skipped: skippedCount,
         dryRun,
-      });
+      }, "Migration completed");
 
       return results;
-    } catch (error) {
-      logger.error('Migration failed:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Migration failed:");
       throw error;
     }
   }
@@ -158,15 +155,15 @@ class DatabaseMigrator {
       const successCount = results.filter((r) => r.status === 'success').length;
       const failedCount = results.filter((r) => r.status === 'failed').length;
 
-      logger.info('Rollback completed', {
+      logger.info({
         total: results.length,
         success: successCount,
         failed: failedCount,
-      });
+      }, "Rollback completed");
 
       return results;
-    } catch (error) {
-      logger.error('Rollback failed:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Rollback failed:");
       throw error;
     }
   }
@@ -247,8 +244,8 @@ class DatabaseMigrator {
       }
 
       return migrations;
-    } catch (error) {
-      logger.error('Failed to read migrations directory:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Failed to read migrations directory:");
       throw error;
     }
   }
@@ -314,7 +311,7 @@ class DatabaseMigrator {
    * Run a single migration
    */
   private async runMigration(
-    client: any,
+    client: import("pg").PoolClient,
     migration: Migration,
     dryRun: boolean
   ): Promise<MigrationResult> {
@@ -335,7 +332,7 @@ class DatabaseMigrator {
           migrationId: migration.id,
           status: 'skipped',
           message: 'Dry run - migration not applied',
-          duration: Date.now() - startTime,
+          duration: Date.now() - startTime
         };
       }
 
@@ -366,10 +363,10 @@ class DatabaseMigrator {
         migrationId: migration.id,
         status: 'success',
         message: 'Migration applied successfully',
-        duration: Date.now() - startTime,
+        duration: Date.now() - startTime
       };
-    } catch (error) {
-      logger.error(`Migration ${migration.id} failed:`, error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Migration ${migration.id} failed:");
 
       // Record migration failure
       if (!dryRun) {
@@ -380,8 +377,8 @@ class DatabaseMigrator {
              WHERE migration_id = $1`,
             [migration.id]
           );
-        } catch (updateError) {
-          logger.error('Failed to update migration status:', updateError);
+        } catch (updateError: unknown) {
+          logger.error({ error: updateError }, "Failed to update migration status:");
         }
       }
 
@@ -420,9 +417,9 @@ class DatabaseMigrator {
         migrationId: migration.id,
         status: 'skipped',
         message: 'Migration validated successfully',
-        duration: Date.now() - startTime,
+        duration: Date.now() - startTime
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         migrationId: migration.id,
         status: 'failed',
@@ -436,7 +433,7 @@ class DatabaseMigrator {
   /**
    * Rollback a migration
    */
-  private async rollbackMigration(client: any, migration: Migration): Promise<MigrationResult> {
+  private async rollbackMigration(client: import("pg").PoolClient, migration: Migration): Promise<MigrationResult> {
     const startTime = Date.now();
 
     try {
@@ -455,10 +452,10 @@ class DatabaseMigrator {
         migrationId: migration.id,
         status: 'success',
         message: 'Migration rolled back successfully',
-        duration: Date.now() - startTime,
+        duration: Date.now() - startTime
       };
-    } catch (error) {
-      logger.error(`Rollback for migration ${migration.id} failed:`, error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Rollback for migration ${migration.id} failed:");
 
       return {
         migrationId: migration.id,
@@ -488,7 +485,7 @@ export { DatabaseMigrator };
 // CLI support
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
-  const command = args[0] || 'up';
+  const command = args[0] ?? 'up';
 
   async function runCLI() {
     try {
@@ -499,7 +496,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           await dbMigrator.migrate();
           break;
         case 'down':
-          const step = parseInt(args[1]) || 1;
+          const step = parseInt(args[1]) ?? 1;
           await dbMigrator.rollback(step);
           break;
         case 'status':
@@ -517,8 +514,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           console.log('Available commands: up, down, status, dry-run');
           process.exit(1);
       }
-    } catch (error) {
-      logger.error('CLI failed:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "CLI failed:");
       process.exit(1);
     } finally {
       await dbPool.shutdown();

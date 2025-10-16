@@ -85,6 +85,18 @@ export async function memoryStore(items: unknown[]): Promise<{
         reasoning: 'Request failed validation',
         user_message_suggestion: '❌ Request validation failed',
       },
+    } as {
+      stored: [],
+      errors: StoreError[],
+      autonomous_context: {
+        action_performed: 'skipped',
+        similar_items_checked: 0,
+        duplicates_found: 0,
+        contradictions_detected: false,
+        recommendation: 'Fix validation errors before retrying',
+        reasoning: 'Request failed validation',
+        user_message_suggestion: '❌ Request validation failed',
+      },
     };
   }
 
@@ -93,7 +105,7 @@ export async function memoryStore(items: unknown[]): Promise<{
   if (validation.errors.length > 0) {
     const errors: StoreError[] = validation.errors.map((err) => ({
       index: err.index,
-      error_code: err.code as any,
+      error_code: err.code as string,
       message: err.message,
       field: err.field,
     }));
@@ -135,8 +147,8 @@ export async function memoryStore(items: unknown[]): Promise<{
       if (itemAny.operation === 'delete') {
         // Handle delete operation
         const deleteRequest: DeleteRequest = {
-          entity_type: itemAny.kind || itemAny.entity_type,
-          entity_id: itemAny.id || itemAny.entity_id,
+          entity_type: itemAny.kind ?? itemAny.entity_type,
+          entity_id: itemAny.id ?? itemAny.entity_id,
           cascade_relations: itemAny.cascade_relations ?? false,
         };
 
@@ -162,8 +174,9 @@ export async function memoryStore(items: unknown[]): Promise<{
             index: i,
             error_code: deleteResult.status === 'immutable' ? 'IMMUTABLE_ENTITY' : 'NOT_FOUND',
             message:
-              deleteResult.message ||
-              `Failed to delete ${deleteRequest.entity_type}:${deleteRequest.entity_id}`,
+              deleteResult instanceof Error
+                ? deleteResult.message
+                : `Failed to delete ${deleteRequest.entity_type}:${deleteRequest.entity_id}`,
           });
         }
         continue;
@@ -171,7 +184,7 @@ export async function memoryStore(items: unknown[]): Promise<{
 
       // Use enhanced validated item (already validated above)
       const item = validatedItems[i];
-      const hash = item.idempotency_key || computeContentHash(JSON.stringify(item.data));
+      const hash = item.idempotency_key ?? computeContentHash(JSON.stringify(item.data));
 
       if (item.kind === 'section') {
         try {
@@ -206,7 +219,7 @@ export async function memoryStore(items: unknown[]): Promise<{
               // Perform update using Prisma (type-safe)
               const updated = await sectionService.updateSection(item.data.id, {
                 title: item.data.title,
-                heading: item.data.heading || item.data.title,
+                heading: item.data.heading ?? item.data.title,
                 bodyMd: item.data.body_md,
                 bodyText: item.data.body_text,
                 tags: item.scope,
@@ -238,12 +251,12 @@ export async function memoryStore(items: unknown[]): Promise<{
           }
 
           // ✨ Check for similar content (for autonomous context)
-          if (item.data.title && (item.data.body_md || item.data.body_text)) {
+          if (item.data.title && (item.data.body_md ?? item.data.body_text)) {
             const similarityResult = await findSimilar(
               pool,
               'section',
               item.data.title,
-              item.data.body_md || item.data.body_text || ''
+              item.data.body_md ?? item.data.body_text ?? ''
             );
             similarItemsChecked++;
             if (similarityResult.has_similar) {
@@ -254,7 +267,7 @@ export async function memoryStore(items: unknown[]): Promise<{
           // Create section using Prisma (type-safe - prevents schema mismatch!)
           const result = await sectionService.createSection({
             title: item.data.title,
-            heading: item.data.heading || item.data.title,
+            heading: item.data.heading ?? item.data.title,
             bodyMd: item.data.body_md,
             bodyText: item.data.body_text,
             tags: item.scope,
@@ -269,13 +282,13 @@ export async function memoryStore(items: unknown[]): Promise<{
             kind: 'section',
             created_at: result.createdAt.toISOString(),
           });
-        } catch (prismaError) {
+        } catch (prismaError: unknown) {
           // Convert Prisma errors to our error format
           if (prismaError instanceof Error) {
             errors.push({
               index: i,
               error_code: 'DATABASE_ERROR',
-              message: `Prisma error: ${prismaError.message}`,
+              message: `Prisma error: ${(prismaError as Error).message}`,
             });
           } else {
             errors.push({
@@ -321,18 +334,21 @@ export async function memoryStore(items: unknown[]): Promise<{
 
           if (existing.rows.length > 0) {
             // Convert to DecisionItem format for validation
+            const existingRow = existing.rows[0] as Record<string, unknown>;
             const existingItem: DecisionItem = {
               kind: 'decision',
-              scope: JSON.parse(existing.rows[0].tags || '{}'),
+              scope: JSON.parse(String(existingRow.tags ?? '{}')),
               data: {
-                id: existing.rows[0].id,
-                component: existing.rows[0].component,
-                status: existing.rows[0].status,
-                title: existing.rows[0].title,
-                rationale: existing.rows[0].rationale,
-                alternatives_considered: existing.rows[0].alternatives_considered,
-                consequences: existing.rows[0].consequences,
-                supersedes: existing.rows[0].supersedes,
+                id: String(existingRow.id ?? ''),
+                component: String(existingRow.component ?? ''),
+                status: String(existingRow.status ?? 'proposed') as any,
+                title: String(existingRow.title ?? ''),
+                rationale: String(existingRow.rationale ?? ''),
+                alternatives_considered: typeof existingRow.alternatives_considered === 'string'
+                  ? JSON.parse(existingRow.alternatives_considered as string)
+                  : (existingRow.alternatives_considered as string[] ?? []),
+                consequences: String(existingRow.consequences ?? ''),
+                supersedes: String(existingRow.supersedes ?? ''),
               },
             };
 
@@ -465,7 +481,7 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       errors.push({
         index: i,
         error_code: 'DATABASE_ERROR',
@@ -586,7 +602,7 @@ function buildAutonomousContext(
               : '✓ Operation completed';
 
   return {
-    action_performed: action,
+    action_performed: action as 'created' | 'updated' | 'deleted' | 'skipped' | 'batch',
     similar_items_checked: similarItemsChecked,
     duplicates_found: duplicatesFound,
     contradictions_detected: contradictionsDetected,

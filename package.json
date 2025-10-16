@@ -1,0 +1,58 @@
+{
+  "name": "cortex-memory-mcp",
+  "version": "1.0.0",
+  "description": "Cortex Memory MCP Server - Knowledge management with autonomous decision support",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "cortex-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "start": "node start-cortex.js",
+    "start:raw": "node dist/index.js",
+    "dev": "node start-cortex.js",
+    "build": "tsc",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "lint:quiet": "eslint src --quiet",
+    "type-check": "tsc --noEmit",
+    "quality-check": "npm run lint && npm run type-check",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:validate": "prisma validate",
+    "test:connection": "node -e \"import('./src/db/pool.js').then(m => m.dbPool.testConnection()).then(() => console.log('✅ DB connection OK')).catch(console.error)\""
+  },
+  "keywords": [
+    "mcp",
+    "memory",
+    "knowledge-management",
+    "autonomous-decision",
+    "postgresql",
+    "prisma"
+  ],
+  "author": "Cortex Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@prisma/client": "^6.17.1",
+    "@types/pg": "^8.15.5",
+    "dotenv": "^17.2.3",
+    "pg": "^8.16.3",
+    "pino": "^10.0.0",
+    "prisma": "^6.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint": "^9.0.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-security": "^1.7.1",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.46.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

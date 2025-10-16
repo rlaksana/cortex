@@ -395,10 +395,10 @@ P95 latency < 300ms on datasets up to 3M items. Auto-purge maintains optimal per
 server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
   if (request.params.name === 'memory.store') {
     const args = request.params.arguments as { items?: unknown[] };
-    const result = await memoryStore(args.items || []);
+    const result = await memoryStore(args.items ?? []);
     return { content: [{ type: 'text', text: JSON.stringify(result) }] };
   } else if (request.params.name === 'memory.find') {
-    const args = (request.params.arguments || {}) as {
+    const args = (request.params.arguments ?? {}) as {
       query: string;
       scope?: Record<string, unknown>;
       types?: string[];

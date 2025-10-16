@@ -90,18 +90,18 @@ export async function findSimilar(
     );
 
     if (exactDupe.rows.length > 0) {
-      const row = exactDupe.rows[0];
+      const row = exactDupe.rows[0] as unknown as Record<string, unknown>;
       similarItems.push({
-        id: row.id,
+        id: String(row.id),
         kind,
-        title: row.title,
+        title: String(row.title),
         snippet: String(row.snippet).substring(0, 200),
         similarity_score: 1.0,
         similarity_type: 'exact_duplicate',
-        content_hash: row.content_hash,
+        content_hash: String(row.content_hash ?? ''),
       });
 
-      const dupRow = exactDupe.rows[0];
+      const dupRow = exactDupe.rows[0] as unknown as Record<string, unknown>;
       return {
         has_duplicates: true,
         has_similar: true,

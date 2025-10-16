@@ -91,7 +91,7 @@ export async function traverseGraph(
           kr.to_entity_type,
           kr.to_entity_id,
           gt.depth + 1,
-          gt.path || kr.to_entity_id,
+          gt.path ?? kr.to_entity_id,
           kr.from_entity_type,
           kr.from_entity_id,
           kr.relation_type,
@@ -130,7 +130,7 @@ export async function traverseGraph(
           kr.from_entity_type,
           kr.from_entity_id,
           gt.depth + 1,
-          gt.path || kr.from_entity_id,
+          gt.path ?? kr.from_entity_id,
           kr.from_entity_type,
           kr.from_entity_id,
           kr.relation_type,
@@ -171,7 +171,7 @@ export async function traverseGraph(
           kr.to_entity_type,
           kr.to_entity_id,
           gt.depth + 1,
-          gt.path || kr.to_entity_id,
+          gt.path ?? kr.to_entity_id,
           kr.from_entity_type,
           kr.from_entity_id,
           kr.to_entity_type,
@@ -195,7 +195,7 @@ export async function traverseGraph(
           kr.from_entity_type,
           kr.from_entity_id,
           gt.depth + 1,
-          gt.path || kr.from_entity_id,
+          gt.path ?? kr.from_entity_id,
           kr.from_entity_type,
           kr.from_entity_id,
           kr.to_entity_type,
@@ -230,7 +230,12 @@ export async function traverseGraph(
   const seenNodes = new Set<string>();
   let maxDepthReached = 0;
 
-  for (const row of result.rows) {
+  for (const row of result.rows as (GraphNode & {
+    from_entity_type?: string;
+    from_entity_id?: string;
+    relation_type?: string;
+    relation_metadata?: Record<string, unknown>;
+  })[]) {
     const nodeKey = `${row.entity_type}:${row.entity_id}`;
 
     // Add node if not seen
@@ -245,7 +250,7 @@ export async function traverseGraph(
     }
 
     // Add edge if not root node
-    if (row.depth > 0 && row.from_entity_type && row.from_entity_id) {
+    if (row.depth > 0 && row.from_entity_type && row.from_entity_id && row.relation_type) {
       edges.push({
         from_entity_type: row.from_entity_type,
         from_entity_id: row.from_entity_id,
@@ -283,7 +288,7 @@ export async function enrichGraphNodes(pool: Pool, nodes: GraphNode[]): Promise<
     if (!nodesByType.has(node.entity_type)) {
       nodesByType.set(node.entity_type, []);
     }
-    nodesByType.get(node.entity_type).push(node);
+    nodesByType.get(node.entity_type)!.push(node);
   }
 
   // Fetch data for each entity type
@@ -315,7 +320,7 @@ export async function enrichGraphNodes(pool: Pool, nodes: GraphNode[]): Promise<
       for (const node of typeNodes) {
         enrichedNodes.push({
           ...node,
-          data: dataMap.get(node.entity_id) || undefined,
+          data: dataMap.get(node.entity_id) ?? undefined,
         });
       }
     } catch (err) {
@@ -347,7 +352,7 @@ function getTableName(entityType: string): string | null {
     entity: 'knowledge_entity',
   };
 
-  return tableMap[entityType] || null;
+  return tableMap[entityType] ?? null;
 }
 
 /**
@@ -388,8 +393,8 @@ export async function findShortestPath(
         kr.to_entity_type,
         kr.to_entity_id,
         ps.depth + 1,
-        ps.path || kr.to_entity_id,
-        ps.edges || jsonb_build_object(
+        ps.path ?? kr.to_entity_id,
+        ps.edges ?? jsonb_build_object(
           'from_entity_type', kr.from_entity_type,
           'from_entity_id', kr.from_entity_id,
           'to_entity_type', kr.to_entity_type,
@@ -420,13 +425,13 @@ export async function findShortestPath(
   }
 
   // Parse edges from JSONB array
-  const edges: GraphEdge[] = result.rows[0].edges.map((edge: any) => ({
-    from_entity_type: edge.from_entity_type,
-    from_entity_id: edge.from_entity_id,
-    to_entity_type: edge.to_entity_type,
-    to_entity_id: edge.to_entity_id,
-    relation_type: edge.relation_type,
-    metadata: edge.metadata,
+  const edges: GraphEdge[] = ((result.rows[0] as Record<string, unknown>).edges as Record<string, unknown>[]).map((edge: Record<string, unknown>) => ({
+    from_entity_type: edge.from_entity_type as string,
+    from_entity_id: edge.from_entity_id as string,
+    to_entity_type: edge.to_entity_type as string,
+    to_entity_id: edge.to_entity_id as string,
+    relation_type: edge.relation_type as string,
+    metadata: edge.metadata as Record<string, unknown> | undefined,
   }));
 
   return edges;

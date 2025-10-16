@@ -21,11 +21,11 @@ export interface AuditEvent {
   tableName: string;
   recordId: string;
   operation: 'INSERT' | 'UPDATE' | 'DELETE';
-  oldData?: any;
-  newData?: any;
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
   changedBy?: string;
-  tags?: Record<string, any>;
-  metadata?: Record<string, any>;
+  tags?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AuditQueryOptions {
@@ -75,7 +75,7 @@ class AuditLogger {
    */
   configureFilter(filter: AuditFilter): void {
     this.filter = { ...this.filter, ...filter };
-    logger.info('Audit filter configured', { filter });
+    logger.info({ filter }, 'Audit filter configured');
   }
 
   /**
@@ -96,28 +96,28 @@ class AuditLogger {
       `;
 
       const params = [
-        processedEvent.id || (await this.generateUUID()),
+        processedEvent.id ?? (await this.generateUUID()),
         processedEvent.eventType,
         processedEvent.tableName,
         processedEvent.recordId,
         processedEvent.operation,
-        this.filterSensitiveData(processedEvent.tableName, processedEvent.oldData),
-        this.filterSensitiveData(processedEvent.tableName, processedEvent.newData),
-        processedEvent.changedBy || 'system',
-        processedEvent.tags || {},
-        processedEvent.metadata || {},
+        this.filterSensitiveData(processedEvent.tableName, processedEvent.oldData ?? {}),
+        this.filterSensitiveData(processedEvent.tableName, processedEvent.newData ?? {}),
+        processedEvent.changedBy ?? 'system',
+        processedEvent.tags ?? {},
+        processedEvent.metadata ?? {},
       ];
 
       await dbPool.query(query, params);
 
-      logger.debug('Audit event logged', {
+      logger.debug({
         eventId: processedEvent.id,
         eventType: processedEvent.eventType,
         tableName: processedEvent.tableName,
         operation: processedEvent.operation,
-      });
+      }, 'Audit event logged');
     } catch (error) {
-      logger.error('Failed to log audit event:', error);
+      logger.error({ error }, 'Failed to log audit event');
       // Don't throw - audit failures shouldn't break the main operation
     }
   }
@@ -144,24 +144,24 @@ class AuditLogger {
 
       const params = await Promise.all(
         processedEvents.flatMap(async (event) => [
-          event.id || (await this.generateUUID()),
+          event.id ?? (await this.generateUUID()),
           event.eventType,
           event.tableName,
           event.recordId,
           event.operation,
-          this.filterSensitiveData(event.tableName, event.oldData),
-          this.filterSensitiveData(event.tableName, event.newData),
-          event.changedBy || 'system',
-          event.tags || {},
-          event.metadata || {},
+          this.filterSensitiveData(event.tableName, event.oldData ?? {}),
+          this.filterSensitiveData(event.tableName, event.newData ?? {}),
+          event.changedBy ?? 'system',
+          event.tags ?? {},
+          event.metadata ?? {},
         ])
       );
 
       await dbPool.query(query, params);
 
-      logger.debug('Batch audit events logged', { count: processedEvents.length });
+      logger.debug({ count: processedEvents.length }, 'Batch audit events logged');
     } catch (error) {
-      logger.error('Failed to log batch audit events:', error);
+      logger.error({ error }, 'Failed to log batch audit events');
       // Don't throw - audit failures shouldn't break the main operation
     }
   }
@@ -205,7 +205,7 @@ class AuditLogger {
     } = options;
 
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (eventType) {
@@ -282,11 +282,11 @@ class AuditLogger {
       ]);
 
       return {
-        events: eventsResult.rows,
-        total: parseInt(countResult.rows[0].total),
+        events: eventsResult.rows as AuditEvent[],
+        total: parseInt((countResult.rows[0] as Record<string, unknown>)?.total as string),
       };
     } catch (error) {
-      logger.error('Failed to query audit events:', error);
+      logger.error({ error }, 'Failed to query audit events');
       throw error;
     }
   }
@@ -320,7 +320,7 @@ class AuditLogger {
    */
   private async generateUUID(): Promise<string> {
     const result = await dbPool.query('SELECT gen_random_uuid() as uuid');
-    return result.rows[0].uuid;
+    return (result.rows[0] as Record<string, unknown>)?.uuid as string;
   }
 
   /**
@@ -364,17 +364,17 @@ class AuditLogger {
   private async processEvent(event: AuditEvent): Promise<AuditEvent> {
     return {
       ...event,
-      id: event.id || (await this.generateUUID()),
-      changedBy: event.changedBy || 'system',
-      tags: event.tags || {},
-      metadata: event.metadata || {},
+      id: event.id ?? (await this.generateUUID()),
+      changedBy: event.changedBy ?? 'system',
+      tags: event.tags ?? {},
+      metadata: event.metadata ?? {},
     };
   }
 
   /**
    * Filter sensitive data from audit records
    */
-  private filterSensitiveData(tableName: string, data: any): any {
+  private filterSensitiveData(tableName: string, data: Record<string, unknown>): Record<string, unknown> {
     if (!data || typeof data !== 'object') {
       return data;
     }
@@ -443,7 +443,7 @@ class AuditLogger {
     try {
       await this.logBatchEvents(eventsToLog);
     } catch (error) {
-      logger.error('Failed to flush audit batch:', error);
+      logger.error({ error }, 'Failed to flush audit batch');
       // Put events back in queue for retry
       this.batchQueue.unshift(...eventsToLog);
     }
@@ -494,14 +494,18 @@ class AuditLogger {
       const results = await Promise.all(queries.map((query) => dbPool.query(query)));
 
       return {
-        totalEvents: parseInt(results[0].rows[0].count),
-        eventsByType: this.arrayToObject(results[1].rows, 'event_type', 'count'),
-        eventsByTable: this.arrayToObject(results[2].rows, 'table_name', 'count'),
-        eventsByOperation: this.arrayToObject(results[3].rows, 'operation', 'count'),
-        recentActivity: results[4].rows[0],
+        totalEvents: parseInt((results[0].rows[0] as Record<string, unknown>)?.count as string),
+        eventsByType: this.arrayToObject(results[1].rows as Record<string, unknown>[], 'event_type', 'count'),
+        eventsByTable: this.arrayToObject(results[2].rows as Record<string, unknown>[], 'table_name', 'count'),
+        eventsByOperation: this.arrayToObject(results[3].rows as Record<string, unknown>[], 'operation', 'count'),
+        recentActivity: {
+          lastHour: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_hour as string) || 0,
+          last24Hours: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_24h as string) || 0,
+          last7Days: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_7d as string) || 0,
+        },
       };
     } catch (error) {
-      logger.error('Failed to get audit statistics:', error);
+      logger.error({ error }, 'Failed to get audit statistics');
       throw error;
     }
   }
@@ -509,10 +513,14 @@ class AuditLogger {
   /**
    * Convert query result array to object
    */
-  private arrayToObject(rows: any[], key: string, value: string): Record<string, number> {
+  private arrayToObject(rows: Record<string, unknown>[], key: string, value: string): Record<string, number> {
     return rows.reduce(
-      (obj, row) => {
-        obj[row[key]] = parseInt(row[value]);
+      (obj: Record<string, number>, row) => {
+        const rowKey = String(row[key]);
+        const rowValue = Number(row[value]);
+        if (rowKey && !isNaN(rowValue)) {
+          obj[rowKey] = rowValue;
+        }
         return obj;
       },
       {} as Record<string, number>
@@ -534,13 +542,13 @@ class AuditLogger {
 
     try {
       const result = await dbPool.query(query, [cutoffDate]);
-      const deletedCount = result.rowCount || 0;
+      const deletedCount = result.rowCount ?? 0;
 
-      logger.info(`Cleaned up ${deletedCount} old audit events`, { olderThanDays });
+      logger.info({ deletedCount, olderThanDays }, `Cleaned up ${deletedCount} old audit events`);
 
       return deletedCount;
     } catch (error) {
-      logger.error('Failed to cleanup audit events:', error);
+      logger.error({ error }, 'Failed to cleanup audit events');
       throw error;
     }
   }
@@ -568,11 +576,11 @@ auditLogger.configureFilter({
  * Wraps the new auditLogger.logEvent method
  */
 export async function auditLog(
-  pool: any,
+  pool: unknown,
   entityType: string,
   entityId: string,
   operation: 'INSERT' | 'UPDATE' | 'DELETE',
-  newData?: any,
+  newData?: unknown,
   changedBy?: string
 ): Promise<void> {
   try {
@@ -581,8 +589,8 @@ export async function auditLog(
       tableName: entityType,
       recordId: entityId,
       operation,
-      newData,
-      changedBy,
+      newData: typeof newData === 'object' && newData !== null ? newData as Record<string, unknown> : undefined,
+      changedBy: changedBy ?? undefined,
       metadata: {
         pool_used: !!pool,
         timestamp: new Date().toISOString(),
@@ -590,6 +598,6 @@ export async function auditLog(
     });
   } catch (error) {
     // Log error but don't throw to maintain backward compatibility
-    logger.error('Audit log failed:', error);
+    logger.error({ error }, 'Audit log failed');
   }
 }

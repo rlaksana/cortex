@@ -58,7 +58,7 @@ export const SectionDataSchema = z
     citation_count: z.number().int().nonnegative().optional(),
   })
   .strict()
-  .refine((data) => data.body_md || data.body_text, {
+  .refine((data) => data.body_md ?? data.body_text, {
     message: 'Either body_md or body_text must be provided',
   });
 

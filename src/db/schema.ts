@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS section (
   ) STORED,
   -- Full-text search vector
   ts TSVECTOR GENERATED ALWAYS AS (
-    to_tsvector('english', COALESCE(heading, '') || ' ' || COALESCE(title, '') || ' ' || COALESCE(body_text, ''))
+    to_tsvector('english', COALESCE(heading, '') ?? ' ' || COALESCE(title, '') || ' ' || COALESCE(body_text, ''))
   ) STORED,
   CONSTRAINT section_title_length CHECK (char_length(title) >= 1 AND char_length(title) <= 500),
   CONSTRAINT section_heading_length CHECK (char_length(heading) >= 1 AND char_length(heading) <= 300)
@@ -727,11 +727,11 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT
-    schemaname || '.' || tablename as table_name,
+    schemaname ?? '.' || tablename as table_name,
     n_live_tup as total_rows,
-    pg_total_relation_size(schemaname || '.' || tablename) as table_size,
-    pg_indexes_size(schemaname || '.' || tablename) as index_size,
-    pg_total_relation_size(schemaname || '.' || tablename) + pg_indexes_size(schemaname || '.' || tablename) as total_size,
+    pg_total_relation_size(schemaname ?? '.' || tablename) as table_size,
+    pg_indexes_size(schemaname ?? '.' || tablename) as index_size,
+    pg_total_relation_size(schemaname ?? '.' || tablename) + pg_indexes_size(schemaname ?? '.' || tablename) as total_size,
     last_vacuum,
     last_autovacuum,
     last_analyze,
@@ -830,7 +830,7 @@ export async function verifySchema(client: Client): Promise<boolean> {
 export async function getSchemaStatistics(client: Client): Promise<any[]> {
   try {
     const result = await client.query('SELECT * FROM get_table_statistics()');
-    return result.rows;
+    return result.rows as unknown[];
   } catch (error) {
     console.error('Error getting schema statistics:', error);
     return [];

@@ -63,9 +63,9 @@ class DatabasePool {
       maxUses: poolConfig.maxUses,
       ssl: poolConfig.ssl ? { rejectUnauthorized: false } : false,
       // Enable query timeout
-      query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000'),
+      query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT ?? '30000'),
       // Enable statement timeout
-      statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000'),
+      statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT ?? '30000'),
       // Enable application name for monitoring
       application_name: 'cortex-mcp-server',
     });
@@ -75,11 +75,11 @@ class DatabasePool {
 
   private getPoolConfig(): PoolConfig {
     return {
-      min: parseInt(process.env.DB_POOL_MIN || '2'),
-      max: parseInt(process.env.DB_POOL_MAX || '10'),
-      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS || '30000'),
-      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS || '10000'),
-      maxUses: parseInt(process.env.DB_MAX_USES || '7500'),
+      min: parseInt(process.env.DB_POOL_MIN ?? '2'),
+      max: parseInt(process.env.DB_POOL_MAX ?? '10'),
+      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS ?? '30000'),
+      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS ?? '10000'),
+      maxUses: parseInt(process.env.DB_MAX_USES ?? '7500'),
       ssl: process.env.DB_SSL === 'true',
     };
   }
@@ -103,7 +103,7 @@ class DatabasePool {
     });
 
     this.pool.on('error', (err: Error) => {
-      logger.error('Pool connection error:', err);
+      logger.error({ error: err }, "Pool connection error:");
     });
   }
 
@@ -124,22 +124,22 @@ class DatabasePool {
       // Test connection with a simple query
       const result = await this.query('SELECT NOW() as current_time');
       logger.info(
-        `Database pool initialized successfully. Current time: ${result.rows[0].current_time}`
+        `Database pool initialized successfully. Current time: ${(result.rows[0] as Record<string, unknown>).current_time}`
       );
 
       this.isInitialized = true;
 
       // Log pool configuration
       const config = this.getPoolConfig();
-      logger.info('Pool configuration:', {
+      logger.info({
         min: config.min,
         max: config.max,
         idleTimeoutMillis: config.idleTimeoutMillis,
         connectionTimeoutMillis: config.connectionTimeoutMillis,
         ssl: config.ssl,
-      });
-    } catch (error) {
-      logger.error('Failed to initialize database pool:', error);
+      }, "Pool configuration:");
+    } catch (error: unknown) {
+      logger.error({ error }, "Failed to initialize database pool:");
       throw error;
     }
   }
@@ -147,7 +147,7 @@ class DatabasePool {
   /**
    * Execute a query with automatic retry on connection failures
    */
-  async query(text: string, params?: any[]): Promise<QueryResult> {
+  async query(text: string, params?: unknown[]): Promise<QueryResult> {
     if (!this.isInitialized) {
       throw new Error('Database pool not initialized. Call initialize() first.');
     }
@@ -165,24 +165,24 @@ class DatabasePool {
         const result = await this.pool.query(text, params);
         const duration = Date.now() - startTime;
 
-        logger.debug('Query executed successfully', {
+        logger.debug({
           text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
           duration,
           rowCount: result.rowCount,
           attempt,
-        });
+        }, "Query executed successfully");
 
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         attempt++;
         const duration = Date.now() - startTime;
 
-        logger.error('Query failed', {
+        logger.error({
           text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
           duration,
           attempt,
-          error: error instanceof Error ? error.message : String(error),
-        });
+          error: error instanceof Error ? (error as Error).message : String(error),
+        }, "Query failed");
 
         // If this is the last attempt, throw the error
         if (attempt > maxRetries) {
@@ -192,9 +192,8 @@ class DatabasePool {
         // For connection errors, wait before retrying
         if (this.isConnectionError(error)) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff
-          logger.warn(
-            `Connection error, retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
-          );
+          const errorMessage = error instanceof Error ? (error as Error).message : String(error);
+          logger.warn({ delay, attempt, maxRetries, error: errorMessage }, `Connection error - retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
           await this.sleep(delay);
         } else {
           // For non-connection errors, don't retry
@@ -232,7 +231,7 @@ class DatabasePool {
       const result = await callback(client);
       await client.query('COMMIT');
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       await client.query('ROLLBACK');
       throw error;
     } finally {
@@ -249,11 +248,17 @@ class DatabasePool {
         return {
           isHealthy: false,
           message: 'Database pool not initialized',
+        } as {
+          isHealthy: false,
+          message: 'Database pool not initialized',
         };
       }
 
       if (this.isShuttingDown) {
         return {
+          isHealthy: false,
+          message: 'Database pool is shutting down',
+        } as {
           isHealthy: false,
           message: 'Database pool is shutting down',
         };
@@ -280,16 +285,16 @@ class DatabasePool {
         message: 'Database pool is healthy',
         poolStats,
         databaseStats: {
-          version: versionResult.rows[0].version,
-          currentDatabase: versionResult.rows[0].database,
-          currentSchema: versionResult.rows[0].schema,
+          version: String((versionResult.rows[0] as Record<string, unknown>).version ?? ''),
+          currentDatabase: String((versionResult.rows[0] as Record<string, unknown>).database ?? ''),
+          currentSchema: String((versionResult.rows[0] as Record<string, unknown>).schema ?? ''),
         },
       };
-    } catch (error) {
-      logger.error('Database health check failed:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Database health check failed:");
       return {
         isHealthy: false,
-        message: error instanceof Error ? error.message : String(error),
+        message: error instanceof Error ? (error as Error).message : String(error),
       };
     }
   }
@@ -304,6 +309,12 @@ class DatabasePool {
       waiting: this.pool.waitingCount,
       max: this.pool.options.max,
       min: this.pool.options.min,
+    } as {
+      total: number,
+      idle: number,
+      waiting: number,
+      max: number,
+      min: number
     };
   }
 
@@ -336,8 +347,8 @@ class DatabasePool {
       ]);
 
       logger.info('Database pool shutdown completed');
-    } catch (error) {
-      logger.error('Error during database pool shutdown:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Error during database pool shutdown:");
       throw error;
     }
   }
@@ -345,7 +356,7 @@ class DatabasePool {
   /**
    * Check if an error is a connection error
    */
-  private isConnectionError(error: any): boolean {
+  private isConnectionError(error: unknown): boolean {
     const connectionErrorCodes = [
       'ECONNREFUSED',
       'ETIMEDOUT',
@@ -359,8 +370,8 @@ class DatabasePool {
       '57P03', // cannot connect now
     ];
 
-    if (error?.code && connectionErrorCodes.includes(error.code)) {
-      return true;
+    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && connectionErrorCodes.includes(error.code)) {
+      return true as true;
     }
 
     // Check for connection-related error messages
@@ -372,7 +383,9 @@ class DatabasePool {
       'connection closed',
     ];
 
-    const errorMessage = error?.message?.toLowerCase() || '';
+    const errorMessage = error && typeof error === 'object' && 'message' in error && typeof (error as Error).message === 'string'
+      ? (error as Error).message.toLowerCase()
+      : '';
     return connectionErrorMessages.some((msg) => errorMessage.includes(msg));
   }
 
@@ -396,12 +409,12 @@ export { DatabasePool };
 // Graceful shutdown handlers
 if (typeof process !== 'undefined') {
   const shutdownHandler = async (signal: string) => {
-    logger.info(`Received ${signal}, starting graceful shutdown...`);
+    logger.info({ signal }, `Starting graceful shutdown... Received ${signal}`);
     try {
       await dbPool.shutdown();
       process.exit(0);
-    } catch (error) {
-      logger.error('Error during graceful shutdown:', error);
+    } catch (error: unknown) {
+      logger.error({ error }, "Error during graceful shutdown:");
       process.exit(1);
     }
   };
@@ -411,22 +424,22 @@ if (typeof process !== 'undefined') {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', async (error) => {
-    logger.error('Uncaught exception:', error);
+    logger.error({ error }, "Uncaught exception:");
     try {
       await dbPool.shutdown();
-    } catch (shutdownError) {
-      logger.error('Error during shutdown after uncaught exception:', shutdownError);
+    } catch (shutdownError: unknown) {
+      logger.error({ error: shutdownError }, "Error during shutdown after uncaught exception:");
     }
     process.exit(1);
   });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', async (reason, promise) => {
-    logger.error('Unhandled promise rejection at:', promise, 'reason:', reason);
+    logger.error({ error: promise, reason }, "Unhandled promise rejection at:");
     try {
       await dbPool.shutdown();
-    } catch (shutdownError) {
-      logger.error('Error during shutdown after unhandled rejection:', shutdownError);
+    } catch (shutdownError: unknown) {
+      logger.error({ error: shutdownError }, "Error during shutdown after unhandled rejection:");
     }
     process.exit(1);
   });

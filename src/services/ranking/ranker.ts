@@ -5,7 +5,7 @@ export function computeFinalScore(hit: {
   citation_count?: number;
 }): number {
   const recencyBoost = computeRecencyBoost(hit.updated_at);
-  const citationScore = Math.min(1.0, Math.log10(1 + (hit.citation_count || 0)) / 2);
+  const citationScore = Math.min(1.0, Math.log10(1 + (hit.citation_count ?? 0)) / 2);
 
   return 0.4 * hit.fts_score + 0.3 * recencyBoost + 0.2 * hit.scope_proximity + 0.1 * citationScore;
 }

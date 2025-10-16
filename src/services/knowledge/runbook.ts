@@ -13,9 +13,9 @@ export async function storeRunbook(
     [
       data.service,
       data.title,
-      data.description || null,
+      data.description ?? null,
       JSON.stringify(data.steps),
-      data.triggers || [],
+      data.triggers ?? [],
       JSON.stringify(scope),
       JSON.stringify({}),
     ]
@@ -86,7 +86,7 @@ export async function findRunbooks(
     service: string;
     title: string;
     description: string;
-    steps_jsonb: any;
+    steps_jsonb: unknown;
     triggers: string[];
     last_verified_at: Date;
     created_at: Date;
@@ -110,7 +110,17 @@ export async function findRunbooks(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    service: string;
+    title: string;
+    description: string;
+    steps_jsonb: unknown;
+    triggers: string[];
+    last_verified_at: Date;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, service, title, description, steps_jsonb, triggers, last_verified_at, created_at, updated_at
      FROM runbook ${whereClause}
      ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
