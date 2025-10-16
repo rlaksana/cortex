@@ -51,7 +51,7 @@ export async function checkAndPurge(
 
   // Get current state
   const result = await pool.query<PurgeMetadata>('SELECT * FROM purge_metadata WHERE id = 1');
-  const meta = result.rows[0];
+  const meta = result.rows[0] as unknown as PurgeMetadata;
 
   if (!meta) {
     logger.error('Purge metadata not found, skipping purge check');
@@ -67,8 +67,8 @@ export async function checkAndPurge(
   const hoursSince = (Date.now() - new Date(meta.last_purge_at).getTime()) / 3600000;
 
   // Check thresholds
-  const timeThresholdExceeded = hoursSince >= meta.time_threshold_hours;
-  const operationThresholdExceeded = meta.operations_since_purge >= meta.operation_threshold;
+  const timeThresholdExceeded = hoursSince >= (meta.time_threshold_hours as number);
+  const operationThresholdExceeded = (meta.operations_since_purge as number) >= (meta.operation_threshold as number);
 
   if (!timeThresholdExceeded && !operationThresholdExceeded) {
     // No purge needed
@@ -130,7 +130,7 @@ async function runPurge(
         AND closed_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.todo = r1.rowCount || 0;
+    deletedCounts.todo = r1.rowCount ?? 0;
 
     // Rule 2: Delete old changes > 90 days
     const r2 = await pool.query(`
@@ -138,7 +138,7 @@ async function runPurge(
       WHERE created_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.change = r2.rowCount || 0;
+    deletedCounts.change = r2.rowCount ?? 0;
 
     // Rule 3: Delete merged PRs > 30 days
     const r3 = await pool.query(`
@@ -148,7 +148,7 @@ async function runPurge(
         AND merged_at < NOW() - INTERVAL '30 days'
       RETURNING id
     `);
-    deletedCounts.pr_context = r3.rowCount || 0;
+    deletedCounts.pr_context = r3.rowCount ?? 0;
 
     // Rule 4: Delete closed issues > 90 days
     const r4 = await pool.query(`
@@ -157,7 +157,7 @@ async function runPurge(
         AND updated_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.issue = r4.rowCount || 0;
+    deletedCounts.issue = r4.rowCount ?? 0;
 
     // Rule 5: Hard delete soft-deleted graph entities > 90 days
     const r5 = await pool.query(`
@@ -166,7 +166,7 @@ async function runPurge(
         AND deleted_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.entity = r5.rowCount || 0;
+    deletedCounts.entity = r5.rowCount ?? 0;
 
     // Rule 6: Hard delete soft-deleted relations > 90 days
     const r6 = await pool.query(`
@@ -175,7 +175,7 @@ async function runPurge(
         AND deleted_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.relation = r6.rowCount || 0;
+    deletedCounts.relation = r6.rowCount ?? 0;
 
     // Rule 7: Hard delete soft-deleted observations > 90 days
     const r7 = await pool.query(`
@@ -184,7 +184,7 @@ async function runPurge(
         AND deleted_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.observation = r7.rowCount || 0;
+    deletedCounts.observation = r7.rowCount ?? 0;
 
     // Rule 8: Delete resolved incidents > 90 days
     const r8 = await pool.query(`
@@ -193,7 +193,7 @@ async function runPurge(
         AND updated_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.incident = r8.rowCount || 0;
+    deletedCounts.incident = r8.rowCount ?? 0;
 
     // Rule 9: Delete completed releases > 90 days
     const r9 = await pool.query(`
@@ -202,7 +202,7 @@ async function runPurge(
         AND updated_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.release = r9.rowCount || 0;
+    deletedCounts.release = r9.rowCount ?? 0;
 
     // Rule 10: Delete closed risks > 90 days
     const r10 = await pool.query(`
@@ -211,7 +211,7 @@ async function runPurge(
         AND updated_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.risk = r10.rowCount || 0;
+    deletedCounts.risk = r10.rowCount ?? 0;
 
     // Rule 11: Delete validated assumptions > 90 days
     const r11 = await pool.query(`
@@ -220,7 +220,7 @@ async function runPurge(
         AND updated_at < NOW() - INTERVAL '90 days'
       RETURNING id
     `);
-    deletedCounts.assumption = r11.rowCount || 0;
+    deletedCounts.assumption = r11.rowCount ?? 0;
 
     const durationMs = Date.now() - startTime;
     const totalDeleted = Object.values(deletedCounts).reduce((sum, n) => sum + n, 0);
@@ -279,7 +279,7 @@ export async function manualPurge(pool: Pool): Promise<PurgeResult> {
  */
 export async function getPurgeStatus(pool: Pool) {
   const result = await pool.query<PurgeMetadata>('SELECT * FROM purge_metadata WHERE id = 1');
-  const meta = result.rows[0];
+  const meta = result.rows[0] as unknown as PurgeMetadata;
 
   if (!meta) {
     throw new Error('Purge metadata not found');

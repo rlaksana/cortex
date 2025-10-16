@@ -39,7 +39,7 @@ export async function storeEntity(
   const hash = computeContentHash(contentData);
 
   // Check for existing entity with same content_hash (dedupe)
-  const existing = await pool.query(
+  const existing = await pool.query<{ id: string }>(
     'SELECT id FROM knowledge_entity WHERE content_hash = $1 AND deleted_at IS NULL',
     [hash]
   );
@@ -50,14 +50,14 @@ export async function storeEntity(
   }
 
   // Check for existing entity with same (entity_type, name) - update case
-  const existingByName = await pool.query(
+  const existingByName = await pool.query<{ id: string }>(
     'SELECT id FROM knowledge_entity WHERE entity_type = $1 AND name = $2 AND deleted_at IS NULL',
     [data.entity_type, data.name]
   );
 
   if (existingByName.rows.length > 0) {
     // Update existing entity
-    const result = await pool.query(
+    const result = await pool.query<{ id: string }>(
       `UPDATE knowledge_entity
        SET data = $1, tags = $2, content_hash = $3, updated_at = NOW()
        WHERE id = $4
@@ -68,7 +68,7 @@ export async function storeEntity(
   }
 
   // Insert new entity
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO knowledge_entity (entity_type, name, data, tags, content_hash)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
@@ -127,7 +127,15 @@ export async function getEntity(
     return null;
   }
 
-  return result.rows[0];
+  return result.rows[0] as {
+    id: string;
+    entity_type: string;
+    name: string;
+    data: Record<string, unknown>;
+    tags: Record<string, unknown>;
+    created_at: Date;
+    updated_at: Date;
+  };
 }
 
 /**
@@ -175,6 +183,14 @@ export async function searchEntities(
   query += ` ORDER BY updated_at DESC LIMIT $${paramIndex}`;
   params.push(limit);
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    entity_type: string;
+    name: string;
+    data: Record<string, unknown>;
+    tags: Record<string, unknown>;
+    created_at: Date;
+    updated_at: Date;
+  }>(query, params);
   return result.rows;
 }

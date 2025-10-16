@@ -11,17 +11,17 @@ export async function storeSection(
   data: SectionData,
   scope?: ScopeFilter
 ): Promise<string> {
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO section (heading, title, body_md, body_text, body_jsonb, tags, metadata)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING id`,
     [
       data.heading,
       data.title,
-      data.body_md || null,
-      data.body_text || null,
-      { text: data.body_text || data.body_md, markdown: data.body_md },
-      JSON.stringify(scope || {}),
+      data.body_md ?? null,
+      data.body_text ?? null,
+      { text: data.body_text ?? data.body_md, markdown: data.body_md },
+      JSON.stringify(scope ?? {}),
       JSON.stringify({}),
     ]
   );
@@ -66,7 +66,7 @@ export async function updateSection(
   }
   if (data.body_md !== undefined || data.body_text !== undefined) {
     updates.push(`body_jsonb = $${paramIndex++}`);
-    values.push({ text: data.body_text || data.body_md, markdown: data.body_md });
+    values.push({ text: data.body_text ?? data.body_md, markdown: data.body_md });
   }
   if (scope !== undefined) {
     updates.push(`tags = $${paramIndex++}`);
@@ -130,7 +130,16 @@ export async function findSections(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    title: string;
+    heading: string;
+    body_text: string;
+    body_md: string;
+    citation_count: number;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, title, heading, body_text, body_md, citation_count, created_at, updated_at
      FROM section ${whereClause}
      ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,

@@ -12,8 +12,8 @@
  * Version: 1.0.0
  */
 
-const net = require('net');
-const { Client } = require('pg');
+import net from 'net';
+import { Client } from 'pg';
 
 // ANSI colors
 const colors = {

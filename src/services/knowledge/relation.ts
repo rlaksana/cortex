@@ -2,7 +2,7 @@
  * Relation storage service (11th knowledge type - entity relationships)
  *
  * Handles storage of directed relationships between any knowledge items.
- * Supports polymorphic relationships: any entity type can link to any other.
+ * Supports polymorphic relationships: unknown entity type can link to any other.
  *
  * @module services/knowledge/relation
  */
@@ -30,7 +30,7 @@ export async function storeRelation(
   scope: Record<string, unknown>
 ): Promise<string> {
   // Check for existing relation with same (from, to, relation_type) - unique constraint
-  const existing = await pool.query(
+  const existing = await pool.query<{ id: string }>(
     `SELECT id FROM knowledge_relation
      WHERE from_entity_type = $1 AND from_entity_id = $2
        AND to_entity_type = $3 AND to_entity_id = $4
@@ -60,7 +60,7 @@ export async function storeRelation(
   }
 
   // Insert new relation
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO knowledge_relation (
        from_entity_type, from_entity_id,
        to_entity_type, to_entity_id,
@@ -73,7 +73,7 @@ export async function storeRelation(
       data.to_entity_type,
       data.to_entity_id,
       data.relation_type,
-      data.metadata || null,
+      data.metadata ?? null,
       JSON.stringify(scope),
     ]
   );
@@ -89,7 +89,7 @@ export async function storeRelation(
  * @returns true if deleted, false if not found
  */
 export async function softDeleteRelation(pool: Pool, relationId: string): Promise<boolean> {
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `UPDATE knowledge_relation
      SET deleted_at = NOW()
      WHERE id = $1 AND deleted_at IS NULL
@@ -138,7 +138,14 @@ export async function getOutgoingRelations(
 
   query += ` ORDER BY created_at DESC`;
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    to_entity_type: string;
+    to_entity_id: string;
+    relation_type: string;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(query, params);
   return result.rows;
 }
 
@@ -180,7 +187,14 @@ export async function getIncomingRelations(
 
   query += ` ORDER BY created_at DESC`;
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    from_entity_type: string;
+    from_entity_id: string;
+    relation_type: string;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(query, params);
   return result.rows;
 }
 

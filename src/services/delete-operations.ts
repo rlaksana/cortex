@@ -134,7 +134,7 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
   if (entity_type === 'decision') {
     const result = await pool.query(`SELECT status FROM ${tableName} WHERE id = $1`, [entity_id]);
 
-    if (result.rows.length > 0 && result.rows[0].status === 'accepted') {
+    if (result.rows.length > 0 && (result.rows[0] as Record<string, unknown>).status === 'accepted') {
       return {
         id: entity_id,
         entity_type: 'decision',

@@ -18,13 +18,13 @@ import pino from 'pino';
 
 export const logger = pino(
   {
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL ?? 'info',
     formatters: {
       level: (label) => ({ level: label }),
     },
     base: {
       service: 'cortex-mcp',
-      environment: process.env.NODE_ENV || 'development',
+      environment: process.env.NODE_ENV ?? 'development',
     },
     timestamp: pino.stdTimeFunctions.isoTime,
     redact: {
@@ -32,7 +32,7 @@ export const logger = pino(
       remove: true,
     },
   },
-  pino.destination(2)
+  void pino.destination(2)
 ); // Write to stderr (fd 2) for MCP stdio protocol compatibility
 
 /**
@@ -46,7 +46,7 @@ export const logger = pino(
  * requestLogger.info({ query: 'auth tokens' }, 'Search query received');
  */
 export function createChildLogger(context: Record<string, unknown>) {
-  return logger.child(context);
+  return logger.child(context) as ReturnType<typeof logger.child>;
 }
 
 /**

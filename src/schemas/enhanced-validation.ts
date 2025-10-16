@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import * as crypto from 'crypto';
 
 /**
  * Enhanced Zod schemas with comprehensive validation to prevent database constraint violations
@@ -40,7 +41,7 @@ export const SectionDataSchema = z
     body_md: z.string().max(1000000, 'Markdown content too large').optional(),
     body_text: z.string().max(1000000, 'Text content too large').optional(),
   })
-  .refine((data) => data.body_md || data.body_text || data.heading || data.title, {
+  .refine((data) => data.body_md ?? data.body_text ?? data.heading ?? data.title, {
     message: 'Section must have at least one of: title, heading, body_md, or body_text',
     path: ['root'],
   });
@@ -223,7 +224,7 @@ export function validateKnowledgeItems(items: unknown[]) {
           index,
           field: error.path.join('.'),
           message: error.message,
-          code: error.code || 'VALIDATION_ERROR',
+          code: error.code ?? 'VALIDATION_ERROR',
         });
       });
     }
@@ -233,8 +234,7 @@ export function validateKnowledgeItems(items: unknown[]) {
 }
 
 // Helper function to generate content hash
-function generateContentHash(item: any): string {
-  const crypto = require('crypto');
+function generateContentHash(item: Record<string, unknown>): string {
   const content = JSON.stringify({
     kind: item.kind,
     scope: item.scope,
@@ -244,14 +244,23 @@ function generateContentHash(item: any): string {
 }
 
 // Helper function to get validation warnings
-function getValidationWarnings(item: any): string[] {
+function getValidationWarnings(item: Record<string, unknown>): string[] {
   const warnings: string[] = [];
 
-  if (item.kind === 'section' && item.data.body_md && item.data.body_md.length > 50000) {
+  if (item.kind === 'section' &&
+      item.data &&
+      typeof item.data === 'object' &&
+      'body_md' in item.data &&
+      typeof item.data.body_md === 'string' &&
+      item.data.body_md.length > 50000) {
     warnings.push('Large markdown content may impact performance');
   }
 
-  if (item.data.title && item.data.title.length > 200) {
+  if (item.data &&
+      typeof item.data === 'object' &&
+      'title' in item.data &&
+      typeof item.data.title === 'string' &&
+      item.data.title.length > 200) {
     warnings.push('Long titles may be truncated in some displays');
   }
 

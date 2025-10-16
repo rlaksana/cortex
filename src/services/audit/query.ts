@@ -91,7 +91,7 @@ export async function queryAuditLog(
 
   // Count total matching entries
   const countQuery = `SELECT COUNT(*) as total FROM event_audit ${whereClause}`;
-  const countResult = await pool.query(countQuery, params);
+  const countResult = await pool.query<{ total: string }>(countQuery, params);
   const total = parseInt(countResult.rows[0].total, 10);
 
   // Fetch paginated entries
@@ -189,7 +189,7 @@ export async function getAuditStatistics(
   const params = since ? [since] : [];
 
   // Total events
-  const totalResult = await pool.query(
+  const totalResult = await pool.query<{ total: string }>(
     `SELECT COUNT(*) as total FROM event_audit ${sinceClause}`,
     params
   );
@@ -220,7 +220,7 @@ export async function getAuditStatistics(
   });
 
   // Unique actors
-  const actorResult = await pool.query(
+  const actorResult = await pool.query<{ count: string }>(
     `SELECT COUNT(DISTINCT actor) as count
      FROM event_audit ${sinceClause}`,
     params

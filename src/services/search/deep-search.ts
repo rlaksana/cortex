@@ -123,5 +123,5 @@ export async function calculateSimilarity(
   text2: string
 ): Promise<number> {
   const result = await pool.query('SELECT similarity($1, $2) AS score', [text1, text2]);
-  return result.rows[0]?.score || 0;
+  return Number((result.rows[0] as Record<string, unknown>).score ?? 0);
 }

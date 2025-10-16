@@ -18,7 +18,7 @@ import { logger } from '../../utils/logger.js';
  */
 async function generateUUID(): Promise<string> {
   const result = await dbPool.query('SELECT gen_random_uuid() as uuid');
-  return result.rows[0].uuid;
+  return (result.rows[0] as { uuid: string }).uuid;
 }
 
 // ============================================================================
@@ -46,25 +46,25 @@ export async function storeIncident(
 ): Promise<string> {
   const id = await generateUUID();
 
-  await pool.query(
+  await pool.query<{ id: string }>(
     `INSERT INTO incident_log (
       id, title, severity, impact, timeline, root_cause_analysis, resolution_status,
       affected_services, business_impact, recovery_actions, follow_up_required,
       incident_commander, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
     [
       id,
       data.title,
       data.severity,
       data.impact,
-      JSON.stringify(data.timeline || []),
-      data.root_cause_analysis || null,
+      JSON.stringify(data.timeline ?? []),
+      data.root_cause_analysis ?? null,
       data.resolution_status,
-      data.affected_services || [],
-      data.business_impact || null,
-      data.recovery_actions || [],
-      data.follow_up_required || false,
-      data.incident_commander || null,
+      data.affected_services ?? [],
+      data.business_impact ?? null,
+      data.recovery_actions ?? [],
+      data.follow_up_required ?? false,
+      data.incident_commander ?? null,
       JSON.stringify(scope),
       JSON.stringify({}),
     ]
@@ -161,7 +161,15 @@ export async function findIncidents(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    title: string;
+    severity: string;
+    impact: string;
+    resolution_status: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, title, severity, impact, resolution_status, created_at, updated_at
      FROM incident_log ${whereClause}
      ORDER BY created_at DESC ${limitClause} ${offsetClause}`,
@@ -198,27 +206,27 @@ export async function storeRelease(
 ): Promise<string> {
   const id = await generateUUID();
 
-  await pool.query(
+  await pool.query<{ id: string }>(
     `INSERT INTO release_log (
       id, version, release_type, scope, release_date, status, ticket_references,
       included_changes, deployment_strategy, rollback_plan, testing_status,
       approvers, release_notes, post_release_actions, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       id,
       data.version,
       data.release_type,
       data.scope,
-      data.release_date || null,
+      data.release_date ?? null,
       data.status,
-      data.ticket_references || [],
-      data.included_changes || [],
-      data.deployment_strategy || null,
-      data.rollback_plan || null,
-      data.testing_status || null,
-      data.approvers || [],
-      data.release_notes || null,
-      data.post_release_actions || [],
+      data.ticket_references ?? [],
+      data.included_changes ?? [],
+      data.deployment_strategy ?? null,
+      data.rollback_plan ?? null,
+      data.testing_status ?? null,
+      data.approvers ?? [],
+      data.release_notes ?? null,
+      data.post_release_actions ?? [],
       JSON.stringify(scope),
       JSON.stringify({}),
     ]
@@ -319,7 +327,16 @@ export async function findReleases(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    version: string;
+    release_type: string;
+    scope: string;
+    release_date: Date;
+    status: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, version, release_type, scope, release_date, status, created_at, updated_at
      FROM release_log ${whereClause}
      ORDER BY release_date DESC ${limitClause} ${offsetClause}`,
@@ -356,12 +373,12 @@ export async function storeRisk(
 ): Promise<string> {
   const id = await generateUUID();
 
-  await pool.query(
+  await pool.query<{ id: string }>(
     `INSERT INTO risk_log (
       id, title, category, risk_level, probability, impact_description,
       trigger_events, mitigation_strategies, owner, review_date, status,
       related_decisions, monitoring_indicators, contingency_plans, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       id,
       data.title,
@@ -369,14 +386,14 @@ export async function storeRisk(
       data.risk_level,
       data.probability,
       data.impact_description,
-      data.trigger_events || [],
-      data.mitigation_strategies || [],
-      data.owner || null,
-      data.review_date || null,
+      data.trigger_events ?? [],
+      data.mitigation_strategies ?? [],
+      data.owner ?? null,
+      data.review_date ?? null,
       data.status,
-      data.related_decisions || [],
-      data.monitoring_indicators || [],
-      data.contingency_plans || null,
+      data.related_decisions ?? [],
+      data.monitoring_indicators ?? [],
+      data.contingency_plans ?? null,
       JSON.stringify(scope),
       JSON.stringify({}),
     ]
@@ -475,7 +492,16 @@ export async function findRisks(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    title: string;
+    category: string;
+    risk_level: string;
+    probability: string;
+    status: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, title, category, risk_level, probability, status, created_at, updated_at
      FROM risk_log ${whereClause}
      ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
@@ -511,12 +537,12 @@ export async function storeAssumption(
 ): Promise<string> {
   const id = await generateUUID();
 
-  await pool.query(
+  await pool.query<{ id: string }>(
     `INSERT INTO assumption_log (
       id, title, description, category, validation_status, impact_if_invalid,
       validation_criteria, validation_date, owner, related_assumptions,
       dependencies, monitoring_approach, review_frequency, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       id,
       data.title,
@@ -524,13 +550,13 @@ export async function storeAssumption(
       data.category,
       data.validation_status,
       data.impact_if_invalid,
-      data.validation_criteria || [],
-      data.validation_date || null,
-      data.owner || null,
-      data.related_assumptions || [],
-      data.dependencies || [],
-      data.monitoring_approach || null,
-      data.review_frequency || null,
+      data.validation_criteria ?? [],
+      data.validation_date ?? null,
+      data.owner ?? null,
+      data.related_assumptions ?? [],
+      data.dependencies ?? [],
+      data.monitoring_approach ?? null,
+      data.review_frequency ?? null,
       JSON.stringify(scope),
       JSON.stringify({}),
     ]
@@ -632,7 +658,15 @@ export async function findAssumptions(
   if (criteria.limit) values.push(criteria.limit);
   if (criteria.offset) values.push(criteria.offset);
 
-  const result = await pool.query(
+  const result = await pool.query<{
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    validation_status: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
     `SELECT id, title, description, category, validation_status, created_at, updated_at
      FROM assumption_log ${whereClause}
      ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,

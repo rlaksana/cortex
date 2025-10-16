@@ -28,7 +28,7 @@ export async function validateADRImmutability(pool: Pool, id: string): Promise<v
     throw new Error(`ADR with id ${id} not found`);
   }
 
-  const currentStatus = result.rows[0].status;
+  const currentStatus = (result.rows[0] as Record<string, unknown>).status;
 
   if (currentStatus === 'accepted') {
     throw new ImmutabilityViolationError(
@@ -62,7 +62,7 @@ export async function validateSpecWriteLock(pool: Pool, sectionId: string): Prom
     throw new Error(`Section with id ${sectionId} not found`);
   }
 
-  const approvedAt = result.rows[0].approved_at;
+  const approvedAt = (result.rows[0] as Record<string, unknown>).approved_at;
 
   if (approvedAt !== null) {
     throw new ImmutabilityViolationError(
