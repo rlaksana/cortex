@@ -30,7 +30,7 @@ export async function addObservation(
   _scope?: Record<string, unknown>
 ): Promise<string> {
   // Insert new observation (append-only)
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO knowledge_observation (
        entity_type, entity_id, observation, observation_type, metadata
      ) VALUES ($1, $2, $3, $4, $5)
@@ -39,8 +39,8 @@ export async function addObservation(
       data.entity_type,
       data.entity_id,
       data.observation,
-      data.observation_type || null,
-      data.metadata || null,
+      data.observation_type ?? null,
+      data.metadata ?? null,
     ]
   );
 
@@ -55,7 +55,7 @@ export async function addObservation(
  * @returns true if deleted, false if not found
  */
 export async function deleteObservation(pool: Pool, observationId: string): Promise<boolean> {
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `UPDATE knowledge_observation
      SET deleted_at = NOW()
      WHERE id = $1 AND deleted_at IS NULL
@@ -83,7 +83,7 @@ export async function deleteObservationsByText(
   entityId: string,
   observationText: string
 ): Promise<number> {
-  const result = await pool.query(
+  const result = await pool.query<{ id: string }>(
     `UPDATE knowledge_observation
      SET deleted_at = NOW()
      WHERE entity_type = $1 AND entity_id = $2 AND observation = $3 AND deleted_at IS NULL
@@ -131,7 +131,13 @@ export async function getObservations(
 
   query += ` ORDER BY created_at DESC`;
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    observation: string;
+    observation_type: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(query, params);
   return result.rows;
 }
 
@@ -168,10 +174,15 @@ export async function searchObservations(
   let paramIndex = 1;
 
   if (useFts) {
-    // Full-text search
+    // Full-text search - escape special characters and format properly
     const tsQuery = searchQuery
       .split(/\s+/)
-      .map((w) => `${w}:*`)
+      .filter(w => w.trim().length > 0) // Remove empty words
+      .map((w) => {
+        // Escape special PostgreSQL tsquery characters
+        const escaped = w.replace(/[&|!():*]/g, '\\$&');
+        return `${escaped}:*`;
+      })
       .join(' & ');
     query = `
       SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
@@ -202,7 +213,15 @@ export async function searchObservations(
   query += ` ORDER BY created_at DESC LIMIT $${paramIndex}`;
   params.push(limit);
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    entity_type: string;
+    entity_id: string;
+    observation: string;
+    observation_type: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(query, params);
   return result.rows;
 }
 
@@ -219,7 +238,7 @@ export async function getObservationCount(
   entityType: string,
   entityId: string
 ): Promise<number> {
-  const result = await pool.query(
+  const result = await pool.query<{ count: string }>(
     `SELECT COUNT(*) as count
      FROM knowledge_observation
      WHERE entity_type = $1 AND entity_id = $2 AND deleted_at IS NULL`,
@@ -271,6 +290,14 @@ export async function getRecentObservations(
     params.push(limit);
   }
 
-  const result = await pool.query(query, params);
+  const result = await pool.query<{
+    id: string;
+    entity_type: string;
+    entity_id: string;
+    observation: string;
+    observation_type: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(query, params);
   return result.rows;
 }

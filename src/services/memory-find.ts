@@ -36,7 +36,7 @@ function computeRankingScore(
   proximityScore: number,
   citationScore: number
 ): number {
-  return 0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore;
+  return 0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore as 0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore;
 }
 
 /**
@@ -52,7 +52,7 @@ function calculateProximity(
   const resultKeys = new Set(Object.keys(resultTags));
 
   const intersection = [...queryKeys].filter(
-    (k) => resultKeys.has(k) && queryScope[k] === resultTags[k]
+    (k) => resultKeys.has(k as string) && queryScope[k] === resultTags[k as string]
   ).length;
   const union = new Set([...queryKeys, ...resultKeys]).size;
 
@@ -124,16 +124,15 @@ export async function memoryFind(params: {
   // Mode routing logic
   const queryWords = params.query.trim().split(/\s+/).length;
   const hasScope = params.scope && Object.keys(params.scope).length > 0;
-  let mode = params.mode || 'auto';
+  let mode = params.mode ?? 'auto';
 
   if (mode === 'auto') {
     mode = queryWords < 3 && !hasScope ? 'fast' : 'deep';
   }
 
-  const topK = params.top_k || (mode === 'fast' ? 10 : 20);
+  const topK = params.top_k ?? (mode === 'fast' ? 10 : 20);
   const searchTypes =
-    params.types ||
-    (mode === 'fast'
+    params.types ?? (mode === 'fast'
       ? ['section']
       : [
           'section',
@@ -156,10 +155,6 @@ export async function memoryFind(params: {
   const scopeFilter = params.scope ? `AND tags @> $2::jsonb` : '';
   const scopeParam = params.scope ? JSON.stringify(params.scope) : null;
 
-  const tsQuery = params.query
-    .split(/\s+/)
-    .map((w) => `${w}:*`)
-    .join(' & ');
   const likePattern = `%${params.query}%`;
 
   const allHits: FindHit[] = [];
@@ -169,39 +164,39 @@ export async function memoryFind(params: {
   if (searchTypes.includes('section')) {
     const sectionQuery = scopeFilter
       ? `SELECT id, heading, body_jsonb,
-                (0.6 * CASE WHEN ts @@ to_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
+                (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
                  0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
                 tags, updated_at, citation_count
          FROM section
-         WHERE ts @@ to_tsquery('english', $1) ${scopeFilter}
+         WHERE ts @@ plainto_tsquery('english', $1) ${scopeFilter}
          ORDER BY fts_score DESC
          LIMIT $3`
       : `SELECT id, heading, body_jsonb,
-                (0.6 * CASE WHEN ts @@ to_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
+                (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
                  0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
                 tags, updated_at, citation_count
          FROM section
-         WHERE ts @@ to_tsquery('english', $1)
+         WHERE ts @@ plainto_tsquery('english', $1)
          ORDER BY fts_score DESC
          LIMIT $2`;
 
-    const sectionParams = scopeFilter ? [tsQuery, scopeParam, topK] : [tsQuery, topK];
+    const sectionParams = scopeFilter ? [params.query, scopeParam, topK] : [params.query, topK];
     const sectionResult = await pool.query(sectionQuery, sectionParams);
     totalCandidates += sectionResult.rows.length;
 
     for (const row of sectionResult.rows) {
-      const ftsScore = parseFloat(row.fts_score) || 0;
+      const ftsScore = parseFloat(row.fts_score) ?? 0;
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
-      const citationScore = calculateCitationScore(row.citation_count || 0);
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      const citationScore = calculateCitationScore(row.citation_count ?? 0);
 
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, citationScore);
 
       allHits.push({
         kind: 'section',
         id: row.id,
-        title: row.heading || 'Untitled',
-        snippet: (row.body_jsonb?.text || '').substring(0, 150) + '...',
+        title: row.heading ?? 'Untitled',
+        snippet: `${(row.body_jsonb?.text ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -230,14 +225,14 @@ export async function memoryFind(params: {
     for (const row of runbookResult.rows) {
       const ftsScore = 0.5; // basic text match
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'runbook',
         id: row.id,
-        title: row.service || 'Untitled Runbook',
-        snippet: JSON.stringify(row.steps_jsonb).substring(0, 150) + '...',
+        title: row.service ?? 'Untitled Runbook',
+        snippet: `${JSON.stringify(row.steps_jsonb).substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -266,14 +261,14 @@ export async function memoryFind(params: {
     for (const row of changeResult.rows) {
       const ftsScore = 0.5;
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'change',
         id: row.id,
-        title: row.subject_ref || 'Untitled Change',
-        snippet: (row.summary || row.details || '').substring(0, 150) + '...',
+        title: row.subject_ref ?? 'Untitled Change',
+        snippet: `${(row.summary ?? row.details ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -302,14 +297,14 @@ export async function memoryFind(params: {
     for (const row of issueResult.rows) {
       const ftsScore = 0.5;
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'issue',
         id: row.id,
-        title: row.title || 'Untitled Issue',
-        snippet: (row.description || '').substring(0, 150) + '...',
+        title: row.title ?? 'Untitled Issue',
+        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -338,14 +333,14 @@ export async function memoryFind(params: {
     for (const row of adrResult.rows) {
       const ftsScore = 0.6; // ADRs are high-value
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'decision',
         id: row.id,
-        title: row.title || 'Untitled ADR',
-        snippet: (row.rationale || '').substring(0, 150) + '...',
+        title: row.title ?? 'Untitled ADR',
+        snippet: `${(row.rationale ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -374,14 +369,14 @@ export async function memoryFind(params: {
     for (const row of todoResult.rows) {
       const ftsScore = 0.5;
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'todo',
         id: row.id,
-        title: (row.text || 'Untitled TODO').substring(0, 50),
-        snippet: (row.text || '').substring(0, 150) + '...',
+        title: (row.text ?? 'Untitled TODO').substring(0, 50),
+        snippet: `${(row.text ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -410,14 +405,14 @@ export async function memoryFind(params: {
     for (const row of releaseResult.rows) {
       const ftsScore = 0.5;
       const recencyScore = calculateRecency(row.created_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'release_note',
         id: row.id,
         title: `Release ${row.version}`,
-        snippet: (row.summary || '').substring(0, 150) + '...',
+        snippet: `${(row.summary ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.created_at,
@@ -446,14 +441,14 @@ export async function memoryFind(params: {
     for (const row of prResult.rows) {
       const ftsScore = 0.5;
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'pr_context',
         id: row.id,
-        title: row.title || `PR #${row.pr_number}`,
-        snippet: (row.description || '').substring(0, 150) + '...',
+        title: row.title ?? `PR #${row.pr_number}`,
+        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -481,8 +476,8 @@ export async function memoryFind(params: {
       allHits.push({
         kind: 'ddl',
         id: row.id,
-        title: row.migration_id || 'Untitled Migration',
-        snippet: (row.description || '').substring(0, 150) + '...',
+        title: row.migration_id ?? 'Untitled Migration',
+        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: {},
         updated_at: row.applied_at,
@@ -513,7 +508,7 @@ export async function memoryFind(params: {
     for (const row of entityResult.rows) {
       const ftsScore = 0.5; // basic text match
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       // Create snippet from entity data
@@ -523,7 +518,7 @@ export async function memoryFind(params: {
         kind: 'entity',
         id: row.id,
         title: `${row.entity_type}: ${row.name}`,
-        snippet: dataSnippet + '...',
+        snippet: `${dataSnippet  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -552,14 +547,14 @@ export async function memoryFind(params: {
     for (const row of incidentResult.rows) {
       const ftsScore = 0.8; // Incidents are high-value
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'incident',
         id: row.id,
         title: `INCIDENT: ${row.title} (${row.severity})`,
-        snippet: (row.impact || '').substring(0, 150) + '...',
+        snippet: `${(row.impact ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -588,14 +583,14 @@ export async function memoryFind(params: {
     for (const row of releaseResult.rows) {
       const ftsScore = 0.7; // Releases are high-value
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'release',
         id: row.id,
         title: `RELEASE: ${row.version} (${row.release_type})`,
-        snippet: (row.scope || '').substring(0, 150) + '...',
+        snippet: `${(row.scope ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -624,14 +619,14 @@ export async function memoryFind(params: {
     for (const row of riskResult.rows) {
       const ftsScore = 0.75; // Risks are high-value
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'risk',
         id: row.id,
         title: `RISK: ${row.title} (${row.risk_level})`,
-        snippet: (row.impact_description || '').substring(0, 150) + '...',
+        snippet: `${(row.impact_description ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -660,14 +655,14 @@ export async function memoryFind(params: {
     for (const row of assumptionResult.rows) {
       const ftsScore = 0.6; // Assumptions are moderate value
       const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags || {});
+      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'assumption',
         id: row.id,
         title: `ASSUMPTION: ${row.title} (${row.validation_status})`,
-        snippet: (row.description || '').substring(0, 150) + '...',
+        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -684,15 +679,15 @@ export async function memoryFind(params: {
   // Graph traversal (if requested)
   let graphResult;
   if (params.traverse) {
-    const startEntityType = params.traverse.start_entity_type || topHits[0]?.kind;
-    const startEntityId = params.traverse.start_entity_id || topHits[0]?.id;
+    const startEntityType = params.traverse.start_entity_type ?? topHits[0]?.kind;
+    const startEntityId = params.traverse.start_entity_id ?? topHits[0]?.id;
 
     if (startEntityType && startEntityId) {
       try {
         const traversalResult = await traverseGraph(pool, startEntityType, startEntityId, {
-          depth: params.traverse.depth,
-          relation_types: params.traverse.relation_types,
-          direction: params.traverse.direction,
+          depth: params.traverse.depth ?? 3,
+          relation_types: params.traverse.relation_types ?? [],
+          direction: params.traverse.direction ?? 'both' as const,
         });
 
         // Enrich nodes with entity data
@@ -712,7 +707,7 @@ export async function memoryFind(params: {
           },
           'Graph traversal completed'
         );
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error(
           { err, start_entity: `${startEntityType}:${startEntityId}` },
           'Graph traversal failed'
@@ -736,7 +731,7 @@ export async function memoryFind(params: {
   const autonomousMetadata: AutonomousMetadata = {
     strategy_used:
       params.mode === 'fast' ? 'fast' : params.mode === 'deep' ? 'deep' : 'fast_then_deep_fallback',
-    mode_requested: params.mode || 'auto',
+    mode_requested: params.mode ?? 'auto',
     mode_executed: mode,
     confidence,
     total_results: topHits.length,
@@ -778,8 +773,8 @@ export async function memoryFind(params: {
       total_candidates: totalCandidates,
       mode_used: mode,
       tables_searched: searchTypes.length,
-      graph_nodes: graphResult?.nodes.length || 0,
-      graph_edges: graphResult?.edges.length || 0,
+      graph_nodes: graphResult?.nodes.length ?? 0,
+      graph_edges: graphResult?.edges.length ?? 0,
     },
     graph: graphResult,
   };
