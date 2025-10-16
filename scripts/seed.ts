@@ -2,7 +2,7 @@ import { Client } from 'pg';
 
 export async function seedDatabase(client: Client): Promise<void> {
   const docId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-  const scope = { project: 'cortex-memory', branch: 'main' };
+  const scope = { project: 'cortex', branch: 'main' };
 
   await client.query(`
     INSERT INTO document (id, type, title, tags)
@@ -10,7 +10,7 @@ export async function seedDatabase(client: Client): Promise<void> {
   `, [docId, JSON.stringify(scope)]);
 
   const sections = [
-    { heading: 'Installation', body: 'Run npm install to get started with Cortex Memory MCP.' },
+    { heading: 'Installation', body: 'Run npm install to get started with Cortex MCP.' },
     { heading: 'Configuration', body: 'Set DATABASE_URL in your .env file pointing to PostgreSQL 18+.' },
     { heading: 'Usage', body: 'Use memory.store to persist knowledge and memory.find to retrieve it.' }
   ];

@@ -1,4 +1,14 @@
-version: '3.8'
+# ============================================================================
+# CORTEX MEMORY MCP - 2-LAYER ARCHITECTURE (PostgreSQL 18 Only)
+# ============================================================================
+# ARCHITECTURE: Local Node.js MCP Server + Docker PostgreSQL (simplified from 3-layer)
+# - Local Node.js connects directly to Docker PostgreSQL on localhost:5433
+# - Eliminates WSL Docker server layer for improved performance (0-5ms vs 10-20ms)
+# - PostgreSQL 18 is MANDATORY - do NOT downgrade to any other version
+# - Uses gen_random_uuid() from pgcrypto extension (NOT uuid-ossp)
+# - Requires PostgreSQL 18-specific performance features and syntax
+# - Changing database version will cause system failure and inconsistencies
+# ============================================================================
 
 services:
   postgres:
@@ -7,18 +17,15 @@ services:
     environment:
       POSTGRES_DB: cortex_prod
       POSTGRES_USER: cortex
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-cortex_secure_password_change_me}
+      POSTGRES_PASSWORD: cortex_pg18_secure_2025_key
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
     ports:
-      - "5433:5432"  # Exposed for external MCP tool access (host:5433 -> container:5432)
+      - "5433:5432"  # Exposed for local Node.js MCP server (host:5433 -> container:5432)
     volumes:
       - cortex_data:/var/lib/postgresql/data
       - ./scripts/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf
       - ./scripts/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
-      - ./migrations/0001_initial_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
-      - ./migrations/0002_indexes.sql:/docker-entrypoint-initdb.d/03-indexes.sql
-      - ./migrations/0003_triggers.sql:/docker-entrypoint-initdb.d/04-triggers.sql
-      - ./migrations/004_add_graph_schema.sql:/docker-entrypoint-initdb.d/05-graph.sql
+      - ./migrations/001_complete_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod"]
       interval: 10s
@@ -30,56 +37,6 @@ services:
     restart: unless-stopped
     # WSL2 specific optimizations
     shm_size: 128m
-
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runtime
-    container_name: cortex-server
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://cortex:${DB_PASSWORD:-cortex_secure_password_change_me}@postgres:5432/cortex_prod
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      NODE_ENV: production
-      DB_POOL_MIN: ${DB_POOL_MIN:-2}
-      DB_POOL_MAX: ${DB_POOL_MAX:-10}
-      DB_IDLE_TIMEOUT_MS: ${DB_IDLE_TIMEOUT_MS:-30000}
-      CORTEX_ORG: ${CORTEX_ORG:-}
-      CORTEX_PROJECT: ${CORTEX_PROJECT:-cortex-memory}
-      CORTEX_BRANCH: ${CORTEX_BRANCH:-main}
-    volumes:
-      - ./migrations:/app/migrations:ro
-    networks:
-      - cortex_network
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-    # WSL2 specific optimizations
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
-    healthcheck:
-      test: ["CMD", "node", "-e", "process.exit(0)"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    command: >
-      sh -c "
-        echo 'Waiting for PostgreSQL to be fully ready...' &&
-        until nc -z postgres 5432; do
-          echo 'PostgreSQL is not ready, waiting 2 seconds...'
-          sleep 2
-        done &&
-        echo 'PostgreSQL is ready! Starting MCP server...' &&
-        node dist/index.js
-      "
 
 volumes:
   cortex_data:

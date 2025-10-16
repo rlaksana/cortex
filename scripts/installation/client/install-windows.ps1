@@ -105,7 +105,7 @@ try {
     # Build DATABASE_URL
     $databaseUrl = "postgresql://cortex:$Password@$ServerIP:$Port/cortex_prod"
 
-    # Create cortex-memory configuration
+    # Create cortex configuration
     $cortexConfig = @{
         command = "node"
         args = @("path/to/mcp-cortex/dist/index.js")
@@ -116,13 +116,13 @@ try {
         }
     }
 
-    # Add or update cortex-memory server
-    if ($config.mcpServers.PSObject.Properties.Name -contains "cortex-memory") {
-        Write-Info "Updating existing cortex-memory configuration"
-        $config.mcpServers."cortex-memory" = $cortexConfig
+    # Add or update cortex server
+    if ($config.mcpServers.PSObject.Properties.Name -contains "cortex") {
+        Write-Info "Updating existing cortex configuration"
+        $config.mcpServers."cortex" = $cortexConfig
     } else {
-        Write-Info "Adding new cortex-memory configuration"
-        $config.mcpServers | Add-Member -MemberType NoteProperty -Name "cortex-memory" -Value $cortexConfig
+        Write-Info "Adding new cortex configuration"
+        $config.mcpServers | Add-Member -MemberType NoteProperty -Name "cortex" -Value $cortexConfig
     }
 
     # Save updated config

@@ -110,7 +110,7 @@ with open("$CLAUDE_CONFIG_PATH", "r") as f:
 if "mcpServers" not in config:
     config["mcpServers"] = {}
 
-config["mcpServers"]["cortex-memory"] = {
+config["mcpServers"]["cortex"] = {
     "command": "node",
     "args": ["path/to/mcp-cortex/dist/index.js"],
     "env": {
@@ -129,7 +129,7 @@ EOF
 else
     # Use jq
     jq --arg db_url "$DATABASE_URL" '
-    .mcpServers["cortex-memory"] = {
+    .mcpServers["cortex"] = {
         "command": "node",
         "args": ["path/to/mcp-cortex/dist/index.js"],
         "env": {
