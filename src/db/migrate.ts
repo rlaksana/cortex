@@ -495,17 +495,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         case 'up':
           await dbMigrator.migrate();
           break;
-        case 'down':
+        case 'down': {
           const step = parseInt(args[1]) ?? 1;
           await dbMigrator.rollback(step);
           break;
-        case 'status':
+        }
+        case 'status': {
           const status = await dbMigrator.status();
           console.log('Migration Status:');
           console.log(`Available: ${status.available.length}`);
           console.log(`Applied: ${status.applied.length}`);
           console.log(`Pending: ${status.pending.length}`);
           break;
+        }
         case 'dry-run':
           await dbMigrator.migrate({ dryRun: true });
           break;

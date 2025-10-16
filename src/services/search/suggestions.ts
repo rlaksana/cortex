@@ -130,7 +130,7 @@ async function checkSpelling(pool: Pool, query: string): Promise<string[]> {
       if (result.rows.length > 0) {
         corrections.push(...result.rows.map((r) => r.word));
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore spelling check errors
       continue;
     }

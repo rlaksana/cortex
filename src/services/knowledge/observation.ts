@@ -187,7 +187,7 @@ export async function searchObservations(
     query = `
       SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
       FROM knowledge_observation
-      WHERE to_tsvector('english', observation) @@ to_tsquery('english', $${paramIndex})
+      WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', $${paramIndex})
         AND deleted_at IS NULL
     `;
     params.push(tsQuery);
