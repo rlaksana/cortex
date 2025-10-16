@@ -26,7 +26,7 @@ export function inferScope(): Scope {
       cachedScope.branch = execSync('git rev-parse --abbrev-ref HEAD', {
         encoding: 'utf8',
       }).trim();
-    } catch (err) {
+    } catch {
       void logger.warn('Failed to infer branch from git');
       cachedScope.branch = 'main';
     }
@@ -38,7 +38,7 @@ export function inferScope(): Scope {
         encoding: 'utf8',
       }).trim();
       cachedScope.project = gitRoot.split('/').pop() ?? 'unknown';
-    } catch (err) {
+    } catch {
       void logger.warn('Failed to infer project from git');
       cachedScope.project = 'unknown';
     }

@@ -371,7 +371,7 @@ class DatabasePool {
     ];
 
     if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && connectionErrorCodes.includes(error.code)) {
-      return true as true;
+      return true as const;
     }
 
     // Check for connection-related error messages
