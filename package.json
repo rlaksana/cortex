@@ -21,7 +21,11 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:validate": "prisma validate",
-    "test:connection": "node -e \"import('./src/db/pool.js').then(m => m.dbPool.testConnection()).then(() => console.log('✅ DB connection OK')).catch(console.error)\""
+    "test:connection": "node -e \"import('./dist/db/pool.js').then(m => m.dbPool.initialize().then(() => m.dbPool.healthCheck()).then(() => console.log('✅ DB connection OK'))).catch(console.error)\"",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "keywords": [
     "mcp",
@@ -43,14 +47,15 @@
     "prisma": "^6.17.1"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "eslint": "^9.0.0",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-security": "^1.7.1",
+    "eslint-plugin-security": "^3.0.1",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.46.1"
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^2.0.0"
   },
   "engines": {
     "node": ">=18.0.0"

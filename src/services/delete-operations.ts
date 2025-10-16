@@ -326,7 +326,7 @@ export async function undelete(pool: Pool, entityType: string, entityId: string)
     );
 
     return result.rows.length > 0;
-  } catch (_err) {
+  } catch {
     return false;
   }
 }

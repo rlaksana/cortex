@@ -323,7 +323,7 @@ export async function enrichGraphNodes(pool: Pool, nodes: GraphNode[]): Promise<
           data: dataMap.get(node.entity_id) ?? undefined,
         });
       }
-    } catch (_err) {
+    } catch {
       // If table doesn't exist or query fails, skip enrichment
       enrichedNodes.push(...typeNodes);
     }
