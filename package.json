@@ -1,11 +1,11 @@
 {
-  "name": "cortex-memory-mcp",
+  "name": "cortex-mcp",
   "version": "1.0.0",
   "description": "Minimal two-tool MCP server for cross-session memory with PostgreSQL SoT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "cortex-memory": "./dist/index.js"
+    "cortex": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -19,6 +19,7 @@
     "test:report": "vitest run tests/functional --reporter=html && open coverage/index.html",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:database": "vitest run tests/integration/db/database-test.ts",
     "test:watch": "vitest",
     "lint": "eslint src tests --ext .ts",
     "lint:fix": "eslint src tests --ext .ts --fix",
@@ -27,7 +28,16 @@
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "db:validate": "tsx scripts/validate-schema.ts",
+    "db:validation": "tsx validate-database.js",
+    "db:setup": "tsx scripts/setup-database.ts",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "pre-commit": "tsx scripts/pre-commit-check.ts",
+    "validate:full": "npm run typecheck && npm run lint && npm run test:database && npm run db:validation",
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
+    "pre-commit": "lint-staged",
+    "quality-check": "npm run typecheck && npm run lint:fix && npm run test tests/validation/ && npm run build"
   },
   "keywords": [
     "mcp",
@@ -42,11 +52,16 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@dbmate/win32-x64": "^2.28.0",
+    "@modelcontextprotocol/sdk": "^1.20.0",
+    "@prisma/client": "^6.17.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.52.4",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.29.0",
     "pg": "^8.11.0",
     "pino": "^8.16.0",
+    "prisma": "^6.17.1",
+    "uuid": "^13.0.0",
     "zod": "^3.22.0"
   },
   "devDependencies": {
@@ -55,13 +70,35 @@
     "@testcontainers/postgresql": "^10.28.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
     "drizzle-kit": "^0.27.0",
     "eslint": "^9.37.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-security": "^3.0.1",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
     "prettier": "^3.3.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.46.1",
     "vitest": "^2.1.0"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "tests/**/*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "*.{ts,js,json,md}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }
