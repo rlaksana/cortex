@@ -27,7 +27,7 @@ jobs:
         run: npm run lint
 
       - name: Run TypeScript type check
-        run: npm run typecheck
+        run: npm run type-check
 
   validation-tests:
     runs-on: ubuntu-latest
@@ -89,6 +89,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare database schema (Prisma db push)
+        run: npx prisma db push
+        env:
+          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+
       - name: Run integration tests
         run: npm run test:integration
         env:
@@ -121,8 +126,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run database migration
-        run: node run-migration.js
+      - name: Prepare schema with Prisma (db push)
+        run: npx prisma db push
         env:
           DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
 
