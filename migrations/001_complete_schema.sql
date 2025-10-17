@@ -237,8 +237,13 @@ CREATE TABLE IF NOT EXISTS knowledge_entity (
   metadata JSONB DEFAULT '{}',
   CONSTRAINT knowledge_entity_type_length CHECK (char_length(entity_type) >= 1 AND char_length(entity_type) <= 100),
   CONSTRAINT knowledge_entity_name_length CHECK (char_length(name) >= 1 AND char_length(name) <= 500),
-  CONSTRAINT knowledge_entity_unique_name_type UNIQUE (entity_type, name) WHERE deleted_at IS NULL
+  CONSTRAINT knowledge_entity_unique_name_type UNIQUE (entity_type, name)
 );
+
+-- Preserve intended semantics with a partial unique index (active only when not soft-deleted)
+CREATE UNIQUE INDEX IF NOT EXISTS ux_knowledge_entity_name_type_active
+  ON knowledge_entity (entity_type, name)
+  WHERE deleted_at IS NULL;
 
 -- Entity relationships (graph edges)
 CREATE TABLE IF NOT EXISTS knowledge_relation (
