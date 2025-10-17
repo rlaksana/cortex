@@ -83,7 +83,8 @@ export class SectionService {
 
     return await prisma.section.findMany({
       where,
-      take: criteria.limit, skip: criteria.offset,
+      take: criteria.limit,
+      skip: criteria.offset,
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,

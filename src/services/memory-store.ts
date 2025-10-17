@@ -86,17 +86,17 @@ export async function memoryStore(items: unknown[]): Promise<{
         user_message_suggestion: '❌ Request validation failed',
       },
     } as {
-      stored: [],
-      errors: StoreError[],
+      stored: [];
+      errors: StoreError[];
       autonomous_context: {
-        action_performed: 'skipped',
-        similar_items_checked: 0,
-        duplicates_found: 0,
-        contradictions_detected: false,
-        recommendation: 'Fix validation errors before retrying',
-        reasoning: 'Request failed validation',
-        user_message_suggestion: '❌ Request validation failed',
-      },
+        action_performed: 'skipped';
+        similar_items_checked: 0;
+        duplicates_found: 0;
+        contradictions_detected: false;
+        recommendation: 'Fix validation errors before retrying';
+        reasoning: 'Request failed validation';
+        user_message_suggestion: '❌ Request validation failed';
+      };
     };
   }
 
@@ -344,9 +344,10 @@ export async function memoryStore(items: unknown[]): Promise<{
                 status: String(existingRow.status ?? 'proposed') as any,
                 title: String(existingRow.title ?? ''),
                 rationale: String(existingRow.rationale ?? ''),
-                alternatives_considered: typeof existingRow.alternatives_considered === 'string'
-                  ? JSON.parse(existingRow.alternatives_considered as string)
-                  : (existingRow.alternatives_considered as string[] ?? []),
+                alternatives_considered:
+                  typeof existingRow.alternatives_considered === 'string'
+                    ? JSON.parse(existingRow.alternatives_considered as string)
+                    : ((existingRow.alternatives_considered as string[]) ?? []),
                 consequences: String(existingRow.consequences ?? ''),
                 supersedes: String(existingRow.supersedes ?? ''),
               },

@@ -68,7 +68,8 @@ export async function checkAndPurge(
 
   // Check thresholds
   const timeThresholdExceeded = hoursSince >= (meta.time_threshold_hours as number);
-  const operationThresholdExceeded = (meta.operations_since_purge as number) >= (meta.operation_threshold as number);
+  const operationThresholdExceeded =
+    (meta.operations_since_purge as number) >= (meta.operation_threshold as number);
 
   if (!timeThresholdExceeded && !operationThresholdExceeded) {
     // No purge needed

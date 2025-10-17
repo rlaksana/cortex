@@ -103,7 +103,7 @@ class DatabasePool {
     });
 
     this.pool.on('error', (err: Error) => {
-      logger.error({ error: err }, "Pool connection error:");
+      logger.error({ error: err }, 'Pool connection error:');
     });
   }
 
@@ -131,15 +131,18 @@ class DatabasePool {
 
       // Log pool configuration
       const config = this.getPoolConfig();
-      logger.info({
-        min: config.min,
-        max: config.max,
-        idleTimeoutMillis: config.idleTimeoutMillis,
-        connectionTimeoutMillis: config.connectionTimeoutMillis,
-        ssl: config.ssl,
-      }, "Pool configuration:");
+      logger.info(
+        {
+          min: config.min,
+          max: config.max,
+          idleTimeoutMillis: config.idleTimeoutMillis,
+          connectionTimeoutMillis: config.connectionTimeoutMillis,
+          ssl: config.ssl,
+        },
+        'Pool configuration:'
+      );
     } catch (error: unknown) {
-      logger.error({ error }, "Failed to initialize database pool:");
+      logger.error({ error }, 'Failed to initialize database pool:');
       throw error;
     }
   }
@@ -165,24 +168,30 @@ class DatabasePool {
         const result = await this.pool.query(text, params);
         const duration = Date.now() - startTime;
 
-        logger.debug({
-          text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-          duration,
-          rowCount: result.rowCount,
-          attempt,
-        }, "Query executed successfully");
+        logger.debug(
+          {
+            text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+            duration,
+            rowCount: result.rowCount,
+            attempt,
+          },
+          'Query executed successfully'
+        );
 
         return result;
       } catch (error: unknown) {
         attempt++;
         const duration = Date.now() - startTime;
 
-        logger.error({
-          text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
-          duration,
-          attempt,
-          error: error instanceof Error ? (error as Error).message : String(error),
-        }, "Query failed");
+        logger.error(
+          {
+            text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+            duration,
+            attempt,
+            error: error instanceof Error ? (error as Error).message : String(error),
+          },
+          'Query failed'
+        );
 
         // If this is the last attempt, throw the error
         if (attempt > maxRetries) {
@@ -193,7 +202,10 @@ class DatabasePool {
         if (this.isConnectionError(error)) {
           const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff
           const errorMessage = error instanceof Error ? (error as Error).message : String(error);
-          logger.warn({ delay, attempt, maxRetries, error: errorMessage }, `Connection error - retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+          logger.warn(
+            { delay, attempt, maxRetries, error: errorMessage },
+            `Connection error - retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
+          );
           await this.sleep(delay);
         } else {
           // For non-connection errors, don't retry
@@ -249,8 +261,8 @@ class DatabasePool {
           isHealthy: false,
           message: 'Database pool not initialized',
         } as {
-          isHealthy: false,
-          message: 'Database pool not initialized',
+          isHealthy: false;
+          message: 'Database pool not initialized';
         };
       }
 
@@ -259,8 +271,8 @@ class DatabasePool {
           isHealthy: false,
           message: 'Database pool is shutting down',
         } as {
-          isHealthy: false,
-          message: 'Database pool is shutting down',
+          isHealthy: false;
+          message: 'Database pool is shutting down';
         };
       }
 
@@ -286,12 +298,14 @@ class DatabasePool {
         poolStats,
         databaseStats: {
           version: String((versionResult.rows[0] as Record<string, unknown>).version ?? ''),
-          currentDatabase: String((versionResult.rows[0] as Record<string, unknown>).database ?? ''),
+          currentDatabase: String(
+            (versionResult.rows[0] as Record<string, unknown>).database ?? ''
+          ),
           currentSchema: String((versionResult.rows[0] as Record<string, unknown>).schema ?? ''),
         },
       };
     } catch (error: unknown) {
-      logger.error({ error }, "Database health check failed:");
+      logger.error({ error }, 'Database health check failed:');
       return {
         isHealthy: false,
         message: error instanceof Error ? (error as Error).message : String(error),
@@ -310,11 +324,11 @@ class DatabasePool {
       max: this.pool.options.max,
       min: this.pool.options.min,
     } as {
-      total: number,
-      idle: number,
-      waiting: number,
-      max: number,
-      min: number
+      total: number;
+      idle: number;
+      waiting: number;
+      max: number;
+      min: number;
     };
   }
 
@@ -348,7 +362,7 @@ class DatabasePool {
 
       logger.info('Database pool shutdown completed');
     } catch (error: unknown) {
-      logger.error({ error }, "Error during database pool shutdown:");
+      logger.error({ error }, 'Error during database pool shutdown:');
       throw error;
     }
   }
@@ -370,7 +384,13 @@ class DatabasePool {
       '57P03', // cannot connect now
     ];
 
-    if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' && connectionErrorCodes.includes(error.code)) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      connectionErrorCodes.includes(error.code)
+    ) {
       return true as const;
     }
 
@@ -383,9 +403,13 @@ class DatabasePool {
       'connection closed',
     ];
 
-    const errorMessage = error && typeof error === 'object' && 'message' in error && typeof (error as Error).message === 'string'
-      ? (error as Error).message.toLowerCase()
-      : '';
+    const errorMessage =
+      error &&
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof (error as Error).message === 'string'
+        ? (error as Error).message.toLowerCase()
+        : '';
     return connectionErrorMessages.some((msg) => errorMessage.includes(msg));
   }
 
@@ -414,7 +438,7 @@ if (typeof process !== 'undefined') {
       await dbPool.shutdown();
       process.exit(0);
     } catch (error: unknown) {
-      logger.error({ error }, "Error during graceful shutdown:");
+      logger.error({ error }, 'Error during graceful shutdown:');
       process.exit(1);
     }
   };
@@ -424,22 +448,22 @@ if (typeof process !== 'undefined') {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', async (error) => {
-    logger.error({ error }, "Uncaught exception:");
+    logger.error({ error }, 'Uncaught exception:');
     try {
       await dbPool.shutdown();
     } catch (shutdownError: unknown) {
-      logger.error({ error: shutdownError }, "Error during shutdown after uncaught exception:");
+      logger.error({ error: shutdownError }, 'Error during shutdown after uncaught exception:');
     }
     process.exit(1);
   });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', async (reason, promise) => {
-    logger.error({ error: promise, reason }, "Unhandled promise rejection at:");
+    logger.error({ error: promise, reason }, 'Unhandled promise rejection at:');
     try {
       await dbPool.shutdown();
     } catch (shutdownError: unknown) {
-      logger.error({ error: shutdownError }, "Error during shutdown after unhandled rejection:");
+      logger.error({ error: shutdownError }, 'Error during shutdown after unhandled rejection:');
     }
     process.exit(1);
   });

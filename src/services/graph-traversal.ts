@@ -425,7 +425,9 @@ export async function findShortestPath(
   }
 
   // Parse edges from JSONB array
-  const edges: GraphEdge[] = ((result.rows[0] as Record<string, unknown>).edges as Record<string, unknown>[]).map((edge: Record<string, unknown>) => ({
+  const edges: GraphEdge[] = (
+    (result.rows[0] as Record<string, unknown>).edges as Record<string, unknown>[]
+  ).map((edge: Record<string, unknown>) => ({
     from_entity_type: edge.from_entity_type as string,
     from_entity_id: edge.from_entity_id as string,
     to_entity_type: edge.to_entity_type as string,

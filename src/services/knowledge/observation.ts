@@ -177,7 +177,7 @@ export async function searchObservations(
     // Full-text search - escape special characters and format properly
     const tsQuery = searchQuery
       .split(/\s+/)
-      .filter(w => w.trim().length > 0) // Remove empty words
+      .filter((w) => w.trim().length > 0) // Remove empty words
       .map((w) => {
         // Escape special PostgreSQL tsquery characters
         const escaped = w.replace(/[&|!():*]/g, '\\$&');

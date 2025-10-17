@@ -9,6 +9,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { memoryStore } from './services/memory-store.js';
 import { memoryFind } from './services/memory-find.js';
+import { smartMemoryFind } from './services/smart-find.js';
 import { logger } from './utils/logger.js';
 import { loadEnv } from './config/env.js';
 import { dbPool } from './db/pool.js';
@@ -23,7 +24,7 @@ const server = new Server({ name: 'cortex', version: '1.0.0' }, { capabilities: 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
-      name: 'memory.store',
+      name: 'memory_store',
       description: `Store, update, or delete knowledge with autonomous decision support.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -275,8 +276,8 @@ Zero config required. Seamless background operation.`,
       },
     },
     {
-      name: 'memory.find',
-      description: `Search knowledge with autonomous retry logic and confidence scoring.
+      name: 'memory_find',
+      description: `Search knowledge with autonomous retry logic, confidence scoring, and smart auto-correction.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 AUTONOMOUS SEARCH PROTOCOL (for Claude Code / AI Callers)
@@ -308,6 +309,16 @@ if (result.hits.length > 0) {
 }
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SMART AUTO-CORRECT (Optional)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Enable auto_fix=true to automatically handle PostgreSQL tsquery syntax errors:
+• Task ID ranges: T008-T021 → T008 T021
+• Version/Phase numbers: Phase-2 → Phase 2
+• Special characters: API#test → API test
+• Multiple hyphens: database-query-design → database query design
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RESPONSE STRUCTURE (for autonomous reasoning)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -328,6 +339,14 @@ RESPONSE STRUCTURE (for autonomous reasoning)
     "fallback_attempted": true,
     "recommendation": "Results sufficient, use top results.",
     "user_message_suggestion": "Found 3 results"
+  },
+  "corrections": {
+    "original_query": "T008-T021 Phase-2 tasks",
+    "final_query": "T008 T021 Phase 2 tasks",
+    "auto_fixes_applied": [
+      "Convert task ID ranges to space-separated format",
+      "Normalize version/phase number formatting"
+    ]
   }
 }
 
@@ -351,6 +370,7 @@ EXAMPLES
 Basic: {query: "OAuth authentication"}
 Filtered: {query: "auth", types: ["section", "decision"], scope: {branch: "main"}}
 Fuzzy: {query: "authntication", mode: "deep"}
+Auto-fix: {query: "T008-T021 foundation tasks", enable_auto_fix: true}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PERFORMANCE
@@ -363,7 +383,7 @@ P95 latency < 300ms on datasets up to 3M items. Auto-purge maintains optimal per
           query: {
             type: 'string',
             description:
-              'Search query string. Supports full-text search operators in fast/auto modes.',
+              'Search query string. Supports full-text search operators in fast/auto modes. Auto-corrected when enable_auto_fix=true.',
           },
           top_k: {
             type: 'number',
@@ -385,6 +405,26 @@ P95 latency < 300ms on datasets up to 3M items. Auto-purge maintains optimal per
             items: { type: 'string' },
             description: 'Filter by knowledge types: ["decision", "issue", "section", etc.]',
           },
+          enable_auto_fix: {
+            type: 'boolean',
+            description: 'Enable automatic query sanitization on tsquery errors (default: false)',
+            default: false,
+          },
+          return_corrections: {
+            type: 'boolean',
+            description: 'Return detailed correction metadata when auto-fix is applied (default: false)',
+            default: false,
+          },
+          max_attempts: {
+            type: 'number',
+            description: 'Maximum retry attempts for auto-fix (default: 3)',
+            default: 3,
+          },
+          timeout_per_attempt_ms: {
+            type: 'number',
+            description: 'Timeout per auto-fix attempt in ms (default: 5000)',
+            default: 5000,
+          },
         },
         required: ['query'],
       },
@@ -393,19 +433,28 @@ P95 latency < 300ms on datasets up to 3M items. Auto-purge maintains optimal per
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request): Promise<CallToolResult> => {
-  if (request.params.name === 'memory.store') {
+  if (request.params.name === 'memory_store') {
     const args = request.params.arguments as { items?: unknown[] };
     const result = await memoryStore(args.items ?? []);
     return { content: [{ type: 'text', text: JSON.stringify(result) }] };
-  } else if (request.params.name === 'memory.find') {
+  } else if (request.params.name === 'memory_find') {
     const args = (request.params.arguments ?? {}) as {
       query: string;
       scope?: Record<string, unknown>;
       types?: string[];
       top_k?: number;
       mode?: 'auto' | 'fast' | 'deep';
+      enable_auto_fix?: boolean;
+      return_corrections?: boolean;
+      max_attempts?: number;
+      timeout_per_attempt_ms?: number;
     };
-    const result = await memoryFind(args);
+
+    // Use smart find when auto-fix is enabled, otherwise use regular find
+    const result = args.enable_auto_fix ?
+      await smartMemoryFind(args) :
+      await memoryFind(args);
+
     return { content: [{ type: 'text', text: JSON.stringify(result) }] };
   }
   throw new Error(`Unknown tool: ${request.params.name}`);

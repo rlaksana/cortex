@@ -247,20 +247,24 @@ function generateContentHash(item: Record<string, unknown>): string {
 function getValidationWarnings(item: Record<string, unknown>): string[] {
   const warnings: string[] = [];
 
-  if (item.kind === 'section' &&
-      item.data &&
-      typeof item.data === 'object' &&
-      'body_md' in item.data &&
-      typeof item.data.body_md === 'string' &&
-      item.data.body_md.length > 50000) {
+  if (
+    item.kind === 'section' &&
+    item.data &&
+    typeof item.data === 'object' &&
+    'body_md' in item.data &&
+    typeof item.data.body_md === 'string' &&
+    item.data.body_md.length > 50000
+  ) {
     warnings.push('Large markdown content may impact performance');
   }
 
-  if (item.data &&
-      typeof item.data === 'object' &&
-      'title' in item.data &&
-      typeof item.data.title === 'string' &&
-      item.data.title.length > 200) {
+  if (
+    item.data &&
+    typeof item.data === 'object' &&
+    'title' in item.data &&
+    typeof item.data.title === 'string' &&
+    item.data.title.length > 200
+  ) {
     warnings.push('Long titles may be truncated in some displays');
   }
 

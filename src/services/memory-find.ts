@@ -36,7 +36,13 @@ function computeRankingScore(
   proximityScore: number,
   citationScore: number
 ): number {
-  return 0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore as 0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore;
+  return (
+    ((0.4 * ftsScore + 0.3 * recencyScore + 0.2 * proximityScore + 0.1 * citationScore) as 0.4) *
+      ftsScore +
+    0.3 * recencyScore +
+    0.2 * proximityScore +
+    0.1 * citationScore
+  );
 }
 
 /**
@@ -132,7 +138,8 @@ export async function memoryFind(params: {
 
   const topK = params.top_k ?? (mode === 'fast' ? 10 : 20);
   const searchTypes =
-    params.types ?? (mode === 'fast'
+    params.types ??
+    (mode === 'fast'
       ? ['section']
       : [
           'section',
@@ -196,7 +203,7 @@ export async function memoryFind(params: {
         kind: 'section',
         id: row.id,
         title: row.heading ?? 'Untitled',
-        snippet: `${(row.body_jsonb?.text ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.body_jsonb?.text ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -232,7 +239,7 @@ export async function memoryFind(params: {
         kind: 'runbook',
         id: row.id,
         title: row.service ?? 'Untitled Runbook',
-        snippet: `${JSON.stringify(row.steps_jsonb).substring(0, 150)  }...`,
+        snippet: `${JSON.stringify(row.steps_jsonb).substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -268,7 +275,7 @@ export async function memoryFind(params: {
         kind: 'change',
         id: row.id,
         title: row.subject_ref ?? 'Untitled Change',
-        snippet: `${(row.summary ?? row.details ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.summary ?? row.details ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -304,7 +311,7 @@ export async function memoryFind(params: {
         kind: 'issue',
         id: row.id,
         title: row.title ?? 'Untitled Issue',
-        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -340,7 +347,7 @@ export async function memoryFind(params: {
         kind: 'decision',
         id: row.id,
         title: row.title ?? 'Untitled ADR',
-        snippet: `${(row.rationale ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.rationale ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -376,7 +383,7 @@ export async function memoryFind(params: {
         kind: 'todo',
         id: row.id,
         title: (row.text ?? 'Untitled TODO').substring(0, 50),
-        snippet: `${(row.text ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.text ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -412,7 +419,7 @@ export async function memoryFind(params: {
         kind: 'release_note',
         id: row.id,
         title: `Release ${row.version}`,
-        snippet: `${(row.summary ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.summary ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.created_at,
@@ -448,7 +455,7 @@ export async function memoryFind(params: {
         kind: 'pr_context',
         id: row.id,
         title: row.title ?? `PR #${row.pr_number}`,
-        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -477,7 +484,7 @@ export async function memoryFind(params: {
         kind: 'ddl',
         id: row.id,
         title: row.migration_id ?? 'Untitled Migration',
-        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: {},
         updated_at: row.applied_at,
@@ -518,7 +525,7 @@ export async function memoryFind(params: {
         kind: 'entity',
         id: row.id,
         title: `${row.entity_type}: ${row.name}`,
-        snippet: `${dataSnippet  }...`,
+        snippet: `${dataSnippet}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -554,7 +561,7 @@ export async function memoryFind(params: {
         kind: 'incident',
         id: row.id,
         title: `INCIDENT: ${row.title} (${row.severity})`,
-        snippet: `${(row.impact ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.impact ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -590,7 +597,7 @@ export async function memoryFind(params: {
         kind: 'release',
         id: row.id,
         title: `RELEASE: ${row.version} (${row.release_type})`,
-        snippet: `${(row.scope ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.scope ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -626,7 +633,7 @@ export async function memoryFind(params: {
         kind: 'risk',
         id: row.id,
         title: `RISK: ${row.title} (${row.risk_level})`,
-        snippet: `${(row.impact_description ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.impact_description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -662,7 +669,7 @@ export async function memoryFind(params: {
         kind: 'assumption',
         id: row.id,
         title: `ASSUMPTION: ${row.title} (${row.validation_status})`,
-        snippet: `${(row.description ?? '').substring(0, 150)  }...`,
+        snippet: `${(row.description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: row.tags,
         updated_at: row.updated_at,
@@ -687,7 +694,7 @@ export async function memoryFind(params: {
         const traversalResult = await traverseGraph(pool, startEntityType, startEntityId, {
           depth: params.traverse.depth ?? 3,
           relation_types: params.traverse.relation_types ?? [],
-          direction: params.traverse.direction ?? 'both' as const,
+          direction: params.traverse.direction ?? ('both' as const),
         });
 
         // Enrich nodes with entity data

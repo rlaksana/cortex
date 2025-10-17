@@ -143,7 +143,7 @@ export class EnvironmentConfig {
     let encrypted = cipher.update(value, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    return `${iv.toString('hex')  }:${  encrypted}`;
+    return `${iv.toString('hex')}:${encrypted}`;
   }
 
   /**
@@ -209,7 +209,10 @@ export class EnvironmentConfig {
       void logger.info('Database connection validation successful');
       return true;
     } catch (error: unknown) {
-      logger.error({ error: error instanceof Error ? error.message : String(error) }, 'Database connection validation failed');
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Database connection validation failed'
+      );
       return false;
     }
   }

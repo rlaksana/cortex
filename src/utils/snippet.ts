@@ -50,7 +50,7 @@ export async function generateSnippet(
     return result.rows[0]?.snippet ?? bodyText.substring(0, maxWords * 5);
   } catch {
     // Fallback to simple truncation if ts_headline fails
-    return `${bodyText.substring(0, maxWords * 5)  }...`;
+    return `${bodyText.substring(0, maxWords * 5)}...`;
   }
 }
 
@@ -67,6 +67,6 @@ export function extractPlainSnippet(text: string, maxLength: number = 150): stri
   const lastSpace = truncated.lastIndexOf(' ');
 
   return lastSpace > maxLength * 0.8
-    ? `${truncated.substring(0, lastSpace)  }...`
-    : `${truncated  }...`;
+    ? `${truncated.substring(0, lastSpace)}...`
+    : `${truncated}...`;
 }

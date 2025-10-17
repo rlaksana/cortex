@@ -110,12 +110,15 @@ class AuditLogger {
 
       await dbPool.query(query, params);
 
-      logger.debug({
-        eventId: processedEvent.id,
-        eventType: processedEvent.eventType,
-        tableName: processedEvent.tableName,
-        operation: processedEvent.operation,
-      }, 'Audit event logged');
+      logger.debug(
+        {
+          eventId: processedEvent.id,
+          eventType: processedEvent.eventType,
+          tableName: processedEvent.tableName,
+          operation: processedEvent.operation,
+        },
+        'Audit event logged'
+      );
     } catch (error) {
       logger.error({ error }, 'Failed to log audit event');
       // Don't throw - audit failures shouldn't break the main operation
@@ -374,7 +377,10 @@ class AuditLogger {
   /**
    * Filter sensitive data from audit records
    */
-  private filterSensitiveData(tableName: string, data: Record<string, unknown>): Record<string, unknown> {
+  private filterSensitiveData(
+    tableName: string,
+    data: Record<string, unknown>
+  ): Record<string, unknown> {
     if (!data || typeof data !== 'object') {
       return data;
     }
@@ -495,13 +501,28 @@ class AuditLogger {
 
       return {
         totalEvents: parseInt((results[0].rows[0] as Record<string, unknown>)?.count as string),
-        eventsByType: this.arrayToObject(results[1].rows as Record<string, unknown>[], 'event_type', 'count'),
-        eventsByTable: this.arrayToObject(results[2].rows as Record<string, unknown>[], 'table_name', 'count'),
-        eventsByOperation: this.arrayToObject(results[3].rows as Record<string, unknown>[], 'operation', 'count'),
+        eventsByType: this.arrayToObject(
+          results[1].rows as Record<string, unknown>[],
+          'event_type',
+          'count'
+        ),
+        eventsByTable: this.arrayToObject(
+          results[2].rows as Record<string, unknown>[],
+          'table_name',
+          'count'
+        ),
+        eventsByOperation: this.arrayToObject(
+          results[3].rows as Record<string, unknown>[],
+          'operation',
+          'count'
+        ),
         recentActivity: {
-          lastHour: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_hour as string) || 0,
-          last24Hours: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_24h as string) || 0,
-          last7Days: parseInt((results[4].rows[0] as Record<string, unknown>)?.last_7d as string) || 0,
+          lastHour:
+            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_hour as string) || 0,
+          last24Hours:
+            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_24h as string) || 0,
+          last7Days:
+            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_7d as string) || 0,
         },
       };
     } catch (error) {
@@ -513,7 +534,11 @@ class AuditLogger {
   /**
    * Convert query result array to object
    */
-  private arrayToObject(rows: Record<string, unknown>[], key: string, value: string): Record<string, number> {
+  private arrayToObject(
+    rows: Record<string, unknown>[],
+    key: string,
+    value: string
+  ): Record<string, number> {
     return rows.reduce(
       (obj: Record<string, number>, row) => {
         const rowKey = String(row[key]);
@@ -589,7 +614,10 @@ export async function auditLog(
       tableName: entityType,
       recordId: entityId,
       operation,
-      newData: typeof newData === 'object' && newData !== null ? newData as Record<string, unknown> : undefined,
+      newData:
+        typeof newData === 'object' && newData !== null
+          ? (newData as Record<string, unknown>)
+          : undefined,
       changedBy: changedBy ?? undefined,
       metadata: {
         pool_used: !!pool,
