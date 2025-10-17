@@ -21,8 +21,8 @@ A comprehensive Memory Cortex MCP server that provides advanced knowledge manage
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
-cd mcp-cortex
+git clone https://github.com/rlaksana/cortex.git
+cd cortex
 ```
 
 ### 2. Install Dependencies
@@ -56,6 +56,83 @@ npm run build
 # Start the server
 npm start
 ```
+
+## MCP Configuration
+
+### Claude Desktop Integration
+
+To use Cortex with Claude Desktop, add the following to your Claude Desktop configuration file:
+
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "node",
+      "args": [
+        "D:\\WORKSPACE\\tools-node\\mcp-cortex\\start-cortex.js"
+      ],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}",
+        "LOG_LEVEL": "info",
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
+```
+
+### Security Best Practices
+
+**Never include credentials in your MCP configuration!** Instead:
+
+1. **Use environment variables** (recommended):
+   ```json
+   {
+     "cortex": {
+       "command": "node",
+       "args": ["path/to/cortex/start-cortex.js"],
+       "env": {
+         "DATABASE_URL": "${DATABASE_URL}"
+       }
+     }
+   }
+   ```
+
+2. **Or create a `.env` file** in the same directory as your MCP config:
+   ```bash
+   # .env file (same directory as claude_desktop_config.json)
+   DATABASE_URL=postgresql://your_username:your_password@localhost:5432/your_database
+   LOG_LEVEL=info
+   ```
+
+3. **Or use absolute paths** (less secure but convenient for development):
+   ```json
+   {
+     "cortex": {
+       "command": "node",
+       "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\start-cortex.js"],
+       "env": {
+         "DATABASE_URL": "postgresql://your_username:your_password@localhost:5432/your_database",
+         "LOG_LEVEL": "info"
+       }
+     }
+   }
+   ```
+
+### MCP Tools Available
+
+Once configured, Cortex provides these MCP tools:
+
+- **`memory_store`**: Store entities, relations, observations, and decisions
+- **`memory_find`**: Search with confidence scoring and filters
+- **`smart_find`**: Intelligent search with advanced ranking
+- **`graph_traversal`**: Navigate relationship networks
+- **`auto_purge`**: Clean up old or irrelevant data
+- **`audit_query`**: Access audit logs and change history
 
 ## Cross-Platform Compatibility
 
