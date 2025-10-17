@@ -49,8 +49,8 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Prepare extensions
-        run: npx prisma db execute --file scripts/init-extensions.sql
+      - name: Prepare extensions (CI minimal)
+        run: npx prisma db execute --file scripts/init-extensions-ci.sql
         env:
           DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
       - name: Apply schema (SQL)
