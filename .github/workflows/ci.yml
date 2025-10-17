@@ -32,12 +32,12 @@ jobs:
         image: postgres:18-alpine
         env:
           POSTGRES_DB: cortex_test
-          POSTGRES_USER: cortex
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres -d cortex_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -52,15 +52,15 @@ jobs:
       - name: Prepare extensions (CI minimal)
         run: npx prisma db execute --file scripts/init-extensions-ci.sql
         env:
-          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/cortex_test
       - name: Apply schema (SQL)
         run: npx prisma db execute --file migrations/001_complete_schema.sql
         env:
-          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/cortex_test
       - name: Run integration tests
         run: npm run test:integration
         env:
-          DATABASE_URL: postgresql://cortex:test_password@localhost:5432/cortex_test
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/cortex_test
 
   build:
     runs-on: ubuntu-latest
