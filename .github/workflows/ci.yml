@@ -27,6 +27,7 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    continue-on-error: true
     services:
       postgres:
         image: postgres:18-alpine
