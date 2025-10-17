@@ -1,80 +1,77 @@
-# MCP-Cortex
+# Cortex Memory MCP (MCP-Cortex)
 
-A comprehensive Memory Cortex MCP server that provides advanced knowledge management capabilities with PostgreSQL backend.
+A high-performance Model Context Protocol (MCP) server for durable knowledge management on PostgreSQL. Ships with autonomous decision support, advanced search, a lightweight knowledge graph, strict type-safety, and a full audit trail.
+
+Works great with Claude Desktop (MCP stdio), local dev, CI, or containerized deployments.
 
 ## Features
 
-- **Memory Management**: Persistent storage of entities, relations, observations, and decisions
-- **Cross-Platform Support**: Compatible with Windows, Linux, and WSL2 environments
-- **Advanced Search**: Deep search capabilities with confidence scoring
-- **Knowledge Graph**: Relationship tracking between entities and concepts
-- **Type Safety**: Full TypeScript support with comprehensive validation
-- **Audit Logging**: Complete audit trail for all operations
+- Knowledge storage: sections, decisions (ADRs), issues, todos, changes, entities, relations, observations, and more
+- Smart retrieval: full‑text + trigram fuzzy search, confidence scoring, auto‑correction (optional)
+- Graph traversal: follow relations to discover connected knowledge
+- Audit + immutability: append-only audit trail, immutable accepted ADRs, write-locked approved docs
+- Type-safe end‑to‑end: TypeScript throughout + Zod validation on config
+- Operational quality gates: health checks, graceful shutdown, pool metrics
 
-## Prerequisites
+## Requirements
 
 - Node.js 18+
-- PostgreSQL database
+- PostgreSQL 18 (required) with `pgcrypto` and `pg_trgm`
 - Git
 
-## Installation
+Prisma is configured with binary targets for Windows (native) and Linux (debian‑openssl‑3.0.x) to support Windows + WSL2.
 
-### 1. Clone Repository
+## Quick Start
+
+### Option A — Local server + Docker PostgreSQL (recommended)
+
+1) Start PostgreSQL 18 via Docker Compose (exposes port 5433 on localhost):
+
 ```bash
-git clone https://github.com/rlaksana/cortex.git
-cd cortex
+docker compose up -d postgres
 ```
 
-### 2. Install Dependencies
+2) Install and build:
+
 ```bash
 npm install
-```
-
-### 3. Database Setup
-
-Create a PostgreSQL database and configure environment variables:
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your database configuration
-DATABASE_URL="postgresql://username:password@localhost:5432/your_database"
-```
-
-### 4. Database Migration
-```bash
-# Apply database schema
-npx prisma migrate dev
-```
-
-### 5. Build and Start
-```bash
-# Build the project
 npm run build
-
-# Start the server
-npm start
 ```
 
-## MCP Configuration
+3) Configure environment (example matches docker-compose):
 
-### Claude Desktop Integration
+```bash
+# .env (or export in your shell)
+DATABASE_URL=postgresql://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod
+LOG_LEVEL=info
+NODE_ENV=development
+```
 
-To use Cortex with Claude Desktop, add the following to your Claude Desktop configuration file:
+4) Run the MCP server (stdio):
 
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Linux:** `~/.config/Claude/claude_desktop_config.json`
+```bash
+npm start
+# or: node dist/index.js
+```
+
+### Option B — Run everything in Docker
+
+See docs/QUICK_START.md and docs/DEPLOYMENT.md for a containerized workflow. The compose file provisions PostgreSQL 18 with required extensions and seeds schema + functions.
+
+## Claude Desktop (MCP) Setup
+
+Add to your Claude Desktop config:
+
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "cortex": {
       "command": "node",
-      "args": [
-        "D:\\WORKSPACE\\tools-node\\mcp-cortex\\start-cortex.js"
-      ],
+      "args": ["<absolute-path-to>/mcp-cortex/start-cortex.js"],
       "env": {
         "DATABASE_URL": "${DATABASE_URL}",
         "LOG_LEVEL": "info",
@@ -85,159 +82,84 @@ To use Cortex with Claude Desktop, add the following to your Claude Desktop conf
 }
 ```
 
-### Security Best Practices
+Tips
+- Prefer environment variables; do not hard-code credentials.
+- Place a `.env` alongside the Claude config if your launcher reads it, or set OS‑level env vars.
 
-**Never include credentials in your MCP configuration!** Instead:
+## Available MCP Tools
 
-1. **Use environment variables** (recommended):
-   ```json
-   {
-     "cortex": {
-       "command": "node",
-       "args": ["path/to/cortex/start-cortex.js"],
-       "env": {
-         "DATABASE_URL": "${DATABASE_URL}"
-       }
-     }
-   }
-   ```
+- `memory_store` — Create/update/delete knowledge with autonomous decision support
+- `memory_find` — Retrieve knowledge with fast FTS or deep fuzzy search
 
-2. **Or create a `.env` file** in the same directory as your MCP config:
-   ```bash
-   # .env file (same directory as claude_desktop_config.json)
-   DATABASE_URL=postgresql://your_username:your_password@localhost:5432/your_database
-   LOG_LEVEL=info
-   ```
+Both tools support scope filters (project/branch/org) and return machine‑readable metadata for autonomous flows.
 
-3. **Or use absolute paths** (less secure but convenient for development):
-   ```json
-   {
-     "cortex": {
-       "command": "node",
-       "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\start-cortex.js"],
-       "env": {
-         "DATABASE_URL": "postgresql://your_username:your_password@localhost:5432/your_database",
-         "LOG_LEVEL": "info"
-       }
-     }
-   }
-   ```
-
-### MCP Tools Available
-
-Once configured, Cortex provides these MCP tools:
-
-- **`memory_store`**: Store entities, relations, observations, and decisions
-- **`memory_find`**: Search with confidence scoring and filters
-- **`smart_find`**: Intelligent search with advanced ranking
-- **`graph_traversal`**: Navigate relationship networks
-- **`auto_purge`**: Clean up old or irrelevant data
-- **`audit_query`**: Access audit logs and change history
-
-## Cross-Platform Compatibility
-
-This project includes cross-platform binary targets for Prisma, ensuring compatibility across:
-
-- Windows (native)
-- Linux/WSL2 (debian-openssl-3.0.x)
-
-The Prisma Client is automatically generated with support for both environments.
-
-## Docker Installation (Alternative)
-
-For easier deployment, use Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-## Development
-
-### Running Tests
-```bash
-npm test
-```
-
-### Type Checking
-```bash
-npm run type-check
-```
-
-### Linting
-```bash
-npm run lint
-```
-
-### Database Operations
-```bash
-# Generate Prisma client
-npx prisma generate
-
-# View database
-npx prisma studio
-
-# Create new migration
-npx prisma migrate dev --name <migration-name>
-```
+See: specs/001-create-specs-000/contracts/mcp-tools.json and docs/AUTONOMOUS_EXAMPLES.md.
 
 ## Configuration
 
-The server uses environment variables for configuration:
+Primary environment variables:
 
-- `DATABASE_URL`: PostgreSQL connection string
-- `LOG_LEVEL`: Logging level (default: 'info')
-- `PORT`: Server port (default: 3000)
+- `DATABASE_URL` (required) — PostgreSQL connection string
+- `LOG_LEVEL` — `debug|info|warn|error` (default: `info`)
+- `NODE_ENV` — `development|production|test` (default: `development`)
+- `MCP_TRANSPORT` — `stdio|http` (default: `stdio`)
 
-## Usage
+Advanced (optional):
 
-Once installed, the MCP-Cortex server provides:
+- `DB_POOL_MIN` (default: 2)
+- `DB_POOL_MAX` (default: 10)
+- `DB_IDLE_TIMEOUT_MS` (default: 30000)
+- `DB_CONNECTION_TIMEOUT_MS` (default: 10000)
+- `DB_MAX_USES` (default: 7500)
+- `DB_SSL` (set `true` to enable SSL with `rejectUnauthorized:false`)
 
-1. **Memory Storage**: Store and retrieve knowledge entities
-2. **Relationship Tracking**: Link related concepts and decisions
-3. **Search Capabilities**: Advanced search with confidence scoring
-4. **Audit Trail**: Complete history of all changes
+## Development
 
-## API Reference
+- Install deps: `npm install`
+- Type check: `npm run type-check`
+- Lint: `npm run lint` (or `lint:fix`)
+- Build: `npm run build`
+- Tests: `npm test` (see also `test:integration`, `test:e2e`)
 
-The server exposes MCP protocol endpoints for:
+Database helpers
 
-- Entity management
-- Relationship operations
-- Search and query
-- Audit logging
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## License
-
-[License information]
+- Generate client: `npm run db:generate`
+- Push schema: `npm run db:push`
+- Migrate dev: `npm run db:migrate`
+- Validate: `npm run db:validate`
 
 ## Troubleshooting
 
-### Prisma Binary Compatibility Issues
+- PostgreSQL version
+  - Run `SELECT version();` and ensure 18.x is reported.
+  - Ensure `pgcrypto` and `pg_trgm` are installed (compose initializes them).
 
-If you encounter binary compatibility errors when running on different operating systems:
+- Connection refused on start
+  - Compose exposes DB on `localhost:5433`. Verify the container is healthy: `docker compose ps`.
 
-1. Ensure you have the latest version: `npm install`
-2. Regenerate Prisma Client: `npx prisma generate`
-3. Verify binary targets in `prisma/schema.prisma` include both environments
+- Prisma binary target mismatch
+  - Regenerate client: `npx prisma generate`.
+  - Binary targets are set in prisma/schema.prisma: `["native","debian-openssl-3.0.x"]`.
 
-### Database Connection Issues
+## Docs
 
-- Verify PostgreSQL is running
-- Check connection string in `.env`
-- Ensure database exists and is accessible
+- Quick Start: docs/QUICK_START.md
+- Deployment: docs/DEPLOYMENT.md
+- Architecture: docs/ARCHITECTURE.md
+- Build Instructions: docs/BUILD_INSTRUCTIONS.md
+- Claude Code Setup: docs/CLAUDE_CODE_SETUP.md
+- Postgres Auth/Config: docs/POSTGRES_AUTH_CONFIG.md
+- Autonomous Examples: docs/AUTONOMOUS_EXAMPLES.md
+
+## Contributing
+
+- Fork → branch → changes + tests → PR
+- Please keep TypeScript strict, run `npm run quality-check` locally.
+
+## License
+
+MIT. See LICENSE if present, otherwise headers in source files.
 
 ## Changelog
 
-### Recent Updates
-
-- **Cross-platform support**: Added binary targets for Windows and Linux/WSL2 compatibility
-- **Dependency optimization**: Moved Prisma to devDependencies for cleaner production builds
-- **Enhanced validation**: Improved type safety and validation across all endpoints
+See CHANGELOG.md and RELEASE_NOTES.md for notable updates.
