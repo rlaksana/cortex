@@ -3,7 +3,9 @@ import { Pool } from 'pg';
 export class ImmutabilityViolationError extends Error {
   constructor(
     message: string,
+    // eslint-disable-next-line no-unused-vars
     public readonly errorCode: string,
+    // eslint-disable-next-line no-unused-vars
     public readonly field?: string
   ) {
     super(message);

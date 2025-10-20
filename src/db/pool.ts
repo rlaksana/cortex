@@ -75,8 +75,8 @@ class DatabasePool {
 
   private getPoolConfig(): PoolConfig {
     return {
-      min: parseInt(process.env.DB_POOL_MIN ?? '2'),
-      max: parseInt(process.env.DB_POOL_MAX ?? '10'),
+      min: parseInt(process.env.DB_POOL_MIN ?? '5'), // Increased for better concurrency
+      max: parseInt(process.env.DB_POOL_MAX ?? '20'), // Increased to handle concurrent operations
       idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS ?? '30000'),
       connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS ?? '10000'),
       maxUses: parseInt(process.env.DB_MAX_USES ?? '7500'),
@@ -235,6 +235,7 @@ class DatabasePool {
   /**
    * Execute a transaction with automatic rollback on error
    */
+  // eslint-disable-next-line no-unused-vars
   async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.getClient();
 

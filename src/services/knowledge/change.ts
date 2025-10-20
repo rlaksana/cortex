@@ -17,7 +17,7 @@ export async function storeChange(
       data.summary,
       data.details,
       hash,
-      JSON.stringify(data.affected_files),
+      data.affected_files || [],
       data.author,
       data.commit_sha,
       JSON.stringify(scope),

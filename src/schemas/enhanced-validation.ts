@@ -89,20 +89,109 @@ export const IssueDataSchema = z.object({
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
 });
 
-// Todo data schema - aligned with database schema
+// Todo data schema - aligned with database service expectations
 export const TodoDataSchema = z.object({
-  scope: z
-    .string()
-    .min(1, 'scope is required (e.g., task, epic, story)')
-    .max(200, 'scope must be 200 characters or less')
-    .optional(),
   todo_type: z.enum(['task', 'bug', 'epic', 'story', 'spike']),
   text: z.string().min(1, 'text is required'),
   status: z.enum(['open', 'in_progress', 'done', 'cancelled', 'archived']),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   assignee: z.string().optional(),
   due_date: z.string().datetime().optional(),
-  closed_at: z.string().datetime().optional(),
+});
+
+// Change data schema
+export const ChangeDataSchema = z.object({
+  change_type: z.enum(['feature_add', 'feature_modify', 'feature_remove', 'bugfix', 'refactor', 'config_change', 'dependency_update']),
+  subject_ref: z.string().min(1, 'subject_ref is required').max(200, 'subject_ref must be 200 characters or less'),
+  summary: z.string().min(1, 'summary is required'),
+  details: z.string().optional(),
+  affected_files: z.array(z.string()).optional(),
+  author: z.string().optional(),
+  commit_sha: z.string().optional(),
+});
+
+// Runbook data schema
+export const RunbookDataSchema = z.object({
+  service: z.string().min(1, 'service is required').max(200, 'service must be 200 characters or less'),
+  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
+  description: z.string().optional(),
+  steps: z.array(z.object({
+    step_number: z.number().int().positive(),
+    description: z.string().min(1, 'step description is required'),
+    command: z.string().optional(),
+    expected_outcome: z.string().optional(),
+  })).min(1, 'At least one step is required'),
+  triggers: z.array(z.string()).optional(),
+  last_verified_at: z.string().datetime().optional(),
+});
+
+// Incident data schema - aligned with session-logs service
+export const IncidentDataSchema = z.object({
+  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
+  severity: z.enum(['low', 'medium', 'high', 'critical']),
+  impact: z.string().min(1, 'impact is required'),
+  timeline: z.array(z.object({
+    timestamp: z.string(),
+    event: z.string(),
+    actor: z.string().optional(),
+  })).optional(),
+  root_cause_analysis: z.string().optional(),
+  resolution_status: z.enum(['open', 'investigating', 'resolved', 'closed']),
+  affected_services: z.array(z.string()).optional(),
+  business_impact: z.string().optional(),
+  recovery_actions: z.array(z.string()).optional(),
+  follow_up_required: z.boolean().optional(),
+  incident_commander: z.string().optional(),
+});
+
+// Release data schema - aligned with session-logs service
+export const ReleaseDataSchema = z.object({
+  version: z.string().min(1, 'version is required'),
+  release_type: z.enum(['major', 'minor', 'patch', 'hotfix']),
+  scope: z.string().min(1, 'scope is required'),
+  release_date: z.string().datetime().optional(),
+  status: z.enum(['planned', 'in_progress', 'completed', 'rolled_back']),
+  ticket_references: z.array(z.string()).optional(),
+  included_changes: z.array(z.string()).optional(),
+  deployment_strategy: z.string().optional(),
+  rollback_plan: z.string().optional(),
+  testing_status: z.string().optional(),
+  approvers: z.array(z.string()).optional(),
+  release_notes: z.string().optional(),
+  post_release_actions: z.array(z.string()).optional(),
+});
+
+// Risk data schema - aligned with session-logs service
+export const RiskDataSchema = z.object({
+  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
+  category: z.enum(['technical', 'business', 'operational', 'security', 'compliance']),
+  risk_level: z.enum(['critical', 'high', 'medium', 'low']),
+  probability: z.enum(['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely']),
+  impact_description: z.string().min(1, 'impact description is required'),
+  trigger_events: z.array(z.string()).optional(),
+  mitigation_strategies: z.array(z.string()).optional(),
+  owner: z.string().optional(),
+  review_date: z.string().optional(),
+  status: z.enum(['active', 'mitigated', 'accepted', 'closed']),
+  related_decisions: z.array(z.string()).optional(),
+  monitoring_indicators: z.array(z.string()).optional(),
+  contingency_plans: z.string().optional(),
+});
+
+// Assumption data schema - aligned with session-logs service
+export const AssumptionDataSchema = z.object({
+  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
+  description: z.string().min(1, 'description is required'),
+  category: z.enum(['technical', 'business', 'user', 'market', 'resource']),
+  validation_status: z.enum(['validated', 'assumed', 'invalidated', 'needs_validation']),
+  impact_if_invalid: z.string().min(1, 'impact if invalid is required'),
+  validation_criteria: z.array(z.string()).optional(),
+  validation_date: z.string().datetime().optional(),
+  owner: z.string().optional(),
+  related_assumptions: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
+  monitoring_approach: z.string().optional(),
+  review_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'as_needed']).optional(),
 });
 
 // Enhanced knowledge item schema with discriminators
@@ -171,13 +260,42 @@ export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
     scope: ScopeFilterSchema.optional(),
     data: TodoDataSchema,
   }),
-  // Add other types as needed
+  z.object({
+    kind: z.literal('change'),
+    scope: ScopeFilterSchema.optional(),
+    data: ChangeDataSchema,
+  }),
+  z.object({
+    kind: z.literal('runbook'),
+    scope: ScopeFilterSchema.optional(),
+    data: RunbookDataSchema,
+  }),
+  z.object({
+    kind: z.literal('incident'),
+    scope: ScopeFilterSchema.optional(),
+    data: IncidentDataSchema,
+  }),
+  z.object({
+    kind: z.literal('release'),
+    scope: ScopeFilterSchema.optional(),
+    data: ReleaseDataSchema,
+  }),
+  z.object({
+    kind: z.literal('risk'),
+    scope: ScopeFilterSchema.optional(),
+    data: RiskDataSchema,
+  }),
+  z.object({
+    kind: z.literal('assumption'),
+    scope: ScopeFilterSchema.optional(),
+    data: AssumptionDataSchema,
+  }),
 ]);
 
 // Schema for delete operations
 export const DeleteOperationSchema = z.object({
   operation: z.literal('delete'),
-  kind: z.enum(['section', 'decision', 'issue', 'todo']),
+  kind: z.enum(['section', 'decision', 'issue', 'todo', 'change', 'runbook', 'incident', 'release', 'risk', 'assumption']),
   id: z.string().uuid(),
   scope: ScopeFilterSchema,
   cascade_relations: z.boolean().optional().default(false),
@@ -285,9 +403,40 @@ function generateContentHash(item: Record<string, unknown>): string {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
+// Helper function to validate array depth
+function validateArrayDepth(obj: unknown, currentDepth: number = 0, maxDepth: number = 3): { valid: boolean; message?: string } {
+  if (currentDepth > maxDepth) {
+    return { valid: false, message: `Array depth exceeds maximum allowed (${maxDepth} levels)` };
+  }
+
+  if (Array.isArray(obj)) {
+    for (const element of obj) {
+      const result = validateArrayDepth(element, currentDepth + 1, maxDepth);
+      if (!result.valid) {
+        return result;
+      }
+    }
+  } else if (obj && typeof obj === 'object') {
+    for (const [, value] of Object.entries(obj)) {
+      const result = validateArrayDepth(value, currentDepth, maxDepth);
+      if (!result.valid) {
+        return result;
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
 // Helper function to get validation warnings
 function getValidationWarnings(item: Record<string, unknown>): string[] {
   const warnings: string[] = [];
+
+  // Validate array depth to prevent performance issues
+  const arrayValidation = validateArrayDepth(item.data);
+  if (!arrayValidation.valid && arrayValidation.message) {
+    warnings.push(arrayValidation.message);
+  }
 
   if (
     item.kind === 'section' &&
@@ -295,9 +444,9 @@ function getValidationWarnings(item: Record<string, unknown>): string[] {
     typeof item.data === 'object' &&
     'body_md' in item.data &&
     typeof item.data.body_md === 'string' &&
-    item.data.body_md.length > 50000
+    item.data.body_md.length > 1000000
   ) {
-    warnings.push('Large markdown content may impact performance');
+    warnings.push('Content exceeds 1MB limit and may be truncated');
   }
 
   if (

@@ -23,7 +23,7 @@ export interface SanitizationResult {
 export interface PatternDetection {
   pattern: RegExp;
   name: string;
-  handler: (match: string) => string;
+  handler: (_match: string) => string;
   description: string;
 }
 
@@ -55,6 +55,45 @@ const PATTERN_DETECTION: PatternDetection[] = [
     name: 'hyphenated_words',
     handler: (match: string) => match.replace(/-/g, ' '),
     description: 'Convert hyphenated words to spaces',
+  },
+  // Common typos - double letters
+  {
+    pattern: /\b([a-zA-Z])\1{2,}([a-zA-Z])\b/g,
+    name: 'double_letters',
+    handler: (match: string) => match.replace(/(.)\1+/g, '$1'),
+    description: 'Fix excessive repeated letters',
+  },
+  // Common English misspellings
+  {
+    pattern: /\b(deduplication|deduplicattion|deduplikation|deduplikasyon)\b/gi,
+    name: 'deduplication_typos',
+    handler: (_match: string) => 'deduplication',
+    description: 'Fix deduplication spelling variations',
+  },
+  {
+    pattern: /\b(authentikation|authentikation|authentification)\b/gi,
+    name: 'authentication_typos',
+    handler: (_match: string) => 'authentication',
+    description: 'Fix authentication spelling variations',
+  },
+  {
+    pattern: /\b(documantation|documentaion|documentation)\b/gi,
+    name: 'documentation_typos',
+    handler: (_match: string) => 'documentation',
+    description: 'Fix documentation spelling variations',
+  },
+  {
+    pattern: /\b(implementaton|implimentation|implementtion)\b/gi,
+    name: 'implementation_typos',
+    handler: (_match: string) => 'implementation',
+    description: 'Fix implementation spelling variations',
+  },
+  // Word boundaries with common suffix errors
+  {
+    pattern: /\b(\w+)(tion|sion|ment|ness|ity|er|or|ist|ism)\b\1/gi,
+    name: 'repeated_words',
+    handler: (match: string) => match.replace(/\b(\w+)\b\1/gi, '$1'),
+    description: 'Fix repeated words',
   },
   // Special characters that break tsquery
   {
@@ -108,7 +147,18 @@ export function sanitizeQuery(
   if (level === 'moderate' || level === 'aggressive') {
     cleaned = applyPatternDetections(
       cleaned,
-      ['task_id_range', 'version_numbers', 'hyphenated_words', 'special_chars'],
+      [
+        'task_id_range',
+        'version_numbers',
+        'hyphenated_words',
+        'double_letters',
+        'deduplication_typos',
+        'authentication_typos',
+        'documentation_typos',
+        'implementation_typos',
+        'repeated_words',
+        'special_chars'
+      ],
       auto_fixes_applied
     );
     transformations.push('moderate_sanitization');

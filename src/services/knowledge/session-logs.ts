@@ -10,14 +10,13 @@
  */
 
 import { Pool } from 'pg';
-import { dbPool } from '../../db/pool.js';
 import { logger } from '../../utils/logger.js';
 
 /**
  * Generate UUID using PostgreSQL gen_random_uuid()
  */
-async function generateUUID(): Promise<string> {
-  const result = await dbPool.query('SELECT gen_random_uuid() as uuid');
+async function generateUUID(pool: Pool): Promise<string> {
+  const result = await pool.query('SELECT gen_random_uuid() as uuid');
   return (result.rows[0] as { uuid: string }).uuid;
 }
 
@@ -44,7 +43,7 @@ export async function storeIncident(
   data: IncidentData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID();
+  const id = await generateUUID(pool);
 
   await pool.query<{ id: string }>(
     `INSERT INTO incident_log (
@@ -204,7 +203,7 @@ export async function storeRelease(
   data: ReleaseData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID();
+  const id = await generateUUID(pool);
 
   await pool.query<{ id: string }>(
     `INSERT INTO release_log (
@@ -371,7 +370,7 @@ export async function storeRisk(
   data: RiskData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID();
+  const id = await generateUUID(pool);
 
   await pool.query<{ id: string }>(
     `INSERT INTO risk_log (
@@ -535,7 +534,7 @@ export async function storeAssumption(
   data: AssumptionData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID();
+  const id = await generateUUID(pool);
 
   await pool.query<{ id: string }>(
     `INSERT INTO assumption_log (

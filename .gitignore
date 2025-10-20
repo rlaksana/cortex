@@ -1,8 +1,214 @@
+# Dependencies
 node_modules/
-dist/
-.env
-*.log
-coverage/
-.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
 
-/src/generated/prisma
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# next.js build output
+.next
+
+# nuxt.js build output
+.nuxt
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# PowerShell
+*.ps1_??????-??????.log
+
+# Test files and reports
+*-test-*.js
+*-test-*.md
+*-test-results.*
+test-results/
+coverage/
+
+# Development and debugging
+debug/
+dev/
+development/
+
+# Array serialization test files
+test-array-serialization*
+array-serialization-test*
+ARRAY_SERIALIZATION_TEST_RESULTS.*
+
+# Production test files
+production-test*
+quick-production-test*
+simple-production-test*
+stress-test-suite*
+workflow-test-suite*
+COMPREHENSIVE_*_TEST_RESULTS.*
+
+# Database and migration debug files
+fix_schema.*
+check_*_columns.sql
+fix_assumption_log.*
+
+# Source code compiled versions
+src/**/*.js
+src/**/index.js.backup
+src/**/immutability.js.backup
+
+# Temporary node_modules
+node_modules_old/
+
+# Generated documentation (keep docs/ folder)
+# API_DOCUMENTATION.md is manually maintained
+
+# Local development files
+src/config/env.js
+src/config/environment.js
+src/db/audit.js
+src/db/migrate.js
+src/db/pool.js
+src/db/prisma.js
+src/db/schema.js
+
+# Development service files
+src/services/audit/
+src/services/auto-purge.js
+src/services/delete-*.js
+src/services/find-*.js
+src/services/filters/
+src/services/graph-traversal.js
+src/services/memory-*.js
+src/services/ranking/
+src/services/search/
+src/services/similarity.js
+src/services/smart-find.js
+
+# Development type files
+src/types/database-results.js
+src/types/db-rows.js
+src/types/knowledge-data.js
+src/types/mcp-sdk.d.ts
+src/types/prisma-client.d.ts
+src/types/query-results.js
+
+# Development utility files
+src/utils/correlation.js
+src/utils/error-handler.js
+src/utils/error-logger.js
+src/utils/field-population.js
+src/utils/hash.js
+src/utils/logger.js
+src/utils/mcp-error-logger.ts
+src/utils/pagination.js
+src/utils/query-enhancer.js
+src/utils/scope.js
+src/utils/snippet.js
+src/utils/structured-logger.js
+
+# Tests and frameworks
+tests/
+comprehensive-memory-test.js
+
+# Temporary backup and migration files
+migrations/20241020_*
+
+# Backup files
+src/**/*.backup
+*.backup
+
+# Test reports that shouldn't be in repo
+COMPREHENSIVE_*_TEST_REPORT*.md
+*TEST_RESULTS*.md
+
+# TypeScript build artifacts that shouldn't be committed manually
+tsconfig.tsbuildinfo

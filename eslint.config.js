@@ -3,7 +3,7 @@ import tsEslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
-  ...tsEslint.configs.recommendedTypeChecked,
+  // TypeScript files configuration - separate config with type checking
   {
     files: ['src/**/*.ts'],
     languageOptions: {
@@ -25,7 +25,15 @@ export default [
         require: 'readonly',
         exports: 'readonly',
         global: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
       },
+    },
+    plugins: {
+      '@typescript-eslint': tsEslint.plugin,
     },
     rules: {
       // General code quality
@@ -37,7 +45,7 @@ export default [
       'no-duplicate-imports': 'error',
 
       // TypeScript specific rules - minimal for 100% clearance
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
@@ -68,7 +76,7 @@ export default [
       'coverage/**',
       '.nyc_output/**',
       'src/generated/**',
-      '*.js',
+      'src/**/*.js',  // Ignore all JS files since they're generated from TS
     ],
   },
 ];

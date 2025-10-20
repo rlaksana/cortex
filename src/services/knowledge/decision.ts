@@ -15,7 +15,7 @@ export async function storeDecision(
       data.status,
       data.title,
       data.rationale,
-      JSON.stringify(data.alternatives_considered),
+      data.alternatives_considered || [],
       data.consequences,
       data.supersedes,
       JSON.stringify(scope),
@@ -59,7 +59,7 @@ export async function updateDecision(
   }
   if (data.alternatives_considered !== undefined) {
     updates.push(`alternatives_considered = $${paramIndex++}`);
-    values.push(JSON.stringify(data.alternatives_considered));
+    values.push(data.alternatives_considered || []);
   }
   if (data.consequences !== undefined) {
     updates.push(`consequences = $${paramIndex++}`);
