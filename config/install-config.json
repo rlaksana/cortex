@@ -1,0 +1,209 @@
+{
+  "version": "1.0.0",
+  "created": "2025-10-20T00:00:00Z",
+  "description": "MCP Cortex Memory Installation Configuration",
+
+  "default_settings": {
+    "install_path": "C:\\cortex-memory",
+    "docker_type": "wsl",
+    "create_backup": true,
+    "auto_start_services": true,
+    "enable_monitoring": true,
+    "log_level": "info"
+  },
+
+  "system_requirements": {
+    "min_windows_version": "10.0.19041",
+    "min_ram_gb": 8,
+    "min_disk_gb": 10,
+    "min_powershell_version": "5.1.0",
+    "network_required": true,
+    "virtualization_required": true
+  },
+
+  "docker_options": {
+    "wsl": {
+      "name": "WSL Docker Commands",
+      "recommended": true,
+      "memory_usage_gb": 0.8,
+      "cpu_usage": "4 cores",
+      "swap_size_gb": 4,
+      "setup_time_minutes": 3,
+      "pros": [
+        "Low memory usage (~800MB)",
+        "Fast startup",
+        "Better performance",
+        "Resource efficient"
+      ],
+      "cons": [
+        "Requires WSL2 setup",
+        "Commands prefixed with 'wsl'",
+        "Linux environment learning curve"
+      ],
+      "requirements": [
+        "Windows 10 version 2004+",
+        "WSL2 enabled",
+        "Ubuntu distribution"
+      ]
+    },
+    "desktop": {
+      "name": "Docker Desktop Commands",
+      "recommended": false,
+      "memory_usage_gb": 4,
+      "cpu_usage": "4 cores",
+      "setup_time_minutes": 10,
+      "pros": [
+        "GUI management interface",
+        "Easy to use",
+        "Windows native feel",
+        "Visual container management"
+      ],
+      "cons": [
+        "High memory usage (3-5GB)",
+        "Slower startup",
+        "Resource intensive",
+        "Background processes"
+      ],
+      "requirements": [
+        "Windows 10 version 2004+",
+        "Virtualization enabled",
+        "8GB+ RAM recommended",
+        "Administrator privileges"
+      ]
+    }
+  },
+
+  "mcp_server": {
+    "platform": "windows_native",
+    "memory_usage_mb": 200,
+    "cpu_usage": "2 cores",
+    "port": "3000",
+    "auto_restart": true,
+    "log_rotation": true,
+    "health_check_interval": 30000
+  },
+
+  "postgresql": {
+    "version": "18",
+    "image": "postgres:18-alpine",
+    "port": 5433,
+    "memory_limit_mb": 1024,
+    "cpu_limit": 2,
+    "storage_size_gb": 1,
+    "backup_retention_days": 30,
+    "extensions": [
+      "pgcrypto",
+      "pg_trgm"
+    ],
+    "performance_tuning": {
+      "shared_buffers": "256MB",
+      "effective_cache_size": "768MB",
+      "maintenance_work_mem": "64MB",
+      "checkpoint_completion_target": "0.9",
+      "wal_buffers": "16MB",
+      "default_statistics_target": "100"
+    }
+  },
+
+  "installation_paths": {
+    "default": "C:\\cortex-memory",
+    "alternatives": [
+      "D:\\cortex-memory",
+      "C:\\Program Files\\cortex-memory",
+      "%USERPROFILE%\\cortex-memory"
+    ]
+  },
+
+  "backup_settings": {
+    "create_before_install": true,
+    "backup_location": "%TEMP%\\cortex-backup-{timestamp}",
+    "backup_components": [
+      "environment_variables",
+      "configuration_files",
+      "database_dumps",
+      "log_files"
+    ],
+    "retention_days": 30,
+    "compression": true
+  },
+
+  "monitoring": {
+    "enabled": true,
+    "log_level": "info",
+    "metrics_collection": true,
+    "health_checks": [
+      "database_connectivity",
+      "mcp_server_status",
+      "disk_space_usage",
+      "memory_usage"
+    ],
+    "alerts": {
+      "disk_usage_threshold": 80,
+      "memory_usage_threshold": 85,
+      "database_connection_timeout": 30
+    }
+  },
+
+  "post_installation": {
+    "create_shortcuts": true,
+    "add_to_path": false,
+    "setup_service": false,
+    "create_desktop_icons": true,
+    "generate_management_scripts": true
+  },
+
+  "validation": {
+    "required_tests": [
+      "system_requirements",
+      "docker_installation",
+      "database_connectivity",
+      "mcp_server_functionality",
+      "end_to_end_workflow"
+    ],
+    "performance_benchmarks": {
+      "database_connection_ms": 100,
+      "mcp_response_ms": 50,
+      "memory_usage_mb": 500
+    }
+  },
+
+  "uninstall_settings": {
+    "remove_data": false,
+    "remove_backups": false,
+    "preserve_config": true,
+    "cleanup_system": true
+  },
+
+  "troubleshooting": {
+    "common_issues": [
+      {
+        "issue": "Docker not starting",
+        "solution": "Restart Docker Desktop service",
+        "logs_check": "docker logs"
+      },
+      {
+        "issue": "Database connection failed",
+        "solution": "Check PostgreSQL container status",
+        "logs_check": "docker-compose logs postgres"
+      },
+      {
+        "issue": "Memory usage too high",
+        "solution": "Adjust Docker memory limits",
+        "logs_check": "docker system df"
+      }
+    ],
+    "log_locations": {
+      "installer": "%TEMP%\\cortex-install-*.log",
+      "mcp_server": "%INSTALL_PATH%\\logs\\",
+      "docker": "%USERPROFILE%\\.docker\\",
+      "postgresql": "docker logs cortex-postgres"
+    }
+  },
+
+  "update_settings": {
+    "auto_update": false,
+    "check_interval_hours": 24,
+    "backup_before_update": true,
+    "rollback_enabled": true
+  }
+}

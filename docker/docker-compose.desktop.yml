@@ -1,0 +1,212 @@
+# =============================================================================
+# CORTEX MEMORY MCP - DOCKER DESKTOP DEPLOYMENT
+# =============================================================================
+# ARCHITECTURE: Windows MCP Server + Docker Desktop PostgreSQL
+# - MCP Server runs natively on Windows (optimal performance)
+# - PostgreSQL runs in Docker Desktop container (GUI management)
+# - Connection: Windows host → Docker Desktop → PostgreSQL
+# - Memory usage: 3-5GB total (higher but includes GUI management)
+# - Performance: 10-20ms latency (very good for MCP workloads)
+# =============================================================================
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cortex-postgres-desktop
+    hostname: cortex-postgres
+    environment:
+      # PostgreSQL Configuration
+      POSTGRES_DB: cortex_prod
+      POSTGRES_USER: cortex
+      POSTGRES_PASSWORD: cortex_pg18_secure_2025_key
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+
+      # PostgreSQL Performance Tuning (Docker Desktop Optimized)
+      POSTGRES_SHARED_PRELOAD_LIBRARIES: pgcrypto,pg_trgm
+      POSTGRES_MAX_CONNECTIONS: 150
+      POSTGRES_SHARED_BUFFERS: 512MB      # Increased for Docker Desktop
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 1.5GB   # Increased for Docker Desktop
+      POSTGRES_MAINTENANCE_WORK_MEM: 128MB     # Increased for Docker Desktop
+      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
+      POSTGRES_WAL_BUFFERS: 32MB               # Increased for Docker Desktop
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
+
+      # Performance Monitoring
+      PGSTATS_STATEMENTS_TIMEOUT: 30s
+
+    ports:
+      # Expose to Windows host (localhost:5433)
+      - "5433:5432"
+
+    volumes:
+      # PostgreSQL Data Volume
+      - cortex_data:/var/lib/postgresql/data
+
+      # Database Schema and Extensions
+      - ../migrations/001_complete_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
+      - ../scripts/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+
+      # PostgreSQL Configuration (Docker Desktop Optimized)
+      - ../config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ../config/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf:ro
+
+      # Backup Volume
+      - cortex_backups:/backups
+
+    restart: unless-stopped
+
+    # Health Checks (Docker Desktop Optimized)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod -t 5"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    # Resource Limits (Docker Desktop Optimized)
+    deploy:
+      resources:
+        limits:
+          memory: 2G          # Higher limit for Docker Desktop
+          cpus: '2'            # Higher CPU limit for Docker Desktop
+        reservations:
+          memory: 1G           # Higher memory reservation
+          cpus: '1'            # Higher CPU reservation
+
+    # Docker Desktop Specific Optimizations
+    shm_size: 256m             # Larger shared memory for PostgreSQL
+    read_only: false
+    stdin_open: true
+    tty: true
+
+    # Networking
+    networks:
+      - cortex_network
+
+    # Logging (Docker Desktop Optimized)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"        # Larger logs for Docker Desktop
+        max-file: "5"          # More log files
+        labels: "cortex,postgres,docker-desktop"
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+
+    # Environment Labels
+    labels:
+      - "cortex.component=database"
+      - "cortex.environment=docker-desktop"
+      - "cortex.version=1.0.0"
+      - "deployment.type=docker-desktop"
+
+  # Optional: pgAdmin for Database Management (Docker Desktop)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cortex-pgadmin-desktop
+    environment:
+      PGADMIN_DEFAULT_EMAIL: cortex@cortex.local
+      PGADMIN_DEFAULT_PASSWORD: cortex_admin_2025
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+
+    ports:
+      # Expose to Windows host (localhost:8080)
+      - "8080:80"
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+    restart: unless-stopped
+
+    # Health Checks
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Resource Limits (More generous for Docker Desktop)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1'
+
+    # Networking
+    networks:
+      - cortex_network
+
+    # Labels
+    labels:
+      - "cortex.component=admin"
+      - "cortex.environment=docker-desktop"
+      - "cortex.optional=true"
+
+  # Optional: Portainer for Docker Management (Docker Desktop)
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: cortex-portainer-desktop
+    command: --host unix:///var/run/docker.sock
+    ports:
+      - "9443:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+
+    restart: unless-stopped
+
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+    # Labels
+    labels:
+      - "cortex.component=management"
+      - "cortex.environment=docker-desktop"
+      - "cortex.optional=true"
+
+# Docker Networks
+networks:
+  cortex_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+    labels:
+      - "cortex.network=docker-desktop"
+
+# Docker Volumes
+volumes:
+  cortex_data:
+    driver: local
+    labels:
+      - "cortex.volume=database"
+      - "cortex.environment=docker-desktop"
+
+  cortex_backups:
+    driver: local
+    labels:
+      - "cortex.volume=backups"
+      - "cortex.environment=docker-desktop"
+
+  pgadmin_data:
+    driver: local
+    labels:
+      - "cortex.volume=admin"
+      - "cortex.environment=docker-desktop"
+
+  portainer_data:
+    driver: local
+    labels:
+      - "cortex.volume=management"
+      - "cortex.environment=docker-desktop"

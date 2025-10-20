@@ -1,0 +1,263 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2025-10-20T00:00:00Z",
+  "requirements": {
+    "operating_system": {
+      "name": "Windows",
+      "min_version": "10.0.19041",
+      "min_version_name": "Windows 10 version 2004",
+      "recommended_version": "10.0.22621",
+      "recommended_version_name": "Windows 11",
+      "architectures": ["x64"],
+      "notes": "Windows 10 version 2004, build 19041 or higher required for WSL2"
+    },
+
+    "hardware": {
+      "ram": {
+        "minimum_gb": 8,
+        "recommended_gb": 16,
+        "wsl_recommended_gb": 16,
+        "docker_desktop_recommended_gb": 32,
+        "notes": "Docker Desktop can consume 3-5GB additional RAM"
+      },
+      "cpu": {
+        "minimum_cores": 2,
+        "recommended_cores": 4,
+        "architecture": "x64_64",
+        "virtualization_support": "required",
+        "notes": "Virtualization must be enabled in BIOS/UEFI"
+      },
+      "disk_space": {
+        "minimum_gb": 10,
+        "recommended_gb": 20,
+        "postgresql_data_gb": 5,
+        "docker_images_gb": 2,
+        "application_files_gb": 1,
+        "temporary_space_gb": 2,
+        "notes": "Additional space required for Docker images and data growth"
+      }
+    },
+
+    "software": {
+      "powershell": {
+        "minimum_version": "5.1.0",
+        "recommended_version": "7.2.0",
+        "execution_policy": "RemoteSigned",
+        "modules": [
+          "Microsoft.PowerShell.Management",
+          "Microsoft.PowerShell.Utility"
+        ],
+        "notes": "PowerShell 5.1+ required for installer scripts"
+      },
+
+      "docker": {
+        "required": true,
+        "wsl2_options": {
+          "backend": "WSL2",
+          "memory_mb": 2048,
+          "processors": 4,
+          "swap_mb": 4096
+        },
+        "docker_desktop_options": {
+          "version": "latest",
+          "memory_mb": 4096,
+          "cpu_shares": 51200
+        },
+        "notes": "Either Docker Desktop with WSL2 backend or WSL2 with Docker engine"
+      },
+
+      "nodejs": {
+        "minimum_version": "18.0.0",
+        "recommended_version": "20.0.0",
+        "architecture": "x64",
+        "npm_minimum_version": "8.0.0",
+        "notes": "Required for MCP Server (Windows native)"
+      },
+
+      "git": {
+        "minimum_version": "2.30.0",
+        "recommended_version": "2.41.0",
+        "notes": "Optional but recommended for version control"
+      }
+    },
+
+    "networking": {
+      "internet_connectivity": {
+        "required": true,
+        "bandwidth_minimum_mbps": 1,
+        "bandwidth_recommended_mbps": 10,
+        "protocols": ["HTTPS", "HTTP"],
+        "ports": {
+          "outbound": [443, 80],
+          "database": 5433
+        }
+      },
+      "firewall": {
+        "docker_required": true,
+        "postgresql_port": 5433,
+        "mcp_server_port": 3000,
+        "notes": "Ensure Docker Desktop can access network"
+      }
+    },
+
+    "wsl_specific": {
+      "wsl2": {
+        "required": true,
+        "enabled_command": "dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart",
+        "virtualization_command": "dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart",
+        "kernel_update": "Required for WSL2",
+        "notes": "Windows Subsystem for Linux 2 must be enabled"
+      },
+      "linux_distribution": {
+        "required": true,
+        "recommended": "Ubuntu 22.04 LTS",
+        "installation_method": "Microsoft Store",
+        "notes": "Ubuntu distribution required for Docker in WSL2"
+      }
+    },
+
+    "permissions": {
+      "administrator": {
+        "required": true,
+        "purpose": "Install system features, Docker Desktop",
+        "elevation_method": "Run as Administrator"
+      },
+      "user_directories": {
+        "required": true,
+        "paths": [
+          "%USERPROFILE%\\.docker",
+          "C:\\Program Files\\Docker",
+          "C:\\ProgramData\\Docker"
+        ],
+        "notes": "Write access required for Docker configuration"
+      }
+    },
+
+    "compatibility": {
+      "supported_features": [
+        "Docker containerization",
+        "WSL2 integration",
+        "PowerShell automation",
+        "System backup and restore",
+        "Service management"
+      ],
+      "known_limitations": [
+        "ARM64 processors not supported",
+        "Windows 7/8/8.1 not supported",
+        "Hyper-V conflicts with other virtualization software"
+      ],
+      "alternative_solutions": {
+        "older_windows": "Use Docker Toolbox (deprecated)",
+        "arm_processors": "Use ARM64-compatible Docker Desktop",
+        "limited_resources": "Use lightweight database solutions"
+      }
+    }
+  },
+
+  "validation_commands": {
+    "windows_version": "systeminfo | findstr /B /C:\"Windows 10\"",
+    "ram_check": "systeminfo | findstr \"Total Physical Memory\"",
+    "disk_space": "fsutil volume diskfree C:",
+    "powershell_version": "$PSVersionTable.PSVersion",
+    "virtualization": "systeminfo | findstr \"Virtualization Enabled\"",
+    "wsl_status": "wsl --list --verbose",
+    "docker_version": "docker --version",
+    "nodejs_version": "node --version"
+  },
+
+  "troubleshooting": {
+    "common_issues": [
+      {
+        "problem": "WSL2 not available",
+        "symptom": "wsl command not found",
+        "solution": "Enable WSL2 feature and install Ubuntu from Microsoft Store",
+        "commands": ["dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"]
+      },
+      {
+        "problem": "Virtualization disabled",
+        "symptom": "Docker Desktop performance issues",
+        "solution": "Enable virtualization in BIOS/UEFI settings",
+        "verification": "systeminfo | findstr \"Virtualization Enabled\""
+      },
+      {
+        "problem": "Insufficient RAM",
+        "symptom": "System slowdown, Docker crashes",
+        "solution": "Upgrade RAM or close unnecessary applications",
+        "recommendation": "16GB+ RAM for Docker Desktop"
+      },
+      {
+        "problem": "Network connectivity issues",
+        "symptom": "Docker can't download images",
+        "solution": "Check firewall settings and proxy configuration",
+        "verification": "Test-NetConnection -ComputerName google.com -Port 443"
+      }
+    ]
+  },
+
+  "performance_benchmarks": {
+    "minimum_acceptable": {
+      "docker_start_time_seconds": 60,
+      "postgresql_startup_seconds": 30,
+      "mcp_server_start_time_seconds": 10,
+      "database_connection_ms": 1000,
+      "memory_usage_mb": 2000
+    },
+    "recommended": {
+      "docker_start_time_seconds": 30,
+      "postgresql_startup_seconds": 15,
+      "mcp_server_start_time_seconds": 5,
+      "database_connection_ms": 100,
+      "memory_usage_mb": 1500
+    }
+  },
+
+  "installation_path_requirements": {
+    "path_length_max_chars": 260,
+    "forbidden_characters": ["<", ">", ":", "\"", "|", "?", "*"],
+    "forbidden_names": ["CON", "PRN", "AUX", "NUL"],
+    "recommended_paths": [
+      "C:\\cortex-memory",
+      "D:\\cortex-memory",
+      "C:\\Program Files\\cortex-memory"
+    ],
+    "permissions_required": ["Read", "Write", "Execute"]
+  },
+
+  "security_considerations": {
+    "user_permissions": {
+      "minimum": "Standard User",
+      "recommended": "Administrator (for installation)",
+      "runtime": "Standard User (sufficient)"
+    },
+    "network_security": {
+      "outbound_connections": ["registry.docker.com", "github.com"],
+      "local_ports": [5433, 3000],
+      "firewall_rules": "Allow Docker Desktop and WSL2"
+    },
+    "data_protection": {
+      "database_encryption": "Not encrypted by default",
+      "config_files": "Plain text (sensitive data)",
+      "recommendations": ["Use encrypted volumes", "Secure config files", "Regular backups"]
+    }
+  },
+
+  "update_and_maintenance": {
+    "auto_update_check": {
+      "frequency_hours": 24,
+      "components": ["Docker Desktop", "WSL2", "Node.js"],
+      "methods": ["PowerShell scheduled task", "Manual check"]
+    },
+    "maintenance_tasks": [
+      "Docker system cleanup",
+      "Log rotation",
+      "Database vacuum",
+      "Security updates"
+    ],
+    "monitoring_metrics": [
+      "Disk usage",
+      "Memory usage",
+      "Database performance",
+      "Service availability"
+    ]
+  }
+}
