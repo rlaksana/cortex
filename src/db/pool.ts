@@ -121,11 +121,16 @@ class DatabasePool {
     }
 
     try {
-      // Test connection with a simple query
-      const result = await this.query('SELECT NOW() as current_time');
-      logger.info(
-        `Database pool initialized successfully. Current time: ${(result.rows[0] as Record<string, unknown>).current_time}`
-      );
+      // Test connection with a simple query using the pool directly
+      const client = await this.pool.connect();
+      try {
+        const result = await client.query('SELECT NOW() as current_time');
+        logger.info(
+          `Database pool initialized successfully. Current time: ${(result.rows[0] as Record<string, unknown>).current_time}`
+        );
+      } finally {
+        client.release();
+      }
 
       this.isInitialized = true;
 
