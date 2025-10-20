@@ -73,7 +73,7 @@ MCP Cortex Memory is a comprehensive knowledge management system with autonomous
 
 4. **Run the installer**:
    ```powershell
-   .\install.ps1
+   .\scripts\install.ps1
    ```
 
 5. **Follow the interactive prompts**:
@@ -309,10 +309,10 @@ Get-ChildItem Env: | Where-Object { $_.Name -match "CORTEX|MCP" }
 #### Complete Reinstall
 ```powershell
 # Uninstall completely
-.\uninstall.ps1 -RemoveData -Force
+.\scripts\uninstall.ps1 -RemoveData -Force
 
 # Reinstall fresh
-.\install.ps1
+.\scripts\install.ps1
 ```
 
 #### Restore from Backup

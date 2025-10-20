@@ -80,7 +80,7 @@ Windows Event Viewer -> System
    # Clear temp files
    Get-ChildItem $env:TEMP -Filter "cortex-*" | Remove-Item -Recurse -Force
    # Retry installation
-   .\install.ps1
+   .\scripts\install.ps1
    ```
 
 4. **Check Disk Space**:
@@ -591,7 +591,7 @@ swap=2GB
 2. **Complete Uninstall**:
    ```powershell
    # Remove everything
-   .\uninstall.ps1 -RemoveData -RemoveBackups -Force
+   .\scripts\uninstall.ps1 -RemoveData -RemoveBackups -Force
    ```
 
 3. **Clean System**:
@@ -603,7 +603,7 @@ swap=2GB
 4. **Reinstall Fresh**:
    ```powershell
    # Fresh installation
-   .\install.ps1
+   .\scripts\install.ps1
    ```
 
 ### Partial Recovery
@@ -766,8 +766,8 @@ Get-ChildItem $env:TEMP -Filter "cortex-*.log"
 # Recovery commands
 .\backup.ps1 -BackupType full
 .\restore.ps1 -BackupPath "backup-path" -RestoreType full
-.\uninstall.ps1 -Force
-.\install.ps1
+.\scripts\uninstall.ps1 -Force
+.\scripts\install.ps1
 
 # Service management
 docker-compose -f docker/docker-compose.wsl.yml restart

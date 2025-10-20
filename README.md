@@ -4,6 +4,26 @@ A high-performance Model Context Protocol (MCP) server for durable knowledge man
 
 Works great with Claude Desktop (MCP stdio), local dev, CI, or containerized deployments.
 
+## 🚀 **Installation System (Windows)**
+
+For Windows users, we provide a comprehensive one-click installation system:
+
+```powershell
+# Clone and install automatically
+git clone https://github.com/rlaksana/cortex.git
+cd cortex
+.\scripts\install.ps1
+```
+
+The installer will:
+- ✅ Choose between WSL Docker (~800MB) or Docker Desktop (3-5GB)
+- ✅ Install PostgreSQL 18 in Docker containers
+- ✅ Configure all environment variables
+- ✅ Set up automatic backup system
+- ✅ Install all dependencies
+
+**Manual installation instructions**: See [docs/INSTALLATION.md](docs/INSTALLATION.md)
+
 ## Features
 
 - Knowledge storage: sections, decisions (ADRs), issues, todos, changes, entities, relations, observations, and more
@@ -28,7 +48,7 @@ Prisma is configured with binary targets for Windows (native) and Linux (debian�
 1) Start PostgreSQL 18 via Docker Compose (exposes port 5433 on localhost):
 
 ```bash
-docker compose up -d postgres
+docker compose -f docker/docker-compose.yml up -d postgres
 ```
 
 2) Install and build:

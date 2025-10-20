@@ -309,16 +309,16 @@ const structuredEntry = {
 
 ```powershell
 # Daily backup
-.\backup.ps1 -BackupType full -Compression
+.\scripts\backup.ps1 -BackupType full -Compression
 
 # Configuration-only backup
-.\backup.ps1 -BackupType config
+.\scripts\backup.ps1 -BackupType config
 
 # Database backup
-.\backup.ps1 -BackupType database
+.\scripts\backup.ps1 -BackupType database
 
 # Scheduled backup (Windows Task Scheduler)
-# Create task to run: .\backup.ps1 -BackupType incremental
+# Create task to run: .\scripts\backup.ps1 -BackupType incremental
 ```
 
 #### Data Retention
@@ -852,7 +852,7 @@ npm start
 .\health-check.ps1
 
 # Backup data
-.\backup.ps1 -BackupType full
+.\scripts\backup.ps1 -BackupType full
 
 # Search (via Claude Desktop)
 "What decisions did we make about the database?"

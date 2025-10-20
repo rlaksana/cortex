@@ -5,6 +5,7 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 yarn.lock
+node_modules_old/
 
 # Build outputs
 dist/
@@ -17,6 +18,9 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.wsl
+.env.production
+.dbmate.env
 
 # Logs
 logs/
@@ -24,6 +28,13 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+cortex-local.log
+mcp-debug.log
+mcp-start.log
+tmp_last_run.log
+
+# PowerShell logs
+*.ps1_??????-??????.log
 
 # Runtime data
 pids
@@ -34,88 +45,21 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 *.lcov
-
-# nyc test coverage
 .nyc_output
 
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# Temporary files
-*.tmp
-*.temp
+# Temporary directories
 temp/
 tmp/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# PowerShell
-*.ps1_??????-??????.log
+*.tmp
+*.temp
 
 # Test files and reports
+test-results/
 *-test-*.js
 *-test-*.md
-*-test-results.*
-test-results/
-coverage/
+*TEST_RESULTS*.md
+COMPREHENSIVE_*_TEST_REPORT*.md
+tests/temp/
 
 # Development and debugging
 debug/
@@ -133,32 +77,49 @@ quick-production-test*
 simple-production-test*
 stress-test-suite*
 workflow-test-suite*
-COMPREHENSIVE_*_TEST_RESULTS.*
 
 # Database and migration debug files
 fix_schema.*
 check_*_columns.sql
 fix_assumption_log.*
+create-schema.sql
 
-# Source code compiled versions
-src/**/*.js
-src/**/index.js.backup
-src/**/immutability.js.backup
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Temporary node_modules
-node_modules_old/
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# IDE backup files
+src/**/*.backup
+*.backup
 
 # Generated documentation (keep docs/ folder)
-# API_DOCUMENTATION.md is manually maintained
+# docs/ folder contains manually maintained documentation
 
-# Local development files
+# Local configuration files
 src/config/env.js
 src/config/environment.js
+
+# Local development files
 src/db/audit.js
 src/db/migrate.js
 src/db/pool.js
 src/db/prisma.js
 src/db/schema.js
+
+# JavaScript compiled versions (keep only TypeScript in src/)
+src/**/*.js
 
 # Development service files
 src/services/audit/
@@ -195,20 +156,13 @@ src/utils/scope.js
 src/utils/snippet.js
 src/utils/structured-logger.js
 
-# Tests and frameworks
-tests/
-comprehensive-memory-test.js
-
 # Temporary backup and migration files
 migrations/20241020_*
 
-# Backup files
-src/**/*.backup
-*.backup
+# Multiple ESLint config files
+eslint.config.cjs
+package.json.eslint-scripts
 
-# Test reports that shouldn't be in repo
-COMPREHENSIVE_*_TEST_REPORT*.md
-*TEST_RESULTS*.md
-
-# TypeScript build artifacts that shouldn't be committed manually
-tsconfig.tsbuildinfo
+# Development files that should not be in repo
+comprehensive-memory-test.js
+test-autonomous.cjs

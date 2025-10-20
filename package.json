@@ -8,9 +8,9 @@
     "cortex-mcp": "dist/index.js"
   },
   "scripts": {
-    "start": "node start-cortex.js",
+    "start": "node scripts/start-cortex.js",
     "start:raw": "node dist/index.js",
-    "dev": "node start-cortex.js",
+    "dev": "node scripts/start-cortex.js",
     "build": "tsc",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
