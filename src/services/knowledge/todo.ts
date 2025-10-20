@@ -6,14 +6,14 @@ export async function storeTodo(pool: Pool, data: TodoData, scope: ScopeFilter):
     `INSERT INTO todo_log (scope, todo_type, text, status, priority, assignee, due_date, tags)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
     [
-      data.scope,
+      JSON.stringify(scope),
       data.todo_type,
       data.text,
       data.status,
       data.priority,
       data.assignee,
       data.due_date,
-      JSON.stringify(scope),
+      JSON.stringify({}),
     ]
   );
   return result.rows[0].id;

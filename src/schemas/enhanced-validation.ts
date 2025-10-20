@@ -51,9 +51,9 @@ export const DecisionDataSchema = z
   .object({
     id: z.string().uuid().optional(),
     component: z.string().min(1, 'Component is required').max(200, 'Component name too long'),
-    status: z.enum(['proposed', 'accepted', 'deprecated', 'superseded'], {
+    status: z.enum(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded'], {
       errorMap: () => ({
-        message: 'Status must be one of: proposed, accepted, deprecated, superseded',
+        message: 'Status must be one of: proposed, accepted, rejected, deprecated, superseded',
       }),
     }),
     title: z
@@ -89,18 +89,20 @@ export const IssueDataSchema = z.object({
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
 });
 
-// Todo data schema
+// Todo data schema - aligned with database schema
 export const TodoDataSchema = z.object({
-  id: z.string().uuid().optional(),
-  title: z
+  scope: z
     .string()
-    .min(1, 'Todo title is required')
-    .max(500, 'Title cannot exceed 500 characters')
-    .trim(),
-  description: z.string().max(5000, 'Description too long').optional(),
-  status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']),
+    .min(1, 'scope is required (e.g., task, epic, story)')
+    .max(200, 'scope must be 200 characters or less')
+    .optional(),
+  todo_type: z.enum(['task', 'bug', 'epic', 'story', 'spike']),
+  text: z.string().min(1, 'text is required'),
+  status: z.enum(['open', 'in_progress', 'done', 'cancelled', 'archived']),
   priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  assignee: z.string().optional(),
   due_date: z.string().datetime().optional(),
+  closed_at: z.string().datetime().optional(),
 });
 
 // Enhanced knowledge item schema with discriminators
@@ -172,17 +174,49 @@ export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
   // Add other types as needed
 ]);
 
+// Schema for delete operations
+export const DeleteOperationSchema = z.object({
+  operation: z.literal('delete'),
+  kind: z.enum(['section', 'decision', 'issue', 'todo']),
+  id: z.string().uuid(),
+  scope: ScopeFilterSchema,
+  cascade_relations: z.boolean().optional().default(false),
+});
+
+// Combined schema for all operations (create + delete)
+export const AnyKnowledgeItemSchema = z.union([
+  // Create operations (discriminated by kind)
+  KnowledgeItemDiscriminator,
+  // Delete operations
+  DeleteOperationSchema,
+]);
+
 // Memory store request schema
 export const MemoryStoreRequestSchema = z
   .object({
     items: z
-      .array(EnhancedKnowledgeItemSchema)
+      .array(AnyKnowledgeItemSchema)
       .min(1, 'At least one item is required')
       .max(100, 'Cannot process more than 100 items in a single request'),
   })
   .refine(
     (request) => {
-      const ids = request.items.filter((item) => item.data.id).map((item) => item.data.id);
+      const ids = request.items
+        .filter((item) => {
+          // For create operations, check data.id (only applies to sections)
+          if ('data' in item && 'id' in item.data && item.data?.id) return true;
+          // For delete operations, check id directly (using type guard)
+          if (isDeleteOperation(item) && item.id) return true;
+          return false;
+        })
+        .map((item) => {
+          // For create operations, return data.id (only sections have IDs)
+          if ('data' in item && 'id' in item.data && item.data?.id) return item.data.id;
+          // For delete operations, return id directly (using type guard)
+          if (isDeleteOperation(item) && item.id) return item.id;
+          return null;
+        })
+        .filter(Boolean);
       return new Set(ids).size === ids.length;
     },
     {
@@ -209,14 +243,22 @@ export function validateKnowledgeItems(items: unknown[]) {
   };
 
   items.forEach((item, index) => {
-    const result = KnowledgeItemDiscriminator.safeParse(item);
+    // Try validating with new combined schema first
+    const result = AnyKnowledgeItemSchema.safeParse(item);
 
     if (result.success) {
+      const validatedData = result.data;
+
+      // Check if this is a delete operation
+      const isDeleteOperation = 'operation' in validatedData && validatedData.operation === 'delete';
+
       results.valid.push({
-        ...result.data,
-        // Add computed fields
-        content_hash: generateContentHash(result.data),
-        validation_warnings: getValidationWarnings(result.data),
+        ...validatedData,
+        // Add computed fields only for create operations (not delete)
+        ...(!isDeleteOperation && {
+          content_hash: generateContentHash(validatedData),
+          validation_warnings: getValidationWarnings(validatedData),
+        }),
       });
     } else {
       result.error.errors.forEach((error) => {
@@ -273,5 +315,10 @@ function getValidationWarnings(item: Record<string, unknown>): string[] {
 
 export type EnhancedSectionData = z.infer<typeof SectionDataSchema>;
 export type EnhancedDecisionData = z.infer<typeof DecisionDataSchema>;
-export type EnhancedKnowledgeItem = z.infer<typeof KnowledgeItemDiscriminator>;
+// Type guard for delete operations
+function isDeleteOperation(item: unknown): item is z.infer<typeof DeleteOperationSchema> {
+  return typeof item === 'object' && item !== null && 'operation' in item && item.operation === 'delete';
+}
+
+export type EnhancedKnowledgeItem = z.infer<typeof AnyKnowledgeItemSchema>;
 export type MemoryStoreRequest = z.infer<typeof MemoryStoreRequestSchema>;

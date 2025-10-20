@@ -115,16 +115,42 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
   const patternsDetected = detectProblematicPatterns(query);
   correctionMetadata.patterns_detected = patternsDetected;
 
-  if (patternsDetected.length > 0) {
+  // Check for common typos proactively (more conservative patterns)
+  const hasCommonTypos = /\b(deduplicattion+|documantation+|authentikation+|implementaton+)\b/i.test(query);
+
+  let workingQuery = query;
+
+  if (patternsDetected.length > 0 || hasCommonTypos) {
     correctionMetadata.transformations.push('pattern_detection');
     logger.info(
       {
         query,
         patterns: patternsDetected,
+        hasTypos: hasCommonTypos,
         enable_auto_fix,
       },
-      'Query contains potentially problematic patterns'
+      'Query contains potentially problematic patterns or typos'
     );
+
+    // If auto-fix enabled and typos detected, proactively apply moderate sanitization
+    // But only if the query is longer than 5 characters to avoid emptying short queries
+    if (enable_auto_fix && hasCommonTypos && query.length > 5) {
+      logger.info({ query: workingQuery }, 'Applying proactive moderate sanitization for typos');
+
+      const proactiveSanitizeResult = sanitizeQuery(workingQuery, 'moderate');
+
+      // Ensure we don't end up with an empty query
+      if (proactiveSanitizeResult.cleaned.trim().length > 0) {
+        workingQuery = proactiveSanitizeResult.cleaned;
+        correctionMetadata.final_query = workingQuery;
+        correctionMetadata.auto_fixes_applied.push(...proactiveSanitizeResult.auto_fixes_applied);
+        correctionMetadata.transformations.push('proactive_moderate_sanitization');
+        correctionMetadata.final_sanitization_level = 'moderate';
+      } else {
+        logger.warn({ query: workingQuery }, 'Sanitization resulted in empty query, keeping original');
+        correctionMetadata.recommendation = 'Sanitization would empty query, using original';
+      }
+    }
   }
 
   // If auto-fix disabled, return original query
@@ -155,7 +181,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
   // Phase 2: Progressive retry strategy
   let finalResult: Awaited<ReturnType<typeof memoryFind>> | undefined;
-  let currentQuery = query;
+  let currentQuery = workingQuery;
   let currentMode = mode;
   let attempts = 0;
 
@@ -364,7 +390,7 @@ function detectProblematicPatterns(query: string): string[] {
  * Determine next sanitization level based on error type
  */
 function determineNextSanitizationLevel(
-  _query: string,
+  query: string,
   error: Error,
   attemptNumber: number
 ): SanitizationLevel {
@@ -387,7 +413,22 @@ function determineNextSanitizationLevel(
     return 'aggressive';
   }
 
-  // Default escalation
+  // Check if query contains common typo patterns
+  const hasTypos = /\b(deduplicattion|documantation|authentikation|implementaton)\b/i.test(query);
+
+  // Default escalation - start with moderate if typos detected
+  if (hasTypos) {
+    switch (attemptNumber) {
+      case 1:
+        return 'moderate';
+      case 2:
+        return 'aggressive';
+      default:
+        return 'aggressive';
+    }
+  }
+
+  // Default escalation for other cases
   switch (attemptNumber) {
     case 1:
       return 'basic';

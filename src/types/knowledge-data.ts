@@ -63,13 +63,14 @@ export interface DecisionData {
 }
 
 export interface TodoData {
-  scope: string;
-  todo_type: string;
+  scope?: string;
+  todo_type: 'task' | 'bug' | 'epic' | 'story' | 'spike';
   text: string;
-  status: string;
-  priority?: string;
+  status: 'open' | 'in_progress' | 'done' | 'cancelled' | 'archived';
+  priority?: 'low' | 'medium' | 'high' | 'critical';
   assignee?: string;
   due_date?: string | Date;
+  closed_at?: string | Date;
 }
 
 export interface ReleaseNoteData {
