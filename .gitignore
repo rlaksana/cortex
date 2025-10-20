@@ -166,3 +166,6 @@ package.json.eslint-scripts
 # Development files that should not be in repo
 comprehensive-memory-test.js
 test-autonomous.cjs
+
+# Legacy development scripts
+scripts/legacy/
