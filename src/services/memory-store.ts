@@ -231,7 +231,7 @@ export async function memoryStore(items: unknown[]): Promise<{
                 id: updated.id,
                 status: 'updated',
                 kind: 'section',
-                created_at: updated.createdAt.toISOString(),
+                created_at: typeof updated.createdAt === 'string' ? updated.createdAt : new Date(updated.createdAt).toISOString(),
               });
               continue;
             }
@@ -245,7 +245,7 @@ export async function memoryStore(items: unknown[]): Promise<{
               id: existingByHash.id,
               status: 'skipped_dedupe',
               kind: 'section',
-              created_at: existingByHash.createdAt.toISOString(),
+              created_at: typeof existingByHash.createdAt === 'string' ? existingByHash.createdAt : new Date(existingByHash.createdAt).toISOString(),
             });
             continue;
           }

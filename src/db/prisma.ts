@@ -92,7 +92,13 @@ export class SectionService {
       bodyText?: string;
       tags?: Record<string, any>;
     }
-  ) {
+  ): Promise<{
+    id: string;
+    title: string;
+    heading: string;
+    createdAt: string;
+    updatedAt: string;
+  }> {
     // Simplified implementation - return mock data for now
     return {
       id,
@@ -106,7 +112,11 @@ export class SectionService {
   /**
    * Checks for duplicate content by hash (simplified for now)
    */
-  async findByContentHash(_contentHash: string) {
+  async findByContentHash(_contentHash: string): Promise<{
+    id: string;
+    title: string;
+    createdAt: string;
+  } | null> {
     // Simplified implementation - return null for now
     return null;
   }
@@ -170,7 +180,15 @@ export class DecisionService {
     };
   }
 
-  async findDecision(_id: string) {
+  async findDecision(_id: string): Promise<{
+    id: string;
+    title: string;
+    component: string;
+    status: string;
+    rationale: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null> {
     // For now, return null to indicate no existing decision
     return null;
   }
