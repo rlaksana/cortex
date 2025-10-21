@@ -14,7 +14,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:18-alpine
-    container_name: cortex-postgres-wsl
+    container_name: cortex-postgres
     hostname: cortex-postgres
     environment:
       # PostgreSQL Configuration
@@ -50,7 +50,6 @@ services:
 
       # PostgreSQL Configuration (WSL2 Optimized)
       - ../config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-      - ../config/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf:ro
 
       # Backup Volume
       - cortex_backups:/backups
