@@ -41,14 +41,17 @@ export interface ChangeData {
 }
 
 export interface IssueData {
-  tracker: string;
-  external_id: string;
+  tracker?: string;
+  external_id?: string;
   title: string;
   status: string;
   description?: string;
   assignee?: string;
   labels?: unknown;
   url?: string;
+  // Additional properties for validation (NOT for database storage)
+  metadata?: Record<string, unknown>;
+  tags?: Record<string, unknown>;
 }
 
 export interface DecisionData {
@@ -74,6 +77,7 @@ export interface TodoData {
 }
 
 export interface ReleaseNoteData {
+  id?: string;
   version: string;
   release_date: string | Date;
   summary: string;
@@ -84,6 +88,7 @@ export interface ReleaseNoteData {
 }
 
 export interface PRContextData {
+  id?: string;
   pr_number: number;
   title: string;
   description?: string;
@@ -95,8 +100,79 @@ export interface PRContextData {
 }
 
 export interface DDLData {
+  id?: string;
   migration_id: string;
   ddl_text: string;
   checksum?: string;
   description?: string;
+}
+
+export interface AssumptionData {
+  id?: string;
+  title: string;
+  description: string;
+  category: string;
+  validation_status?: string;
+  impact_if_invalid?: string;
+  validation_method?: string;
+  validation_date?: string;
+  owner?: string;
+  dependencies?: unknown;
+  expiry_date?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface IncidentData {
+  id?: string;
+  title: string;
+  description?: string;
+  severity: string;
+  status?: string;
+  impact: string;
+  impact_level?: string;
+  timeline?: unknown;
+  incident_type?: string;
+  affected_services?: unknown;
+  root_cause?: string;
+  root_cause_analysis?: string;
+  resolution?: string;
+  lessons_learned?: string;
+  recovery_actions?: unknown;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface ReleaseData {
+  id?: string;
+  version: string;
+  title?: string;
+  description?: string;
+  status?: string;
+  deployment_strategy?: string;
+  release_date?: string | Date;
+  release_notes?: unknown;
+  features?: unknown;
+  bug_fixes?: unknown;
+  breaking_changes?: unknown;
+  rollback_plan?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface RiskData {
+  id?: string;
+  title: string;
+  description: string;
+  probability: 'very_likely' | 'likely' | 'possible' | 'unlikely' | 'very_unlikely';
+  impact: string;
+  risk_level?: string;
+  category: string;
+  mitigation?: string;
+  contingency_plan?: string;
+  risk_owner?: string;
+  review_date?: string;
+  identified_date?: string;
+  created_at?: Date;
+  updated_at?: Date;
 }

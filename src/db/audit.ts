@@ -1,6 +1,7 @@
 // Using gen_random_uuid() from PostgreSQL instead of UUID library
-import { dbPool } from './pool.js';
+import { prisma } from './prisma-client.js';
 import { logger } from '../utils/logger.js';
+import * as crypto from 'crypto';
 
 /**
  * Audit Logging System
@@ -18,22 +19,22 @@ import { logger } from '../utils/logger.js';
 export interface AuditEvent {
   id?: string;
   eventType: string;
-  tableName: string;
-  recordId: string;
+  table_name: string;
+  record_id: string;
   operation: 'INSERT' | 'UPDATE' | 'DELETE';
-  oldData?: Record<string, unknown>;
-  newData?: Record<string, unknown>;
-  changedBy?: string;
+  old_data?: Record<string, unknown>;
+  new_data?: Record<string, unknown>;
+  changed_by?: string;
   tags?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
 }
 
 export interface AuditQueryOptions {
   eventType?: string;
-  tableName?: string;
-  recordId?: string;
+  table_name?: string;
+  record_id?: string;
   operation?: 'INSERT' | 'UPDATE' | 'DELETE';
-  changedBy?: string;
+  changed_by?: string;
   startDate?: Date;
   endDate?: Date;
   limit?: number;
@@ -54,12 +55,11 @@ export interface AuditFilter {
     eventTypes?: string[];
   };
   sensitiveFields?: {
-    [tableName: string]: string[];
+    [table_name: string]: string[];
   };
 }
 
 class AuditLogger {
-  private auditTable = 'event_audit';
   private filter: AuditFilter = {};
   private batchQueue: AuditEvent[] = [];
   private batchTimeout: NodeJS.Timeout | null = null;
@@ -89,32 +89,26 @@ class AuditLogger {
     const processedEvent = await this.processEvent(event);
 
     try {
-      const query = `
-        INSERT INTO ${this.auditTable}
-        (event_id, event_type, table_name, record_id, operation, old_data, new_data, changed_by, tags, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      `;
-
-      const params = [
-        processedEvent.id ?? (await this.generateUUID()),
-        processedEvent.eventType,
-        processedEvent.tableName,
-        processedEvent.recordId,
-        processedEvent.operation,
-        this.filterSensitiveData(processedEvent.tableName, processedEvent.oldData ?? {}),
-        this.filterSensitiveData(processedEvent.tableName, processedEvent.newData ?? {}),
-        processedEvent.changedBy ?? 'system',
-        processedEvent.tags ?? {},
-        processedEvent.metadata ?? {},
-      ];
-
-      await dbPool.query(query, params);
+      await prisma.getClient().eventAudit.create({
+        data: {
+          id: processedEvent.id ?? (await this.generateUUID()),
+          event_type: processedEvent.eventType,
+          table_name: processedEvent.table_name,
+          record_id: processedEvent.record_id,
+          operation: processedEvent.operation,
+          old_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.old_data ?? {}) as any,
+          new_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.new_data ?? {}) as any,
+          changed_by: processedEvent.changed_by ?? 'system',
+          tags: processedEvent.tags ?? {} as any,
+          metadata: processedEvent.metadata ?? {} as any,
+        }
+      });
 
       logger.debug(
         {
           eventId: processedEvent.id,
-          eventType: processedEvent.eventType,
-          tableName: processedEvent.tableName,
+          event_type: processedEvent.eventType,
+          table_name: processedEvent.table_name,
           operation: processedEvent.operation,
         },
         'Audit event logged'
@@ -139,28 +133,25 @@ class AuditLogger {
     }
 
     try {
-      const query = `
-        INSERT INTO ${this.auditTable}
-        (event_id, event_type, table_name, record_id, operation, old_data, new_data, changed_by, tags, metadata)
-        VALUES ${processedEvents.map((_, i) => `($${i * 10 + 1}, $${i * 10 + 2}, $${i * 10 + 3}, $${i * 10 + 4}, $${i * 10 + 5}, $${i * 10 + 6}, $${i * 10 + 7}, $${i * 10 + 8}, $${i * 10 + 9}, $${i * 10 + 10})`).join(', ')}
-      `;
-
-      const params = await Promise.all(
-        processedEvents.flatMap(async (event) => [
-          event.id ?? (await this.generateUUID()),
-          event.eventType,
-          event.tableName,
-          event.recordId,
-          event.operation,
-          this.filterSensitiveData(event.tableName, event.oldData ?? {}),
-          this.filterSensitiveData(event.tableName, event.newData ?? {}),
-          event.changedBy ?? 'system',
-          event.tags ?? {},
-          event.metadata ?? {},
-        ])
+      // Use Prisma createMany for batch insert
+      const auditData = await Promise.all(
+        processedEvents.map(async (event) => ({
+          id: event.id ?? (await this.generateUUID()),
+          event_type: event.eventType,
+          table_name: event.table_name,
+          record_id: event.record_id,
+          operation: event.operation,
+          old_data: this.filterSensitiveData(event.table_name, event.old_data ?? {}) as any,
+          new_data: this.filterSensitiveData(event.table_name, event.new_data ?? {}) as any,
+          changed_by: event.changed_by ?? 'system',
+          tags: event.tags ?? {} as any,
+          metadata: event.metadata ?? {} as any,
+        }))
       );
 
-      await dbPool.query(query, params);
+      await prisma.getClient().eventAudit.createMany({
+        data: auditData,
+      });
 
       logger.debug({ count: processedEvents.length }, 'Batch audit events logged');
     } catch (error) {
@@ -193,100 +184,46 @@ class AuditLogger {
     events: AuditEvent[];
     total: number;
   }> {
-    const {
-      eventType,
-      tableName,
-      recordId,
-      operation,
-      changedBy,
-      startDate,
-      endDate,
-      limit = 100,
-      offset = 0,
-      orderBy = 'changed_at',
-      orderDirection = 'DESC',
-    } = options;
-
-    const conditions: string[] = [];
-    const params: unknown[] = [];
-    let paramIndex = 1;
-
-    if (eventType) {
-      conditions.push(`event_type = $${paramIndex++}`);
-      params.push(eventType);
-    }
-
-    if (tableName) {
-      conditions.push(`table_name = $${paramIndex++}`);
-      params.push(tableName);
-    }
-
-    if (recordId) {
-      conditions.push(`record_id = $${paramIndex++}`);
-      params.push(recordId);
-    }
-
-    if (operation) {
-      conditions.push(`operation = $${paramIndex++}`);
-      params.push(operation);
-    }
-
-    if (changedBy) {
-      conditions.push(`changed_by = $${paramIndex++}`);
-      params.push(changedBy);
-    }
-
-    if (startDate) {
-      conditions.push(`changed_at >= $${paramIndex++}`);
-      params.push(startDate);
-    }
-
-    if (endDate) {
-      conditions.push(`changed_at <= $${paramIndex++}`);
-      params.push(endDate);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const orderClause = `ORDER BY ${orderBy} ${orderDirection}`;
-    const limitClause = `LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(limit, offset);
-
-    // Query for events
-    const eventsQuery = `
-      SELECT
-        event_id as id,
-        event_type as "eventType",
-        table_name as "tableName",
-        record_id as "recordId",
-        operation,
-        old_data as "oldData",
-        new_data as "newData",
-        changed_by as "changedBy",
-        changed_at as "changedAt",
-        tags,
-        metadata
-      FROM ${this.auditTable}
-      ${whereClause}
-      ${orderClause}
-      ${limitClause}
-    `;
-
-    // Query for total count
-    const countQuery = `
-      SELECT COUNT(*) as total
-      FROM ${this.auditTable}
-      ${whereClause}
-    `;
-
     try {
-      const [eventsResult, countResult] = await Promise.all([
-        dbPool.query(eventsQuery, params),
-        dbPool.query(countQuery, params.slice(0, -2)), // Exclude limit/offset params
+      // Use Prisma to query audit events with filtering and pagination
+      const whereClause: any = {};
+
+      if (options.table_name) {
+        whereClause.table_name = options.table_name;
+      }
+
+      if (options.record_id) {
+        whereClause.record_id = options.record_id;
+      }
+
+      if (options.operation) {
+        whereClause.operation = options.operation;
+      }
+
+      if (options.startDate || options.endDate) {
+        whereClause.created_at = {};
+        if (options.startDate) whereClause.created_at.gte = options.startDate;
+        if (options.endDate) whereClause.created_at.lte = options.endDate;
+      }
+
+      const [eventsResult, totalResult] = await Promise.all([
+        prisma.getClient().eventAudit.findMany({
+          where: whereClause,
+          orderBy: { created_at: (options.orderDirection?.toLowerCase() || 'desc') as 'asc' | 'desc' },
+          take: options.limit || 100,
+          skip: options.offset || 0,
+        }),
+        prisma.getClient().eventAudit.count({ where: whereClause }),
       ]);
 
       return {
-        events: eventsResult.rows as AuditEvent[],
-        total: parseInt((countResult.rows[0] as Record<string, unknown>)?.total as string),
+        events: eventsResult.map((event: any) => ({
+          ...event,
+          eventType: event.eventType,
+          table_name: event.table_name,
+          record_id: event.record_id,
+        })) as AuditEvent[],
+        total: totalResult,
       };
     } catch (error) {
       logger.error({ error }, 'Failed to query audit events');
@@ -297,8 +234,8 @@ class AuditLogger {
   /**
    * Get audit event history for a specific record
    */
-  async getRecordHistory(tableName: string, recordId: string): Promise<AuditEvent[]> {
-    return this.queryEvents({ tableName, recordId, orderBy: 'changed_at' }).then(
+  async getRecordHistory(table_name: string, record_id: string): Promise<AuditEvent[]> {
+    return this.queryEvents({ table_name, record_id }).then(
       (result) => result.events
     );
   }
@@ -313,7 +250,6 @@ class AuditLogger {
     return this.queryEvents({
       startDate,
       limit,
-      orderBy: 'changed_at',
       orderDirection: 'DESC',
     }).then((result) => result.events);
   }
@@ -322,8 +258,8 @@ class AuditLogger {
    * Generate UUID using PostgreSQL gen_random_uuid()
    */
   private async generateUUID(): Promise<string> {
-    const result = await dbPool.query('SELECT gen_random_uuid() as uuid');
-    return (result.rows[0] as Record<string, unknown>)?.uuid as string;
+    const result = await prisma.getClient().$queryRaw<Array<{ uuid: string }>>`SELECT gen_random_uuid() as uuid`;
+    return result[0]?.uuid || crypto.randomUUID();
   }
 
   /**
@@ -333,7 +269,7 @@ class AuditLogger {
     const { exclude, include } = this.filter;
 
     // Check exclusions
-    if (exclude?.tables?.includes(event.tableName)) {
+    if (exclude?.tables?.includes(event.table_name)) {
       return false;
     }
 
@@ -346,7 +282,7 @@ class AuditLogger {
     }
 
     // Check inclusions (if specified, only log these)
-    if (include?.tables && !include.tables.includes(event.tableName)) {
+    if (include?.tables && !include.tables.includes(event.table_name)) {
       return false;
     }
 
@@ -368,7 +304,7 @@ class AuditLogger {
     return {
       ...event,
       id: event.id ?? (await this.generateUUID()),
-      changedBy: event.changedBy ?? 'system',
+      changed_by: event.changed_by ?? 'system',
       tags: event.tags ?? {},
       metadata: event.metadata ?? {},
     };
@@ -378,14 +314,14 @@ class AuditLogger {
    * Filter sensitive data from audit records
    */
   private filterSensitiveData(
-    tableName: string,
+    table_name: string,
     data: Record<string, unknown>
   ): Record<string, unknown> {
     if (!data || typeof data !== 'object') {
       return data;
     }
 
-    const sensitiveFields = this.filter.sensitiveFields?.[tableName];
+    const sensitiveFields = this.filter.sensitiveFields?.[table_name];
     if (!sensitiveFields) {
       return data;
     }
@@ -456,7 +392,7 @@ class AuditLogger {
   }
 
   /**
-   * Get audit statistics
+   * Get comprehensive audit statistics
    */
   async getStatistics(): Promise<{
     totalEvents: number;
@@ -469,87 +405,94 @@ class AuditLogger {
       last7Days: number;
     };
   }> {
-    const queries = [
-      // Total events
-      'SELECT COUNT(*) as count FROM event_audit',
-
-      // Events by type
-      `SELECT event_type, COUNT(*) as count
-       FROM event_audit
-       GROUP BY event_type`,
-
-      // Events by table
-      `SELECT table_name, COUNT(*) as count
-       FROM event_audit
-       GROUP BY table_name`,
-
-      // Events by operation
-      `SELECT operation, COUNT(*) as count
-       FROM event_audit
-       GROUP BY operation`,
-
-      // Recent activity
-      `SELECT
-         COUNT(CASE WHEN changed_at >= NOW() - INTERVAL '1 hour' THEN 1 END) as last_hour,
-         COUNT(CASE WHEN changed_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as last_24_hours,
-         COUNT(CASE WHEN changed_at >= NOW() - INTERVAL '7 days' THEN 1 END) as last_7_days
-       FROM event_audit`,
-    ];
-
     try {
-      const results = await Promise.all(queries.map((query) => dbPool.query(query)));
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      return {
-        totalEvents: parseInt((results[0].rows[0] as Record<string, unknown>)?.count as string),
-        eventsByType: this.arrayToObject(
-          results[1].rows as Record<string, unknown>[],
-          'event_type',
-          'count'
-        ),
-        eventsByTable: this.arrayToObject(
-          results[2].rows as Record<string, unknown>[],
-          'table_name',
-          'count'
-        ),
-        eventsByOperation: this.arrayToObject(
-          results[3].rows as Record<string, unknown>[],
-          'operation',
-          'count'
-        ),
+      // Execute all queries in parallel for better performance
+      const [
+        totalEvents,
+        eventsByType,
+        eventsByTable,
+        eventsByOperation,
+        lastHourCount,
+        last24HoursCount,
+        last7DaysCount
+      ] = await Promise.all([
+        // Total events
+        prisma.getClient().eventAudit.count(),
+
+        // Events by type
+        prisma.getClient().eventAudit.groupBy({
+          by: ['event_type'],
+          _count: true,
+        }),
+
+        // Events by table
+        prisma.getClient().eventAudit.groupBy({
+          by: ['table_name'],
+          _count: true,
+        }),
+
+        // Events by operation
+        prisma.getClient().eventAudit.groupBy({
+          by: ['operation'],
+          _count: true,
+        }),
+
+        // Recent activity counts
+        prisma.getClient().eventAudit.count({
+          where: { created_at: { gte: oneHourAgo } }
+        }),
+        prisma.getClient().eventAudit.count({
+          where: { created_at: { gte: oneDayAgo } }
+        }),
+        prisma.getClient().eventAudit.count({
+          where: { created_at: { gte: sevenDaysAgo } }
+        }),
+      ]);
+
+      // Process groupBy results
+      const eventsByTypeMap: Record<string, number> = {};
+      eventsByType.forEach((item: any) => {
+        if (item.eventType) {
+          eventsByTypeMap[item.eventType] = item._count;
+        }
+      });
+
+      const eventsByTableMap: Record<string, number> = {};
+      eventsByTable.forEach((item: any) => {
+        if (item.table_name) {
+          eventsByTableMap[item.table_name] = item._count;
+        }
+      });
+
+      const eventsByOperationMap: Record<string, number> = {};
+      eventsByOperation.forEach((item: any) => {
+        eventsByOperationMap[item.operation] = item._count;
+      });
+
+      const statistics = {
+        totalEvents,
+        eventsByType: eventsByTypeMap,
+        eventsByTable: eventsByTableMap,
+        eventsByOperation: eventsByOperationMap,
         recentActivity: {
-          lastHour:
-            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_hour as string) || 0,
-          last24Hours:
-            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_24h as string) || 0,
-          last7Days:
-            parseInt((results[4].rows[0] as Record<string, unknown>)?.last_7d as string) || 0,
+          lastHour: lastHourCount,
+          last24Hours: last24HoursCount,
+          last7Days: last7DaysCount,
         },
       };
+
+      logger.debug({ statistics }, 'Retrieved comprehensive audit statistics');
+
+      return statistics;
     } catch (error) {
       logger.error({ error }, 'Failed to get audit statistics');
       throw error;
     }
-  }
-
-  /**
-   * Convert query result array to object
-   */
-  private arrayToObject(
-    rows: Record<string, unknown>[],
-    key: string,
-    value: string
-  ): Record<string, number> {
-    return rows.reduce(
-      (obj: Record<string, number>, row) => {
-        const rowKey = String(row[key]);
-        const rowValue = Number(row[value]);
-        if (rowKey && !isNaN(rowValue)) {
-          obj[rowKey] = rowValue;
-        }
-        return obj;
-      },
-      {} as Record<string, number>
-    );
   }
 
   /**
@@ -559,15 +502,14 @@ class AuditLogger {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-    const query = `
-      DELETE FROM ${this.auditTable}
-      WHERE changed_at < $1
-      RETURNING id
-    `;
-
     try {
-      const result = await dbPool.query(query, [cutoffDate]);
-      const deletedCount = result.rowCount ?? 0;
+      // Use Prisma deleteMany for cleanup
+      const deleteResult = await prisma.getClient().eventAudit.deleteMany({
+        where: {
+          created_at: { lt: cutoffDate }
+        }
+      });
+      const deletedCount = deleteResult.count;
 
       logger.info({ deletedCount, olderThanDays }, `Cleaned up ${deletedCount} old audit events`);
 
@@ -601,26 +543,25 @@ auditLogger.configureFilter({
  * Wraps the new auditLogger.logEvent method
  */
 export async function auditLog(
-  pool: unknown,
-  entityType: string,
-  entityId: string,
+  entity_type: string,
+  entity_id: string,
   operation: 'INSERT' | 'UPDATE' | 'DELETE',
-  newData?: unknown,
-  changedBy?: string
+  new_data?: unknown,
+  changed_by?: string
 ): Promise<void> {
   try {
     await auditLogger.logEvent({
       eventType: 'data_change',
-      tableName: entityType,
-      recordId: entityId,
+      table_name: entity_type,
+      record_id: entity_id,
       operation,
-      newData:
-        typeof newData === 'object' && newData !== null
-          ? (newData as Record<string, unknown>)
+      new_data:
+        typeof new_data === 'object' && new_data !== null
+          ? (new_data as Record<string, unknown>)
           : undefined,
-      changedBy: changedBy ?? undefined,
+      changed_by: changed_by ?? undefined,
       metadata: {
-        pool_used: !!pool,
+        pool_used: true,
         timestamp: new Date().toISOString(),
       },
     });

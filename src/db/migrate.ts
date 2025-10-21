@@ -21,12 +21,12 @@ interface Migration {
   id: string;
   name: string;
   checksum: string;
-  appliedAt?: Date;
+  applied_at?: Date;
   status: 'pending' | 'applied' | 'failed' | 'rolled_back';
 }
 
 interface MigrationResult {
-  migrationId: string;
+  migration_id: string;
   status: 'success' | 'failed' | 'skipped';
   message: string;
   duration: number;
@@ -283,7 +283,7 @@ class DatabaseMigrator {
       id: row.id,
       name: row.name,
       checksum: row.checksum,
-      appliedAt: row.applied_at,
+      applied_at: row.applied_at,
       status: row.status,
     }));
   }
@@ -341,7 +341,7 @@ class DatabaseMigrator {
 
       if (dryRun) {
         return {
-          migrationId: migration.id,
+          migration_id: migration.id,
           status: 'skipped',
           message: 'Dry run - migration not applied',
           duration: Date.now() - startTime,
@@ -372,7 +372,7 @@ class DatabaseMigrator {
       logger.info(`Migration ${migration.id} applied successfully`);
 
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'success',
         message: 'Migration applied successfully',
         duration: Date.now() - startTime,
@@ -395,7 +395,7 @@ class DatabaseMigrator {
       }
 
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'failed',
         message: 'Migration failed',
         duration: Date.now() - startTime,
@@ -426,14 +426,14 @@ class DatabaseMigrator {
       }
 
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'skipped',
         message: 'Migration validated successfully',
         duration: Date.now() - startTime,
       };
     } catch (error: unknown) {
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'failed',
         message: 'Migration validation failed',
         duration: Date.now() - startTime,
@@ -464,7 +464,7 @@ class DatabaseMigrator {
       logger.info(`Migration ${migration.id} rolled back successfully`);
 
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'success',
         message: 'Migration rolled back successfully',
         duration: Date.now() - startTime,
@@ -473,7 +473,7 @@ class DatabaseMigrator {
       logger.error({ error }, 'Rollback for migration ${migration.id} failed:');
 
       return {
-        migrationId: migration.id,
+        migration_id: migration.id,
         status: 'failed',
         message: 'Rollback failed',
         duration: Date.now() - startTime,

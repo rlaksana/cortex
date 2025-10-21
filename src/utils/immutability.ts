@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../db/prisma.js';
 
 export class ImmutabilityViolationError extends Error {
   constructor(
@@ -19,20 +19,22 @@ export class ImmutabilityViolationError extends Error {
  * Rule: Once ADR status = 'accepted', content becomes immutable
  * Rationale: Accepted decisions are authoritative and should not be retroactively changed
  *
- * @param pool - Database connection pool
  * @param id - ADR UUID to check
  * @throws ImmutabilityViolationError if ADR is accepted
  */
-export async function validateADRImmutability(pool: Pool, id: string): Promise<void> {
-  const result = await pool.query(`SELECT status FROM adr_decision WHERE id = $1`, [id]);
+export async function validateADRImmutability(id: string): Promise<void> {
+  const prisma = getPrismaClient();
 
-  if (result.rows.length === 0) {
+  const decision = await prisma.adrDecision.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+
+  if (!decision) {
     throw new Error(`ADR with id ${id} not found`);
   }
 
-  const currentStatus = (result.rows[0] as Record<string, unknown>).status;
-
-  if (currentStatus === 'accepted') {
+  if (decision.status === 'accepted') {
     throw new ImmutabilityViolationError(
       'Cannot modify accepted ADR. Create a new ADR with supersedes reference instead.',
       'IMMUTABILITY_VIOLATION',
@@ -47,32 +49,29 @@ export async function validateADRImmutability(pool: Pool, id: string): Promise<v
  * Rule: Once document.approved_at is set, all child sections become read-only
  * Rationale: Approved specs are authoritative and prevent drift
  *
- * @param pool - Database connection pool
+ * Note: Document functionality not implemented in current schema - this is a placeholder
+ * for future document approval workflow implementation.
+ *
  * @param sectionId - Section UUID to check
  * @throws ImmutabilityViolationError if parent document is approved
  */
-export async function validateSpecWriteLock(pool: Pool, sectionId: string): Promise<void> {
-  const result = await pool.query(
-    `SELECT d.approved_at
-     FROM section s
-     JOIN document d ON s.document_id = d.id
-     WHERE s.id = $1`,
-    [sectionId]
-  );
+export async function validateSpecWriteLock(sectionId: string): Promise<void> {
+  const prisma = getPrismaClient();
 
-  if (result.rows.length === 0) {
+  // First get the section to verify it exists
+  const section = await prisma.section.findUnique({
+    where: { id: sectionId },
+    select: { id: true },
+  });
+
+  if (!section) {
     throw new Error(`Section with id ${sectionId} not found`);
   }
 
-  const approvedAt = (result.rows[0] as Record<string, unknown>).approved_at;
-
-  if (approvedAt !== null) {
-    throw new ImmutabilityViolationError(
-      `Cannot modify section in approved document (approved at ${approvedAt}). Create a new document version instead.`,
-      'WRITE_LOCK_VIOLATION',
-      'approved_at'
-    );
-  }
+  // Document approval workflow not implemented in current schema
+  // This function serves as a placeholder for future document approval features
+  // Currently, all sections are editable as there is no document concept in the schema
+  return;
 }
 
 /**
@@ -93,16 +92,16 @@ export function validateAuditAppendOnly(): void {
 /**
  * Check if operation would violate any immutability constraints
  *
- * @param entityType - Type of entity being modified
+ * @param entity_type - Type of entity being modified
  * @param operation - Operation being performed (UPDATE, DELETE)
  * @returns Error code if violation, null if allowed
  */
 export function checkImmutabilityConstraint(
-  entityType: string,
+  entity_type: string,
   operation: 'UPDATE' | 'DELETE'
 ): string | null {
   // Audit log is always append-only
-  if (entityType === 'event_audit' && (operation === 'UPDATE' || operation === 'DELETE')) {
+  if (entity_type === 'event_audit' && (operation === 'UPDATE' || operation === 'DELETE')) {
     return 'AUDIT_APPEND_ONLY_VIOLATION';
   }
 

@@ -10,7 +10,7 @@ export function computeFinalScore(hit: {
   return 0.4 * hit.fts_score + 0.3 * recencyBoost + 0.2 * hit.scope_proximity + 0.1 * citationScore;
 }
 
-function computeRecencyBoost(updatedAt: string): number {
-  const daysSince = (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+function computeRecencyBoost(updated_at: string): number {
+  const daysSince = (Date.now() - new Date(updated_at).getTime()) / (1000 * 60 * 60 * 24);
   return Math.max(0, 1.0 - Math.log10(1 + daysSince) / Math.log10(180));
 }

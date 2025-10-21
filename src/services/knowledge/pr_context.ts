@@ -1,30 +1,63 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 import type { PRContextData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storePRContext(
-  pool: Pool,
   data: PRContextData,
   scope: ScopeFilter
 ): Promise<string> {
-  const expiresAt = data.merged_at
-    ? new Date(new Date(data.merged_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    : null;
+  const prisma = getPrismaClient();
 
-  const result = await pool.query<{ id: string }>(
-    `INSERT INTO pr_context (pr_number, title, description, author, status, base_branch, head_branch, merged_at, expires_at, tags)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-    [
-      data.pr_number,
-      data.title,
-      data.description,
-      data.author,
-      data.status,
-      data.base_branch,
-      data.head_branch,
-      data.merged_at,
-      expiresAt,
-      JSON.stringify(scope),
-    ]
-  );
-  return result.rows[0].id;
+  // Check if this is an update operation (has ID)
+  if (data.id) {
+    const existing = await prisma.prContext.findUnique({
+      where: { id: data.id }
+    });
+
+    if (existing) {
+      // Update existing PR context
+      const result = await prisma.prContext.update({
+        where: { id: data.id },
+        data: {
+          pr_number: data.pr_number ?? existing.pr_number,
+          title: data.title ?? existing.title,
+          description: data.description ?? existing.description,
+          author: data.author ?? existing.author,
+          status: data.status ?? existing.status,
+          merged_at: data.merged_at ? new Date(data.merged_at) : existing.merged_at,
+          tags: {
+            ...(existing.tags as any || {}),
+            ...scope,
+            base_branch: data.base_branch ?? (existing.tags as any)?.base_branch,
+            head_branch: data.head_branch ?? (existing.tags as any)?.head_branch,
+            expires_at: data.merged_at
+              ? new Date(new Date(data.merged_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+              : (existing.tags as any)?.expires_at
+          }
+        }
+      });
+      return result.id;
+    }
+  }
+
+  // Create new PR context
+  const result = await prisma.prContext.create({
+    data: {
+      pr_number: data.pr_number,
+      title: data.title,
+      description: data.description,
+      author: data.author,
+      status: data.status,
+      merged_at: data.merged_at ? new Date(data.merged_at) : null,
+      tags: {
+        ...scope,
+        base_branch: data.base_branch,
+        head_branch: data.head_branch,
+        expires_at: data.merged_at
+          ? new Date(new Date(data.merged_at).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          : null
+      }
+    }
+  });
+
+  return result.id;
 }

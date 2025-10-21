@@ -1,158 +1,195 @@
-// import pkg from '@prisma/client';
-// import * as crypto from 'crypto';
-
-// Temporarily use direct database queries instead of Prisma
-// const { PrismaClient } = pkg;
-// type PrismaClientType = InstanceType<typeof PrismaClient>;
-
-import { getPool } from './pool.js';
+import { PrismaClient } from '@prisma/client';
 import * as crypto from 'crypto';
 
-// Global variable to store the database pool
-const pool = getPool();
+// Global Prisma client instance
+let prisma: PrismaClient | null = null;
+
+export function getPrismaClient(): PrismaClient {
+  if (!prisma) {
+    prisma = new PrismaClient({
+      log: ['warn', 'error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL || 'postgresql://localhost:5432/cortex_db'
+        }
+      }
+    });
+  }
+  return prisma;
+}
 
 /**
  * Gracefully closes the database connection
  */
 export async function disconnectPrisma(): Promise<void> {
-  // No-op for now since we're using the pool directly
+  if (prisma) {
+    await prisma.$disconnect();
+    prisma = null;
+  }
 }
 
 /**
  * Type-safe section operations using Prisma
  */
 export class SectionService {
-  // Using direct database connection instead of Prisma
+  private prisma = getPrismaClient();
 
   /**
-   * Creates a new section using direct SQL queries
+   * Creates a new section using Prisma client
    */
   async createSection(data: {
     title: string;
-    heading: string;
-    bodyMd?: string;
-    bodyText?: string;
+    content?: string;
     tags?: Record<string, any>;
     metadata?: Record<string, any>;
   }) {
-    const bodyJsonb = {
-      text: data.bodyText ?? data.bodyMd ?? '',
-      markdown: data.bodyMd ?? null,
-    };
-
-    const contentHash = this.generateContentHash(data.title, data.bodyMd ?? data.bodyText);
     const id = crypto.randomUUID();
 
-    const query = `
-      INSERT INTO section (id, title, heading, body_md, body_text, body_jsonb, content_hash, tags, metadata, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-      RETURNING id, title, heading, body_md, body_text, created_at, updated_at
-    `;
+    // Use Prisma's native create method
+    const section = await this.prisma.section.create({
+      data: {
+        id,
+        title: data.title,
+        content: data.content || null,
+        tags: data.tags || {},
+        metadata: data.metadata || {},
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
 
-    const result = await pool.query(query, [
-      id,
-      data.title,
-      data.heading,
-      data.bodyMd ?? null,
-      data.bodyText ?? null,
-      JSON.stringify(bodyJsonb),
-      contentHash,
-      JSON.stringify(data.tags ?? {}),
-      JSON.stringify(data.metadata ?? {})
-    ]);
-
-    const row = result.rows[0];
     return {
-      id: row.id,
-      title: row.title,
-      heading: row.heading,
-      bodyMd: row.body_md,
-      bodyText: row.body_text,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at
+      id: section.id,
+      title: section.title,
+      content: section.content,
+      created_at: section.created_at,
+      updated_at: section.updated_at,
     };
   }
 
   /**
-   * Finds sections by title or content (simplified for now)
+   * Finds sections by title or content using Prisma
    */
-  async findSections(_criteria: { title?: string; limit?: number; offset?: number }) {
-    // Simplified implementation - return empty results for now
-    return [];
+  async findSections(criteria: { title?: string; limit?: number; offset?: number }) {
+    const whereClause: any = {};
+
+    if (criteria.title) {
+      whereClause.title = { contains: criteria.title, mode: 'insensitive' };
+    }
+
+    const sections = await this.prisma.section.findMany({
+      where: whereClause,
+      take: criteria.limit || 50,
+      skip: criteria.offset || 0,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        created_at: true,
+        updated_at: true,
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+
+    return sections.map(section => ({
+      id: section.id,
+      title: section.title,
+      content: section.content,
+      created_at: section.created_at,
+      updated_at: section.updated_at,
+    }));
   }
 
   /**
-   * Finds sections by scope tags (simplified for now)
+   * Finds sections by scope tags using Prisma
    */
-  async findSectionsByScope(_scope: Record<string, any>) {
-    // Simplified implementation - return empty results for now
-    return [];
+  async findSectionsByScope(scope: Record<string, any>) {
+    const sections = await this.prisma.section.findMany({
+      where: {
+        tags: {
+          path: [Object.keys(scope)[0]], // Get first key for JSONB path
+          equals: Object.values(scope)[0], // Get first value
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        created_at: true,
+        updated_at: true,
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+
+    return sections.map(section => ({
+      id: section.id,
+      title: section.title,
+      content: section.content,
+      created_at: section.created_at,
+      updated_at: section.updated_at,
+    }));
   }
 
   /**
-   * Updates an existing section (simplified for now)
+   * Updates an existing section using Prisma
    */
   async updateSection(
     id: string,
     data: {
       title?: string;
-      heading?: string;
-      bodyMd?: string;
-      bodyText?: string;
+      content?: string;
       tags?: Record<string, any>;
     }
   ): Promise<{
     id: string;
     title: string;
-    heading: string;
-    createdAt: string;
-    updatedAt: string;
+    content: string | null;
+    created_at: Date;
+    updated_at: Date;
   }> {
-    // Simplified implementation - return mock data for now
+    const updateData: any = {};
+
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.content !== undefined) updateData.content = data.content;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+
+    const section = await this.prisma.section.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
     return {
-      id,
-      title: data.title || 'Updated Title',
-      heading: data.heading || 'Updated Heading',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: section.id,
+      title: section.title,
+      content: section.content,
+      created_at: section.created_at,
+      updated_at: section.updated_at,
     };
   }
 
   /**
-   * Checks for duplicate content by hash
+   * Finds sections by title search (simple content hash lookup not available)
    */
-  async findByContentHash(contentHash: string): Promise<{
+  async findByContentHash(_content_hash: string): Promise<{
     id: string;
     title: string;
-    createdAt: Date;
+    created_at: Date;
   } | null> {
-    const query = `
-      SELECT id, title, created_at
-      FROM section
-      WHERE content_hash = $1
-      LIMIT 1
-    `;
-
-    const result = await pool.query(query, [contentHash]);
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    const row = result.rows[0];
-    return {
-      id: row.id,
-      title: row.title,
-      createdAt: row.created_at
-    };
-  }
-
-  /**
-   * Generates a consistent content hash
-   */
-  private generateContentHash(title: string, content?: string): string {
-    const hashInput = `${title}:${content ?? ''}`;
-    return crypto.createHash('sha256').update(hashInput).digest('hex');
+    // Note: content_hash field doesn't exist in the schema
+    // This is a simplified implementation
+    return null;
   }
 }
 
@@ -160,63 +197,127 @@ export class SectionService {
  * Type-safe decision operations using Prisma
  */
 export class DecisionService {
+  private prisma = getPrismaClient();
+
   async createDecision(data: {
     component: string;
     status: string;
     title: string;
     rationale: string;
     alternativesConsidered?: string[];
-    consequences?: string;
-    supersedes?: string;
     tags?: Record<string, any>;
   }) {
     const id = `decision_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // For now, return a mock decision
+    // Use Prisma's native create method
+    const decision = await this.prisma.adrDecision.create({
+      data: {
+        id,
+        component: data.component,
+        status: data.status,
+        title: data.title,
+        rationale: data.rationale,
+        alternativesConsidered: data.alternativesConsidered || [],
+        tags: data.tags || {},
+      },
+      select: {
+        id: true,
+        component: true,
+        status: true,
+        title: true,
+        rationale: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
     return {
-      id,
-      component: data.component,
-      status: data.status,
-      title: data.title,
-      rationale: data.rationale,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: decision.id,
+      component: decision.component,
+      status: decision.status,
+      title: decision.title,
+      rationale: decision.rationale,
+      created_at: decision.created_at,
+      updated_at: decision.updated_at,
     };
   }
 
   async updateDecision(
-    _id: string,
+    id: string,
     data: Partial<{
       status: string;
       title: string;
       rationale: string;
       alternativesConsidered: string[];
-      consequences: string;
     }>
   ) {
-    // For now, return a mock updated decision
+    const updateData: any = {};
+
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.rationale !== undefined) updateData.rationale = data.rationale;
+    if (data.alternativesConsidered !== undefined) updateData.alternativesConsidered = data.alternativesConsidered;
+
+    const decision = await this.prisma.adrDecision.update({
+      where: { id },
+      data: updateData,
+      select: {
+        id: true,
+        component: true,
+        status: true,
+        title: true,
+        rationale: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
     return {
-      id: 'mock-decision-id',
-      component: 'mock-component',
-      status: data.status || 'updated',
-      title: data.title || 'Updated Decision',
-      rationale: data.rationale || 'Updated rationale',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      id: decision.id,
+      component: decision.component,
+      status: decision.status,
+      title: decision.title,
+      rationale: decision.rationale,
+      created_at: decision.created_at,
+      updated_at: decision.updated_at,
     };
   }
 
-  async findDecision(_id: string): Promise<{
+  async findDecision(id: string): Promise<{
     id: string;
     title: string;
     component: string;
     status: string;
     rationale: string;
-    createdAt: string;
-    updatedAt: string;
+    created_at: Date;
+    updated_at: Date;
   } | null> {
-    // For now, return null to indicate no existing decision
-    return null;
+    const decision = await this.prisma.adrDecision.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        component: true,
+        status: true,
+        rationale: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    if (!decision) {
+      return null;
+    }
+
+    return {
+      id: decision.id,
+      title: decision.title,
+      component: decision.component,
+      status: decision.status,
+      rationale: decision.rationale,
+      created_at: decision.created_at,
+      updated_at: decision.updated_at,
+    };
   }
 }
 

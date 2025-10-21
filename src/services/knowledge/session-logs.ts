@@ -9,16 +9,8 @@
  * Provides comprehensive CRUD operations for session persistence.
  */
 
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 import { logger } from '../../utils/logger.js';
-
-/**
- * Generate UUID using PostgreSQL gen_random_uuid()
- */
-async function generateUUID(pool: Pool): Promise<string> {
-  const result = await pool.query('SELECT gen_random_uuid() as uuid');
-  return (result.rows[0] as { uuid: string }).uuid;
-}
 
 // ============================================================================
 // INCIDENT LOG OPERATIONS
@@ -39,91 +31,96 @@ export interface IncidentData {
 }
 
 export async function storeIncident(
-  pool: Pool,
-  data: IncidentData,
+    data: IncidentData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID(pool);
+  const prisma = getPrismaClient();
 
-  await pool.query<{ id: string }>(
-    `INSERT INTO incident_log (
-      id, title, severity, impact, timeline, root_cause_analysis, resolution_status,
-      affected_services, business_impact, recovery_actions, follow_up_required,
-      incident_commander, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-    [
-      id,
-      data.title,
-      data.severity,
-      data.impact,
-      JSON.stringify(data.timeline ?? []),
-      data.root_cause_analysis ?? null,
-      data.resolution_status,
-      data.affected_services ?? [],
-      data.business_impact ?? null,
-      data.recovery_actions ?? [],
-      data.follow_up_required ?? false,
-      data.incident_commander ?? null,
-      JSON.stringify(scope),
-      JSON.stringify({}),
-    ]
-  );
+  const result = await prisma.incidentLog.create({
+    data: {
+      title: data.title,
+      severity: data.severity,
+      impact: data.impact,
+      resolution_status: data.resolution_status,
+      tags: {
+        ...scope,
+        timeline: data.timeline ?? [],
+        root_cause_analysis: data.root_cause_analysis,
+        affected_services: data.affected_services ?? [],
+        business_impact: data.business_impact,
+        recovery_actions: data.recovery_actions ?? [],
+        follow_up_required: data.follow_up_required ?? false,
+        incident_commander: data.incident_commander
+      }
+    }
+  });
 
-  logger.info({ incidentId: id, severity: data.severity }, 'Incident stored successfully');
-  return id;
+  logger.info({ incidentId: result.id, severity: data.severity }, 'Incident stored successfully');
+  return result.id;
 }
 
 export async function updateIncident(
-  pool: Pool,
-  id: string,
+    id: string,
   data: Partial<IncidentData>
 ): Promise<void> {
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
 
-  const updateFields = [
-    'title',
-    'severity',
-    'impact',
-    'timeline',
-    'root_cause_analysis',
-    'resolution_status',
-    'affected_services',
-    'business_impact',
-    'recovery_actions',
-    'follow_up_required',
-    'incident_commander',
-  ] as const;
+  const updateData: any = {};
 
-  for (const field of updateFields) {
-    if (data[field] !== undefined) {
-      updates.push(`${field} = $${paramIndex++}`);
-      if (field === 'timeline') {
-        values.push(JSON.stringify(data[field]));
-      } else {
-        values.push(data[field]);
-      }
-    }
+  if (data.title !== undefined) {
+    updateData.title = data.title;
+  }
+  if (data.severity !== undefined) {
+    updateData.severity = data.severity;
+  }
+  if (data.impact !== undefined) {
+    updateData.impact = data.impact;
+  }
+  if (data.resolution_status !== undefined) {
+    updateData.resolution_status = data.resolution_status;
   }
 
-  if (updates.length === 0) {
+  // Note: Other fields are stored in tags due to schema limitations
+  const tagUpdates: any = {};
+  if (data.timeline !== undefined) {
+    tagUpdates.timeline = data.timeline;
+  }
+  if (data.root_cause_analysis !== undefined) {
+    tagUpdates.root_cause_analysis = data.root_cause_analysis;
+  }
+  if (data.affected_services !== undefined) {
+    tagUpdates.affected_services = data.affected_services;
+  }
+  if (data.business_impact !== undefined) {
+    tagUpdates.business_impact = data.business_impact;
+  }
+  if (data.recovery_actions !== undefined) {
+    tagUpdates.recovery_actions = data.recovery_actions;
+  }
+  if (data.follow_up_required !== undefined) {
+    tagUpdates.follow_up_required = data.follow_up_required;
+  }
+  if (data.incident_commander !== undefined) {
+    tagUpdates.incident_commander = data.incident_commander;
+  }
+
+  if (Object.keys(updateData).length === 0 && Object.keys(tagUpdates).length === 0) {
     return;
   }
 
-  updates.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id);
+  if (Object.keys(tagUpdates).length > 0) {
+    updateData.tags = tagUpdates;
+  }
 
-  await pool.query(
-    `UPDATE incident_log SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-    values
-  );
-  logger.info({ incidentId: id, updates: updates.length }, 'Incident updated successfully');
+  await prisma.incidentLog.update({
+    where: { id },
+    data: updateData
+  });
+  logger.info({ incidentId: id, updates: Object.keys(updateData).length }, 'Incident updated successfully');
 }
 
 export async function findIncidents(
-  pool: Pool,
-  criteria: {
+    criteria: {
     severity?: string;
     status?: string;
     limit?: number;
@@ -140,42 +137,42 @@ export async function findIncidents(
     updated_at: Date;
   }>
 > {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
+
+  const whereClause: any = {};
 
   if (criteria.severity) {
-    conditions.push(`severity = $${paramIndex++}`);
-    values.push(criteria.severity);
+    whereClause.severity = criteria.severity;
   }
   if (criteria.status) {
-    conditions.push(`resolution_status = $${paramIndex++}`);
-    values.push(criteria.status);
+    whereClause.resolution_status = criteria.status;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
+  const result = await prisma.incidentLog.findMany({
+    where: whereClause,
+    orderBy: { created_at: 'desc' },
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      title: true,
+      severity: true,
+      impact: true,
+      resolution_status: true,
+      created_at: true,
+      updated_at: true
+    }
+  });
 
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query<{
-    id: string;
-    title: string;
-    severity: string;
-    impact: string;
-    resolution_status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>(
-    `SELECT id, title, severity, impact, resolution_status, created_at, updated_at
-     FROM incident_log ${whereClause}
-     ORDER BY created_at DESC ${limitClause} ${offsetClause}`,
-    values
-  );
-
-  return result.rows;
+  return result.map(incident => ({
+    id: incident.id,
+    title: incident.title,
+    severity: incident.severity,
+    impact: incident.impact,
+    resolution_status: incident.resolution_status,
+    created_at: incident.created_at,
+    updated_at: incident.updated_at
+  }));
 }
 
 // ============================================================================
@@ -199,57 +196,62 @@ export interface ReleaseData {
 }
 
 export async function storeRelease(
-  pool: Pool,
-  data: ReleaseData,
+    data: ReleaseData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID(pool);
+  const prisma = getPrismaClient();
 
-  await pool.query<{ id: string }>(
-    `INSERT INTO release_log (
-      id, version, release_type, scope, release_date, status, ticket_references,
-      included_changes, deployment_strategy, rollback_plan, testing_status,
-      approvers, release_notes, post_release_actions, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-    [
-      id,
-      data.version,
-      data.release_type,
-      data.scope,
-      data.release_date ?? null,
-      data.status,
-      data.ticket_references ?? [],
-      data.included_changes ?? [],
-      data.deployment_strategy ?? null,
-      data.rollback_plan ?? null,
-      data.testing_status ?? null,
-      data.approvers ?? [],
-      data.release_notes ?? null,
-      data.post_release_actions ?? [],
-      JSON.stringify(scope),
-      JSON.stringify({}),
-    ]
-  );
+  const result = await prisma.releaseLog.create({
+    data: {
+      version: data.version,
+      release_type: data.release_type,
+      scope: data.scope,
+      status: data.status,
+      tags: {
+        ...scope,
+        release_date: data.release_date,
+        ticket_references: data.ticket_references ?? [],
+        included_changes: data.included_changes ?? [],
+        deployment_strategy: data.deployment_strategy,
+        rollback_plan: data.rollback_plan,
+        testing_status: data.testing_status,
+        approvers: data.approvers ?? [],
+        release_notes: data.release_notes,
+        post_release_actions: data.post_release_actions ?? []
+      }
+    }
+  });
 
-  logger.info({ releaseId: id, version: data.version }, 'Release stored successfully');
-  return id;
+  logger.info({ releaseId: result.id, version: data.version }, 'Release stored successfully');
+  return result.id;
 }
 
 export async function updateRelease(
-  pool: Pool,
-  id: string,
+    id: string,
   data: Partial<ReleaseData>
 ): Promise<void> {
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
 
-  const updateFields = [
-    'version',
-    'release_type',
-    'scope',
+  const updateData: any = {};
+  const tagUpdates: any = {};
+
+  // Handle direct fields (those that exist in the schema)
+  if (data.version !== undefined) {
+    updateData.version = data.version;
+  }
+  if (data.release_type !== undefined) {
+    updateData.release_type = data.release_type;
+  }
+  if (data.scope !== undefined) {
+    updateData.scope = data.scope;
+  }
+  if (data.status !== undefined) {
+    updateData.status = data.status;
+  }
+
+  // Handle fields stored in tags JSON
+  const tagFields = [
     'release_date',
-    'status',
     'ticket_references',
     'included_changes',
     'deployment_strategy',
@@ -260,35 +262,29 @@ export async function updateRelease(
     'post_release_actions',
   ] as const;
 
-  for (const field of updateFields) {
+  for (const field of tagFields) {
     if (data[field] !== undefined) {
-      if (Array.isArray(data[field])) {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      } else {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      }
+      tagUpdates[field] = data[field];
     }
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0 && Object.keys(tagUpdates).length === 0) {
     return;
   }
 
-  updates.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id);
+  if (Object.keys(tagUpdates).length > 0) {
+    updateData.tags = tagUpdates;
+  }
 
-  await pool.query(
-    `UPDATE release_log SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-    values
-  );
-  logger.info({ releaseId: id, updates: updates.length }, 'Release updated successfully');
+  await prisma.releaseLog.update({
+    where: { id },
+    data: updateData
+  });
+  logger.info({ releaseId: id, updates: Object.keys(updateData).length }, 'Release updated successfully');
 }
 
 export async function findReleases(
-  pool: Pool,
-  criteria: {
+    criteria: {
     version?: string;
     status?: string;
     limit?: number;
@@ -306,43 +302,47 @@ export async function findReleases(
     updated_at: Date;
   }>
 > {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
+
+  const whereClause: any = {};
 
   if (criteria.version) {
-    conditions.push(`version ILIKE $${paramIndex}`);
-    values.push(`%${criteria.version}%`);
+    whereClause.version = {
+      contains: criteria.version,
+      mode: 'insensitive'
+    };
   }
   if (criteria.status) {
-    conditions.push(`status = $${paramIndex++}`);
-    values.push(criteria.status);
+    whereClause.status = criteria.status;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
+  const result = await prisma.releaseLog.findMany({
+    where: whereClause,
+    orderBy: { created_at: 'desc' },
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      version: true,
+      release_type: true,
+      scope: true,
+      status: true,
+      created_at: true,
+      updated_at: true,
+      tags: true
+    }
+  });
 
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query<{
-    id: string;
-    version: string;
-    release_type: string;
-    scope: string;
-    release_date: Date;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>(
-    `SELECT id, version, release_type, scope, release_date, status, created_at, updated_at
-     FROM release_log ${whereClause}
-     ORDER BY release_date DESC ${limitClause} ${offsetClause}`,
-    values
-  );
-
-  return result.rows;
+  return result.map(release => ({
+    id: release.id,
+    version: release.version,
+    release_type: release.release_type,
+    scope: release.scope,
+    release_date: (release.tags as any)?.release_date ? new Date((release.tags as any).release_date) : release.created_at,
+    status: release.status,
+    created_at: release.created_at,
+    updated_at: release.updated_at
+  }));
 }
 
 // ============================================================================
@@ -366,89 +366,94 @@ export interface RiskData {
 }
 
 export async function storeRisk(
-  pool: Pool,
-  data: RiskData,
+    data: RiskData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID(pool);
+  const prisma = getPrismaClient();
 
-  await pool.query<{ id: string }>(
-    `INSERT INTO risk_log (
-      id, title, category, risk_level, probability, impact_description,
-      trigger_events, mitigation_strategies, owner, review_date, status,
-      related_decisions, monitoring_indicators, contingency_plans, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-    [
-      id,
-      data.title,
-      data.category,
-      data.risk_level,
-      data.probability,
-      data.impact_description,
-      data.trigger_events ?? [],
-      data.mitigation_strategies ?? [],
-      data.owner ?? null,
-      data.review_date ?? null,
-      data.status,
-      data.related_decisions ?? [],
-      data.monitoring_indicators ?? [],
-      data.contingency_plans ?? null,
-      JSON.stringify(scope),
-      JSON.stringify({}),
-    ]
-  );
+  const result = await prisma.riskLog.create({
+    data: {
+      title: data.title,
+      category: data.category,
+      risk_level: data.risk_level,
+      impact_description: data.impact_description,
+      status: data.status,
+      tags: {
+        ...scope,
+        probability: data.probability,
+        trigger_events: data.trigger_events ?? [],
+        mitigation_strategies: data.mitigation_strategies ?? [],
+        owner: data.owner ?? null,
+        review_date: data.review_date ?? null,
+        related_decisions: data.related_decisions ?? [],
+        monitoring_indicators: data.monitoring_indicators ?? [],
+        contingency_plans: data.contingency_plans ?? null
+      }
+    }
+  });
 
-  logger.info({ riskId: id, level: data.risk_level }, 'Risk stored successfully');
-  return id;
+  logger.info({ riskId: result.id, level: data.risk_level }, 'Risk stored successfully');
+  return result.id;
 }
 
-export async function updateRisk(pool: Pool, id: string, data: Partial<RiskData>): Promise<void> {
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+export async function updateRisk(id: string, data: Partial<RiskData>): Promise<void> {
+  const prisma = getPrismaClient();
 
-  const updateFields = [
-    'title',
-    'category',
-    'risk_level',
+  const updateData: any = {};
+  const tagUpdates: any = {};
+
+  // Handle direct fields (those that exist in the schema)
+  if (data.title !== undefined) {
+    updateData.title = data.title;
+  }
+  if (data.category !== undefined) {
+    updateData.category = data.category;
+  }
+  if (data.risk_level !== undefined) {
+    updateData.risk_level = data.risk_level;
+  }
+  if (data.impact_description !== undefined) {
+    updateData.impact_description = data.impact_description;
+  }
+  if (data.status !== undefined) {
+    updateData.status = data.status;
+  }
+
+  // Handle fields stored in tags JSON
+  const tagFields = [
     'probability',
-    'impact_description',
     'trigger_events',
     'mitigation_strategies',
     'owner',
     'review_date',
-    'status',
     'related_decisions',
     'monitoring_indicators',
     'contingency_plans',
   ] as const;
 
-  for (const field of updateFields) {
+  for (const field of tagFields) {
     if (data[field] !== undefined) {
-      if (Array.isArray(data[field])) {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      } else {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      }
+      tagUpdates[field] = data[field];
     }
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0 && Object.keys(tagUpdates).length === 0) {
     return;
   }
 
-  updates.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id);
+  if (Object.keys(tagUpdates).length > 0) {
+    updateData.tags = tagUpdates;
+  }
 
-  await pool.query(`UPDATE risk_log SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
-  logger.info({ riskId: id, updates: updates.length }, 'Risk updated successfully');
+  await prisma.riskLog.update({
+    where: { id },
+    data: updateData
+  });
+  logger.info({ riskId: id, updates: Object.keys(updateData).length }, 'Risk updated successfully');
 }
 
 export async function findRisks(
-  pool: Pool,
-  criteria: {
+    criteria: {
     category?: string;
     level?: string;
     status?: string;
@@ -467,47 +472,47 @@ export async function findRisks(
     updated_at: Date;
   }>
 > {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
+
+  const whereClause: any = {};
 
   if (criteria.category) {
-    conditions.push(`category = $${paramIndex++}`);
-    values.push(criteria.category);
+    whereClause.category = criteria.category;
   }
   if (criteria.level) {
-    conditions.push(`risk_level = $${paramIndex++}`);
-    values.push(criteria.level);
+    whereClause.risk_level = criteria.level;
   }
   if (criteria.status) {
-    conditions.push(`status = $${paramIndex++}`);
-    values.push(criteria.status);
+    whereClause.status = criteria.status;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
+  const result = await prisma.riskLog.findMany({
+    where: whereClause,
+    orderBy: { updated_at: 'desc' },
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      risk_level: true,
+      status: true,
+      created_at: true,
+      updated_at: true,
+      tags: true
+    }
+  });
 
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query<{
-    id: string;
-    title: string;
-    category: string;
-    risk_level: string;
-    probability: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>(
-    `SELECT id, title, category, risk_level, probability, status, created_at, updated_at
-     FROM risk_log ${whereClause}
-     ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
-    values
-  );
-
-  return result.rows;
+  return result.map(risk => ({
+    id: risk.id,
+    title: risk.title,
+    category: risk.category,
+    risk_level: risk.risk_level,
+    probability: (risk.tags as any)?.probability || 'unknown',
+    status: risk.status,
+    created_at: risk.created_at,
+    updated_at: risk.updated_at
+  }));
 }
 
 // ============================================================================
@@ -530,59 +535,66 @@ export interface AssumptionData {
 }
 
 export async function storeAssumption(
-  pool: Pool,
-  data: AssumptionData,
+    data: AssumptionData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const id = await generateUUID(pool);
+  const prisma = getPrismaClient();
 
-  await pool.query<{ id: string }>(
-    `INSERT INTO assumption_log (
-      id, title, description, category, validation_status, impact_if_invalid,
-      validation_criteria, validation_date, owner, related_assumptions,
-      dependencies, monitoring_approach, review_frequency, tags, metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-    [
-      id,
-      data.title,
-      data.description,
-      data.category,
-      data.validation_status,
-      data.impact_if_invalid,
-      data.validation_criteria ?? [],
-      data.validation_date ?? null,
-      data.owner ?? null,
-      data.related_assumptions ?? [],
-      data.dependencies ?? [],
-      data.monitoring_approach ?? null,
-      data.review_frequency ?? null,
-      JSON.stringify(scope),
-      JSON.stringify({}),
-    ]
-  );
+  const result = await prisma.assumptionLog.create({
+    data: {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      validation_status: data.validation_status,
+      impact_if_invalid: data.impact_if_invalid,
+      tags: {
+        ...scope,
+        validation_criteria: data.validation_criteria ?? [],
+        validation_date: data.validation_date ?? null,
+        owner: data.owner ?? null,
+        related_assumptions: data.related_assumptions ?? [],
+        dependencies: data.dependencies ?? [],
+        monitoring_approach: data.monitoring_approach ?? null,
+        review_frequency: data.review_frequency ?? null
+      }
+    }
+  });
 
   logger.info(
-    { assumptionId: id, status: data.validation_status },
+    { assumptionId: result.id, status: data.validation_status },
     'Assumption stored successfully'
   );
-  return id;
+  return result.id;
 }
 
 export async function updateAssumption(
-  pool: Pool,
-  id: string,
+    id: string,
   data: Partial<AssumptionData>
 ): Promise<void> {
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
 
-  const updateFields = [
-    'title',
-    'description',
-    'category',
-    'validation_status',
-    'impact_if_invalid',
+  const updateData: any = {};
+  const tagUpdates: any = {};
+
+  // Handle direct fields (those that exist in the schema)
+  if (data.title !== undefined) {
+    updateData.title = data.title;
+  }
+  if (data.description !== undefined) {
+    updateData.description = data.description;
+  }
+  if (data.category !== undefined) {
+    updateData.category = data.category;
+  }
+  if (data.validation_status !== undefined) {
+    updateData.validation_status = data.validation_status;
+  }
+  if (data.impact_if_invalid !== undefined) {
+    updateData.impact_if_invalid = data.impact_if_invalid;
+  }
+
+  // Handle fields stored in tags JSON
+  const tagFields = [
     'validation_criteria',
     'validation_date',
     'owner',
@@ -592,35 +604,29 @@ export async function updateAssumption(
     'review_frequency',
   ] as const;
 
-  for (const field of updateFields) {
+  for (const field of tagFields) {
     if (data[field] !== undefined) {
-      if (Array.isArray(data[field])) {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      } else {
-        updates.push(`${field} = $${paramIndex++}`);
-        values.push(data[field]);
-      }
+      tagUpdates[field] = data[field];
     }
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0 && Object.keys(tagUpdates).length === 0) {
     return;
   }
 
-  updates.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id);
+  if (Object.keys(tagUpdates).length > 0) {
+    updateData.tags = tagUpdates;
+  }
 
-  await pool.query(
-    `UPDATE assumption_log SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-    values
-  );
-  logger.info({ assumptionId: id, updates: updates.length }, 'Assumption updated successfully');
+  await prisma.assumptionLog.update({
+    where: { id },
+    data: updateData
+  });
+  logger.info({ assumptionId: id, updates: Object.keys(updateData).length }, 'Assumption updated successfully');
 }
 
 export async function findAssumptions(
-  pool: Pool,
-  criteria: {
+    criteria: {
     category?: string;
     status?: string;
     limit?: number;
@@ -637,42 +643,42 @@ export async function findAssumptions(
     updated_at: Date;
   }>
 > {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
+
+  const whereClause: any = {};
 
   if (criteria.category) {
-    conditions.push(`category = $${paramIndex++}`);
-    values.push(criteria.category);
+    whereClause.category = criteria.category;
   }
   if (criteria.status) {
-    conditions.push(`validation_status = $${paramIndex++}`);
-    values.push(criteria.status);
+    whereClause.validation_status = criteria.status;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
+  const result = await prisma.assumptionLog.findMany({
+    where: whereClause,
+    orderBy: { updated_at: 'desc' },
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      validation_status: true,
+      created_at: true,
+      updated_at: true
+    }
+  });
 
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query<{
-    id: string;
-    title: string;
-    description: string;
-    category: string;
-    validation_status: string;
-    created_at: Date;
-    updated_at: Date;
-  }>(
-    `SELECT id, title, description, category, validation_status, created_at, updated_at
-     FROM assumption_log ${whereClause}
-     ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
-    values
-  );
-
-  return result.rows;
+  return result.map(assumption => ({
+    id: assumption.id,
+    title: assumption.title,
+    description: assumption.description,
+    category: assumption.category,
+    validation_status: assumption.validation_status,
+    created_at: assumption.created_at,
+    updated_at: assumption.updated_at
+  }));
 }
 
 // ============================================================================
@@ -690,30 +696,29 @@ export interface SessionLogEntry {
 }
 
 export async function getSessionLogDashboard(
-  pool: Pool,
-  criteria: {
+    criteria: {
     type?: string;
     limit?: number;
     offset?: number;
   } = {}
 ): Promise<SessionLogEntry[]> {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
 
-  if (criteria.type) {
-    conditions.push(`log_type = $${paramIndex++}`);
-    values.push(criteria.type);
-  }
+  // Since we can't easily replicate the UNION ALL with Prisma queries,
+  // we'll use $queryRawUnsafe with proper template literal
+  const limitClause = criteria.limit ? `LIMIT ${criteria.limit}` : '';
+  const offsetClause = criteria.offset ? `OFFSET ${criteria.offset}` : '';
+  const whereClause = criteria.type ? `WHERE log_type = '${criteria.type}'` : '';
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
-
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query(
+  const result = await prisma.$queryRawUnsafe<Array<{
+    log_type: string;
+    id: string;
+    title: string;
+    status: string;
+    created_at: Date;
+    updated_at: Date;
+    tags: Record<string, unknown>;
+  }>>(
     `SELECT log_type, id, title, status, created_at, updated_at, tags
      FROM (
        SELECT 'incident' as log_type, id, title, resolution_status as status, created_at, updated_at, tags FROM incident_log
@@ -725,12 +730,11 @@ export async function getSessionLogDashboard(
        SELECT 'assumption' as log_type, id, title, validation_status as status, created_at, updated_at, tags FROM assumption_log
      ) as combined_logs
      ${whereClause}
-     ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
-    values
+     ORDER BY updated_at DESC ${limitClause} ${offsetClause}`
   );
 
-  return result.rows.map((row) => ({
-    type: row.log_type,
+  return result.map((row) => ({
+    type: row.log_type as 'incident' | 'release' | 'risk' | 'assumption',
     id: row.id,
     title: row.title,
     status: row.status,

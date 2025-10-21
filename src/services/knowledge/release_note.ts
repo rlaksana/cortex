@@ -1,24 +1,55 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 import type { ReleaseNoteData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeReleaseNote(
-  pool: Pool,
   data: ReleaseNoteData,
   scope: ScopeFilter
 ): Promise<string> {
-  const result = await pool.query<{ id: string }>(
-    `INSERT INTO release_note (version, release_date, summary, breaking_changes, new_features, bug_fixes, deprecations, tags)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    [
-      data.version,
-      data.release_date,
-      data.summary,
-      data.breaking_changes || [],
-      data.new_features || [],
-      data.bug_fixes || [],
-      data.deprecations || [],
-      JSON.stringify(scope),
-    ]
-  );
-  return result.rows[0].id;
+  const prisma = getPrismaClient();
+
+  // Check if this is an update operation (has ID)
+  if (data.id) {
+    const existing = await prisma.releaseNote.findUnique({
+      where: { id: data.id }
+    });
+
+    if (existing) {
+      // Update existing release note
+      const result = await prisma.releaseNote.update({
+        where: { id: data.id },
+        data: {
+          version: data.version ?? existing.version,
+          summary: data.summary ?? existing.summary,
+          tags: {
+            ...(existing.tags as any || {}),
+            ...scope,
+            release_date: data.release_date ?? (existing.tags as any)?.release_date,
+            breaking_changes: data.breaking_changes ?? (existing.tags as any)?.breaking_changes,
+            new_features: data.new_features ?? (existing.tags as any)?.new_features,
+            bug_fixes: data.bug_fixes ?? (existing.tags as any)?.bug_fixes,
+            deprecations: data.deprecations ?? (existing.tags as any)?.deprecations
+          }
+        }
+      });
+      return result.id;
+    }
+  }
+
+  // Create new release note
+  const result = await prisma.releaseNote.create({
+    data: {
+      version: data.version,
+      summary: data.summary,
+      tags: {
+        ...scope,
+        release_date: data.release_date,
+        breaking_changes: data.breaking_changes || [],
+        new_features: data.new_features || [],
+        bug_fixes: data.bug_fixes || [],
+        deprecations: data.deprecations || []
+      }
+    }
+  });
+
+  return result.id;
 }

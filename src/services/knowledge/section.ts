@@ -1,33 +1,34 @@
-import { Pool } from 'pg';
 import type { SectionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateSpecWriteLock } from '../../utils/immutability.js';
 import { logger } from '../../utils/logger.js';
+import { getPrismaClient } from '../../db/prisma.js';
 
 /**
  * Store a new section in the database
  */
 export async function storeSection(
-  pool: Pool,
   data: SectionData,
   scope?: ScopeFilter
 ): Promise<string> {
-  const result = await pool.query<{ id: string }>(
-    `INSERT INTO section (heading, title, body_md, body_text, body_jsonb, tags, metadata)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id`,
-    [
-      data.heading,
-      data.title,
-      data.body_md ?? null,
-      data.body_text ?? null,
-      { text: data.body_text ?? data.body_md, markdown: data.body_md },
-      JSON.stringify(scope ?? {}),
-      JSON.stringify({}),
-    ]
-  );
+  const prisma = getPrismaClient();
 
-  logger.info({ sectionId: result.rows[0].id, title: data.title }, 'Section stored successfully');
-  return result.rows[0].id;
+  // FIXED: Use direct field access for new fields instead of metadata workaround
+  const result = await prisma.section.create({
+    data: {
+      title: data.title || data.heading || 'Untitled Section',
+      content: data.body_text || data.body_md || '',
+      heading: data.heading || null,
+      body_md: data.body_md || null,
+      body_text: data.body_text || null,
+      document_id: data.document_id || null,
+      citation_count: data.citation_count || 0,
+      tags: scope || {},
+      metadata: {}
+    }
+  });
+
+  logger.info({ sectionId: result.id, title: data.title }, 'Section stored successfully');
+  return result.id;
 }
 
 /**
@@ -36,59 +37,60 @@ export async function storeSection(
  * @throws ImmutabilityViolationError if section is in approved document
  */
 export async function updateSection(
-  pool: Pool,
   id: string,
   data: Partial<SectionData>,
   scope?: ScopeFilter
 ): Promise<void> {
+  const prisma = getPrismaClient();
   // Check write-lock before allowing update
-  await validateSpecWriteLock(pool, id);
+  await validateSpecWriteLock(id);
 
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const updateData: any = {};
 
   if (data.title !== undefined) {
-    updates.push(`title = $${paramIndex++}`);
-    values.push(data.title);
-  }
-  if (data.heading !== undefined) {
-    updates.push(`heading = $${paramIndex++}`);
-    values.push(data.heading);
-  }
-  if (data.body_md !== undefined) {
-    updates.push(`body_md = $${paramIndex++}`);
-    values.push(data.body_md);
+    updateData.title = data.title;
   }
   if (data.body_text !== undefined) {
-    updates.push(`body_text = $${paramIndex++}`);
-    values.push(data.body_text);
-  }
-  if (data.body_md !== undefined || data.body_text !== undefined) {
-    updates.push(`body_jsonb = $${paramIndex++}`);
-    values.push({ text: data.body_text ?? data.body_md, markdown: data.body_md });
+    updateData.content = data.body_text;
+  } else if (data.body_md !== undefined) {
+    updateData.content = data.body_md;
   }
   if (scope !== undefined) {
-    updates.push(`tags = $${paramIndex++}`);
-    values.push(JSON.stringify(scope));
+    updateData.tags = scope;
   }
 
-  if (updates.length === 0) {
+  // FIXED: Use direct field access for new fields
+  if (data.heading !== undefined) {
+    updateData.heading = data.heading;
+  }
+  if (data.body_md !== undefined) {
+    updateData.body_md = data.body_md;
+  }
+  if (data.body_text !== undefined) {
+    updateData.body_text = data.body_text;
+  }
+  if (data.document_id !== undefined) {
+    updateData.document_id = data.document_id;
+  }
+  if (data.citation_count !== undefined) {
+    updateData.citation_count = data.citation_count;
+  }
+
+  if (Object.keys(updateData).length === 0) {
     return; // No updates to perform
   }
 
-  updates.push(`updated_at = CURRENT_TIMESTAMP`);
-  values.push(id);
-
-  await pool.query(`UPDATE section SET ${updates.join(', ')} WHERE id = $${paramIndex}`, values);
-  logger.info({ sectionId: id, updates: updates.length }, 'Section updated successfully');
+  await prisma.section.update({
+    where: { id },
+    data: updateData
+  });
+  logger.info({ sectionId: id, updates: Object.keys(updateData).length }, 'Section updated successfully');
 }
 
 /**
  * Find sections by various criteria
  */
 export async function findSections(
-  pool: Pool,
   criteria: {
     title?: string;
     documentId?: string;
@@ -107,44 +109,49 @@ export async function findSections(
     updated_at: Date;
   }>
 > {
-  const conditions: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const prisma = getPrismaClient();
+
+  const whereClause: any = {};
 
   if (criteria.title) {
-    conditions.push(`(title ILIKE $${paramIndex} OR heading ILIKE $${paramIndex})`);
-    values.push(`%${criteria.title}%`);
-    paramIndex++;
+    whereClause.OR = [
+      { title: { contains: criteria.title, mode: 'insensitive' } },
+      { heading: { contains: criteria.title, mode: 'insensitive' } }
+    ];
   }
 
   if (criteria.documentId) {
-    conditions.push(`document_id = $${paramIndex}`);
-    values.push(criteria.documentId);
-    paramIndex++;
+    // FIXED: Use direct field access instead of metadata
+    whereClause.document_id = criteria.documentId;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  const limitClause = criteria.limit ? `LIMIT $${paramIndex++}` : '';
-  const offsetClause = criteria.offset ? `OFFSET $${paramIndex++}` : '';
+  const result = await prisma.section.findMany({
+    where: whereClause,
+    orderBy: { updated_at: 'desc' },
+    take: criteria.limit,
+    skip: criteria.offset,
+    select: {
+      id: true,
+      title: true,
+      content: true,
+      heading: true,
+      body_md: true,
+      body_text: true,
+      document_id: true,
+      citation_count: true,
+      created_at: true,
+      updated_at: true
+    }
+  });
 
-  if (criteria.limit) values.push(criteria.limit);
-  if (criteria.offset) values.push(criteria.offset);
-
-  const result = await pool.query<{
-    id: string;
-    title: string;
-    heading: string;
-    body_text: string;
-    body_md: string;
-    citation_count: number;
-    created_at: Date;
-    updated_at: Date;
-  }>(
-    `SELECT id, title, heading, body_text, body_md, citation_count, created_at, updated_at
-     FROM section ${whereClause}
-     ORDER BY updated_at DESC ${limitClause} ${offsetClause}`,
-    values
-  );
-
-  return result.rows;
+  return result.map(section => ({
+    id: section.id,
+    title: section.title,
+    heading: section.heading || section.title,
+    body_text: section.body_text || section.content || '',
+    body_md: section.body_md || section.content || '',
+    citation_count: section.citation_count || 0,
+    created_at: section.created_at,
+    updated_at: section.updated_at
+  }));
 }

@@ -11,6 +11,8 @@ import { smartMemoryFind } from './services/smart-find.js';
 import { logger } from './utils/logger.js';
 import { loadEnv } from './config/env.js';
 import { dbPool } from './db/pool.js';
+import { prisma } from './db/prisma-client.js';
+import { validateMemoryStoreInput, validateMemoryFindInput, ValidationError } from './schemas/mcp-inputs.js';
 
 // Load environment variables from .env file
 config();
@@ -78,16 +80,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   try {
     switch (name) {
       case 'memory_store': {
-        const result = await memoryStore(args?.items as any[]);
+        // Validate input using Zod schema
+        const validatedInput = validateMemoryStoreInput(args);
+        const result = await memoryStore(validatedInput.items);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       case 'memory_find': {
-        const result = await smartMemoryFind({
-          query: args?.query as string,
-          scope: args?.scope as Record<string, unknown>,
-          types: args?.types as string[],
-          mode: (args?.mode as 'auto' | 'fast' | 'deep') || 'auto',
-        });
+        // Validate input using Zod schema
+        const validatedInput = validateMemoryFindInput(args);
+        const result = await smartMemoryFind(validatedInput);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       default:
@@ -95,30 +96,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
     }
   } catch (error) {
     logger.error({ error, tool: name, args }, 'Tool execution failed');
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    let errorMessage: string;
+    let errorCode: string;
+
+    if (error instanceof ValidationError) {
+      errorMessage = error.message;
+      errorCode = error.code || 'VALIDATION_ERROR';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+      errorCode = 'EXECUTION_ERROR';
+    } else {
+      errorMessage = 'Unknown error occurred';
+      errorCode = 'UNKNOWN_ERROR';
+    }
+
     return {
-      content: [{ type: 'text', text: JSON.stringify({ error: errorMessage }, null, 2) }],
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: errorMessage,
+          code: errorCode,
+          tool: name
+        }, null, 2)
+      }],
       isError: true,
     };
   }
 });
 
 async function runServer() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  logger.info('Cortex Memory MCP Server running on stdio');
+  try {
+    // Initialize Prisma client
+    await prisma.initialize();
+    logger.info('✅ Prisma client initialized');
+
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    logger.info('Cortex Memory MCP Server running on stdio');
+  } catch (error) {
+    logger.error({ error }, 'Failed to start server');
+    process.exit(1);
+  }
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.info('Shutting down Cortex Memory MCP Server...');
   await dbPool.shutdown();
+  await prisma.disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   logger.info('Shutting down Cortex Memory MCP Server...');
   await dbPool.shutdown();
+  await prisma.disconnect();
   process.exit(0);
 });
 

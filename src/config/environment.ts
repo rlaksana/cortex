@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
 

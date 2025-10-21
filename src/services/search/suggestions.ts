@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { prisma } from '../../db/prisma-client.js';
 
 export interface Suggestion {
   type: 'spelling' | 'filter' | 'broader' | 'alternative';
@@ -22,7 +22,6 @@ export interface Suggestion {
  * @returns Array of actionable suggestions
  */
 export async function generateSuggestions(
-  pool: Pool,
   query: string,
   hitCount: number,
   hasFilters: boolean = false
@@ -50,7 +49,7 @@ export async function generateSuggestions(
     }
 
     // Check for potential spelling errors using trigram similarity
-    const spellingCheck = await checkSpelling(pool, query);
+    const spellingCheck = await checkSpelling(query);
     if (spellingCheck.length > 0) {
       suggestions.push({
         type: 'spelling',
@@ -94,7 +93,7 @@ export async function generateSuggestions(
  * @param query - Search query to check
  * @returns Array of potential correct spellings
  */
-async function checkSpelling(pool: Pool, query: string): Promise<string[]> {
+async function checkSpelling(query: string): Promise<string[]> {
   const words = query
     .toLowerCase()
     .split(/\s+/)
@@ -108,28 +107,37 @@ async function checkSpelling(pool: Pool, query: string): Promise<string[]> {
 
   for (const word of words) {
     try {
-      // Find similar words in section headings/body_text
-      const result = await pool.query(
-        `
-        SELECT DISTINCT word
-        FROM (
-          SELECT unnest(string_to_array(lower(heading), ' ')) AS word FROM section
-          UNION ALL
-          SELECT unnest(string_to_array(lower(body_text), ' ')) AS word FROM section LIMIT 1000
-        ) words
-        WHERE
-          length(word) > 3
-          AND similarity(word, $1) > 0.6
-          AND word != $1
-        ORDER BY similarity(word, $1) DESC
-        LIMIT 2
-      `,
-        [word]
-      );
+      // Find similar words in section titles and content using Prisma
+      const sections = await prisma.getClient().section.findMany({
+        select: {
+          title: true,
+          content: true,
+        },
+        take: 1000, // Limit for performance
+      });
 
-      if (result.rows.length > 0) {
-        corrections.push(...result.rows.map((r) => r.word));
+      // Extract words from sections and find similar ones
+      const sectionWords = new Set<string>();
+      for (const section of sections) {
+        if (section.title) {
+          section.title.toLowerCase().split(/\s+/).forEach(w => {
+            if (w.length > 3) sectionWords.add(w);
+          });
+        }
+        if (section.content) {
+          section.content.toLowerCase().split(/\s+/).forEach(w => {
+            if (w.length > 3) sectionWords.add(w);
+          });
+        }
       }
+
+      // Find similar words using simple string similarity
+      const similarWords = Array.from(sectionWords)
+        .filter(w => w !== word && calculateSimilarity(word, w) > 0.6)
+        .sort((a, b) => calculateSimilarity(word, b) - calculateSimilarity(word, a))
+        .slice(0, 2);
+
+      corrections.push(...similarWords);
     } catch {
       // Ignore spelling check errors
       continue;
@@ -137,6 +145,38 @@ async function checkSpelling(pool: Pool, query: string): Promise<string[]> {
   }
 
   return [...new Set(corrections)].slice(0, 3);
+}
+
+// Simple similarity calculation for spelling suggestions
+function calculateSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+
+  if (longer.length === 0) return 1.0;
+
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+// Levenshtein distance calculation
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+
+  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+
+  for (let j = 1; j <= str2.length; j++) {
+    for (let i = 1; i <= str1.length; i++) {
+      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1, // deletion
+        matrix[j - 1][i] + 1, // insertion
+        matrix[j - 1][i - 1] + indicator, // substitution
+      );
+    }
+  }
+
+  return matrix[str2.length][str1.length];
 }
 
 /**

@@ -7,6 +7,11 @@ import {
   EntityDataSchema,
   RelationDataSchema,
   ObservationDataSchema,
+  IncidentDataSchema,
+  ReleaseDataSchema,
+  RiskDataSchema,
+  AssumptionDataSchema,
+  ScopeSchema,
 } from './knowledge-types.js';
 
 /**
@@ -82,19 +87,52 @@ export const DecisionDataSchema = z
     path: ['rationale'],
   });
 
-// Issue data schema
+// PRISMA SCHEMA COMPLIANT Issue data schema
+// Uses direct database fields: tracker, external_id, labels, url, assignee
+// NO metadata/tags workarounds for database fields
 export const IssueDataSchema = z.object({
   id: z.string().uuid().optional(),
-  tracker: z.string().min(1, 'Tracker is required').max(100, 'Tracker name too long'),
-  external_id: z.string().min(1, 'External ID is required').max(100, 'External ID too long'),
+  // Direct database fields (Prisma Schema compliance)
+  tracker: z.string().max(100, 'Tracker name too long').optional(),
+  external_id: z.string().max(100, 'External ID too long').optional(),
   title: z
     .string()
     .min(1, 'Issue title is required')
     .max(500, 'Title cannot exceed 500 characters')
     .trim(),
-  description: z.string().max(50000, 'Description too long'),
+  description: z.string().max(50000, 'Description too long').optional(),
   severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+  // Additional direct fields from Prisma schema
+  labels: z.array(z.any()).optional(),
+  url: z.string().max(2000, 'URL too long').optional(),
+  assignee: z.string().max(200, 'Assignee name too long').optional(),
+  // Additional properties for validation (NOT for database storage)
+  metadata: z.record(z.unknown()).optional(),
+  tags: z.record(z.unknown()).optional(),
+}).refine((data) => {
+  // PRISMA SCHEMA COMPLIANCE: Ensure no metadata workaround usage
+  // All database fields must use direct field access
+  if (data.metadata) {
+    const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
+    for (const field of forbiddenFields) {
+      if (field in data.metadata) {
+        return false;
+      }
+    }
+  }
+  if (data.tags) {
+    const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
+    for (const field of forbiddenFields) {
+      if (field in data.tags) {
+        return false;
+      }
+    }
+  }
+  return true;
+}, {
+  message: 'PRISMA SCHEMA VIOLATION: Use direct fields (tracker, external_id, url, assignee, labels) instead of metadata/tags workarounds',
+  path: ['root'],
 });
 
 // Todo data schema - aligned with database service expectations
@@ -133,74 +171,8 @@ export const RunbookDataSchema = z.object({
   last_verified_at: z.string().datetime().optional(),
 });
 
-// Incident data schema - aligned with session-logs service
-export const IncidentDataSchema = z.object({
-  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
-  severity: z.enum(['low', 'medium', 'high', 'critical']),
-  impact: z.string().min(1, 'impact is required'),
-  timeline: z.array(z.object({
-    timestamp: z.string(),
-    event: z.string(),
-    actor: z.string().optional(),
-  })).optional(),
-  root_cause_analysis: z.string().optional(),
-  resolution_status: z.enum(['open', 'investigating', 'resolved', 'closed']),
-  affected_services: z.array(z.string()).optional(),
-  business_impact: z.string().optional(),
-  recovery_actions: z.array(z.string()).optional(),
-  follow_up_required: z.boolean().optional(),
-  incident_commander: z.string().optional(),
-});
-
-// Release data schema - aligned with session-logs service
-export const ReleaseDataSchema = z.object({
-  version: z.string().min(1, 'version is required'),
-  release_type: z.enum(['major', 'minor', 'patch', 'hotfix']),
-  scope: z.string().min(1, 'scope is required'),
-  release_date: z.string().datetime().optional(),
-  status: z.enum(['planned', 'in_progress', 'completed', 'rolled_back']),
-  ticket_references: z.array(z.string()).optional(),
-  included_changes: z.array(z.string()).optional(),
-  deployment_strategy: z.string().optional(),
-  rollback_plan: z.string().optional(),
-  testing_status: z.string().optional(),
-  approvers: z.array(z.string()).optional(),
-  release_notes: z.string().optional(),
-  post_release_actions: z.array(z.string()).optional(),
-});
-
-// Risk data schema - aligned with session-logs service
-export const RiskDataSchema = z.object({
-  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
-  category: z.enum(['technical', 'business', 'operational', 'security', 'compliance']),
-  risk_level: z.enum(['critical', 'high', 'medium', 'low']),
-  probability: z.enum(['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely']),
-  impact_description: z.string().min(1, 'impact description is required'),
-  trigger_events: z.array(z.string()).optional(),
-  mitigation_strategies: z.array(z.string()).optional(),
-  owner: z.string().optional(),
-  review_date: z.string().optional(),
-  status: z.enum(['active', 'mitigated', 'accepted', 'closed']),
-  related_decisions: z.array(z.string()).optional(),
-  monitoring_indicators: z.array(z.string()).optional(),
-  contingency_plans: z.string().optional(),
-});
-
-// Assumption data schema - aligned with session-logs service
-export const AssumptionDataSchema = z.object({
-  title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
-  description: z.string().min(1, 'description is required'),
-  category: z.enum(['technical', 'business', 'user', 'market', 'resource']),
-  validation_status: z.enum(['validated', 'assumed', 'invalidated', 'needs_validation']),
-  impact_if_invalid: z.string().min(1, 'impact if invalid is required'),
-  validation_criteria: z.array(z.string()).optional(),
-  validation_date: z.string().datetime().optional(),
-  owner: z.string().optional(),
-  related_assumptions: z.array(z.string()).optional(),
-  dependencies: z.array(z.string()).optional(),
-  monitoring_approach: z.string().optional(),
-  review_frequency: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'as_needed']).optional(),
-});
+// Incident, Release, Risk, and Assumption data schemas are now imported from knowledge-types.js
+// to avoid schema duplication and validation conflicts
 
 // Enhanced knowledge item schema with discriminators
 export const EnhancedKnowledgeItemSchema = z
@@ -250,83 +222,83 @@ export const EnhancedKnowledgeItemSchema = z
 export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('section'),
-    scope: ScopeFilterSchema,
+    scope: ScopeSchema,
     data: SectionDataSchema,
   }),
   z.object({
     kind: z.literal('decision'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: DecisionDataSchema,
   }),
   z.object({
     kind: z.literal('issue'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: IssueDataSchema,
   }),
   z.object({
     kind: z.literal('todo'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: TodoDataSchema,
   }),
   z.object({
     kind: z.literal('change'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: ChangeDataSchema,
   }),
   z.object({
     kind: z.literal('runbook'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: RunbookDataSchema,
   }),
   z.object({
     kind: z.literal('incident'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: IncidentDataSchema,
   }),
   z.object({
     kind: z.literal('release'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: ReleaseDataSchema,
   }),
   z.object({
     kind: z.literal('risk'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: RiskDataSchema,
   }),
   z.object({
     kind: z.literal('assumption'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: AssumptionDataSchema,
   }),
   // Missing schemas added during comprehensive testing
   z.object({
     kind: z.literal('release_note'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: ReleaseNoteDataSchema,
   }),
   z.object({
     kind: z.literal('ddl'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: DDLDataSchema,
   }),
   z.object({
     kind: z.literal('pr_context'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: PRContextDataSchema,
   }),
   z.object({
     kind: z.literal('entity'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: EntityDataSchema,
   }),
   z.object({
     kind: z.literal('relation'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: RelationDataSchema,
   }),
   z.object({
     kind: z.literal('observation'),
-    scope: ScopeFilterSchema.optional(),
+    scope: ScopeSchema.optional(),
     data: ObservationDataSchema,
   }),
 ]);
@@ -334,9 +306,9 @@ export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
 // Schema for delete operations
 export const DeleteOperationSchema = z.object({
   operation: z.literal('delete'),
-  kind: z.enum(['section', 'decision', 'issue', 'todo', 'change', 'runbook', 'incident', 'release', 'risk', 'assumption']),
-  id: z.string().uuid(),
-  scope: ScopeFilterSchema,
+  kind: z.enum(['section', 'decision', 'issue', 'todo', 'change', 'runbook', 'incident', 'release', 'risk', 'assumption', 'release_note', 'ddl', 'pr_context', 'entity', 'relation', 'observation']),
+  id: z.string().min(1, 'ID is required'),
+  scope: ScopeSchema,
   cascade_relations: z.boolean().optional().default(false),
 });
 

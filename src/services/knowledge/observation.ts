@@ -7,7 +7,7 @@
  * @module services/knowledge/observation
  */
 
-import type { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 import type { ObservationItem } from '../../schemas/knowledge-types.js';
 
 /**
@@ -19,32 +19,28 @@ import type { ObservationItem } from '../../schemas/knowledge-types.js';
  * - FTS indexing on observation text
  * - Optional categorization via observation_type
  *
- * @param pool - PostgreSQL connection pool
  * @param data - Observation data (entity_type, entity_id, observation, observation_type, metadata)
  * @param scope - Scope metadata (not used for observations, but kept for consistency)
  * @returns UUID of stored observation
  */
 export async function addObservation(
-  pool: Pool,
   data: ObservationItem['data'],
   _scope?: Record<string, unknown>
 ): Promise<string> {
-  // Insert new observation (append-only)
-  const result = await pool.query<{ id: string }>(
-    `INSERT INTO knowledge_observation (
-       entity_type, entity_id, observation, observation_type, metadata
-     ) VALUES ($1, $2, $3, $4, $5)
-     RETURNING id`,
-    [
-      data.entity_type,
-      data.entity_id,
-      data.observation,
-      data.observation_type ?? null,
-      data.metadata ?? null,
-    ]
-  );
+  const prisma = getPrismaClient();
+  // FIXED: Use direct field access for observation_type and store metadata properly
+  const result = await prisma.knowledgeObservation.create({
+    data: {
+      entity_type: data.entity_type,
+      entity_id: data.entity_id,
+      observation: data.observation,
+      observation_type: data.observation_type || undefined,
+      metadata: data.metadata || undefined as any,
+      tags: {}
+    }
+  });
 
-  return result.rows[0].id;
+  return result.id;
 }
 
 /**
@@ -54,16 +50,19 @@ export async function addObservation(
  * @param observationId - UUID of observation to delete
  * @returns true if deleted, false if not found
  */
-export async function deleteObservation(pool: Pool, observationId: string): Promise<boolean> {
-  const result = await pool.query<{ id: string }>(
-    `UPDATE knowledge_observation
-     SET deleted_at = NOW()
-     WHERE id = $1 AND deleted_at IS NULL
-     RETURNING id`,
-    [observationId]
-  );
+export async function deleteObservation(observationId: string): Promise<boolean> {
+  const prisma = getPrismaClient();
+  const result = await prisma.knowledgeObservation.updateMany({
+    where: {
+      id: observationId,
+      deleted_at: null
+    },
+    data: {
+      deleted_at: new Date()
+    }
+  });
 
-  return result.rows.length > 0;
+  return result.count > 0;
 }
 
 /**
@@ -72,41 +71,44 @@ export async function deleteObservation(pool: Pool, observationId: string): Prom
  * Useful for removing specific facts without knowing observation IDs.
  *
  * @param pool - PostgreSQL connection pool
- * @param entityType - Entity type
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type
+ * @param entity_id - Entity UUID
  * @param observationText - Exact observation text to delete
  * @returns Number of observations deleted
  */
 export async function deleteObservationsByText(
-  pool: Pool,
-  entityType: string,
-  entityId: string,
+  entity_type: string,
+  entity_id: string,
   observationText: string
 ): Promise<number> {
-  const result = await pool.query<{ id: string }>(
-    `UPDATE knowledge_observation
-     SET deleted_at = NOW()
-     WHERE entity_type = $1 AND entity_id = $2 AND observation = $3 AND deleted_at IS NULL
-     RETURNING id`,
-    [entityType, entityId, observationText]
-  );
+  const prisma = getPrismaClient();
+  const result = await prisma.knowledgeObservation.updateMany({
+    where: {
+      entity_type: entity_type,
+      entity_id: entity_id,
+      observation: observationText,
+      deleted_at: null
+    },
+    data: {
+      deleted_at: new Date()
+    }
+  });
 
-  return result.rows.length;
+  return result.count;
 }
 
 /**
  * Get all active observations for an entity
  *
  * @param pool - PostgreSQL connection pool
- * @param entityType - Entity type
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type
+ * @param entity_id - Entity UUID
  * @param observationTypeFilter - Optional filter by observation_type
  * @returns Array of observations ordered by created_at DESC
  */
 export async function getObservations(
-  pool: Pool,
-  entityType: string,
-  entityId: string,
+  entity_type: string,
+  entity_id: string,
   observationTypeFilter?: string
 ): Promise<
   Array<{
@@ -117,28 +119,38 @@ export async function getObservations(
     created_at: Date;
   }>
 > {
-  let query = `
-    SELECT id, observation, observation_type, metadata, created_at
-    FROM knowledge_observation
-    WHERE entity_type = $1 AND entity_id = $2 AND deleted_at IS NULL
-  `;
-  const params: unknown[] = [entityType, entityId];
+  const prisma = getPrismaClient();
 
+  const whereClause: any = {
+    entity_type: entity_type,
+    entity_id: entity_id,
+    deleted_at: null
+  };
+
+  // FIXED: Use direct field access for observation_type filtering
   if (observationTypeFilter) {
-    query += ` AND observation_type = $3`;
-    params.push(observationTypeFilter);
+    whereClause.observation_type = observationTypeFilter;
   }
 
-  query += ` ORDER BY created_at DESC`;
+  const result = await prisma.knowledgeObservation.findMany({
+    where: whereClause,
+    orderBy: { created_at: 'desc' },
+    select: {
+      id: true,
+      observation: true,
+      observation_type: true,
+      metadata: true,
+      created_at: true
+    }
+  });
 
-  const result = await pool.query<{
-    id: string;
-    observation: string;
-    observation_type: string | null;
-    metadata: Record<string, unknown> | null;
-    created_at: Date;
-  }>(query, params);
-  return result.rows;
+  return result.map(observation => ({
+    id: observation.id,
+    observation: observation.observation,
+    observation_type: observation.observation_type,
+    metadata: observation.metadata as Record<string, unknown> | null,
+    created_at: observation.created_at
+  }));
 }
 
 /**
@@ -146,14 +158,13 @@ export async function getObservations(
  *
  * @param pool - PostgreSQL connection pool
  * @param searchQuery - Search query (FTS or LIKE pattern)
- * @param entityTypeFilter - Optional filter by entity_type
+ * @param entity_typeFilter - Optional filter by entity_type
  * @param limit - Result limit
  * @returns Array of matching observations with entity context
  */
 export async function searchObservations(
-  pool: Pool,
-  searchQuery: string,
-  entityTypeFilter?: string,
+    searchQuery: string,
+  entity_typeFilter?: string,
   limit: number = 20
 ): Promise<
   Array<{
@@ -166,12 +177,9 @@ export async function searchObservations(
     created_at: Date;
   }>
 > {
+  const prisma = getPrismaClient();
   // Use FTS if query looks like search terms, otherwise use LIKE
   const useFts = searchQuery.split(/\s+/).length > 1;
-
-  let query: string;
-  const params: unknown[] = [];
-  let paramIndex = 1;
 
   if (useFts) {
     // Full-text search - escape special characters and format properly
@@ -184,68 +192,117 @@ export async function searchObservations(
         return `${escaped}:*`;
       })
       .join(' & ');
-    query = `
-      SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
-      FROM knowledge_observation
-      WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', $${paramIndex})
-        AND deleted_at IS NULL
-    `;
-    params.push(tsQuery);
-    paramIndex++;
+
+    if (entity_typeFilter) {
+      const result = await prisma.$queryRaw<Array<{
+        id: string;
+        entity_type: string;
+        entity_id: string;
+        observation: string;
+        observation_type: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: Date;
+      }>>`
+        SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+        FROM knowledge_observation
+        WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', ${tsQuery})
+          AND deleted_at IS NULL AND entity_type = ${entity_typeFilter}
+        ORDER BY created_at DESC LIMIT ${limit}
+      `;
+      return result.flat();
+    } else {
+      const result = await prisma.$queryRaw<Array<{
+        id: string;
+        entity_type: string;
+        entity_id: string;
+        observation: string;
+        observation_type: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: Date;
+      }>>`
+        SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+        FROM knowledge_observation
+        WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', ${tsQuery})
+          AND deleted_at IS NULL
+        ORDER BY created_at DESC LIMIT ${limit}
+      `;
+      return result.flat();
+    }
   } else {
     // LIKE pattern search
-    query = `
-      SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
-      FROM knowledge_observation
-      WHERE observation ILIKE $${paramIndex}
-        AND deleted_at IS NULL
-    `;
-    params.push(`%${searchQuery}%`);
-    paramIndex++;
+    if (entity_typeFilter) {
+      const result = await prisma.$queryRaw<Array<{
+        id: string;
+        entity_type: string;
+        entity_id: string;
+        observation: string;
+        observation_type: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: Date;
+      }>>`
+        SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+        FROM knowledge_observation
+        WHERE observation ILIKE ${`%${searchQuery}%`}
+          AND deleted_at IS NULL AND entity_type = ${entity_typeFilter}
+        ORDER BY created_at DESC LIMIT ${limit}
+      `;
+      return result.flat();
+    } else {
+      const result = await prisma.$queryRaw<Array<Array<{
+        id: string;
+        entity_type: string;
+        entity_id: string;
+        observation: string;
+        observation_type: string | null;
+        metadata: Record<string, unknown> | null;
+        created_at: Date;
+      }>>>`
+        SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+        FROM knowledge_observation
+        WHERE observation ILIKE ${`%${searchQuery}%`}
+          AND deleted_at IS NULL
+        ORDER BY created_at DESC LIMIT ${limit}
+      `;
+      if (result.length > 0 && result[0].length > 0) {
+        return result[0] as unknown as Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>;
+      }
+      return [];
+    }
   }
-
-  if (entityTypeFilter) {
-    query += ` AND entity_type = $${paramIndex}`;
-    params.push(entityTypeFilter);
-    paramIndex++;
-  }
-
-  query += ` ORDER BY created_at DESC LIMIT $${paramIndex}`;
-  params.push(limit);
-
-  const result = await pool.query<{
-    id: string;
-    entity_type: string;
-    entity_id: string;
-    observation: string;
-    observation_type: string | null;
-    metadata: Record<string, unknown> | null;
-    created_at: Date;
-  }>(query, params);
-  return result.rows;
 }
 
 /**
  * Get observation count for an entity
  *
  * @param pool - PostgreSQL connection pool
- * @param entityType - Entity type
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type
+ * @param entity_id - Entity UUID
  * @returns Number of active observations
  */
 export async function getObservationCount(
-  pool: Pool,
-  entityType: string,
-  entityId: string
+    entity_type: string,
+  entity_id: string
 ): Promise<number> {
-  const result = await pool.query<{ count: string }>(
-    `SELECT COUNT(*) as count
+  const prisma = getPrismaClient();
+  const result = await prisma.$queryRaw`
+    SELECT COUNT(*) as count
      FROM knowledge_observation
-     WHERE entity_type = $1 AND entity_id = $2 AND deleted_at IS NULL`,
-    [entityType, entityId]
-  );
+     WHERE entity_type = ${entity_type} AND entity_id = ${entity_id} AND deleted_at IS NULL
+  `;
 
-  return parseInt(result.rows[0].count, 10);
+  const typedResult = result as Array<{ count: bigint }>;
+  if (typedResult.length > 0) {
+    return Number(typedResult[0].count);
+  }
+  return 0;
 }
 
 /**
@@ -255,13 +312,12 @@ export async function getObservationCount(
  *
  * @param pool - PostgreSQL connection pool
  * @param limit - Result limit
- * @param entityTypeFilter - Optional filter by entity_type
+ * @param entity_typeFilter - Optional filter by entity_type
  * @returns Array of recent observations
  */
 export async function getRecentObservations(
-  pool: Pool,
-  limit: number = 50,
-  entityTypeFilter?: string
+    limit: number = 50,
+  entity_typeFilter?: string
 ): Promise<
   Array<{
     id: string;
@@ -273,31 +329,55 @@ export async function getRecentObservations(
     created_at: Date;
   }>
 > {
-  let query = `
-    SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
-    FROM knowledge_observation
-    WHERE deleted_at IS NULL
-  `;
-  const params: unknown[] = [];
+  const prisma = getPrismaClient();
 
-  if (entityTypeFilter) {
-    query += ` AND entity_type = $1`;
-    params.push(entityTypeFilter);
-    query += ` ORDER BY created_at DESC LIMIT $2`;
-    params.push(limit);
+  if (entity_typeFilter) {
+    const result = await prisma.$queryRaw<Array<Array<{
+      id: string;
+      entity_type: string;
+      entity_id: string;
+      observation: string;
+      observation_type: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>>>`
+      SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+      FROM knowledge_observation
+      WHERE deleted_at IS NULL AND entity_type = ${entity_typeFilter}
+      ORDER BY created_at DESC LIMIT ${limit}
+    `;
+    return result.flat() as unknown as Array<{
+      id: string;
+      entity_type: string;
+      entity_id: string;
+      observation: string;
+      observation_type: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>;
   } else {
-    query += ` ORDER BY created_at DESC LIMIT $1`;
-    params.push(limit);
+    const result = await prisma.$queryRaw<Array<Array<{
+      id: string;
+      entity_type: string;
+      entity_id: string;
+      observation: string;
+      observation_type: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>>>`
+      SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
+      FROM knowledge_observation
+      WHERE deleted_at IS NULL
+      ORDER BY created_at DESC LIMIT ${limit}
+    `;
+    return result.flat() as unknown as Array<{
+      id: string;
+      entity_type: string;
+      entity_id: string;
+      observation: string;
+      observation_type: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: Date;
+    }>;
   }
-
-  const result = await pool.query<{
-    id: string;
-    entity_type: string;
-    entity_id: string;
-    observation: string;
-    observation_type: string | null;
-    metadata: Record<string, unknown> | null;
-    created_at: Date;
-  }>(query, params);
-  return result.rows;
 }

@@ -1,6 +1,5 @@
-import { getPool } from '../db/pool.js';
 import { auditLog } from '../db/audit.js';
-import { computeContentHash } from '../utils/hash.js';
+// import { computeContentHash } from '../utils/hash.js'; // Unused import
 import {
   violatesADRImmutability,
   violatesSpecWriteLock,
@@ -12,12 +11,11 @@ import {
   MemoryStoreRequestSchema,
 } from '../schemas/enhanced-validation.js';
 import { logger } from '../utils/logger.js';
-import { sectionService, decisionService } from '../db/prisma.js';
 import { ImmutabilityViolationError } from '../utils/immutability.js';
 import { storeRunbook } from './knowledge/runbook.js';
 import { storeChange } from './knowledge/change.js';
 import { storeIssue } from './knowledge/issue.js';
-import { storeDecision, updateDecision } from './knowledge/decision.js';
+// import { storeDecision } from './knowledge/decision.js'; // Unused import
 import { storeTodo } from './knowledge/todo.js';
 import { storeReleaseNote } from './knowledge/release_note.js';
 import { storeDDL } from './knowledge/ddl.js';
@@ -27,9 +25,13 @@ import { storeRelation } from './knowledge/relation.js';
 import { addObservation } from './knowledge/observation.js';
 import {
   storeIncident,
+  updateIncident,
   storeRelease,
+  updateRelease,
   storeRisk,
+  updateRisk,
   storeAssumption,
+  updateAssumption,
 } from './knowledge/session-logs.js';
 import { softDelete, type DeleteRequest } from './delete-operations.js';
 import { checkAndPurge } from './auto-purge.js';
@@ -124,10 +126,9 @@ export async function memoryStore(items: unknown[]): Promise<{
     };
   }
 
-  const pool = getPool();
-
+  
   // ✨ AUTO-MAINTENANCE: Check purge thresholds (< 1ms overhead)
-  await checkAndPurge(pool, 'memory.store');
+  await checkAndPurge('memory.store');
 
   const stored: StoreResult[] = [];
   const errors: StoreError[] = [];
@@ -147,20 +148,19 @@ export async function memoryStore(items: unknown[]): Promise<{
       if (itemAny.operation === 'delete') {
         // Handle delete operation
         const deleteRequest: DeleteRequest = {
-          entity_type: itemAny.kind ?? itemAny.entity_type,
-          entity_id: itemAny.id ?? itemAny.entity_id,
+          entity_type: itemAny.kind,
+          entity_id: itemAny.id,
           cascade_relations: itemAny.cascade_relations ?? false,
         };
 
-        const deleteResult = await softDelete(pool, deleteRequest);
+        const deleteResult = await softDelete(deleteRequest);
 
         if (deleteResult.status === 'deleted') {
           await auditLog(
-            pool,
             deleteRequest.entity_type,
             deleteRequest.entity_id,
             'DELETE',
-            { operation: 'soft_delete', cascade: deleteRequest.cascade_relations },
+            { operation: 'soft_delete', cascade: deleteRequest.cascade_relations, ...itemAny.data },
             itemAny.source?.actor
           );
           stored.push({
@@ -184,13 +184,17 @@ export async function memoryStore(items: unknown[]): Promise<{
 
       // Use enhanced validated item (already validated above)
       const item = validatedItems[i];
-      const hash = item.idempotency_key ?? computeContentHash(JSON.stringify(item.data));
+      // const hash = item.idempotency_key ?? computeContentHash(JSON.stringify(item.data)); // Unused variable
 
       if (item.kind === 'section') {
         try {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+
           // Check if this is an update operation
           if (item.data.id) {
-            const existing = await decisionService.findDecision(item.data.id); // Using decision service temporarily
+            const existing = await prismaClient.section.findUnique({
+              where: { id: item.data.id },
+            });
 
             if (existing) {
               // Convert to SectionItem format for validation
@@ -200,11 +204,11 @@ export async function memoryStore(items: unknown[]): Promise<{
                 data: {
                   id: existing.id,
                   title: existing.title,
-                  heading: existing.title, // Will be updated when section service is complete
+                  heading: existing.title, // Using title as heading since schema doesn't have heading field
                   body_text: '',
-                  body_md: '',
+                  body_md: existing.content ?? '',
                 },
-                tags: {},
+                tags: existing.tags as Record<string, unknown>,
               };
 
               // Check write-lock violation
@@ -212,40 +216,53 @@ export async function memoryStore(items: unknown[]): Promise<{
                 throw new ImmutabilityViolationError(
                   'Cannot modify approved specification content',
                   'SPEC_WRITE_LOCK',
-                  'body_md'
+                  'content'
                 );
               }
 
               // Perform update using Prisma (type-safe)
-              const updated = await sectionService.updateSection(item.data.id, {
-                title: item.data.title,
-                heading: item.data.heading ?? item.data.title,
-                bodyMd: item.data.body_md,
-                bodyText: item.data.body_text,
-                tags: item.scope,
+              const updated = await prismaClient.section.update({
+                where: { id: item.data.id },
+                data: {
+                  title: item.data.title,
+                  content: item.data.body_md ?? item.data.body_text,
+                  tags: item.scope ? item.scope : existing.tags,
+                  metadata: {},
+                },
               });
 
-              await auditLog(pool, 'section', updated.id, 'UPDATE', item.data, item.source?.actor);
+              await auditLog('section', updated.id, 'UPDATE', item.data, item.source?.actor);
 
               stored.push({
                 id: updated.id,
                 status: 'updated',
                 kind: 'section',
-                created_at: typeof updated.createdAt === 'string' ? updated.createdAt : new Date(updated.createdAt).toISOString(),
+                created_at: updated.created_at.toISOString(),
               });
               continue;
             }
           }
 
-          // Check for duplicates using Prisma
-          const existingByHash = await sectionService.findByContentHash(hash);
-          if (existingByHash) {
+          // Check for duplicates using Prisma - generate content hash for comparison
+          // const titleToHash = item.data.title ?? '';
+          // const contentToHash = item.data.body_md ?? item.data.body_text ?? '';
+          // const content_hash = require('crypto').createHash('sha256').update(`${titleToHash}:${contentToHash}`).digest('hex'); // Unused variable
+
+          // Check for existing sections with same content (simple duplicate detection)
+          const existingByContent = await prismaClient.section.findFirst({
+            where: {
+              title: item.data.title,
+              content: item.data.body_md ?? item.data.body_text,
+            },
+          });
+
+          if (existingByContent) {
             duplicatesFound++;
             stored.push({
-              id: existingByHash.id,
+              id: existingByContent.id,
               status: 'skipped_dedupe',
               kind: 'section',
-              created_at: typeof existingByHash.createdAt === 'string' ? existingByHash.createdAt : new Date(existingByHash.createdAt).toISOString(),
+              created_at: existingByContent.created_at.toISOString(),
             });
             continue;
           }
@@ -253,7 +270,6 @@ export async function memoryStore(items: unknown[]): Promise<{
           // ✨ Check for similar content (for autonomous context)
           if (item.data.title && (item.data.body_md ?? item.data.body_text)) {
             const similarityResult = await findSimilar(
-              pool,
               'section',
               item.data.title,
               item.data.body_md ?? item.data.body_text ?? ''
@@ -264,23 +280,23 @@ export async function memoryStore(items: unknown[]): Promise<{
             }
           }
 
-          // Create section using Prisma (type-safe - prevents schema mismatch!)
-          const result = await sectionService.createSection({
-            title: item.data.title,
-            heading: item.data.heading ?? item.data.title,
-            bodyMd: item.data.body_md,
-            bodyText: item.data.body_text,
-            tags: item.scope,
-            metadata: {},
+          // Create section using Prisma (type-safe - matches actual schema!)
+          const result = await prismaClient.section.create({
+            data: {
+              title: item.data.title,
+              content: item.data.body_md ?? item.data.body_text,
+              tags: item.scope ?? {},
+              metadata: {},
+            },
           });
 
-          await auditLog(pool, 'section', result.id, 'INSERT', item.data, item.source?.actor);
+          await auditLog('section', result.id, 'INSERT', item.data, item.source?.actor);
 
           stored.push({
             id: result.id,
             status: 'inserted',
             kind: 'section',
-            created_at: result.createdAt.toISOString(),
+            created_at: result.created_at.toISOString(),
           });
         } catch (prismaError: unknown) {
           // Convert Prisma errors to our error format
@@ -299,8 +315,8 @@ export async function memoryStore(items: unknown[]): Promise<{
           }
         }
       } else if (item.kind === 'runbook') {
-        const id = await storeRunbook(pool, item.data, item.scope);
-        await auditLog(pool, 'runbook', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeRunbook(item.data, item.scope);
+        await auditLog('runbook', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -308,8 +324,8 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'change') {
-        const id = await storeChange(pool, item.data, item.scope);
-        await auditLog(pool, 'change_log', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeChange(item.data, item.scope);
+        await auditLog('change_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -317,8 +333,8 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'issue') {
-        const id = await storeIssue(pool, item.data, item.scope);
-        await auditLog(pool, 'issue_log', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeIssue(item.data, item.scope);
+        await auditLog('issue_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -326,79 +342,150 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'decision') {
+        try {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+
+          // Check if this is an update operation
+          if (item.data.id) {
+            const existing = await prismaClient.adrDecision.findUnique({
+              where: { id: item.data.id },
+            });
+
+            if (existing) {
+              // Convert to DecisionItem format for validation using available properties
+              const existingItem: DecisionItem = {
+                kind: 'decision',
+                scope: {
+                  project: 'default',
+                  branch: 'main'
+                }, // Simplified scope for now
+                data: {
+                  id: existing.id,
+                  component: existing.component,
+                  status: existing.status as any,
+                  title: existing.title,
+                  rationale: existing.rationale,
+                  alternatives_considered: existing.alternativesConsidered ?? [],
+                  consequences: '', // This field doesn't exist in schema
+                  supersedes: '', // This field doesn't exist in schema
+                },
+              };
+
+              // Check immutability violation
+              if (violatesADRImmutability(existingItem, item)) {
+                throw new ImmutabilityViolationError(
+                  'Cannot modify accepted ADR content. Create new ADR with supersedes reference.',
+                  'ADR_IMMUTABLE',
+                  'status'
+                );
+              }
+
+              // Perform update using Prisma client directly
+              await prismaClient.adrDecision.update({
+                where: { id: item.data.id },
+                data: {
+                  status: item.data.status,
+                  title: item.data.title,
+                  rationale: item.data.rationale,
+                  alternativesConsidered: item.data.alternatives_considered,
+                },
+              });
+
+              await auditLog(
+                'adr_decision',
+                item.data.id,
+                'UPDATE',
+                item.data,
+                item.source?.actor
+              );
+
+              stored.push({
+                id: item.data.id,
+                status: 'updated',
+                kind: 'decision',
+                created_at: new Date().toISOString(),
+              });
+              continue;
+            }
+          }
+
+          // Create new decision using Prisma
+          const result = await prismaClient.adrDecision.create({
+            data: {
+              component: item.data.component ?? 'unknown',
+              status: item.data.status ?? 'proposed',
+              title: item.data.title,
+              rationale: item.data.rationale ?? '',
+              alternativesConsidered: item.data.alternatives_considered ?? [],
+              tags: item.scope ?? {},
+              metadata: {},
+            },
+          });
+
+          await auditLog('adr_decision', result.id, 'INSERT', item.data, item.source?.actor);
+          stored.push({
+            id: result.id,
+            status: 'inserted',
+            kind: 'decision',
+            created_at: result.created_at.toISOString(),
+          });
+        } catch (prismaError: unknown) {
+          if (prismaError instanceof Error) {
+            errors.push({
+              index: i,
+              error_code: 'DATABASE_ERROR',
+              message: `Prisma error: ${prismaError.message}`,
+            });
+          } else {
+            errors.push({
+              index: i,
+              error_code: 'DATABASE_ERROR',
+              message: 'Unknown Prisma error',
+            });
+          }
+        }
+      } else if (item.kind === 'todo') {
+        const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+
         // Check if this is an update operation
         if (item.data.id) {
-          const existing = await pool.query('SELECT * FROM adr_decision WHERE id = $1', [
-            item.data.id,
-          ]);
+          const existing = await prismaClient.todoLog.findUnique({
+            where: { id: item.data.id }
+          });
 
-          if (existing.rows.length > 0) {
-            // Convert to DecisionItem format for validation
-            const existingRow = existing.rows[0] as Record<string, unknown>;
-            const existingItem: DecisionItem = {
-              kind: 'decision',
-              scope: JSON.parse(String(existingRow.tags ?? '{}')),
+          if (existing) {
+            // Update existing todo using direct field access
+            const result = await prismaClient.todoLog.update({
+              where: { id: item.data.id },
               data: {
-                id: String(existingRow.id ?? ''),
-                component: String(existingRow.component ?? ''),
-                status: String(existingRow.status ?? 'proposed') as any,
-                title: String(existingRow.title ?? ''),
-                rationale: String(existingRow.rationale ?? ''),
-                alternatives_considered:
-                  typeof existingRow.alternatives_considered === 'string'
-                    ? JSON.parse(existingRow.alternatives_considered as string)
-                    : ((existingRow.alternatives_considered as string[]) ?? []),
-                consequences: String(existingRow.consequences ?? ''),
-                supersedes: String(existingRow.supersedes ?? ''),
-              },
-            };
-
-            // Check immutability violation
-            if (violatesADRImmutability(existingItem, item)) {
-              throw new ImmutabilityViolationError(
-                'Cannot modify accepted ADR content. Create new ADR with supersedes reference.',
-                'ADR_IMMUTABLE',
-                'status'
-              );
-            }
-
-            // Perform update
-            await updateDecision(pool, item.data.id, item.data);
-            await auditLog(
-              pool,
-              'adr_decision',
-              item.data.id,
-              'UPDATE',
-              item.data,
-              item.source?.actor
-            );
-
-            stored.push({
-              id: item.data.id,
-              status: 'updated',
-              kind: 'decision',
-              created_at: new Date().toISOString(),
+                title: item.data.text || item.data.todo_type || existing.title,
+                description: item.data.text ?? existing.description,
+                status: item.data.status ?? existing.status,
+                priority: item.data.priority ?? existing.priority,
+                due_date: item.data.due_date ? new Date(item.data.due_date) : existing.due_date,
+                todo_type: item.data.todo_type ?? existing.todo_type,
+                text: item.data.text ?? existing.text,
+                assignee: item.data.assignee ?? existing.assignee,
+                tags: {
+                  ...(existing.tags as any || {}),
+                  ...item.scope
+                }
+              }
             });
+
+            await auditLog('todo_log', result.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({ id: result.id, status: 'updated', kind: 'todo', created_at: new Date().toISOString() });
             continue;
           }
         }
 
-        // Original INSERT logic
-        const id = await storeDecision(pool, item.data, item.scope);
-        await auditLog(pool, 'adr_decision', id, 'INSERT', item.data, item.source?.actor);
-        stored.push({
-          id,
-          status: 'inserted',
-          kind: 'decision',
-          created_at: new Date().toISOString(),
-        });
-      } else if (item.kind === 'todo') {
-        const id = await storeTodo(pool, item.data, item.scope);
-        await auditLog(pool, 'todo_log', id, 'INSERT', item.data, item.source?.actor);
+        // Create new todo
+        const id = await storeTodo(item.data, item.scope);
+        await auditLog('todo_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({ id, status: 'inserted', kind: 'todo', created_at: new Date().toISOString() });
       } else if (item.kind === 'release_note') {
-        const id = await storeReleaseNote(pool, item.data, item.scope);
-        await auditLog(pool, 'release_note', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeReleaseNote(item.data, item.scope);
+        await auditLog('release_note', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -406,12 +493,12 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'ddl') {
-        const id = await storeDDL(pool, item.data);
-        await auditLog(pool, 'ddl_history', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeDDL(item.data);
+        await auditLog('ddl_history', id, 'INSERT', item.data, item.source?.actor);
         stored.push({ id, status: 'inserted', kind: 'ddl', created_at: new Date().toISOString() });
       } else if (item.kind === 'pr_context') {
-        const id = await storePRContext(pool, item.data, item.scope);
-        await auditLog(pool, 'pr_context', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storePRContext(item.data, item.scope);
+        await auditLog('pr_context', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -419,8 +506,43 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'entity') {
-        const id = await storeEntity(pool, item.data, item.scope);
-        await auditLog(pool, 'knowledge_entity', id, 'INSERT', item.data, item.source?.actor);
+        const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+
+        // Check if this is an update operation
+        if (item.data.id) {
+          const existing = await prismaClient.knowledgeEntity.findUnique({
+            where: { id: item.data.id }
+          });
+
+          if (existing) {
+            // Update existing entity
+            const result = await prismaClient.knowledgeEntity.update({
+              where: { id: item.data.id },
+              data: {
+                entity_type: item.data.entity_type ?? existing.entity_type,
+                name: item.data.name ?? existing.name,
+                data: item.data.data ?? existing.data,
+                tags: {
+                  ...(existing.tags as any || {}),
+                  ...item.scope
+                }
+              }
+            });
+
+            await auditLog('knowledge_entity', result.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({
+              id: result.id,
+              status: 'updated',
+              kind: 'entity',
+              created_at: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+
+        // Create new entity
+        const id = await storeEntity(item.data, item.scope);
+        await auditLog('knowledge_entity', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -428,8 +550,8 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'relation') {
-        const id = await storeRelation(pool, item.data, item.scope);
-        await auditLog(pool, 'knowledge_relation', id, 'INSERT', item.data, item.source?.actor);
+        const id = await storeRelation(item.data, item.scope);
+        await auditLog('knowledge_relation', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -437,8 +559,8 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'observation') {
-        const id = await addObservation(pool, item.data, item.scope);
-        await auditLog(pool, 'knowledge_observation', id, 'INSERT', item.data, item.source?.actor);
+        const id = await addObservation(item.data, item.scope);
+        await auditLog('knowledge_observation', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -446,8 +568,30 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'incident') {
-        const id = await storeIncident(pool, item.data, item.scope);
-        await auditLog(pool, 'incident_log', id, 'INSERT', item.data, item.source?.actor);
+        // Check if this is an update operation
+        if (item.data.id) {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+          const existing = await prismaClient.incidentLog.findUnique({
+            where: { id: item.data.id }
+          });
+
+          if (existing) {
+            // Update existing incident
+            await updateIncident(item.data.id, item.data);
+            await auditLog('incident_log', item.data.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({
+              id: item.data.id,
+              status: 'updated',
+              kind: 'incident',
+              created_at: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+
+        // Create new incident
+        const id = await storeIncident(item.data, item.scope);
+        await auditLog('incident_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -455,8 +599,30 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'release') {
-        const id = await storeRelease(pool, item.data, item.scope);
-        await auditLog(pool, 'release_log', id, 'INSERT', item.data, item.source?.actor);
+        // Check if this is an update operation
+        if (item.data.id) {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+          const existing = await prismaClient.releaseLog.findUnique({
+            where: { id: item.data.id }
+          });
+
+          if (existing) {
+            // Update existing release
+            await updateRelease(item.data.id, item.data);
+            await auditLog('release_log', item.data.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({
+              id: item.data.id,
+              status: 'updated',
+              kind: 'release',
+              created_at: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+
+        // Create new release
+        const id = await storeRelease(item.data, item.scope);
+        await auditLog('release_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -464,8 +630,30 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'risk') {
-        const id = await storeRisk(pool, item.data, item.scope);
-        await auditLog(pool, 'risk_log', id, 'INSERT', item.data, item.source?.actor);
+        // Check if this is an update operation
+        if (item.data.id) {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+          const existing = await prismaClient.riskLog.findUnique({
+            where: { id: item.data.id }
+          });
+
+          if (existing) {
+            // Update existing risk
+            await updateRisk(item.data.id, item.data);
+            await auditLog('risk_log', item.data.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({
+              id: item.data.id,
+              status: 'updated',
+              kind: 'risk',
+              created_at: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+
+        // Create new risk
+        const id = await storeRisk(item.data, item.scope);
+        await auditLog('risk_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',
@@ -473,8 +661,30 @@ export async function memoryStore(items: unknown[]): Promise<{
           created_at: new Date().toISOString(),
         });
       } else if (item.kind === 'assumption') {
-        const id = await storeAssumption(pool, item.data, item.scope);
-        await auditLog(pool, 'assumption_log', id, 'INSERT', item.data, item.source?.actor);
+        // Check if this is an update operation
+        if (item.data.id) {
+          const prismaClient = (await import('../db/prisma-client.js')).prisma.getClient();
+          const existing = await prismaClient.assumptionLog.findUnique({
+            where: { id: item.data.id }
+          });
+
+          if (existing) {
+            // Update existing assumption
+            await updateAssumption(item.data.id, item.data);
+            await auditLog('assumption_log', item.data.id, 'UPDATE', item.data, item.source?.actor);
+            stored.push({
+              id: item.data.id,
+              status: 'updated',
+              kind: 'assumption',
+              created_at: new Date().toISOString(),
+            });
+            continue;
+          }
+        }
+
+        // Create new assumption
+        const id = await storeAssumption(item.data, item.scope);
+        await auditLog('assumption_log', id, 'INSERT', item.data, item.source?.actor);
         stored.push({
           id,
           status: 'inserted',

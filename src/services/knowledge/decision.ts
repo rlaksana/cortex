@@ -1,27 +1,23 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 import type { DecisionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateADRImmutability } from '../../utils/immutability.js';
 
 export async function storeDecision(
-  pool: Pool,
   data: DecisionData,
   scope: ScopeFilter
 ): Promise<string> {
-  const result = await pool.query<{ id: string }>(
-    `INSERT INTO adr_decision (component, status, title, rationale, alternatives_considered, consequences, supersedes, tags)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-    [
-      data.component,
-      data.status,
-      data.title,
-      data.rationale,
-      data.alternatives_considered || [],
-      data.consequences,
-      data.supersedes,
-      JSON.stringify(scope),
-    ]
-  );
-  return result.rows[0].id;
+  const prisma = getPrismaClient();
+  const result = await prisma.adrDecision.create({
+    data: {
+      component: data.component,
+      status: data.status,
+      title: data.title,
+      rationale: data.rationale,
+      alternativesConsidered: (data.alternatives_considered as string[]) || [],
+      tags: scope
+    }
+  });
+  return result.id;
 }
 
 /**
@@ -30,49 +26,37 @@ export async function storeDecision(
  * @throws ImmutabilityViolationError if ADR status is 'accepted'
  */
 export async function updateDecision(
-  pool: Pool,
   id: string,
   data: Partial<DecisionData>
 ): Promise<void> {
+  const prisma = getPrismaClient();
   // Check immutability before allowing update
-  await validateADRImmutability(pool, id);
+  await validateADRImmutability(id);
 
-  const updates: string[] = [];
-  const values: unknown[] = [];
-  let paramIndex = 1;
+  const updateData: any = {};
 
   if (data.component !== undefined) {
-    updates.push(`component = $${paramIndex++}`);
-    values.push(data.component);
+    updateData.component = data.component;
   }
   if (data.status !== undefined) {
-    updates.push(`status = $${paramIndex++}`);
-    values.push(data.status);
+    updateData.status = data.status;
   }
   if (data.title !== undefined) {
-    updates.push(`title = $${paramIndex++}`);
-    values.push(data.title);
+    updateData.title = data.title;
   }
   if (data.rationale !== undefined) {
-    updates.push(`rationale = $${paramIndex++}`);
-    values.push(data.rationale);
+    updateData.rationale = data.rationale;
   }
   if (data.alternatives_considered !== undefined) {
-    updates.push(`alternatives_considered = $${paramIndex++}`);
-    values.push(data.alternatives_considered || []);
-  }
-  if (data.consequences !== undefined) {
-    updates.push(`consequences = $${paramIndex++}`);
-    values.push(data.consequences);
+    updateData.alternativesConsidered = (data.alternatives_considered as string[]) || [];
   }
 
-  if (updates.length === 0) {
+  if (Object.keys(updateData).length === 0) {
     return; // No updates to perform
   }
 
-  values.push(id);
-  await pool.query(
-    `UPDATE adr_decision SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-    values
-  );
+  await prisma.adrDecision.update({
+    where: { id },
+    data: updateData
+  });
 }

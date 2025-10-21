@@ -1,9 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -11,105 +7,394 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Section table for documentation chunks
+// CONSISTENT ARCHITECTURE: Nama SAMA PERFECT antara Prisma model dan database table
+
 model Section {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  documentId      String?   @map("document_id") @db.Uuid
-  heading         String    @db.VarChar(300)
-  title           String    @db.VarChar(500)
-  bodyMd          String?   @map("body_md") @db.Text
-  bodyText        String?   @map("body_text") @db.Text
-  bodyJsonb       Json      @map("body_jsonb") @default(dbgenerated("{\"text\": COALESCE(body_text, ''), \"markdown\": COALESCE(body_md, '')}"))
-  citationCount   Int       @default(0) @map("citation_count")
-  contentHash     String?   @map("content_hash") @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tags            Json      @default("{}") @db.JsonB
-  metadata        Json      @default("{}") @db.JsonB
+  id             String   @id @default(cuid())
+  title          String   @db.VarChar(500)
+  content        String?
+  heading        String?  @db.VarChar(500)   // ADD - Missing field
+  body_md        String?  @db.Text           // ADD - Missing field
+  body_text      String?  @db.Text           // ADD - Missing field
+  document_id    String?  @db.VarChar(200)   // ADD - Missing field
+  citation_count Int?     @default(0)       // ADD - Missing field
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  tags           Json     @default("{}")
+  metadata       Json     @default("{}")
+  created_by     String?  @default("system") @db.VarChar(200)
+  updated_by     String?  @default("system") @db.VarChar(200)
+  request_id     String?  @db.VarChar(100)
+  content_hash   String?  @db.VarChar(128)
 
-  // Indexes
-  @@index([contentHash], map: "idx_section_content_hash")
-  @@index([tags], map: "idx_section_tags", type: Hash)
-  @@index([createdAt], map: "idx_section_created_at")
-  @@index([title], map: "idx_section_title", type: BTree)
-  @@map("section")
+  @@index([document_id], map: "idx_Section_document_id")
+  @@map("Section")
 }
 
-// ADR Decision table
 model AdrDecision {
-  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  component             String    @db.VarChar(200)
-  status                String    @db.VarChar(50)
-  title                 String    @db.VarChar(500)
-  rationale             String    @db.Text
+  id                     String    @id @default(cuid())
+  component              String    @db.VarChar(200)
+  status                 String    @db.VarChar(50)
+  title                  String    @db.VarChar(500)
+  rationale              String
   alternativesConsidered String[]
-  consequences          String?   @db.Text
-  supersedes            String?   @db.Uuid
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tags                  Json      @default("{}") @db.JsonB
-  metadata              Json      @default("{}") @db.JsonB
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  tags                   Json      @default("{}")
+  metadata               Json      @default("{}")
+  created_by             String?   @default("system") @db.VarChar(200)
+  updated_by             String?   @default("system") @db.VarChar(200)
+  request_id             String?   @db.VarChar(100)
+  content_hash           String?   @db.VarChar(128)
+  accepted_at            DateTime? @db.Timestamptz(6)
+  accepted_by            String?   @db.VarChar(200)
 
-  @@index([status], map: "idx_adr_decision_status")
-  @@index([component], map: "idx_adr_decision_component")
-  @@map("adr_decision")
+  @@index([updated_at(sort: Desc), created_at], map: "idx_AdrDecision_updated_at_desc")
+  @@map("AdrDecision")
 }
 
-// Issue tracking table
 model IssueLog {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tracker     String    @db.VarChar(100)
-  externalId  String    @map("external_id") @db.VarChar(100)
-  title       String    @db.VarChar(500)
-  description String?   @db.Text
-  severity    String?   @db.VarChar(50)
-  status      String?   @db.VarChar(50)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tags        Json      @default("{}") @db.JsonB
-  metadata    Json      @default("{}") @db.JsonB
+  id           String   @id @default(cuid())
+  title        String   @db.VarChar(500)
+  description  String?
+  status       String   @db.VarChar(50)
+  tracker      String?  @db.VarChar(100)  // ADD - Critical missing field
+  external_id  String?  @db.VarChar(100)  // ADD - Critical missing field
+  severity     String?  @db.VarChar(50)
+  labels       Json?    @default("[]")    // ADD - Missing field
+  url          String?                  // ADD - Missing field
+  assignee     String?  @db.VarChar(200) // ADD - Missing field
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  tags         Json     @default("{}")
+  metadata     Json     @default("{}")
+  created_by   String?  @default("system") @db.VarChar(200)
+  updated_by   String?  @default("system") @db.VarChar(200)
+  request_id   String?  @db.VarChar(100)
+  content_hash String?  @db.VarChar(128)
 
-  @@unique([tracker, externalId], map: "unique_issue_tracker_external")
-  @@index([status], map: "idx_issue_status")
-  @@index([severity], map: "idx_issue_severity")
-  @@map("issue_log")
+  @@index([updated_at(sort: Desc), created_at], map: "idx_IssueLog_updated_at_desc")
+  @@index([tracker, external_id], map: "idx_IssueLog_tracker_external")
+  @@map("IssueLog")
 }
 
-// Todo tracking table
 model TodoLog {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String    @db.VarChar(500)
-  description String?   @db.Text
-  status      String    @db.VarChar(50)
-  priority    String?   @db.VarChar(50)
-  dueDate     DateTime? @map("due_date") @db.Timestamptz(6)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tags        Json      @default("{}") @db.JsonB
-  metadata    Json      @default("{}") @db.JsonB
+  id           String    @id @default(cuid())
+  title        String    @db.VarChar(500)
+  description  String?
+  status       String    @db.VarChar(50)
+  priority     String?   @db.VarChar(50)
+  due_date     DateTime?
+  todo_type    String?   @db.VarChar(50)   // ADD - Critical missing field
+  text         String?   @db.Text          // ADD - Critical missing field
+  assignee     String?   @db.VarChar(200)  // ADD - Missing field
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  tags         Json      @default("{}")
+  metadata     Json      @default("{}")
+  closed_at    DateTime?
+  created_by   String?   @default("system") @db.VarChar(200)
+  updated_by   String?   @default("system") @db.VarChar(200)
+  request_id   String?   @db.VarChar(100)
+  content_hash String?   @db.VarChar(128)
+  completed_at DateTime? @db.Timestamptz(6)
+  completed_by String?   @db.VarChar(200)
 
-  @@index([status], map: "idx_todo_status")
-  @@index([priority], map: "idx_todo_priority")
-  @@index([dueDate], map: "idx_todo_due_date")
-  @@map("todo_log")
+  @@index([updated_at(sort: Desc), created_at], map: "idx_TodoLog_updated_at_desc")
+  @@index([todo_type, status], map: "idx_TodoLog_type_status")
+  @@index([assignee], map: "idx_TodoLog_assignee")
+  @@map("TodoLog")
 }
 
-// Add other models as needed...
-model ChangeLog {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  changeType  String    @map("change_type") @db.VarChar(100)
-  subjectRef  String    @map("subject_ref") @db.VarChar(200)
-  summary     String    @db.Text
-  details     String?   @db.Text
-  affectedFiles String[] @map("affected_files")
-  author      String    @db.VarChar(200)
-  commitSha   String?   @map("commit_sha") @db.VarChar(100)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  tags        Json      @default("{}") @db.JsonB
-  metadata    Json      @default("{}") @db.JsonB
+model Runbook {
+  id              String   @id @default(cuid())
+  title           String   @db.VarChar(500)
+  description     String?
+  steps           Json     @default("[]")
+  service         String?  @db.VarChar(200)  // ADD - Critical missing field
+  triggers        Json?    @default("[]")    // ADD - Missing field
+  last_verified_at DateTime?                // ADD - Missing field
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  tags            Json     @default("{}")
+  metadata        Json     @default("{}")
+  created_by      String?  @default("system") @db.VarChar(200)
+  updated_by      String?  @default("system") @db.VarChar(200)
+  request_id      String?  @db.VarChar(100)
+  content_hash    String?  @db.VarChar(128)
 
-  @@index([changeType], map: "idx_change_type")
-  @@index([commitSha], map: "idx_change_commit_sha")
-  @@map("change_log")
+  @@index([service], map: "idx_Runbook_service")
+  @@map("Runbook")
+}
+
+model ChangeLog {
+  id          String   @id @default(cuid())
+  change_type String   @db.VarChar(100)
+  subject_ref String   @db.VarChar(200)
+  summary     String
+  author      String   @db.VarChar(200)
+  commit_sha  String?  @db.VarChar(100)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  tags        Json     @default("{}")
+  metadata    Json     @default("{}")
+  created_by  String?  @default("system") @db.VarChar(200)
+  updated_by  String?  @default("system") @db.VarChar(200)
+  request_id  String?  @db.VarChar(100)
+  content_hash String? @db.VarChar(128)
+
+  @@map("ChangeLog")
+}
+
+model ReleaseNote {
+  id          String   @id @default(cuid())
+  version     String   @db.VarChar(100)
+  summary     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  tags        Json     @default("{}")
+  metadata    Json     @default("{}")
+  created_by  String?  @default("system") @db.VarChar(200)
+  updated_by  String?  @default("system") @db.VarChar(200)
+  request_id  String?  @db.VarChar(100)
+  content_hash String? @db.VarChar(128)
+
+  @@map("ReleaseNote")
+}
+
+model DdlHistory {
+  id          String   @id @default(cuid())
+  migration_id String  @db.VarChar(200)
+  ddl_text    String
+  checksum    String   @db.VarChar(64)
+  applied_at  DateTime @default(now())
+  description String?
+  status      String   @default("applied") @db.VarChar(20)
+  tags        Json     @default("{}")
+  metadata    Json     @default("{}")
+  created_by  String?  @default("system") @db.VarChar(200)
+  updated_by  String?  @default("system") @db.VarChar(200)
+  request_id  String?  @db.VarChar(100)
+  content_hash String? @db.VarChar(128)
+
+  @@map("DdlHistory")
+}
+
+model PrContext {
+  id          String    @id @default(cuid())
+  pr_number   Int
+  title       String    @db.VarChar(500)
+  description String?
+  author      String    @db.VarChar(200)
+  status      String    @default("open") @db.VarChar(50)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  tags        Json      @default("{}")
+  metadata    Json      @default("{}")
+  merged_at   DateTime?
+  created_by  String?   @default("system") @db.VarChar(200)
+  updated_by  String?   @default("system") @db.VarChar(200)
+  request_id  String?   @db.VarChar(100)
+  content_hash String?  @db.VarChar(128)
+
+  @@map("PrContext")
+}
+
+model KnowledgeEntity {
+  id          String    @id @default(cuid())
+  entity_type String    @db.VarChar(100)
+  name        String    @db.VarChar(500)
+  data        Json      @default("{}")
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  tags        Json      @default("{}")
+  metadata    Json      @default("{}")
+  deleted_at  DateTime?
+  created_by  String?   @default("system") @db.VarChar(200)
+  updated_by  String?   @default("system") @db.VarChar(200)
+  request_id  String?   @db.VarChar(100)
+  content_hash String?  @db.VarChar(128)  // ADD - Missing field for deduplication
+
+  @@index([entity_type, name], map: "idx_KnowledgeEntity_type_name")
+  @@map("KnowledgeEntity")
+}
+
+model KnowledgeRelation {
+  id               String    @id @default(cuid())
+  from_entity_type String    @db.VarChar(100)
+  from_entity_id   String
+  to_entity_type   String    @db.VarChar(100)
+  to_entity_id     String
+  relation_type    String    @db.VarChar(100)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  tags             Json      @default("{}")
+  metadata         Json      @default("{}")
+  deleted_at       DateTime?
+  created_by       String?   @default("system") @db.VarChar(200)
+  updated_by       String?   @default("system") @db.VarChar(200)
+  request_id       String?   @db.VarChar(100)
+  content_hash     String?  @db.VarChar(128)
+
+  @@map("KnowledgeRelation")
+}
+
+model KnowledgeObservation {
+  id              String    @id @default(cuid())
+  entity_type     String    @db.VarChar(100)
+  entity_id       String
+  observation     String
+  observation_type String?  @db.VarChar(100)  // ADD - Critical missing field
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  tags            Json      @default("{}")
+  metadata        Json      @default("{}")
+  deleted_at      DateTime?
+  created_by      String?   @default("system") @db.VarChar(200)
+  updated_by      String?   @default("system") @db.VarChar(200)
+  request_id      String?   @db.VarChar(100)
+  content_hash    String?   @db.VarChar(128)
+
+  @@index([entity_type, entity_id], map: "idx_KnowledgeObservation_entity")
+  @@index([observation_type], map: "idx_KnowledgeObservation_type")
+  @@map("KnowledgeObservation")
+}
+
+model IncidentLog {
+  id               String   @id @default(cuid())
+  title            String   @db.VarChar(500)
+  severity         String   @db.VarChar(20)
+  impact           String
+  resolution_status String  @default("open") @db.VarChar(50)
+  affected_services Json?    @default("[]")   // ADD - Missing field
+  business_impact   String?                     // ADD - Missing field
+  recovery_actions  Json?    @default("[]")   // ADD - Missing field
+  follow_up_required Boolean? @default(false) // ADD - Missing field
+  incident_commander String? @db.VarChar(200) // ADD - Missing field
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  tags             Json     @default("{}")
+  metadata         Json     @default("{}")
+  created_by       String?  @default("system") @db.VarChar(200)
+  updated_by       String?  @default("system") @db.VarChar(200)
+  request_id       String?  @db.VarChar(100)
+  content_hash     String?  @db.VarChar(128)
+  detected_at      DateTime? @db.Timestamptz(6)
+  timeline         Json?     @default("[]")
+  root_cause_analysis String?
+  resolution       String?
+
+  @@index([severity, resolution_status], map: "idx_IncidentLog_severity_status")
+  @@map("IncidentLog")
+}
+
+model ReleaseLog {
+  id          String   @id @default(cuid())
+  version     String   @db.VarChar(100)
+  release_type String  @db.VarChar(50)
+  scope       String
+  status      String   @default("planned") @db.VarChar(50)
+  ticket_references Json?   @default("[]")    // ADD - Missing field
+  included_changes  Json?   @default("[]")    // ADD - Missing field
+  deployment_strategy String?                 // ADD - Missing field
+  testing_status    String?                   // ADD - Missing field
+  approvers         Json?    @default("[]")   // ADD - Missing field
+  release_notes     String?                   // ADD - Missing field
+  post_release_actions Json?  @default("[]")  // ADD - Missing field
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  tags        Json     @default("{}")
+  metadata    Json     @default("{}")
+  created_by  String?  @default("system") @db.VarChar(200)
+  updated_by  String?  @default("system") @db.VarChar(200)
+  request_id  String?  @db.VarChar(100)
+  content_hash String?  @db.VarChar(128)
+  deployment_date DateTime? @db.Timestamptz(6)
+  rollback_plan String?
+
+  @@index([version, status], map: "idx_ReleaseLog_version_status")
+  @@map("ReleaseLog")
+}
+
+model RiskLog {
+  id                  String   @id @default(cuid())
+  title               String   @db.VarChar(500)
+  category            String   @db.VarChar(50)
+  risk_level          String   @db.VarChar(20)
+  impact_description  String
+  probability         String?  @db.VarChar(20)  // FIX: Change from Decimal to String to match TypeScript enum
+  mitigation_strategies Json? @default("[]")   // ADD - Missing field
+  trigger_events      Json?   @default("[]")   // ADD - Missing field
+  owner               String? @db.VarChar(200) // ADD - Missing field
+  review_date         String?                 // ADD - Missing field
+  monitoring_indicators Json? @default("[]")  // ADD - Missing field
+  contingency_plans   String?                 // ADD - Missing field
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  tags                Json     @default("{}")
+  metadata            Json     @default("{}")
+  status              String   @default("open") @db.VarChar(50)
+  created_by          String?  @default("system") @db.VarChar(200)
+  updated_by          String?  @default("system") @db.VarChar(200)
+  request_id          String?  @db.VarChar(100)
+  content_hash        String?  @db.VarChar(128)
+
+  @@map("RiskLog")
+}
+
+model AssumptionLog {
+  id               String   @id @default(cuid())
+  title            String   @db.VarChar(500)
+  description      String
+  category         String   @db.VarChar(50)
+  validation_status String  @default("assumed") @db.VarChar(50)
+  impact_if_invalid String
+  validation_criteria Json?  @default("[]")  // ADD - Missing field
+  validation_date   String?                  // ADD - Missing field
+  owner             String? @db.VarChar(200)  // ADD - Missing field
+  related_assumptions Json? @default("[]")   // ADD - Missing field
+  monitoring_approach String?               // ADD - Missing field
+  review_frequency  String? @db.VarChar(50)  // ADD - Missing field
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  tags             Json     @default("{}")
+  metadata         Json     @default("{}")
+  created_by       String?  @default("system") @db.VarChar(200)
+  updated_by       String?  @default("system") @db.VarChar(200)
+  request_id       String?  @db.VarChar(100)
+  content_hash     String?  @db.VarChar(128)
+  dependencies     Json?     @default("[]")
+
+  @@map("AssumptionLog")
+}
+
+model PurgeMetadata {
+  id                   Int      @id @unique @default(1)
+  last_purge_at        DateTime @default(now())
+  operations_since_purge Int     @default(0)
+  time_threshold_hours Int      @default(24)
+  operation_threshold  Int      @default(1000)
+  deleted_counts       Json     @default("{}")
+  last_duration_ms     Int?
+  enabled              Boolean  @default(true)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  @@map("PurgeMetadata")
+}
+
+model EventAudit {
+  id          String   @id @default(cuid())
+  event_type  String   @db.VarChar(100)
+  table_name  String   @db.VarChar(100)
+  record_id   String   @db.VarChar(500)
+  operation   String   @db.VarChar(10)
+  old_data    Json?
+  new_data    Json?
+  changed_by  String?  @db.VarChar(200)
+  tags        Json     @default("{}")
+  metadata    Json     @default("{}")
+  created_at  DateTime @default(now())
+
+  @@map("EventAudit")
 }

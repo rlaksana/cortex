@@ -1,22 +1,26 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
+import { logger } from '../../utils/logger.js';
 
 export interface AuditLogEntry {
   id: string;
-  entity_type: string;
-  entity_id: string;
+  eventType: string;
+  table_name: string;
+  record_id: string;
   operation: string;
-  actor: string | null;
-  change_summary: Record<string, unknown> | null;
+  changed_by: string | null;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
   created_at: Date;
 }
 
 export interface AuditLogFilters {
-  entity_type?: string;
-  entity_id?: string;
+  table_name?: string;
+  record_id?: string;
   operation?: 'INSERT' | 'UPDATE' | 'DELETE';
-  actor?: string;
+  changed_by?: string;
   since?: Date;
   until?: Date;
+  eventType?: string;
 }
 
 export interface AuditLogQueryResult {
@@ -41,85 +45,107 @@ export interface AuditLogQueryResult {
  * @returns Paginated audit log entries
  */
 export async function queryAuditLog(
-  pool: Pool,
   filters: AuditLogFilters = {},
   options: {
     page?: number;
     page_size?: number;
-    order_by?: 'created_at' | 'entity_type';
+    order_by?: 'created_at' | 'table_name' | 'eventType';
     order_dir?: 'ASC' | 'DESC';
   } = {}
 ): Promise<AuditLogQueryResult> {
+  const prisma = getPrismaClient();
   const { page = 1, page_size = 50, order_by = 'created_at', order_dir = 'DESC' } = options;
 
-  // Build WHERE clause dynamically
-  const whereClauses: string[] = [];
-  const params: unknown[] = [];
-  let paramIndex = 1;
+  try {
+    // Build Prisma where clause
+    const whereClause: any = {};
 
-  if (filters.entity_type) {
-    whereClauses.push(`entity_type = $${paramIndex++}`);
-    params.push(filters.entity_type);
+    if (filters.table_name) {
+      whereClause.table_name = filters.table_name;
+    }
+
+    if (filters.record_id) {
+      whereClause.record_id = filters.record_id;
+    }
+
+    if (filters.operation) {
+      whereClause.operation = filters.operation;
+    }
+
+    if (filters.changed_by) {
+      whereClause.changed_by = filters.changed_by;
+    }
+
+    if (filters.eventType) {
+      whereClause.eventType = filters.eventType;
+    }
+
+    // Handle date range filtering
+    if (filters.since || filters.until) {
+      whereClause.created_at = {};
+      if (filters.since) whereClause.created_at.gte = filters.since;
+      if (filters.until) whereClause.created_at.lte = filters.until;
+    }
+
+    // Calculate pagination
+    const offset = (page - 1) * page_size;
+
+    // Execute count and data queries in parallel
+    const [totalResult, entriesResult] = await Promise.all([
+      prisma.eventAudit.count({ where: whereClause }),
+      prisma.eventAudit.findMany({
+        where: whereClause,
+        orderBy: { [order_by]: order_dir.toLowerCase() as 'asc' | 'desc' },
+        skip: offset,
+        take: page_size,
+        select: {
+          id: true,
+          event_type: true,
+          table_name: true,
+          record_id: true,
+          operation: true,
+          changed_by: true,
+          old_data: true,
+          new_data: true,
+          created_at: true,
+        },
+      }),
+    ]);
+
+    logger.debug(
+      {
+        filters,
+        total: totalResult,
+        page,
+        page_size,
+        returned: entriesResult.length
+      },
+      'Audit log query executed'
+    );
+
+    // Map database field names to interface field names
+    const entries = entriesResult.map((entry: any) => ({
+      ...entry,
+      eventType: entry.event_type,
+    })) as AuditLogEntry[];
+
+    return {
+      entries,
+      total: totalResult,
+      page,
+      page_size,
+    };
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        filters,
+        options
+      },
+      'Failed to query audit log'
+    );
+    throw error;
   }
-
-  if (filters.entity_id) {
-    whereClauses.push(`entity_id = $${paramIndex++}`);
-    params.push(filters.entity_id);
-  }
-
-  if (filters.operation) {
-    whereClauses.push(`operation = $${paramIndex++}`);
-    params.push(filters.operation);
-  }
-
-  if (filters.actor) {
-    whereClauses.push(`actor = $${paramIndex++}`);
-    params.push(filters.actor);
-  }
-
-  if (filters.since) {
-    whereClauses.push(`created_at >= $${paramIndex++}`);
-    params.push(filters.since);
-  }
-
-  if (filters.until) {
-    whereClauses.push(`created_at <= $${paramIndex++}`);
-    params.push(filters.until);
-  }
-
-  const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-  // Count total matching entries
-  const countQuery = `SELECT COUNT(*) as total FROM event_audit ${whereClause}`;
-  const countResult = await pool.query<{ total: string }>(countQuery, params);
-  const total = parseInt(countResult.rows[0].total, 10);
-
-  // Fetch paginated entries
-  const offset = (page - 1) * page_size;
-  const dataQuery = `
-    SELECT
-      id,
-      entity_type,
-      entity_id,
-      operation,
-      actor,
-      change_summary,
-      created_at
-    FROM event_audit
-    ${whereClause}
-    ORDER BY ${order_by} ${order_dir}
-    LIMIT $${paramIndex++} OFFSET $${paramIndex}
-  `;
-
-  const dataParams = [...params, page_size, offset];
-  const dataResult = await pool.query<AuditLogEntry>(dataQuery, dataParams);
-
-  return {
-    entries: dataResult.rows,
-    total,
-    page,
-    page_size,
-  };
 }
 
 /**
@@ -128,22 +154,41 @@ export async function queryAuditLog(
  * Convenience wrapper for queryAuditLog focused on single entity history
  *
  * @param pool - Database connection pool
- * @param entityType - Entity type (e.g., 'section', 'adr_decision')
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type (e.g., 'section', 'adr_decision')
+ * @param entity_id - Entity UUID
  * @returns Chronological audit entries for entity
  */
 export async function getEntityAuditTrail(
-  pool: Pool,
-  entityType: string,
-  entityId: string
+  table_name: string,
+  record_id: string
 ): Promise<AuditLogEntry[]> {
-  const result = await queryAuditLog(
-    pool,
-    { entity_type: entityType, entity_id: entityId },
-    { page_size: 100, order_dir: 'ASC' }
-  );
+  try {
+    const result = await queryAuditLog(
+      { table_name, record_id },
+      { page_size: 100, order_dir: 'ASC' }
+    );
 
-  return result.entries;
+    logger.debug(
+      {
+        table_name,
+        record_id,
+        count: result.entries.length
+      },
+      'Retrieved entity audit trail'
+    );
+
+    return result.entries;
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        table_name,
+        record_id
+      },
+      'Failed to get entity audit trail'
+    );
+    throw error;
+  }
 }
 
 /**
@@ -154,19 +199,50 @@ export async function getEntityAuditTrail(
  * @returns Recent audit log entries
  */
 export async function getRecentAuditActivity(
-  pool: Pool,
   limit: number = 20
 ): Promise<AuditLogEntry[]> {
-  const result = await pool.query<AuditLogEntry>(
-    `SELECT
-       id, entity_type, entity_id, operation, actor, change_summary, created_at
-     FROM event_audit
-     ORDER BY created_at DESC
-     LIMIT $1`,
-    [limit]
-  );
+  const prisma = getPrismaClient();
 
-  return result.rows;
+  try {
+    const entries = await prisma.eventAudit.findMany({
+      orderBy: { created_at: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        event_type: true,
+        table_name: true,
+        record_id: true,
+        operation: true,
+        changed_by: true,
+        old_data: true,
+        new_data: true,
+        created_at: true,
+      },
+    });
+
+    logger.debug(
+      {
+        limit,
+        count: entries.length
+      },
+      'Retrieved recent audit activity'
+    );
+
+    // Map database field names to interface field names
+    return entries.map((entry: any) => ({
+      ...entry,
+      eventType: entry.event_type,
+    })) as AuditLogEntry[];
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        limit
+      },
+      'Failed to get recent audit activity'
+    );
+    throw error;
+  }
 }
 
 /**
@@ -177,7 +253,6 @@ export async function getRecentAuditActivity(
  * @returns Aggregated audit statistics
  */
 export async function getAuditStatistics(
-  pool: Pool,
   since?: Date
 ): Promise<{
   total_events: number;
@@ -185,52 +260,82 @@ export async function getAuditStatistics(
   events_by_operation: Record<string, number>;
   unique_actors: number;
 }> {
-  const sinceClause = since ? 'WHERE created_at >= $1' : '';
-  const params = since ? [since] : [];
+  const prisma = getPrismaClient();
 
-  // Total events
-  const totalResult = await pool.query<{ total: string }>(
-    `SELECT COUNT(*) as total FROM event_audit ${sinceClause}`,
-    params
-  );
-  const total_events = parseInt(totalResult.rows[0].total, 10);
+  try {
+    // Build where clause for date filtering
+    const whereClause = since ? { created_at: { gte: since } } : {};
 
-  // Events by entity type
-  const typeResult = await pool.query(
-    `SELECT entity_type, COUNT(*) as count
-     FROM event_audit ${sinceClause}
-     GROUP BY entity_type`,
-    params
-  );
-  const events_by_type: Record<string, number> = {};
-  typeResult.rows.forEach((row) => {
-    events_by_type[row.entity_type] = parseInt(row.count, 10);
-  });
+    // Execute all queries in parallel for better performance
+    const [
+      totalResult,
+      typeResult,
+      operationResult,
+      actorResult
+    ] = await Promise.all([
+      // Total events
+      prisma.eventAudit.count({ where: whereClause }),
 
-  // Events by operation
-  const opResult = await pool.query(
-    `SELECT operation, COUNT(*) as count
-     FROM event_audit ${sinceClause}
-     GROUP BY operation`,
-    params
-  );
-  const events_by_operation: Record<string, number> = {};
-  opResult.rows.forEach((row) => {
-    events_by_operation[row.operation] = parseInt(row.count, 10);
-  });
+      // Events by table name (entity type)
+      prisma.eventAudit.groupBy({
+        by: ['table_name'],
+        where: whereClause,
+        _count: true,
+      }),
 
-  // Unique actors
-  const actorResult = await pool.query<{ count: string }>(
-    `SELECT COUNT(DISTINCT actor) as count
-     FROM event_audit ${sinceClause}`,
-    params
-  );
-  const unique_actors = parseInt(actorResult.rows[0].count, 10);
+      // Events by operation
+      prisma.eventAudit.groupBy({
+        by: ['operation'],
+        where: whereClause,
+        _count: true,
+      }),
 
-  return {
-    total_events,
-    events_by_type,
-    events_by_operation,
-    unique_actors,
-  };
+      // Unique actors
+      prisma.eventAudit.groupBy({
+        by: ['changed_by'],
+        where: whereClause,
+      }),
+    ]);
+
+    // Process results
+    const events_by_type: Record<string, number> = {};
+    typeResult.forEach((item: any) => {
+      if (item.table_name) {
+        events_by_type[item.table_name] = item._count;
+      }
+    });
+
+    const events_by_operation: Record<string, number> = {};
+    operationResult.forEach((item: any) => {
+      events_by_operation[item.operation] = item._count;
+    });
+
+    const unique_actors = actorResult.filter((item: any) => item.changed_by !== null).length;
+
+    const statistics = {
+      total_events: totalResult,
+      events_by_type,
+      events_by_operation,
+      unique_actors,
+    };
+
+    logger.debug(
+      {
+        since,
+        statistics
+      },
+      'Retrieved audit statistics'
+    );
+
+    return statistics;
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        since
+      },
+      'Failed to get audit statistics'
+    );
+    throw error;
+  }
 }

@@ -1,4 +1,4 @@
-import { Pool } from 'pg';
+import { getPrismaClient } from '../../db/prisma.js';
 
 export interface DeepSearchResult {
   id: string;
@@ -30,81 +30,81 @@ export interface DeepSearchResult {
  * @returns Array of search results with combined scoring
  */
 export async function deepSearch(
-  pool: Pool,
   query: string,
   searchTypes: string[] = ['section'],
   topK: number = 20,
   minSimilarity: number = 0.3
 ): Promise<DeepSearchResult[]> {
+  const prisma = getPrismaClient();
   const results: DeepSearchResult[] = [];
 
   // Search sections with FTS + trigram similarity
   if (searchTypes.includes('section')) {
-    const sectionQuery = `
+    const sectionResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'section' AS kind,
         heading AS title,
         LEFT(body_text, 200) AS snippet,
-        (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
-         0.4 * similarity(COALESCE(heading, ''), $1)) AS fts_score,
-        similarity(body_text, $1) AS similarity_score,
-        (0.4 * (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END + 0.4 * similarity(COALESCE(heading, ''), $1)) +
-         0.6 * similarity(body_text, $1)) AS combined_score
+        (0.6 * CASE WHEN ts @@ plainto_tsquery('english', ${query}) THEN 1.0 ELSE 0.0 END +
+         0.4 * similarity(COALESCE(heading, ''), ${query})) AS fts_score,
+        similarity(body_text, ${query}) AS similarity_score,
+        (0.4 * (0.6 * CASE WHEN ts @@ plainto_tsquery('english', ${query}) THEN 1.0 ELSE 0.0 END + 0.4 * similarity(COALESCE(heading, ''), ${query})) +
+         0.6 * similarity(body_text, ${query})) AS combined_score
       FROM section
       WHERE
-        ts @@ plainto_tsquery('english', $1)
-        OR similarity(body_text, $1) > $2
+        ts @@ plainto_tsquery('english', ${query})
+        OR similarity(body_text, ${query}) > ${minSimilarity}
       ORDER BY combined_score DESC
-      LIMIT $3
+      LIMIT ${topK}
     `;
-
-    const sectionResult = await pool.query(sectionQuery, [query, minSimilarity, topK]);
-    results.push(...sectionResult.rows);
+    if (sectionResult.length > 0) {
+      results.push(...(sectionResult as unknown as DeepSearchResult[]));
+    }
   }
 
   // Search runbook with trigram on service name + steps
   if (searchTypes.includes('runbook')) {
-    const runbookQuery = `
+    const runbookResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'runbook' AS kind,
         service AS title,
         LEFT(steps_jsonb::text, 200) AS snippet,
         0.0 AS fts_score,
-        GREATEST(similarity(service, $1), similarity(steps_jsonb::text, $1)) AS similarity_score,
-        (0.3 * GREATEST(similarity(service, $1), similarity(steps_jsonb::text, $1))) AS combined_score
+        GREATEST(similarity(service, ${query}), similarity(steps_jsonb::text, ${query})) AS similarity_score,
+        (0.3 * GREATEST(similarity(service, ${query}), similarity(steps_jsonb::text, ${query}))) AS combined_score
       FROM runbook
       WHERE
-        similarity(service, $1) > $2
-        OR similarity(steps_jsonb::text, $1) > $2
+        similarity(service, ${query}) > ${minSimilarity}
+        OR similarity(steps_jsonb::text, ${query}) > ${minSimilarity}
       ORDER BY combined_score DESC
-      LIMIT $3
+      LIMIT ${topK}
     `;
-
-    const runbookResult = await pool.query(runbookQuery, [query, minSimilarity, topK]);
-    results.push(...runbookResult.rows);
+    if (runbookResult.length > 0) {
+      results.push(...(runbookResult as unknown as DeepSearchResult[]));
+    }
   }
 
   // Search change_log with trigram on summary
   if (searchTypes.includes('change')) {
-    const changeQuery = `
+    const changeResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'change' AS kind,
         summary AS title,
         details AS snippet,
         0.0 AS fts_score,
-        similarity(summary, $1) AS similarity_score,
-        (0.3 * similarity(summary, $1)) AS combined_score
+        similarity(summary, ${query}) AS similarity_score,
+        (0.3 * similarity(summary, ${query})) AS combined_score
       FROM change_log
-      WHERE similarity(summary, $1) > $2
+      WHERE similarity(summary, ${query}) > ${minSimilarity}
       ORDER BY combined_score DESC
-      LIMIT $3
+      LIMIT ${topK}
     `;
-
-    const changeResult = await pool.query(changeQuery, [query, minSimilarity, topK]);
-    results.push(...changeResult.rows);
+    if (changeResult.length > 0) {
+      results.push(...(changeResult as unknown as DeepSearchResult[]));
+    }
   }
 
   // Sort all results by combined_score descending
@@ -118,10 +118,15 @@ export async function deepSearch(
  * Uses pg_trgm similarity without database query
  */
 export async function calculateSimilarity(
-  pool: Pool,
   text1: string,
   text2: string
 ): Promise<number> {
-  const result = await pool.query('SELECT similarity($1, $2) AS score', [text1, text2]);
-  return Number((result.rows[0] as Record<string, unknown>).score ?? 0);
+  const prisma = getPrismaClient();
+  const result = await prisma.$queryRaw<Array<{ score: number }>>`
+    SELECT similarity(${text1}, ${text2}) AS score
+  `;
+  if (result.length > 0) {
+    return Number((result as unknown as Array<{ score: number }>)[0].score);
+  }
+  return 0;
 }

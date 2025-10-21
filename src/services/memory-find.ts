@@ -1,7 +1,17 @@
-import { getPool } from '../db/pool.js';
+import { prisma } from '../db/prisma-client.js';
 import { logger } from '../utils/logger.js';
 import { traverseGraph, enrichGraphNodes, type TraversalOptions } from './graph-traversal.js';
 import { checkAndPurge } from './auto-purge.js';
+
+// Helper function to create properly typed scope conditions for Prisma JSON filtering
+function createScopeConditions(scope: Record<string, unknown>): Record<string, any>[] {
+  return Object.entries(scope).map(([key, value]) => ({
+    tags: {
+      path: [key], // Prisma expects path as array of segments
+      equals: value
+    }
+  }));
+}
 
 interface FindHit {
   kind: string;
@@ -68,11 +78,11 @@ function calculateProximity(
 /**
  * Normalize recency: newer is better, using exponential decay
  */
-function calculateRecency(updatedAt: Date | string | null): number {
-  if (!updatedAt) return 0.3; // default for missing timestamps
+function calculateRecency(updated_at: Date | string | null): number {
+  if (!updated_at) return 0.3; // default for missing timestamps
 
   const now = Date.now();
-  const updated = new Date(updatedAt).getTime();
+  const updated = new Date(updated_at).getTime();
   const ageMs = now - updated;
   const ageDays = ageMs / (1000 * 60 * 60 * 24);
 
@@ -83,10 +93,10 @@ function calculateRecency(updatedAt: Date | string | null): number {
 /**
  * Normalize citation count using log scale
  */
-function calculateCitationScore(count: number): number {
-  if (count <= 0) return 0;
-  return Math.log10(count + 1) / Math.log10(100); // normalize to [0, 1] assuming max 100 citations
-}
+// function calculateCitationScore(count: number): number {
+//   if (count <= 0) return 0;
+//   return Math.log10(count + 1) / Math.log10(100); // normalize to [0, 1] assuming max 100 citations
+// }
 
 export async function memoryFind(params: {
   query: string;
@@ -120,12 +130,20 @@ export async function memoryFind(params: {
     }>;
   };
 }> {
-  const pool = getPool();
-
+  
   // ✨ AUTO-MAINTENANCE: Check purge thresholds (< 1ms overhead)
-  await checkAndPurge(pool, 'memory.find');
+  await checkAndPurge('memory.find');
 
   const startTime = Date.now();
+
+  // Input validation - prevent undefined/null errors
+  if (!params.query || typeof params.query !== 'string') {
+    throw new Error('Query parameter is required and must be a string');
+  }
+
+  if (params.scope && typeof params.scope !== 'object') {
+    throw new Error('Scope parameter must be an object if provided');
+  }
 
   // Mode routing logic
   const queryWords = params.query.trim().split(/\s+/).length;
@@ -158,521 +176,895 @@ export async function memoryFind(params: {
           'assumption',
         ]);
 
-  // Build scope filter SQL
-  const scopeFilter = params.scope ? `AND tags @> $2::jsonb` : '';
-  const scopeParam = params.scope ? JSON.stringify(params.scope) : null;
-
-  const likePattern = `%${params.query}%`;
+  // These variables are no longer needed with Prisma Client
 
   const allHits: FindHit[] = [];
   let totalCandidates = 0;
 
-  // Search section table (has FTS)
+  // Search section table using Prisma
   if (searchTypes.includes('section')) {
-    const sectionQuery = scopeFilter
-      ? `SELECT id, heading, body_jsonb,
-                (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
-                 0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
-                tags, updated_at, citation_count
-         FROM section
-         WHERE ts @@ plainto_tsquery('english', $1) ${scopeFilter}
-         ORDER BY fts_score DESC
-         LIMIT $3`
-      : `SELECT id, heading, body_jsonb,
-                (0.6 * CASE WHEN ts @@ plainto_tsquery('english', $1) THEN 1.0 ELSE 0.0 END +
-                 0.4 * similarity(COALESCE(heading, ''), $1)) as fts_score,
-                tags, updated_at, citation_count
-         FROM section
-         WHERE ts @@ plainto_tsquery('english', $1)
-         ORDER BY fts_score DESC
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let sectionResults: any[];
 
-    const sectionParams = scopeFilter ? [params.query, scopeParam, topK] : [params.query, topK];
-    const sectionResult = await pool.query(sectionQuery, sectionParams);
-    totalCandidates += sectionResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      // Search with scope filter - use Prisma's JSON operations with correct syntax
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of sectionResult.rows) {
-      const ftsScore = parseFloat(row.fts_score) ?? 0;
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
-      const citationScore = calculateCitationScore(row.citation_count ?? 0);
+      sectionResults = await prisma.getClient().section.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { content: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      // Search without scope filter
+      sectionResults = await prisma.getClient().section.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { content: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += sectionResults.length;
+
+    for (const section of sectionResults) {
+      // Calculate a simple FTS-like score based on exact matches and position
+      const titleMatch = section.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const contentMatch = section.content?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.6 * Math.max(titleMatch, contentMatch) + 0.4 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(section.updated_at);
+      const proximityScore = calculateProximity(params.scope, section.tags as Record<string, unknown> ?? {});
+      const citationScore = section.citation_count ? section.citation_count / 10 : 0; // Scale citation count
 
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, citationScore);
 
+      // Use content for snippet
+      const snippetContent = section.content || '';
+
       allHits.push({
         kind: 'section',
-        id: row.id,
-        title: row.heading ?? 'Untitled',
-        snippet: `${(row.body_jsonb?.text ?? '').substring(0, 150)}...`,
+        id: section.id,
+        title: section.title ?? 'Untitled',
+        snippet: `${snippetContent.substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: section.tags as Record<string, unknown>,
+        updated_at: section.updated_at?.toISOString(),
         route_used: mode,
         confidence: ftsScore > 0.3 ? 0.85 : 0.65,
       });
     }
   }
 
-  // Search runbook table
+  // Search runbook table using Prisma
   if (searchTypes.includes('runbook')) {
-    const runbookQuery = scopeFilter
-      ? `SELECT id, service, steps_jsonb, tags, updated_at
-         FROM runbook
-         WHERE (service ILIKE $1 OR steps_jsonb::text ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, service, steps_jsonb, tags, updated_at
-         FROM runbook
-         WHERE service ILIKE $1 OR steps_jsonb::text ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let runbookResults: any[];
 
-    const runbookParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const runbookResult = await pool.query(runbookQuery, runbookParams);
-    totalCandidates += runbookResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      // Search with scope filter
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of runbookResult.rows) {
-      const ftsScore = 0.5; // basic text match
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      runbookResults = await prisma.getClient().runbook.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      // Search without scope filter
+      runbookResults = await prisma.getClient().runbook.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += runbookResults.length;
+
+    for (const runbook of runbookResults) {
+      const titleMatch = runbook.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = runbook.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.7 * Math.max(titleMatch, descriptionMatch) + 0.3 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(runbook.updated_at);
+      const proximityScore = calculateProximity(params.scope, runbook.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      // Create snippet from steps_jsonb or description
+      const stepsSnippet = runbook.steps_jsonb ? JSON.stringify(runbook.steps_jsonb).substring(0, 150) : '';
+      const descriptionSnippet = runbook.description?.substring(0, 150) ?? '';
+      const snippet = stepsSnippet || descriptionSnippet || `Service: ${runbook.service}`;
 
       allHits.push({
         kind: 'runbook',
-        id: row.id,
-        title: row.service ?? 'Untitled Runbook',
-        snippet: `${JSON.stringify(row.steps_jsonb).substring(0, 150)}...`,
+        id: runbook.id,
+        title: runbook.title ?? 'Untitled Runbook',
+        snippet: `${snippet}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: runbook.tags as Record<string, unknown>,
+        updated_at: runbook.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.7,
       });
     }
   }
 
-  // Search change_log table
+  // Search change_log table using Prisma
   if (searchTypes.includes('change')) {
-    const changeQuery = scopeFilter
-      ? `SELECT id, subject_ref, summary, details, tags, updated_at
-         FROM change_log
-         WHERE (subject_ref ILIKE $1 OR summary ILIKE $1 OR details ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, subject_ref, summary, details, tags, updated_at
-         FROM change_log
-         WHERE subject_ref ILIKE $1 OR summary ILIKE $1 OR details ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let changeResults: any[];
 
-    const changeParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const changeResult = await pool.query(changeQuery, changeParams);
-    totalCandidates += changeResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      // Search with scope filter
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of changeResult.rows) {
-      const ftsScore = 0.5;
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      changeResults = await prisma.getClient().changeLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { subject_ref: { contains: searchQuery, mode: 'insensitive' } },
+                { summary: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      // Search without scope filter
+      changeResults = await prisma.getClient().changeLog.findMany({
+        where: {
+          OR: [
+            { subject_ref: { contains: searchQuery, mode: 'insensitive' } },
+            { summary: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += changeResults.length;
+
+    for (const change of changeResults) {
+      const subjectMatch = change.subject_ref.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const summaryMatch = change.summary?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.7 * Math.max(subjectMatch, summaryMatch) + 0.3 * (subjectMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(change.updated_at);
+      const proximityScore = calculateProximity(params.scope, change.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'change',
-        id: row.id,
-        title: row.subject_ref ?? 'Untitled Change',
-        snippet: `${(row.summary ?? row.details ?? '').substring(0, 150)}...`,
+        id: change.id,
+        title: change.subject_ref ?? 'Untitled Change',
+        snippet: `${(change.summary ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: change.tags as Record<string, unknown>,
+        updated_at: change.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.7,
       });
     }
   }
 
-  // Search issue_log table
+  // Search issue_log table using Prisma
   if (searchTypes.includes('issue')) {
-    const issueQuery = scopeFilter
-      ? `SELECT id, title, description, tags, updated_at
-         FROM issue_log
-         WHERE (title ILIKE $1 OR description ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, description, tags, updated_at
-         FROM issue_log
-         WHERE title ILIKE $1 OR description ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let issueResults: any[];
 
-    const issueParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const issueResult = await pool.query(issueQuery, issueParams);
-    totalCandidates += issueResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of issueResult.rows) {
-      const ftsScore = 0.5;
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      issueResults = await prisma.getClient().issueLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      issueResults = await prisma.getClient().issueLog.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += issueResults.length;
+
+    for (const issue of issueResults) {
+      const titleMatch = issue.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = issue.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.6 * Math.max(titleMatch, descriptionMatch) + 0.4 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(issue.updated_at);
+      const proximityScore = calculateProximity(params.scope, issue.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'issue',
-        id: row.id,
-        title: row.title ?? 'Untitled Issue',
-        snippet: `${(row.description ?? '').substring(0, 150)}...`,
+        id: issue.id,
+        title: issue.title,
+        snippet: `${(issue.description ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: issue.tags as Record<string, unknown>,
+        updated_at: issue.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.7,
       });
     }
   }
 
-  // Search adr_decision table
+  // Search adr_decision table using Prisma
   if (searchTypes.includes('decision')) {
-    const adrQuery = scopeFilter
-      ? `SELECT id, title, rationale, component, tags, updated_at
-         FROM adr_decision
-         WHERE (title ILIKE $1 OR rationale ILIKE $1 OR component ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, rationale, component, tags, updated_at
-         FROM adr_decision
-         WHERE title ILIKE $1 OR rationale ILIKE $1 OR component ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let decisionResults: any[];
 
-    const adrParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const adrResult = await pool.query(adrQuery, adrParams);
-    totalCandidates += adrResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of adrResult.rows) {
-      const ftsScore = 0.6; // ADRs are high-value
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      decisionResults = await prisma.getClient().adrDecision.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { rationale: { contains: searchQuery, mode: 'insensitive' } },
+                { component: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      decisionResults = await prisma.getClient().adrDecision.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { rationale: { contains: searchQuery, mode: 'insensitive' } },
+            { component: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += decisionResults.length;
+
+    for (const decision of decisionResults) {
+      const titleMatch = decision.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const rationaleMatch = decision.rationale?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const componentMatch = decision.component?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.8 * Math.max(titleMatch, rationaleMatch, componentMatch) + 0.2 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(decision.updated_at);
+      const proximityScore = calculateProximity(params.scope, decision.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'decision',
-        id: row.id,
-        title: row.title ?? 'Untitled ADR',
-        snippet: `${(row.rationale ?? '').substring(0, 150)}...`,
+        id: decision.id,
+        title: `ADR: ${decision.component} - ${decision.title}`,
+        snippet: `${(decision.rationale ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: decision.tags as Record<string, unknown>,
+        updated_at: decision.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.8,
       });
     }
   }
 
-  // Search todo_log table
+  // Search todo_log table using Prisma
   if (searchTypes.includes('todo')) {
-    const todoQuery = scopeFilter
-      ? `SELECT id, text, scope, tags, updated_at
-         FROM todo_log
-         WHERE (text ILIKE $1 OR scope ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, text, scope, tags, updated_at
-         FROM todo_log
-         WHERE text ILIKE $1 OR scope ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let todoResults: any[];
 
-    const todoParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const todoResult = await pool.query(todoQuery, todoParams);
-    totalCandidates += todoResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of todoResult.rows) {
-      const ftsScore = 0.5;
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      todoResults = await prisma.getClient().todoLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+                { priority: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      todoResults = await prisma.getClient().todoLog.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+            { priority: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += todoResults.length;
+
+    for (const todo of todoResults) {
+      const titleMatch = todo.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = todo.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const priorityMatch = todo.priority?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.6 * Math.max(titleMatch, descriptionMatch, priorityMatch) + 0.4 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(todo.updated_at);
+      const proximityScore = calculateProximity(params.scope, todo.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
+
+      const snippetText = todo.description ?? todo.title ?? 'No description';
 
       allHits.push({
         kind: 'todo',
-        id: row.id,
-        title: (row.text ?? 'Untitled TODO').substring(0, 50),
-        snippet: `${(row.text ?? '').substring(0, 150)}...`,
+        id: todo.id,
+        title: `${todo.status.toUpperCase()}: ${todo.title}`,
+        snippet: `${snippetText.substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: todo.tags as Record<string, unknown>,
+        updated_at: todo.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.65,
       });
     }
   }
 
-  // Search release_note table
+  // Search release_note table using Prisma
   if (searchTypes.includes('release_note')) {
-    const releaseQuery = scopeFilter
-      ? `SELECT id, version, summary, tags, created_at
-         FROM release_note
-         WHERE (version ILIKE $1 OR summary ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, version, summary, tags, created_at
-         FROM release_note
-         WHERE version ILIKE $1 OR summary ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let releaseResults: any[];
 
-    const releaseParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const releaseResult = await pool.query(releaseQuery, releaseParams);
-    totalCandidates += releaseResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of releaseResult.rows) {
-      const ftsScore = 0.5;
-      const recencyScore = calculateRecency(row.created_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      releaseResults = await prisma.getClient().releaseNote.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { version: { contains: searchQuery, mode: 'insensitive' } },
+                { summary: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { created_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      releaseResults = await prisma.getClient().releaseNote.findMany({
+        where: {
+          OR: [
+            { version: { contains: searchQuery, mode: 'insensitive' } },
+            { summary: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { created_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += releaseResults.length;
+
+    for (const release of releaseResults) {
+      const versionMatch = release.version.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const summaryMatch = release.summary?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.7 * Math.max(versionMatch, summaryMatch) + 0.3 * (versionMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(release.updated_at);
+      const proximityScore = calculateProximity(params.scope, release.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'release_note',
-        id: row.id,
-        title: `Release ${row.version}`,
-        snippet: `${(row.summary ?? '').substring(0, 150)}...`,
+        id: release.id,
+        title: `Release ${release.version}`,
+        snippet: `${(release.summary ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.created_at,
+        scope: release.tags as Record<string, unknown>,
+        updated_at: release.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.75,
       });
     }
   }
 
-  // Search pr_context table
+  // Search pr_context table using Prisma
   if (searchTypes.includes('pr_context')) {
-    const prQuery = scopeFilter
-      ? `SELECT id, title, description, pr_number, tags, updated_at
-         FROM pr_context
-         WHERE (title ILIKE $1 OR description ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, description, pr_number, tags, updated_at
-         FROM pr_context
-         WHERE title ILIKE $1 OR description ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let prResults: any[];
 
-    const prParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const prResult = await pool.query(prQuery, prParams);
-    totalCandidates += prResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of prResult.rows) {
-      const ftsScore = 0.5;
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      prResults = await prisma.getClient().prContext.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+                { author: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      prResults = await prisma.getClient().prContext.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+            { author: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += prResults.length;
+
+    for (const pr of prResults) {
+      const titleMatch = pr.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = pr.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const authorMatch = pr.author?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.7 * Math.max(titleMatch, descriptionMatch, authorMatch) + 0.3 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(pr.updated_at);
+      const proximityScore = calculateProximity(params.scope, pr.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'pr_context',
-        id: row.id,
-        title: row.title ?? `PR #${row.pr_number}`,
-        snippet: `${(row.description ?? '').substring(0, 150)}...`,
+        id: pr.id,
+        title: `PR #${pr.pr_number}: ${pr.title}`,
+        snippet: `${(pr.description ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: pr.tags as Record<string, unknown>,
+        updated_at: pr.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.7,
       });
     }
   }
 
-  // Search ddl_history table
+  // Search ddl_log table using Prisma (unified model)
   if (searchTypes.includes('ddl')) {
-    const ddlQuery = `SELECT id, migration_id, description, applied_at
-         FROM ddl_history
-         WHERE migration_id ILIKE $1 OR description ILIKE $1
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
 
-    const ddlResult = await pool.query(ddlQuery, [likePattern, topK]);
-    totalCandidates += ddlResult.rows.length;
+    const ddlResults = await prisma.getClient().ddlHistory.findMany({
+      where: {
+        OR: [
+          { migration_id: { contains: searchQuery, mode: 'insensitive' } },
+          { description: { contains: searchQuery, mode: 'insensitive' } },
+          { ddl_text: { contains: searchQuery, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { applied_at: 'desc' },
+      take: topK,
+    });
 
-    for (const row of ddlResult.rows) {
-      const ftsScore = 0.4;
-      const recencyScore = calculateRecency(row.applied_at);
+    totalCandidates += ddlResults.length;
+
+    for (const ddl of ddlResults) {
+      const migrationMatch = ddl.migration_id.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = ddl.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ddlMatch = ddl.ddl_text?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.5 * Math.max(migrationMatch, descriptionMatch, ddlMatch) + 0.5 * (migrationMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(ddl.applied_at);
       const finalScore = computeRankingScore(ftsScore, recencyScore, 0, 0);
 
       allHits.push({
         kind: 'ddl',
-        id: row.id,
-        title: row.migration_id ?? 'Untitled Migration',
-        snippet: `${(row.description ?? '').substring(0, 150)}...`,
+        id: ddl.id,
+        title: ddl.migration_id ?? 'Untitled Migration',
+        snippet: `${(ddl.description ?? '').substring(0, 150)}...`,
         score: finalScore,
         scope: {},
-        updated_at: row.applied_at,
+        updated_at: ddl.applied_at?.toISOString(),
         route_used: mode,
         confidence: 0.6,
       });
     }
   }
 
-  // Search knowledge_entity table (flexible entities)
+  // Search knowledge_entity table (flexible entities) using Prisma
   if (searchTypes.includes('entity')) {
-    const entityQuery = scopeFilter
-      ? `SELECT id, entity_type, name, data, tags, updated_at
-         FROM knowledge_entity
-         WHERE (name ILIKE $1 OR entity_type ILIKE $1 OR data::text ILIKE $1)
-         AND deleted_at IS NULL ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, entity_type, name, data, tags, updated_at
-         FROM knowledge_entity
-         WHERE (name ILIKE $1 OR entity_type ILIKE $1 OR data::text ILIKE $1)
-         AND deleted_at IS NULL
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let entityResults: any[];
 
-    const entityParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const entityResult = await pool.query(entityQuery, entityParams);
-    totalCandidates += entityResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of entityResult.rows) {
-      const ftsScore = 0.5; // basic text match
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      entityResults = await prisma.getClient().knowledgeEntity.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: searchQuery, mode: 'insensitive' } },
+                { entity_type: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+            {
+              deleted_at: null,
+            },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      entityResults = await prisma.getClient().knowledgeEntity.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { name: { contains: searchQuery, mode: 'insensitive' } },
+                { entity_type: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            {
+              deleted_at: null,
+            },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += entityResults.length;
+
+    for (const entity of entityResults) {
+      const nameMatch = entity.name.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const typeMatch = entity.entity_type.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.6 * Math.max(nameMatch, typeMatch) + 0.4 * (nameMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(entity.updated_at);
+      const proximityScore = calculateProximity(params.scope, entity.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       // Create snippet from entity data
-      const dataSnippet = JSON.stringify(row.data).substring(0, 100);
+      const dataSnippet = JSON.stringify(entity.data).substring(0, 100);
 
       allHits.push({
         kind: 'entity',
-        id: row.id,
-        title: `${row.entity_type}: ${row.name}`,
+        id: entity.id,
+        title: `${entity.entity_type}: ${entity.name}`,
         snippet: `${dataSnippet}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: entity.tags as Record<string, unknown>,
+        updated_at: entity.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.7,
       });
     }
   }
 
-  // Search incident_log table (8-LOG SYSTEM)
+  // Search incident_log table (8-LOG SYSTEM) using Prisma
   if (searchTypes.includes('incident')) {
-    const incidentQuery = scopeFilter
-      ? `SELECT id, title, severity, impact, resolution_status, tags, updated_at
-         FROM incident_log
-         WHERE (title ILIKE $1 OR impact ILIKE $1 OR root_cause_analysis ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, severity, impact, resolution_status, tags, updated_at
-         FROM incident_log
-         WHERE (title ILIKE $1 OR impact ILIKE $1 OR root_cause_analysis ILIKE $1)
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let incidentResults: any[];
 
-    const incidentParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const incidentResult = await pool.query(incidentQuery, incidentParams);
-    totalCandidates += incidentResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of incidentResult.rows) {
-      const ftsScore = 0.8; // Incidents are high-value
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      incidentResults = await prisma.getClient().incidentLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { impact: { contains: searchQuery, mode: 'insensitive' } },
+                { severity: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      incidentResults = await prisma.getClient().incidentLog.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { impact: { contains: searchQuery, mode: 'insensitive' } },
+            { severity: { contains: searchQuery, mode: 'insensitive' } },
+            { resolution: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += incidentResults.length;
+
+    for (const incident of incidentResults) {
+      const titleMatch = incident.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const impactMatch = incident.impact?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const severityMatch = incident.severity?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.8 * Math.max(titleMatch, impactMatch, severityMatch) + 0.2 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(incident.updated_at);
+      const proximityScore = calculateProximity(params.scope, incident.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'incident',
-        id: row.id,
-        title: `INCIDENT: ${row.title} (${row.severity})`,
-        snippet: `${(row.impact ?? '').substring(0, 150)}...`,
+        id: incident.id,
+        title: `INCIDENT: ${incident.title} (${incident.severity})`,
+        snippet: `${(incident.impact ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: incident.tags as Record<string, unknown>,
+        updated_at: incident.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.85,
       });
     }
   }
 
-  // Search release_log table (8-LOG SYSTEM)
+  // Search release_log table (8-LOG SYSTEM) using Prisma
   if (searchTypes.includes('release')) {
-    const releaseQuery = scopeFilter
-      ? `SELECT id, version, release_type, scope, status, tags, updated_at
-         FROM release_log
-         WHERE (version ILIKE $1 OR scope ILIKE $1 OR release_notes ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, version, release_type, scope, status, tags, updated_at
-         FROM release_log
-         WHERE (version ILIKE $1 OR scope ILIKE $1 OR release_notes ILIKE $1)
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let releaseResults: any[];
 
-    const releaseParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const releaseResult = await pool.query(releaseQuery, releaseParams);
-    totalCandidates += releaseResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of releaseResult.rows) {
-      const ftsScore = 0.7; // Releases are high-value
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      releaseResults = await prisma.getClient().releaseLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { version: { contains: searchQuery, mode: 'insensitive' } },
+                { scope: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      releaseResults = await prisma.getClient().releaseLog.findMany({
+        where: {
+          OR: [
+            { version: { contains: searchQuery, mode: 'insensitive' } },
+            { scope: { contains: searchQuery, mode: 'insensitive' } },
+            { release_type: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += releaseResults.length;
+
+    for (const release of releaseResults) {
+      const versionMatch = release.version.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const scopeMatch = release.scope?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.8 * Math.max(versionMatch, scopeMatch) + 0.2 * (versionMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(release.updated_at);
+      const proximityScore = calculateProximity(params.scope, release.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'release',
-        id: row.id,
-        title: `RELEASE: ${row.version} (${row.release_type})`,
-        snippet: `${(row.scope ?? '').substring(0, 150)}...`,
+        id: release.id,
+        title: `RELEASE: ${release.version}`,
+        snippet: `${(release.scope ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: release.tags as Record<string, unknown>,
+        updated_at: release.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.8,
       });
     }
   }
 
-  // Search risk_log table (8-LOG SYSTEM)
+  // Search risk_log table (8-LOG SYSTEM) using Prisma
   if (searchTypes.includes('risk')) {
-    const riskQuery = scopeFilter
-      ? `SELECT id, title, category, risk_level, impact_description, tags, updated_at
-         FROM risk_log
-         WHERE (title ILIKE $1 OR impact_description ILIKE $1 OR mitigation_strategies::text ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, category, risk_level, impact_description, tags, updated_at
-         FROM risk_log
-         WHERE (title ILIKE $1 OR impact_description ILIKE $1 OR mitigation_strategies::text ILIKE $1)
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let riskResults: any[];
 
-    const riskParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const riskResult = await pool.query(riskQuery, riskParams);
-    totalCandidates += riskResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of riskResult.rows) {
-      const ftsScore = 0.75; // Risks are high-value
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      riskResults = await prisma.getClient().riskLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { impact_description: { contains: searchQuery, mode: 'insensitive' } },
+                { category: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      riskResults = await prisma.getClient().riskLog.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { impact_description: { contains: searchQuery, mode: 'insensitive' } },
+            { risk_level: { contains: searchQuery, mode: 'insensitive' } },
+            { category: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += riskResults.length;
+
+    for (const risk of riskResults) {
+      const titleMatch = risk.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const impactMatch = risk.impact_description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const categoryMatch = risk.category?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.75 * Math.max(titleMatch, impactMatch, categoryMatch) + 0.25 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(risk.updated_at);
+      const proximityScore = calculateProximity(params.scope, risk.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'risk',
-        id: row.id,
-        title: `RISK: ${row.title} (${row.risk_level})`,
-        snippet: `${(row.impact_description ?? '').substring(0, 150)}...`,
+        id: risk.id,
+        title: `RISK: ${risk.title}`,
+        snippet: `${(risk.impact_description ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: risk.tags as Record<string, unknown>,
+        updated_at: risk.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.8,
       });
     }
   }
 
-  // Search assumption_log table (8-LOG SYSTEM)
+  // Search assumption_log table (8-LOG SYSTEM) using Prisma
   if (searchTypes.includes('assumption')) {
-    const assumptionQuery = scopeFilter
-      ? `SELECT id, title, description, category, validation_status, tags, updated_at
-         FROM assumption_log
-         WHERE (title ILIKE $1 OR description ILIKE $1 OR impact_if_invalid ILIKE $1) ${scopeFilter}
-         LIMIT $3`
-      : `SELECT id, title, description, category, validation_status, tags, updated_at
-         FROM assumption_log
-         WHERE (title ILIKE $1 OR description ILIKE $1 OR impact_if_invalid ILIKE $1)
-         LIMIT $2`;
+    const searchQuery = params.query.toLowerCase();
+    let assumptionResults: any[];
 
-    const assumptionParams = scopeFilter ? [likePattern, scopeParam, topK] : [likePattern, topK];
-    const assumptionResult = await pool.query(assumptionQuery, assumptionParams);
-    totalCandidates += assumptionResult.rows.length;
+    if (params.scope && Object.keys(params.scope).length > 0) {
+      const scopeConditions = createScopeConditions(params.scope);
 
-    for (const row of assumptionResult.rows) {
-      const ftsScore = 0.6; // Assumptions are moderate value
-      const recencyScore = calculateRecency(row.updated_at);
-      const proximityScore = calculateProximity(params.scope, row.tags ?? {});
+      assumptionResults = await prisma.getClient().assumptionLog.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchQuery, mode: 'insensitive' } },
+                { description: { contains: searchQuery, mode: 'insensitive' } },
+                { impact_if_invalid: { contains: searchQuery, mode: 'insensitive' } },
+                { category: { contains: searchQuery, mode: 'insensitive' } },
+              ],
+            },
+            ...scopeConditions,
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    } else {
+      assumptionResults = await prisma.getClient().assumptionLog.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchQuery, mode: 'insensitive' } },
+            { description: { contains: searchQuery, mode: 'insensitive' } },
+            { impact_if_invalid: { contains: searchQuery, mode: 'insensitive' } },
+            { category: { contains: searchQuery, mode: 'insensitive' } },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+        take: topK,
+      });
+    }
+
+    totalCandidates += assumptionResults.length;
+
+    for (const assumption of assumptionResults) {
+      const titleMatch = assumption.title.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const descriptionMatch = assumption.description?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const impactMatch = assumption.impact_if_invalid?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const categoryMatch = assumption.category?.toLowerCase().includes(searchQuery) ? 1.0 : 0.0;
+      const ftsScore = 0.6 * Math.max(titleMatch, descriptionMatch, impactMatch, categoryMatch) + 0.4 * (titleMatch > 0 ? 1.0 : 0.0);
+
+      const recencyScore = calculateRecency(assumption.updated_at);
+      const proximityScore = calculateProximity(params.scope, assumption.tags as Record<string, unknown> ?? {});
       const finalScore = computeRankingScore(ftsScore, recencyScore, proximityScore, 0);
 
       allHits.push({
         kind: 'assumption',
-        id: row.id,
-        title: `ASSUMPTION: ${row.title} (${row.validation_status})`,
-        snippet: `${(row.description ?? '').substring(0, 150)}...`,
+        id: assumption.id,
+        title: `ASSUMPTION: ${assumption.title} (${assumption.validation_status})`,
+        snippet: `${(assumption.description ?? '').substring(0, 150)}...`,
         score: finalScore,
-        scope: row.tags,
-        updated_at: row.updated_at,
+        scope: assumption.tags as Record<string, unknown>,
+        updated_at: assumption.updated_at?.toISOString(),
         route_used: mode,
         confidence: 0.75,
       });
@@ -691,14 +1083,14 @@ export async function memoryFind(params: {
 
     if (startEntityType && startEntityId) {
       try {
-        const traversalResult = await traverseGraph(pool, startEntityType, startEntityId, {
+        const traversalResult = await traverseGraph(startEntityType, startEntityId, {
           depth: params.traverse.depth ?? 3,
           relation_types: params.traverse.relation_types ?? [],
           direction: params.traverse.direction ?? ('both' as const),
         });
 
         // Enrich nodes with entity data
-        const enrichedNodes = await enrichGraphNodes(pool, traversalResult.nodes);
+        const enrichedNodes = await enrichGraphNodes(traversalResult.nodes);
 
         graphResult = {
           nodes: enrichedNodes,

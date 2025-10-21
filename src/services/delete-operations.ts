@@ -7,10 +7,11 @@
  * @module services/delete-operations
  */
 
-import type { Pool } from 'pg';
+import { getPrismaClient } from '../db/prisma.js';
 import { softDeleteEntity } from './knowledge/entity.js';
 import { softDeleteRelation } from './knowledge/relation.js';
 import { deleteObservation } from './knowledge/observation.js';
+import { logger } from '../utils/logger.js';
 
 export interface DeleteRequest {
   entity_type: string; // "entity", "relation", "observation", or any typed knowledge type
@@ -39,12 +40,13 @@ export interface DeleteResult {
  * @param request - Delete request
  * @returns Delete result
  */
-export async function softDelete(pool: Pool, request: DeleteRequest): Promise<DeleteResult> {
+export async function softDelete(request: DeleteRequest): Promise<DeleteResult> {
+  const prisma = getPrismaClient();
   const { entity_type, entity_id, cascade_relations = false } = request;
 
   // Handle graph extension types first
   if (entity_type === 'entity') {
-    const deleted = await softDeleteEntity(pool, entity_id);
+    const deleted = await softDeleteEntity(entity_id);
 
     if (!deleted) {
       return {
@@ -58,7 +60,7 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
     // Cascade delete relations if requested
     let cascadedCount = 0;
     if (cascade_relations) {
-      cascadedCount = await cascadeDeleteRelations(pool, 'entity', entity_id);
+      cascadedCount = await cascadeDeleteRelations('entity', entity_id);
     }
 
     return {
@@ -70,7 +72,7 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
   }
 
   if (entity_type === 'relation') {
-    const deleted = await softDeleteRelation(pool, entity_id);
+    const deleted = await softDeleteRelation(entity_id);
 
     if (!deleted) {
       return {
@@ -89,7 +91,7 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
   }
 
   if (entity_type === 'observation') {
-    const deleted = await deleteObservation(pool, entity_id);
+    const deleted = await deleteObservation(entity_id);
 
     if (!deleted) {
       return {
@@ -120,8 +122,8 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
     pr_context: 'pr_context',
   };
 
-  const tableName = tableMap[entity_type];
-  if (!tableName) {
+  const table_name = tableMap[entity_type];
+  if (!table_name) {
     return {
       id: entity_id,
       entity_type,
@@ -130,73 +132,99 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
     };
   }
 
-  // Check immutability constraints
-  if (entity_type === 'decision') {
-    const result = await pool.query(`SELECT status FROM ${tableName} WHERE id = $1`, [entity_id]);
+  // Handle typed knowledge types with Prisma Client
+  try {
+    // Check immutability constraints for decisions
+    if (entity_type === 'decision') {
+      const decision = await prisma.adrDecision.findUnique({
+        where: { id: entity_id },
+        select: { status: true }
+      });
 
-    if (
-      result.rows.length > 0 &&
-      (result.rows[0] as Record<string, unknown>).status === 'accepted'
-    ) {
+      if (decision?.status === 'accepted') {
+        return {
+          id: entity_id,
+          entity_type: 'decision',
+          status: 'immutable',
+          message: 'Cannot delete accepted ADR (immutability constraint)',
+        };
+      }
+    }
+
+    // Check if entity exists first
+    const findOperations: Record<string, () => Promise<{ id: string } | null>> = {
+      section: () => prisma.section.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      runbook: () => prisma.runbook.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      change: () => prisma.changeLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      issue: () => prisma.issueLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      decision: () => prisma.adrDecision.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      todo: () => prisma.todoLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release_note: () => prisma.releaseNote.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      ddl: () => prisma.ddlHistory.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      pr_context: () => prisma.prContext.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      incident: () => prisma.incidentLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release: () => prisma.releaseLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      risk: () => prisma.riskLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      assumption: () => prisma.assumptionLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+    };
+
+    // Use Prisma model map for type-safe delete operations
+    const deleteOperations: Record<string, () => Promise<any>> = {
+      section: () => prisma.section.delete({ where: { id: entity_id } }),
+      runbook: () => prisma.runbook.delete({ where: { id: entity_id } }),
+      change: () => prisma.changeLog.delete({ where: { id: entity_id } }),
+      issue: () => prisma.issueLog.delete({ where: { id: entity_id } }),
+      decision: () => prisma.adrDecision.delete({ where: { id: entity_id } }),
+      todo: () => prisma.todoLog.delete({ where: { id: entity_id } }),
+      release_note: () => prisma.releaseNote.delete({ where: { id: entity_id } }),
+      ddl: () => prisma.ddlHistory.delete({ where: { id: entity_id } }),
+      pr_context: () => prisma.prContext.delete({ where: { id: entity_id } }),
+      incident: () => prisma.incidentLog.delete({ where: { id: entity_id } }),
+      release: () => prisma.releaseLog.delete({ where: { id: entity_id } }),
+      risk: () => prisma.riskLog.delete({ where: { id: entity_id } }),
+      assumption: () => prisma.assumptionLog.delete({ where: { id: entity_id } }),
+    };
+
+    const findOperation = findOperations[entity_type];
+    const deleteOperation = deleteOperations[entity_type];
+
+    if (!findOperation || !deleteOperation) {
       return {
         id: entity_id,
-        entity_type: 'decision',
-        status: 'immutable',
-        message: 'Cannot delete accepted ADR (immutability constraint)',
+        entity_type,
+        status: 'not_found',
+        message: `Unknown entity type: ${entity_type}`,
       };
     }
-  }
 
-  // Soft delete: add deleted_at column if it doesn't exist, or use status = 'deleted'
-  // For simplicity, we'll use a DELETE operation with audit trail
-  // In production, tables should have deleted_at column
-  try {
-    // Check if table has deleted_at column
-    const hasDeletedAt = await pool.query(
-      `SELECT column_name FROM information_schema.columns
-       WHERE table_name = $1 AND column_name = 'deleted_at'`,
-      [tableName]
-    );
-
-    if (hasDeletedAt.rows.length > 0) {
-      // Use soft delete
-      const result = await pool.query(
-        `UPDATE ${tableName}
-         SET deleted_at = NOW()
-         WHERE id = $1 AND deleted_at IS NULL
-         RETURNING id`,
-        [entity_id]
-      );
-
-      if (result.rows.length === 0) {
-        return {
-          id: entity_id,
-          entity_type,
-          status: 'not_found',
-          message: 'Entity not found or already deleted',
-        };
-      }
-    } else {
-      // Table doesn't have deleted_at, perform hard delete with audit
-      const result = await pool.query(`DELETE FROM ${tableName} WHERE id = $1 RETURNING id`, [
-        entity_id,
-      ]);
-
-      if (result.rows.length === 0) {
-        return {
-          id: entity_id,
-          entity_type,
-          status: 'not_found',
-          message: 'Entity not found',
-        };
-      }
+    // Check if entity exists first
+    const existingEntity = await findOperation();
+    if (!existingEntity) {
+      return {
+        id: entity_id,
+        entity_type,
+        status: 'not_found',
+        message: 'Entity not found',
+      };
     }
+
+    // Perform the delete operation
+    await deleteOperation();
 
     // Cascade delete relations if requested
     let cascadedCount = 0;
     if (cascade_relations) {
-      cascadedCount = await cascadeDeleteRelations(pool, entity_type, entity_id);
+      cascadedCount = await cascadeDeleteRelations(entity_type, entity_id);
     }
+
+    logger.debug(
+      {
+        id: entity_id,
+        entity_type,
+        cascaded_relations: cascadedCount
+      },
+      'Entity deleted successfully'
+    );
 
     return {
       id: entity_id,
@@ -205,6 +233,15 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
       cascaded_relations: cascadedCount,
     };
   } catch (err) {
+    logger.error(
+      {
+        error: err,
+        id: entity_id,
+        entity_type
+      },
+      'Failed to delete entity'
+    );
+
     return {
       id: entity_id,
       entity_type,
@@ -218,26 +255,63 @@ export async function softDelete(pool: Pool, request: DeleteRequest): Promise<De
  * Cascade delete all relations pointing to/from an entity
  *
  * @param pool - PostgreSQL connection pool
- * @param entityType - Entity type
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type
+ * @param entity_id - Entity UUID
  * @returns Number of relations deleted
  */
 async function cascadeDeleteRelations(
-  pool: Pool,
-  entityType: string,
-  entityId: string
+  entity_type: string,
+  entity_id: string
 ): Promise<number> {
-  const result = await pool.query(
-    `UPDATE knowledge_relation
-     SET deleted_at = NOW()
-     WHERE (from_entity_type = $1 AND from_entity_id = $2
-            OR to_entity_type = $1 AND to_entity_id = $2)
-       AND deleted_at IS NULL
-     RETURNING id`,
-    [entityType, entityId]
-  );
+  const prisma = getPrismaClient();
 
-  return result.rows.length;
+  try {
+    const result = await prisma.knowledgeRelation.updateMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              {
+                from_entity_type: entity_type,
+                from_entity_id: entity_id,
+              },
+              {
+                to_entity_type: entity_type,
+                to_entity_id: entity_id,
+              },
+            ],
+          },
+          {
+            deleted_at: null, // Only soft-delete non-deleted relations
+          },
+        ],
+      },
+      data: {
+        deleted_at: new Date(),
+      },
+    });
+
+    logger.debug(
+      {
+        entity_type,
+        entity_id,
+        cascadedCount: result.count
+      },
+      'Cascade deleted relations'
+    );
+
+    return result.count;
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        entity_type,
+        entity_id
+      },
+      'Failed to cascade delete relations'
+    );
+    return 0;
+  }
 }
 
 /**
@@ -247,11 +321,11 @@ async function cascadeDeleteRelations(
  * @param requests - Array of delete requests
  * @returns Array of delete results
  */
-export async function bulkDelete(pool: Pool, requests: DeleteRequest[]): Promise<DeleteResult[]> {
+export async function bulkDelete(requests: DeleteRequest[]): Promise<DeleteResult[]> {
   const results: DeleteResult[] = [];
 
   for (const request of requests) {
-    const result = await softDelete(pool, request);
+    const result = await softDelete(request);
     results.push(result);
   }
 
@@ -262,74 +336,74 @@ export async function bulkDelete(pool: Pool, requests: DeleteRequest[]): Promise
  * Undelete (restore) a soft-deleted entity
  *
  * @param pool - PostgreSQL connection pool
- * @param entityType - Entity type
- * @param entityId - Entity UUID
+ * @param entity_type - Entity type
+ * @param entity_id - Entity UUID
  * @returns true if restored, false if not found
  */
-export async function undelete(pool: Pool, entityType: string, entityId: string): Promise<boolean> {
-  // Handle graph extension types
-  if (entityType === 'entity') {
-    const result = await pool.query(
-      `UPDATE knowledge_entity
-       SET deleted_at = NULL
-       WHERE id = $1 AND deleted_at IS NOT NULL
-       RETURNING id`,
-      [entityId]
-    );
-    return result.rows.length > 0;
-  }
-
-  if (entityType === 'relation') {
-    const result = await pool.query(
-      `UPDATE knowledge_relation
-       SET deleted_at = NULL
-       WHERE id = $1 AND deleted_at IS NOT NULL
-       RETURNING id`,
-      [entityId]
-    );
-    return result.rows.length > 0;
-  }
-
-  if (entityType === 'observation') {
-    const result = await pool.query(
-      `UPDATE knowledge_observation
-       SET deleted_at = NULL
-       WHERE id = $1 AND deleted_at IS NOT NULL
-       RETURNING id`,
-      [entityId]
-    );
-    return result.rows.length > 0;
-  }
-
-  // Handle typed knowledge types
-  const tableMap: Record<string, string> = {
-    section: 'section',
-    runbook: 'runbook',
-    change: 'change_log',
-    issue: 'issue_log',
-    decision: 'adr_decision',
-    todo: 'todo_log',
-    release_note: 'release_note',
-    ddl: 'ddl_history',
-    pr_context: 'pr_context',
-  };
-
-  const tableName = tableMap[entityType];
-  if (!tableName) {
-    return false;
-  }
+export async function undelete(entity_type: string, entity_id: string): Promise<boolean> {
+  const prisma = getPrismaClient();
 
   try {
-    const result = await pool.query(
-      `UPDATE ${tableName}
-       SET deleted_at = NULL
-       WHERE id = $1 AND deleted_at IS NOT NULL
-       RETURNING id`,
-      [entityId]
+    // Handle graph extension types with soft delete support
+    if (entity_type === 'entity') {
+      const result = await prisma.knowledgeEntity.updateMany({
+        where: {
+          id: entity_id,
+          deleted_at: { not: null },
+        },
+        data: {
+          deleted_at: null,
+        },
+      });
+      return result.count > 0;
+    }
+
+    if (entity_type === 'relation') {
+      const result = await prisma.knowledgeRelation.updateMany({
+        where: {
+          id: entity_id,
+          deleted_at: { not: null },
+        },
+        data: {
+          deleted_at: null,
+        },
+      });
+      return result.count > 0;
+    }
+
+    if (entity_type === 'observation') {
+      const result = await prisma.knowledgeObservation.updateMany({
+        where: {
+          id: entity_id,
+          deleted_at: { not: null },
+        },
+        data: {
+          deleted_at: null,
+        },
+      });
+      return result.count > 0;
+    }
+
+    // Note: Typed knowledge types don't support undelete as they use hard delete
+    // This maintains consistency with the schema where these tables don't have deleted_at columns
+    logger.warn(
+      {
+        entity_type,
+        entity_id
+      },
+      'Undelete not supported for entity type (hard delete only)'
     );
 
-    return result.rows.length > 0;
-  } catch {
+    return false;
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        entity_type,
+        entity_id
+      },
+      'Failed to undelete entity'
+    );
     return false;
   }
 }
