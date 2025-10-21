@@ -544,7 +544,7 @@ BEGIN
     operation_type,
     old_data_json,
     new_data_json,
-    COALESCE(NEW.updated_by, OLD.updated_by, 'system'),
+    'system',
     COALESCE(NEW.tags, OLD.tags, '{}'),
     COALESCE(NEW.metadata, OLD.metadata, '{}')
   );
@@ -727,11 +727,11 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT
-    schemaname ?? '.' || tablename as table_name,
+    schemaname || '.' || tablename as table_name,
     n_live_tup as total_rows,
-    pg_total_relation_size(schemaname ?? '.' || tablename) as table_size,
-    pg_indexes_size(schemaname ?? '.' || tablename) as index_size,
-    pg_total_relation_size(schemaname ?? '.' || tablename) + pg_indexes_size(schemaname ?? '.' || tablename) as total_size,
+    pg_total_relation_size(schemaname || '.' || tablename) as table_size,
+    pg_indexes_size(schemaname || '.' || tablename) as index_size,
+    pg_total_relation_size(schemaname || '.' || tablename) + pg_indexes_size(schemaname || '.' || tablename) as total_size,
     last_vacuum,
     last_autovacuum,
     last_analyze,

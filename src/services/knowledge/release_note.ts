@@ -13,10 +13,10 @@ export async function storeReleaseNote(
       data.version,
       data.release_date,
       data.summary,
-      JSON.stringify(data.breaking_changes),
-      JSON.stringify(data.new_features),
-      JSON.stringify(data.bug_fixes),
-      JSON.stringify(data.deprecations),
+      data.breaking_changes || [],
+      data.new_features || [],
+      data.bug_fixes || [],
+      data.deprecations || [],
       JSON.stringify(scope),
     ]
   );

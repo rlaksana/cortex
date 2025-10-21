@@ -41,12 +41,12 @@ export class SectionService {
     };
 
     const contentHash = this.generateContentHash(data.title, data.bodyMd ?? data.bodyText);
-    const id = `section_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = crypto.randomUUID();
 
     const query = `
-      INSERT INTO "sections" (id, title, heading, "bodyMd", "bodyText", "bodyJsonb", "contentHash", tags, metadata, "createdAt", "updatedAt")
+      INSERT INTO section (id, title, heading, body_md, body_text, body_jsonb, content_hash, tags, metadata, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-      RETURNING id, title, heading, "bodyMd", "bodyText", "createdAt", "updatedAt"
+      RETURNING id, title, heading, body_md, body_text, created_at, updated_at
     `;
 
     const result = await pool.query(query, [
@@ -61,7 +61,16 @@ export class SectionService {
       JSON.stringify(data.metadata ?? {})
     ]);
 
-    return result.rows[0];
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      title: row.title,
+      heading: row.heading,
+      bodyMd: row.body_md,
+      bodyText: row.body_text,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
   }
 
   /**
@@ -110,15 +119,32 @@ export class SectionService {
   }
 
   /**
-   * Checks for duplicate content by hash (simplified for now)
+   * Checks for duplicate content by hash
    */
-  async findByContentHash(_contentHash: string): Promise<{
+  async findByContentHash(contentHash: string): Promise<{
     id: string;
     title: string;
-    createdAt: string;
+    createdAt: Date;
   } | null> {
-    // Simplified implementation - return null for now
-    return null;
+    const query = `
+      SELECT id, title, created_at
+      FROM section
+      WHERE content_hash = $1
+      LIMIT 1
+    `;
+
+    const result = await pool.query(query, [contentHash]);
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      title: row.title,
+      createdAt: row.created_at
+    };
   }
 
   /**

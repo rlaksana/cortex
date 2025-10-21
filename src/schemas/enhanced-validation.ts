@@ -1,5 +1,13 @@
 import { z } from 'zod';
 import * as crypto from 'crypto';
+import {
+  ReleaseNoteDataSchema,
+  DDLDataSchema,
+  PRContextDataSchema,
+  EntityDataSchema,
+  RelationDataSchema,
+  ObservationDataSchema,
+} from './knowledge-types.js';
 
 /**
  * Enhanced Zod schemas with comprehensive validation to prevent database constraint violations
@@ -289,6 +297,37 @@ export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
     kind: z.literal('assumption'),
     scope: ScopeFilterSchema.optional(),
     data: AssumptionDataSchema,
+  }),
+  // Missing schemas added during comprehensive testing
+  z.object({
+    kind: z.literal('release_note'),
+    scope: ScopeFilterSchema.optional(),
+    data: ReleaseNoteDataSchema,
+  }),
+  z.object({
+    kind: z.literal('ddl'),
+    scope: ScopeFilterSchema.optional(),
+    data: DDLDataSchema,
+  }),
+  z.object({
+    kind: z.literal('pr_context'),
+    scope: ScopeFilterSchema.optional(),
+    data: PRContextDataSchema,
+  }),
+  z.object({
+    kind: z.literal('entity'),
+    scope: ScopeFilterSchema.optional(),
+    data: EntityDataSchema,
+  }),
+  z.object({
+    kind: z.literal('relation'),
+    scope: ScopeFilterSchema.optional(),
+    data: RelationDataSchema,
+  }),
+  z.object({
+    kind: z.literal('observation'),
+    scope: ScopeFilterSchema.optional(),
+    data: ObservationDataSchema,
   }),
 ]);
 
