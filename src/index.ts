@@ -103,7 +103,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [{
             type: 'text',
             text: JSON.stringify({
-              items: items,
+              items,
               stored_count: items.length,
               message: 'Memory items stored successfully (simplified version)',
               timestamp: new Date().toISOString()
@@ -128,7 +128,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [{
             type: 'text',
             text: JSON.stringify({
-              query: query,
+              query,
               hits: [],
               message: 'Search completed (simplified version)',
               timestamp: new Date().toISOString()
