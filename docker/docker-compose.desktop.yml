@@ -7,6 +7,17 @@
 # - Connection: Windows host → Docker Desktop → PostgreSQL
 # - Memory usage: 3-5GB total (higher but includes GUI management)
 # - Performance: 10-20ms latency (very good for MCP workloads)
+
+# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
+# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
+# - PostgreSQL image version (postgres:18-alpine required)
+# - Container name (cortex-postgres-desktop required)
+# - Database credentials (POSTGRES_USER, POSTGRES_PASSWORD)
+# - Database name (POSTGRES_DB: cortex_prod required)
+# - Port mappings and network configuration
+# - Volume mappings and resource limits
+# - Health check parameters and restart policy
+# - Any changes require formal change request and team approval
 # =============================================================================
 
 version: '3.8'

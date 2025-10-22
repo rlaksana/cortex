@@ -482,3 +482,12 @@ function isDeleteOperation(item: unknown): item is z.infer<typeof DeleteOperatio
 
 export type EnhancedKnowledgeItem = z.infer<typeof AnyKnowledgeItemSchema>;
 export type MemoryStoreRequest = z.infer<typeof MemoryStoreRequestSchema>;
+
+// Memory find request schema
+export const MemoryFindRequestSchema = z.object({
+  query: z.string().min(1, 'Query is required'),
+  scope: ScopeFilterSchema.optional(),
+  types: z.array(z.string()).optional(),
+  mode: z.enum(['auto', 'fast', 'deep']).optional().default('auto'),
+  limit: z.number().int().min(1).max(1000).optional().default(50),
+});

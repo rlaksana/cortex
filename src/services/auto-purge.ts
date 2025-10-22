@@ -238,14 +238,14 @@ async function runPurge(
       data: {
         last_purge_at: new Date(),
         operations_since_purge: 0,
-        deleted_counts: deleted_counts,
+        deleted_counts,
         last_duration_ms: durationMs
       }
     });
 
     logger.info(
       {
-        deleted_counts: deleted_counts,
+        deleted_counts,
         total_deleted: totalDeleted,
         duration_ms: durationMs,
         triggered_by: triggeredBy,
@@ -255,7 +255,7 @@ async function runPurge(
     );
 
     return {
-      deleted_counts: deleted_counts,
+      deleted_counts,
       total_deleted: totalDeleted,
       duration_ms: durationMs,
       triggered_by: triggeredBy,

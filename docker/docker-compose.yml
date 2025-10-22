@@ -8,6 +8,17 @@
 # - Uses gen_random_uuid() from pgcrypto extension (NOT uuid-ossp)
 # - Requires PostgreSQL 18-specific performance features and syntax
 # - Changing database version will cause system failure and inconsistencies
+
+# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
+# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
+# - PostgreSQL image version (postgres:18-alpine required)
+# - Container name (cortex-postgres required)
+# - Database credentials (POSTGRES_USER, POSTGRES_PASSWORD)
+# - Database name (POSTGRES_DB: cortex_prod required)
+# - Port mapping (5433:5432 required)
+# - Volume mappings and network configuration
+# - Health check parameters and restart policy
+# - Any changes require formal change request and team approval
 # ============================================================================
 
 services:

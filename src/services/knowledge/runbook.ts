@@ -13,9 +13,9 @@ export async function storeRunbook(
     data: {
       title: data.title || 'Untitled Runbook',
       description: data.description || null,
-      steps: data.steps || [],
+      steps: JSON.stringify(data.steps || []),
       service: data.service || null,
-      triggers: data.triggers || [],
+      triggers: JSON.stringify(data.triggers || []),
       last_verified_at: data.last_verified_at || null,
       tags: scope || {}
     }

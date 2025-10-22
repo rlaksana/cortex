@@ -84,8 +84,8 @@ export async function deleteObservationsByText(
   const prisma = getPrismaClient();
   const result = await prisma.knowledgeObservation.updateMany({
     where: {
-      entity_type: entity_type,
-      entity_id: entity_id,
+      entity_type,
+      entity_id,
       observation: observationText,
       deleted_at: null
     },
@@ -122,8 +122,8 @@ export async function getObservations(
   const prisma = getPrismaClient();
 
   const whereClause: any = {
-    entity_type: entity_type,
-    entity_id: entity_id,
+    entity_type,
+    entity_id,
     deleted_at: null
   };
 
