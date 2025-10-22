@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger.js';
-// import { prisma } from '../../db/prisma-client.js';
+import { prisma } from '../../db/prisma-client.js';
 import type {
   SimilarityService as ISimilarityService,
   KnowledgeItem
@@ -133,50 +133,68 @@ export class SimilarityService implements ISimilarityService {
    * Get candidate items from database for similarity comparison
    */
   private async getCandidateItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
-    const whereClause: any = {};
-
-    // Prioritize same kind items
-    if (item.kind) {
-      whereClause.kind = item.kind;
-    }
-
-    // Add scope filtering for relevant results
-    if (item.scope?.project) {
-      whereClause.OR = [
-        { scope_project: item.scope.project },
-        { scope_org: item.scope.org || '' }
-      ];
-    }
-
-    // Limit to recent items for performance
-    const recentCutoff = new Date();
-    recentCutoff.setDate(recentCutoff.getDate() - 30); // Last 30 days
-    whereClause.created_at = { gte: recentCutoff };
-
     try {
-      // TODO: Replace with proper service calls - prisma.knowledge doesn't exist
-      logger.warn({ itemKind: item.kind }, 'Similarity search not implemented - prisma.knowledge table does not exist');
-      return [];
+      // Build the where clause for KnowledgeEntity table
+      const whereClause: any = {
+        deleted_at: null // Exclude soft-deleted records
+      };
 
-      // const candidates = await prisma.knowledge.findMany({
-      //   where: whereClause,
-      //   select: {
-      //     id: true,
-      //     kind: true,
-      //     scope_project: true,
-      //     scope_branch: true,
-      //     scope_org: true,
-      //     data: true,
-      //     created_at: true,
-      //     updated_at: true
-      //   },
-      //   orderBy: { created_at: 'desc' },
-      //   take: 50 // Limit candidates for performance
-      // });
+      // Prioritize same entity_type (kind) items
+      if (item.kind) {
+        whereClause.entity_type = item.kind;
+      }
 
-      // return candidates.map((row: any) => this.mapRowToKnowledgeItem(row));
+      // Add scope filtering based on metadata or data fields
+      if (item.scope?.project) {
+        whereClause.OR = [
+          {
+            metadata: {
+              path: ['scope', 'project'],
+              equals: item.scope.project
+            }
+          },
+          {
+            data: {
+              path: ['scope', 'project'],
+              equals: item.scope.project
+            }
+          },
+          {
+            metadata: {
+              path: ['org'],
+              equals: item.scope.org || ''
+            }
+          }
+        ];
+      }
+
+      // Limit to recent items for performance (last 30 days)
+      const recentCutoff = new Date();
+      recentCutoff.setDate(recentCutoff.getDate() - 30);
+      whereClause.created_at = { gte: recentCutoff };
+
+      // Query the KnowledgeEntity table
+      const candidates = await prisma.getClient().knowledgeEntity.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          entity_type: true,
+          name: true,
+          data: true,
+          metadata: true,
+          created_at: true,
+          updated_at: true,
+          tags: true
+        },
+        orderBy: { created_at: 'desc' },
+        take: 50 // Limit candidates for performance
+      });
+
+      // Map database rows to KnowledgeItem interface
+      return candidates.map((row: any) => this.mapRowToKnowledgeItem(row));
+
     } catch (error) {
-      logger.error({ error }, 'Error fetching candidate items');
+      logger.error({ error, itemKind: item.kind }, 'Error fetching candidate items from KnowledgeEntity table');
       return [];
     }
   }
@@ -184,20 +202,35 @@ export class SimilarityService implements ISimilarityService {
   /**
    * Map database row to KnowledgeItem interface
    */
-  // private mapRowToKnowledgeItem(row: any): KnowledgeItem {
-  //   return {
-  //     id: row.id,
-  //     kind: row.kind,
-  //     scope: {
-  //       project: row.scope_project,
-  //       branch: row.scope_branch,
-  //       org: row.scope_org
-  //     },
-  //     data: row.data,
-  //     created_at: row.created_at?.toISOString(),
-  //     updated_at: row.updated_at?.toISOString()
-  //   };
-  // }
+  private mapRowToKnowledgeItem(row: any): KnowledgeItem {
+    // Extract scope information from metadata or data fields
+    let scope: { project?: string; branch?: string; org?: string } = {};
+
+    // Try to get scope from metadata first
+    if (row.metadata?.scope) {
+      scope = {
+        project: row.metadata.scope.project,
+        branch: row.metadata.scope.branch,
+        org: row.metadata.scope.org
+      };
+    } else if (row.data?.scope) {
+      // Fallback to data field
+      scope = {
+        project: row.data.scope.project,
+        branch: row.data.scope.branch,
+        org: row.data.scope.org
+      };
+    }
+
+    return {
+      id: row.id,
+      kind: row.entity_type, // Map entity_type to kind
+      scope: scope,
+      data: row.data || {},
+      created_at: row.created_at?.toISOString(),
+      updated_at: row.updated_at?.toISOString()
+    };
+  }
 
   /**
    * Compute detailed similarity score between two items
