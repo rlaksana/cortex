@@ -1,4 +1,5 @@
 import pino from 'pino';
+import { logger } from './mcp-logger.js';
 
 /**
  * Structured JSON logger using Pino
@@ -16,24 +17,8 @@ import pino from 'pino';
  * - scope: {org, project, branch} for audit
  */
 
-export const logger = pino(
-  {
-    level: process.env.LOG_LEVEL ?? 'info',
-    formatters: {
-      level: (label) => ({ level: label }),
-    },
-    base: {
-      service: 'cortex-mcp',
-      environment: process.env.NODE_ENV ?? 'development',
-    },
-    timestamp: pino.stdTimeFunctions.isoTime,
-    redact: {
-      paths: ['*.idempotency_key', '*.actor'], // PII redaction
-      remove: true,
-    },
-  },
-  void pino.destination(2)
-); // Write to stderr (fd 2) for MCP stdio protocol compatibility
+// Re-export the logger
+export { logger };
 
 /**
  * Create a child logger with additional context

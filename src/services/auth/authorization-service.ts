@@ -497,7 +497,10 @@ export class AuthorizationService {
       }
     });
 
-    logger.info('Initialized default resource access rules');
+    // Disable logging during MCP initialization to prevent stdout contamination
+    if (process.env.NODE_ENV !== 'production') {
+      // logger.info('Initialized default resource access rules');
+    }
   }
 
   /**
