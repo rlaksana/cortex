@@ -269,7 +269,7 @@ export async function relationExists(
       from_entity_id: fromId,
       to_entity_type: toType,
       to_entity_id: toId,
-      relation_type: relation_type,
+      relation_type,
       deleted_at: null
     },
     select: { id: true }

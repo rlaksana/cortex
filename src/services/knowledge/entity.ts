@@ -8,6 +8,7 @@
  */
 
 import { getPrismaClient } from '../../db/prisma.js';
+import { createHash } from 'crypto';
 import type { EntityItem } from '../../schemas/knowledge-types.js';
 
 /**
@@ -35,7 +36,7 @@ export async function storeEntity(
   // Check for existing entity by content_hash first
   const existingByHash = await prisma.knowledgeEntity.findFirst({
     where: {
-      content_hash: content_hash,
+      content_hash,
       deleted_at: null
     }
   });
@@ -59,7 +60,7 @@ export async function storeEntity(
       where: { id: existingByName.id },
       data: {
         data: data.data as any,
-        content_hash: content_hash,
+        content_hash,
         tags: scope as any
       }
     });
@@ -72,7 +73,7 @@ export async function storeEntity(
       entity_type: data.entity_type,
       name: data.name,
       data: data.data as any,
-      content_hash: content_hash,
+      content_hash,
       tags: scope as any
     }
   });
@@ -84,13 +85,12 @@ export async function storeEntity(
  * Generate content hash for entity deduplication
  */
 function generateContentHash(data: EntityItem['data']): string {
-  const crypto = require('crypto');
   const content = JSON.stringify({
     entity_type: data.entity_type,
     name: data.name,
     data: data.data
   });
-  return crypto.createHash('sha256').update(content).digest('hex').substring(0, 128);
+  return createHash('sha256').update(content).digest('hex').substring(0, 128);
 }
 
 /**

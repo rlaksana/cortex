@@ -43,10 +43,10 @@ export async function storeReleaseNote(
       tags: {
         ...scope,
         release_date: data.release_date,
-        breaking_changes: data.breaking_changes || [],
-        new_features: data.new_features || [],
-        bug_fixes: data.bug_fixes || [],
-        deprecations: data.deprecations || []
+        breaking_changes: JSON.stringify(data.breaking_changes || []),
+        new_features: JSON.stringify(data.new_features || []),
+        bug_fixes: JSON.stringify(data.bug_fixes || []),
+        deprecations: JSON.stringify(data.deprecations || [])
       }
     }
   });

@@ -20,7 +20,7 @@ export async function storeChange(
         ...scope,
         details: data.details,
         content_hash: hash,
-        affected_files: data.affected_files || []
+        affected_files: JSON.stringify(data.affected_files || [])
       }
     }
   });

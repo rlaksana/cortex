@@ -167,16 +167,40 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
     correctionMetadata.recommendation = 'Auto-fix disabled. Query executed as-is.';
     correctionMetadata.final_query = query;
 
-    return {
-      ...result,
-      corrections: return_corrections ? correctionMetadata : undefined,
+    // Convert MemoryFindResponse to SmartFindResult format
+    const smartFindResult: SmartFindResult = {
+      hits: result.results.map((resultItem: any) => ({
+        kind: resultItem.kind,
+        id: resultItem.id,
+        title: resultItem.data.title || resultItem.id,
+        snippet: resultItem.data.snippet || resultItem.data.description || '',
+        score: resultItem.confidence_score,
+        scope: resultItem.scope,
+        updated_at: resultItem.created_at,
+        route_used: result.autonomous_context.search_mode_used,
+        confidence: resultItem.confidence_score,
+      })),
+      suggestions: [],
+      autonomous_metadata: {
+        strategy_used: result.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+        mode_requested: mode,
+        mode_executed: result.autonomous_context.search_mode_used,
+        confidence: result.autonomous_context.confidence_average > 0.8 ? 'high' : result.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+        total_results: result.total_count,
+        avg_score: result.autonomous_context.confidence_average,
+        fallback_attempted: false,
+        recommendation: 'Auto-fix disabled. Query executed as-is.',
+        user_message_suggestion: result.autonomous_context.user_message_suggestion,
+      },
       debug: {
-        ...result.debug,
         auto_fix_enabled: false,
         patterns_detected: patternsDetected.length,
         total_attempts: 1,
       },
+      corrections: return_corrections ? correctionMetadata : undefined,
     };
+
+    return smartFindResult;
   }
 
   // Phase 2: Progressive retry strategy
@@ -273,7 +297,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
             correctionMetadata.final_sanitization_level = 'aggressive';
 
             // Try one final time
-            const finalResult = await memoryFind({
+            const memoryFindResult = await memoryFind({
               query: currentQuery,
               scope,
               types,
@@ -281,19 +305,39 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
               mode: 'deep',
             });
 
-            finalResult.autonomous_metadata.recommendation =
-              'Query retrieved using aggressive sanitization. Consider using simpler terms for better results.';
-
-            finalResult.debug = {
-              ...finalResult.debug,
-              total_attempts: attempts + 1,
-              final_sanitization_level: 'aggressive',
-            };
-
-            return {
-              ...finalResult,
+            // Convert MemoryFindResponse to SmartFindResult format
+            const smartFindResult: SmartFindResult = {
+              hits: memoryFindResult.results.map((result: any) => ({
+                kind: result.kind,
+                id: result.id,
+                title: result.data.title || result.id,
+                snippet: result.data.snippet || result.data.description || '',
+                score: result.confidence_score,
+                scope: result.scope,
+                updated_at: result.created_at,
+                route_used: memoryFindResult.autonomous_context.search_mode_used,
+                confidence: result.confidence_score,
+              })),
+              suggestions: [],
+              autonomous_metadata: {
+                strategy_used: memoryFindResult.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+                mode_requested: mode,
+                mode_executed: memoryFindResult.autonomous_context.search_mode_used,
+                confidence: memoryFindResult.autonomous_context.confidence_average > 0.8 ? 'high' : memoryFindResult.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+                total_results: memoryFindResult.total_count,
+                avg_score: memoryFindResult.autonomous_context.confidence_average,
+                fallback_attempted: true,
+                recommendation: 'Query retrieved using aggressive sanitization. Consider using simpler terms for better results.',
+                user_message_suggestion: memoryFindResult.autonomous_context.user_message_suggestion,
+              },
+              debug: {
+                total_attempts: attempts + 1,
+                final_sanitization_level: 'aggressive',
+              },
               corrections: return_corrections ? correctionMetadata : undefined,
             };
+
+            return smartFindResult;
           } catch (finalError) {
             // If final attempt fails, return empty result with error info
             return createErrorResult(query, finalError, correctionMetadata, return_corrections);
@@ -343,26 +387,42 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
     );
   }
 
-  finalResult.debug = {
-    ...finalResult.debug,
-    total_attempts: attempts,
-    total_time_ms: totalTime,
-    auto_fix_enabled: enable_auto_fix,
-    corrections_applied: correctionMetadata.auto_fixes_applied.length,
-    final_sanitization_level: correctionMetadata.final_sanitization_level,
-  };
-
-  // Generate recommendation
-  finalResult.autonomous_metadata.recommendation = generateRecommendation(
-    correctionMetadata,
-    finalResult.autonomous_metadata.confidence
-  );
-
-  return {
-    ...finalResult,
+  // Convert memoryFind result to SmartFindResult format
+  const smartFindResult: SmartFindResult = {
+    hits: finalResult.results.map((result: any) => ({
+      kind: result.kind,
+      id: result.id,
+      title: result.data.title || result.id,
+      snippet: result.data.snippet || result.data.description || '',
+      score: result.confidence_score,
+      scope: result.scope,
+      updated_at: result.created_at,
+      route_used: finalResult.autonomous_context.search_mode_used,
+      confidence: result.confidence_score,
+    })),
+    suggestions: [],
+    autonomous_metadata: {
+      strategy_used: finalResult.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+      mode_requested: mode,
+      mode_executed: finalResult.autonomous_context.search_mode_used,
+      confidence: finalResult.autonomous_context.confidence_average > 0.8 ? 'high' : finalResult.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+      total_results: finalResult.total_count,
+      avg_score: finalResult.autonomous_context.confidence_average,
+      fallback_attempted: false,
+      recommendation: generateRecommendation(correctionMetadata, finalResult.autonomous_context.confidence_average > 0.8 ? 'high' : 'medium'),
+      user_message_suggestion: finalResult.autonomous_context.user_message_suggestion,
+    },
+    debug: {
+      total_attempts: attempts,
+      total_time_ms: totalTime,
+      auto_fix_enabled: enable_auto_fix,
+      corrections_applied: correctionMetadata.auto_fixes_applied.length,
+      final_sanitization_level: correctionMetadata.final_sanitization_level,
+    },
     corrections: return_corrections ? correctionMetadata : undefined,
-    debug: finalResult.debug,
   };
+
+  return smartFindResult;
 }
 
 /**

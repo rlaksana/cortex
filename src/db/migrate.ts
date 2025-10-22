@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createHash } from 'crypto';
 import { dbPool } from './pool.js';
 import { logger } from '../utils/logger.js';
 
@@ -486,8 +487,7 @@ class DatabaseMigrator {
    * Calculate checksum of a string
    */
   private calculateChecksum(content: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
+    return createHash('sha256').update(content).digest('hex');
   }
 }
 

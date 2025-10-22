@@ -7,6 +7,16 @@
 # - Connection: Windows host → WSL2 Docker → PostgreSQL
 # - Memory usage: ~800MB total (vs 3-5GB for Docker Desktop)
 # - Performance: 5-10ms latency (excellent for MCP workloads)
+
+# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
+# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
+# - PostgreSQL image version (postgres:18-alpine required)
+# - Container name (cortex-postgres required)
+# - Database credentials (POSTGRES_USER, POSTGRES_PASSWORD)
+# - Database name (POSTGRES_DB: cortex_prod required)
+# - Port mapping (5433:5432 required)
+# - Volume mappings and network configuration
+# - Any changes require formal change request and team approval
 # =============================================================================
 
 version: '3.8'

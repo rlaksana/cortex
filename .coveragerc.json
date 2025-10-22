@@ -1,0 +1,276 @@
+{
+  "name": "mcp-cortex-coverage",
+  "version": "1.0.0",
+  "description": "Comprehensive coverage configuration for mcp-cortex project",
+
+  "coverage": {
+    "provider": "v8",
+    "enabled": true,
+    "all": true,
+    "clean": true,
+    "cleanOnRerun": true,
+    "perFile": true,
+
+    "directories": {
+      "reports": "coverage",
+      "reportsDirectory": "coverage",
+      "output": "coverage/reports"
+    },
+
+    "reporters": [
+      "text",
+      "text-summary",
+      "json",
+      "json-summary",
+      "html",
+      "lcov",
+      "clover",
+      "teamcity"
+    ],
+
+    "exclude": [
+      "tests/**",
+      "test/**",
+      "**/*.test.ts",
+      "**/*.test.js",
+      "**/*.spec.ts",
+      "**/*.spec.js",
+      "dist/**",
+      "build/**",
+      "node_modules/**",
+      "coverage/**",
+      "**/*.d.ts",
+      "**/*.config.ts",
+      "**/*.config.js",
+      "**/*.config.cjs",
+      "scripts/**",
+      "migrations/**",
+      "docker/**",
+      ".github/**",
+      ".husky/**",
+      ".claude/**",
+      ".serena/**",
+      ".specify/**",
+      "docs/**",
+      "*.md",
+      "*.txt",
+      "*.yml",
+      "*.yaml"
+    ],
+
+    "include": [
+      "src/**/*.ts",
+      "src/**/*.js"
+    ],
+
+    "thresholds": {
+      "global": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "perFile": {
+          "statements": 85,
+          "branches": 80,
+          "functions": 85,
+          "lines": 85
+        }
+      },
+      "critical": {
+        "src/core/**": {
+          "statements": 98,
+          "branches": 95,
+          "functions": 98,
+          "lines": 98
+        },
+        "src/db/**": {
+          "statements": 95,
+          "branches": 90,
+          "functions": 95,
+          "lines": 95
+        },
+        "src/mcp/**": {
+          "statements": 95,
+          "branches": 90,
+          "functions": 95,
+          "lines": 95
+        }
+      },
+      "standard": {
+        "src/utils/**": {
+          "statements": 90,
+          "branches": 85,
+          "functions": 90,
+          "lines": 90
+        },
+        "src/types/**": {
+          "statements": 80,
+          "branches": 75,
+          "functions": 80,
+          "lines": 80
+        }
+      }
+    },
+
+    "watermarks": {
+      "statements": [80, 95],
+      "functions": [80, 95],
+      "branches": [75, 90],
+      "lines": [80, 95]
+    },
+
+    "branches": true,
+    "functions": true,
+    "lines": true,
+    "statements": true,
+    "skipFull": false,
+    "allowExternal": false,
+
+    "output": {
+      "json": {
+        "path": "coverage/coverage.json",
+        "format": "v8"
+      },
+      "lcov": {
+        "path": "coverage/lcov.info",
+        "filename": "lcov.info"
+      },
+      "html": {
+        "path": "coverage/html",
+        "subdir": "report"
+      },
+      "text": {
+        "path": "coverage/coverage.txt"
+      },
+      "summary": {
+        "path": "coverage/coverage-summary.json"
+      }
+    },
+
+    "checkCoverage": {
+      "statements": 95,
+      "branches": 90,
+      "functions": 95,
+      "lines": 95,
+      "perFile": false,
+      "skipFull": false,
+      "branches": 85
+    },
+
+    "reporting": {
+      "showUncovredBranches": true,
+      "showOnlyUncovered": false,
+      "highlightUncovered": true,
+      "verbose": true,
+      "reporterOptions": {
+        "html": {
+          "subdir": "report",
+          "theme": "default",
+          "showUncoveredBranches": true
+        },
+        "text": {
+          "maxCols": 120,
+          "skipFull": false
+        },
+        "lcov": {
+          "projectRoot": ".",
+          "append": false
+        },
+        "json": {
+          "file": "coverage/coverage.json",
+          "compact": false
+        },
+        "clover": {
+          "file": "coverage/clover.xml",
+          "projectName": "mcp-cortex"
+        }
+      }
+    },
+
+    "instrumentation": {
+      "compact": true,
+      "preserveComments": false,
+      "produceSourceMap": true,
+      "sourceMap": true,
+      "embedSource": false,
+      "esModules": true,
+      "babel": false
+    },
+
+    "hooks": {
+      "preTest": "npm run lint",
+      "postTest": "npm run test:coverage:report",
+      "onFailure": "npm run test:coverage:check"
+    },
+
+    "git": {
+      "diff": true,
+      "baseBranch": "main",
+      "diffAgainst": "HEAD~1",
+      "onlyChanged": false
+    },
+
+    "ci": {
+      "failOnBelowThreshold": true,
+      "failOnEmptyCoverage": true,
+      "uploadToCodecov": true,
+      "generateBadge": true,
+      "mergeReports": true
+    },
+
+    "monitoring": {
+      "trending": true,
+      "historicalReporting": true,
+      "qualityGates": {
+        "enabled": true,
+        "minCoverage": 90,
+        "blockBuild": false
+      }
+    },
+
+    "customMetrics": {
+      "criticalPathCoverage": true,
+      "testComplexity": true,
+      "codeComplexity": true,
+      "maintainabilityIndex": true
+    }
+  },
+
+  "profiles": {
+    "development": {
+      "thresholds": {
+        "global": {
+          "statements": 85,
+          "branches": 80,
+          "functions": 85,
+          "lines": 85
+        }
+      },
+      "reporters": ["text", "html"]
+    },
+    "ci": {
+      "thresholds": {
+        "global": {
+          "statements": 95,
+          "branches": 90,
+          "functions": 95,
+          "lines": 95
+        }
+      },
+      "reporters": ["json", "lcov", "text-summary"],
+      "failOnBelowThreshold": true
+    },
+    "production": {
+      "thresholds": {
+        "global": {
+          "statements": 98,
+          "branches": 95,
+          "functions": 98,
+          "lines": 98
+        }
+      },
+      "reporters": ["html", "lcov", "json"],
+      "failOnBelowThreshold": true
+    }
+  }
+}

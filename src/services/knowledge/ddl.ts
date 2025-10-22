@@ -37,7 +37,7 @@ export async function storeDDL(data: DDLData): Promise<string> {
     data: {
       migration_id: data.migration_id,
       ddl_text: data.ddl_text,
-      checksum: checksum,
+      checksum,
       description: data.description
     }
   });

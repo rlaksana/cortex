@@ -81,7 +81,7 @@ export async function storeIssue(data: IssueData, scope: ScopeFilter): Promise<s
       // Direct database fields (Prisma Schema compliance)
       tracker: data.tracker || null,
       external_id: data.external_id || null,
-      labels: data.labels || [],
+      labels: JSON.stringify(data.labels || []),
       url: data.url || null,
       assignee: data.assignee || null,
       // Scope tags for project isolation only (NOT for database fields)
