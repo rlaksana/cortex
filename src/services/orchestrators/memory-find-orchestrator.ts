@@ -4,6 +4,8 @@ import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph
 import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
 import { queryParser, type ParsedQuery } from '../search/query-parser.js';
 import { searchStrategySelector, type StrategySelection } from '../search/search-strategy.js';
+import { searchService } from '../search/search-service.js';
+import { entityMatchingService } from '../search/entity-matching-service.js';
 import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
 import { auditService } from '../audit/audit-service.js';
 
@@ -451,43 +453,43 @@ export class MemoryFindOrchestrator {
   }
 
   /**
-   * Execute fallback search
+   * Execute fallback search using service layer
    */
   private async executeFallbackSearch(
-    _parsed: ParsedQuery,
+    parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
-    // For now, return empty results as fallback
-    // TODO: Implement proper fallback search using service layer instead of direct prisma calls
-    logger.warn({ query: query.query }, 'Fallback search not implemented, returning empty results');
+    logger.info({ query: query.query }, 'Executing fallback search using service layer');
 
-    return {
-      results: [],
-      totalCount: 0
-    };
+    try {
+      // Use the new search service for sophisticated fallback search
+      return await searchService.performFallbackSearch(parsed, query);
+    } catch (error) {
+      logger.error({ error, query: query.query }, 'Fallback search service failed');
+      return {
+        results: [],
+        totalCount: 0
+      };
+    }
   }
 
   
   /**
-   * Find entities matching the query terms
+   * Find entities matching the query terms using service layer
    */
   private async findEntityMatches(
-    _parsed: ParsedQuery,
+    parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ id: string; kind: string }[]> {
-    const whereClause: any = {
-      kind: { in: ['entity', 'decision', 'issue'] }
-    };
+    logger.info({ query: query.query }, 'Finding entity matches using service layer');
 
-    if (query.types && query.types.length > 0) {
-      whereClause.kind = { in: query.types };
+    try {
+      // Use the new entity matching service for sophisticated entity resolution
+      return await entityMatchingService.findEntityMatches(parsed, query);
+    } catch (error) {
+      logger.error({ error, query: query.query }, 'Entity matching service failed');
+      return [];
     }
-
-    // TODO: Implement proper entity matching using service layer instead of direct prisma calls
-    // For now, return empty results
-    logger.warn({ query: query.query }, 'Entity matching not implemented, returning empty results');
-
-    return [];
   }
 
   /**

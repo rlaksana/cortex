@@ -398,3 +398,90 @@ model EventAudit {
 
   @@map("EventAudit")
 }
+
+// Authentication and Authorization Models
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  role         UserRole  @default(USER)
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  last_login   DateTime?
+
+  // Relations
+  api_keys     ApiKey[]
+  sessions     AuthSession[]
+
+  @@index([username], map: "idx_User_username")
+  @@index([email], map: "idx_User_email")
+  @@index([role, is_active], map: "idx_User_role_active")
+  @@map("User")
+}
+
+model ApiKey {
+  id          String      @id @default(cuid())
+  key_id      String      @unique @db.VarChar(100)  // Public identifier like "ck_live_1234567890"
+  key_hash    String      @db.VarChar(255)           // SHA-256 hash of the actual key
+  user_id     String      @db.VarChar(200)
+  name        String      @db.VarChar(200)
+  description String?     @db.Text
+  scopes      Json        @default("[]")             // Array of AuthScope strings
+  is_active   Boolean     @default(true)
+  expires_at  DateTime?
+  last_used   DateTime?
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  created_by  String?     @default("system") @db.VarChar(200)
+
+  // Relations
+  user        User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_active], map: "idx_ApiKey_user_active")
+  @@index([key_id], map: "idx_ApiKey_key_id")
+  @@index([expires_at, is_active], map: "idx_ApiKey_expires_active")
+  @@map("ApiKey")
+}
+
+model AuthSession {
+  id            String    @id @default(cuid())
+  user_id       String    @db.VarChar(200)
+  session_token String    @unique @db.VarChar(500)
+  refresh_token String?   @unique @db.VarChar(500)
+  ip_address    String    @db.VarChar(45)  // IPv6 compatible
+  user_agent    String    @db.Text
+  created_at    DateTime  @default(now())
+  expires_at    DateTime
+  is_active     Boolean   @default(true)
+
+  // Relations
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_active], map: "idx_AuthSession_user_active")
+  @@index([session_token], map: "idx_AuthSession_token")
+  @@index([expires_at, is_active], map: "idx_AuthSession_expires_active")
+  @@map("AuthSession")
+}
+
+model TokenRevocationList {
+  id          String    @id @default(cuid())
+  jti         String    @unique @db.VarChar(255)  // JWT ID
+  user_id     String    @db.VarChar(200)
+  revoked_at  DateTime  @default(now())
+  reason      String    @db.Text
+  expires_at  DateTime  // When the token would have naturally expired
+
+  @@index([user_id], map: "idx_TokenRevocation_user")
+  @@index([jti], map: "idx_TokenRevocation_jti")
+  @@map("TokenRevocationList")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  READ_ONLY
+  SERVICE
+}

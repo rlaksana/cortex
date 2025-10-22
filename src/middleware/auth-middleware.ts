@@ -90,7 +90,7 @@ export class AuthMiddleware {
         if (config.rate_limit) {
           const identifier = authMethod === 'jwt'
             ? authContext.user.id
-            : authContext.user.id || 'anonymous'; // Use user.id for API keys too
+            : authContext.user.id || `api-key-${apiKeyHeader?.substring(0, 10)}`;
 
           const isAllowed = this.authService.checkRateLimit(
             identifier,
@@ -99,6 +99,34 @@ export class AuthMiddleware {
           );
 
           if (!isAllowed) {
+            // Log rate limit exceeded
+            await this.logAuthEvent({
+              event_type: 'auth_failure',
+              ip_address: clientInfo.ipAddress,
+              user_agent: clientInfo.userAgent,
+              resource: req.path,
+              action: req.method,
+              details: {
+                error_code: 'RATE_LIMITED',
+                error_message: 'Rate limit exceeded',
+                processing_time_ms: Date.now() - startTime,
+                rate_limit_config: config.rate_limit,
+                identifier
+              },
+              severity: 'medium'
+            });
+
+            // Additional audit logging for rate limiting
+            await this.auditService.logRateLimitExceeded(
+              identifier,
+              req.path,
+              config.rate_limit.requests,
+              config.rate_limit.window_ms,
+              clientInfo.ipAddress,
+              clientInfo.userAgent,
+              authContext.user.id
+            );
+
             throw this.createAuthError('RATE_LIMITED', 'Too many requests');
           }
         }
@@ -303,43 +331,59 @@ export class AuthMiddleware {
   }
 
   /**
-   * API key authentication
+   * API key authentication with database validation
    */
   private async authenticateWithAPIKey(apiKey: string, clientInfo: { ipAddress: string; userAgent: string }): Promise<AuthContext> {
     try {
-      // This would typically validate against a database
-      // For now, we'll implement a basic validation
+      // Validate API key format first
       if (!apiKey.startsWith('ck_')) {
         throw this.createAuthError('INVALID_API_KEY', 'Invalid API key format');
       }
 
-      // TODO: Implement actual API key validation against database
-      // This would include:
-      // 1. Fetch API key from database by key_id
-      // 2. Verify the key hash
-      // 3. Check if key is active and not expired
-      // 4. Get associated user and scopes
-      // 5. Update last_used timestamp
+      // Use the auth service to validate against database
+      const validationResult = await this.authService.validateApiKeyWithDatabase(apiKey);
 
-      // Placeholder implementation
-      const mockAuthContext: AuthContext = {
+      if (!validationResult) {
+        throw this.createAuthError('INVALID_API_KEY', 'API key validation failed');
+      }
+
+      const { user, scopes, apiKeyInfo } = validationResult;
+
+      // Create auth context with validated user and scopes
+      const authContext: AuthContext = {
         user: {
-          id: 'service-user',
-          username: 'service',
-          role: UserRole.SERVICE
+          id: user.id,
+          username: user.username,
+          role: user.role
         },
         session: {
-          id: 'api-key-session',
+          id: `api-key-${apiKeyInfo.id}`,
           ip_address: clientInfo.ipAddress,
           user_agent: clientInfo.userAgent
         },
-        scopes: [AuthScope.MEMORY_READ, AuthScope.MEMORY_WRITE, AuthScope.SEARCH_BASIC],
+        scopes,
         token_jti: randomUUID()
       };
 
-      return mockAuthContext;
+      // Store API key info in the request for later use if needed
+      // This is already available in the auth context session
+
+      logger.info({
+        apiKeyId: apiKeyInfo.key_id,
+        userId: user.id,
+        scopes: scopes.length,
+        ipAddress: clientInfo.ipAddress
+      }, 'API key authentication successful');
+
+      return authContext;
 
     } catch (error) {
+      logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        apiKeyPrefix: apiKey.substring(0, Math.min(10, apiKey.length)),
+        ipAddress: clientInfo.ipAddress
+      }, 'API key authentication failed');
+
       throw this.createAuthError('INVALID_API_KEY', 'API key validation failed');
     }
   }

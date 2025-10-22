@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { logger } from '../../utils/logger.js';
+import { prisma } from '../../db/prisma-client.js';
 import {
   User,
   ApiKey,
@@ -242,6 +243,232 @@ export class AuthService {
 
   async verifyApiKey(key: string, hashedKey: string): Promise<boolean> {
     return bcrypt.compare(key, hashedKey);
+  }
+
+  /**
+   * Database-backed API key validation
+   */
+  async validateApiKeyWithDatabase(apiKey: string): Promise<{ user: User; scopes: AuthScope[]; apiKeyInfo: ApiKey } | null> {
+    try {
+      // Extract key ID from API key format (ck_live_... or ck_test_...)
+      const keyIdMatch = apiKey.match(/^(ck_[^_]+)_([a-f0-9]+)/);
+      if (!keyIdMatch) {
+        logger.warn({ apiKeyPrefix: apiKey.substring(0, 10) }, 'Invalid API key format');
+        return null;
+      }
+
+      const keyId = `${keyIdMatch[1]}_${keyIdMatch[2]}`;
+
+      // Fetch API key from database with user information
+      const apiKeyRecord = await prisma.getClient().apiKey.findFirst({
+        where: {
+          key_id: keyId,
+          is_active: true
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              role: true,
+              is_active: true,
+              created_at: true,
+              updated_at: true,
+              last_login: true
+            }
+          }
+        }
+      });
+
+      if (!apiKeyRecord) {
+        logger.warn({ keyId }, 'API key not found or inactive');
+        return null;
+      }
+
+      // Check if API key has expired
+      if (apiKeyRecord.expires_at && new Date() > apiKeyRecord.expires_at) {
+        logger.warn({ keyId, expiresAt: apiKeyRecord.expires_at }, 'API key has expired');
+        return null;
+      }
+
+      // Check if user is active
+      if (!apiKeyRecord.user.is_active) {
+        logger.warn({ keyId, userId: apiKeyRecord.user.id }, 'User account is inactive');
+        return null;
+      }
+
+      // Verify the API key hash
+      const isValidKey = await this.verifyApiKey(apiKey, apiKeyRecord.key_hash);
+      if (!isValidKey) {
+        logger.warn({ keyId }, 'API key hash verification failed');
+        return null;
+      }
+
+      // Parse scopes from JSON
+      const scopes: AuthScope[] = Array.isArray(apiKeyRecord.scopes)
+        ? apiKeyRecord.scopes as AuthScope[]
+        : [];
+
+      // Update last used timestamp
+      await prisma.getClient().apiKey.update({
+        where: { id: apiKeyRecord.id },
+        data: { last_used: new Date() }
+      });
+
+      // Convert database user to User interface
+      const user: User = {
+        id: apiKeyRecord.user.id,
+        username: apiKeyRecord.user.username,
+        email: apiKeyRecord.user.email,
+        password_hash: '', // Not included for security
+        role: apiKeyRecord.user.role as UserRole,
+        is_active: apiKeyRecord.user.is_active,
+        created_at: apiKeyRecord.user.created_at.toISOString(),
+        updated_at: apiKeyRecord.user.updated_at.toISOString(),
+        last_login: apiKeyRecord.user.last_login?.toISOString()
+      };
+
+      // Convert database API key to ApiKey interface
+      const apiKeyInfo: ApiKey = {
+        id: apiKeyRecord.id,
+        key_id: apiKeyRecord.key_id,
+        key_hash: apiKeyRecord.key_hash,
+        user_id: apiKeyRecord.user_id,
+        name: apiKeyRecord.name,
+        description: apiKeyRecord.description || undefined,
+        scopes,
+        is_active: apiKeyRecord.is_active,
+        expires_at: apiKeyRecord.expires_at?.toISOString(),
+        created_at: apiKeyRecord.created_at.toISOString(),
+        last_used_at: apiKeyRecord.last_used?.toISOString(),
+        updated_at: apiKeyRecord.updated_at.toISOString()
+      };
+
+      logger.info({
+        keyId,
+        userId: user.id,
+        scopes: scopes.length,
+        lastUsed: apiKeyRecord.last_used
+      }, 'API key validated successfully');
+
+      return { user, scopes, apiKeyInfo };
+
+    } catch (error) {
+      logger.error({ error, apiKeyPrefix: apiKey.substring(0, 10) }, 'API key validation failed');
+      return null;
+    }
+  }
+
+  /**
+   * Create a new API key in the database
+   */
+  async createApiKeyInDatabase(
+    userId: string,
+    name: string,
+    scopes: AuthScope[],
+    expiresAt?: Date,
+    description?: string
+  ): Promise<{ keyId: string; key: string }> {
+    try {
+      const { keyId, key } = this.generateApiKey();
+      const keyHash = await this.hashApiKey(key);
+
+      await prisma.getClient().apiKey.create({
+        data: {
+          key_id: keyId,
+          key_hash: keyHash,
+          user_id: userId,
+          name,
+          description,
+          scopes: scopes as any[], // Prisma Json field
+          expires_at: expiresAt,
+          is_active: true
+        }
+      });
+
+      logger.info({ keyId, userId, scopes: scopes.length }, 'API key created in database');
+      return { keyId, key };
+
+    } catch (error) {
+      logger.error({ error, userId, name }, 'Failed to create API key in database');
+      throw error;
+    }
+  }
+
+  /**
+   * Revoke an API key
+   */
+  async revokeApiKey(keyId: string, userId?: string): Promise<boolean> {
+    try {
+      const whereClause: any = { key_id: keyId };
+      if (userId) {
+        whereClause.user_id = userId;
+      }
+
+      const result = await prisma.getClient().apiKey.updateMany({
+        where: whereClause,
+        data: { is_active: false }
+      });
+
+      const success = result.count > 0;
+      if (success) {
+        logger.info({ keyId, userId }, 'API key revoked successfully');
+      } else {
+        logger.warn({ keyId, userId }, 'API key not found for revocation');
+      }
+
+      return success;
+
+    } catch (error) {
+      logger.error({ error, keyId, userId }, 'Failed to revoke API key');
+      return false;
+    }
+  }
+
+  /**
+   * List API keys for a user
+   */
+  async listApiKeysForUser(userId: string): Promise<ApiKey[]> {
+    try {
+      const apiKeys = await prisma.getClient().apiKey.findMany({
+        where: { user_id: userId },
+        select: {
+          id: true,
+          key_id: true,
+          key_hash: true,
+          user_id: true,
+          name: true,
+          description: true,
+          scopes: true,
+          is_active: true,
+          expires_at: true,
+          created_at: true,
+          last_used: true,
+          updated_at: true
+        },
+        orderBy: { created_at: 'desc' }
+      });
+
+      return apiKeys.map(key => ({
+        id: key.id,
+        key_id: key.key_id,
+        key_hash: key.key_hash,
+        user_id: key.user_id,
+        name: key.name,
+        description: key.description || undefined,
+        scopes: Array.isArray(key.scopes) ? key.scopes as AuthScope[] : [],
+        is_active: key.is_active,
+        expires_at: key.expires_at?.toISOString(),
+        created_at: key.created_at.toISOString(),
+        last_used: key.last_used?.toISOString(),
+        updated_at: key.updated_at.toISOString()
+      }));
+
+    } catch (error) {
+      logger.error({ error, userId }, 'Failed to list API keys for user');
+      return [];
+    }
   }
 
   // Authorization operations
