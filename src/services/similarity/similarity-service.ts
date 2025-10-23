@@ -225,7 +225,7 @@ export class SimilarityService implements ISimilarityService {
     return {
       id: row.id,
       kind: row.entity_type, // Map entity_type to kind
-      scope: scope,
+      scope,
       data: row.data || {},
       created_at: row.created_at?.toISOString(),
       updated_at: row.updated_at?.toISOString()
