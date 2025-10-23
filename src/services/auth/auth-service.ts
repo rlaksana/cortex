@@ -341,7 +341,7 @@ export class AuthService {
         is_active: apiKeyRecord.is_active,
         expires_at: apiKeyRecord.expires_at?.toISOString(),
         created_at: apiKeyRecord.created_at.toISOString(),
-        last_used_at: apiKeyRecord.last_used?.toISOString(),
+        last_used: apiKeyRecord.last_used?.toISOString(),
         updated_at: apiKeyRecord.updated_at.toISOString()
       };
 
