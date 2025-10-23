@@ -22,7 +22,7 @@ on:
           - critical-path-only
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
   COVERAGE_ENABLED: true
   COVERAGE_DIR: coverage
   COVERAGE_REPORTS_DIR: coverage/reports
@@ -46,9 +46,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
+
+    - name: Setup test environment
+        run: cp .env.ci .env
 
       - name: Determine coverage type
         id: setup
@@ -82,9 +86,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
+
+    - name: Setup test environment
+        run: cp .env.ci .env
 
       - name: Run unit tests with coverage
         run: npm run test:coverage:unit
@@ -109,8 +117,9 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: cortex_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -128,14 +137,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
 
+    - name: Setup test environment
+        run: cp .env.ci .env
+
       - name: Setup test database
         run: |
           npm run db:generate
-          npm run db:push
+          npm run db:push -- --accept-data-loss
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
 
@@ -164,8 +177,9 @@ jobs:
       postgres:
         image: postgres:15-alpine
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: cortex_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -183,9 +197,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
+
+    - name: Setup test environment
+        run: cp .env.ci .env
 
       - name: Download previous coverage artifacts
         uses: actions/download-artifact@v4
@@ -196,7 +214,7 @@ jobs:
       - name: Setup test database
         run: |
           npm run db:generate
-          npm run db:push
+          npm run db:push -- --accept-data-loss
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
 
@@ -239,16 +257,25 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
+
+    - name: Setup test environment
+        run: cp .env.ci .env
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
           name: comprehensive-coverage
 
-      - name: Evaluate quality gates
+      - name: Install dependencies for quality gates
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc jq
+
+    - name: Evaluate quality gates
         id: quality-gates
         run: |
           echo "Evaluating coverage quality gates..."
@@ -330,9 +357,13 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install dependencies
         run: npm ci
+
+    - name: Setup test environment
+        run: cp .env.ci .env
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
@@ -351,10 +382,10 @@ jobs:
 
       - name: Upload coverage to GitHub Pages
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./coverage/html
+          publish_dir: ./coverage
           destination_dir: coverage
 
       - name: Comment coverage on PR
@@ -412,6 +443,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install dependencies for metrics
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bc jq
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
