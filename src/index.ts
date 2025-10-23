@@ -3,6 +3,34 @@ import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
+// Simple in-memory token store for the simplified version
+class TokenStore {
+  private static validTokens = new Set<string>([
+    'test-token',
+    'test-access-token',
+    'test-refresh-token'
+  ]);
+
+  static addToken(token: string) {
+    this.validTokens.add(token);
+  }
+
+  static isValid(token: string): boolean {
+    return this.validTokens.has(token);
+  }
+
+  static removeToken(token: string) {
+    this.validTokens.delete(token);
+  }
+
+  static clearAll() {
+    this.validTokens.clear();
+    this.validTokens.add('test-token');
+    this.validTokens.add('test-access-token');
+    this.validTokens.add('test-refresh-token');
+  }
+}
+
 // Simple stub server that defers complex initialization
 const server = new Server(
   { name: 'cortex', version: '1.0.0' },
@@ -12,21 +40,46 @@ const server = new Server(
 // Basic auth service stub
 const authService = {
   verifyAccessToken: (token) => {
-    if (token === 'test-token') {
+    if (TokenStore.isValid(token)) {
       return { jti: 'test-session-id', session_id: 'test-session-id' };
     }
     throw new Error('Invalid token');
   },
-  generateAccessToken: (user, sessionId, scopes) => 'test-access-token',
-  generateRefreshToken: (user, sessionId) => 'test-refresh-token',
-  refreshToken: (refreshToken) => ({
-    access_token: 'new-access-token',
-    refresh_token: 'new-refresh-token',
-    token_type: 'Bearer',
-    expires_in: 900
-  }),
-  revokeToken: (tokenId) => {},
-  revokeSession: (sessionId) => {},
+  generateAccessToken: (user, sessionId, scopes) => {
+    const token = 'test-access-token';
+    TokenStore.addToken(token);
+    return token;
+  },
+  generateRefreshToken: (user, sessionId) => {
+    const token = 'test-refresh-token';
+    TokenStore.addToken(token);
+    return token;
+  },
+  refreshToken: (refreshToken) => {
+    // Generate unique tokens with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const newAccessToken = `new-access-token-${timestamp}`;
+    const newRefreshToken = `new-refresh-token-${timestamp}`;
+
+    // Add the new tokens to our token store
+    TokenStore.addToken(newAccessToken);
+    TokenStore.addToken(newRefreshToken);
+
+    return {
+      access_token: newAccessToken,
+      refresh_token: newRefreshToken,
+      token_type: 'Bearer',
+      expires_in: 900
+    };
+  },
+  revokeToken: (tokenId) => {
+    TokenStore.removeToken(tokenId);
+  },
+  revokeSession: (sessionId) => {
+    // In a real implementation, we'd find and remove all tokens for this session
+    // For this simplified version, we'll clear everything except the default
+    TokenStore.clearAll();
+  },
   createSession: (user, ip, userAgent) => ({ id: 'session-id' }),
   getUserScopes: (user) => ['memory:read', 'memory:write', 'search:basic']
 };
@@ -81,7 +134,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ]
 }));
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
   const { name, arguments: args } = request.params;
 
   try {
