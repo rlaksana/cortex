@@ -67,6 +67,7 @@ export class MemoryFindOrchestrator {
 
   /**
    * Query multiple knowledge tables based on types filter
+   * Uses table-specific field mapping instead of universal data field
    */
   private async queryMultipleTables(types: string[], whereClause: any, select: any, orderBy?: any, take?: number) {
     const results: any[] = [];
@@ -77,15 +78,19 @@ export class MemoryFindOrchestrator {
       if (!tableName) continue;
 
       try {
+        // Create table-specific where clause and select fields
+        const tableSpecificWhere = this.buildTableSpecificWhereClause(tableName, whereClause, kind);
+        const tableSpecificSelect = this.buildTableSpecificSelect(tableName, select, kind);
+
         const tableResults = await (prisma as any)[tableName].findMany({
-          where: whereClause,
-          select,
-          orderBy,
-          take
+          where: tableSpecificWhere,
+          select: tableSpecificSelect,
+          orderBy: orderBy || { updated_at: 'desc' },
+          take: take || 50
         });
 
         const tableCount = await (prisma as any)[tableName].count({
-          where: whereClause
+          where: tableSpecificWhere
         });
 
         results.push(...tableResults.map((result: any) => ({
@@ -96,11 +101,153 @@ export class MemoryFindOrchestrator {
 
         totalCount += tableCount;
       } catch (error) {
-        logger.warn({ kind, error }, 'Failed to query table, skipping');
+        logger.warn({ kind, tableName, error }, 'Failed to query table, skipping');
       }
     }
 
     return { results, totalCount };
+  }
+
+  /**
+   * Build table-specific WHERE clause based on table structure
+   */
+  private buildTableSpecificWhereClause(tableName: string, baseWhereClause: any, kind: string): any {
+    const whereClause = { ...baseWhereClause };
+
+    // Convert universal data field searches to table-specific field searches
+    if (whereClause.OR && Array.isArray(whereClause.OR)) {
+      const searchFields = this.getSearchableFields(tableName);
+      const tableSpecificOR = [];
+
+      for (const orCondition of whereClause.OR) {
+        if (orCondition.data && orCondition.data.path && orCondition.data.string_contains) {
+          const searchTerm = orCondition.data.string_contains;
+
+          // Create OR conditions for all searchable fields in this table
+          const fieldConditions = searchFields.map(field => ({
+            [field]: { contains: searchTerm, mode: 'insensitive' }
+          }));
+
+          tableSpecificOR.push(...fieldConditions);
+        } else {
+          // Keep non-data OR conditions as-is
+          tableSpecificOR.push(orCondition);
+        }
+      }
+
+      if (tableSpecificOR.length > 0) {
+        whereClause.OR = tableSpecificOR;
+      } else {
+        delete whereClause.OR;
+      }
+    }
+
+    // Remove the data field references that don't exist in the schema
+    delete whereClause.data;
+
+    return whereClause;
+  }
+
+  /**
+   * Build table-specific SELECT fields based on table structure
+   */
+  private buildTableSpecificSelect(tableName: string, baseSelect: any, kind: string): any {
+    // For tables with knowledge structure, use tags and metadata
+    if (['section', 'adrDecision', 'issueLog', 'todoLog', 'runbook', 'changeLog',
+         'releaseNote', 'ddlHistory', 'prContext', 'incidentLog', 'releaseLog',
+         'riskLog', 'assumptionLog'].includes(tableName)) {
+      return {
+        id: true,
+        tags: true, // Scope data is stored in tags field
+        created_at: true,
+        updated_at: true,
+        // Add table-specific fields
+        ...this.getTableSpecificFields(tableName)
+      };
+    }
+
+    // For knowledge entity tables
+    if (tableName === 'knowledgeEntity') {
+      return {
+        id: true,
+        entity_type: true,
+        name: true,
+        tags: true,
+        created_at: true,
+        updated_at: true
+      };
+    }
+
+    // For knowledge relation tables
+    if (tableName === 'knowledgeRelation') {
+      return {
+        id: true,
+        from_entity_type: true,
+        from_entity_id: true,
+        to_entity_type: true,
+        to_entity_id: true,
+        relation_type: true,
+        tags: true,
+        created_at: true,
+        updated_at: true
+      };
+    }
+
+    // Default select
+    return {
+      id: true,
+      tags: true,
+      created_at: true,
+      updated_at: true
+    };
+  }
+
+  /**
+   * Get searchable fields for each table type
+   */
+  private getSearchableFields(tableName: string): string[] {
+    const fieldMap: Record<string, string[]> = {
+      'section': ['title', 'content', 'heading', 'body_md', 'body_text'],
+      'adrDecision': ['title', 'rationale', 'component'],
+      'issueLog': ['title', 'description', 'status', 'tracker'],
+      'todoLog': ['title', 'description', 'status', 'text'],
+      'runbook': ['title', 'description', 'service'],
+      'changeLog': ['change_type', 'subject_ref', 'summary', 'author'],
+      'releaseNote': ['version', 'summary'],
+      'ddlHistory': ['migration_id', 'description', 'status'],
+      'prContext': ['title', 'description', 'author', 'status'],
+      'incidentLog': ['title', 'severity', 'impact', 'resolution_status'],
+      'releaseLog': ['version', 'release_type', 'scope', 'status'],
+      'riskLog': ['title', 'category', 'risk_level', 'impact_description'],
+      'assumptionLog': ['title', 'description', 'category', 'validation_status'],
+      'knowledgeEntity': ['name', 'entity_type'],
+      'knowledgeRelation': ['relation_type']
+    };
+
+    return fieldMap[tableName] || ['title', 'description'];
+  }
+
+  /**
+   * Get table-specific fields for SELECT
+   */
+  private getTableSpecificFields(tableName: string): any {
+    const fieldMap: Record<string, any> = {
+      'section': { title: true, content: true, heading: true },
+      'adrDecision': { title: true, rationale: true, component: true },
+      'issueLog': { title: true, description: true, status: true },
+      'todoLog': { title: true, description: true, status: true },
+      'runbook': { title: true, description: true, service: true },
+      'changeLog': { change_type: true, summary: true, author: true },
+      'releaseNote': { version: true, summary: true },
+      'ddlHistory': { migration_id: true, description: true },
+      'prContext': { title: true, description: true, author: true },
+      'incidentLog': { title: true, severity: true, impact: true },
+      'releaseLog': { version: true, release_type: true, scope: true },
+      'riskLog': { title: true, category: true, risk_level: true },
+      'assumptionLog': { title: true, description: true, category: true }
+    };
+
+    return fieldMap[tableName] || {};
   }
 
   /**
@@ -281,32 +428,51 @@ export class MemoryFindOrchestrator {
     parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
-    // Build search query for PostgreSQL FTS
-    // const searchVector = this.buildSearchVector(parsed); // Unused for now
-
+    // Build search query for table-specific fields
     const whereClause: any = {
-      OR: [
-        { data: { path: ['title'], string_contains: parsed.terms[0] } },
-        { data: { path: ['description'], string_contains: parsed.terms[0] } },
-        { data: { path: ['content'], string_contains: parsed.terms[0] } }
-      ]
+      OR: []
     };
+
+    // Add search conditions for each term
+    for (const term of parsed.terms) {
+      if (term.length > 2) { // Skip very short terms
+        whereClause.OR.push(
+          { data: { path: ['title'], string_contains: term } },
+          { data: { path: ['name'], string_contains: term } },
+          { data: { path: ['description'], string_contains: term } },
+          { data: { path: ['content'], string_contains: term } },
+          { data: { path: ['summary'], string_contains: term } }
+        );
+      }
+    }
 
     // Add type filters
     if (query.types && query.types.length > 0) {
       whereClause.kind = { in: query.types };
     }
 
-    // Add scope filters
+    // Add scope filters using tags field (since scope_* columns don't exist)
     if (query.scope) {
+      const scopeConditions = [];
       if (query.scope.project) {
-        whereClause.scope_project = query.scope.project;
+        scopeConditions.push({
+          tags: { path: ['project'], equals: query.scope.project }
+        });
       }
       if (query.scope.branch) {
-        whereClause.scope_branch = query.scope.branch;
+        scopeConditions.push({
+          tags: { path: ['branch'], equals: query.scope.branch }
+        });
       }
       if (query.scope.org) {
-        whereClause.scope_org = query.scope.org;
+        scopeConditions.push({
+          tags: { path: ['org'], equals: query.scope.org }
+        });
+      }
+
+      if (scopeConditions.length > 0) {
+        whereClause.AND = whereClause.AND || [];
+        whereClause.AND.push({ AND: scopeConditions });
       }
     }
 
@@ -331,10 +497,7 @@ export class MemoryFindOrchestrator {
 
     const selectFields = {
       id: true,
-      scope_project: true,
-      scope_branch: true,
-      scope_org: true,
-      data: true,
+      tags: true, // Scope data is stored in tags field
       created_at: true,
       updated_at: true
     };
@@ -428,19 +591,23 @@ export class MemoryFindOrchestrator {
       const enrichedNodes = await enrichGraphNodes(graphResult.nodes);
 
       // Convert to search results
-      const searchResults = enrichedNodes.map(node => ({
-        id: node.entity_id,
-        kind: node.entity_type,
-        scope: {
-          project: node.data?.scope_project,
-          branch: node.data?.scope_branch,
-          org: node.data?.scope_org
-        },
-        data: node.data || {},
-        created_at: (typeof node.data?.created_at === 'string' ? node.data.created_at : new Date().toISOString()),
-        confidence_score: 0.7, // Base confidence for graph traversal
-        match_type: 'semantic' as const
-      }));
+      const searchResults = enrichedNodes.map(node => {
+        const nodeData = node.data as any;
+        const tags = nodeData?.tags || {};
+        return {
+          id: node.entity_id,
+          kind: node.entity_type,
+          scope: {
+            project: tags.project,
+            branch: tags.branch,
+            org: tags.org
+          },
+          data: nodeData || {},
+          created_at: (typeof nodeData?.created_at === 'string' ? nodeData.created_at : new Date().toISOString()),
+          confidence_score: 0.7, // Base confidence for graph traversal
+          match_type: 'semantic' as const
+        };
+      });
 
       allResults.push(...searchResults);
       totalCount += searchResults.length;
@@ -514,21 +681,157 @@ export class MemoryFindOrchestrator {
 
   /**
    * Map database row to SearchResult
+   * Normalizes table-specific fields to a consistent data structure
    */
   private mapRowToSearchResult(row: any, baseConfidence: number): SearchResult {
+    // Extract scope data from tags field (where it's actually stored)
+    const tags = row.tags || {};
+
+    // Normalize table-specific fields to a consistent data structure
+    const normalizedData = this.normalizeTableData(row);
+
     return {
       id: row.id,
       kind: row.kind,
       scope: {
-        project: row.scope_project,
-        branch: row.scope_branch,
-        org: row.scope_org
+        project: tags.project,
+        branch: tags.branch,
+        org: tags.org
       },
-      data: row.data,
+      data: normalizedData,
       created_at: row.created_at?.toISOString() || new Date().toISOString(),
       confidence_score: baseConfidence,
       match_type: 'exact' as const
     };
+  }
+
+  /**
+   * Normalize table-specific data to consistent structure
+   */
+  private normalizeTableData(row: any): any {
+    const tableName = this.getTableNameForKind(row.kind);
+
+    switch (tableName) {
+      case 'section':
+        return {
+          title: row.title,
+          content: row.content,
+          heading: row.heading,
+          body_md: row.body_md,
+          body_text: row.body_text
+        };
+
+      case 'adrDecision':
+        return {
+          title: row.title,
+          rationale: row.rationale,
+          component: row.component,
+          status: row.status
+        };
+
+      case 'issueLog':
+        return {
+          title: row.title,
+          description: row.description,
+          status: row.status,
+          severity: row.severity
+        };
+
+      case 'todoLog':
+        return {
+          title: row.title,
+          description: row.description,
+          status: row.status,
+          priority: row.priority
+        };
+
+      case 'runbook':
+        return {
+          title: row.title,
+          description: row.description,
+          service: row.service
+        };
+
+      case 'changeLog':
+        return {
+          title: row.subject_ref,
+          description: row.summary,
+          change_type: row.change_type,
+          author: row.author
+        };
+
+      case 'releaseNote':
+        return {
+          title: row.version,
+          description: row.summary
+        };
+
+      case 'ddlHistory':
+        return {
+          title: row.migration_id,
+          description: row.description,
+          status: row.status
+        };
+
+      case 'prContext':
+        return {
+          title: row.title,
+          description: row.description,
+          author: row.author,
+          status: row.status
+        };
+
+      case 'incidentLog':
+        return {
+          title: row.title,
+          description: row.impact,
+          severity: row.severity,
+          status: row.resolution_status
+        };
+
+      case 'releaseLog':
+        return {
+          title: row.version,
+          description: row.scope,
+          release_type: row.release_type,
+          status: row.status
+        };
+
+      case 'riskLog':
+        return {
+          title: row.title,
+          description: row.impact_description,
+          category: row.category,
+          risk_level: row.risk_level
+        };
+
+      case 'assumptionLog':
+        return {
+          title: row.title,
+          description: row.description,
+          category: row.category,
+          validation_status: row.validation_status
+        };
+
+      case 'knowledgeEntity':
+        return {
+          name: row.name,
+          entity_type: row.entity_type
+        };
+
+      case 'knowledgeRelation':
+        return {
+          relation_type: row.relation_type,
+          from_entity_type: row.from_entity_type,
+          to_entity_type: row.to_entity_type
+        };
+
+      default:
+        return {
+          title: row.title || row.name || 'Unknown',
+          description: row.description || row.content || ''
+        };
+    }
   }
 
   /**

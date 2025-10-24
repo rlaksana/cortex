@@ -63,6 +63,78 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
+  /**
+   * Database-backed user authentication
+   */
+  async validateUserWithDatabase(username: string, password: string): Promise<User | null> {
+    try {
+      // Fetch user from database
+      const userRecord = await prisma.getClient().user.findUnique({
+        where: { username },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          password_hash: true,
+          role: true,
+          is_active: true,
+          created_at: true,
+          updated_at: true,
+          last_login: true
+        }
+      });
+
+      if (!userRecord) {
+        logger.warn({ username }, 'User not found in database');
+        return null;
+      }
+
+      // Check if user account is active
+      if (!userRecord.is_active) {
+        logger.warn({ username, userId: userRecord.id }, 'User account is inactive');
+        return null;
+      }
+
+      // Verify password
+      const isValidPassword = await this.verifyPassword(password, userRecord.password_hash);
+      if (!isValidPassword) {
+        logger.warn({ username, userId: userRecord.id }, 'Invalid password provided');
+        return null;
+      }
+
+      // Update last login timestamp
+      await prisma.getClient().user.update({
+        where: { id: userRecord.id },
+        data: { last_login: new Date() }
+      });
+
+      // Convert database user to User interface
+      const user: User = {
+        id: userRecord.id,
+        username: userRecord.username,
+        email: userRecord.email,
+        password_hash: userRecord.password_hash,
+        role: userRecord.role as UserRole,
+        is_active: userRecord.is_active,
+        created_at: userRecord.created_at.toISOString(),
+        updated_at: userRecord.updated_at.toISOString(),
+        last_login: userRecord.last_login?.toISOString()
+      };
+
+      logger.info({
+        userId: user.id,
+        username: user.username,
+        role: user.role
+      }, 'User authenticated successfully via database');
+
+      return user;
+
+    } catch (error) {
+      logger.error({ error, username }, 'Database user validation failed');
+      return null;
+    }
+  }
+
   // JWT token operations
   generateAccessToken(user: User, sessionId: string, scopes: AuthScope[]): string {
     const payload: TokenPayload = {
