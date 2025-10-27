@@ -1,0 +1,332 @@
+# ============================================================================
+# KUBERNETES QDRANT VECTOR DATABASE DEPLOYMENT
+# ============================================================================
+
+---
+# Qdrant ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qdrant-config
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  production.yaml: |
+    # Qdrant Production Configuration for Cortex Memory MCP
+    service:
+      http:
+        host: 0.0.0.0
+        port: 6333
+      grpc:
+        host: 0.0.0.0
+        port: 6334
+      max_request_size_mb: 256
+      timeout: 300
+      cors:
+        allow_origin: "*"
+        allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        allow_headers: "*"
+        expose_headers: ["Content-Length"]
+        max_age: 3600
+      telemetry_disabled: false
+
+    storage:
+      storage_path: /qdrant/storage
+      performance:
+        max_search_threads: 4
+        max_indexing_threads: 4
+        search_pool_size: 8
+        indexing_pool_size: 4
+        segment_size_limit: 500MB
+        per_segment_memory_limit: 512MB
+        wal_capacity_mb: 1024
+      snapshots:
+        path: /qdrant/snapshots
+        creation_interval_sec: 3600
+        retention_count: 24
+      optimizers_config:
+        default_segment_number: 2
+        max_segment_size_mb: 500
+        memmap_threshold_kb: 1024
+        indexing_threshold: 20000
+        flush_interval_sec: 5
+        max_optimization_threads: 2
+
+    logging:
+      level: INFO
+      format: json
+      log_rotation:
+        max_file_size: 128MB
+        max_files: 10
+      components:
+        search: INFO
+        update: INFO
+        snapshot: INFO
+        collection_manager: INFO
+
+    cluster:
+      enabled: false
+
+    auth:
+      api_key: ${QDRANT_API_KEY:-}
+
+    memory:
+      limit: 4GB
+
+---
+# Qdrant PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-pvc
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 200Gi
+  volumeMode: Filesystem
+
+---
+# Qdrant Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: qdrant-secret
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+type: Opaque
+data:
+  QDRANT_API_KEY: Y29ydGV4X3FkcmFudF9hcGlfa2V5XzIwMjU=  # cortex_qdrant_api_key_2025
+
+---
+# Qdrant Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/version: "v1.13.2"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/component: vector-database
+      app.kubernetes.io/part-of: cortex-memory
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: qdrant
+        app.kubernetes.io/component: vector-database
+        app.kubernetes.io/part-of: cortex-memory
+        app.kubernetes.io/version: "v1.13.2"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "6333"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: qdrant
+        image: qdrant/qdrant:v1.13.2
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: qdrant-secret
+              key: QDRANT_API_KEY
+        ports:
+        - name: http
+          containerPort: 6333
+          protocol: TCP
+        - name: grpc
+          containerPort: 6334
+          protocol: TCP
+        volumeMounts:
+        - name: qdrant-storage
+          mountPath: /qdrant/storage
+        - name: qdrant-snapshots
+          mountPath: /qdrant/snapshots
+        - name: qdrant-config
+          mountPath: /qdrant/config/production.yaml
+          subPath: production.yaml
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "curl -X PUT http://localhost:6333/locks"
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "sleep 10 && curl -f http://localhost:6333/health"
+      volumes:
+      - name: qdrant-storage
+        persistentVolumeClaim:
+          claimName: qdrant-pvc
+      - name: qdrant-snapshots
+        persistentVolumeClaim:
+          claimName: qdrant-snapshots-pvc
+      - name: qdrant-config
+        configMap:
+          name: qdrant-config
+      terminationGracePeriodSeconds: 120
+      restartPolicy: Always
+
+---
+# Qdrant Snapshots PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-snapshots-pvc
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: fast-ssd
+  resources:
+    requests:
+      storage: 50Gi
+  volumeMode: Filesystem
+
+---
+# Qdrant Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/service-type: vector-database
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "6333"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 6333
+    targetPort: http
+    protocol: TCP
+  - name: grpc
+    port: 6334
+    targetPort: grpc
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+
+---
+# Qdrant Headless Service (for direct pod access)
+apiVersion: v1
+kind: Service
+metadata:
+  name: qdrant-headless
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/service-type: headless
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: http
+    port: 6333
+    targetPort: http
+    protocol: TCP
+  - name: grpc
+    port: 6334
+    targetPort: grpc
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+
+---
+# Qdrant ServiceMonitor (for Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: qdrant-metrics
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: vector-database
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/monitored-by: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qdrant
+      app.kubernetes.io/component: vector-database
+      app.kubernetes.io/part-of: cortex-memory
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+    honorLabels: true

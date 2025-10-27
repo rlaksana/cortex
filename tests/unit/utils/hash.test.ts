@@ -10,7 +10,7 @@
  * - Security properties
  */
 
-import { computeContentHash } from '../../../src/utils/hash.js';
+import { computeContentHash } from '../../../src/utils/hash.ts';
 
 describe('Hashing Utilities', () => {
   describe('computeContentHash', () => {

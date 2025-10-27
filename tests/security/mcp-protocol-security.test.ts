@@ -18,17 +18,17 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.ts';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
   ErrorCode,
   McpError
-} from '@modelcontextprotocol/sdk/types.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { validateMemoryStoreInput, validateMemoryFindInput } from '../../src/schemas/mcp-inputs.js';
-import { logger } from '../../src/utils/logger.js';
+} from '@modelcontextprotocol/sdk/types.ts';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { validateMemoryStoreInput, validateMemoryFindInput } from '../schemas/mcp-inputs.ts';
+import { logger } from '../utils/logger.ts';
 
 // Mock MCP server for testing
 const mockServer = new Server(

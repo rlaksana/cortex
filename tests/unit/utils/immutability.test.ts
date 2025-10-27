@@ -19,18 +19,18 @@ import {
 } from '../../src/utils/immutability';
 
 // Mock the dependencies
-vi.mock('../../src/db/prisma.js', () => ({
-  getPrismaClient: vi.fn(() => mockPrismaClient),
+vi.mock('../../src/db/pool.js', () => ({
+  dbPool: {
+    query: vi.fn(),
+    initialize: vi.fn(),
+  },
 }));
 
-// Mock Prisma client
-const mockPrismaClient = {
-  adrDecision: {
-    findUnique: vi.fn(),
-  },
-  section: {
-    findUnique: vi.fn(),
-  },
+// Mock database pool
+const mockDbPool = {
+  query: vi.fn(),
+  initialize: vi.fn(),
+  close: vi.fn(),
 };
 
 describe('Immutability Helpers', () => {

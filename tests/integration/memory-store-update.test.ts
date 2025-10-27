@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Pool } from 'pg';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { ImmutabilityViolationError } from '../../src/utils/immutability.js';
+import { memoryStore } from '../services/memory-store.ts';
+import { ImmutabilityViolationError } from '../utils/immutability.ts';
 
 /**
  * T089: memory.store UPDATE Functionality Test

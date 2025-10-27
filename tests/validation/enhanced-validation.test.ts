@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   validateKnowledgeItems,
   MemoryStoreRequestSchema,
-} from '../../src/schemas/enhanced-validation.js';
-import { memoryStore } from '../../src/services/memory-store.js';
+} from '../schemas/enhanced-validation.ts';
+import { memoryStore } from '../services/memory-store.ts';
 
 // Mock the database pool for testing
 vi.mock('../../src/db/pool.js', () => ({

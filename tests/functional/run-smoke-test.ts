@@ -11,7 +11,7 @@
 
 import { Pool, Client } from 'pg';
 import net from 'net';
-import { loadEnv } from '../../src/config/env.js';
+import { loadEnv } from '../../src/config/environment.js';
 
 // Load environment
 loadEnv();

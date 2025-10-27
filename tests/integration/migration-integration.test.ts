@@ -12,11 +12,11 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { Pool } from 'pg';
-import { dbPool } from '../../src/db/pool.js';
-import { prisma } from '../../src/db/prisma-client.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
-import { SCHEMA_DDL } from '../../src/db/schema.js';
+import { dbPool } from '../db/pool.ts';
+// Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
+import { memoryStore } from '../services/memory-store.ts';
+import { memoryFind } from '../services/memory-find.ts';
+import { SCHEMA_DDL } from '../db/schema.ts';
 
 describe('Migration Integration Tests', () => {
   let testPool: Pool;
@@ -25,7 +25,6 @@ describe('Migration Integration Tests', () => {
   beforeAll(async () => {
     // Initialize main database
     await dbPool.initialize();
-    await prisma.initialize();
 
     // Create separate test database for migration testing
     migrationDb = `cortex_migration_test_${Date.now()}`;

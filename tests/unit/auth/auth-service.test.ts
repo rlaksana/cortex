@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { AuthService } from '../../../src/services/auth/auth-service.js';
-import { UserRole, AuthScope } from '../../../src/types/auth-types.js';
-import { User } from '../../../src/types/auth-types.js';
+import { AuthService } from '../../../src/services/auth/auth-service.ts';
+import { UserRole, AuthScope } from '../../../src/types/auth-types.ts';
+import { User } from '../../../src/types/auth-types.ts';
 
 describe('AuthService', () => {
   let authService: AuthService;

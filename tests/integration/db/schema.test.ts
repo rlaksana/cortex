@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestContainer } from '../../helpers/testcontainers.js';
+import { getTestContainer } from '../helpers/testcontainers.ts';
 import { Client } from 'pg';
 
 /**

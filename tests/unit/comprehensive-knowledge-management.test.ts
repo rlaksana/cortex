@@ -33,7 +33,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore, memoryFind } from '../src/services/index.js';
+import { memoryStore, memoryFind } from '../services/index.ts';
 
 const TEST_SCOPE = {
   project: 'cortex-test-comprehensive',

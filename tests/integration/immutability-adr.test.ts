@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Pool } from 'pg';
-import { storeDecision, updateDecision } from '../../src/services/knowledge/decision.js';
-import { ImmutabilityViolationError } from '../../src/utils/immutability.js';
+import { storeDecision, updateDecision } from '../services/knowledge/decision.ts';
+import { ImmutabilityViolationError } from '../utils/immutability.ts';
 
 /**
  * T064: ADR Immutability Test

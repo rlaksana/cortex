@@ -21,8 +21,8 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-vi.mock('../../src/db/prisma.js', () => ({
-  getPrismaClient: vi.fn(() => mockPrismaClient),
+vi.mock('../../src/db/unified-database-layer.js', () => ({
+  UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockUnifiedDatabaseLayer),
 }));
 
 vi.mock('../../src/services/knowledge/entity.js', () => ({
@@ -37,69 +37,15 @@ vi.mock('../../src/services/knowledge/observation.js', () => ({
   deleteObservation: vi.fn(),
 }));
 
-// Mock Prisma client
-const mockPrismaClient = {
-  section: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  runbook: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  changeLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  issueLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  adrDecision: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  todoLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  releaseNote: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  ddlHistory: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  prContext: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  incidentLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  releaseLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  riskLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  assumptionLog: {
-    findUnique: vi.fn(),
-    delete: vi.fn(),
-  },
-  knowledgeRelation: {
-    updateMany: vi.fn(),
-  },
-  knowledgeEntity: {
-    updateMany: vi.fn(),
-  },
-  knowledgeObservation: {
-    updateMany: vi.fn(),
-  },
+// Mock UnifiedDatabaseLayer
+const mockUnifiedDatabaseLayer = {
+  initialize: vi.fn().mockResolvedValue(undefined),
+  create: vi.fn(),
+  find: vi.fn(),
+  findUnique: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  query: vi.fn(),
 };
 
 import type { DeleteRequest, DeleteResult } from '../../src/services/delete-operations';

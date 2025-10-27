@@ -21,10 +21,8 @@ import {
 } from '../../src/utils/transaction';
 
 // Mock the dependencies
-vi.mock('../../src/db/prisma-client.js', () => ({
-  prisma: {
-    getClient: vi.fn(() => mockPrismaClient),
-  },
+vi.mock('../../src/db/unified-database-layer.js', () => ({
+  UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
 vi.mock('../../src/utils/logger.js', () => ({
@@ -41,10 +39,10 @@ vi.mock('../../src/utils/db-error-handler.js', () => ({
   },
 }));
 
-// Mock Prisma client
-const mockPrismaClient = {
-  $transaction: vi.fn(),
-  $queryRaw: vi.fn(),
+// Mock Unified Database Layer
+const mockDatabaseLayer = {
+  transaction: vi.fn(),
+  query: vi.fn(),
   someModel: {
     findUnique: vi.fn(),
     update: vi.fn(),
@@ -57,7 +55,7 @@ describe('Transaction Handling Utilities', () => {
     vi.resetAllMocks();
 
     // Default successful transaction mock
-    mockPrismaClient.$transaction.mockImplementation(async (callback) => {
+    mockDatabaseLayer.transaction.mockImplementation(async (callback) => {
       return await callback(mockTx);
     });
 
@@ -101,7 +99,7 @@ describe('Transaction Handling Utilities', () => {
 
       await executeTransaction(callback);
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 30000,
@@ -120,7 +118,7 @@ describe('Transaction Handling Utilities', () => {
 
       await executeTransaction(callback, options);
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 60000,
@@ -307,7 +305,7 @@ describe('Transaction Handling Utilities', () => {
 
       await transaction(callback);
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 30000,
@@ -325,7 +323,7 @@ describe('Transaction Handling Utilities', () => {
 
       await transaction(callback, options);
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 45000,
@@ -386,9 +384,9 @@ describe('Transaction Handling Utilities', () => {
 
       await executeParallelTransactions(operations, options);
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledTimes(2);
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledTimes(2);
       // Each transaction should get the same options
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 60000,
@@ -479,7 +477,7 @@ describe('Transaction Handling Utilities', () => {
       await batchOperation(items, 2, processor);
 
       // Should create a transaction for each batch
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledTimes(2);
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledTimes(2);
     });
 
     it('should log batch processing information', async () => {
@@ -713,7 +711,7 @@ describe('Transaction Handling Utilities', () => {
 
       await transactionHealthCheck();
 
-      expect(mockPrismaClient.$transaction).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.transaction).toHaveBeenCalledWith(
         expect.any(Function),
         {
           timeout: 5000,
@@ -723,7 +721,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should handle health check timeout gracefully', async () => {
-      mockPrismaClient.$transaction.mockRejectedValue(new Error('Transaction timeout'));
+      mockDatabaseLayer.transaction.mockRejectedValue(new Error('Transaction timeout'));
 
       const result = await transactionHealthCheck();
 

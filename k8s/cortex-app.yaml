@@ -1,0 +1,364 @@
+# ============================================================================
+# KUBERNETES CORTEX MEMORY MCP APPLICATION DEPLOYMENT
+# ============================================================================
+
+---
+# Cortex Application ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cortex-config
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  CORS_ORIGINS: "*"
+  MAX_CONCURRENT_REQUESTS: "100"
+  REQUEST_TIMEOUT: "60000"
+
+  # Database Configuration
+  DATABASE_URL: "postgresql://cortex:$(POSTGRES_PASSWORD)@postgres:5432/cortex_prod"
+  QDRANT_HOST: "qdrant"
+  QDRANT_PORT: "6333"
+  QDRANT_API_KEY: "$(QDRANT_API_KEY)"
+
+  # Redis Configuration
+  REDIS_URL: "redis://redis:6379"
+  REDIS_TTL: "3600"
+
+  # Performance Settings
+  MAX_BATCH_SIZE: "1000"
+  EMBEDDING_DIMENSION: "1536"
+  SIMILARITY_THRESHOLD: "0.7"
+
+  # Feature Flags
+  ENABLE_VECTOR_SEARCH: "true"
+  ENABLE_FULLTEXT_SEARCH: "true"
+  ENABLE_CACHING: "true"
+  ENABLE_METRICS: "true"
+  ENABLE_TRACING: "false"
+
+---
+# Cortex Application Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cortex-secret
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+type: Opaque
+data:
+  POSTGRES_PASSWORD: Y29ydGV4X3BnMThfc2VjdXJlXzIwMjVfa2V5  # cortex_pg18_secure_2025_key
+  QDRANT_API_KEY: Y29ydGV4X3FkcmFudF9hcGlfa2V5XzIwMjU=  # cortex_qdrant_api_key_2025
+  JWT_SECRET: Y29ydGV4X2p3dF9zZWNyZXRfMjAyNV9zZWN1cmU=   # cortex_jwt_secret_2025_secure
+  API_SECRET: Y29ydGV4X2FwaV9zZWNyZXRfMjAyNV9zZWN1cmU=  # cortex_api_secret_2025_secure
+
+---
+# Cortex Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cortex-app
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/version: "2.0.0"
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cortex-app
+      app.kubernetes.io/component: application
+      app.kubernetes.io/part-of: cortex-memory
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cortex-app
+        app.kubernetes.io/component: application
+        app.kubernetes.io/part-of: cortex-memory
+        app.kubernetes.io/version: "2.0.0"
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+        checksum/config: "d8e8fca2dc0f896fd7cb4cb0031ba249"
+        checksum/secret: "a1b2c3d4e5f6789012345678901234567890abcdef"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: cortex-app
+        image: cortex-mcp:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: cortex-config
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cortex-secret
+              key: POSTGRES_PASSWORD
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cortex-secret
+              key: QDRANT_API_KEY
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cortex-secret
+              key: JWT_SECRET
+        - name: API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cortex-secret
+              key: API_SECRET
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        - name: mcp
+          containerPort: 8000
+          protocol: TCP
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+          successThreshold: 1
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "sleep 15"
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - "echo 'Cortex MCP application started' && node dist/health-check.js"
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: tmp
+          mountPath: /app/tmp
+      - name: cortex-exporter
+        image: prom/node-exporter:v1.6.1
+        env:
+        - name: NODE_EXPORTER_PORT
+          value: "9100"
+        ports:
+        - name: metrics
+          containerPort: 9100
+          protocol: TCP
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+          readOnly: true
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 120
+      restartPolicy: Always
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - cortex-app
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - application
+              topologyKey: kubernetes.io/hostname
+
+---
+# Cortex Application Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cortex-app
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/service-type: application
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 3000
+    targetPort: http
+    protocol: TCP
+  - name: mcp
+    port: 8000
+    targetPort: mcp
+    protocol: TCP
+  - name: metrics
+    port: 9100
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+
+---
+# Cortex Application ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cortex-app-metrics
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+    app.kubernetes.io/monitored-by: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cortex-app
+      app.kubernetes.io/component: application
+      app.kubernetes.io/part-of: cortex-memory
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+  - port: metrics
+    interval: 30s
+    path: /metrics
+
+---
+# Horizontal Pod Autoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cortex-app-hpa
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cortex-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+
+---
+# PodDisruptionBudget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cortex-app-pdb
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-app
+    app.kubernetes.io/component: application
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cortex-app
+      app.kubernetes.io/component: application
+      app.kubernetes.io/part-of: cortex-memory

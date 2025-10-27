@@ -3,14 +3,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { dbPool } from '../../src/db/pool.js';
+import { memoryStore } from '../services/memory-store.ts';
+import { dbPool } from '../db/pool.ts';
 import {
   getObservations,
   searchObservations,
   getObservationCount,
   deleteObservationsByText,
-} from '../../src/services/knowledge/observation.js';
+} from '../services/knowledge/observation.ts';
 
 describe('Observation Management Integration Tests', () => {
   let testTaskId: string;

@@ -8,7 +8,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+// PrismaClient removed - system now uses Qdrant + PostgreSQL architecture';
 import { validateMemoryStoreInput, validateMemoryFindInput, ValidationError } from '../../../src/schemas/mcp-inputs';
 import { MemoryStoreInputSchema, MemoryFindInputSchema } from '../../../src/schemas/mcp-inputs';
 

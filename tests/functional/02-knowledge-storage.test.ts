@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../../src/services/memory-store.js';
+import { memoryStore } from '../services/memory-store.ts';
 import { Pool } from 'pg';
 
 const TEST_SCOPE = {

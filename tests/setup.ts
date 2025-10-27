@@ -117,16 +117,12 @@ export const createTestKnowledgeItem = (overrides: any = {}) => ({
   },
 });
 
-// Mock Prisma client for unit tests
-export const mockPrismaClient = {
-  section: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  adrDecision: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  issueLog: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  todoLog: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  // ... add more as needed
-  $connect: vi.fn(),
-  $disconnect: vi.fn(),
-  $transaction: vi.fn(),
+// Mock database pool for unit tests
+export const mockDbPool = {
+  query: vi.fn(),
+  initialize: vi.fn(),
+  close: vi.fn(),
+  healthCheck: vi.fn(),
 };
 
 // Test utility functions

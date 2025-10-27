@@ -16,10 +16,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { sanitizeQuery, type SanitizationLevel } from '../../src/utils/query-sanitizer.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { validateMemoryStoreInput, validateMemoryFindInput } from '../../src/schemas/mcp-inputs.js';
+import { sanitizeQuery, type SanitizationLevel } from '../utils/query-sanitizer.ts';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { validateMemoryStoreInput, validateMemoryFindInput } from '../schemas/mcp-inputs.ts';
 
 describe('Data Sanitization Security Tests', () => {
 

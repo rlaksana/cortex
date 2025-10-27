@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   validateKnowledgeItem,
   safeValidateKnowledgeItem,
-} from '../../src/schemas/knowledge-types.js';
+} from '../schemas/knowledge-types.ts';
 
 /**
  * T024: Contract test for memory.store

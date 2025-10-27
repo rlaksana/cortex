@@ -12,11 +12,11 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { Pool } from 'pg';
-import { dbPool } from '../../src/db/pool.js';
-import { prisma } from '../../src/db/prisma-client.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
-import { logger } from '../../src/utils/logger.js';
+import { dbPool } from '../db/pool.ts';
+// Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
+import { memoryStore } from '../services/memory-store.ts';
+import { memoryFind } from '../services/memory-find.ts';
+import { logger } from '../utils/logger.ts';
 
 describe('Database Operations Integration Tests', () => {
   let pool: Pool;
@@ -25,7 +25,6 @@ describe('Database Operations Integration Tests', () => {
   beforeAll(async () => {
     // Initialize database connections
     await dbPool.initialize();
-    await prisma.initialize();
 
     // Create direct pool for test isolation
     testDbConfig = {

@@ -8,10 +8,10 @@
  */
 
 import { performance } from 'perf_hooks';
-import { PrismaClient } from '@prisma/client';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { logger } from '../../src/utils/logger.js';
+// PrismaClient removed - system now uses Qdrant + PostgreSQL architecture';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { logger } from '../utils/logger.ts';
 
 // ============================================================================
 // Test Configuration

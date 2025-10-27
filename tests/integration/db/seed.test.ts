@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestContainer } from '../../helpers/testcontainers.js';
+import { getTestContainer } from '../helpers/testcontainers.ts';
 import { Client } from 'pg';
-import { seedDatabase } from '../../../scripts/seed.js';
+import { seedDatabase } from '../scripts/seed.ts';
 
 /**
  * T011: Seed data test (RED phase)

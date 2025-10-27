@@ -14,15 +14,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock the dependencies
-vi.mock('../../src/db/prisma-client.js', () => ({
-  prisma: {
-    getClient: vi.fn(() => mockPrismaClient),
-  },
+vi.mock('../../src/db/unified-database-layer.js', () => ({
+  UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
-// Mock Prisma client
-const mockPrismaClient = {
-  $queryRaw: vi.fn(),
+// Mock Unified Database Layer
+const mockDatabaseLayer = {
+  query: vi.fn(),
   section: {
     findMany: vi.fn(),
   },
@@ -87,11 +85,11 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockTraversalResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockTraversalResult);
 
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('WITH RECURSIVE graph_traverse')
       );
 
@@ -149,12 +147,12 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockTraversalResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockTraversalResult);
 
       const options: TraversalOptions = { depth: 2 };
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000', options);
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('gt.depth < 2')
       );
 
@@ -165,7 +163,7 @@ describe('Graph Traversal Service', () => {
     it('should filter by relation types', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([
+      mockDatabaseLayer.query.mockResolvedValue([
         {
           entity_type: 'decision',
           entity_id: '123e4567-e89b-12d3-a456-426614174000',
@@ -188,7 +186,7 @@ describe('Graph Traversal Service', () => {
 
       // Note: The current implementation doesn't actually use relation_types in the SQL query
       // This test documents the current behavior and can be updated when the feature is implemented
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalled();
+      expect(mockDatabaseLayer.query).toHaveBeenCalled();
     });
 
     it('should handle incoming traversal direction', async () => {
@@ -212,7 +210,7 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockTraversalResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockTraversalResult);
 
       const options: TraversalOptions = { direction: 'incoming' };
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000', options);
@@ -230,7 +228,7 @@ describe('Graph Traversal Service', () => {
     it('should handle both directions traversal', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([
+      mockDatabaseLayer.query.mockResolvedValue([
         {
           entity_type: 'decision',
           entity_id: '123e4567-e89b-12d3-a456-426614174000',
@@ -242,7 +240,7 @@ describe('Graph Traversal Service', () => {
       const options: TraversalOptions = { direction: 'both' };
       await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000', options);
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalled();
+      expect(mockDatabaseLayer.query).toHaveBeenCalled();
     });
 
     it('should detect and prevent cycles', async () => {
@@ -264,11 +262,11 @@ describe('Graph Traversal Service', () => {
         // This would create a cycle back to the root, so it should be excluded by the SQL
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockTraversalResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockTraversalResult);
 
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('NOT (kr.to_entity_id = ANY(gt.path))')
       );
 
@@ -279,7 +277,7 @@ describe('Graph Traversal Service', () => {
     it('should handle database errors gracefully', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockRejectedValue(new Error('Database connection failed'));
+      mockDatabaseLayer.query.mockRejectedValue(new Error('Database connection failed'));
 
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
@@ -324,7 +322,7 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockTraversalResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockTraversalResult);
 
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
@@ -339,7 +337,7 @@ describe('Graph Traversal Service', () => {
     it('should handle empty traversal results', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
@@ -389,8 +387,8 @@ describe('Graph Traversal Service', () => {
         severity: 'high',
       };
 
-      mockPrismaClient.adrDecision.findMany.mockResolvedValue([mockDecisionData]);
-      mockPrismaClient.issueLog.findMany.mockResolvedValue([mockIssueData]);
+      mockDatabaseLayer.adrDecision.findMany.mockResolvedValue([mockDecisionData]);
+      mockDatabaseLayer.issueLog.findMany.mockResolvedValue([mockIssueData]);
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
@@ -409,11 +407,11 @@ describe('Graph Traversal Service', () => {
         data: mockIssueData,
       });
 
-      expect(mockPrismaClient.adrDecision.findMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.adrDecision.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['123e4567-e89b-12d3-a456-426614174000'] } },
       });
 
-      expect(mockPrismaClient.issueLog.findMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.issueLog.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['123e4567-e89b-12d3-a456-426614174001'] } },
       });
     });
@@ -428,27 +426,27 @@ describe('Graph Traversal Service', () => {
         { entity_type: 'decision', entity_id: 'id4', depth: 2 },
       ];
 
-      mockPrismaClient.adrDecision.findMany.mockResolvedValue([
+      mockDatabaseLayer.adrDecision.findMany.mockResolvedValue([
         { id: 'id1', title: 'Decision 1' },
         { id: 'id2', title: 'Decision 2' },
         { id: 'id4', title: 'Decision 4' },
       ]);
 
-      mockPrismaClient.issueLog.findMany.mockResolvedValue([
+      mockDatabaseLayer.issueLog.findMany.mockResolvedValue([
         { id: 'id3', title: 'Issue 1' },
       ]);
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
       // Should batch queries by entity type
-      expect(mockPrismaClient.adrDecision.findMany).toHaveBeenCalledTimes(1);
-      expect(mockPrismaClient.issueLog.findMany).toHaveBeenCalledTimes(1);
+      expect(mockDatabaseLayer.adrDecision.findMany).toHaveBeenCalledTimes(1);
+      expect(mockDatabaseLayer.issueLog.findMany).toHaveBeenCalledTimes(1);
 
-      expect(mockPrismaClient.adrDecision.findMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.adrDecision.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['id1', 'id2', 'id4'] } },
       });
 
-      expect(mockPrismaClient.issueLog.findMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.issueLog.findMany).toHaveBeenCalledWith({
         where: { id: { in: ['id3'] } },
       });
 
@@ -490,8 +488,8 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.adrDecision.findMany.mockRejectedValue(new Error('Table not found'));
-      mockPrismaClient.issueLog.findMany.mockResolvedValue([{ id: '123e4567-e89b-12d3-a456-426614174001', title: 'Issue 1' }]);
+      mockDatabaseLayer.adrDecision.findMany.mockRejectedValue(new Error('Table not found'));
+      mockDatabaseLayer.issueLog.findMany.mockResolvedValue([{ id: '123e4567-e89b-12d3-a456-426614174001', title: 'Issue 1' }]);
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
@@ -518,7 +516,7 @@ describe('Graph Traversal Service', () => {
       ];
 
       // Return data for only one of the nodes
-      mockPrismaClient.adrDecision.findMany.mockResolvedValue([
+      mockDatabaseLayer.adrDecision.findMany.mockResolvedValue([
         { id: '123e4567-e89b-12d3-a456-426614174000', title: 'Decision 1' },
       ]);
 
@@ -557,7 +555,7 @@ describe('Graph Traversal Service', () => {
         },
       ];
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(mockPathResult);
+      mockDatabaseLayer.query.mockResolvedValue(mockPathResult);
 
       const path = await findShortestPath(
         'decision',
@@ -566,7 +564,7 @@ describe('Graph Traversal Service', () => {
         '123e4567-e89b-12d3-a456-426614174002'
       );
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('WITH RECURSIVE path_search')
       );
 
@@ -593,7 +591,7 @@ describe('Graph Traversal Service', () => {
     it('should return null when no path exists', async () => {
       const { findShortestPath } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       const path = await findShortestPath(
         'decision',
@@ -608,7 +606,7 @@ describe('Graph Traversal Service', () => {
     it('should respect max depth limit', async () => {
       const { findShortestPath } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       await findShortestPath(
         'decision',
@@ -618,7 +616,7 @@ describe('Graph Traversal Service', () => {
         3
       );
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('ps.depth < 3')
       );
     });
@@ -626,7 +624,7 @@ describe('Graph Traversal Service', () => {
     it('should use default max depth when not specified', async () => {
       const { findShortestPath } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       await findShortestPath(
         'decision',
@@ -635,7 +633,7 @@ describe('Graph Traversal Service', () => {
         '123e4567-e89b-12d3-a456-426614174002'
       );
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('ps.depth < 5')
       );
     });
@@ -643,7 +641,7 @@ describe('Graph Traversal Service', () => {
     it('should handle database errors gracefully', async () => {
       const { findShortestPath } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockRejectedValue(new Error('Database error'));
+      mockDatabaseLayer.query.mockRejectedValue(new Error('Database error'));
 
       const path = await findShortestPath(
         'decision',
@@ -658,7 +656,7 @@ describe('Graph Traversal Service', () => {
     it('should order results by depth to find shortest path', async () => {
       const { findShortestPath } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       await findShortestPath(
         'decision',
@@ -667,11 +665,11 @@ describe('Graph Traversal Service', () => {
         '123e4567-e89b-12d3-a456-426614174002'
       );
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('ORDER BY depth ASC')
       );
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('LIMIT 1')
       );
     });
@@ -694,7 +692,7 @@ describe('Graph Traversal Service', () => {
         relation_type: i > 0 ? 'resolves' : null,
       }));
 
-      mockPrismaClient.$queryRaw.mockResolvedValue(largeResult);
+      mockDatabaseLayer.query.mockResolvedValue(largeResult);
 
       const startTime = Date.now();
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000', { depth: 10 });
@@ -710,7 +708,7 @@ describe('Graph Traversal Service', () => {
     it('should handle concurrent traversals safely', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([
+      mockDatabaseLayer.query.mockResolvedValue([
         {
           entity_type: 'decision',
           entity_id: '123e4567-e89b-12d3-a456-426614174000',
@@ -728,17 +726,17 @@ describe('Graph Traversal Service', () => {
 
       expect(results).toHaveLength(10);
       expect(results.every(r => r.nodes.length > 0)).toBe(true);
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledTimes(10);
+      expect(mockDatabaseLayer.query).toHaveBeenCalledTimes(10);
     });
 
     it('should use CTE for efficient recursive queries', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000');
 
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('WITH RECURSIVE')
       );
     });
@@ -748,7 +746,7 @@ describe('Graph Traversal Service', () => {
     it('should handle empty entity IDs', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockRejectedValue(new Error('Invalid UUID'));
+      mockDatabaseLayer.query.mockRejectedValue(new Error('Invalid UUID'));
 
       const result = await traverseGraph('decision', '');
 
@@ -759,7 +757,7 @@ describe('Graph Traversal Service', () => {
     it('should handle special characters in entity types', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       const result = await traverseGraph('special-type', '123e4567-e89b-12d3-a456-426614174000');
 
@@ -769,7 +767,7 @@ describe('Graph Traversal Service', () => {
     it('should handle invalid depth values', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       // @ts-expect-error - Testing invalid input
       const result = await traverseGraph('decision', '123e4567-e89b-12d3-a456-426614174000', { depth: -1 });
@@ -781,14 +779,14 @@ describe('Graph Traversal Service', () => {
     it('should handle SQL injection attempts safely', async () => {
       const { traverseGraph } = await import('../../src/services/graph-traversal.js');
 
-      mockPrismaClient.$queryRaw.mockResolvedValue([]);
+      mockDatabaseLayer.query.mockResolvedValue([]);
 
       const maliciousId = "123e4567-e89b-12d3-a456-426614174000'; DROP TABLE knowledge_relation; --";
 
       await traverseGraph('decision', maliciousId);
 
       // The query should use parameterized binding
-      expect(mockPrismaClient.$queryRaw).toHaveBeenCalledWith(
+      expect(mockDatabaseLayer.query).toHaveBeenCalledWith(
         expect.stringContaining('${maliciousId}')
       );
     });
@@ -806,12 +804,12 @@ describe('Graph Traversal Service', () => {
       }));
 
       // Mock successful data retrieval for all types
-      mockPrismaClient.section.findMany.mockResolvedValue([{ id: nodes[0].entity_id, title: 'Section' }]);
-      mockPrismaClient.adrDecision.findMany.mockResolvedValue([{ id: nodes[1].entity_id, title: 'Decision' }]);
-      mockPrismaClient.issueLog.findMany.mockResolvedValue([{ id: nodes[2].entity_id, title: 'Issue' }]);
-      mockPrismaClient.runbook.findMany.mockResolvedValue([{ id: nodes[3].entity_id, title: 'Runbook' }]);
-      mockPrismaClient.todoLog.findMany.mockResolvedValue([{ id: nodes[4].entity_id, title: 'Todo' }]);
-      mockPrismaClient.knowledgeEntity.findMany.mockResolvedValue([{ id: nodes[5].entity_id, title: 'Entity' }]);
+      mockDatabaseLayer.section.findMany.mockResolvedValue([{ id: nodes[0].entity_id, title: 'Section' }]);
+      mockDatabaseLayer.adrDecision.findMany.mockResolvedValue([{ id: nodes[1].entity_id, title: 'Decision' }]);
+      mockDatabaseLayer.issueLog.findMany.mockResolvedValue([{ id: nodes[2].entity_id, title: 'Issue' }]);
+      mockDatabaseLayer.runbook.findMany.mockResolvedValue([{ id: nodes[3].entity_id, title: 'Runbook' }]);
+      mockDatabaseLayer.todoLog.findMany.mockResolvedValue([{ id: nodes[4].entity_id, title: 'Todo' }]);
+      mockDatabaseLayer.knowledgeEntity.findMany.mockResolvedValue([{ id: nodes[5].entity_id, title: 'Entity' }]);
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
@@ -819,12 +817,12 @@ describe('Graph Traversal Service', () => {
       expect(enrichedNodes.every(n => n.data)).toBe(true);
 
       // Should call the appropriate findMany method for each type
-      expect(mockPrismaClient.section.findMany).toHaveBeenCalled();
-      expect(mockPrismaClient.adrDecision.findMany).toHaveBeenCalled();
-      expect(mockPrismaClient.issueLog.findMany).toHaveBeenCalled();
-      expect(mockPrismaClient.runbook.findMany).toHaveBeenCalled();
-      expect(mockPrismaClient.todoLog.findMany).toHaveBeenCalled();
-      expect(mockPrismaClient.knowledgeEntity.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.section.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.adrDecision.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.issueLog.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.runbook.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.todoLog.findMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.knowledgeEntity.findMany).toHaveBeenCalled();
     });
   });
 });

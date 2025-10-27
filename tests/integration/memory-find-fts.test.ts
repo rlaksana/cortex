@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Pool } from 'pg';
-import { memoryFind } from '../../src/services/memory-find.js';
+import { memoryFind } from '../services/memory-find.ts';
 
 /**
  * T032: FTS Search Test

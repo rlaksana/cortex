@@ -16,10 +16,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { inferScope, type Scope } from '../../src/utils/scope.js';
-import { prisma } from '../../src/db/prisma-client.js';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { inferScope, type Scope } from '../utils/scope.ts';
+// Prisma client removed - system now uses Qdrant + PostgreSQL architecture
 
 describe('Scope Isolation Security Tests', () => {
   // Test scopes for isolation
@@ -52,15 +52,17 @@ describe('Scope Isolation Security Tests', () => {
   ];
 
   beforeEach(async () => {
-    // Clean up test data before each test
+    // Clean up test data before each test using UnifiedDatabaseLayer
     try {
-      const prismaClient = await prisma.getClient();
-      await prismaClient.knowledgeEntity.deleteMany({
-        where: {
-          tags: {
-            path: ['project'],
-            string_contains: 'test-scope-'
-          }
+      const { UnifiedDatabaseLayer } = await import('../../src/db/unified-database-layer.ts');
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
+      // Clean up test entities with test-scope- in their tags
+      await db.delete('knowledgeEntity', {
+        tags: {
+          path: ['project'],
+          string_contains: 'test-scope-'
         }
       });
     } catch (error) {

@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { dbPool } from '../../src/db/pool.js';
-import { logger } from '../../src/utils/logger.js';
+import { dbPool } from '../db/pool.ts';
+import { logger } from '../utils/logger.ts';
 
 describe('Database Schema Validation', () => {
   let pool: typeof dbPool;

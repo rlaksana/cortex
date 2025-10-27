@@ -11,18 +11,18 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.ts';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
   JSONRPCMessage,
   ErrorCode,
   McpError,
-} from '@modelcontextprotocol/sdk/types.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { dbPool } from '../../src/db/pool.js';
-import { prisma } from '../../src/db/prisma-client.js';
+} from '@modelcontextprotocol/sdk/types.ts';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { dbPool } from '../db/pool.ts';
+// Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 
 describe('MCP Protocol Integration Tests', () => {
   let server: Server;
@@ -31,7 +31,6 @@ describe('MCP Protocol Integration Tests', () => {
   beforeAll(async () => {
     // Initialize database for testing
     await dbPool.initialize();
-    await prisma.initialize();
 
     // Create test server instance
     server = new Server(
@@ -101,10 +100,10 @@ describe('MCP Protocol Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup test data
+    // Cleanup test data using proper table names
     await dbPool.query(`DELETE FROM section WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM decision WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM issue WHERE tags @> '{"test": true}'::jsonb`);
+    await dbPool.query(`DELETE FROM adr_decision WHERE tags @> '{"test": true}'::jsonb`);
+    await dbPool.query(`DELETE FROM issue_log WHERE tags @> '{"test": true}'::jsonb`);
     await dbPool.query(`DELETE FROM runbook WHERE tags @> '{"test": true}'::jsonb`);
     await dbPool.query(`DELETE FROM knowledge_entity WHERE tags @> '{"test": true}'::jsonb`);
     await dbPool.query(`DELETE FROM knowledge_relation WHERE tags @> '{"test": true}'::jsonb`);

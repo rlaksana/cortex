@@ -17,11 +17,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Pool, Client } from 'pg';
-import { prisma } from '../../src/db/prisma-client.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { sanitizeQuery } from '../../src/utils/query-sanitizer.js';
-import { logger } from '../../src/utils/logger.js';
+import { DatabaseFactory } from '../db/database-factory.ts';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { sanitizeQuery } from '../utils/query-sanitizer.ts';
+import { logger } from '../utils/logger.ts';
 
 // Mock database connection for security testing
 const TEST_DB_CONFIG = {

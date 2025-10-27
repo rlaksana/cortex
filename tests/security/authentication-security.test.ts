@@ -17,10 +17,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { validateMemoryStoreInput, validateMemoryFindInput } from '../../src/schemas/mcp-inputs.js';
-import { logger } from '../../src/utils/logger.js';
+import { memoryStore } from '../services/memory-store.ts';
+import { smartMemoryFind } from '../services/smart-find.ts';
+import { validateMemoryStoreInput, validateMemoryFindInput } from '../schemas/mcp-inputs.ts';
+import { logger } from '../utils/logger.ts';
 
 // Mock authentication service for testing
 interface AuthToken {

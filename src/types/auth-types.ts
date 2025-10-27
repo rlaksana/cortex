@@ -138,7 +138,7 @@ export interface AuthenticatedRequest {
 
 export interface SecurityAuditLog {
   id: string;
-  event_type: 'auth_success' | 'auth_failure' | 'token_revoked' | 'api_key_created' | 'api_key_updated' | 'api_key_revoked' | 'permission_denied' | 'suspicious_activity';
+  event_type: 'auth_success' | 'auth_failure' | 'token_revoked' | 'api_key_created' | 'api_key_updated' | 'api_key_revoked' | 'permission_denied' | 'suspicious_activity' | 'ip_validation_failed' | 'ip_validation_bypassed';
   user_id?: string;
   session_id?: string;
   api_key_id?: string;
@@ -152,9 +152,21 @@ export interface SecurityAuditLog {
 }
 
 export interface AuthError {
-  code: 'INVALID_TOKEN' | 'EXPIRED_TOKEN' | 'INSUFFICIENT_SCOPES' | 'INVALID_API_KEY' | 'USER_INACTIVE' | 'SESSION_EXPIRED' | 'RATE_LIMITED';
+  code: 'INVALID_TOKEN' | 'EXPIRED_TOKEN' | 'INSUFFICIENT_SCOPES' | 'INVALID_API_KEY' | 'USER_INACTIVE' | 'SESSION_EXPIRED' | 'RATE_LIMITED' | 'IP_VALIDATION_FAILED';
   message: string;
   details?: Record<string, any>;
+}
+
+export type IPValidationMode = 'strict' | 'subnet' | 'disabled';
+
+export interface IPValidationConfig {
+  mode: IPValidationMode;
+  trusted_proxies?: string[]; // CIDR ranges for trusted proxy servers
+  allowed_subnets?: string[]; // CIDR ranges for client IP validation (subnet mode only)
+  subnet_mask?: number; // Default subnet mask for subnet validation (24 for IPv4, 64 for IPv6)
+  max_header_length?: number; // Maximum length for proxy headers to prevent injection
+  validate_headers?: boolean; // Whether to validate proxy header format
+  log_ip_changes?: boolean; // Whether to log IP change events
 }
 
 export interface AuthMiddlewareConfig {
@@ -162,6 +174,7 @@ export interface AuthMiddlewareConfig {
   optional_scopes?: AuthScope[];
   allow_api_keys?: boolean;
   require_user_session?: boolean;
+  ip_validation?: IPValidationConfig;
   rate_limit?: {
     requests: number;
     window_ms: number;

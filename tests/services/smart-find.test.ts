@@ -1,13 +1,13 @@
-import { memoryFind } from '../../src/services/memory-find.js';
+import { memoryFind } from '../services/memory-find.ts';
 import {
   smartMemoryFind,
   type CorrectionMetadata,
   type SmartFindResult
-} from '../../src/services/smart-find.js';
+} from '../services/smart-find.ts';
 import {
   sanitizeQuery,
   type SanitizationResult
-} from '../../src/utils/query-sanitizer.js';
+} from '../utils/query-sanitizer.ts';
 
 // Mock the memoryFind function
 jest.mock('../../src/services/memory-find.js');

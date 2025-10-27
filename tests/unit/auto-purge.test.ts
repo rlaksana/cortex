@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { Pool } from 'pg';
 
 // Mock the dependencies
-vi.mock('../../src/utils/logger.js', () => ({
+vi.mock('../../src/utils/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -22,20 +22,19 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-vi.mock('../../src/db/prisma-client.js', () => ({
-  prisma: {
-    getClient: vi.fn(() => mockPrismaClient),
-  },
+vi.mock('../../src/db/unified-database-layer.js', () => ({
+  UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
-vi.mock('../../src/utils/db-error-handler.js', () => ({
+vi.mock('../../src/utils/db-error-handler', () => ({
   dbErrorHandler: {
     executeWithRetry: vi.fn(),
   },
 }));
 
-// Mock Prisma client
-const mockPrismaClient = {
+// Mock Unified Database Layer
+const mockDatabaseLayer = {
+  query: vi.fn(),
   purgeMetadata: {
     update: vi.fn(),
     findUnique: vi.fn(),
@@ -82,7 +81,7 @@ describe('Auto-Purge Service', () => {
     vi.resetAllMocks();
 
     // Default successful mock for dbErrorHandler
-    const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+    const { dbErrorHandler } = require('../../src/utils/db-error-handler');
     dbErrorHandler.executeWithRetry.mockResolvedValue({
       success: true,
       data: { operations_since_purge: 1 }
@@ -96,7 +95,7 @@ describe('Auto-Purge Service', () => {
   describe('checkAndPurge', () => {
     it('should increment operation counter on every call', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -105,7 +104,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: purge not needed (thresholds not exceeded)
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: new Date(),
         operations_since_purge: 10,
@@ -125,8 +124,8 @@ describe('Auto-Purge Service', () => {
 
     it('should trigger purge when time threshold exceeded', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -136,7 +135,7 @@ describe('Auto-Purge Service', () => {
 
       // Mock: time threshold exceeded (25 hours since last purge)
       const oldDate = new Date(Date.now() - 25 * 3600 * 1000);
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: oldDate,
         operations_since_purge: 10,
@@ -158,8 +157,8 @@ describe('Auto-Purge Service', () => {
 
     it('should trigger purge when operation threshold exceeded', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -168,7 +167,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: operation threshold exceeded
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: new Date(),
         operations_since_purge: 1001,
@@ -189,7 +188,7 @@ describe('Auto-Purge Service', () => {
 
     it('should skip purge when disabled', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -198,7 +197,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: purge disabled
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: false,
         last_purge_at: new Date(0),
         operations_since_purge: 9999,
@@ -209,13 +208,13 @@ describe('Auto-Purge Service', () => {
       await checkAndPurge('memory.store');
 
       // Should not trigger purge
-      expect(mockPrismaClient.purgeMetadata.update).toHaveBeenCalledTimes(1); // Only counter update
+      expect(mockDatabaseLayer.purgeMetadata.update).toHaveBeenCalledTimes(1); // Only counter update
     });
 
     it('should handle counter update failure gracefully', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock counter update failure
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -235,13 +234,13 @@ describe('Auto-Purge Service', () => {
       );
 
       // Should not attempt to find metadata
-      expect(mockPrismaClient.purgeMetadata.findUnique).not.toHaveBeenCalled();
+      expect(mockDatabaseLayer.purgeMetadata.findUnique).not.toHaveBeenCalled();
     });
 
     it('should create initial metadata record if not found', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -250,12 +249,12 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: metadata not found
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue(null);
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue(null);
 
       await checkAndPurge('memory.store');
 
       // Should create initial record
-      expect(mockPrismaClient.purgeMetadata.create).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.purgeMetadata.create).toHaveBeenCalledWith({
         data: {
           id: 1,
           time_threshold_hours: 24,
@@ -270,8 +269,8 @@ describe('Auto-Purge Service', () => {
 
     it('should handle database errors during purge gracefully', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -280,7 +279,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: metadata exists and purge should trigger
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: new Date(Date.now() - 25 * 3600 * 1000),
         operations_since_purge: 10,
@@ -303,40 +302,40 @@ describe('Auto-Purge Service', () => {
   describe('runPurge', () => {
     beforeEach(() => {
       // Mock successful delete operations
-      mockPrismaClient.todoLog.deleteMany.mockResolvedValue({ count: 5 });
-      mockPrismaClient.changeLog.deleteMany.mockResolvedValue({ count: 3 });
-      mockPrismaClient.prContext.deleteMany.mockResolvedValue({ count: 2 });
-      mockPrismaClient.issueLog.deleteMany.mockResolvedValue({ count: 4 });
-      mockPrismaClient.knowledgeEntity.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.knowledgeRelation.deleteMany.mockResolvedValue({ count: 2 });
-      mockPrismaClient.knowledgeObservation.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.incidentLog.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.releaseLog.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.riskLog.deleteMany.mockResolvedValue({ count: 1 });
-      mockPrismaClient.assumptionLog.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.todoLog.deleteMany.mockResolvedValue({ count: 5 });
+      mockDatabaseLayer.changeLog.deleteMany.mockResolvedValue({ count: 3 });
+      mockDatabaseLayer.prContext.deleteMany.mockResolvedValue({ count: 2 });
+      mockDatabaseLayer.issueLog.deleteMany.mockResolvedValue({ count: 4 });
+      mockDatabaseLayer.knowledgeEntity.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.knowledgeRelation.deleteMany.mockResolvedValue({ count: 2 });
+      mockDatabaseLayer.knowledgeObservation.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.incidentLog.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.releaseLog.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.riskLog.deleteMany.mockResolvedValue({ count: 1 });
+      mockDatabaseLayer.assumptionLog.deleteMany.mockResolvedValue({ count: 1 });
     });
 
     it('should execute all TTL-based purge rules', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../src/utils/logger');
 
       const result = await manualPurge();
 
       // Should call all delete operations
-      expect(mockPrismaClient.todoLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.todoLog.deleteMany).toHaveBeenCalledWith({
         where: {
           status: { in: ['done', 'cancelled'] },
           closed_at: expect.any(Date),
         },
       });
 
-      expect(mockPrismaClient.changeLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.changeLog.deleteMany).toHaveBeenCalledWith({
         where: {
           created_at: expect.any(Date),
         },
       });
 
-      expect(mockPrismaClient.prContext.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.prContext.deleteMany).toHaveBeenCalledWith({
         where: {
           status: 'merged',
           merged_at: expect.any(Date),
@@ -344,7 +343,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Should update metadata with results
-      expect(mockPrismaClient.purgeMetadata.update).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.purgeMetadata.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: {
           last_purge_at: expect.any(Date),
@@ -379,10 +378,10 @@ describe('Auto-Purge Service', () => {
 
     it('should handle database errors during purge execution', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock database error
-      mockPrismaClient.todoLog.deleteMany.mockRejectedValue(new Error('Connection failed'));
+      mockDatabaseLayer.todoLog.deleteMany.mockRejectedValue(new Error('Connection failed'));
 
       await expect(manualPurge()).rejects.toThrow('Connection failed');
 
@@ -427,7 +426,7 @@ describe('Auto-Purge Service', () => {
         last_duration_ms: 125,
       };
 
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue(mockMeta);
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue(mockMeta);
 
       const status = await getPurgeStatus();
 
@@ -442,7 +441,7 @@ describe('Auto-Purge Service', () => {
     it('should throw error when metadata not found', async () => {
       const { getPurgeStatus } = await import('../../src/services/auto-purge.js');
 
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue(null);
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue(null);
 
       await expect(getPurgeStatus()).rejects.toThrow('Purge metadata not found');
     });
@@ -452,7 +451,7 @@ describe('Auto-Purge Service', () => {
 
       // Mock data: 12 hours since last purge, 500 operations, thresholds 24h/1000ops
       const twelveHoursAgo = new Date(Date.now() - 12 * 3600 * 1000);
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: twelveHoursAgo,
         operations_since_purge: 500,
@@ -474,7 +473,7 @@ describe('Auto-Purge Service', () => {
 
       // Mock data: 25 hours since last purge (exceeds 24h threshold)
       const twentyFiveHoursAgo = new Date(Date.now() - 25 * 3600 * 1000);
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: twentyFiveHoursAgo,
         operations_since_purge: 500,
@@ -497,7 +496,7 @@ describe('Auto-Purge Service', () => {
 
       await manualPurge();
 
-      expect(mockPrismaClient.todoLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.todoLog.deleteMany).toHaveBeenCalledWith({
         where: {
           status: { in: ['done', 'cancelled'] },
           closed_at: expect.any(Date),
@@ -510,7 +509,7 @@ describe('Auto-Purge Service', () => {
 
       await manualPurge();
 
-      expect(mockPrismaClient.prContext.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.prContext.deleteMany).toHaveBeenCalledWith({
         where: {
           status: 'merged',
           merged_at: expect.any(Date),
@@ -523,19 +522,19 @@ describe('Auto-Purge Service', () => {
 
       await manualPurge();
 
-      expect(mockPrismaClient.knowledgeEntity.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.knowledgeEntity.deleteMany).toHaveBeenCalledWith({
         where: {
           deleted_at: expect.any(Date),
         },
       });
 
-      expect(mockPrismaClient.knowledgeRelation.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.knowledgeRelation.deleteMany).toHaveBeenCalledWith({
         where: {
           deleted_at: expect.any(Date),
         },
       });
 
-      expect(mockPrismaClient.knowledgeObservation.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.knowledgeObservation.deleteMany).toHaveBeenCalledWith({
         where: {
           deleted_at: expect.any(Date),
         },
@@ -546,7 +545,7 @@ describe('Auto-Purge Service', () => {
   describe('Performance Considerations', () => {
     it('should run purge asynchronously without blocking', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -555,7 +554,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: purge should trigger
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: new Date(Date.now() - 25 * 3600 * 1000),
         operations_since_purge: 1001,
@@ -573,7 +572,7 @@ describe('Auto-Purge Service', () => {
 
     it('should handle concurrent checkAndPurge calls safely', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -582,7 +581,7 @@ describe('Auto-Purge Service', () => {
       });
 
       // Mock: no purge needed
-      mockPrismaClient.purgeMetadata.findUnique.mockResolvedValue({
+      mockDatabaseLayer.purgeMetadata.findUnique.mockResolvedValue({
         enabled: true,
         last_purge_at: new Date(),
         operations_since_purge: 10,
@@ -602,20 +601,20 @@ describe('Auto-Purge Service', () => {
   describe('Error Recovery', () => {
     it('should continue operation if some delete operations fail', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../src/utils/logger');
 
       // Mock partial failure - some operations succeed, others fail
-      mockPrismaClient.todoLog.deleteMany.mockResolvedValue({ count: 5 });
-      mockPrismaClient.changeLog.deleteMany.mockRejectedValue(new Error('Table locked'));
-      mockPrismaClient.prContext.deleteMany.mockResolvedValue({ count: 2 });
-      mockPrismaClient.issueLog.deleteMany.mockResolvedValue({ count: 4 });
+      mockDatabaseLayer.todoLog.deleteMany.mockResolvedValue({ count: 5 });
+      mockDatabaseLayer.changeLog.deleteMany.mockRejectedValue(new Error('Table locked'));
+      mockDatabaseLayer.prContext.deleteMany.mockResolvedValue({ count: 2 });
+      mockDatabaseLayer.issueLog.deleteMany.mockResolvedValue({ count: 4 });
 
       await expect(manualPurge()).rejects.toThrow('Table locked');
 
       // Should have attempted the operations that succeeded
-      expect(mockPrismaClient.todoLog.deleteMany).toHaveBeenCalled();
-      expect(mockPrismaClient.prContext.deleteMany).toHaveBeenCalled();
-      expect(mockPrismaClient.issueLog.deleteMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.todoLog.deleteMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.prContext.deleteMany).toHaveBeenCalled();
+      expect(mockDatabaseLayer.issueLog.deleteMany).toHaveBeenCalled();
     });
 
     it('should validate date calculations for TTL policies', async () => {
@@ -628,7 +627,7 @@ describe('Auto-Purge Service', () => {
       const ninetyDaysAgo = new Date(now);
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      expect(mockPrismaClient.todoLog.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.todoLog.deleteMany).toHaveBeenCalledWith({
         where: {
           status: { in: ['done', 'cancelled'] },
           closed_at: expect.any(Date),
@@ -639,7 +638,7 @@ describe('Auto-Purge Service', () => {
       const thirtyDaysAgo = new Date(now);
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      expect(mockPrismaClient.prContext.deleteMany).toHaveBeenCalledWith({
+      expect(mockDatabaseLayer.prContext.deleteMany).toHaveBeenCalledWith({
         where: {
           status: 'merged',
           merged_at: expect.any(Date),

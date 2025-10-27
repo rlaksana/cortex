@@ -11,15 +11,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { dbPool } from '../../src/db/pool.js';
-import { prisma } from '../../src/db/prisma-client.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
+import { dbPool } from '../db/pool.ts';
+// Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
+import { memoryStore } from '../services/memory-store.ts';
+import { memoryFind } from '../services/memory-find.ts';
 
 describe('Scope Isolation Integration Tests', () => {
   beforeAll(async () => {
     await dbPool.initialize();
-    await prisma.initialize();
   });
 
   afterAll(async () => {

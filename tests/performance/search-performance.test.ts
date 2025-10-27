@@ -6,10 +6,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { TestRunner, TestAssertions } from '../framework/test-setup.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
-import type { TestContext } from '../framework/test-setup.js';
+import { TestRunner, TestAssertions } from '../framework/test-setup.ts';
+import { memoryStore } from '../services/memory-store.ts';
+import { memoryFind } from '../services/memory-find.ts';
+import type { TestContext } from '../framework/test-setup.ts';
 
 describe('SEARCH PERFORMANCE BENCHMARKS', () => {
   let testRunner: TestRunner;

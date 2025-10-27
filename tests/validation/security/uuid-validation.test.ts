@@ -8,7 +8,7 @@
  */
 
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
+// PrismaClient removed - system now uses Qdrant + PostgreSQL architecture';
 import { randomUUID } from 'crypto';
 
 describe('UUID Validation Security Tests', () => {

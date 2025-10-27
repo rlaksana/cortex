@@ -6,7 +6,7 @@
  */
 
 import type { Pool } from 'pg';
-import { getPool } from '../../../database/connection.js';
+import { dbPool } from '../../../src/db/pool.js';
 
 /**
  * Database test helper for managing test databases and data
