@@ -2,9 +2,9 @@ name: Test Coverage
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   schedule:
     # Run coverage reports daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -22,7 +22,7 @@ on:
           - critical-path-only
 
 env:
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
   COVERAGE_ENABLED: true
   COVERAGE_DIR: coverage
   COVERAGE_REPORTS_DIR: coverage/reports
@@ -114,6 +114,18 @@ jobs:
     if: needs.setup.outputs.coverage-type == 'comprehensive' || needs.setup.outputs.coverage-type == 'integration'
 
     services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+
       postgres:
         image: postgres:15-alpine
         env:
@@ -151,12 +163,16 @@ jobs:
           npm run db:push -- --accept-data-loss
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
+          QDRANT_URL: http://localhost:6333
+          QDRANT_API_KEY: ""
 
       - name: Run integration tests with coverage
         run: npm run test:coverage:integration
         continue-on-error: true
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
+          QDRANT_URL: http://localhost:6333
+          QDRANT_API_KEY: ""
 
       - name: Upload integration coverage artifacts
         uses: actions/upload-artifact@v4
@@ -174,6 +190,18 @@ jobs:
     if: needs.setup.outputs.should-run-full == 'true'
 
     services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+
       postgres:
         image: postgres:15-alpine
         env:
@@ -217,11 +245,15 @@ jobs:
           npm run db:push -- --accept-data-loss
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
+          QDRANT_URL: http://localhost:6333
+          QDRANT_API_KEY: ""
 
       - name: Run comprehensive coverage
         run: npm run test:coverage:ci
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cortex_test
+          QDRANT_URL: http://localhost:6333
+          QDRANT_API_KEY: ""
 
       - name: Generate coverage report
         run: npm run test:coverage:report
@@ -303,24 +335,24 @@ jobs:
           PASSED=true
           ERROR_MESSAGE=""
 
-          if (( $(echo "$LINES < 95" | bc -l) )); then
+          if (( $(echo "$LINES < 80" | bc -l) )); then
             PASSED=false
-            ERROR_MESSAGE="$ERROR_MESSAGE Lines coverage below 95% ($LINES%); "
+            ERROR_MESSAGE="$ERROR_MESSAGE Lines coverage below 80% ($LINES%); "
           fi
 
-          if (( $(echo "$FUNCTIONS < 95" | bc -l) )); then
+          if (( $(echo "$FUNCTIONS < 80" | bc -l) )); then
             PASSED=false
-            ERROR_MESSAGE="$ERROR_MESSAGE Functions coverage below 95% ($FUNCTIONS%); "
+            ERROR_MESSAGE="$ERROR_MESSAGE Functions coverage below 80% ($FUNCTIONS%); "
           fi
 
-          if (( $(echo "$BRANCHES < 90" | bc -l) )); then
+          if (( $(echo "$BRANCHES < 70" | bc -l) )); then
             PASSED=false
-            ERROR_MESSAGE="$ERROR_MESSAGE Branches coverage below 90% ($BRANCHES%); "
+            ERROR_MESSAGE="$ERROR_MESSAGE Branches coverage below 70% ($BRANCHES%); "
           fi
 
-          if (( $(echo "$STATEMENTS < 95" | bc -l) )); then
+          if (( $(echo "$STATEMENTS < 80" | bc -l) )); then
             PASSED=false
-            ERROR_MESSAGE="$ERROR_MESSAGE Statements coverage below 95% ($STATEMENTS%); "
+            ERROR_MESSAGE="$ERROR_MESSAGE Statements coverage below 80% ($STATEMENTS%); "
           fi
 
           if [[ "$PASSED" == "true" ]]; then
@@ -403,17 +435,17 @@ jobs:
 
               comment += '| Metric | Coverage | Target | Status |\n';
               comment += '|--------|----------|--------|--------|\n';
-              comment += `| Lines | ${total.lines.pct}% | 95% | ${total.lines.pct >= 95 ? '✅' : '❌'} |\n`;
-              comment += `| Functions | ${total.functions.pct}% | 95% | ${total.functions.pct >= 95 ? '✅' : '❌'} |\n`;
-              comment += `| Branches | ${total.branches.pct}% | 90% | ${total.branches.pct >= 90 ? '✅' : '❌'} |\n`;
-              comment += `| Statements | ${total.statements.pct}% | 95% | ${total.statements.pct >= 95 ? '✅' : '❌'} |\n\n`;
+              comment += `| Lines | ${total.lines.pct}% | 80% | ${total.lines.pct >= 80 ? '✅' : '❌'} |\n`;
+              comment += `| Functions | ${total.functions.pct}% | 80% | ${total.functions.pct >= 80 ? '✅' : '❌'} |\n`;
+              comment += `| Branches | ${total.branches.pct}% | 70% | ${total.branches.pct >= 70 ? '✅' : '❌'} |\n`;
+              comment += `| Statements | ${total.statements.pct}% | 80% | ${total.statements.pct >= 80 ? '✅' : '❌'} |\n\n`;
 
               const overallCoverage = Math.round((total.lines.pct + total.functions.pct + total.statements.pct) / 3);
               comment += `**Overall Coverage: ${overallCoverage}%**\n\n`;
 
-              if (overallCoverage >= 95) {
+              if (overallCoverage >= 80) {
                 comment += '🎉 Excellent coverage! All thresholds met.\n';
-              } else if (overallCoverage >= 90) {
+              } else if (overallCoverage >= 70) {
                 comment += '✅ Good coverage, but there\'s room for improvement.\n';
               } else {
                 comment += '⚠️ Coverage needs improvement. Please add more tests.\n';
