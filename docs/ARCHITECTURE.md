@@ -2,7 +2,9 @@
 
 ## Overview
 
-Cortex Memory MCP Server implements a sophisticated dual-database architecture that combines PostgreSQL's relational capabilities with Qdrant's vector search functionality. This unified approach provides both structured data management and semantic search capabilities in a single, cohesive system.
+Cortex Memory MCP Server implements a **Qdrant-only architecture** that provides vector-based storage and semantic search capabilities. The system uses Qdrant as the sole database for all operations, eliminating complexity and ensuring consistent performance.
+
+⚠️ **IMPORTANT NOTICE**: This system uses **QDRANT ONLY**. PostgreSQL is NOT used and should NOT be configured or installed.
 
 ## High-Level Architecture
 
@@ -20,42 +22,40 @@ Cortex Memory MCP Server implements a sophisticated dual-database architecture t
 │  │ Service         │  │ Service         │  │ Service         ││
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘│
 ├─────────────────────────────────────────────────────────────┤
-│                Unified Database Layer                       │
-│  ┌─────────────────┐              ┌─────────────────┐      │
-│  │   PostgreSQL    │ ◄────────────►│     Qdrant      │      │
-│  │   Relational    │   Unified     │   Vector DB     │      │
-│  │   Data + FTS    │   Interface    │   Semantic      │      │
-│  └─────────────────┘              └─────────────────┘      │
+│                 Qdrant Database Layer                       │
+│                                                             │
+│              ┌─────────────────────────────┐               │
+│              │        QDRANT VECTOR DB      │               │
+│              │   • Semantic Search         │               │
+│              │   • Vector Storage          │               │
+│              │   • Metadata Storage        │               │
+│              │   • Similarity Search       │               │
+│              └─────────────────────────────┘               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Components
 
-### 1. Unified Database Layer
+### 1. Qdrant Database Layer
 
-The `UnifiedDatabaseLayer` class provides a single interface for all database operations, coordinating between PostgreSQL and Qdrant.
+The `QdrantAdapter` class provides a single interface for all database operations using Qdrant as the sole storage backend.
 
 **Key Features**:
-- Single interface for multiple database types
-- Connection pooling and performance optimization
+- Single interface for vector-based storage
+- Semantic search and similarity matching
 - Type-safe TypeScript operations
 - Comprehensive error handling
-- Graceful degradation and fallbacks
+- Automatic embedding generation and storage
+- Metadata filtering and retrieval
 
-**PostgreSQL Responsibilities**:
-- Structured relational data storage
-- Full-text search with PostgreSQL's `tsvector`
-- Complex queries and aggregations
-- ACID transactions
-- JSON/JSONB operations
-- Array operations and indexing
-
-**Qdrant Responsibilities**:
+**Qdrant Capabilities**:
 - Vector similarity search
 - Semantic understanding
 - Embedding storage and retrieval
-- Approximate nearest neighbor search
+- Metadata filtering with JSON payloads
 - Collection management
+- Approximate nearest neighbor search
+- Real-time indexing and search
 
 ### 2. Service Layer Architecture
 
@@ -144,10 +144,11 @@ Memory Store Service
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
-│ Unified Database Layer                     │
-│ - PostgreSQL storage (structured data)     │
-│ - Qdrant storage (vectors & search)        │
-│ - Transaction coordination                 │
+│ Qdrant Database Layer                      │
+│ - Vector storage and retrieval             │
+│ - Semantic search capabilities             │
+│ - Metadata filtering and storage           │
+│ - Automatic embedding generation           │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
@@ -208,44 +209,55 @@ Ranked Results with Autonomous Context
 
 ## Search Strategies
 
-### 1. Hybrid Search (Default)
-Combines semantic and keyword search for comprehensive results:
+### 1. Semantic Search (Primary)
+Vector-based similarity search using Qdrant:
 
 ```typescript
 // Implementation flow
-const semanticResults = await qdrant.search(query);
-const keywordResults = await postgresql.fullTextSearch(query);
-const hybridResults = mergeAndRank(semanticResults, keywordResults);
-```
-
-### 2. Semantic Search
-Pure vector similarity using Qdrant:
-
-```typescript
-// Vector embeddings + similarity search
 const embedding = await openai.createEmbedding(query);
 const results = await qdrant.similaritySearch(embedding);
 ```
 
-### 3. Full-Text Search
-PostgreSQL's advanced text search capabilities:
+### 2. Metadata Filtered Search
+Vector search with metadata filtering:
 
 ```typescript
-// tsvector + tsquery search
-const results = await postgresql.fullTextSearch({
-  query,
-  weighting: { D: 0.1, C: 0.2, B: 0.4, A: 0.8 },
-  normalization: 32,
-  highlight: true
+// Vector search with metadata filters
+const results = await qdrant.search({
+  vector: embedding,
+  filter: {
+    must: [
+      { key: "kind", match: { value: "entity" }},
+      { key: "scope.project", match: { value: "project-name" }}
+    ]
+  }
+});
+```
+
+### 3. Hybrid Semantic Search
+Multi-factor semantic search with weighting:
+
+```typescript
+// Weighted semantic search
+const results = await qdrant.search({
+  vector: embedding,
+  payload: {
+    title: item.title,
+    content: item.content,
+    kind: item.kind
+  }
 });
 ```
 
 ### 4. Fallback Search
-Basic pattern matching when other methods fail:
+Basic text matching in metadata:
 
 ```typescript
-// ILIKE pattern matching
-const results = await postgresql.fallbackSearch(query);
+// Text matching in stored metadata
+const results = await qdrant.search({
+  query: "text search in metadata",
+  search_type: "text"
+});
 ```
 
 ## Similarity Service Architecture
@@ -494,23 +506,28 @@ logger.info({
 
 ### 1. Horizontal Scaling
 
-- **PostgreSQL**: Read replicas for read-heavy workloads
-- **Qdrant**: Distributed cluster for vector search
+- **Qdrant**: Distributed cluster for vector search with sharding
 - **Application**: Stateless services with load balancing
+- **OpenAI API**: Multiple API keys for rate limit handling
 
 ### 2. Data Partitioning
 
 ```typescript
-// PostgreSQL partitioning by date
-CREATE TABLE knowledge_entities_2025_01 PARTITION OF knowledge_entities
-FOR VALUES FROM ('2025-01-01') TO ('2025-02-01');
-
-// Qdrant sharding by project
+// Qdrant sharding and partitioning
 const collectionConfig = {
   shard_number: 4,  // Number of shards
   replication_factor: 2,  // Replicas per shard
-  write_consistency_factor: 2
+  write_consistency_factor: 2,
+  on_disk_payload: true,  // Store payloads on disk
+  hnsw_config: {
+    m: 16,  // HNSW connectivity
+    ef_construct: 100,  // Index construction accuracy
+    full_scan_threshold: 10000
+  }
 };
+
+// Collections can be organized by project or scope
+const projectCollection = `cortex-memory-${projectScope}`;
 ```
 
 ### 3. Caching Layers

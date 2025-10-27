@@ -9,11 +9,12 @@ This guide provides comprehensive information for developers working with the Co
 ### System Requirements
 
 - **Node.js**: 20.0.0 or higher
-- **PostgreSQL**: 15.0 or higher
 - **Qdrant**: 1.7.0 or higher
 - **Docker**: 20.10+ and Docker Compose 2.0+
 - **Git**: 2.40+
 - **TypeScript**: 5.0+ (included with dev dependencies)
+
+⚠️ **IMPORTANT**: This system uses **QDRANT ONLY**. Do NOT install PostgreSQL - it is not needed and will cause confusion.
 
 ### Development Tools
 
@@ -25,8 +26,8 @@ This guide provides comprehensive information for developers working with the Co
   - Thunder Client (for API testing)
 
 - **Database Tools**:
-  - PostgreSQL client (pgAdmin, DBeaver, or psql)
   - Qdrant Web UI (http://localhost:6333/dashboard)
+  - NO PostgreSQL tools needed
 
 ## Quick Start
 
@@ -49,24 +50,22 @@ cp .env.example .env
 #### Option A: Docker (Recommended)
 
 ```bash
-# Start PostgreSQL and Qdrant
+# Start Qdrant only
 docker-compose -f docker-compose.dev.yml up -d
 
-# Wait for services to be ready
-npm run db:wait
+# Wait for Qdrant to be ready
+npm run qdrant:wait
 ```
 
 #### Option B: Local Installation
 
 ```bash
-# PostgreSQL setup (Ubuntu/Debian)
-sudo apt-get install postgresql postgresql-contrib
-sudo systemctl start postgresql
-sudo -u postgres createdb cortex_memory
-
-# Qdrant setup
+# Qdrant setup only - NO PostgreSQL needed
 curl -L https://github.com/qdrant/qdrant/releases/latest/download/qdrant-linux-x86_64.tar.gz | tar xz
 ./qdrant/x86_64-unknown-linux-gnu/qdrant &
+
+# Verify Qdrant is running
+curl http://localhost:6333/health
 ```
 
 ### 3. Environment Configuration
@@ -74,10 +73,10 @@ curl -L https://github.com/qdrant/qdrant/releases/latest/download/qdrant-linux-x
 Edit `.env` file with your configuration:
 
 ```bash
-# Database Configuration
-DATABASE_URL=postgresql://cortex:password@localhost:5432/cortex_memory
+# Database Configuration - QDRANT ONLY
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-api-key-if-required
+# NO DATABASE_URL NEEDED - QDRANT ONLY!
 
 # OpenAI Configuration (for embeddings)
 OPENAI_API_KEY=your-openai-api-key
@@ -93,11 +92,11 @@ SEARCH_LIMIT=50
 ### 4. Database Initialization
 
 ```bash
-# Run database migrations
-npm run db:migrate
+# No database migrations needed for Qdrant
+echo "✅ Qdrant is ready - no migrations required"
 
-# Seed with sample data (optional)
-npm run db:seed
+# Initialize Qdrant collection (handled automatically on first run)
+npm run qdrant:init
 ```
 
 ### 5. Start Development Server
@@ -106,10 +105,8 @@ npm run db:seed
 # Start the MCP server
 npm run dev
 
-# Or start with specific mode
-npm run dev:qdrant    # Qdrant-only mode
-npm run dev:postgres  # PostgreSQL-only mode
-npm run dev:unified   # Unified mode (default)
+# Qdrant-only mode is the default and only supported mode
+npm run dev
 ```
 
 ## Development Workflow
@@ -173,12 +170,10 @@ npm run test:integration # Integration tests only
 npm run test:watch       # Run tests in watch mode
 npm run test:coverage    # Run with coverage report
 
-# Database
-npm run db:migrate       # Run migrations
-npm run db:rollback      # Rollback last migration
-npm run db:seed          # Seed database
-npm run db:reset         # Reset database
-npm run db:studio        # Open database studio
+# Database (Qdrant only)
+npm run qdrant:init      # Initialize Qdrant collection
+npm run qdrant:reset     # Reset Qdrant collection
+# NO DATABASE MIGRATIONS - QDRANT ONLY
 
 # Code Quality
 npm run lint             # Run ESLint
@@ -331,101 +326,84 @@ npm run test:watch
 
 ## Database Development
 
-### 1. Migrations
+### 1. Qdrant Collection Management
 
-Create new migration:
+Qdrant automatically manages collections. No manual schema migrations needed:
 
 ```bash
-npm run migration:create -- --name add_new_table
+# Initialize the main collection (handled automatically)
+npm run qdrant:init
+
+# Reset collection if needed
+npm run qdrant:reset
 ```
 
-Migration file structure:
+### 2. Qdrant Schema
+
+The system uses a single collection with metadata-based organization:
 
 ```typescript
-// src/db/migrations/001_add_new_table.ts
-import { Migration } from '../migrator.js';
+// Collection: "cortex-memory"
+interface VectorPayload {
+  // Knowledge item data
+  title: string;
+  content: string;
+  kind: string; // entity, relation, observation, etc.
+  scope: {
+    project?: string;
+    branch?: string;
+    org?: string;
+  };
 
-export const migration: Migration = {
-  version: '001',
-  description: 'Add new table',
-  up: async (db) => {
-    await db.query(`
-      CREATE TABLE new_table (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        title TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-  },
-  down: async (db) => {
-    await db.query('DROP TABLE new_table');
-  }
-};
-```
+  // Metadata for filtering
+  created_at: string;
+  updated_at: string;
+  tags?: string[];
 
-### 2. Database Schema
-
-Key tables:
-
-```sql
--- Knowledge entities (main storage)
-CREATE TABLE knowledge_entities (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  entity_type VARCHAR(50) NOT NULL,
-  name TEXT NOT NULL,
-  data JSONB NOT NULL,
-  metadata JSONB,
-  scope JSONB,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  deleted_at TIMESTAMP,
-  search_vector tsvector
-);
-
--- Search index
-CREATE INDEX idx_knowledge_entities_search ON knowledge_entities
-USING GIN (search_vector);
-
--- JSONB indexes
-CREATE INDEX idx_knowledge_entities_data ON knowledge_entities
-USING GIN (data);
+  // Content for retrieval
+  data: Record<string, any>;
+}
 ```
 
 ### 3. Query Development
 
-Use the unified database layer:
+Use the Qdrant adapter:
 
 ```typescript
-import { database } from '../src/db/unified-database-layer.js';
+import { QdrantAdapter } from '../src/db/adapters/qdrant-adapter.js';
 
-// Full-text search
-const results = await database.fullTextSearch({
+const qdrant = new QdrantAdapter();
+
+// Semantic search
+const results = await qdrant.search({
   query: 'authentication security',
-  config: 'english',
-  weighting: { D: 0.1, C: 0.2, B: 0.4, A: 0.8 },
-  max_results: 50
+  limit: 50,
+  filter: {
+    must: [
+      { key: "kind", match: { value: "entity" }}
+    ]
+  }
 });
 
-// JSON queries
-const entities = await database.jsonQuery(
-  'knowledge_entities',
-  'data',
-  {
-    path: '$.status',
-    filter: '$ == "active"'
+// Metadata filtering
+const entities = await qdrant.search({
+  vector: embedding,
+  filter: {
+    must: [
+      { key: "scope.project", match: { value: "my-project" }},
+      { key: "data.status", match: { value: "active" }}
+    ]
   }
-);
+});
 
-// Array operations
-const tagged = await database.arrayQuery(
-  'knowledge_entities',
-  {
-    column: 'tags',
-    operation: 'contains',
-    values: ['important', 'security']
-  }
-);
+// Similarity search
+const similar = await qdrant.findSimilar({
+  id: "existing-vector-id",
+  limit: 10
+});
 ```
+
+⚠️ **IMPORTANT**: All database operations go through Qdrant. No SQL queries or PostgreSQL operations are supported.
 
 ## API Development
 
@@ -564,7 +542,7 @@ export class Environment {
   }
 
   private validateRequired(): void {
-    const required = ['DATABASE_URL', 'QDRANT_URL'];
+    const required = ['QDRANT_URL'];
     const missing = required.filter(key => !this.config[key]);
 
     if (missing.length > 0) {
@@ -572,8 +550,9 @@ export class Environment {
     }
   }
 
-  getDatabaseUrl(): string {
-    return this.config.DATABASE_URL!;
+  // NO DATABASE_URL - QDRANT ONLY
+  getQdrantUrl(): string {
+    return this.config.QDRANT_URL!;
   }
 
   getQdrantConfig() {
@@ -604,15 +583,7 @@ import { Environment } from './environment.js';
 const env = Environment.getInstance();
 
 export const DatabaseConfig = {
-  postgres: {
-    connectionString: env.getDatabaseUrl(),
-    pool: {
-      min: 2,
-      max: parseInt(process.env.DB_POOL_MAX || '10'),
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000
-    }
-  },
+  // NO POSTGRESQL CONFIG - QDRANT ONLY
   qdrant: env.getQdrantConfig()
 };
 
@@ -645,15 +616,14 @@ node --inspect-brk dist/index.js
 #### Database Connection Issues
 
 ```bash
-# Check PostgreSQL connection
-psql $DATABASE_URL -c "SELECT 1;"
-
 # Check Qdrant connection
 curl http://localhost:6333/health
 
 # Check Docker containers
 docker-compose -f docker-compose.dev.yml ps
 docker-compose -f docker-compose.dev.yml logs
+
+# NO POSTGRESQL CONNECTION CHECKS NEEDED
 ```
 
 #### TypeScript Issues

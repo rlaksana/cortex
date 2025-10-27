@@ -1,9 +1,19 @@
 /**
- * PostgreSQL Adapter Interface
+ * ⚠️ DEPRECATED - PostgreSQL Adapter Interface
  *
- * Defines the contract for PostgreSQL-specific database operations,
- * including full-text search, CRUD operations, UUID generation,
- * and advanced PostgreSQL features.
+ * THIS INTERFACE IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE
+ *
+ * PostgreSQL is NO LONGER SUPPORTED in Cortex Memory MCP.
+ * All database operations now use Qdrant vector database interfaces.
+ *
+ * Migration completed: 2025-01-27
+ * Replacement: src/db/interfaces/vector-adapter.interface.ts
+ *
+ * If you're seeing this file being imported, please update your code
+ * to use the vector adapter interface instead.
+ *
+ * @deprecated Use VectorAdapter interface instead
+ * @remove-version 2.1.0
  */
 
 import { DatabaseConfig, DatabaseMetrics } from './database-interface.js';

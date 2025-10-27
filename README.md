@@ -1,43 +1,36 @@
-# Cortex Memory MCP Server - Unified Database Architecture
+# Cortex Memory MCP Server - Qdrant Vector Database Architecture
 
 ## Overview
 
-Cortex Memory MCP Server is an advanced knowledge management system that leverages a **unified PostgreSQL + Qdrant architecture** for comprehensive data management and intelligent semantic search. The system provides sophisticated memory management with autonomous decision support capabilities.
+Cortex Memory MCP Server is an advanced knowledge management system that leverages **Qdrant vector database** for intelligent semantic search and memory management. The system provides sophisticated memory capabilities with autonomous decision support.
 
 **Key Features:**
-- 🧠 **Unified Database Architecture** - PostgreSQL for structured data + Qdrant for vector search
-- 🔍 **Multi-Strategy Search** - Semantic, full-text, hybrid, and fallback search strategies
+- 🧠 **Vector-First Architecture** - Qdrant vector database for semantic search and storage
+- 🔍 **Intelligent Search** - Semantic similarity search with multi-strategy approach
 - 🗄️ **16 Knowledge Types** - Complete knowledge management (entities, relations, observations, etc.)
-- 🛡️ **Advanced Deduplication** - Intelligent content similarity detection with configurable thresholds
-- 🚀 **Production Ready** - Comprehensive error handling, graceful degradation, and performance optimization
+- 🛡️ **Advanced Deduplication** - Intelligent content similarity detection (85% threshold)
+- 🚀 **Production Ready** - Comprehensive error handling and performance optimization
 - ⚡ **Smart Orchestration** - Autonomous service coordination with context generation
 
 ## Architecture
 
-### Unified Database Layer
-The system uses a sophisticated dual-database architecture that combines the strengths of both databases:
-
-**PostgreSQL Responsibilities:**
-- Structured relational data storage
-- Full-text search with advanced `tsvector` capabilities
-- Complex queries and aggregations
-- ACID transactions and data integrity
-- JSON/JSONB operations with indexing
-- Array operations and pattern matching
+### Qdrant-First Database Layer
+The system uses Qdrant as the primary and only database backend:
 
 **Qdrant Responsibilities:**
 - Vector similarity search and semantic understanding
-- Embedding storage and retrieval
+- Embedding storage and retrieval with OpenAI embeddings
 - Approximate nearest neighbor search
 - Collection management and sharding
 - Semantic ranking and relevance scoring
+- All data storage and retrieval operations
 
-**Unified Interface:**
-- Single `UnifiedDatabaseLayer` class coordinating both databases
-- Automatic query routing based on operation type
-- Connection pooling and performance optimization
-- Comprehensive error handling with graceful degradation
+**Key Architecture Benefits:**
+- Single database backend for simplicity and reliability
+- Optimized for vector operations and semantic search
+- Automatic schema management
 - Type-safe TypeScript operations
+- Comprehensive error handling with graceful degradation
 
 ### Service Layer
 - **Memory Store Orchestrator** - Coordinates validation, deduplication, similarity detection, and storage
@@ -78,10 +71,9 @@ The system supports 16 comprehensive knowledge types:
 ### Prerequisites
 
 - Node.js 20.0.0 or higher
-- PostgreSQL 15.0 or higher
-- Qdrant 1.7.0 or higher
-- OpenAI API key for vector embeddings
-- Docker (for containerized deployment)
+- Qdrant 1.7.0 or higher (runs on port 6333)
+- OpenAI API key for vector embeddings (MANDATORY)
+- Docker (for Qdrant container)
 
 ### Installation
 
@@ -101,25 +93,17 @@ cp .env.example .env
 ### Environment Configuration
 
 ```bash
-# PostgreSQL Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/cortex_memory
-DB_POOL_SIZE=10
-DB_TIMEOUT=30000
+# ⚠️ CRITICAL: OpenAI API Key is MANDATORY - system will not start without it
+OPENAI_API_KEY=your-openai-api-key-here
 
 # Qdrant Configuration
 QDRANT_URL=http://localhost:6333
-QDRANT_API_KEY=your-api-key-if-required
-QDRANT_COLLECTION_NAME=cortex-memory
-QDRANT_MAX_CONNECTIONS=10
-
-# OpenAI Configuration (Required for embeddings)
-OPENAI_API_KEY=your-openai-api-key
-EMBEDDING_MODEL=text-embedding-ada-002
+# QDRANT_API_KEY=  # Only if your Qdrant requires authentication
 
 # Vector Configuration
 VECTOR_SIZE=1536
 VECTOR_DISTANCE=Cosine
-SIMILARITY_THRESHOLD=0.7
+EMBEDDING_MODEL=text-embedding-ada-002
 
 # Search Configuration
 SEARCH_LIMIT=50
@@ -135,14 +119,13 @@ LOG_LEVEL=info
 ### Development Setup with Docker
 
 ```bash
-# Start databases with Docker Compose
-docker-compose -f docker-compose.dev.yml up -d
+# Start Qdrant database with Docker
+docker run -p 6333:6333 qdrant/qdrant:latest
 
-# Wait for services to be ready
-npm run db:wait
+# Or with Docker Compose if available
+docker-compose -f docker/docker-compose.yml up -d
 
-# Run database migrations
-npm run db:migrate
+# Wait for Qdrant to be ready (check http://localhost:6333/health)
 
 # Start development server
 npm run dev
@@ -151,16 +134,16 @@ npm run dev
 ### Running the Server
 
 ```bash
-# Start the unified MCP server
+# Build the project
+npm run build
+
+# Start the Qdrant-based MCP server
 npm start
 
-# Development mode with hot reload
+# Development mode
 npm run dev
 
-# Or run specific modes
-npm run start:unified    # Unified PostgreSQL + Qdrant mode (default)
-npm run start:postgres   # PostgreSQL-only mode
-npm run start:qdrant     # Qdrant-only mode
+# The system now runs exclusively on Qdrant vector database
 ```
 
 ### Docker Deployment
@@ -602,7 +585,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Unified Database Architecture (v2.0.0)
 
 **Major Architecture Enhancement:**
-- ✅ **PostgreSQL + Qdrant Integration** - Unified database layer combining structured and vector search
+- ✅ **Qdrant Vector Database** - Optimized for semantic search and similarity matching
 - ✅ **Advanced Service Orchestration** - Modular services with clear separation of concerns
 - ✅ **Enhanced Error Handling** - Graceful degradation with multiple fallback strategies
 - ✅ **Improved Performance** - Connection pooling, caching, and query optimization

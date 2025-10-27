@@ -1,1 +1,0 @@
-Testing special characters: !@#$%^&*()_+-=[]{}|;':",./<>?~` and unicode: ñáéíóú 中文字符 🚀 emoji test

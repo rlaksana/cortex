@@ -1,19 +1,29 @@
 # ============================================================================
-# CORTEX MEMORY MCP - 2-LAYER ARCHITECTURE (PostgreSQL 18 Only)
+# CORTEX MEMORY MCP - QDRANT VECTOR DATABASE ARCHITECTURE
 # ============================================================================
-# ARCHITECTURE: Local Node.js MCP Server + Docker PostgreSQL (simplified from 3-layer)
-# - Local Node.js connects directly to Docker PostgreSQL on localhost:5433
-# - Eliminates WSL Docker server layer for improved performance (0-5ms vs 10-20ms)
-# - PostgreSQL 18 is MANDATORY - do NOT downgrade to any other version
-# - Uses gen_random_uuid() from pgcrypto extension (NOT uuid-ossp)
-# - Requires PostgreSQL 18-specific performance features and syntax
-# - Changing database version will cause system failure and inconsistencies
+# ARCHITECTURE: Local Node.js MCP Server + Qdrant Vector Database
+# - Uses Qdrant for vector storage and similarity search
+# - No PostgreSQL dependencies - fully migrated to vector database
+# - High-performance vector operations with filtering capabilities
 
-# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
-# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
 services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cortex-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - cortex_network
+
 volumes:
-  cortex_data:
+  qdrant_data:
     driver: local
 
 networks:

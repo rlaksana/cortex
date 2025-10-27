@@ -1,1 +1,0 @@
-This memory will be deleted to test delete functionality

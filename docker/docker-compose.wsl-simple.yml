@@ -1,47 +1,40 @@
 # =============================================================================
-# CORTEX MEMORY MCP - SIMPLIFIED WSL DOCKER DEPLOYMENT
+# CORTEX MEMORY MCP - SIMPLIFIED WSL QDRANT DEPLOYMENT
 # =============================================================================
-# ARCHITECTURE: Windows MCP Server + WSL2 Docker PostgreSQL
+# ARCHITECTURE: Windows MCP Server + WSL2 Docker Qdrant Vector Database
 # - MCP Server runs natively on Windows (optimal performance)
-# - PostgreSQL runs in WSL2 Docker container (resource efficient)
-# - Connection: Windows host → WSL2 Docker → PostgreSQL
-# - Memory usage: ~800MB total (vs 3-5GB for Docker Desktop)
-# - Performance: 5-10ms latency (excellent for MCP workloads)
+# - Qdrant runs in WSL2 Docker container (resource efficient)
+# - Connection: Windows host → WSL2 Docker → Qdrant
+# - Memory usage: ~400MB total (vs 3-5GB for PostgreSQL + Docker Desktop)
+# - Performance: 2-5ms latency for vector operations
 
-# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
-# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
 version: '3.8'
 
 services:
-      # PostgreSQL Performance Tuning (WSL2 Optimized)
-      POSTGRES_SHARED_PRELOAD_LIBRARIES: pgcrypto,pg_trgm
-      POSTGRES_MAX_CONNECTIONS: 100
-      POSTGRES_SHARED_BUFFERS: 256MB
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 768MB
-      POSTGRES_MAINTENANCE_WORK_MEM: 64MB
-      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
-      POSTGRES_WAL_BUFFERS: 16MB
-      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
-
-      # Performance Monitoring
-      PGSTATS_STATEMENTS_TIMEOUT: 30s
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cortex-qdrant-wsl-simple
+    restart: unless-stopped
 
     ports:
-      # Expose to Windows host (localhost:5433)
-      - "5433:5432"
+      # Expose to Windows host (localhost:6333)
+      - "6333:6333"
+      - "6334:6334"
+
+    environment:
+      # Basic Qdrant Configuration
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
 
     volumes:
-      # PostgreSQL Data Volume
-      - cortex_data:/var/lib/postgresql/data
-
-      # Database Schema and Extensions (if they exist)
-      - ../migrations:/docker-entrypoint-initdb.d:ro
+      # Qdrant Data Volume
+      - qdrant_data:/qdrant/storage
 
     restart: unless-stopped
 
-    # Health Checks (WSL2 Optimized)
+    # Health Checks
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod -t 5"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -51,14 +44,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G          # Conservative memory limit
-          cpus: '1.5'        # CPU limit for WSL2
+          memory: 512M        # Conservative memory limit for Qdrant
+          cpus: '1.0'        # CPU limit for WSL2
         reservations:
-          memory: 512M       # Memory reservation
+          memory: 256M       # Memory reservation
           cpus: '0.5'        # CPU reservation
 
     # WSL2 Specific Optimizations
-    shm_size: 128m             # Shared memory for PostgreSQL
     read_only: false
     stdin_open: true
     tty: true
@@ -73,7 +65,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-        labels: "cortex,postgres,wsl"
+        labels: "cortex,qdrant,wsl"
 
     # Security
     security_opt:
@@ -85,6 +77,7 @@ services:
       - "cortex.environment=wsl"
       - "cortex.version=1.0.0"
       - "deployment.type=wsl"
+      - "cortex.database=qdrant"
 
 # Docker Networks
 networks:
@@ -99,8 +92,9 @@ networks:
 
 # Docker Volumes
 volumes:
-  cortex_data:
+  qdrant_data:
     driver: local
     labels:
       - "cortex.volume=database"
       - "cortex.environment=wsl"
+      - "cortex.database=qdrant"

@@ -1,1 +1,0 @@
-Basic test content for memory store functionality validation.

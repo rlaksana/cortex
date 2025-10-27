@@ -1,55 +1,43 @@
 # =============================================================================
-# CORTEX MEMORY MCP - DOCKER DESKTOP DEPLOYMENT
+# CORTEX MEMORY MCP - DOCKER DESKTOP QDRANT DEPLOYMENT
 # =============================================================================
-# ARCHITECTURE: Windows MCP Server + Docker Desktop PostgreSQL
+# ARCHITECTURE: Windows MCP Server + Docker Desktop Qdrant Vector Database
 # - MCP Server runs natively on Windows (optimal performance)
-# - PostgreSQL runs in Docker Desktop container (GUI management)
-# - Connection: Windows host → Docker Desktop → PostgreSQL
-# - Memory usage: 3-5GB total (higher but includes GUI management)
-# - Performance: 10-20ms latency (very good for MCP workloads)
+# - Qdrant runs in Docker Desktop container (GUI management)
+# - Connection: Windows host → Docker Desktop → Qdrant
+# - Memory usage: 1-2GB total (much lower than PostgreSQL)
+# - Performance: 2-5ms latency for vector operations
 
-# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
-# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
 version: '3.8'
 
 services:
-      # PostgreSQL Performance Tuning (Docker Desktop Optimized)
-      POSTGRES_SHARED_PRELOAD_LIBRARIES: pgcrypto,pg_trgm
-      POSTGRES_MAX_CONNECTIONS: 150
-      POSTGRES_SHARED_BUFFERS: 512MB      # Increased for Docker Desktop
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 1.5GB   # Increased for Docker Desktop
-      POSTGRES_MAINTENANCE_WORK_MEM: 128MB     # Increased for Docker Desktop
-      POSTGRES_CHECKPOINT_COMPLETION_TARGET: 0.9
-      POSTGRES_WAL_BUFFERS: 32MB               # Increased for Docker Desktop
-      POSTGRES_DEFAULT_STATISTICS_TARGET: 100
-
-      # Performance Monitoring
-      PGSTATS_STATEMENTS_TIMEOUT: 30s
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cortex-qdrant-desktop
+    restart: unless-stopped
 
     ports:
-      # Expose to Windows host (localhost:5433)
-      - "5433:5432"
+      # Expose to Windows host (localhost:6333)
+      - "6333:6333"
+      - "6334:6334"
+
+    environment:
+      # Qdrant Configuration (Docker Desktop Optimized)
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS=4
+      - QDRANT__STORAGE__PERFORMANCE__WEIGHTED_SEARCH_THREAD_POOL_SIZE=2
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB= 512
 
     volumes:
-      # PostgreSQL Data Volume
-      - cortex_data:/var/lib/postgresql/data
-
-      # Database Schema and Extensions
-      - ../migrations/001_complete_schema.sql:/docker-entrypoint-initdb.d/02-schema.sql:ro
-      - ../scripts/init-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
-
-      # PostgreSQL Configuration (Docker Desktop Optimized)
-      - ../config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-      - ../config/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf:ro
-
-      # Backup Volume
-      - cortex_backups:/backups
+      # Qdrant Data Volume
+      - qdrant_data:/qdrant/storage
 
     restart: unless-stopped
 
     # Health Checks (Docker Desktop Optimized)
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod -t 5"]
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -59,14 +47,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G          # Higher limit for Docker Desktop
-          cpus: '2'            # Higher CPU limit for Docker Desktop
+          memory: 1G          # Conservative limit for Qdrant
+          cpus: '2'           # CPU limit for Docker Desktop
         reservations:
-          memory: 1G           # Higher memory reservation
-          cpus: '1'            # Higher CPU reservation
+          memory: 512M        # Memory reservation
+          cpus: '1'           # CPU reservation
 
     # Docker Desktop Specific Optimizations
-    shm_size: 256m             # Larger shared memory for PostgreSQL
     read_only: false
     stdin_open: true
     tty: true
@@ -81,7 +68,7 @@ services:
       options:
         max-size: "50m"        # Larger logs for Docker Desktop
         max-file: "5"          # More log files
-        labels: "cortex,postgres,docker-desktop"
+        labels: "cortex,qdrant,docker-desktop"
 
     # Security
     security_opt:
@@ -93,50 +80,7 @@ services:
       - "cortex.environment=docker-desktop"
       - "cortex.version=1.0.0"
       - "deployment.type=docker-desktop"
-
-  # Optional: pgAdmin for Database Management (Docker Desktop)
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: cortex-pgadmin-desktop
-    environment:
-      PGADMIN_DEFAULT_EMAIL: cortex@cortex.local
-      PGADMIN_DEFAULT_PASSWORD: cortex_admin_2025
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
-
-    ports:
-      # Expose to Windows host (localhost:8080)
-      - "8080:80"
-
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-
-    restart: unless-stopped
-
-    # Health Checks
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-    # Resource Limits (More generous for Docker Desktop)
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '1'
-
-    # Networking
-    networks:
-      - cortex_network
-
-    # Labels
-    labels:
-      - "cortex.component=admin"
-      - "cortex.environment=docker-desktop"
-      - "cortex.optional=true"
+      - "cortex.database=qdrant"
 
   # Optional: Portainer for Docker Management (Docker Desktop)
   portainer:
@@ -177,23 +121,12 @@ networks:
 
 # Docker Volumes
 volumes:
-  cortex_data:
+  qdrant_data:
     driver: local
     labels:
       - "cortex.volume=database"
       - "cortex.environment=docker-desktop"
-
-  cortex_backups:
-    driver: local
-    labels:
-      - "cortex.volume=backups"
-      - "cortex.environment=docker-desktop"
-
-  pgadmin_data:
-    driver: local
-    labels:
-      - "cortex.volume=admin"
-      - "cortex.environment=docker-desktop"
+      - "cortex.database=qdrant"
 
   portainer_data:
     driver: local

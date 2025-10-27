@@ -31,21 +31,17 @@ export interface DatabaseSelectionConfig {
   fallbackEnabled: boolean;
 }
 
+// ⚠️ DEPRECATED: PostgreSQL is no longer supported
+// This interface is kept for backward compatibility only
+// @deprecated Use QdrantConfig instead
 export interface PostgresConfig {
-  host: string;
-  port: number;
-  database: string;
-  user: string;
-  password: string;
-  databaseUrl: string;
-  pool: {
-    min: number;
-    max: number;
-    idleTimeout: number;
-    connectionTimeout: number;
-    retryAttempts: number;
-    retryDelay: number;
-  };
+  host?: never; // Removed - PostgreSQL not supported
+  port?: never; // Removed - PostgreSQL not supported
+  database?: never; // Removed - PostgreSQL not supported
+  user?: never; // Removed - PostgreSQL not supported
+  password?: never; // Removed - PostgreSQL not supported
+  databaseUrl?: never; // Removed - PostgreSQL not supported
+  pool?: never; // Removed - PostgreSQL not supported
 }
 
 export interface QdrantConfig {

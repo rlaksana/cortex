@@ -1,21 +1,24 @@
 /**
- * PostgreSQL Adapter
+ * ⚠️ DEPRECATED - PostgreSQL Adapter
  *
- * Implements PostgreSQL-specific database operations, including
- * full-text search, CRUD operations, UUID generation, and
- * advanced PostgreSQL features.
+ * THIS FILE IS DEPRECATED AND WILL BE REMOVED IN A FUTURE RELEASE
  *
- * Features:
- * - Full-text search with tsvector and tsquery
- * - UUID generation (v4 and v7)
- * - JSON Path queries and operations
- * - Array operations for JSON arrays
- * - Query execution plan analysis
- * - Connection pooling and management
- * - Type-safe operations with TypeScript
+ * PostgreSQL is NO LONGER SUPPORTED in Cortex Memory MCP.
+ * All database operations now use Qdrant vector database.
  *
+ * Migration completed: 2025-01-27
+ * Replacement: src/db/adapters/qdrant-adapter.ts
+ *
+ * If you're seeing this file being imported, please update your code
+ * to use the Qdrant adapter instead.
+ *
+ * This file is kept only for backward compatibility during the
+ * transition period and will be completely removed in v2.1.0.
+ *
+ * @deprecated Use QdrantAdapter instead
+ * @remove-version 2.1.0
  * @author Cortex Team
- * @version 2.0.0
+ * @version 2.0.0 (DEPRECATED)
  * @since 2025
  */
 
@@ -56,6 +59,7 @@ import type {
 
 /**
  * PostgreSQL adapter implementing relational database operations
+ * @deprecated Use QdrantAdapter instead - PostgreSQL is no longer supported
  */
 export class PostgreSQLAdapter implements IPostgreSQLAdapter {
   private pool: Pool;
@@ -63,6 +67,20 @@ export class PostgreSQLAdapter implements IPostgreSQLAdapter {
   private initialized: boolean = false;
 
   constructor(config: PostgreSQLConfig) {
+    // ⚠️ DEPRECATION WARNING
+    logger.error(`
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     ⚠️  DEPRECATION WARNING  ⚠️                           ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ PostgreSQL Adapter is DEPRECATED and will be REMOVED in v2.1.0               ║
+║                                                                              ║
+║ PostgreSQL is NO LONGER SUPPORTED in Cortex Memory MCP.                      ║
+║ Please migrate to QdrantAdapter immediately.                                ║
+║                                                                              ║
+║ Migration completed: 2025-01-27                                              ║
+║ See: src/db/adapters/qdrant-adapter.ts                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+    `);
     // Use unified environment configuration
     const env = Environment.getInstance();
     const testingConfig = env.getTestingConfig();

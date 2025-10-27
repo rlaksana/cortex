@@ -1,18 +1,14 @@
 # ============================================================================
-# CORTEX MEMORY MCP - DUAL DATABASE ARCHITECTURE (PostgreSQL 18 + Qdrant)
+# CORTEX MEMORY MCP - QDRANT VECTOR DATABASE ARCHITECTURE
 # ============================================================================
-# ARCHITECTURE: Local Node.js MCP Server + Docker PostgreSQL + Qdrant
-# - Local Node.js connects to PostgreSQL on localhost:5433 for structured data
-# - Local Node.js connects to Qdrant on localhost:6333 for vector search
-# - PostgreSQL 18 handles traditional knowledge types (entities, relations, etc.)
-# - Qdrant handles vector embeddings and semantic search
-# - Both databases are synchronized through the unified database layer
-#
-# ⚠️ DOCKER COMPOSE CONFIGURATION RESTRICTIONS ⚠️
-# 🔴 FORBIDDEN: Do NOT change any configuration without explicit approval:
+# ARCHITECTURE: Local Node.js MCP Server + Docker Qdrant + Supporting Services
+# - Local Node.js connects to Qdrant on localhost:6333 for all data operations
+# - Qdrant handles both structured data and vector embeddings
+# - High-performance vector operations with filtering capabilities
+# - Simplified architecture with single database backend
+
 services:
-  # PostgreSQL 18 - Structured Knowledge Storage
-  # Qdrant Vector Database - Semantic Search & Embeddings
+  # Qdrant Vector Database - Primary Storage & Semantic Search
   qdrant:
     image: qdrant/qdrant:v1.13.2
     container_name: cortex-qdrant
@@ -91,6 +87,11 @@ services:
       - ./ssl:/etc/nginx/ssl
       - ./logs/nginx:/var/log/nginx
     depends_on:
+      - qdrant
+    networks:
+      - cortex_network
+    restart: unless-stopped
+
   # Prometheus - Metrics Collection
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -148,7 +149,6 @@ services:
       - ./logs:/var/log/app
       - vector_data:/var/lib/vector
     depends_on:
-      - postgres
       - qdrant
     networks:
       - cortex_network
@@ -157,14 +157,6 @@ services:
       - logging
 
 volumes:
-  # PostgreSQL data with backup strategy
-  cortex_postgres_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/postgres
-
   # Qdrant vector data with backup strategy
   cortex_qdrant_data:
     driver: local
@@ -196,4 +188,4 @@ networks:
         - subnet: 172.20.0.0/16
           gateway: 172.20.0.1
     labels:
-      - "cortex.network=dual-database"
+      - "cortex.network=qdrant-only"

@@ -11,7 +11,6 @@ This guide provides comprehensive instructions for deploying the Cortex Memory M
 ```
 Development Machine
 ├── Docker Desktop
-│   ├── PostgreSQL (port 5432)
 │   ├── Qdrant (port 6333)
 │   └── Cortex MCP (port 3000)
 └── Local Development Tools
@@ -23,7 +22,6 @@ Development Machine
 Production Cluster
 ├── Load Balancer (HTTPS termination)
 ├── Cortex MCP Services (3+ instances)
-│   ├── PostgreSQL Cluster (Primary + Replicas)
 │   └── Qdrant Cluster (3+ nodes)
 ├── Monitoring Stack
 │   ├── Prometheus
@@ -33,6 +31,8 @@ Production Cluster
     ├── ELK Stack
     └── Filebeat
 ```
+
+⚠️ **IMPORTANT**: This system uses **QDRANT ONLY**. Do NOT install, configure, or connect to PostgreSQL.
 
 ## Docker Deployment
 
@@ -53,41 +53,20 @@ services:
       - "9229:9229"  # Node.js debugger
     environment:
       - NODE_ENV=development
-      - DATABASE_URL=postgresql://cortex:dev_password@postgres:5432/cortex_dev
       - QDRANT_URL=http://qdrant:6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEBUG=cortex:*
       - HOT_RELOAD=true
+      - # NO DATABASE_URL NEEDED - QDRANT ONLY!
     volumes:
       - .:/app
       - /app/node_modules
       - ./logs:/app/logs
     depends_on:
-      postgres:
-        condition: service_healthy
       qdrant:
         condition: service_healthy
     restart: unless-stopped
     command: npm run dev
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=cortex_dev
-      - POSTGRES_USER=cortex
-      - POSTGRES_PASSWORD=dev_password
-      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_dev"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:v1.7.0
@@ -107,24 +86,11 @@ services:
       retries: 3
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_dev_data:/data
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
 volumes:
-  postgres_dev_data:
   qdrant_dev_data:
-  redis_dev_data:
 ```
+
+⚠️ **NOTICE**: No PostgreSQL container is needed. Cortex uses Qdrant only for all storage operations.
 
 #### Production Environment
 
@@ -149,23 +115,17 @@ services:
           memory: 1G
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://cortex:${DB_PASSWORD}@postgres:5432/cortex_prod
       - QDRANT_URL=http://qdrant:6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDIS_URL=redis://redis:6379
-      - DB_POOL_SIZE=20
       - ENABLE_CACHE=true
       - ENABLE_METRICS=true
       - LOG_LEVEL=warn
       - API_KEY_ENABLED=true
+      - # NO DATABASE_URL - QDRANT ONLY!
     ports:
       - "3000:3000"
     depends_on:
-      postgres:
-        condition: service_healthy
       qdrant:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
@@ -173,36 +133,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-    environment:
-      - POSTGRES_DB=cortex_prod
-      - POSTGRES_USER=cortex
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
-    volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
-      - postgres_backup:/backups
-    environment:
-      - POSTGRES_SHARED_PRELOAD_LIBRARIES=pg_stat_statements
-      - POSTGRES_MAX_CONNECTIONS=200
-      - POSTGRES_SHARED_BUFFERS=256MB
-      - POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cortex -d cortex_prod"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
   qdrant:
@@ -230,22 +160,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_prod_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
   nginx:
     image: nginx:alpine
     ports:
@@ -260,11 +174,10 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_prod_data:
-  postgres_backup:
   qdrant_prod_data:
-  redis_prod_data:
 ```
+
+⚠️ **IMPORTANT**: Production deployment requires only Qdrant. No PostgreSQL database is needed or supported.
 
 ### 2. Dockerfile Configuration
 
@@ -388,10 +301,10 @@ metadata:
   namespace: cortex-mcp
 type: Opaque
 data:
-  DATABASE_URL: <base64-encoded-database-url>
   OPENAI_API_KEY: <base64-encoded-openai-key>
   QDRANT_API_KEY: <base64-encoded-qdrant-key>
   API_KEY: <base64-encoded-api-key>
+  # NO DATABASE_URL - QDRANT ONLY
 ```
 
 ### 2. Application Deployment
@@ -618,14 +531,11 @@ spec:
       ],
       "secrets": [
         {
-          "name": "DATABASE_URL",
-          "valueFrom": "arn:aws:secretsmanager:region:account:secret:cortex/db-url"
-        },
-        {
           "name": "OPENAI_API_KEY",
           "valueFrom": "arn:aws:secretsmanager:region:account:secret:cortex/openai-key"
         }
       ],
+      # NO DATABASE_URL SECRET - QDRANT ONLY
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
@@ -685,37 +595,7 @@ resource "aws_ecs_cluster" "cortex_cluster" {
   }
 }
 
-# RDS for PostgreSQL
-resource "aws_db_instance" "cortex_postgres" {
-  identifier = "cortex-postgres"
-
-  engine         = "postgres"
-  engine_version = "15.4"
-  instance_class = "db.m5.large"
-
-  allocated_storage     = 100
-  max_allocated_storage = 1000
-  storage_encrypted     = true
-  storage_type          = "gp2"
-
-  db_name  = "cortex_prod"
-  username = var.db_username
-  password = var.db_password
-
-  vpc_security_group_ids = [aws_security_group.rds.id]
-  db_subnet_group_name   = aws_db_subnet_group.cortex.name
-
-  backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
-
-  skip_final_snapshot = false
-  final_snapshot_identifier = "cortex-postgres-final"
-
-  tags = {
-    Name = "cortex-postgres"
-  }
-}
+# NO RDS/POSTGRESQL RESOURCES NEEDED - QDRANT ONLY
 
 # ElastiCache for Redis
 resource "aws_elasticache_subnet_group" "cortex_cache" {
@@ -787,16 +667,12 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: DATABASE_URL
         - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
               name: cortex-secrets
               key: OPENAI_API_KEY
+        # NO DATABASE_URL ENVIRONMENT VARIABLE - QDRANT ONLY
         resources:
           limits:
             cpu: 2000m
@@ -1028,53 +904,62 @@ echo "🎉 Deployment is healthy and ready!"
 set -e
 
 ENVIRONMENT=${1:-production}
-echo "🗄️ Running database migrations for $ENVIRONMENT..."
+echo "🗄️ Preparing Qdrant deployment for $ENVIRONMENT..."
 
 # Set environment variables
 export NODE_ENV=$ENVIRONMENT
-export DATABASE_URL=$(kubectl get secret cortex-secrets -n cortex-mcp -o jsonpath='{.data.DATABASE_URL}' | base64 -d)
+# NO DATABASE_URL - QDRANT ONLY
 
-# Run migrations
-npm run db:migrate
+# No database migrations needed for Qdrant
+echo "✅ No migrations required for Qdrant-only deployment"
 
-echo "✅ Database migrations completed!"
+echo "✅ Qdrant deployment preparation completed!"
 ```
 
 ## Backup and Recovery
 
-### 1. Database Backup Script
+### 1. Qdrant Backup Script
 
 ```bash
 #!/bin/bash
-# scripts/backup-db.sh
+# scripts/backup-qdrant.sh
 
 BACKUP_DIR="/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="cortex_backup_$DATE.sql"
+BACKUP_FILE="cortex_qdrant_backup_$DATE"
 
 # Create backup directory
 mkdir -p $BACKUP_DIR
 
-# PostgreSQL backup
-pg_dump $DATABASE_URL > "$BACKUP_DIR/$BACKUP_FILE"
+# Qdrant snapshot backup
+curl -X POST "http://localhost:6333/collections/cortex-memory/snapshots" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "'$BACKUP_FILE'"}'
+
+# Wait for snapshot creation
+sleep 10
+
+# Find and copy the snapshot
+SNAPSHOT_PATH="/qdrant/snapshots/cortex-memory/$BACKUP_FILE.snapshot"
+cp $SNAPSHOT_PATH "$BACKUP_DIR/"
 
 # Compress backup
-gzip "$BACKUP_DIR/$BACKUP_FILE"
+gzip "$BACKUP_DIR/$BACKUP_FILE.snapshot"
 
 # Upload to S3 (AWS)
-aws s3 cp "$BACKUP_DIR/$BACKUP_FILE.gz" "s3://cortex-backups/database/"
+aws s3 cp "$BACKUP_DIR/$BACKUP_FILE.snapshot.gz" "s3://cortex-backups/qdrant/"
 
 # Clean local files older than 7 days
 find $BACKUP_DIR -name "*.gz" -mtime +7 -delete
 
-echo "✅ Database backup completed: $BACKUP_FILE.gz"
+echo "✅ Qdrant backup completed: $BACKUP_FILE.snapshot.gz"
 ```
 
-### 2. Restore Script
+### 2. Qdrant Restore Script
 
 ```bash
 #!/bin/bash
-# scripts/restore-db.sh
+# scripts/restore-qdrant.sh
 
 BACKUP_FILE=$1
 
@@ -1083,25 +968,32 @@ if [ -z "$BACKUP_FILE" ]; then
   exit 1
 fi
 
-echo "🔄 Restoring database from $BACKUP_FILE..."
+echo "🔄 Restoring Qdrant from $BACKUP_FILE..."
 
 # Download from S3 if needed
 if [[ $BACKUP_FILE == s3://* ]]; then
-  aws s3 cp $BACKUP_FILE /tmp/restore.sql.gz
-  BACKUP_FILE="/tmp/restore.sql.gz"
+  aws s3 cp $BACKUP_FILE /tmp/restore.snapshot.gz
+  BACKUP_FILE="/tmp/restore.snapshot.gz"
 fi
 
 # Decompress if needed
 if [[ $BACKUP_FILE == *.gz ]]; then
-  gunzip -c $BACKUP_FILE > /tmp/restore.sql
-  BACKUP_FILE="/tmp/restore.sql"
+  gunzip -c $BACKUP_FILE > /tmp/restore.snapshot
+  BACKUP_FILE="/tmp/restore.snapshot"
 fi
 
-# Restore database
-psql $DATABASE_URL < $BACKUP_FILE
+# Copy to Qdrant snapshots directory
+cp $BACKUP_FILE "/qdrant/snapshots/cortex-memory/"
 
-echo "✅ Database restore completed!"
+# Restore from snapshot
+curl -X POST "http://localhost:6333/collections/cortex-memory/snapshots/restore" \
+  -H "Content-Type: application/json" \
+  -d '{"snapshot_name": "'$(basename $BACKUP_FILE)'"}'
+
+echo "✅ Qdrant restore completed!"
 ```
+
+⚠️ **IMPORTANT**: This system uses Qdrant-only backups. No SQL backup/restore is needed or supported.
 
 ## Security Considerations
 
@@ -1136,11 +1028,8 @@ spec:
           name: cortex-mcp
     ports:
     - protocol: TCP
-      port: 5432  # PostgreSQL
-    - protocol: TCP
       port: 6333  # Qdrant
-    - protocol: TCP
-      port: 6379  # Redis
+    # NO POSTGRESQL - QDRANT ONLY
   - to: []
     ports:
     - protocol: TCP

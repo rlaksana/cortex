@@ -11,22 +11,17 @@ Cortex Memory MCP Server uses a comprehensive configuration system that supports
 The primary configuration method is through environment variables. Copy `.env.example` to `.env` and customize:
 
 ```bash
-# Required Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/cortex_memory
+# Required Configuration - QDRANT ONLY
 QDRANT_URL=http://localhost:6333
 OPENAI_API_KEY=your-openai-api-key
+# NO DATABASE_URL NEEDED - QDRANT ONLY!
 
 # Application Settings
 NODE_ENV=development                    # development, staging, production
 LOG_LEVEL=info                        # error, warn, info, debug
 PORT=3000                             # Server port
 
-# PostgreSQL Configuration
-DATABASE_URL=postgresql://user:pass@host:5432/dbname
-DB_POOL_SIZE=10                       # Connection pool size
-DB_TIMEOUT=30000                      # Connection timeout (ms)
-DB_IDLE_TIMEOUT=30000                 # Idle timeout (ms)
-DB_MAX_CLIENTS=20                     # Maximum concurrent clients
+# NO POSTGRESQL CONFIGURATION - SYSTEM USES QDRANT ONLY
 
 # Qdrant Configuration
 QDRANT_URL=http://localhost:6333
@@ -170,11 +165,9 @@ export class Environment {
 // src/config/schemas.ts
 import { z } from 'zod';
 
+// NO POSTGRESQL CONFIGURATION SCHEMA - QDRANT ONLY
 export const DatabaseConfigSchema = z.object({
-  DATABASE_URL: z.string().url(),
-  DB_POOL_SIZE: z.coerce.number().min(1).max(100).default(10),
-  DB_TIMEOUT: z.coerce.number().min(1000).default(30000),
-  DB_IDLE_TIMEOUT: z.coerce.number().min(5000).default(30000),
+  // Empty object - PostgreSQL is not used
 });
 
 export const QdrantConfigSchema = z.object({
@@ -196,37 +189,25 @@ export const SearchConfigSchema = z.object({
 
 ## Service-Specific Configuration
 
-### 1. Database Configuration
+### 1. Database Configuration (Qdrant Only)
 
 ```typescript
 // src/config/database.ts
 import { Environment } from './environment.js';
-import { DatabaseConfigSchema } from './schemas.js';
+import { QdrantConfigSchema } from './schemas.js';
 
 const env = Environment.getInstance();
-const dbConfig = DatabaseConfigSchema.parse(process.env);
+const qdrantConfig = QdrantConfigSchema.parse(process.env);
 
 export const DatabaseConfig = {
-  postgres: {
-    connectionString: dbConfig.DATABASE_URL,
-    pool: {
-      min: 2,
-      max: dbConfig.DB_POOL_SIZE,
-      idleTimeoutMillis: dbConfig.DB_IDLE_TIMEOUT,
-      connectionTimeoutMillis: dbConfig.DB_TIMEOUT,
-      acquireTimeoutMillis: dbConfig.DB_TIMEOUT,
-      createTimeoutMillis: 30000,
-      destroyTimeoutMillis: 5000,
-      reapIntervalMillis: 1000,
-      createRetryIntervalMillis: 200
-    },
-    ssl: env.isProduction() ? { rejectUnauthorized: false } : false
-  },
-
-  migrations: {
-    tableName: 'migrations',
-    directory: './src/db/migrations',
-    autoMigrate: env.isProduction()
+  // NO POSTGRESQL CONFIGURATION - QDRANT ONLY
+  qdrant: {
+    url: qdrantConfig.QDRANT_URL,
+    apiKey: qdrantConfig.QDRANT_API_KEY,
+    collectionName: qdrantConfig.QDRANT_COLLECTION_NAME,
+    maxConnections: qdrantConfig.QDRANT_MAX_CONNECTIONS,
+    timeout: qdrantConfig.QDRANT_TIMEOUT,
+    retryAttempts: qdrantConfig.QDRANT_RETRY_ATTEMPTS
   }
 };
 ```
@@ -360,15 +341,7 @@ export class RuntimeConfig {
 import { logger } from '../utils/logger.js';
 
 export class ConfigValidator {
-  static validateDatabaseUrl(url: string): boolean {
-    try {
-      new URL(url);
-      return url.startsWith('postgresql://');
-    } catch {
-      return false;
-    }
-  }
-
+  // NO DATABASE_URL VALIDATION - QDRANT ONLY
   static validateQdrantUrl(url: string): boolean {
     try {
       const parsed = new URL(url);
@@ -385,9 +358,7 @@ export class ConfigValidator {
   static validateAll(): void {
     const errors: string[] = [];
 
-    if (!this.validateDatabaseUrl(process.env.DATABASE_URL)) {
-      errors.push('Invalid DATABASE_URL');
-    }
+    // NO DATABASE_URL VALIDATION - QDRANT ONLY
 
     if (!this.validateQdrantUrl(process.env.QDRANT_URL)) {
       errors.push('Invalid QDRANT_URL');
@@ -401,7 +372,7 @@ export class ConfigValidator {
       throw new Error(`Configuration validation failed: ${errors.join(', ')}`);
     }
 
-    logger.info('Configuration validation passed');
+    logger.info('Qdrant-only configuration validation passed');
   }
 }
 ```
@@ -479,7 +450,8 @@ export const ProductionConfig = {
 export class SecurityConfig {
   static sanitizeConfig(): void {
     // Remove sensitive data from logs
-    const sensitiveKeys = ['OPENAI_API_KEY', 'DATABASE_URL', 'QDRANT_API_KEY'];
+    const sensitiveKeys = ['OPENAI_API_KEY', 'QDRANT_API_KEY'];
+    // NO DATABASE_URL - QDRANT ONLY
 
     sensitiveKeys.forEach(key => {
       if (process.env[key]) {
@@ -509,10 +481,7 @@ export class SecurityConfig {
 // src/config/performance.ts
 export const PerformanceConfig = {
   connectionPooling: {
-    postgres: {
-      min: Math.max(2, Math.floor(cpus.length / 2)),
-      max: Math.min(20, cpus.length * 2)
-    },
+    // NO POSTGRESQL POOLING - QDRANT ONLY
     qdrant: {
       min: 2,
       max: 10
@@ -531,7 +500,7 @@ export const PerformanceConfig = {
   },
 
   timeouts: {
-    database: 30000,
+    qdrant: 30000,  // Qdrant operations
     search: 10000,
     embedding: 60000,
     api: 120000
@@ -591,8 +560,8 @@ export async function validateConfiguration(): Promise<void> {
     // Validate URLs and API keys
     ConfigValidator.validateAll();
 
-    // Validate database connections
-    await validateDatabaseConnections();
+    // Validate Qdrant connection
+    await validateQdrantConnection();
 
     // Validate external services
     await validateExternalServices();
@@ -604,12 +573,12 @@ export async function validateConfiguration(): Promise<void> {
   }
 }
 
-async function validateDatabaseConnections(): Promise<void> {
-  const db = new UnifiedDatabaseLayer();
-  const isHealthy = await db.healthCheck();
+async function validateQdrantConnection(): Promise<void> {
+  const qdrant = new QdrantAdapter();
+  const isHealthy = await qdrant.healthCheck();
 
   if (!isHealthy) {
-    throw new Error('Database health check failed');
+    throw new Error('Qdrant health check failed');
   }
 }
 
@@ -649,12 +618,12 @@ export class RuntimeValidator {
   }
 
   private static async validateConnections(): Promise<void> {
-    // Check database connection health
-    const db = new UnifiedDatabaseLayer();
-    const healthy = await db.healthCheck();
+    // Check Qdrant connection health
+    const qdrant = new QdrantAdapter();
+    const healthy = await qdrant.healthCheck();
 
     if (!healthy) {
-      logger.warn('Database connection health check failed');
+      logger.warn('Qdrant connection health check failed');
     }
   }
 
@@ -683,32 +652,25 @@ services:
     build: .
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://cortex:${DB_PASSWORD}@postgres:5432/cortex_memory
       - QDRANT_URL=http://qdrant:6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DB_POOL_SIZE=20
       - ENABLE_CACHE=true
       - ENABLE_METRICS=true
       - API_KEY_ENABLED=true
+      # NO DATABASE_URL - QDRANT ONLY
     depends_on:
-      - postgres
       - qdrant
     restart: unless-stopped
-
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_DB=cortex_memory
-      - POSTGRES_USER=cortex
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
   qdrant:
     image: qdrant/qdrant:v1.7.0
     volumes:
       - qdrant_data:/qdrant/storage
+
+  # NO POSTGRESQL SERVICE - QDRANT ONLY
 ```
+
+⚠️ **IMPORTANT NOTICE**: This Docker configuration uses QDRANT ONLY. No PostgreSQL container is included or needed.
 
 ### Kubernetes Configuration
 
@@ -720,12 +682,12 @@ metadata:
   name: cortex-config
 data:
   NODE_ENV: "production"
-  DB_POOL_SIZE: "20"
   ENABLE_CACHE: "true"
   ENABLE_METRICS: "true"
   LOG_LEVEL: "info"
   SEARCH_LIMIT: "50"
   SIMILARITY_THRESHOLD: "0.7"
+  # NO DB_POOL_SIZE - QDRANT ONLY
 
 ---
 # k8s/secret.yaml
@@ -735,9 +697,9 @@ metadata:
   name: cortex-secrets
 type: Opaque
 data:
-  DATABASE_URL: <base64-encoded-url>
   OPENAI_API_KEY: <base64-encoded-key>
   QDRANT_API_KEY: <base64-encoded-key>
+  # NO DATABASE_URL - QDRANT ONLY
 ```
 
 This comprehensive configuration system ensures that the Cortex Memory MCP Server can be easily deployed and managed across different environments while maintaining security, performance, and reliability.
