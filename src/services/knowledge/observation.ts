@@ -140,7 +140,7 @@ export async function getObservations(
     whereClause.observation_type = observationTypeFilter;
   }
 
-  const result = return await db.find('knowledgeObservation', {
+  const result = await db.find('knowledgeObservation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {

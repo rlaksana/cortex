@@ -9,7 +9,7 @@ export async function storeRisk(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await qdrant.riskLog.create({
+  const result = await db.create('riskLog', {
     data: {
       title: data.title,
       category: data.category || 'general',
@@ -42,7 +42,7 @@ export async function findRisks(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const risks = return await db.find('riskLog', {
+  const risks = await db.find('riskLog', {
     where: {
       AND: [
         {
@@ -54,7 +54,7 @@ export async function findRisks(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope);
+            string_contains: JSON.stringify(scope)
           }
         } : {}
       ]
@@ -99,7 +99,7 @@ export async function updateRisk(
     throw new Error(`Risk with id ${id} not found`);
   }
 
-  const result = await db.update('riskLog', { id }, {
+  const result = await db.update('riskLog', { id: id }, {
       title: data.title ?? existing.title,
       category: data.category ?? existing.category,
       impact_description: data.description ?? data.impact ?? existing.impact_description,
@@ -112,13 +112,12 @@ export async function updateRisk(
       monitoring_indicators: existing.monitoring_indicators as any,
       contingency_plans: (data.contingency_plan ?? existing.contingency_plans) || undefined,
       tags: {
-        ...(existing.tags as any || {);,
+        ...(existing.tags as any || {}),
         ...scope,
         identified_date: data.identified_date ?? (existing.tags as any)?.identified_date,
         impact: data.impact ?? (existing.tags as any)?.impact
       }
-    }
-  });
+    });
 
   return result.id;
 }

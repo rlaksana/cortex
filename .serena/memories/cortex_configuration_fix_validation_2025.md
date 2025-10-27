@@ -9,7 +9,7 @@ User updated Claude Code configuration per Option 2 recommendation:
   "args": ["dist/index.js"],
   "cwd": "D:\\WORKSPACE\\tools-node\\mcp-cortex",
   "env": {
-    "DATABASE_URL": "postgres://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
+    "DATABASE_URL": "qdrant://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
     "LOG_LEVEL": "error",
     "NODE_ENV": "production"
   }

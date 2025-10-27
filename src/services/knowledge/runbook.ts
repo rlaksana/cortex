@@ -99,7 +99,7 @@ export async function findRunbooks(
     };
   }
 
-  const result = return await db.find('runbook', {
+  const result = await db.find('runbook', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,

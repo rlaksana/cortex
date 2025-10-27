@@ -1,0 +1,98 @@
+# ============================================================================
+# QDRANT PRODUCTION CONFIGURATION
+# ============================================================================
+# Optimized for Cortex Memory MCP vector search operations
+# Supports high-performance semantic search and embedding storage
+
+service:
+  # HTTP API configuration
+  http:
+    host: 0.0.0.0
+    port: 6333
+
+  # gRPC API configuration
+  grpc:
+    host: 0.0.0.0
+    port: 6334
+
+  # Performance settings
+  max_request_size_mb: 256
+  timeout: 300
+
+  # CORS configuration for web access
+  cors:
+    allow_origin: "*"
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: "*"
+    expose_headers: ["Content-Length"]
+    max_age: 3600
+
+  # Telemetry (disabled for production)
+  telemetry_disabled: true
+
+  # Service discovery
+  enable_tls: false
+
+storage:
+  # Storage path (will be overridden by volume mount)
+  storage_path: /qdrant/storage
+
+  # Performance optimization
+  performance:
+    # Search performance
+    max_search_threads: 4
+    max_indexing_threads: 4
+    search_pool_size: 8
+    indexing_pool_size: 4
+
+    # Memory management
+    segment_size_limit: 500MB
+    per_segment_memory_limit: 512MB
+
+    # Write-ahead log settings
+    wal_capacity_mb: 1024
+
+  # Snapshots configuration
+  snapshots:
+    path: /qdrant/snapshots
+    creation_interval_sec: 3600  # Every hour
+    retention_count: 24  # Keep 24 snapshots
+
+  # Collection settings
+  optimizers_config:
+    default_segment_number: 2
+    max_segment_size_mb: 500
+    memmap_threshold_kb: 1024
+    indexing_threshold: 20000
+    flush_interval_sec: 5
+    max_optimization_threads: 2
+
+logging:
+  level: INFO
+  format: json
+
+  # Log rotation
+  log_rotation:
+    max_file_size: 128MB
+    max_files: 10
+
+  # Specific component logging
+  components:
+    search: INFO
+    update: INFO
+    snapshot: INFO
+    collection_manager: INFO
+
+cluster:
+  # Disabled for single-node deployment
+  enabled: false
+
+# Security configuration
+auth:
+  # API key authentication (can be enabled for production)
+  api_key: ${QDRANT_API_KEY:-}
+
+# Memory optimization
+memory:
+  # Limit memory usage to prevent OOM
+  limit: 4GB

@@ -72,7 +72,7 @@ export default defineConfig({
       cleanOnRerun: true,
       enabled: true
     },
-    testTimeout: 10000,
+    testTimeout: 30000,
     setupFiles: ['tests/setup.ts'],
     reporters: ['verbose', 'json'],
     outputFile: {

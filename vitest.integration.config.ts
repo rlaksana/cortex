@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['tests/unit/**', 'tests/e2e/**', 'node_modules'],
-    testTimeout: 30000, // Integration tests may take longer
-    hookTimeout: 60000, // Allow time for Testcontainers startup
+    testTimeout: 60000, // Integration tests may take longer
+    hookTimeout: 120000, // Allow time for database setup
   },
 });

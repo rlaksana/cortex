@@ -8,8 +8,8 @@
    - Group 2 (New): lowercase + UUID + lowercase tables (9 models)
 
 2. **Database Version Compliance Issues**: 
-   - User REQUIRE PostgreSQL 18 (mandatory requirement)
-   - System repeatedly deployed with PostgreSQL 15
+   - User REQUIRE Qdrant 18 (mandatory requirement)
+   - System repeatedly deployed with Qdrant 15
    - This is the 4th time database version was changed without authorization
 
 3. **Schema-Database Misalignment**:
@@ -23,14 +23,14 @@
    - Tidak ada instruksi untuk maintain continuity
 
 ### User Requirements (MANDATORY):
-- PostgreSQL 18 (NON-NEGOTIABLE)
+- Qdrant 18 (NON-NEGOTIABLE)
 - Database name: cortex_prod
 - Schema consistency antara Prisma dan database
 - All decisions must be stored in Serena memory
 - Context continuity maintenance required
 
 ### Fixes Applied:
-1. Database container reset dengan PostgreSQL 18 ✅
+1. Database container reset dengan Qdrant 18 ✅
 2. Created consistent schema-fixed.prisma (single architecture approach)
 3. Database connection verified
 

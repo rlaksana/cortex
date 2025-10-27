@@ -152,7 +152,7 @@ export async function findIncidents(
     whereClause.resolution_status = criteria.status;
   }
 
-  const result = return await db.find('incidentLog', {
+  const result = await db.find('incidentLog', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     take: criteria.limit,
@@ -324,7 +324,7 @@ export async function findReleases(
     whereClause.status = criteria.status;
   }
 
-  const result = return await db.find('releaseLog', {
+  const result = await db.find('releaseLog', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     take: criteria.limit,
@@ -498,7 +498,7 @@ export async function findRisks(
     whereClause.status = criteria.status;
   }
 
-  const result = return await db.find('riskLog', {
+  const result = await db.find('riskLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,
@@ -670,7 +670,7 @@ export async function findAssumptions(
     whereClause.validation_status = criteria.status;
   }
 
-  const result = return await db.find('assumptionLog', {
+  const result = await db.find('assumptionLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,

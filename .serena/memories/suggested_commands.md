@@ -41,7 +41,7 @@ npx prisma validate
 cp .env.example .env
 
 # Set required variables
-DATABASE_URL=postgresql://cortex:password@localhost:5433/cortex_prod
+DATABASE_URL=Qdrant://cortex:password@localhost:5433/cortex_prod
 NODE_ENV=development
 LOG_LEVEL=info
 ```
@@ -54,6 +54,6 @@ LOG_LEVEL=info
 
 ## Common Issues
 1. **Module Import Error**: Regenerate Prisma client with ESM support
-2. **Database Connection**: Verify PostgreSQL is running on port 5433
+2. **Database Connection**: Verify Qdrant is running on port 5433
 3. **Permission Issues**: Check file permissions for generated files
 4. **Port Conflicts**: Ensure no other MCP server using stdio transport

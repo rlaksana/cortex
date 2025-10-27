@@ -31,7 +31,7 @@ export async function storeRelation(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Check for existing relation with same (from, to, relation_type) - unique constraint
-  const existing = const results = await db.find('knowledgeRelation', {
+  const existing = await db.find('knowledgeRelation', {
     where: {
       from_entity_type: data.from_entity_type,
       from_entity_id: data.from_entity_id,
@@ -133,7 +133,7 @@ export async function getOutgoingRelations(
     whereClause.relation_type = relation_typeFilter;
   }
 
-  const result = return await db.find('knowledgeRelation', {
+  const result = await db.find('knowledgeRelation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {
@@ -193,7 +193,7 @@ export async function getIncomingRelations(
     whereClause.relation_type = relation_typeFilter;
   }
 
-  const result = return await db.find('knowledgeRelation', {
+  const result = await db.find('knowledgeRelation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {
@@ -274,7 +274,7 @@ export async function relationExists(
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
-  const result = const results = await db.find('knowledgeRelation', {
+  const result = await db.find('knowledgeRelation', {
     where: {
       from_entity_type: fromType,
       from_entity_id: fromId,

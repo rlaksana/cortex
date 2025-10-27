@@ -9,24 +9,22 @@ export async function storeAssumption(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await qdrant.assumptionLog.create({
-    data: {
-      category: data.category || "general",
-      title: data.title,
-      description: data.description || '',
-      validation_status: data.validation_status || 'assumed',
-      impact_if_invalid: data.impact_if_invalid || 'unknown',
-      validation_criteria: data.validation_method ? [data.validation_method] : undefined,
-      validation_date: (data as any).validation_date || data.validation_date || null,
-      owner: (data as any).owner || data.owner || undefined,
-      related_assumptions: undefined,
-  monitoring_approach: data.validation_method || undefined as any,
-      review_frequency: (data as any).review_frequency || undefined as any,
-      tags: {
-        ...scope,
-        dependencies: data.dependencies ? JSON.stringify(data.dependencies) : undefined,
-        expiry_date: data.expiry_date
-      }
+  const result = await db.create('assumptionLog', {
+    category: data.category || "general",
+    title: data.title,
+    description: data.description || '',
+    validation_status: data.validation_status || 'assumed',
+    impact_if_invalid: data.impact_if_invalid || 'unknown',
+    validation_criteria: data.validation_method ? [data.validation_method] : undefined,
+    validation_date: (data as any).validation_date || data.validation_date || null,
+    owner: (data as any).owner || data.owner || undefined,
+    related_assumptions: undefined,
+    monitoring_approach: data.validation_method || undefined as any,
+    review_frequency: (data as any).review_frequency || undefined as any,
+    tags: {
+      ...scope,
+      dependencies: data.dependencies ? JSON.stringify(data.dependencies) : undefined,
+      expiry_date: data.expiry_date
     }
   });
 
@@ -42,7 +40,7 @@ export async function findAssumptions(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const assumptions = return await db.find('assumptionLog', {
+  const assumptions = await db.find('assumptionLog', {
     where: {
       AND: [
         {
@@ -55,7 +53,7 @@ export async function findAssumptions(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope);
+            string_contains: JSON.stringify(scope)
           }
         } : {}
       ]
@@ -90,32 +88,29 @@ export async function updateAssumption(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await qdrant.assumptionLog.findUnique({
-    where: { id }
-  });
+  const existing = await db.findUnique('assumptionLog', { id });
 
   if (!existing) {
     throw new Error(`Assumption with id ${id} not found`);
   }
 
   const result = await db.update('assumptionLog', { id }, {
-      title: data.title ?? existing.title,
-      category: data.category ?? existing.category,
-      description: data.description ?? existing.description,
-      validation_status: data.validation_status ?? existing.validation_status,
-      impact_if_invalid: data.impact_if_invalid ?? existing.impact_if_invalid,
-      validation_criteria: data.validation_method ? [data.validation_method] : existing.validation_criteria as any,
-      validation_date: (data as any).validation_date ?? data.validation_date ?? existing.validation_date,
-      owner: (data as any).owner ?? data.owner ?? existing.owner,
-      related_assumptions: existing.related_assumptions as any,
-      monitoring_approach: data.validation_method ?? existing.monitoring_approach,
-      review_frequency: (data as any).review_frequency ?? existing.review_frequency,
-      tags: {
-        ...(existing.tags as any || {);,
-        ...scope,
-        dependencies: data.dependencies ?? (existing.tags as any)?.dependencies,
-        expiry_date: data.expiry_date ?? (existing.tags as any)?.expiry_date
-      }
+    title: data.title ?? existing.title,
+    category: data.category ?? existing.category,
+    description: data.description ?? existing.description,
+    validation_status: data.validation_status ?? existing.validation_status,
+    impact_if_invalid: data.impact_if_invalid ?? existing.impact_if_invalid,
+    validation_criteria: data.validation_method ? [data.validation_method] : existing.validation_criteria as any,
+    validation_date: (data as any).validation_date ?? data.validation_date ?? existing.validation_date,
+    owner: (data as any).owner ?? data.owner ?? existing.owner,
+    related_assumptions: existing.related_assumptions as any,
+    monitoring_approach: data.validation_method ?? existing.monitoring_approach,
+    review_frequency: (data as any).review_frequency ?? existing.review_frequency,
+    tags: {
+      ...(existing.tags as any || {}),
+      ...scope,
+      dependencies: data.dependencies ?? (existing.tags as any)?.dependencies,
+      expiry_date: data.expiry_date ?? (existing.tags as any)?.expiry_date
     }
   });
 

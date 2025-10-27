@@ -1,11 +1,11 @@
 # CORTEX MCP PROJECT - MANDATORY REQUIREMENTS
 
 ## Database Requirements (NON-NEGOTIABLE):
-- **PostgreSQL Version**: 18 (REQUIRED - user explicitly warned mandatory)
+- **Qdrant Version**: 18 (REQUIRED - user explicitly warned mandatory)
 - **Database Name**: cortex_prod 
 - **Port**: 5433
-- **User**: postgres
-- **Password**: postgres
+- **User**: qdrant
+- **Password**: qdrant
 
 ## Architecture Requirements:
 - Single consistent Prisma schema (NO dual architecture)

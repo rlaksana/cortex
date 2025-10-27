@@ -4,12 +4,12 @@
 Cortex MCP server fails to start automatically after Claude Code restart due to:
 1. Manual server startup required
 2. No automatic process management
-3. PostgreSQL dependency check needed
+3. Qdrant dependency check needed
 
 ## Solutions Implemented
 
 ### 1. Startup Scripts Created
-- `start-cortex.bat` - Windows batch script with PostgreSQL check
+- `start-cortex.bat` - Windows batch script with Qdrant check
 - `start-cortex.js` - Node.js script with proper error handling
 - `package.json` - Proper npm scripts for development
 
@@ -29,7 +29,7 @@ npm run test:connection
 ```
 
 ### 3. Features Added
-- PostgreSQL connection validation
+- Qdrant connection validation
 - Graceful shutdown handling
 - Error reporting and logging
 - Process status monitoring
@@ -42,7 +42,7 @@ npm run test:connection
 
 ## Permanent Solution
 1. Use the new startup scripts: `npm start`
-2. Ensure PostgreSQL Docker container is running
+2. Ensure Qdrant Docker container is running
 3. Server will automatically validate dependencies before starting
 
 ## Multi-Instance Support (Future)

@@ -9,7 +9,7 @@ export async function storeRelease(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await qdrant.releaseLog.create({
+  const result = await db.create('releaseLog', {
     data: {
       version: data.version,
       scope: data.description || '',
@@ -44,7 +44,7 @@ export async function findReleases(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const releases = return await db.find('releaseLog', {
+  const releases = await db.find('releaseLog', {
     where: {
       AND: [
         {
@@ -56,7 +56,7 @@ export async function findReleases(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope);
+            string_contains: JSON.stringify(scope)
           }
         } : {}
       ]
@@ -92,7 +92,7 @@ export async function updateRelease(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await qdrant.releaseLog.findUnique({
+  const existing = await db.find('releaseLog', {
     where: { id }
   });
 
@@ -100,28 +100,12 @@ export async function updateRelease(
     throw new Error(`Release with id ${id} not found`);
   }
 
-  const result = await db.update('releaseLog', { id }, {
+  const result = await db.update('releaseLog', { id: id }, {
       version: data.version ?? existing.version,
       scope: data.description ?? existing.scope,
       status: data.status ?? existing.status,
-      release_type: 'minor', // Default release type
-      deployment_date: data.release_date ? new Date(data.release_date) : existing.deployment_date,
-      rollback_plan: data.rollback_plan ?? existing.rollback_plan,
-      ticket_references: (data as any).ticket_references ?? existing.ticket_references,
-      included_changes: data.features ? JSON.stringify(data.features) : existing.included_changes as any,
-      deployment_strategy: (data as any).deployment_strategy ?? existing.deployment_strategy as any,
-      testing_status: (data as any).testing_status ?? existing.testing_status as any,
-      approvers: (data as any).approvers ?? existing.approvers as any,
-      release_notes: data.release_notes ? JSON.stringify(data.release_notes) : existing.release_notes || undefined,
-      post_release_actions: data.bug_fixes ? JSON.stringify(data.bug_fixes) : existing.post_release_actions || undefined,
-      tags: {
-        ...(existing.tags as any || {);,
-        ...scope,
-        title: data.title ?? (existing.tags as any)?.title,
-        breaking_changes: data.breaking_changes ? JSON.stringify(data.breaking_changes) : (existing.tags as any)?.breaking_changes
-      }
-    }
-  });
+      release_type: 'minor'
+    });
 
   return result.id;
 }

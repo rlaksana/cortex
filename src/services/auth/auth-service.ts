@@ -40,17 +40,41 @@ export interface AuthServiceConfig {
   session_timeout_hours: number;
   max_sessions_per_user: number;
   rate_limit_enabled: boolean;
+  token_blacklist_backup_path?: string; // Optional backup path for token blacklist
+}
+
+interface SecurityEvent {
+  type: string;
+  jti?: string;
+  userId?: string;
+  timestamp: Date;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  metadata?: Record<string, any>;
 }
 
 export class AuthService {
   private config: AuthServiceConfig;
   private tokenBlacklist: Set<string> = new Set(); // In-memory cache for performance
+  private tokenBlacklistCache: Map<string, { revoked: boolean; timestamp: number }> = new Map(); // Enhanced cache with metadata
   private activeSessions: Map<string, AuthSession> = new Map();
+  private databaseCircuitBreaker: { isOpen: boolean; failureCount: number; lastFailureTime: number; recoveryTimeout: number } = {
+    isOpen: false,
+    failureCount: 0,
+    lastFailureTime: 0,
+    recoveryTimeout: 60000 // 1 minute recovery timeout
+  };
+  private distributedSync: { lastSyncTime: number; syncInterval: number; instanceId: string } = {
+    lastSyncTime: 0,
+    syncInterval: 30000, // 30 seconds
+    instanceId: crypto.randomUUID()
+  };
 
   constructor(config: AuthServiceConfig) {
     this.config = config;
     this.validateConfig();
+    this.loadTokenBlacklistFromBackup();
     this.startSessionCleanup();
+    this.startDistributedSync();
   }
 
   private validateConfig(): void {
@@ -225,30 +249,28 @@ export class AuthService {
         audience: 'cortex-client'
       }) as TokenPayload;
 
-      // First check in-memory cache for performance
-      if (this.tokenBlacklist.has(decoded.jti)) {
-        throw new Error('Token has been revoked');
-      }
+      // Multi-layered token revocation check with fail-safe defaults
+      const isRevoked = await this.checkTokenRevocationWithFailSafe(decoded.jti);
 
-      // Then check database for distributed consistency
-      try {
-        const revokedToken = await qdrant.getClient().tokenRevocationList.findFirst({
-          where: {
-            jti: decoded.jti,
-            expires_at: {
-              gt: new Date()
-            }
-          }
-        });
+      if (isRevoked) {
+        // Audit log for security monitoring
+        logger.warn({
+          jti: decoded.jti,
+          userId: decoded.sub,
+          username: decoded.username,
+          reason: 'token_revoked'
+        }, 'Access denied: Token has been revoked');
 
-        if (revokedToken) {
-          // Add to in-memory cache for future checks
-          this.tokenBlacklist.add(decoded.jti);
-          throw new Error('Token has been revoked');
-        }
-      } catch (dbError) {
-        logger.warn({ jti: decoded.jti, error: dbError }, 'Failed to check token revocation status in database');
-        // If database check fails, proceed cautiously but log the issue
+        // Store security event
+        await this.storeSecurityEvent({
+          type: 'revoked_token_access_attempt',
+          jti: decoded.jti,
+          userId: decoded.sub,
+          timestamp: new Date(),
+          severity: 'high'
+        }).catch(err => logger.error({ err }, 'Failed to store security event'));
+
+        throw new Error('TOKEN_REVOKED');
       }
 
       return decoded;
@@ -257,9 +279,155 @@ export class AuthService {
         throw new Error('EXPIRED_TOKEN');
       } else if (error instanceof jwt.JsonWebTokenError) {
         throw new Error('INVALID_TOKEN');
-      } else {
+      } else if (error instanceof Error && error.message === 'TOKEN_REVOKED') {
         throw error;
+      } else {
+        // Log unexpected errors for security monitoring
+        logger.error({
+          error: error.message,
+          stack: error.stack,
+          context: 'token_verification'
+        }, 'Unexpected error during token verification');
+        throw new Error('TOKEN_VERIFICATION_FAILED');
       }
+    }
+  }
+
+  /**
+   * Fail-safe token revocation check with multiple persistence layers
+   * Defaults to SECURE behavior (returns true for revoked) when any layer is unavailable
+   */
+  private async checkTokenRevocationWithFailSafe(jti: string): Promise<boolean> {
+    const now = Date.now();
+
+    // Layer 1: Enhanced in-memory cache with metadata
+    const cached = this.tokenBlacklistCache.get(jti);
+    if (cached) {
+      // Cache entry is valid for 5 minutes
+      if (now - cached.timestamp < 5 * 60 * 1000) {
+        return cached.revoked;
+      } else {
+        // Expired cache entry, remove it
+        this.tokenBlacklistCache.delete(jti);
+        this.tokenBlacklist.delete(jti);
+      }
+    }
+
+    // Layer 2: Check circuit breaker status
+    if (this.databaseCircuitBreaker.isOpen) {
+      if (now - this.databaseCircuitBreaker.lastFailureTime > this.databaseCircuitBreaker.recoveryTimeout) {
+        // Attempt to close circuit breaker
+        this.databaseCircuitBreaker.isOpen = false;
+        this.databaseCircuitBreaker.failureCount = 0;
+        logger.info('Database circuit breaker attempting recovery');
+      } else {
+        // Circuit breaker is still open - default to secure behavior
+        logger.warn({ jti }, 'Database circuit breaker open - defaulting to secure token verification');
+
+        // Store temporary revocation entry
+        this.tokenBlacklistCache.set(jti, {
+          revoked: true,
+          timestamp: now
+        });
+        this.tokenBlacklist.add(jti);
+
+        return true;
+      }
+    }
+
+    // Layer 3: Database check with exponential backoff retry
+    try {
+      const isRevoked = await this.checkDatabaseTokenRevocationWithRetry(jti);
+
+      // Cache the result
+      this.tokenBlacklistCache.set(jti, {
+        revoked: isRevoked,
+        timestamp: now
+      });
+
+      if (isRevoked) {
+        this.tokenBlacklist.add(jti);
+      }
+
+      // Reset circuit breaker on success
+      this.databaseCircuitBreaker.failureCount = 0;
+
+      return isRevoked;
+
+    } catch (dbError) {
+      // Handle database failure with fail-safe default
+      this.handleDatabaseFailure(dbError);
+
+      logger.error({
+        jti,
+        error: dbError.message,
+        circuitBreakerOpen: this.databaseCircuitBreaker.isOpen
+      }, 'Database token revocation check failed - applying fail-safe security');
+
+      // FAIL-SAFE: When database is unavailable, assume token might be revoked
+      // This is the critical security fix - default to secure behavior
+      this.tokenBlacklistCache.set(jti, {
+        revoked: true,
+        timestamp: now
+      });
+      this.tokenBlacklist.add(jti);
+
+      return true;
+    }
+  }
+
+  /**
+   * Database token revocation check with exponential backoff retry
+   */
+  private async checkDatabaseTokenRevocationWithRetry(jti: string, attempt: number = 1): Promise<boolean> {
+    const maxAttempts = 3;
+    const baseDelay = 100; // 100ms base delay
+
+    try {
+      const revokedToken = await qdrant.getClient().tokenRevocationList.findFirst({
+        where: {
+          jti: jti,
+          expires_at: {
+            gt: new Date()
+          }
+        }
+      });
+
+      return !!revokedToken;
+
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+        logger.warn({
+          jti,
+          attempt,
+          maxAttempts,
+          delay,
+          error: error.message
+        }, 'Database token revocation check failed, retrying...');
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.checkDatabaseTokenRevocationWithRetry(jti, attempt + 1);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Handle database failures and manage circuit breaker state
+   */
+  private handleDatabaseFailure(error: Error): void {
+    this.databaseCircuitBreaker.failureCount++;
+    this.databaseCircuitBreaker.lastFailureTime = Date.now();
+
+    // Open circuit breaker after 3 consecutive failures
+    if (this.databaseCircuitBreaker.failureCount >= 3) {
+      this.databaseCircuitBreaker.isOpen = true;
+      logger.error({
+        failureCount: this.databaseCircuitBreaker.failureCount,
+        error: error.message
+      }, 'Database circuit breaker opened due to consecutive failures');
     }
   }
 
@@ -280,23 +448,232 @@ export class AuthService {
     }
   }
 
-  async revokeToken(jti: string): Promise<void> {
-    // Add to in-memory cache for immediate effect
-    this.tokenBlacklist.add(jti);
+  async revokeToken(jti: string, reason?: string): Promise<void> {
+    const now = Date.now();
 
-    // Persist to database for distributed consistency
+    // Layer 1: Add to in-memory cache for immediate effect
+    this.tokenBlacklist.add(jti);
+    this.tokenBlacklistCache.set(jti, {
+      revoked: true,
+      timestamp: now
+    });
+
+    // Layer 2: Persist to backup storage
+    await this.persistTokenRevocationToBackup(jti, now);
+
+    // Layer 3: Persist to database for distributed consistency with retry logic
+    let databasePersisted = false;
+    try {
+      databasePersisted = await this.persistTokenRevocationToDatabaseWithRetry(jti, reason);
+    } catch (error) {
+      logger.error({ jti, error }, 'Failed to persist token revocation to database after retries');
+    }
+
+    // Log comprehensive audit trail
+    logger.info({
+      jti,
+      reason,
+      databasePersisted,
+      timestamp: new Date(now).toISOString()
+    }, 'Token revoked with multi-layer persistence');
+
+    // Store security event for monitoring
+    await this.storeSecurityEvent({
+      type: 'token_revoked',
+      jti,
+      timestamp: new Date(now),
+      severity: reason?.includes('security') ? 'high' : 'medium',
+      metadata: {
+        reason,
+        databasePersisted,
+        layers: ['memory', 'backup', databasePersisted ? 'database' : 'database_failed']
+      }
+    }).catch(err => logger.error({ err }, 'Failed to store token revocation security event'));
+  }
+
+  /**
+   * Persist token revocation to database with exponential backoff retry
+   */
+  private async persistTokenRevocationToDatabaseWithRetry(jti: string, reason?: string, attempt: number = 1): Promise<boolean> {
+    const maxAttempts = 3;
+    const baseDelay = 200; // 200ms base delay
+
     try {
       await qdrant.getClient().tokenRevocationList.create({
         data: {
           jti,
           revoked_at: new Date(),
-          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          reason: reason || 'manual_revocation'
         }
       });
-      logger.info({ jti }, 'Token revoked and persisted to database');
+
+      return true;
+
     } catch (error) {
-      logger.error({ jti, error }, 'Failed to persist token revocation to database');
-      // Still consider it revoked due to in-memory cache
+      if (attempt < maxAttempts) {
+        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+        logger.warn({
+          jti,
+          attempt,
+          maxAttempts,
+          delay,
+          error: error.message
+        }, 'Database token revocation persistence failed, retrying...');
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.persistTokenRevocationToDatabaseWithRetry(jti, reason, attempt + 1);
+      }
+
+      logger.error({
+        jti,
+        error: error.message,
+        finalAttempt: attempt
+      }, 'Failed to persist token revocation to database after all retries');
+
+      throw error;
+    }
+  }
+
+  /**
+   * Persist token revocation to backup storage (filesystem)
+   */
+  private async persistTokenRevocationToBackup(jti: string, timestamp: number): Promise<void> {
+    if (!this.config.token_blacklist_backup_path) {
+      return; // Skip if no backup path configured
+    }
+
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+
+      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+
+      // Ensure directory exists
+      await fs.mkdir(path.dirname(backupFile), { recursive: true });
+
+      // Read existing backup
+      let backup: Record<string, number> = {};
+      try {
+        const data = await fs.readFile(backupFile, 'utf-8');
+        backup = JSON.parse(data);
+      } catch (error) {
+        // File doesn't exist or is invalid, start fresh
+        backup = {};
+      }
+
+      // Add revocation entry
+      backup[jti] = timestamp;
+
+      // Write backup atomically
+      const tempFile = backupFile + '.tmp';
+      await fs.writeFile(tempFile, JSON.stringify(backup, null, 2));
+      await fs.rename(tempFile, backupFile);
+
+      logger.debug({ jti, backupFile }, 'Token revocation persisted to backup storage');
+
+    } catch (error) {
+      logger.error({
+        jti,
+        error: error.message,
+        backupPath: this.config.token_blacklist_backup_path
+      }, 'Failed to persist token revocation to backup storage');
+    }
+  }
+
+  /**
+   * Load token blacklist from backup storage on startup
+   */
+  private async loadTokenBlacklistFromBackup(): Promise<void> {
+    if (!this.config.token_blacklist_backup_path) {
+      return; // Skip if no backup path configured
+    }
+
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+
+      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+
+      const data = await fs.readFile(backupFile, 'utf-8');
+      const backup: Record<string, number> = JSON.parse(data);
+
+      const now = Date.now();
+      const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+      let loadedCount = 0;
+      let expiredCount = 0;
+
+      for (const [jti, timestamp] of Object.entries(backup)) {
+        if (now - timestamp < expiryMs) {
+          this.tokenBlacklist.add(jti);
+          this.tokenBlacklistCache.set(jti, {
+            revoked: true,
+            timestamp
+          });
+          loadedCount++;
+        } else {
+          expiredCount++;
+        }
+      }
+
+      logger.info({
+        backupFile,
+        loadedCount,
+        expiredCount,
+        totalEntries: Object.keys(backup).length
+      }, 'Token blacklist loaded from backup storage');
+
+    } catch (error) {
+      logger.info({
+        error: error.message,
+        backupPath: this.config.token_blacklist_backup_path
+      }, 'No backup token blacklist found or failed to load, starting fresh');
+    }
+  }
+
+  /**
+   * Store security event for audit and monitoring
+   */
+  private async storeSecurityEvent(event: SecurityEvent): Promise<void> {
+    try {
+      // Store in database if available
+      await qdrant.getClient().securityEvent.create({
+        data: {
+          type: event.type,
+          jti: event.jti,
+          user_id: event.userId,
+          timestamp: event.timestamp,
+          severity: event.severity,
+          metadata: event.metadata || {}
+        }
+      });
+
+    } catch (error) {
+      // If database storage fails, log to file as fallback
+      logger.warn({
+        event,
+        error: error.message
+      }, 'Failed to store security event in database, logging to file');
+
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+
+        const logFile = path.join(
+          this.config.token_blacklist_backup_path || process.cwd(),
+          'security-events.log'
+        );
+
+        const logEntry = {
+          timestamp: event.timestamp.toISOString(),
+          ...event
+        };
+
+        await fs.appendFile(logFile, JSON.stringify(logEntry) + '\n');
+
+      } catch (fileError) {
+        logger.error({ fileError }, 'Failed to write security event to file');
+      }
     }
   }
 
@@ -374,34 +751,144 @@ export class AuthService {
 
   private startSessionCleanup(): void {
     setInterval(async () => {
-      const now = new Date();
+      const now = Date.now();
+      const nowDate = new Date(now);
 
       // Clean up expired sessions
       for (const [sessionId, session] of this.activeSessions) {
-        if (now > new Date(session.expires_at)) {
+        if (nowDate > new Date(session.expires_at)) {
           this.activeSessions.delete(sessionId);
         }
       }
 
+      // Clean up expired token revocations from enhanced cache
+      const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+      let cacheCleanupCount = 0;
+
+      for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
+        if (now - entry.timestamp > expiryMs) {
+          this.tokenBlacklistCache.delete(jti);
+          this.tokenBlacklist.delete(jti);
+          cacheCleanupCount++;
+        }
+      }
+
+      if (cacheCleanupCount > 0) {
+        logger.debug({ cacheCleanupCount }, 'Cleaned up expired entries from token blacklist cache');
+      }
+
       // Clean up expired token revocations from database
       try {
-        await qdrant.getClient().tokenRevocationList.deleteMany({
+        const result = await qdrant.getClient().tokenRevocationList.deleteMany({
           where: {
             expires_at: {
-              lt: now
+              lt: nowDate
             }
           }
         });
+
+        if (result.count > 0) {
+          logger.info({ deletedCount: result.count }, 'Cleaned up expired token revocations from database');
+        }
+
       } catch (error) {
         logger.error({ error }, 'Failed to cleanup expired token revocations from database');
       }
 
-      // Clean up in-memory cache periodically (prevent memory leaks)
-      if (this.tokenBlacklist.size > 10000) {
-        this.tokenBlacklist.clear();
-        logger.info('Cleared in-memory token blacklist cache (size limit reached)');
+      // Clean up backup storage
+      await this.cleanupBackupStorage(now);
+
+      // Aggressive cache cleanup if memory usage is high
+      if (this.tokenBlacklistCache.size > 10000) {
+        // Keep only recent entries (last 1 hour)
+        const oneHourMs = 60 * 60 * 1000;
+        const beforeCount = this.tokenBlacklistCache.size;
+
+        for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
+          if (now - entry.timestamp > oneHourMs) {
+            this.tokenBlacklistCache.delete(jti);
+            this.tokenBlacklist.delete(jti);
+          }
+        }
+
+        const afterCount = this.tokenBlacklistCache.size;
+        logger.info({
+          beforeCount,
+          afterCount,
+          clearedCount: beforeCount - afterCount
+        }, 'Performed aggressive token blacklist cache cleanup');
       }
+
+      // Circuit breaker recovery attempt
+      if (this.databaseCircuitBreaker.isOpen &&
+          now - this.databaseCircuitBreaker.lastFailureTime > this.databaseCircuitBreaker.recoveryTimeout) {
+
+        // Test database connection
+        try {
+          await qdrant.getClient().tokenRevocationList.findFirst({
+            where: { jti: 'circuit-breaker-test' }
+          });
+
+          this.databaseCircuitBreaker.isOpen = false;
+          this.databaseCircuitBreaker.failureCount = 0;
+          logger.info('Database circuit breaker recovered - connection restored');
+
+        } catch (error) {
+          this.databaseCircuitBreaker.lastFailureTime = now;
+          logger.debug({ error: error.message }, 'Database circuit breaker test failed, keeping open');
+        }
+      }
+
     }, 5 * 60 * 1000); // Clean up every 5 minutes
+  }
+
+  /**
+   * Clean up expired entries from backup storage
+   */
+  private async cleanupBackupStorage(now: number): Promise<void> {
+    if (!this.config.token_blacklist_backup_path) {
+      return;
+    }
+
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+
+      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+
+      try {
+        const data = await fs.readFile(backupFile, 'utf-8');
+        const backup: Record<string, number> = JSON.parse(data);
+
+        const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const cleanedBackup: Record<string, number> = {};
+        let removedCount = 0;
+
+        for (const [jti, timestamp] of Object.entries(backup)) {
+          if (now - timestamp < expiryMs) {
+            cleanedBackup[jti] = timestamp;
+          } else {
+            removedCount++;
+          }
+        }
+
+        if (removedCount > 0) {
+          // Write cleaned backup atomically
+          const tempFile = backupFile + '.tmp';
+          await fs.writeFile(tempFile, JSON.stringify(cleanedBackup, null, 2));
+          await fs.rename(tempFile, backupFile);
+
+          logger.debug({ removedCount, backupFile }, 'Cleaned up expired entries from backup storage');
+        }
+
+      } catch (error) {
+        // Backup file doesn't exist or is invalid
+        logger.debug({ error: error.message }, 'Backup file cleanup skipped - file not accessible');
+      }
+
+    } catch (error) {
+      logger.error({ error }, 'Failed to cleanup backup storage');
+    }
   }
 
   // API Key operations
@@ -818,6 +1305,124 @@ export class AuthService {
     return true;
   }
 
+  /**
+   * Start distributed synchronization for multi-instance deployments
+   */
+  private startDistributedSync(): void {
+    // Sync every 30 seconds to ensure consistency across instances
+    setInterval(async () => {
+      await this.performDistributedSync();
+    }, this.distributedSync.syncInterval);
+  }
+
+  /**
+   * Perform distributed synchronization with other instances
+   */
+  private async performDistributedSync(): Promise<void> {
+    const now = Date.now();
+
+    // Skip if circuit breaker is open
+    if (this.databaseCircuitBreaker.isOpen) {
+      return;
+    }
+
+    try {
+      // Get recent token revocations from database (last 5 minutes)
+      const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
+
+      const recentRevocations = await qdrant.getClient().tokenRevocationList.findMany({
+        where: {
+          revoked_at: {
+            gt: fiveMinutesAgo
+          }
+        },
+        select: {
+          jti: true,
+          revoked_at: true
+        },
+        orderBy: {
+          revoked_at: 'desc'
+        }
+      });
+
+      let syncCount = 0;
+
+      for (const revocation of recentRevocations) {
+        const revocationTime = revocation.revoked_at.getTime();
+
+        // Only add if not already cached or if our cache is older
+        const cached = this.tokenBlacklistCache.get(revocation.jti);
+        if (!cached || cached.timestamp < revocationTime) {
+          this.tokenBlacklist.add(revocation.jti);
+          this.tokenBlacklistCache.set(revocation.jti, {
+            revoked: true,
+            timestamp: revocationTime
+          });
+          syncCount++;
+        }
+      }
+
+      this.distributedSync.lastSyncTime = now;
+
+      if (syncCount > 0) {
+        logger.info({
+          instanceId: this.distributedSync.instanceId,
+          syncCount,
+          totalRevocations: recentRevocations.length
+        }, 'Distributed token blacklist sync completed');
+      }
+
+      // Update instance heartbeat
+      await this.updateInstanceHeartbeat();
+
+    } catch (error) {
+      logger.error({
+        instanceId: this.distributedSync.instanceId,
+        error: error.message
+      }, 'Distributed sync failed');
+
+      // Don't treat this as a database circuit breaker issue
+      // Sync failures shouldn't affect normal token verification
+    }
+  }
+
+  /**
+   * Update instance heartbeat for distributed coordination
+   */
+  private async updateInstanceHeartbeat(): Promise<void> {
+    try {
+      await qdrant.getClient().authInstance.upsert({
+        where: { instance_id: this.distributedSync.instanceId },
+        update: {
+          last_heartbeat: new Date(),
+          token_blacklist_size: this.tokenBlacklist.size,
+          circuit_breaker_open: this.databaseCircuitBreaker.isOpen
+        },
+        create: {
+          instance_id: this.distributedSync.instanceId,
+          last_heartbeat: new Date(),
+          token_blacklist_size: this.tokenBlacklist.size,
+          circuit_breaker_open: this.databaseCircuitBreaker.isOpen,
+          created_at: new Date()
+        }
+      });
+
+    } catch (error) {
+      logger.debug({
+        instanceId: this.distributedSync.instanceId,
+        error: error.message
+      }, 'Failed to update instance heartbeat');
+    }
+  }
+
+  /**
+   * Force immediate distributed sync (useful for testing or manual triggers)
+   */
+  async forceDistributedSync(): Promise<void> {
+    logger.info({ instanceId: this.distributedSync.instanceId }, 'Forcing immediate distributed sync');
+    await this.performDistributedSync();
+  }
+
   // Health check
   getHealthStatus(): { status: 'healthy' | 'degraded'; details: any } {
     const now = Date.now();
@@ -828,11 +1433,20 @@ export class AuthService {
       active_sessions: this.activeSessions.size,
       expired_sessions: expiredSessions,
       blacklisted_tokens: this.tokenBlacklist.size,
-      rate_limit_entries: this.rateLimitMap.size
+      enhanced_cache_size: this.tokenBlacklistCache.size,
+      rate_limit_entries: this.rateLimitMap.size,
+      circuit_breaker_open: this.databaseCircuitBreaker.isOpen,
+      database_failures: this.databaseCircuitBreaker.failureCount,
+      instance_id: this.distributedSync.instanceId,
+      last_distributed_sync: this.distributedSync.lastSyncTime ? new Date(this.distributedSync.lastSyncTime).toISOString() : 'never'
     };
 
+    const isDegraded = expiredSessions > 100 ||
+                      this.databaseCircuitBreaker.isOpen ||
+                      (now - this.distributedSync.lastSyncTime > 5 * 60 * 1000); // No sync for 5 minutes
+
     return {
-      status: expiredSessions > 100 ? 'degraded' : 'healthy',
+      status: isDegraded ? 'degraded' : 'healthy',
       details
     };
   }

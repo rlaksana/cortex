@@ -1,0 +1,668 @@
+# ============================================================================
+# CORTEX MEMORY MCP - CI/CD PIPELINE FOR DUAL DATABASE SUPPORT
+# ============================================================================
+# Supports PostgreSQL 18 + Qdrant vector database with comprehensive testing
+# and deployment automation across environments
+
+name: CI/CD Pipeline - Dual Database Support
+
+on:
+  push:
+    branches: [main, develop, release/*]
+    tags: ['v*']
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKER_PLATFORM: linux/amd64,linux/arm64
+  NODE_VERSION: '20'
+  POSTGRES_VERSION: '18'
+  QDRANT_VERSION: 'v1.13.2'
+
+jobs:
+  # Code Quality and Security Checks
+  quality-checks:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    outputs:
+      should-deploy: ${{ steps.check.outputs.should-deploy }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Type checking
+      run: npm run type-check
+
+    - name: Linting
+      run: npm run lint:quiet
+
+    - name: Security audit
+      run: npm audit --audit-level high
+
+    - name: Check code formatting
+      run: npx prettier --check src/**/*.ts
+
+    - name: Dependency vulnerability scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Determine deployment
+      id: check
+      run: |
+        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "environment=production" >> $GITHUB_OUTPUT
+        elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/develop" ]]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        else
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+          echo "environment=none" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Extract version
+      id: version
+      run: |
+        if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          VERSION="${{ github.ref_name }}"
+        else
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          VERSION="${VERSION}-${COMMIT_SHA}"
+        fi
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    strategy:
+      matrix:
+        node-version: [18, 20, 21]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run unit tests with coverage
+      run: npm run test:coverage:ci
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        flags: unit-tests
+        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Integration Tests - PostgreSQL
+  integration-tests-postgres:
+    name: Integration Tests - PostgreSQL 18
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U test_user; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+    - name: Run database migrations
+      run: npm run db:migrate
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        QDRANT_HOST: localhost
+        QDRANT_PORT: 6333
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: postgres-integration-test-results
+        path: test-results/
+
+  # Integration Tests - Qdrant
+  integration-tests-qdrant:
+    name: Integration Tests - Qdrant Vector DB
+    runs-on: ubuntu-latest
+    needs: quality-checks
+    services:
+      qdrant:
+        image: qdrant/qdrant:${{ env.QDRANT_VERSION }}
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+          QDRANT__SERVICE__GRPC_PORT: 6334
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+          - 6334:6334
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Wait for Qdrant
+      run: |
+        until curl -f http://localhost:6333/health; do
+          echo "Waiting for Qdrant..."
+          sleep 2
+        done
+
+    - name: Create test collection
+      run: |
+        curl -X PUT "http://localhost:6333/collections/test-collection" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "vectors": {
+              "size": 1536,
+              "distance": "Cosine"
+            }
+          }'
+
+    - name: Run Qdrant integration tests
+      run: npm run test:integration:qdrant
+      env:
+        QDRANT_HOST: localhost
+        QDRANT_PORT: 6333
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: qdrant-integration-test-results
+        path: test-results/
+
+  # Dual Database Integration Tests
+  integration-tests-dual-db:
+    name: Integration Tests - Dual Database
+    runs-on: ubuntu-latest
+    needs: [quality-checks, integration-tests-postgres, integration-tests-qdrant]
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      qdrant:
+        image: qdrant/qdrant:${{ env.QDRANT_VERSION }}
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+          QDRANT__SERVICE__GRPC_PORT: 6334
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Wait for services
+      run: |
+        echo "Waiting for PostgreSQL..."
+        until pg_isready -h localhost -p 5432 -U test_user; do
+          sleep 2
+        done
+
+        echo "Waiting for Qdrant..."
+        until curl -f http://localhost:6333/health; do
+          sleep 2
+        done
+
+    - name: Setup test data
+      run: |
+        npm run db:migrate
+        curl -X PUT "http://localhost:6333/collections/test-collection" \
+          -H "Content-Type: application/json" \
+          -d '{"vectors": {"size": 1536, "distance": "Cosine"}}'
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+
+    - name: Run dual database tests
+      run: npm run test:integration:dual-db
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        QDRANT_HOST: localhost
+        QDRANT_PORT: 6333
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dual-db-integration-test-results
+        path: test-results/
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [quality-checks, integration-tests-dual-db]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      qdrant:
+        image: qdrant/qdrant:${{ env.QDRANT_VERSION }}
+        env:
+          QDRANT__SERVICE__HTTP_PORT: 6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6333:6333
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run performance tests
+      run: npm run test:performance:all
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        QDRANT_HOST: localhost
+        QDRANT_PORT: 6333
+
+    - name: Upload performance reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-test-results
+        path: performance-results/
+
+  # Build Docker Images
+  build-images:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [quality-checks, unit-tests, integration-tests-dual-db]
+    if: needs.quality-checks.outputs.should-deploy == 'true'
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: ${{ env.DOCKER_PLATFORM }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          NODE_VERSION=${{ env.NODE_VERSION }}
+          POSTGRES_VERSION=${{ env.POSTGRES_VERSION }}
+          QDRANT_VERSION=${{ env.QDRANT_VERSION }}
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom
+        path: sbom.spdx.json
+
+  # Security Scanning - Container
+  security-scan-container:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: needs.quality-checks.outputs.should-deploy == 'true'
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs.build-images.outputs.image-tag }}
+        format: 'sarif'
+        output: 'trivy-container-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-container-results.sarif'
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-images, security-scan-container]
+    if: needs.quality-checks.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.cortex-mcp.example.com
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Create namespace if it doesn't exist
+        kubectl apply -f k8s/namespace.yaml
+
+        # Deploy databases first
+        kubectl apply -f k8s/postgres.yaml -n cortex-mcp
+        kubectl apply -f k8s/qdrant.yaml -n cortex-mcp
+
+        # Wait for databases to be ready
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgres -n cortex-mcp --timeout=300s
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=qdrant -n cortex-mcp --timeout=300s
+
+        # Deploy application
+        kubectl apply -f k8s/cortex-app.yaml -n cortex-mcp
+
+        # Wait for deployment
+        kubectl rollout status deployment/cortex-app -n cortex-mcp --timeout=600s
+
+    - name: Run smoke tests
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Get application URL
+        APP_URL=$(kubectl get service cortex-app -n cortex-mcp -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+        # Run smoke tests
+        curl -f "http://$APP_URL/health" || exit 1
+        curl -f "http://$APP_URL/ready" || exit 1
+
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-images, security-scan-container, deploy-staging]
+    if: needs.quality-checks.outputs.environment == 'production'
+    environment:
+      name: production
+      url: https://cortex-mcp.example.com
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'v1.28.0'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Create backup before deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Backup PostgreSQL
+        kubectl exec -n cortex-mcp deployment/postgres -- pg_dump -U cortex cortex_prod > postgres-backup-$(date +%Y%m%d-%H%M%S).sql
+
+        # Backup Qdrant collections
+        kubectl exec -n cortex-mcp deployment/qdrant -- curl -X GET "http://localhost:6333/snapshots" || true
+
+    - name: Deploy to Kubernetes (Blue-Green)
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Apply configuration
+        kubectl apply -f k8s/namespace.yaml
+
+        # Deploy databases (if not already running)
+        kubectl apply -f k8s/postgres.yaml -n cortex-mcp
+        kubectl apply -f k8s/qdrant.yaml -n cortex-mcp
+
+        # Wait for databases
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=postgres -n cortex-mcp --timeout=300s
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=qdrant -n cortex-mcp --timeout=300s
+
+        # Deploy application with blue-green strategy
+        kubectl apply -f k8s/cortex-app.yaml -n cortex-mcp
+
+        # Wait for new deployment
+        kubectl rollout status deployment/cortex-app -n cortex-mcp --timeout=600s
+
+    - name: Run production health checks
+      run: |
+        export KUBECONFIG=kubeconfig
+
+        # Get application URL
+        APP_URL=$(kubectl get service cortex-app -n cortex-mcp -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+        # Comprehensive health checks
+        for i in {1..30}; do
+          if curl -f "http://$APP_URL/health"; then
+            echo "Health check passed"
+            break
+          fi
+          echo "Health check failed, retrying in 10s..."
+          sleep 10
+        done
+
+        # Database health checks
+        kubectl exec -n cortex-mcp deployment/postgres -- pg_isready -U cortex
+        kubectl exec -n cortex-mcp deployment/qdrant -- curl -f "http://localhost:6333/health"
+
+    - name: Create deployment tag
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: `refs/tags/deploy-${{ needs.quality-checks.outputs.version }}`,
+            sha: context.sha
+          })
+
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      if: always()
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+  # Post-Deployment Tests
+  post-deployment-tests:
+    name: Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --frozen-lockfile
+
+    - name: Run E2E tests
+      run: npm run test:e2e
+      env:
+        TEST_ENVIRONMENT: ${{ needs.quality-checks.outputs.environment }}
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: test-results/

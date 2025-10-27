@@ -10,7 +10,7 @@ Berdasarkan comprehensive testing:
 - **Environment loading**: Success dengan konfigurasi lengkap
 - **Database connection**: `✅ DB connection OK` 
 - **Resource rules**: 14 access rules berhasil di-load
-- **PostgreSQL container**: Running di port 5433
+- **Qdrant container**: Running di port 5433
 - **Startup script**: Berjalan tanpa error
 
 ### 2. "Failure" Explanation: Expected Behavior
@@ -35,7 +35,7 @@ MCP configuration memerlukan explicit working directory specification:
   "args": ["start-cortex.js"],
   "cwd": "D:\\WORKSPACE\\tools-node\\mcp-cortex",
   "env": {
-    "DATABASE_URL": "postgres://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
+    "DATABASE_URL": "qdrant://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
     "LOG_LEVEL": "info",
     "DB_HOST": "localhost",
     "DB_PORT": "5433",
@@ -75,7 +75,7 @@ npx @modelcontextprotocol/inspector --cli node "D:\\WORKSPACE\\tools-node\\mcp-c
       "args": ["start-cortex.js"],
       "cwd": "D:\\WORKSPACE\\tools-node\\mcp-cortex",
       "env": {
-        "DATABASE_URL": "postgres://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
+        "DATABASE_URL": "qdrant://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod",
         "LOG_LEVEL": "debug",
         "NODE_ENV": "development"
       }
@@ -103,7 +103,7 @@ npx @modelcontextprotocol/inspector node "D:\\WORKSPACE\\tools-node\\mcp-cortex\
 
 ## Production Verification Steps
 
-1. ✅ Verify PostgreSQL running: `wsl -d Ubuntu docker ps`
+1. ✅ Verify Qdrant running: `wsl -d Ubuntu docker ps`
 2. ✅ Test database connection: `npm run test:connection`
 3. ✅ Start server directly: `node start-cortex.js`
 4. ⚠️ Update Claude Code configuration dengan `cwd`

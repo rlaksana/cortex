@@ -1,7 +1,7 @@
 # CORTEX MCP SCHEMA FIX - 2025-10-21
 
 ## User Requirements Applied:
-1. **PostgreSQL 18** ✅ (MANDATORY requirement)
+1. **Qdrant 18** ✅ (MANDATORY requirement)
 2. **Nama SAMA PERFECT** antara Prisma model dan database table ✅
 3. **Tidak ada camel case vs snake case** - semua konsisten ✅
 

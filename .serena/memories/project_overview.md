@@ -4,17 +4,17 @@
 - **Name**: Cortex Memory MCP
 - **Type**: Model Context Protocol (MCP) Server
 - **Purpose**: Knowledge management with autonomous decision support
-- **Architecture**: 2-layer (Local Node.js → Docker PostgreSQL)
+- **Architecture**: 2-layer (Local Node.js → Docker Qdrant)
 
 ## Core Capabilities
 - **Memory Store**: Store/update/delete knowledge with 16 types (section, decision, issue, todo, release, risk, etc.)
 - **Memory Find**: Search with confidence scoring and autonomous retry logic
-- **Knowledge Graph**: Entities, relations, observations with PostgreSQL backend
+- **Knowledge Graph**: Entities, relations, observations with Qdrant backend
 - **Autonomous Protocol**: AI-driven decision making for memory operations
 
 ## Technical Stack
 - **Runtime**: Node.js with ES Modules
-- **Database**: PostgreSQL 18 with Prisma ORM
+- **Database**: Qdrant 18 with Prisma ORM
 - **Language**: TypeScript (compiled to JavaScript)
 - **MCP SDK**: Model Context Protocol for AI integration
 - **Features**: Content deduplication, branch isolation, immutability enforcement

@@ -1,0 +1,430 @@
+# ============================================================================
+# CORTEX MEMORY MCP - SECURITY HARDENING CONFIGURATION
+# ============================================================================
+# Comprehensive security configuration for dual database infrastructure
+# Implements industry best practices and compliance requirements
+
+# Network Security Configuration
+network_security:
+  # Firewall rules
+  firewall_rules:
+    # Database access restrictions
+    - name: "postgres-access"
+      description: "Restrict PostgreSQL access to application layer"
+      source: ["cortex-app", "cortex-app-exporter"]
+      destination: ["postgres:5432"]
+      protocol: "tcp"
+      action: "allow"
+
+    - name: "qdrant-access"
+      description: "Restrict Qdrant access to application layer"
+      source: ["cortex-app", "cortex-app-exporter"]
+      destination: ["qdrant:6333", "qdrant:6334"]
+      protocol: "tcp"
+      action: "allow"
+
+    - name: "redis-access"
+      description: "Restrict Redis access to application layer"
+      source: ["cortex-app"]
+      destination: ["redis:6379"]
+      protocol: "tcp"
+      action: "allow"
+
+    # Monitoring access
+    - name: "monitoring-access"
+      description: "Allow monitoring systems access"
+      source: ["prometheus", "grafana", "node-exporter"]
+      destination: ["postgres:5432", "qdrant:6333", "cortex-app:3000"]
+      protocol: "tcp"
+      action: "allow"
+
+    # Deny all other database access
+    - name: "deny-database-access"
+      description: "Deny all other database access"
+      source: ["*"]
+      destination: ["postgres:5432", "qdrant:6333", "qdrant:6334", "redis:6379"]
+      protocol: "tcp"
+      action: "deny"
+
+  # Network policies for Kubernetes
+  network_policies:
+    - name: "cortex-mcp-network-policy"
+      namespace: "cortex-mcp"
+      pod_selector: {}
+      policy_types: ["Ingress", "Egress"]
+
+      ingress:
+        - from:
+            - namespaceSelector:
+                matchLabels:
+                  name: "ingress-nginx"
+            - podSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: "cortex-memory"
+          ports:
+            - protocol: TCP
+              port: 3000  # Cortex app
+            - protocol: TCP
+              port: 6333  # Qdrant HTTP
+            - protocol: TCP
+              port: 6334  # Qdrant gRPC
+
+      egress:
+        - to:
+            - podSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: "cortex-memory"
+          ports:
+            - protocol: TCP
+              port: 5432  # PostgreSQL
+            - protocol: TCP
+              port: 6333  # Qdrant HTTP
+            - protocol: TCP
+              port: 6334  # Qdrant gRPC
+            - protocol: TCP
+              port: 6379  # Redis
+
+# Authentication and Authorization
+auth_config:
+  # PostgreSQL security
+  postgresql:
+    password_policy:
+      min_length: 16
+      require_uppercase: true
+      require_lowercase: true
+      require_numbers: true
+      require_special_chars: true
+      password_history: 5
+      max_age_days: 90
+
+    connection_security:
+      require_ssl: true
+      ssl_mode: "require"
+      ssl_cert_file: "/etc/ssl/certs/server.crt"
+      ssl_key_file: "/etc/ssl/private/server.key"
+      ssl_ca_file: "/etc/ssl/certs/ca.crt"
+
+    user_privileges:
+      - username: "cortex"
+        privileges: ["CONNECT", "TEMPORARY", "CREATE", "USAGE"]
+        databases: ["cortex_prod"]
+
+      - username: "cortex_readonly"
+        privileges: ["CONNECT", "SELECT"]
+        databases: ["cortex_prod"]
+
+      - username: "cortex_backup"
+        privileges: ["CONNECT", "SELECT"]
+        databases: ["cortex_prod"]
+
+  # Qdrant security
+  qdrant:
+    api_key:
+      enabled: true
+      key_rotation_days: 30
+      key_length: 64
+      key_encoding: "base64"
+
+    authentication:
+      require_api_key: true
+      api_key_header: "api-key"
+
+    cors:
+      enabled: true
+      allowed_origins: ["https://cortex-mcp.example.com"]
+      allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allowed_headers: ["Content-Type", "api-key"]
+      max_age: 3600
+
+  # Application security
+  application:
+    jwt:
+      secret_length: 64
+      algorithm: "HS512"
+      expiration_hours: 24
+      refresh_token_days: 7
+
+    api_key:
+      length: 64
+      encoding: "base64"
+      rotation_days: 30
+      rate_limit_per_minute: 100
+
+    session:
+      timeout_minutes: 60
+      max_concurrent_sessions: 5
+      secure_cookies: true
+      same_site: "strict"
+
+# Encryption Configuration
+encryption_config:
+  # Data at rest encryption
+  data_at_rest:
+    postgresql:
+      enabled: true
+      algorithm: "AES-256"
+      key_management: "AWS KMS"
+
+    qdrant:
+      enabled: true
+      algorithm: "AES-256"
+      key_rotation_days: 90
+
+    storage:
+      encrypted_volumes: true
+      encryption_type: "aws:ebs"
+      kms_key_id: "alias/cortex-mcp-encryption"
+
+  # Data in transit encryption
+  data_in_transit:
+    tls_version: "1.3"
+    cipher_suites:
+      - "TLS_AES_256_GCM_SHA384"
+      - "TLS_CHACHA20_POLY1305_SHA256"
+      - "TLS_AES_128_GCM_SHA256"
+
+    certificate_management:
+      auto_renewal: true
+      renewal_days_before_expiry: 30
+      ca_provider: "Let's Encrypt"
+
+    internal_communication:
+      require_mutual_tls: true
+      certificate_validation: "strict"
+
+# Access Control
+access_control:
+  # Role-based access control (RBAC)
+  rbac_roles:
+    - name: "admin"
+      description: "Full administrative access"
+      permissions:
+        - "*"
+
+    - name: "developer"
+      description: "Developer access"
+      permissions:
+        - "knowledge:*"
+        - "search:*"
+        - "collections:read"
+        - "entities:read,write"
+
+    - name: "analyst"
+      description: "Data analyst access"
+      permissions:
+        - "search:*"
+        - "knowledge:read"
+        - "entities:read"
+        - "collections:read"
+
+    - name: "readonly"
+      description: "Read-only access"
+      permissions:
+        - "search:basic"
+        - "knowledge:read"
+        - "entities:read"
+
+  # Database access control
+  database_access:
+    postgresql:
+      row_level_security: true
+      column_level_encryption: true
+      audit_logging: true
+
+      rls_policies:
+        - table: "knowledge_entity"
+          policy: "user_isolation"
+          using: "created_by = current_user"
+
+        - table: "knowledge_relation"
+          policy: "entity_access_check"
+          using: "EXISTS (SELECT 1 FROM knowledge_entity ke WHERE ke.id = from_entity_id AND ke.created_by = current_user)"
+
+    qdrant:
+      collection_level_access: true
+      point_level_access: false
+      search_filters: true
+
+      access_policies:
+        - collection: "user_embeddings"
+          read_access: ["owner", "admin"]
+          write_access: ["owner"]
+
+        - collection: "shared_knowledge"
+          read_access: ["authenticated"]
+          write_access: ["admin", "moderator"]
+
+# Security Monitoring
+security_monitoring:
+  # Audit logging
+  audit_logging:
+    enabled: true
+    log_all_queries: false
+    log_failed_queries: true
+    log_ddl_operations: true
+    log_user_actions: true
+    log_access_denied: true
+
+    retention_days: 365
+    storage_encrypted: true
+    integrity_checks: true
+
+  # Intrusion detection
+  intrusion_detection:
+    enabled: true
+    anomaly_detection: true
+    behavior_analysis: true
+
+    alerts:
+      - type: "brute_force_attempt"
+        threshold: 5
+        time_window_minutes: 15
+        action: "block_ip"
+
+      - type: "unusual_data_access"
+        threshold: 1000
+        time_window_minutes: 60
+        action: "alert_admin"
+
+      - type: "privilege_escalation"
+        threshold: 1
+        action: "immediate_alert"
+
+  # Vulnerability scanning
+  vulnerability_scanning:
+    enabled: true
+    scan_frequency: "daily"
+    include_dependencies: true
+    include_containers: true
+
+    remediation:
+      auto_patch: false
+      severity_threshold: "high"
+      notification_channels: ["email", "slack"]
+
+# Compliance Configuration
+compliance:
+  # GDPR compliance
+  gdpr:
+    data_subject_requests: true
+    right_to_be_forgotten: true
+    consent_management: true
+    data_processing_records: true
+
+    retention_policies:
+      personal_data_days: 2555  # 7 years
+      analytics_data_days: 365
+      audit_logs_days: 2555
+
+  # SOC 2 compliance
+  soc2:
+    security_controls: true
+    availability_monitoring: true
+    processing_integrity: true
+    confidentiality: true
+    privacy: true
+
+  # HIPAA compliance (if applicable)
+  hipaa:
+    enabled: false  # Set to true if handling PHI
+    access_logs: true
+    encryption_at_rest: true
+    encryption_in_transit: true
+    audit_controls: true
+    integrity_controls: true
+
+# Security Headers
+security_headers:
+  web_security:
+    content_security_policy: |
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https:;
+      font-src 'self';
+      connect-src 'self' https:;
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self'
+
+    x_frame_options: "DENY"
+    x_content_type_options: "nosniff"
+    x_xss_protection: "1; mode=block"
+    strict_transport_security: "max-age=31536000; includeSubDomains; preload"
+    referrer_policy: "strict-origin-when-cross-origin"
+    permissions_policy: |
+      camera=(),
+      microphone=(),
+      geolocation=(),
+      payment=()
+
+# Container Security
+container_security:
+  # Docker security
+  docker:
+    user_namespace_remap: true
+    read_only_rootfs: true
+    no_new_privileges: true
+    seccomp_profile: "default"
+    apparmor_profile: "docker-default"
+    capabilities_drop: ["ALL"]
+    capabilities_add: ["CHOWN", "DAC_OVERRIDE", "FSETID", "FOWNER", "MKNOD", "SETGID", "SETUID", "SETPCAP", "NET_BIND_SERVICE", "KILL"]
+
+  # Kubernetes security
+  kubernetes:
+    pod_security_policy: true
+    pod_security_admission: true
+    admission_controllers: ["ResourceQuota", "LimitRanger", "ServiceAccount", "PodSecurityPolicy"]
+
+    security_context:
+      run_as_non_root: true
+      run_as_user: 1001
+      run_as_group: 1001
+      fs_group: 1001
+      read_only_root_filesystem: true
+      allow_privilege_escalation: false
+      seccomp_profile:
+        type: "RuntimeDefault"
+
+# Secrets Management
+secrets_management:
+  # Encryption at rest
+  encryption:
+    algorithm: "AES-256-GCM"
+    key_derivation: "PBKDF2"
+    iterations: 100000
+
+  # Key management
+  key_management:
+    provider: "AWS KMS"
+    key_rotation_days: 90
+    automatic_rotation: true
+
+  # Secret rotation
+  rotation:
+    database_passwords_days: 90
+    api_keys_days: 30
+    certificates_days: 365
+
+    notification_channels: ["email", "slack"]
+    grace_period_days: 7
+
+# Backup Security
+backup_security:
+  encryption:
+    enabled: true
+    algorithm: "AES-256"
+    key_management: "separate"
+
+  access_control:
+    backup_access_roles: ["backup_admin", "system_admin"]
+    restore_access_roles: ["restore_admin", "system_admin"]
+
+  retention:
+    encrypted_retention_days: 365
+    audit_log_retention_days: 2555
+
+  verification:
+    checksum_verification: true
+    restore_testing: true
+    integrity_checks: true

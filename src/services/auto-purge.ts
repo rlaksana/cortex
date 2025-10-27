@@ -10,7 +10,7 @@
  */
 
 import { logger } from '../utils/logger.js';
-import { qdrant } from '../db/qdrant-client.js';
+import { qdrant } from '../db/qdrant.js';
 import { dbErrorHandler } from '../utils/db-error-handler.js';
 
 export interface PurgeResult {

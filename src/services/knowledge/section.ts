@@ -129,7 +129,7 @@ export async function findSections(
     whereClause.document_id = criteria.documentId;
   }
 
-  const result = return await db.find('section', {
+  const result = await db.find('section', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,

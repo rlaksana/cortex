@@ -4,8 +4,8 @@ import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { logger } from './utils/logger.js';
-import { loadEnv } from './config/env.js';
-import { AUTH_CONFIG } from './config/auth-config.js';
+import { loadEnv } from './config/environment.js';
+import { getAuthConfig } from './config/auth-config.js';
 import { AuthScope, UserRole } from './types/auth-types.js';
 
 // Load environment variables from .env file (redirect stdout to stderr for MCP stdio compatibility)
@@ -35,16 +35,17 @@ async function getServices() {
     const { MCPAuthHelper } = await import('./services/auth/auth-middleware-helper.js');
 
     // Initialize services
+    const authConfig = getAuthConfig();
     const authService = new AuthService({
-      jwt_secret: AUTH_CONFIG.JWT_SECRET,
-      jwt_refresh_secret: AUTH_CONFIG.JWT_REFRESH_SECRET,
-      jwt_expires_in: AUTH_CONFIG.JWT_EXPIRES_IN,
-      jwt_refresh_expires_in: AUTH_CONFIG.JWT_REFRESH_EXPIRES_IN,
-      bcrypt_rounds: AUTH_CONFIG.BCRYPT_ROUNDS,
-      api_key_length: AUTH_CONFIG.API_KEY_LENGTH,
-      session_timeout_hours: AUTH_CONFIG.SESSION_TIMEOUT_HOURS,
-      max_sessions_per_user: AUTH_CONFIG.MAX_SESSIONS_PER_USER,
-      rate_limit_enabled: AUTH_CONFIG.RATE_LIMIT_ENABLED
+      jwt_secret: authConfig.JWT_SECRET,
+      jwt_refresh_secret: authConfig.JWT_REFRESH_SECRET,
+      jwt_expires_in: authConfig.JWT_EXPIRES_IN,
+      jwt_refresh_expires_in: authConfig.JWT_REFRESH_EXPIRES_IN,
+      bcrypt_rounds: authConfig.BCRYPT_ROUNDS,
+      api_key_length: authConfig.API_KEY_LENGTH,
+      session_timeout_hours: authConfig.SESSION_TIMEOUT_HOURS,
+      max_sessions_per_user: authConfig.MAX_SESSIONS_PER_USER,
+      rate_limit_enabled: authConfig.RATE_LIMIT_ENABLED
     });
 
     const authorizationService = new AuthorizationService();

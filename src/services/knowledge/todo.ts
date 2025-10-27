@@ -7,7 +7,7 @@ export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<str
   await db.initialize();
 
   // FIXED: Use direct field access for new fields instead of tags workaround
-  const result = await qdrant.todoLog.create({
+  const result = await db.create('todoLog', {
     data: {
       title: data.text || data.todo_type || 'Untitled Todo',
       description: data.text,
@@ -33,7 +33,7 @@ export async function updateTodo(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await qdrant.todoLog.findUnique({
+  const existing = await db.find('todoLog', {
     where: { id }
   });
 
@@ -42,7 +42,7 @@ export async function updateTodo(
   }
 
   // FIXED: Update existing todo using direct field access
-  const result = await db.update('todoLog', { id }, {
+  const result = await db.update('todoLog', { id: id }, {
       title: data.text || data.todo_type || existing.title,
       description: data.text ?? existing.description,
       status: data.status ?? existing.status,
@@ -52,11 +52,10 @@ export async function updateTodo(
       text: data.text ?? existing.text,
       assignee: data.assignee ?? existing.assignee,
       tags: {
-        ...(existing.tags as any || {);,
+        ...(existing.tags as any || {}),
         ...scope
       }
-    }
-  });
+    });
 
   return result.id;
 }

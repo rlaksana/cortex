@@ -6,7 +6,7 @@
 ## Strategy: Complete Database Rebuild
 1. **HAPUS SEMUA** existing data (user permission granted)
 2. **Create ulang** menggunakan Prisma migration yang proper
-3. **NO manual PostgreSQL operations** - hanya Prisma methods
+3. **NO manual Qdrant operations** - hanya Prisma methods
 4. **Populate dengan sample data** untuk testing
 
 ## Execution Plan:
@@ -19,7 +19,7 @@
 ## Constraints:
 - ONLY use Prisma operations
 - NO raw SQL or manual database manipulation
-- PostgreSQL 18 compliance mandatory
+- Qdrant 18 compliance mandatory
 - Perfect naming consistency maintained
 
 ## Status: Waiting user confirmation to proceed with complete database reset

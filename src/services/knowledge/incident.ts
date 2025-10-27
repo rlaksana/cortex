@@ -9,7 +9,7 @@ export async function storeIncident(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const result = await qdrant.incidentLog.create({
+  const result = await db.create('incidentLog', {
     data: {
       title: data.title,
       severity: data.severity || 'medium',
@@ -42,7 +42,7 @@ export async function findIncidents(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const incidents = return await db.find('incidentLog', {
+  const incidents = await db.find('incidentLog', {
     where: {
       AND: [
         {
@@ -55,7 +55,7 @@ export async function findIncidents(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope);
+            string_contains: JSON.stringify(scope)
           }
         } : {}
       ]
@@ -92,7 +92,7 @@ export async function updateIncident(
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await qdrant.incidentLog.findUnique({
+  const existing = await db.find('incidentLog', {
     where: { id }
   });
 
@@ -100,24 +100,23 @@ export async function updateIncident(
     throw new Error(`Incident with id ${id} not found`);
   }
 
-  const result = await db.update('incidentLog', { id }, {
-      title: data.title ?? existing.title,
-      severity: data.severity ?? existing.severity,
-      impact: data.impact_level ?? existing.impact,
-      resolution_status: data.status ?? existing.resolution_status,
-      affected_services: (data as any).affected_services ?? existing.affected_services,
-      business_impact: data.description ?? existing.business_impact,
-      recovery_actions: (data as any).recovery_actions ?? existing.recovery_actions,
-      follow_up_required: (data as any).follow_up_required ?? existing.follow_up_required,
-      incident_commander: (data as any).incident_commander ?? existing.incident_commander,
-      timeline: (data as any).timeline ?? existing.timeline,
-      root_cause_analysis: data.root_cause_analysis ?? existing.root_cause_analysis,
-      resolution: data.resolution ?? existing.resolution,
-      tags: {
-        ...(existing.tags as any || {);,
-        ...scope,
-        lessons_learned: data.lessons_learned ?? (existing.tags as any)?.lessons_learned
-      }
+  const result = await db.update('incidentLog', { id: id }, {
+    title: data.title ?? existing.title,
+    severity: data.severity ?? existing.severity,
+    impact: data.impact_level ?? existing.impact,
+    resolution_status: data.status ?? existing.resolution_status,
+    affected_services: (data as any).affected_services ?? existing.affected_services,
+    business_impact: data.description ?? existing.business_impact,
+    recovery_actions: (data as any).recovery_actions ?? existing.recovery_actions,
+    follow_up_required: (data as any).follow_up_required ?? existing.follow_up_required,
+    incident_commander: (data as any).incident_commander ?? existing.incident_commander,
+    timeline: (data as any).timeline ?? existing.timeline,
+    root_cause_analysis: data.root_cause_analysis ?? existing.root_cause_analysis,
+    resolution: data.resolution ?? existing.resolution,
+    tags: {
+      ...(existing.tags as any || {}),
+      ...scope,
+      lessons_learned: data.lessons_learned ?? (existing.tags as any)?.lessons_learned
     }
   });
 
