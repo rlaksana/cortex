@@ -47,4 +47,3 @@ export function getAuthConfig() {
     ACCOUNT_LOCKOUT_DURATION_MS: 30 * 60 * 1000, // 30 minutes
   };
 }
-

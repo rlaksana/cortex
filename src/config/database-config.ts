@@ -22,26 +22,15 @@ import type { DatabaseConfig } from '../db/database-interface.js';
 
 // Polyfill fetch for Node.js compatibility
 if (typeof fetch === 'undefined') {
-  global.fetch = (await import('node-fetch')).default;
+  const { default: fetch } = await import('node-fetch');
+  // Type assertion to handle fetch interface compatibility
+  (globalThis as any).fetch = fetch as any;
 }
 
 export interface DatabaseSelectionConfig {
-  type: 'qdrant' | 'hybrid';
+  type: 'qdrant';
   migrationMode: boolean;
   fallbackEnabled: boolean;
-}
-
-// ⚠️ DEPRECATED: PostgreSQL is no longer supported
-// This interface is kept for backward compatibility only
-// @deprecated Use QdrantConfig instead
-export interface PostgresConfig {
-  host?: never; // Removed - PostgreSQL not supported
-  port?: never; // Removed - PostgreSQL not supported
-  database?: never; // Removed - PostgreSQL not supported
-  user?: never; // Removed - PostgreSQL not supported
-  password?: never; // Removed - PostgreSQL not supported
-  databaseUrl?: never; // Removed - PostgreSQL not supported
-  pool?: never; // Removed - PostgreSQL not supported
 }
 
 export interface QdrantConfig {
@@ -80,7 +69,6 @@ export interface FeatureFlags {
 
 export interface CompleteDatabaseConfig {
   selection: DatabaseSelectionConfig;
-  postgres?: PostgresConfig;
   qdrant: QdrantConfig;
   vector: VectorConfig;
   migration: MigrationConfig;
@@ -115,22 +103,22 @@ export class DatabaseConfigManager {
 
     return {
       selection: {
-        type: (rawConfig.DATABASE_TYPE as 'qdrant' | 'hybrid') || 'qdrant',
+        type: 'qdrant', // Only qdrant is supported
         migrationMode: false, // Default to false for now
-        fallbackEnabled: true
+        fallbackEnabled: true,
       },
       qdrant: {
         url: rawConfig.QDRANT_URL || '',
         ...(rawConfig.QDRANT_API_KEY && { apiKey: rawConfig.QDRANT_API_KEY }),
         timeout: parseInt(String(rawConfig.QDRANT_TIMEOUT || '30000')),
-        collectionPrefix: rawConfig.QDRANT_COLLECTION_PREFIX || 'cortex'
+        collectionPrefix: rawConfig.QDRANT_COLLECTION_PREFIX || 'cortex',
       },
       vector: {
         ...(rawConfig.OPENAI_API_KEY && { openaiApiKey: rawConfig.OPENAI_API_KEY }),
         size: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
-        distance: rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclidean' | 'DotProduct' || 'Cosine',
+        distance: (rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclidean' | 'DotProduct') || 'Cosine',
         embeddingModel: rawConfig.EMBEDDING_MODEL || 'text-embedding-ada-002',
-        batchSize: parseInt(String(rawConfig.EMBEDDING_BATCH_SIZE || '10'))
+        batchSize: parseInt(String(rawConfig.EMBEDDING_BATCH_SIZE || '10')),
       },
       migration: {
         mode: 'validate',
@@ -140,15 +128,15 @@ export class DatabaseConfigManager {
         preservePg: false,
         validationEnabled: true,
         skipValidation: false,
-        progressFile: './migration-progress.json'
+        progressFile: './migration-progress.json',
       },
       features: {
         migrationMode: false,
         healthChecks: true,
         metricsCollection: true,
         caching: true,
-        debugMode: rawConfig.NODE_ENV === 'development'
-      }
+        debugMode: rawConfig.NODE_ENV === 'development',
+      },
     };
   }
 
@@ -168,12 +156,15 @@ export class DatabaseConfigManager {
     this.validateDependencies();
 
     // Log successful configuration
-    void logger.info({
-      type: this.config.selection.type,
-      environment: env,
-      migrationMode: this.config.selection.migrationMode,
-      features: this.config.features
-    }, 'Database configuration validated and optimized');
+    void logger.info(
+      {
+        type: this.config.selection.type,
+        environment: env,
+        migrationMode: this.config.selection.migrationMode,
+        features: this.config.features,
+      },
+      'Database configuration validated and optimized'
+    );
   }
 
   /**
@@ -182,27 +173,15 @@ export class DatabaseConfigManager {
   private validateDatabaseType(): void {
     const { type } = this.config.selection;
 
-    switch (type) {
-      case 'qdrant':
-        if (!this.config.qdrant.url) {
-          throw new Error('Qdrant configuration is incomplete: missing URL');
-        }
-        if (!this.config.vector.openaiApiKey) {
-          throw new Error('Qdrant configuration is incomplete: missing OpenAI API key');
-        }
-        break;
+    if (type !== 'qdrant') {
+      throw new Error(`Unsupported database type: ${type}. Only 'qdrant' is supported.`);
+    }
 
-      case 'hybrid':
-        if (!this.config.qdrant.url) {
-          throw new Error('Hybrid mode requires Qdrant configuration');
-        }
-        if (!this.config.vector.openaiApiKey) {
-          throw new Error('Hybrid mode requires OpenAI API key for vectors');
-        }
-        break;
-
-      default:
-        throw new Error(`Unsupported database type: ${type}`);
+    if (!this.config.qdrant.url) {
+      throw new Error('Qdrant configuration is incomplete: missing URL');
+    }
+    if (!this.config.vector.openaiApiKey) {
+      throw new Error('Qdrant configuration is incomplete: missing OpenAI API key');
     }
   }
 
@@ -244,13 +223,11 @@ export class DatabaseConfigManager {
     // Check if required environment variables are set
     const requiredVars: string[] = [];
 
-    if (this.config.selection.type === 'qdrant' || this.config.selection.type === 'hybrid') {
-      if (!this.config.vector.openaiApiKey) {
-        requiredVars.push('OPENAI_API_KEY');
-      }
-      if (!this.config.qdrant.url) {
-        requiredVars.push('QDRANT_URL');
-      }
+    if (!this.config.vector.openaiApiKey) {
+      requiredVars.push('OPENAI_API_KEY');
+    }
+    if (!this.config.qdrant.url) {
+      requiredVars.push('QDRANT_URL');
     }
 
     if (requiredVars.length > 0) {
@@ -263,13 +240,6 @@ export class DatabaseConfigManager {
    */
   getConfiguration(): CompleteDatabaseConfig {
     return { ...this.config };
-  }
-
-  /**
-   * Get configuration for specific database type
-   */
-  getPostgresConfig(): PostgresConfig | undefined {
-    return this.config.postgres ? { ...this.config.postgres } : undefined;
   }
 
   getQdrantConfig(): QdrantConfig {
@@ -294,14 +264,13 @@ export class DatabaseConfigManager {
   createFactoryConfig(): DatabaseConfig {
     const baseConfig: DatabaseConfig = {
       type: this.config.selection.type,
-      connectionString: this.config.qdrant.url || '',
-      url: this.config.qdrant.url,
+      url: this.config.qdrant.url || 'http://localhost:6333',
       ...(this.config.qdrant.apiKey && { apiKey: this.config.qdrant.apiKey }),
       logQueries: this.config.features.debugMode,
       connectionTimeout: this.config.qdrant.timeout,
       maxConnections: 10, // Default value since pool doesn't exist anymore
       vectorSize: this.config.vector.size,
-      distance: this.config.vector.distance
+      distance: this.config.vector.distance,
     };
 
     return baseConfig;
@@ -328,7 +297,9 @@ export class DatabaseConfigManager {
         errors.push('Qdrant URL is not configured');
       }
     } catch (error) {
-      errors.push(`Qdrant validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Qdrant validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     try {
@@ -339,7 +310,9 @@ export class DatabaseConfigManager {
         errors.push('OpenAI API key is not configured');
       }
     } catch (error) {
-      errors.push(`OpenAI validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `OpenAI validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     const overall = qdrant && openai && errors.length === 0;
@@ -348,7 +321,7 @@ export class DatabaseConfigManager {
       qdrant,
       openai,
       overall,
-      errors
+      errors,
     };
   }
 
@@ -400,24 +373,24 @@ export class DatabaseConfigManager {
 
     // Check dependency health (e.g., OpenAI API)
     let dependenciesValid = true;
-    if (this.config.selection.type === 'qdrant' || this.config.selection.type === 'hybrid') {
-      try {
-        // Test OpenAI API connectivity
-        const response = await fetch('https://api.openai.com/v1/models', {
-          headers: {
-            'Authorization': `Bearer ${this.config.vector.openaiApiKey}`
-          },
-          signal: AbortSignal.timeout(5000)
-        });
+    try {
+      // Test OpenAI API connectivity
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          Authorization: `Bearer ${this.config.vector.openaiApiKey}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      });
 
-        if (!response.ok) {
-          dependenciesValid = false;
-          issues.push(`OpenAI API health check failed: ${response.status}`);
-        }
-      } catch (error) {
+      if (!response.ok) {
         dependenciesValid = false;
-        issues.push(`OpenAI API connectivity failed: ${error instanceof Error ? error.message : String(error)}`);
+        issues.push(`OpenAI API health check failed: ${response.status}`);
       }
+    } catch (error) {
+      dependenciesValid = false;
+      issues.push(
+        `OpenAI API connectivity failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     const overallHealth = configurationValid && connectionsValid && dependenciesValid;
@@ -428,7 +401,7 @@ export class DatabaseConfigManager {
       connections: connectionsValid,
       dependencies: dependenciesValid,
       issues,
-      lastChecked: new Date()
+      lastChecked: new Date(),
     };
   }
 
@@ -442,14 +415,29 @@ export class DatabaseConfigManager {
   /**
    * Deep merge utility for configuration updates
    */
-  private deepMerge(target: Partial<CompleteDatabaseConfig>, source: Partial<CompleteDatabaseConfig>): CompleteDatabaseConfig {
+  private deepMerge(
+    target: Partial<CompleteDatabaseConfig>,
+    source: Partial<CompleteDatabaseConfig>
+  ): CompleteDatabaseConfig {
     const result = { ...target };
 
     for (const key in source) {
-      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-        (result as any)[key] = this.deepMerge((result[key] || {}) as Partial<CompleteDatabaseConfig>, source[key] as Partial<CompleteDatabaseConfig>);
+      const sourceValue = source[key as keyof CompleteDatabaseConfig];
+
+      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        // Type-safe nested merge with proper typing
+        const targetValue = result[key as keyof CompleteDatabaseConfig];
+
+        if (targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue)) {
+          result[key as keyof CompleteDatabaseConfig] = this.deepMerge(
+            targetValue as Partial<CompleteDatabaseConfig>,
+            sourceValue as Partial<CompleteDatabaseConfig>
+          ) as any;
+        } else {
+          result[key as keyof CompleteDatabaseConfig] = sourceValue as any;
+        }
       } else {
-        (result as any)[key] = source[key];
+        result[key as keyof CompleteDatabaseConfig] = sourceValue as any;
       }
     }
 

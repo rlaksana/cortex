@@ -45,7 +45,15 @@ export interface DataTransformationConfig {
 export interface FilterRule {
   name: string;
   field: string;
-  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'exists' | 'greaterThan' | 'lessThan';
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith'
+    | 'regex'
+    | 'exists'
+    | 'greaterThan'
+    | 'lessThan';
   value: any;
   negate?: boolean;
 }
@@ -131,7 +139,7 @@ export const MIGRATION_STRATEGIES: Record<MigrationMode, MigrationStrategy> = {
     requiresTarget: true,
     destructive: false,
     reversible: true,
-    estimatedDuration: 'slow'
+    estimatedDuration: 'slow',
   },
   'qdrant-to-pg': {
     mode: 'qdrant-to-pg',
@@ -140,35 +148,35 @@ export const MIGRATION_STRATEGIES: Record<MigrationMode, MigrationStrategy> = {
     requiresTarget: true,
     destructive: false,
     reversible: true,
-    estimatedDuration: 'medium'
+    estimatedDuration: 'medium',
   },
-  'sync': {
+  sync: {
     mode: 'sync',
     description: 'Synchronize data bidirectionally between qdrant and Qdrant',
     requiresSource: true,
     requiresTarget: true,
     destructive: false,
     reversible: true,
-    estimatedDuration: 'slow'
+    estimatedDuration: 'slow',
   },
-  'validate': {
+  validate: {
     mode: 'validate',
     description: 'Validate data integrity between qdrant and Qdrant without migration',
     requiresSource: true,
     requiresTarget: true,
     destructive: false,
     reversible: true,
-    estimatedDuration: 'medium'
+    estimatedDuration: 'medium',
   },
-  'cleanup': {
+  cleanup: {
     mode: 'cleanup',
     description: 'Clean up orphaned data and optimize storage',
     requiresSource: true,
     requiresTarget: false,
     destructive: true,
     reversible: false,
-    estimatedDuration: 'fast'
-  }
+    estimatedDuration: 'fast',
+  },
 };
 
 /**
@@ -186,17 +194,17 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
         name: 'exclude-empty-content',
         field: 'content',
         operator: 'exists',
-        value: true
-      }
+        value: true,
+      },
     ],
     transformationRules: [
       {
         name: 'flatten-metadata',
         type: 'structure',
         transformation: 'flatten',
-        parameters: { separator: '_' }
-      }
-    ]
+        parameters: { separator: '_' },
+      },
+    ],
   },
   'qdrant-to-pg': {
     generateEmbeddings: 'never',
@@ -211,11 +219,11 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
         type: 'field',
         sourceField: 'vector',
         targetField: 'embedding_data',
-        transformation: 'serialize'
-      }
-    ]
+        transformation: 'serialize',
+      },
+    ],
   },
-  'sync': {
+  sync: {
     generateEmbeddings: 'if-missing',
     embeddingModel: 'text-embedding-ada-002',
     batchSize: 75,
@@ -226,28 +234,28 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
         name: 'exclude-system-records',
         field: 'kind',
         operator: 'exists',
-        value: true
-      }
+        value: true,
+      },
     ],
     transformationRules: [
       {
         name: 'merge-metadata',
         type: 'structure',
         transformation: 'merge',
-        parameters: { strategy: 'target-priority' }
-      }
-    ]
+        parameters: { strategy: 'target-priority' },
+      },
+    ],
   },
-  'validate': {
+  validate: {
     generateEmbeddings: 'never',
     embeddingModel: 'text-embedding-ada-002',
     batchSize: 200,
     contentFields: ['content'],
     metadataFields: ['id', 'kind', 'scope'],
     filterRules: [],
-    transformationRules: []
+    transformationRules: [],
   },
-  'cleanup': {
+  cleanup: {
     generateEmbeddings: 'never',
     embeddingModel: 'text-embedding-ada-002',
     batchSize: 500,
@@ -258,11 +266,11 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
         name: 'old-records',
         field: 'created_at',
         operator: 'lessThan',
-        value: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
-      }
+        value: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+      },
     ],
-    transformationRules: []
-  }
+    transformationRules: [],
+  },
 };
 
 /**
@@ -304,7 +312,7 @@ export class MigrationConfigManager {
         contentFields: defaultTransformation.contentFields,
         metadataFields: defaultTransformation.metadataFields,
         filterRules: defaultTransformation.filterRules,
-        transformationRules: defaultTransformation.transformationRules
+        transformationRules: defaultTransformation.transformationRules,
       },
       validation: {
         enabled: baseConfig.validationEnabled,
@@ -314,7 +322,7 @@ export class MigrationConfigManager {
         checkSum: true,
         checkEmbeddings: mode === 'pg-to-qdrant' || mode === 'sync',
         checkMetadata: true,
-        toleranceThreshold: 0.95
+        toleranceThreshold: 0.95,
       },
       progressTracking: {
         enabled: true,
@@ -323,7 +331,7 @@ export class MigrationConfigManager {
         saveInterval: 1000,
         maxRetries: 3,
         resumeOnError: true,
-        compressionEnabled: this.environment === 'production'
+        compressionEnabled: this.environment === 'production',
       },
       performance: {
         maxConcurrency: baseConfig.concurrency,
@@ -332,7 +340,7 @@ export class MigrationConfigManager {
         chunkSize: Math.min(baseConfig.batchSize / 2, 50),
         prefetchSize: Math.min(baseConfig.batchSize, 100),
         gcInterval: 10000,
-        monitoringEnabled: true
+        monitoringEnabled: true,
       },
       safety: {
         dryRun: baseConfig.dryRun,
@@ -343,10 +351,10 @@ export class MigrationConfigManager {
         maxErrors: 10,
         errorThreshold: 0.05,
         rollbackOnFailure: baseConfig.preservePg,
-        criticalOperations: ['delete', 'truncate', 'drop', 'cleanup']
+        criticalOperations: ['delete', 'truncate', 'drop', 'cleanup'],
       },
       source: { type: 'qdrant', config: {} }, // Will be populated later
-      target: { type: 'qdrant', config: {} } // Will be populated later
+      target: { type: 'qdrant', config: {} }, // Will be populated later
     };
   }
 
@@ -370,7 +378,11 @@ export class MigrationConfigManager {
       logger.warn('Running in dry-run mode with validation enabled - validation will be simulated');
     }
 
-    if (!this.config.safety.dryRun && this.config.strategy.destructive && !this.config.safety.backupEnabled) {
+    if (
+      !this.config.safety.dryRun &&
+      this.config.strategy.destructive &&
+      !this.config.safety.backupEnabled
+    ) {
       errors.push('Backup is required for destructive migration operations');
     }
 
@@ -387,13 +399,16 @@ export class MigrationConfigManager {
       throw new Error(`Migration configuration validation failed:\n${errors.join('\n')}`);
     }
 
-    logger.info({
-      mode: this.config.mode,
-      environment: this.environment,
-      dryRun: this.config.safety.dryRun,
-      batchSize: this.config.dataTransformation.batchSize,
-      concurrency: this.config.performance.maxConcurrency
-    }, 'Migration configuration validated');
+    logger.info(
+      {
+        mode: this.config.mode,
+        environment: this.environment,
+        dryRun: this.config.safety.dryRun,
+        batchSize: this.config.dataTransformation.batchSize,
+        concurrency: this.config.performance.maxConcurrency,
+      },
+      'Migration configuration validated'
+    );
   }
 
   /**
@@ -468,8 +483,14 @@ export class MigrationConfigManager {
         // Development optimizations
         this.config.safety.dryRun = true;
         this.config.validation.level = 'basic';
-        this.config.performance.maxConcurrency = Math.min(this.config.performance.maxConcurrency, 2);
-        this.config.dataTransformation.batchSize = Math.min(this.config.dataTransformation.batchSize, 10);
+        this.config.performance.maxConcurrency = Math.min(
+          this.config.performance.maxConcurrency,
+          2
+        );
+        this.config.dataTransformation.batchSize = Math.min(
+          this.config.dataTransformation.batchSize,
+          10
+        );
         break;
 
       case 'production':
@@ -545,7 +566,7 @@ export class MigrationConfigManager {
     return {
       estimatedMinutes,
       confidence,
-      factors
+      factors,
     };
   }
 
@@ -565,13 +586,13 @@ export class MigrationConfigManager {
         mode: this.config.mode,
         dataTransformation: { ...this.config.dataTransformation },
         validation: { ...this.config.validation },
-        performance: { ...this.config.performance }
+        performance: { ...this.config.performance },
       },
       metadata: {
         environment: this.environment,
         strategy: this.config.strategy.description,
-        estimatedDuration: this.config.strategy.estimatedDuration
-      }
+        estimatedDuration: this.config.strategy.estimatedDuration,
+      },
     };
   }
 
@@ -583,7 +604,7 @@ export class MigrationConfigManager {
       version: '2.0.0',
       timestamp: new Date().toISOString(),
       environment: this.environment,
-      config: this.config
+      config: this.config,
     };
   }
 
@@ -603,7 +624,7 @@ export class MigrationConfigManager {
       preservePg: data.config.safety.preserveSource,
       validationEnabled: data.config.validation.enabled,
       skipValidation: !data.config.validation.enabled,
-      progressFile: data.config.progressTracking.filePath
+      progressFile: data.config.progressTracking.filePath,
     };
 
     return new MigrationConfigManager(baseConfig, data.environment);
@@ -641,7 +662,7 @@ export class MigrationConfigFactory {
       validationEnabled: true,
       skipValidation: false,
       progressFile: `./migration-${mode}-progress.json`,
-      ...overrides
+      ...overrides,
     };
 
     return new MigrationConfigManager(baseConfig, environment);

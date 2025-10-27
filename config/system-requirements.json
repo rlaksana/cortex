@@ -30,11 +30,11 @@
       "disk_space": {
         "minimum_gb": 10,
         "recommended_gb": 20,
-        "postgresql_data_gb": 5,
+        "qdrant_data_gb": 5,
         "docker_images_gb": 2,
         "application_files_gb": 1,
         "temporary_space_gb": 2,
-        "notes": "Additional space required for Docker images and data growth"
+        "notes": "Additional space required for Docker images and vector data growth"
       }
     },
 
@@ -89,12 +89,13 @@
         "protocols": ["HTTPS", "HTTP"],
         "ports": {
           "outbound": [443, 80],
-          "database": 5433
+          "vector_database": 6333
         }
       },
       "firewall": {
         "docker_required": true,
-        "postgresql_port": 5433,
+        "qdrant_http_port": 6333,
+        "qdrant_grpc_port": 6334,
         "mcp_server_port": 3000,
         "notes": "Ensure Docker Desktop can access network"
       }
@@ -197,16 +198,16 @@
   "performance_benchmarks": {
     "minimum_acceptable": {
       "docker_start_time_seconds": 60,
-      "postgresql_startup_seconds": 30,
+      "qdrant_startup_seconds": 30,
       "mcp_server_start_time_seconds": 10,
-      "database_connection_ms": 1000,
+      "vector_database_connection_ms": 1000,
       "memory_usage_mb": 2000
     },
     "recommended": {
       "docker_start_time_seconds": 30,
-      "postgresql_startup_seconds": 15,
+      "qdrant_startup_seconds": 15,
       "mcp_server_start_time_seconds": 5,
-      "database_connection_ms": 100,
+      "vector_database_connection_ms": 100,
       "memory_usage_mb": 1500
     }
   },
@@ -231,11 +232,11 @@
     },
     "network_security": {
       "outbound_connections": ["registry.docker.com", "github.com"],
-      "local_ports": [5433, 3000],
+      "local_ports": [6333, 6334, 3000],
       "firewall_rules": "Allow Docker Desktop and WSL2"
     },
     "data_protection": {
-      "database_encryption": "Not encrypted by default",
+      "vector_database_encryption": "Not encrypted by default",
       "config_files": "Plain text (sensitive data)",
       "recommendations": ["Use encrypted volumes", "Secure config files", "Regular backups"]
     }
@@ -250,13 +251,13 @@
     "maintenance_tasks": [
       "Docker system cleanup",
       "Log rotation",
-      "Database vacuum",
+      "Vector database optimization",
       "Security updates"
     ],
     "monitoring_metrics": [
       "Disk usage",
       "Memory usage",
-      "Database performance",
+      "Vector database performance",
       "Service availability"
     ]
   }

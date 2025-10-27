@@ -83,25 +83,20 @@
     "health_check_interval": 30000
   },
 
-  "postgresql": {
-    "version": "18",
-    "image": "postgres:18-alpine",
-    "port": 5433,
-    "memory_limit_mb": 1024,
+  "qdrant": {
+    "version": "latest",
+    "image": "qdrant/qdrant:latest",
+    "http_port": 6333,
+    "grpc_port": 6334,
+    "memory_limit_mb": 2048,
     "cpu_limit": 2,
-    "storage_size_gb": 1,
+    "storage_size_gb": 2,
     "backup_retention_days": 30,
-    "extensions": [
-      "pgcrypto",
-      "pg_trgm"
-    ],
     "performance_tuning": {
-      "shared_buffers": "256MB",
-      "effective_cache_size": "768MB",
-      "maintenance_work_mem": "64MB",
-      "checkpoint_completion_target": "0.9",
-      "wal_buffers": "16MB",
-      "default_statistics_target": "100"
+      "max_search_threads": 4,
+      "max_indexing_threads": 4,
+      "max_request_size_mb": 256,
+      "log_level": "INFO"
     }
   },
 
@@ -132,7 +127,7 @@
     "log_level": "info",
     "metrics_collection": true,
     "health_checks": [
-      "database_connectivity",
+      "vector_database_connectivity",
       "mcp_server_status",
       "disk_space_usage",
       "memory_usage"
@@ -140,7 +135,7 @@
     "alerts": {
       "disk_usage_threshold": 80,
       "memory_usage_threshold": 85,
-      "database_connection_timeout": 30
+      "vector_database_connection_timeout": 30
     }
   },
 
@@ -156,12 +151,12 @@
     "required_tests": [
       "system_requirements",
       "docker_installation",
-      "database_connectivity",
+      "vector_database_connectivity",
       "mcp_server_functionality",
       "end_to_end_workflow"
     ],
     "performance_benchmarks": {
-      "database_connection_ms": 100,
+      "vector_database_connection_ms": 100,
       "mcp_response_ms": 50,
       "memory_usage_mb": 500
     }
@@ -182,9 +177,9 @@
         "logs_check": "docker logs"
       },
       {
-        "issue": "Database connection failed",
-        "solution": "Check PostgreSQL container status",
-        "logs_check": "docker-compose logs postgres"
+        "issue": "Vector database connection failed",
+        "solution": "Check Qdrant container status",
+        "logs_check": "docker-compose logs qdrant"
       },
       {
         "issue": "Memory usage too high",
@@ -196,7 +191,7 @@
       "installer": "%TEMP%\\cortex-install-*.log",
       "mcp_server": "%INSTALL_PATH%\\logs\\",
       "docker": "%USERPROFILE%\\.docker\\",
-      "postgresql": "docker logs cortex-postgres"
+      "qdrant": "docker logs cortex-qdrant"
     }
   },
 

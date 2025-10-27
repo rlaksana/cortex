@@ -13,11 +13,7 @@ const child = spawn('node', [serverPath], {
   env: {
     ...process.env,
     // Override with MCP client environment if provided
-    DATABASE_URL: process.env.DATABASE_URL || 'postgresql://cortex:cortex_pg18_secure_2025_key@localhost:5433/cortex_prod',
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-    DB_HOST: process.env.DB_HOST || 'localhost',
-    DB_PORT: process.env.DB_PORT || '5433',
-    DB_PASSWORD: process.env.DB_PASSWORD || 'cortex_pg18_secure_2025_key',
     NODE_ENV: process.env.NODE_ENV || 'development'
   }
 });
