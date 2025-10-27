@@ -185,8 +185,8 @@ Memory Find Service
 ┌─────────────────────────────────────────────┐
 │ Search Execution                           │
 │ - Semantic search (Qdrant)                 │
-│ - Full-text search (PostgreSQL)            │
-│ - Hybrid search (both)                     │
+│ - Full-text search (Qdrant)               │
+│ - Hybrid search (semantic + text)          │
 │ - Fallback search                           │
 └─────────────────────────────────────────────┘
     ↓
@@ -330,15 +330,12 @@ class Environment {
 
   getDatabaseConfig(): DatabaseConfig {
     return {
-      postgres: {
-        url: process.env.DATABASE_URL,
-        poolSize: parseInt(process.env.DB_POOL_SIZE || '10'),
-        timeout: parseInt(process.env.DB_TIMEOUT || '30000')
-      },
       qdrant: {
         url: process.env.QDRANT_URL || 'http://localhost:6333',
         apiKey: process.env.QDRANT_API_KEY,
-        vectorSize: parseInt(process.env.VECTOR_SIZE || '1536')
+        vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
+        timeout: parseInt(process.env.QDRANT_TIMEOUT || '5000'),
+        maxRetries: parseInt(process.env.QDRANT_MAX_RETRIES || '3')
       }
     };
   }
@@ -355,15 +352,15 @@ class Environment {
 
 ## Performance Optimizations
 
-### 1. Connection Pooling
+### 1. Connection Management
 
 ```typescript
-// PostgreSQL connection pool
-const postgresPool = new Pool({
-  connectionString: config.postgresUrl,
-  max: config.maxConnections,
-  connectionTimeoutMillis: config.connectionTimeout,
-  idleTimeoutMillis: config.idleTimeout
+// Qdrant client connection
+const qdrantClient = new QdrantClient({
+  url: config.qdrantUrl,
+  apiKey: config.qdrantApiKey,
+  timeout: config.connectionTimeout,
+  maxRetries: config.maxRetries
 });
 
 // Qdrant connection management
@@ -377,14 +374,19 @@ const qdrantClient = new QdrantClient({
 ### 2. Query Optimization
 
 ```typescript
-// PostgreSQL query optimization
-const optimizedQuery = `
-  SELECT * FROM knowledge_entities
-  WHERE
-    entity_type = $1
-    AND created_at > $2
-    AND search_vector @@ websearch_to_tsquery($3)
-  ORDER BY ts_rank_cd(search_vector, websearch_to_tsquery($3)) DESC
+// Qdrant search optimization
+const optimizedSearch = await qdrantClient.search({
+  collection_name: 'knowledge_entities',
+  query_vector: embedding,
+  query_filter: {
+    must: [
+      { key: "entity_type", match: { value: entityType } },
+      { key: "created_at", range: { gt: timestamp } }
+    ]
+  },
+  limit: 50,
+  score_threshold: 0.7
+});
   LIMIT $4
 `;
 ```
@@ -453,7 +455,6 @@ class ValidationService {
 ```typescript
 interface HealthCheck {
   database: {
-    postgres: boolean;
     qdrant: boolean;
   };
   services: {
@@ -478,7 +479,6 @@ interface PerformanceMetrics {
     memoryFind: OperationMetrics;
   };
   database: {
-    postgres: DatabaseMetrics;
     qdrant: DatabaseMetrics;
   };
   search: {
@@ -587,14 +587,6 @@ interface ConfigProfile {
 ### 1. Database Migrations
 
 ```typescript
-// PostgreSQL migrations
-interface Migration {
-  version: string;
-  description: string;
-  up: () => Promise<void>;
-  down: () => Promise<void>;
-}
-
 // Qdrant collection migrations
 interface CollectionMigration {
   collectionName: string;

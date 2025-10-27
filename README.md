@@ -598,7 +598,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Search Enhancements:**
 - **Multi-Strategy Search** - Automatic strategy selection (semantic, full-text, hybrid, fallback)
-- **Advanced Full-Text Search** - PostgreSQL tsvector with configurable weighting
+- **Advanced Full-Text Search** - Qdrant text search with configurable weighting
 - **Semantic Understanding** - Vector embeddings with similarity ranking
 - **Context Generation** - Autonomous context and user suggestions
 

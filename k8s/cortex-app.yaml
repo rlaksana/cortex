@@ -20,24 +20,28 @@ data:
   MAX_CONCURRENT_REQUESTS: "100"
   REQUEST_TIMEOUT: "60000"
 
-  # Database Configuration
-  DATABASE_URL: "postgresql://cortex:$(POSTGRES_PASSWORD)@postgres:5432/cortex_prod"
-  QDRANT_HOST: "qdrant"
-  QDRANT_PORT: "6333"
+  # Database Configuration - QDRANT ONLY
+  DATABASE_TYPE: "qdrant"
+  QDRANT_URL: "http://qdrant:6333"
   QDRANT_API_KEY: "$(QDRANT_API_KEY)"
+  QDRANT_COLLECTION_NAME: "cortex-k8s-memory"
+  QDRANT_TIMEOUT: "30000"
 
-  # Redis Configuration
-  REDIS_URL: "redis://redis:6379"
-  REDIS_TTL: "3600"
+  # Vector Embedding Configuration
+  OPENAI_API_KEY: "$(OPENAI_API_KEY)"
+  VECTOR_SIZE: "1536"
+  VECTOR_DISTANCE: "Cosine"
+  EMBEDDING_MODEL: "text-embedding-ada-002"
+  EMBEDDING_BATCH_SIZE: "10"
 
   # Performance Settings
   MAX_BATCH_SIZE: "1000"
   EMBEDDING_DIMENSION: "1536"
   SIMILARITY_THRESHOLD: "0.7"
 
-  # Feature Flags
+  # Feature Flags - QDRANT ONLY ARCHITECTURE
   ENABLE_VECTOR_SEARCH: "true"
-  ENABLE_FULLTEXT_SEARCH: "true"
+  ENABLE_SEMANTIC_SEARCH: "true"
   ENABLE_CACHING: "true"
   ENABLE_METRICS: "true"
   ENABLE_TRACING: "false"
@@ -55,7 +59,7 @@ metadata:
     app.kubernetes.io/part-of: cortex-memory
 type: Opaque
 data:
-  POSTGRES_PASSWORD: Y29ydGV4X3BnMThfc2VjdXJlXzIwMjVfa2V5  # cortex_pg18_secure_2025_key
+  OPENAI_API_KEY: eW91ci1vcGVuYWktYXBpLWtleS1oZXJl  # your-openai-api-key-here
   QDRANT_API_KEY: Y29ydGV4X3FkcmFudF9hcGlfa2V5XzIwMjU=  # cortex_qdrant_api_key_2025
   JWT_SECRET: Y29ydGV4X2p3dF9zZWNyZXRfMjAyNV9zZWN1cmU=   # cortex_jwt_secret_2025_secure
   API_SECRET: Y29ydGV4X2FwaV9zZWNyZXRfMjAyNV9zZWN1cmU=  # cortex_api_secret_2025_secure
@@ -111,11 +115,11 @@ spec:
         - configMapRef:
             name: cortex-config
         env:
-        - name: POSTGRES_PASSWORD
+        - name: OPENAI_API_KEY
           valueFrom:
             secretKeyRef:
               name: cortex-secret
-              key: POSTGRES_PASSWORD
+              key: OPENAI_API_KEY
         - name: QDRANT_API_KEY
           valueFrom:
             secretKeyRef:

@@ -714,10 +714,6 @@ scrape_configs:
     metrics_path: /metrics
     scrape_interval: 30s
 
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
-
   - job_name: 'qdrant'
     static_configs:
       - targets: ['qdrant:6333']

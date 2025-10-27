@@ -780,7 +780,6 @@ docker push your-registry/cortex-memory-mcp:v1.0.0
 
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
 - [Jest Testing Framework](https://jestjs.io/docs/getting-started)
-- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
 - [Qdrant Documentation](https://qdrant.tech/documentation/)
 - [Express.js Guide](https://expressjs.com/en/guide/)
 
