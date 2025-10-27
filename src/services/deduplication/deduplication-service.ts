@@ -2,7 +2,7 @@ import { logger } from '../../utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import type {
   DeduplicationService as IDeduplicationService,
-  KnowledgeItem
+  KnowledgeItem,
 } from '../../types/core-interfaces.js';
 
 /**
@@ -42,22 +42,22 @@ export class DeduplicationService implements IDeduplicationService {
    */
   private getTableNameForKind(kind: string): string | null {
     const kindToTableMap: Record<string, string> = {
-      'section': 'section',
-      'decision': 'adrDecision',
-      'issue': 'issueLog',
-      'todo': 'todoLog',
-      'runbook': 'runbook',
-      'change': 'changeLog',
-      'release_note': 'releaseNote',
-      'ddl': 'ddlHistory',
-      'pr_context': 'prContext',
-      'entity': 'knowledgeEntity',
-      'relation': 'knowledgeRelation',
-      'observation': 'knowledgeObservation',
-      'incident': 'incidentLog',
-      'release': 'releaseLog',
-      'risk': 'riskLog',
-      'assumption': 'assumptionLog'
+      section: 'section',
+      decision: 'adrDecision',
+      issue: 'issueLog',
+      todo: 'todoLog',
+      runbook: 'runbook',
+      change: 'changeLog',
+      release_note: 'releaseNote',
+      ddl: 'ddlHistory',
+      pr_context: 'prContext',
+      entity: 'knowledgeEntity',
+      relation: 'knowledgeRelation',
+      observation: 'knowledgeObservation',
+      incident: 'incidentLog',
+      release: 'releaseLog',
+      risk: 'riskLog',
+      assumption: 'assumptionLog',
     };
 
     return kindToTableMap[kind] || null;
@@ -66,7 +66,9 @@ export class DeduplicationService implements IDeduplicationService {
   /**
    * Check for duplicate items in the provided list
    */
-  async checkDuplicates(items: KnowledgeItem[]): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
+  async checkDuplicates(
+    items: KnowledgeItem[]
+  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
     if (!this.config.enabled) {
       return { duplicates: [], originals: items };
     }
@@ -91,15 +93,18 @@ export class DeduplicationService implements IDeduplicationService {
     duplicates.push(...existingDuplicates);
 
     // Filter out existing duplicates from originals
-    const finalOriginals = originals.filter(original =>
-      !existingDuplicates.some(dup => this.isSameItem(original, dup))
+    const finalOriginals = originals.filter(
+      (original) => !existingDuplicates.some((dup) => this.isSameItem(original, dup))
     );
 
-    logger.info({
-      totalItems: items.length,
-      duplicatesFound: duplicates.length,
-      originalsRemaining: finalOriginals.length
-    }, 'Deduplication analysis complete');
+    logger.info(
+      {
+        totalItems: items.length,
+        duplicatesFound: duplicates.length,
+        originalsRemaining: finalOriginals.length,
+      },
+      'Deduplication analysis complete'
+    );
 
     return { duplicates, originals: finalOriginals };
   }
@@ -110,10 +115,13 @@ export class DeduplicationService implements IDeduplicationService {
   async removeDuplicates(items: KnowledgeItem[]): Promise<KnowledgeItem[]> {
     const { duplicates, originals } = await this.checkDuplicates(items);
 
-    logger.warn({
-      removedCount: duplicates.length,
-      remainingCount: originals.length
-    }, 'Duplicates removed from item list');
+    logger.warn(
+      {
+        removedCount: duplicates.length,
+        remainingCount: originals.length,
+      },
+      'Duplicates removed from item list'
+    );
 
     return originals;
   }
@@ -127,7 +135,7 @@ export class DeduplicationService implements IDeduplicationService {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Deduplication is disabled'
+        reason: 'Deduplication is disabled',
       };
     }
 
@@ -140,7 +148,7 @@ export class DeduplicationService implements IDeduplicationService {
           existingId: exactMatch.id,
           similarityScore: 1.0,
           matchType: 'exact',
-          reason: 'Exact match found in database'
+          reason: 'Exact match found in database',
         };
       }
 
@@ -152,7 +160,7 @@ export class DeduplicationService implements IDeduplicationService {
           existingId: contentMatch.id,
           similarityScore: contentMatch.similarity,
           matchType: 'content',
-          reason: `Content similarity ${contentMatch.similarity.toFixed(2)} exceeds threshold`
+          reason: `Content similarity ${contentMatch.similarity.toFixed(2)} exceeds threshold`,
         };
       }
 
@@ -160,7 +168,7 @@ export class DeduplicationService implements IDeduplicationService {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'No significant matches found'
+        reason: 'No significant matches found',
       };
     } catch (error) {
       logger.error({ error, item }, 'Error checking for duplicates');
@@ -168,7 +176,7 @@ export class DeduplicationService implements IDeduplicationService {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Error during duplicate check'
+        reason: 'Error during duplicate check',
       };
     }
   }
@@ -181,10 +189,15 @@ export class DeduplicationService implements IDeduplicationService {
       kind: item.kind,
       scope: item.scope,
       // Sort data keys to ensure consistent signature
-      data: Object.keys(item.data || {}).sort().reduce((result, key) => {
-        result[key] = item.data[key];
-        return result;
-      }, {} as Record<string, any>)
+      data: Object.keys(item.data || {})
+        .sort()
+        .reduce(
+          (result, key) => {
+            result[key] = item.data[key];
+            return result;
+          },
+          {} as Record<string, any>
+        ),
     };
 
     return JSON.stringify(signatureData);
@@ -216,7 +229,9 @@ export class DeduplicationService implements IDeduplicationService {
   /**
    * Find exact matches in the database
    */
-  private async findExactMatch(item: KnowledgeItem): Promise<{ id: string; similarity: number } | null> {
+  private async findExactMatch(
+    item: KnowledgeItem
+  ): Promise<{ id: string; similarity: number } | null> {
     const whereClause: any = {
       kind: item.kind,
     };
@@ -249,7 +264,7 @@ export class DeduplicationService implements IDeduplicationService {
 
     const existing = await (qdrant as any)[tableName].findFirst({
       where: whereClause,
-      select: { id: true }
+      select: { id: true },
     });
 
     return existing ? { id: existing.id, similarity: 1.0 } : null;
@@ -258,7 +273,9 @@ export class DeduplicationService implements IDeduplicationService {
   /**
    * Find content-based matches using similarity search
    */
-  private async findContentMatch(item: KnowledgeItem): Promise<{ id: string; similarity: number } | null> {
+  private async findContentMatch(
+    item: KnowledgeItem
+  ): Promise<{ id: string; similarity: number } | null> {
     // This is a simplified implementation
     // In a real system, you would use more sophisticated similarity algorithms
     // such as vector embeddings, text similarity, etc.
@@ -291,7 +308,7 @@ export class DeduplicationService implements IDeduplicationService {
         where: whereClause,
         select: { id: true, data: true },
         orderBy: { created_at: 'desc' },
-        take: 10 // Limit to recent items for performance
+        take: 10, // Limit to recent items for performance
       });
 
       for (const existingItem of recentItems) {
@@ -314,13 +331,13 @@ export class DeduplicationService implements IDeduplicationService {
    * Calculate simple text similarity (Jaccard similarity)
    */
   private calculateTextSimilarity(text1: string, text2: string): number {
-    const words1 = new Set(text1.split(/\s+/).filter(word => word.length > 2));
-    const words2 = new Set(text2.split(/\s+/).filter(word => word.length > 2));
+    const words1 = new Set(text1.split(/\s+/).filter((word) => word.length > 2));
+    const words2 = new Set(text2.split(/\s+/).filter((word) => word.length > 2));
 
     if (words1.size === 0 && words2.size === 0) return 1.0;
     if (words1.size === 0 || words2.size === 0) return 0.0;
 
-    const intersection = new Set([...words1].filter(word => words2.has(word)));
+    const intersection = new Set([...words1].filter((word) => words2.has(word)));
     const union = new Set([...words1, ...words2]);
 
     return intersection.size / union.size;

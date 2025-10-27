@@ -37,11 +37,11 @@ export function convertToAuthContext(mcpAuth: MCPAuthContext): AuthContext {
     user: {
       id: mcpAuth.user.id,
       username: mcpAuth.user.username,
-      role: mcpAuth.user.role as UserRole
+      role: mcpAuth.user.role as UserRole,
     },
     session: mcpAuth.session,
     scopes: mcpAuth.scopes,
-    token_jti: mcpAuth.token_jti
+    token_jti: mcpAuth.token_jti,
   };
 }
 
@@ -77,7 +77,9 @@ export class MCPAuthHelper {
 
       throw new Error('Invalid authentication token format');
     } catch (error) {
-      throw new Error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Authentication failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -92,17 +94,22 @@ export class MCPAuthHelper {
   ): Promise<{ allowed: boolean; reason: string; required_scopes: AuthScope[] }> {
     try {
       const authContext = convertToAuthContext(auth);
-      const decision = await this.authorizationService.checkAccess(authContext, resource, action, context);
+      const decision = await this.authorizationService.checkAccess(
+        authContext,
+        resource,
+        action,
+        context
+      );
       return {
         allowed: decision.allowed,
         reason: decision.reason,
-        required_scopes: decision.required_scopes
+        required_scopes: decision.required_scopes,
       };
     } catch (error) {
       return {
         allowed: false,
         reason: `Authorization check failed: ${error instanceof Error ? error.message : String(error)}`,
-        required_scopes: []
+        required_scopes: [],
       };
     }
   }
@@ -124,7 +131,7 @@ export class MCPAuthHelper {
         method,
         requestInfo.ip_address,
         requestInfo.user_agent,
-        scopes.map(s => s as string)
+        scopes.map((s) => s as string)
       );
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
@@ -171,14 +178,17 @@ export class MCPAuthHelper {
         userId,
         resource,
         action,
-        requiredScopes.map(s => s as string),
-        userScopes.map(s => s as string),
+        requiredScopes.map((s) => s as string),
+        userScopes.map((s) => s as string),
         requestInfo.ip_address,
         requestInfo.user_agent
       );
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
-      logger.error({ error, userId, resource, action, requiredScopes, userScopes }, 'Failed to log permission denied');
+      logger.error(
+        { error, userId, resource, action, requiredScopes, userScopes },
+        'Failed to log permission denied'
+      );
     }
   }
 }

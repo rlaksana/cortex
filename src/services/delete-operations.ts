@@ -138,7 +138,7 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
     if (entity_type === 'decision') {
       const decision = await qdrant.adrDecision.findUnique({
         where: { id: entity_id },
-        select: { status: true }
+        select: { status: true },
       });
 
       if (decision?.status === 'accepted') {
@@ -157,15 +157,21 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
       runbook: () => qdrant.runbook.findUnique({ where: { id: entity_id }, select: { id: true } }),
       change: () => qdrant.changeLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
       issue: () => qdrant.issueLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      decision: () => qdrant.adrDecision.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      decision: () =>
+        qdrant.adrDecision.findUnique({ where: { id: entity_id }, select: { id: true } }),
       todo: () => qdrant.todoLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      release_note: () => qdrant.releaseNote.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release_note: () =>
+        qdrant.releaseNote.findUnique({ where: { id: entity_id }, select: { id: true } }),
       ddl: () => qdrant.ddlHistory.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      pr_context: () => qdrant.prContext.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      incident: () => qdrant.incidentLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      release: () => qdrant.releaseLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      pr_context: () =>
+        qdrant.prContext.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      incident: () =>
+        qdrant.incidentLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release: () =>
+        qdrant.releaseLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
       risk: () => qdrant.riskLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      assumption: () => qdrant.assumptionLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      assumption: () =>
+        qdrant.assumptionLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
     };
 
     // Use Qdrant model map for type-safe delete operations
@@ -221,7 +227,7 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
       {
         id: entity_id,
         entity_type,
-        cascaded_relations: cascadedCount
+        cascaded_relations: cascadedCount,
       },
       'Entity deleted successfully'
     );
@@ -237,7 +243,7 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
       {
         error: err,
         id: entity_id,
-        entity_type
+        entity_type,
       },
       'Failed to delete entity'
     );
@@ -259,10 +265,7 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
  * @param entity_id - Entity UUID
  * @returns Number of relations deleted
  */
-async function cascadeDeleteRelations(
-  entity_type: string,
-  entity_id: string
-): Promise<number> {
+async function cascadeDeleteRelations(entity_type: string, entity_id: string): Promise<number> {
   const qdrant = getQdrantClient();
 
   try {
@@ -295,7 +298,7 @@ async function cascadeDeleteRelations(
       {
         entity_type,
         entity_id,
-        cascadedCount: result.count
+        cascadedCount: result.count,
       },
       'Cascade deleted relations'
     );
@@ -306,7 +309,7 @@ async function cascadeDeleteRelations(
       {
         error,
         entity_type,
-        entity_id
+        entity_id,
       },
       'Failed to cascade delete relations'
     );
@@ -389,7 +392,7 @@ export async function undelete(entity_type: string, entity_id: string): Promise<
     logger.warn(
       {
         entity_type,
-        entity_id
+        entity_id,
       },
       'Undelete not supported for entity type (hard delete only)'
     );
@@ -400,7 +403,7 @@ export async function undelete(entity_type: string, entity_id: string): Promise<
       {
         error,
         entity_type,
-        entity_id
+        entity_id,
       },
       'Failed to undelete entity'
     );

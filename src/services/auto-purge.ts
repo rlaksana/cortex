@@ -27,30 +27,32 @@ export interface PurgeResult {
  *
  * @param source - Tool that triggered the check
  */
-export async function checkAndPurge(
-  source: 'memory.store' | 'memory.find'
-): Promise<void> {
+export async function checkAndPurge(source: 'memory.store' | 'memory.find'): Promise<void> {
   try {
     // Update operation counter with error handling
     const updateResult = await dbErrorHandler.executeWithRetry(
-      () => qdrant.getClient().purgeMetadata.update({
-        where: { id: 1 },
-        data: {
-          operations_since_purge: { increment: 1 }
-        }
-      }),
+      () =>
+        qdrant.getClient().purgeMetadata.update({
+          where: { id: 1 },
+          data: {
+            operations_since_purge: { increment: 1 },
+          },
+        }),
       'auto-purge.update-counter',
       { maxRetries: 2, baseDelayMs: 500 }
     );
 
     if (!updateResult.success) {
-      logger.warn({ error: updateResult.error, source }, 'Failed to update purge counter, skipping purge check');
+      logger.warn(
+        { error: updateResult.error, source },
+        'Failed to update purge counter, skipping purge check'
+      );
       return;
     }
 
     // Get current state
     const meta = await qdrant.getClient().purgeMetadata.findUnique({
-      where: { id: 1 }
+      where: { id: 1 },
     });
 
     if (!meta) {
@@ -59,8 +61,8 @@ export async function checkAndPurge(
         data: {
           id: 1,
           time_threshold_hours: 24,
-          operation_threshold: 1000
-        }
+          operation_threshold: 1000,
+        },
       });
       return;
     }
@@ -138,16 +140,16 @@ async function runPurge(
     const r1 = await qdrant.getClient().todoLog.deleteMany({
       where: {
         status: { in: ['done', 'cancelled'] },
-        closed_at: { lt: ninetyDaysAgo }
-      }
+        closed_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.todo = r1.count;
 
     // Rule 2: Delete old changes > 90 days
     const r2 = await qdrant.getClient().changeLog.deleteMany({
       where: {
-        created_at: { lt: ninetyDaysAgo }
-      }
+        created_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.change = r2.count;
 
@@ -155,8 +157,8 @@ async function runPurge(
     const r3 = await qdrant.getClient().prContext.deleteMany({
       where: {
         status: 'merged',
-        merged_at: { lt: thirtyDaysAgo }
-      }
+        merged_at: { lt: thirtyDaysAgo },
+      },
     });
     deleted_counts.pr_context = r3.count;
 
@@ -164,32 +166,32 @@ async function runPurge(
     const r4 = await qdrant.getClient().issueLog.deleteMany({
       where: {
         status: { in: ['closed', 'wont_fix'] },
-        updated_at: { lt: ninetyDaysAgo }
-      }
+        updated_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.issue = r4.count;
 
     // Rule 5: Hard delete soft-deleted graph entities > 90 days
     const r5 = await qdrant.getClient().knowledgeEntity.deleteMany({
       where: {
-        deleted_at: { lt: ninetyDaysAgo }
-      }
+        deleted_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.entity = r5.count;
 
     // Rule 6: Hard delete soft-deleted relations > 90 days
     const r6 = await qdrant.getClient().knowledgeRelation.deleteMany({
       where: {
-        deleted_at: { lt: ninetyDaysAgo }
-      }
+        deleted_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.relation = r6.count;
 
     // Rule 7: Hard delete soft-deleted observations > 90 days
     const r7 = await qdrant.getClient().knowledgeObservation.deleteMany({
       where: {
-        deleted_at: { lt: ninetyDaysAgo }
-      }
+        deleted_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.observation = r7.count;
 
@@ -197,8 +199,8 @@ async function runPurge(
     const r8 = await qdrant.getClient().incidentLog.deleteMany({
       where: {
         resolution_status: { in: ['resolved', 'closed'] },
-        updated_at: { lt: ninetyDaysAgo }
-      }
+        updated_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.incident = r8.count;
 
@@ -206,8 +208,8 @@ async function runPurge(
     const r9 = await qdrant.getClient().releaseLog.deleteMany({
       where: {
         status: { in: ['completed', 'rolled_back'] },
-        updated_at: { lt: ninetyDaysAgo }
-      }
+        updated_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.release = r9.count;
 
@@ -215,8 +217,8 @@ async function runPurge(
     const r10 = await qdrant.getClient().riskLog.deleteMany({
       where: {
         status: { in: ['closed', 'accepted'] },
-        updated_at: { lt: ninetyDaysAgo }
-      }
+        updated_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.risk = r10.count;
 
@@ -224,8 +226,8 @@ async function runPurge(
     const r11 = await qdrant.getClient().assumptionLog.deleteMany({
       where: {
         validation_status: 'validated',
-        updated_at: { lt: ninetyDaysAgo }
-      }
+        updated_at: { lt: ninetyDaysAgo },
+      },
     });
     deleted_counts.assumption = r11.count;
 
@@ -239,8 +241,8 @@ async function runPurge(
         last_purge_at: new Date(),
         operations_since_purge: 0,
         deleted_counts,
-        last_duration_ms: durationMs
-      }
+        last_duration_ms: durationMs,
+      },
     });
 
     logger.info(
@@ -284,7 +286,7 @@ export async function manualPurge(): Promise<PurgeResult> {
  */
 export async function getPurgeStatus() {
   const meta = await qdrant.getClient().purgeMetadata.findUnique({
-    where: { id: 1 }
+    where: { id: 1 },
   });
 
   if (!meta) {

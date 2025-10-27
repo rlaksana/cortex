@@ -35,31 +35,29 @@ interface SearchExecutionResult {
  * Coordinates query parsing, strategy selection, search execution, and result ranking
  */
 export class MemoryFindOrchestrator {
-  constructor(
-    private ranker: ResultRanker = resultRanker
-  ) {}
+  constructor(private ranker: ResultRanker = resultRanker) {}
 
   /**
    * Map knowledge kinds to their corresponding Qdrant table names
    */
   private getTableNameForKind(kind: string): string | null {
     const kindToTableMap: Record<string, string> = {
-      'section': 'section',
-      'decision': 'adrDecision',
-      'issue': 'issueLog',
-      'todo': 'todoLog',
-      'runbook': 'runbook',
-      'change': 'changeLog',
-      'release_note': 'releaseNote',
-      'ddl': 'ddlHistory',
-      'pr_context': 'prContext',
-      'entity': 'knowledgeEntity',
-      'relation': 'knowledgeRelation',
-      'observation': 'knowledgeObservation',
-      'incident': 'incidentLog',
-      'release': 'releaseLog',
-      'risk': 'riskLog',
-      'assumption': 'assumptionLog'
+      section: 'section',
+      decision: 'adrDecision',
+      issue: 'issueLog',
+      todo: 'todoLog',
+      runbook: 'runbook',
+      change: 'changeLog',
+      release_note: 'releaseNote',
+      ddl: 'ddlHistory',
+      pr_context: 'prContext',
+      entity: 'knowledgeEntity',
+      relation: 'knowledgeRelation',
+      observation: 'knowledgeObservation',
+      incident: 'incidentLog',
+      release: 'releaseLog',
+      risk: 'riskLog',
+      assumption: 'assumptionLog',
     };
 
     return kindToTableMap[kind] || null;
@@ -69,7 +67,13 @@ export class MemoryFindOrchestrator {
    * Query multiple knowledge tables based on types filter
    * Uses table-specific field mapping instead of universal data field
    */
-  private async queryMultipleTables(types: string[], whereClause: any, select: any, orderBy?: any, take?: number) {
+  private async queryMultipleTables(
+    types: string[],
+    whereClause: any,
+    select: any,
+    orderBy?: any,
+    take?: number
+  ) {
     const results: any[] = [];
     let totalCount = 0;
 
@@ -86,18 +90,20 @@ export class MemoryFindOrchestrator {
           where: tableSpecificWhere,
           select: tableSpecificSelect,
           orderBy: orderBy || { updated_at: 'desc' },
-          take: take || 50
+          take: take || 50,
         });
 
         const tableCount = await (qdrant as any)[tableName].count({
-          where: tableSpecificWhere
+          where: tableSpecificWhere,
         });
 
-        results.push(...tableResults.map((result: any) => ({
-          ...result,
-          kind,
-          created_at: result.created_at.toISOString()
-        })));
+        results.push(
+          ...tableResults.map((result: any) => ({
+            ...result,
+            kind,
+            created_at: result.created_at.toISOString(),
+          }))
+        );
 
         totalCount += tableCount;
       } catch (error) {
@@ -111,7 +117,11 @@ export class MemoryFindOrchestrator {
   /**
    * Build table-specific WHERE clause based on table structure
    */
-  private buildTableSpecificWhereClause(tableName: string, baseWhereClause: any, kind: string): any {
+  private buildTableSpecificWhereClause(
+    tableName: string,
+    baseWhereClause: any,
+    kind: string
+  ): any {
     const whereClause = { ...baseWhereClause };
 
     // Convert universal data field searches to table-specific field searches
@@ -124,8 +134,8 @@ export class MemoryFindOrchestrator {
           const searchTerm = orCondition.data.string_contains;
 
           // Create OR conditions for all searchable fields in this table
-          const fieldConditions = searchFields.map(field => ({
-            [field]: { contains: searchTerm, mode: 'insensitive' }
+          const fieldConditions = searchFields.map((field) => ({
+            [field]: { contains: searchTerm, mode: 'insensitive' },
           }));
 
           tableSpecificOR.push(...fieldConditions);
@@ -153,16 +163,30 @@ export class MemoryFindOrchestrator {
    */
   private buildTableSpecificSelect(tableName: string, baseSelect: any, kind: string): any {
     // For tables with knowledge structure, use tags and metadata
-    if (['section', 'adrDecision', 'issueLog', 'todoLog', 'runbook', 'changeLog',
-         'releaseNote', 'ddlHistory', 'prContext', 'incidentLog', 'releaseLog',
-         'riskLog', 'assumptionLog'].includes(tableName)) {
+    if (
+      [
+        'section',
+        'adrDecision',
+        'issueLog',
+        'todoLog',
+        'runbook',
+        'changeLog',
+        'releaseNote',
+        'ddlHistory',
+        'prContext',
+        'incidentLog',
+        'releaseLog',
+        'riskLog',
+        'assumptionLog',
+      ].includes(tableName)
+    ) {
       return {
         id: true,
         tags: true, // Scope data is stored in tags field
         created_at: true,
         updated_at: true,
         // Add table-specific fields
-        ...this.getTableSpecificFields(tableName)
+        ...this.getTableSpecificFields(tableName),
       };
     }
 
@@ -174,7 +198,7 @@ export class MemoryFindOrchestrator {
         name: true,
         tags: true,
         created_at: true,
-        updated_at: true
+        updated_at: true,
       };
     }
 
@@ -189,7 +213,7 @@ export class MemoryFindOrchestrator {
         relation_type: true,
         tags: true,
         created_at: true,
-        updated_at: true
+        updated_at: true,
       };
     }
 
@@ -198,7 +222,7 @@ export class MemoryFindOrchestrator {
       id: true,
       tags: true,
       created_at: true,
-      updated_at: true
+      updated_at: true,
     };
   }
 
@@ -207,21 +231,21 @@ export class MemoryFindOrchestrator {
    */
   private getSearchableFields(tableName: string): string[] {
     const fieldMap: Record<string, string[]> = {
-      'section': ['title', 'content', 'heading', 'body_md', 'body_text'],
-      'adrDecision': ['title', 'rationale', 'component'],
-      'issueLog': ['title', 'description', 'status', 'tracker'],
-      'todoLog': ['title', 'description', 'status', 'text'],
-      'runbook': ['title', 'description', 'service'],
-      'changeLog': ['change_type', 'subject_ref', 'summary', 'author'],
-      'releaseNote': ['version', 'summary'],
-      'ddlHistory': ['migration_id', 'description', 'status'],
-      'prContext': ['title', 'description', 'author', 'status'],
-      'incidentLog': ['title', 'severity', 'impact', 'resolution_status'],
-      'releaseLog': ['version', 'release_type', 'scope', 'status'],
-      'riskLog': ['title', 'category', 'risk_level', 'impact_description'],
-      'assumptionLog': ['title', 'description', 'category', 'validation_status'],
-      'knowledgeEntity': ['name', 'entity_type'],
-      'knowledgeRelation': ['relation_type']
+      section: ['title', 'content', 'heading', 'body_md', 'body_text'],
+      adrDecision: ['title', 'rationale', 'component'],
+      issueLog: ['title', 'description', 'status', 'tracker'],
+      todoLog: ['title', 'description', 'status', 'text'],
+      runbook: ['title', 'description', 'service'],
+      changeLog: ['change_type', 'subject_ref', 'summary', 'author'],
+      releaseNote: ['version', 'summary'],
+      ddlHistory: ['migration_id', 'description', 'status'],
+      prContext: ['title', 'description', 'author', 'status'],
+      incidentLog: ['title', 'severity', 'impact', 'resolution_status'],
+      releaseLog: ['version', 'release_type', 'scope', 'status'],
+      riskLog: ['title', 'category', 'risk_level', 'impact_description'],
+      assumptionLog: ['title', 'description', 'category', 'validation_status'],
+      knowledgeEntity: ['name', 'entity_type'],
+      knowledgeRelation: ['relation_type'],
     };
 
     return fieldMap[tableName] || ['title', 'description'];
@@ -232,19 +256,19 @@ export class MemoryFindOrchestrator {
    */
   private getTableSpecificFields(tableName: string): any {
     const fieldMap: Record<string, any> = {
-      'section': { title: true, content: true, heading: true },
-      'adrDecision': { title: true, rationale: true, component: true },
-      'issueLog': { title: true, description: true, status: true },
-      'todoLog': { title: true, description: true, status: true },
-      'runbook': { title: true, description: true, service: true },
-      'changeLog': { change_type: true, summary: true, author: true },
-      'releaseNote': { version: true, summary: true },
-      'ddlHistory': { migration_id: true, description: true },
-      'prContext': { title: true, description: true, author: true },
-      'incidentLog': { title: true, severity: true, impact: true },
-      'releaseLog': { version: true, release_type: true, scope: true },
-      'riskLog': { title: true, category: true, risk_level: true },
-      'assumptionLog': { title: true, description: true, category: true }
+      section: { title: true, content: true, heading: true },
+      adrDecision: { title: true, rationale: true, component: true },
+      issueLog: { title: true, description: true, status: true },
+      todoLog: { title: true, description: true, status: true },
+      runbook: { title: true, description: true, service: true },
+      changeLog: { change_type: true, summary: true, author: true },
+      releaseNote: { version: true, summary: true },
+      ddlHistory: { migration_id: true, description: true },
+      prContext: { title: true, description: true, author: true },
+      incidentLog: { title: true, severity: true, impact: true },
+      releaseLog: { version: true, release_type: true, scope: true },
+      riskLog: { title: true, category: true, risk_level: true },
+      assumptionLog: { title: true, description: true, category: true },
     };
 
     return fieldMap[tableName] || {};
@@ -269,18 +293,14 @@ export class MemoryFindOrchestrator {
         originalQuery: query,
         parsed,
         strategy: searchStrategySelector.selectStrategy(query, parsed),
-        startTime
+        startTime,
       };
 
       // Step 2: Execute search strategy
       const searchResult = await this.executeSearch(context);
 
       // Step 3: Rank results
-      const rankedResults = this.ranker.rankResults(
-        searchResult.results,
-        query,
-        parsed
-      );
+      const rankedResults = this.ranker.rankResults(searchResult.results, query, parsed);
 
       // Step 4: Build response
       const response = this.buildResponse(rankedResults, searchResult);
@@ -288,21 +308,23 @@ export class MemoryFindOrchestrator {
       // Step 5: Log operation
       await this.logSearchOperation(query, response, Date.now() - startTime);
 
-      logger.info({
-        resultCount: response.results.length,
-        executionTime: Date.now() - startTime,
-        strategy: searchResult.strategy.primary.name
-      }, 'Memory find operation completed');
+      logger.info(
+        {
+          resultCount: response.results.length,
+          executionTime: Date.now() - startTime,
+          strategy: searchResult.strategy.primary.name,
+        },
+        'Memory find operation completed'
+      );
 
       return response;
-
     } catch (error) {
       logger.error({ error, query }, 'Memory find operation failed');
 
       // Log error
       await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
         operation: 'memory_find',
-        query: query.query
+        query: query.query,
       });
 
       return this.createErrorResponse(error);
@@ -317,11 +339,7 @@ export class MemoryFindOrchestrator {
 
     try {
       // Execute primary strategy
-      const primaryResults = await this.executeStrategy(
-        strategy.primary,
-        parsed,
-        originalQuery
-      );
+      const primaryResults = await this.executeStrategy(strategy.primary, parsed, originalQuery);
 
       if (primaryResults.results.length > 0 || !strategy.fallback) {
         return {
@@ -329,15 +347,18 @@ export class MemoryFindOrchestrator {
           totalCount: primaryResults.totalCount,
           strategy,
           executionTime: Date.now() - context.startTime,
-          fallbackUsed: false
+          fallbackUsed: false,
         };
       }
 
       // Try fallback strategy if primary returned no results
-      logger.warn({
-        primaryStrategy: strategy.primary.name,
-        fallbackStrategy: strategy.fallback?.name
-      }, 'Primary strategy returned no results, trying fallback');
+      logger.warn(
+        {
+          primaryStrategy: strategy.primary.name,
+          fallbackStrategy: strategy.fallback?.name,
+        },
+        'Primary strategy returned no results, trying fallback'
+      );
 
       if (strategy.fallback) {
         const fallbackResults = await this.executeStrategy(
@@ -351,7 +372,7 @@ export class MemoryFindOrchestrator {
           totalCount: fallbackResults.totalCount,
           strategy,
           executionTime: Date.now() - context.startTime,
-          fallbackUsed: true
+          fallbackUsed: true,
         };
       }
 
@@ -360,9 +381,8 @@ export class MemoryFindOrchestrator {
         totalCount: 0,
         strategy,
         executionTime: Date.now() - context.startTime,
-        fallbackUsed: false
+        fallbackUsed: false,
       };
-
     } catch (error) {
       logger.error({ error, strategy: strategy.primary.name }, 'Primary strategy failed');
 
@@ -380,10 +400,13 @@ export class MemoryFindOrchestrator {
             totalCount: fallbackResults.totalCount,
             strategy,
             executionTime: Date.now() - context.startTime,
-            fallbackUsed: true
+            fallbackUsed: true,
           };
         } catch (fallbackError) {
-          logger.error({ fallbackError, strategy: strategy.fallback.name }, 'Fallback strategy also failed');
+          logger.error(
+            { fallbackError, strategy: strategy.fallback.name },
+            'Fallback strategy also failed'
+          );
           throw fallbackError;
         }
       }
@@ -430,12 +453,13 @@ export class MemoryFindOrchestrator {
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
     // Build search query for table-specific fields
     const whereClause: any = {
-      OR: []
+      OR: [],
     };
 
     // Add search conditions for each term
     for (const term of parsed.terms) {
-      if (term.length > 2) { // Skip very short terms
+      if (term.length > 2) {
+        // Skip very short terms
         whereClause.OR.push(
           { data: { path: ['title'], string_contains: term } },
           { data: { path: ['name'], string_contains: term } },
@@ -456,17 +480,17 @@ export class MemoryFindOrchestrator {
       const scopeConditions = [];
       if (query.scope.project) {
         scopeConditions.push({
-          tags: { path: ['project'], equals: query.scope.project }
+          tags: { path: ['project'], equals: query.scope.project },
         });
       }
       if (query.scope.branch) {
         scopeConditions.push({
-          tags: { path: ['branch'], equals: query.scope.branch }
+          tags: { path: ['branch'], equals: query.scope.branch },
         });
       }
       if (query.scope.org) {
         scopeConditions.push({
-          tags: { path: ['org'], equals: query.scope.org }
+          tags: { path: ['org'], equals: query.scope.org },
         });
       }
 
@@ -476,30 +500,33 @@ export class MemoryFindOrchestrator {
       }
     }
 
-    const types = query.types && query.types.length > 0 ? query.types : Object.keys({
-      'section': 'section',
-      'decision': 'adrDecision',
-      'issue': 'issueLog',
-      'todo': 'todoLog',
-      'runbook': 'runbook',
-      'change': 'changeLog',
-      'release_note': 'releaseNote',
-      'ddl': 'ddlHistory',
-      'pr_context': 'prContext',
-      'entity': 'knowledgeEntity',
-      'relation': 'knowledgeRelation',
-      'observation': 'knowledgeObservation',
-      'incident': 'incidentLog',
-      'release': 'releaseLog',
-      'risk': 'riskLog',
-      'assumption': 'assumptionLog'
-    });
+    const types =
+      query.types && query.types.length > 0
+        ? query.types
+        : Object.keys({
+            section: 'section',
+            decision: 'adrDecision',
+            issue: 'issueLog',
+            todo: 'todoLog',
+            runbook: 'runbook',
+            change: 'changeLog',
+            release_note: 'releaseNote',
+            ddl: 'ddlHistory',
+            pr_context: 'prContext',
+            entity: 'knowledgeEntity',
+            relation: 'knowledgeRelation',
+            observation: 'knowledgeObservation',
+            incident: 'incidentLog',
+            release: 'releaseLog',
+            risk: 'riskLog',
+            assumption: 'assumptionLog',
+          });
 
     const selectFields = {
       id: true,
       tags: true, // Scope data is stored in tags field
       created_at: true,
-      updated_at: true
+      updated_at: true,
     };
 
     const { results, totalCount } = await this.queryMultipleTables(
@@ -511,8 +538,8 @@ export class MemoryFindOrchestrator {
     );
 
     return {
-      results: results.map(row => this.mapRowToSearchResult(row, 0.8)), // Base confidence score
-      totalCount
+      results: results.map((row) => this.mapRowToSearchResult(row, 0.8)), // Base confidence score
+      totalCount,
     };
   }
 
@@ -542,18 +569,15 @@ export class MemoryFindOrchestrator {
     // Execute both fulltext and semantic searches
     const [fulltextResults, semanticResults] = await Promise.all([
       this.executeFulltextSearch(parsed, query),
-      this.executeSemanticSearch(parsed, query)
+      this.executeSemanticSearch(parsed, query),
     ]);
 
     // Merge and deduplicate results
-    const mergedResults = this.mergeResults(
-      fulltextResults.results,
-      semanticResults.results
-    );
+    const mergedResults = this.mergeResults(fulltextResults.results, semanticResults.results);
 
     return {
       results: mergedResults,
-      totalCount: Math.max(fulltextResults.totalCount, semanticResults.totalCount)
+      totalCount: Math.max(fulltextResults.totalCount, semanticResults.totalCount),
     };
   }
 
@@ -575,23 +599,20 @@ export class MemoryFindOrchestrator {
     const allResults: SearchResult[] = [];
     let totalCount = 0;
 
-    for (const entity of entityMatches.slice(0, 5)) { // Limit to prevent explosion
+    for (const entity of entityMatches.slice(0, 5)) {
+      // Limit to prevent explosion
       const traversalOptions: TraversalOptions = {
         depth: 2,
-        direction: 'both'
+        direction: 'both',
       };
 
-      const graphResult = await traverseGraph(
-        entity.kind,
-        entity.id,
-        traversalOptions
-      );
+      const graphResult = await traverseGraph(entity.kind, entity.id, traversalOptions);
 
       // Enrich graph nodes with data
       const enrichedNodes = await enrichGraphNodes(graphResult.nodes);
 
       // Convert to search results
-      const searchResults = enrichedNodes.map(node => {
+      const searchResults = enrichedNodes.map((node) => {
         const nodeData = node.data as any;
         const tags = nodeData?.tags || {};
         return {
@@ -600,12 +621,15 @@ export class MemoryFindOrchestrator {
           scope: {
             project: tags.project,
             branch: tags.branch,
-            org: tags.org
+            org: tags.org,
           },
           data: nodeData || {},
-          created_at: (typeof nodeData?.created_at === 'string' ? nodeData.created_at : new Date().toISOString()),
+          created_at:
+            typeof nodeData?.created_at === 'string'
+              ? nodeData.created_at
+              : new Date().toISOString(),
           confidence_score: 0.7, // Base confidence for graph traversal
-          match_type: 'semantic' as const
+          match_type: 'semantic' as const,
         };
       });
 
@@ -615,7 +639,7 @@ export class MemoryFindOrchestrator {
 
     return {
       results: allResults,
-      totalCount
+      totalCount,
     };
   }
 
@@ -635,12 +659,11 @@ export class MemoryFindOrchestrator {
       logger.error({ error, query: query.query }, 'Fallback search service failed');
       return {
         results: [],
-        totalCount: 0
+        totalCount: 0,
       };
     }
   }
 
-  
   /**
    * Find entities matching the query terms using service layer
    */
@@ -662,10 +685,7 @@ export class MemoryFindOrchestrator {
   /**
    * Merge and deduplicate results from multiple searches
    */
-  private mergeResults(
-    results1: SearchResult[],
-    results2: SearchResult[]
-  ): SearchResult[] {
+  private mergeResults(results1: SearchResult[], results2: SearchResult[]): SearchResult[] {
     const seen = new Set<string>();
     const merged: SearchResult[] = [];
 
@@ -696,12 +716,12 @@ export class MemoryFindOrchestrator {
       scope: {
         project: tags.project,
         branch: tags.branch,
-        org: tags.org
+        org: tags.org,
       },
       data: normalizedData,
       created_at: row.created_at?.toISOString() || new Date().toISOString(),
       confidence_score: baseConfidence,
-      match_type: 'exact' as const
+      match_type: 'exact' as const,
     };
   }
 
@@ -718,7 +738,7 @@ export class MemoryFindOrchestrator {
           content: row.content,
           heading: row.heading,
           body_md: row.body_md,
-          body_text: row.body_text
+          body_text: row.body_text,
         };
 
       case 'adrDecision':
@@ -726,7 +746,7 @@ export class MemoryFindOrchestrator {
           title: row.title,
           rationale: row.rationale,
           component: row.component,
-          status: row.status
+          status: row.status,
         };
 
       case 'issueLog':
@@ -734,7 +754,7 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.description,
           status: row.status,
-          severity: row.severity
+          severity: row.severity,
         };
 
       case 'todoLog':
@@ -742,14 +762,14 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.description,
           status: row.status,
-          priority: row.priority
+          priority: row.priority,
         };
 
       case 'runbook':
         return {
           title: row.title,
           description: row.description,
-          service: row.service
+          service: row.service,
         };
 
       case 'changeLog':
@@ -757,20 +777,20 @@ export class MemoryFindOrchestrator {
           title: row.subject_ref,
           description: row.summary,
           change_type: row.change_type,
-          author: row.author
+          author: row.author,
         };
 
       case 'releaseNote':
         return {
           title: row.version,
-          description: row.summary
+          description: row.summary,
         };
 
       case 'ddlHistory':
         return {
           title: row.migration_id,
           description: row.description,
-          status: row.status
+          status: row.status,
         };
 
       case 'prContext':
@@ -778,7 +798,7 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.description,
           author: row.author,
-          status: row.status
+          status: row.status,
         };
 
       case 'incidentLog':
@@ -786,7 +806,7 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.impact,
           severity: row.severity,
-          status: row.resolution_status
+          status: row.resolution_status,
         };
 
       case 'releaseLog':
@@ -794,7 +814,7 @@ export class MemoryFindOrchestrator {
           title: row.version,
           description: row.scope,
           release_type: row.release_type,
-          status: row.status
+          status: row.status,
         };
 
       case 'riskLog':
@@ -802,7 +822,7 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.impact_description,
           category: row.category,
-          risk_level: row.risk_level
+          risk_level: row.risk_level,
         };
 
       case 'assumptionLog':
@@ -810,26 +830,26 @@ export class MemoryFindOrchestrator {
           title: row.title,
           description: row.description,
           category: row.category,
-          validation_status: row.validation_status
+          validation_status: row.validation_status,
         };
 
       case 'knowledgeEntity':
         return {
           name: row.name,
-          entity_type: row.entity_type
+          entity_type: row.entity_type,
         };
 
       case 'knowledgeRelation':
         return {
           relation_type: row.relation_type,
           from_entity_type: row.from_entity_type,
-          to_entity_type: row.to_entity_type
+          to_entity_type: row.to_entity_type,
         };
 
       default:
         return {
           title: row.title || row.name || 'Unknown',
-          description: row.description || row.content || ''
+          description: row.description || row.content || '',
         };
     }
   }
@@ -842,14 +862,14 @@ export class MemoryFindOrchestrator {
     searchResult: SearchExecutionResult
   ): MemoryFindResponse {
     // Convert ranked results back to SearchResult format
-    const results = rankedResults.map(rr => ({
+    const results = rankedResults.map((rr) => ({
       id: rr.id,
       kind: rr.kind,
       scope: rr.scope,
       data: rr.data,
       created_at: rr.created_at,
       confidence_score: rr.boostedScore,
-      match_type: rr.match_type
+      match_type: rr.match_type,
     }));
 
     return {
@@ -858,11 +878,12 @@ export class MemoryFindOrchestrator {
       autonomous_context: {
         search_mode_used: searchResult.strategy.primary.name,
         results_found: results.length,
-        confidence_average: results.length > 0
-          ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
-          : 0,
-        user_message_suggestion: this.generateUserMessage(results, searchResult)
-      }
+        confidence_average:
+          results.length > 0
+            ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
+            : 0,
+        user_message_suggestion: this.generateUserMessage(results, searchResult),
+      },
     };
   }
 
@@ -918,8 +939,8 @@ export class MemoryFindOrchestrator {
         search_mode_used: 'validation_failed',
         results_found: 0,
         confidence_average: 0,
-        user_message_suggestion: `❌ Invalid query: ${errors.join(', ')}`
-      }
+        user_message_suggestion: `❌ Invalid query: ${errors.join(', ')}`,
+      },
     };
   }
 
@@ -934,8 +955,8 @@ export class MemoryFindOrchestrator {
         search_mode_used: 'error',
         results_found: 0,
         confidence_average: 0,
-        user_message_suggestion: '❌ Search failed - please try again'
-      }
+        user_message_suggestion: '❌ Search failed - please try again',
+      },
     };
   }
 }

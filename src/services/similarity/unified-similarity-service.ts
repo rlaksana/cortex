@@ -22,7 +22,7 @@ import { environment } from '../../config/environment.js';
 import type {
   SimilarityService as ISimilarityService,
   KnowledgeItem,
-  MemoryStoreResponse
+  MemoryStoreResponse,
 } from '../../types/core-interfaces.js';
 import type { DatabaseConfig } from '../../db/database-interface.js';
 
@@ -77,7 +77,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
       distance: config.distance,
       logQueries: config.logQueries,
       connectionTimeout: config.connectionTimeout,
-      maxConnections: config.maxConnections
+      maxConnections: config.maxConnections,
     });
 
     this.config = {
@@ -89,7 +89,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
       vectorWeight: 0.7, // Favor semantic similarity
       lexicalWeight: 0.3, // Complement with lexical analysis
       enableContradictionDetection: true,
-      enableAdaptiveThresholds: true
+      enableAdaptiveThresholds: true,
     };
   }
 
@@ -133,21 +133,24 @@ export class UnifiedSimilarityService implements ISimilarityService {
       maxResults = this.config.maxResults,
       includeContent = this.config.includeContentAnalysis,
       includeMetadata = this.config.includeMetadataAnalysis,
-      scope
+      scope,
     } = options;
 
     try {
-      logger.debug({
-        queryId: query.id,
-        threshold,
-        maxResults,
-        scope
-      }, 'Finding similar items using hybrid analysis');
+      logger.debug(
+        {
+          queryId: query.id,
+          threshold,
+          maxResults,
+          scope,
+        },
+        'Finding similar items using hybrid analysis'
+      );
 
       // Step 1: Semantic search using Qdrant vector similarity
       const semanticResults = await this.performSemanticSearch(query, {
         maxResults: maxResults * 2, // Get more candidates for filtering
-        scope
+        scope,
       });
 
       // Step 2: Lexical similarity analysis for top candidates
@@ -162,28 +165,28 @@ export class UnifiedSimilarityService implements ISimilarityService {
       );
 
       // Step 4: Apply adaptive thresholding and sorting
-      const filteredResults = await this.applyAdaptiveFiltering(
-        combinedResults,
-        threshold
-      );
+      const filteredResults = await this.applyAdaptiveFiltering(combinedResults, threshold);
 
       // Step 5: Detect contradictions and recommend actions
-      const finalResults = await this.analyzeContradictionsAndRecommend(
-        filteredResults
+      const finalResults = await this.analyzeContradictionsAndRecommend(filteredResults);
+
+      logger.debug(
+        {
+          queryId: query.id,
+          resultCount: finalResults.length,
+        },
+        'Similarity analysis completed'
       );
 
-      logger.debug({
-        queryId: query.id,
-        resultCount: finalResults.length
-      }, 'Similarity analysis completed');
-
       return finalResults.slice(0, maxResults);
-
     } catch (error) {
-      logger.error({
-        error,
-        queryId: query.id
-      }, 'Failed to find similar items');
+      logger.error(
+        {
+          error,
+          queryId: query.id,
+        },
+        'Failed to find similar items'
+      );
       throw error;
     }
   }
@@ -210,29 +213,29 @@ export class UnifiedSimilarityService implements ISimilarityService {
       const similarItems = await this.findSimilar(item, {
         threshold,
         maxResults: 5,
-        scope
+        scope,
       });
 
-      const exactMatches = similarItems.filter(result => result.score >= threshold);
+      const exactMatches = similarItems.filter((result) => result.score >= threshold);
       const isDuplicate = exactMatches.length > 0;
-      const confidence = exactMatches.length > 0 ? Math.max(...exactMatches.map(m => m.score)) : 0;
+      const confidence =
+        exactMatches.length > 0 ? Math.max(...exactMatches.map((m) => m.score)) : 0;
 
       const reasoning = [
         `Found ${exactMatches.length} potential ${strictMode ? 'exact' : 'near'} duplicates`,
         `Highest similarity score: ${confidence.toFixed(3)}`,
         `Analysis threshold: ${threshold}`,
-        exactMatches.length > 0 ?
-          `Recommendation: ${exactMatches[0].recommendedAction}` :
-          'No duplicates detected'
+        exactMatches.length > 0
+          ? `Recommendation: ${exactMatches[0].recommendedAction}`
+          : 'No duplicates detected',
       ];
 
       return {
         isDuplicate,
         confidence,
         matches: exactMatches,
-        reasoning
+        reasoning,
       };
-
     } catch (error) {
       logger.error({ error, itemId: item.id }, 'Failed to check for duplicates');
       throw error;
@@ -255,20 +258,19 @@ export class UnifiedSimilarityService implements ISimilarityService {
         filters: {
           kind: query.kind,
           // Exclude the query item itself
-          excludeIds: query.id ? [query.id] : undefined
-        }
+          excludeIds: query.id ? [query.id] : undefined,
+        },
       };
 
       const results = await this.qdrantAdapter.search(searchQuery, {
         limit: options.maxResults,
-        useHybrid: true // Use both vector and keyword search
+        useHybrid: true, // Use both vector and keyword search
       });
 
-      return results.hits.map(hit => ({
+      return results.hits.map((hit) => ({
         item: hit.item,
-        score: hit.score || hit.confidence || 0
+        score: hit.score || hit.confidence || 0,
       }));
-
     } catch (error) {
       logger.error({ error, queryId: query.id }, 'Semantic search failed');
       return [];
@@ -288,7 +290,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
       const lexicalScore = this.calculateLexicalSimilarity(query, candidate.item);
       results.push({
         item: candidate.item,
-        lexicalScore
+        lexicalScore,
       });
     }
 
@@ -337,7 +339,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
     const words1 = new Set(text1.toLowerCase().split(/\s+/));
     const words2 = new Set(text2.toLowerCase().split(/\s+/));
 
-    const intersection = new Set([...words1].filter(word => words2.has(word)));
+    const intersection = new Set([...words1].filter((word) => words2.has(word)));
     const union = new Set([...words1, ...words2]);
 
     return intersection.size / union.size; // Jaccard similarity
@@ -352,7 +354,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
     const parts1 = scope1.split('/');
     const parts2 = scope2.split('/');
 
-    const commonParts = parts1.filter(part => parts2.includes(part));
+    const commonParts = parts1.filter((part) => parts2.includes(part));
     const totalParts = new Set([...parts1, ...parts2]);
 
     return commonParts.length / totalParts.size;
@@ -366,38 +368,36 @@ export class UnifiedSimilarityService implements ISimilarityService {
     semanticResults: Array<{ item: KnowledgeItem; score: number }>,
     lexicalResults: Array<{ item: KnowledgeItem; lexicalScore: number }>,
     options: { includeContent: boolean; includeMetadata: boolean }
-  ): Promise<Array<{
-    item: KnowledgeItem;
-    semanticScore: number;
-    lexicalScore: number;
-    metadataScore: number;
-    combinedScore: number;
-  }>> {
+  ): Promise<
+    Array<{
+      item: KnowledgeItem;
+      semanticScore: number;
+      lexicalScore: number;
+      metadataScore: number;
+      combinedScore: number;
+    }>
+  > {
     const results = [];
 
     for (const semantic of semanticResults) {
-      const lexical = lexicalResults.find(l => l.item.id === semantic.item.id);
+      const lexical = lexicalResults.find((l) => l.item.id === semantic.item.id);
 
       if (!lexical) continue;
 
-      const metadataScore = this.calculateMetadataSimilarity(
-        query,
-        semantic.item,
-        options
-      );
+      const metadataScore = this.calculateMetadataSimilarity(query, semantic.item, options);
 
       // Combine scores using configured weights
       const combinedScore =
-        (semantic.score * this.config.vectorWeight) +
-        (lexical.lexicalScore * this.config.lexicalWeight) +
-        (metadataScore * 0.1); // Small weight for metadata
+        semantic.score * this.config.vectorWeight +
+        lexical.lexicalScore * this.config.lexicalWeight +
+        metadataScore * 0.1; // Small weight for metadata
 
       results.push({
         item: semantic.item,
         semanticScore: semantic.score,
         lexicalScore: lexical.lexicalScore,
         metadataScore,
-        combinedScore
+        combinedScore,
       });
     }
 
@@ -428,7 +428,9 @@ export class UnifiedSimilarityService implements ISimilarityService {
 
     // Timestamp similarity (if both have timestamps)
     if (item1.timestamp && item2.timestamp) {
-      const timeDiff = Math.abs(new Date(item1.timestamp).getTime() - new Date(item2.timestamp).getTime());
+      const timeDiff = Math.abs(
+        new Date(item1.timestamp).getTime() - new Date(item2.timestamp).getTime()
+      );
       const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
 
       // More similar if created within same day/week
@@ -447,11 +449,11 @@ export class UnifiedSimilarityService implements ISimilarityService {
     threshold: number
   ): Promise<Array<{ combinedScore: number }>> {
     if (!this.config.enableAdaptiveThresholds) {
-      return results.filter(result => result.combinedScore >= threshold);
+      return results.filter((result) => result.combinedScore >= threshold);
     }
 
     // Adaptive threshold based on result distribution
-    const scores = results.map(r => r.combinedScore);
+    const scores = results.map((r) => r.combinedScore);
     const meanScore = scores.reduce((a, b) => a + b, 0) / scores.length;
     const stdDev = Math.sqrt(
       scores.reduce((sq, n) => sq + Math.pow(n - meanScore, 2), 0) / scores.length
@@ -460,7 +462,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
     // Use statistical threshold if it's higher than the configured one
     const adaptiveThreshold = Math.max(threshold, meanScore - stdDev);
 
-    return results.filter(result => result.combinedScore >= adaptiveThreshold);
+    return results.filter((result) => result.combinedScore >= adaptiveThreshold);
   }
 
   /**
@@ -472,14 +474,11 @@ export class UnifiedSimilarityService implements ISimilarityService {
     const similarityResults: SimilarityResult[] = [];
 
     for (const result of results) {
-      const contradictionDetected = this.config.enableContradictionDetection ?
-        await this.detectContradiction(result.item, results) :
-        false;
+      const contradictionDetected = this.config.enableContradictionDetection
+        ? await this.detectContradiction(result.item, results)
+        : false;
 
-      const recommendedAction = this.recommendAction(
-        result.combinedScore,
-        contradictionDetected
-      );
+      const recommendedAction = this.recommendAction(result.combinedScore, contradictionDetected);
 
       similarityResults.push({
         item: result.item,
@@ -488,11 +487,11 @@ export class UnifiedSimilarityService implements ISimilarityService {
           semantic: 0, // Will be filled in combine step
           lexical: 0,
           metadata: 0,
-          overall: result.combinedScore
+          overall: result.combinedScore,
         },
         reasoning: this.generateReasoning(result.combinedScore, contradictionDetected),
         contradictionDetected,
-        recommendedAction
+        recommendedAction,
       });
     }
 
@@ -509,7 +508,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
     // Simple contradiction detection based on content patterns
     const contradictionPatterns = [
       /\b(not|no|never|don't|can't|won't|doesn't)\b/gi,
-      /\b(however|but|although|despite|contrary)\b/gi
+      /\b(however|but|although|despite|contrary)\b/gi,
     ];
 
     for (const similar of similarItems) {
@@ -559,10 +558,7 @@ export class UnifiedSimilarityService implements ISimilarityService {
   /**
    * Generate reasoning for similarity result
    */
-  private generateReasoning(
-    score: number,
-    contradictionDetected: boolean
-  ): string[] {
+  private generateReasoning(score: number, contradictionDetected: boolean): string[] {
     const reasoning = [];
 
     if (score >= 0.9) {
@@ -612,12 +608,12 @@ export class UnifiedSimilarityService implements ISimilarityService {
     config: SimilarityConfig;
     qdrantMetrics: any;
   }> {
-    const qdrantMetrics = await this.qdrantAdapter.getMetrics?.() || {};
+    const qdrantMetrics = (await this.qdrantAdapter.getMetrics?.()) || {};
 
     return {
       initialized: this.initialized,
       config: this.config,
-      qdrantMetrics
+      qdrantMetrics,
     };
   }
 }
@@ -625,7 +621,9 @@ export class UnifiedSimilarityService implements ISimilarityService {
 /**
  * Export convenience function to create similarity service
  */
-export function createUnifiedSimilarityService(dbConfig?: DatabaseConfig): UnifiedSimilarityService {
+export function createUnifiedSimilarityService(
+  dbConfig?: DatabaseConfig
+): UnifiedSimilarityService {
   return new UnifiedSimilarityService(dbConfig);
 }
 

@@ -7,13 +7,7 @@ import crypto from 'crypto';
 import { logger } from '../../utils/logger.js';
 import { AuthService } from './auth-service.js';
 import { AuditService } from '../audit/audit-service.js';
-import {
-  ApiKey,
-  User,
-  AuthScope,
-  SecurityAuditLog,
-  AuthContext
-} from '../../types/auth-types.js';
+import { ApiKey, User, AuthScope, SecurityAuditLog, AuthContext } from '../../types/auth-types.js';
 
 export interface CreateApiKeyRequest {
   name: string;
@@ -64,10 +58,12 @@ export class ApiKeyService {
   ): Promise<{ api_key: string; key_info: ApiKeyResponse }> {
     // Validate user permissions
     const userMaxScopes = this.authService.getUserMaxScopes(user);
-    const invalidScopes = request.scopes.filter(scope => !userMaxScopes.includes(scope));
+    const invalidScopes = request.scopes.filter((scope) => !userMaxScopes.includes(scope));
 
     if (invalidScopes.length > 0) {
-      throw new Error(`User not allowed to create API key with scopes: ${invalidScopes.join(', ')}`);
+      throw new Error(
+        `User not allowed to create API key with scopes: ${invalidScopes.join(', ')}`
+      );
     }
 
     // Generate API key
@@ -84,7 +80,7 @@ export class ApiKeyService {
       scopes: request.scopes,
       is_active: true,
       expires_at: request.expires_at,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
 
     // Store API key
@@ -103,21 +99,24 @@ export class ApiKeyService {
         name: request.name,
         scopes: request.scopes,
         expires_at: request.expires_at,
-        description: request.description
+        description: request.description,
       },
-      severity: 'medium'
+      severity: 'medium',
     });
 
-    logger.info({
-      keyId,
-      userId: user.id,
-      name: request.name,
-      scopes: request.scopes
-    }, 'API key created');
+    logger.info(
+      {
+        keyId,
+        userId: user.id,
+        name: request.name,
+        scopes: request.scopes,
+      },
+      'API key created'
+    );
 
     return {
       api_key: key,
-      key_info: this.mapToApiKeyResponse(apiKey)
+      key_info: this.mapToApiKeyResponse(apiKey),
     };
   }
 
@@ -134,7 +133,7 @@ export class ApiKeyService {
         return {
           valid: false,
           error: 'Invalid API key format',
-          error_code: 'INVALID_FORMAT'
+          error_code: 'INVALID_FORMAT',
         };
       }
 
@@ -158,15 +157,15 @@ export class ApiKeyService {
           user_agent: context?.user_agent || 'unknown',
           details: {
             reason: 'Invalid API key',
-            key_prefix: apiKey.substring(0, 10)
+            key_prefix: apiKey.substring(0, 10),
           },
-          severity: 'medium'
+          severity: 'medium',
         });
 
         return {
           valid: false,
           error: 'Invalid API key',
-          error_code: 'INVALID_KEY'
+          error_code: 'INVALID_KEY',
         };
       }
 
@@ -180,15 +179,15 @@ export class ApiKeyService {
           user_agent: context?.user_agent || 'unknown',
           details: {
             reason: 'API key is inactive',
-            key_id: keyId
+            key_id: keyId,
           },
-          severity: 'medium'
+          severity: 'medium',
         });
 
         return {
           valid: false,
           error: 'API key is inactive',
-          error_code: 'INACTIVE_KEY'
+          error_code: 'INACTIVE_KEY',
         };
       }
 
@@ -203,15 +202,15 @@ export class ApiKeyService {
           details: {
             reason: 'API key expired',
             key_id: keyId,
-            expires_at: foundApiKey.expires_at
+            expires_at: foundApiKey.expires_at,
           },
-          severity: 'medium'
+          severity: 'medium',
         });
 
         return {
           valid: false,
           error: 'API key has expired',
-          error_code: 'EXPIRED_KEY'
+          error_code: 'EXPIRED_KEY',
         };
       }
 
@@ -228,9 +227,9 @@ export class ApiKeyService {
         user_agent: context?.user_agent || 'unknown',
         details: {
           key_id: keyId,
-          scopes: foundApiKey.scopes as AuthScope[]
+          scopes: foundApiKey.scopes as AuthScope[],
         },
-        severity: 'low'
+        severity: 'low',
       });
 
       // Mock user data (in real implementation, fetch from database)
@@ -242,16 +241,15 @@ export class ApiKeyService {
         role: 'user' as any,
         is_active: true,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       return {
         valid: true,
         api_key: foundApiKey,
         user,
-        scopes: foundApiKey.scopes as AuthScope[]
+        scopes: foundApiKey.scopes as AuthScope[],
       };
-
     } catch (error) {
       logger.error({ error }, 'API key validation error');
 
@@ -261,15 +259,15 @@ export class ApiKeyService {
         user_agent: context?.user_agent || 'unknown',
         details: {
           reason: 'Validation error',
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         },
-        severity: 'high'
+        severity: 'high',
       });
 
       return {
         valid: false,
         error: 'Validation failed',
-        error_code: 'VALIDATION_ERROR'
+        error_code: 'VALIDATION_ERROR',
       };
     }
   }
@@ -278,10 +276,9 @@ export class ApiKeyService {
    * List all API keys for a user
    */
   async listApiKeys(user: User): Promise<ApiKeyResponse[]> {
-    const userApiKeys = Array.from(this.apiKeys.values())
-      .filter(key => key.user_id === user.id);
+    const userApiKeys = Array.from(this.apiKeys.values()).filter((key) => key.user_id === user.id);
 
-    return userApiKeys.map(key => this.mapToApiKeyResponse(key));
+    return userApiKeys.map((key) => this.mapToApiKeyResponse(key));
   }
 
   /**
@@ -325,16 +322,19 @@ export class ApiKeyService {
       details: {
         key_id: keyId,
         name: apiKey.name,
-        revoked_at: new Date().toISOString()
+        revoked_at: new Date().toISOString(),
       },
-      severity: 'medium'
+      severity: 'medium',
     });
 
-    logger.info({
-      keyId,
-      userId: user.id,
-      name: apiKey.name
-    }, 'API key revoked');
+    logger.info(
+      {
+        keyId,
+        userId: user.id,
+        name: apiKey.name,
+      },
+      'API key revoked'
+    );
 
     return true;
   }
@@ -363,7 +363,7 @@ export class ApiKeyService {
     // Validate scope updates
     if (updates.scopes) {
       const userMaxScopes = this.authService.getUserMaxScopes(user);
-      const invalidScopes = updates.scopes.filter(scope => !userMaxScopes.includes(scope));
+      const invalidScopes = updates.scopes.filter((scope) => !userMaxScopes.includes(scope));
 
       if (invalidScopes.length > 0) {
         throw new Error(`User not allowed to assign scopes: ${invalidScopes.join(', ')}`);
@@ -374,7 +374,7 @@ export class ApiKeyService {
     const updatedKey: ApiKey = {
       ...apiKey,
       ...updates,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     this.apiKeys.set(keyId, updatedKey);
@@ -389,9 +389,9 @@ export class ApiKeyService {
       details: {
         key_id: keyId,
         updates,
-        updated_at: updatedKey.updated_at
+        updated_at: updatedKey.updated_at,
       },
-      severity: 'low'
+      severity: 'low',
     });
 
     return this.mapToApiKeyResponse(updatedKey);
@@ -407,36 +407,35 @@ export class ApiKeyService {
     keys_by_scope: Record<string, number>;
     recent_usage: Array<{ key_id: string; name: string; last_used?: string; usage_count: number }>;
   }> {
-    const userApiKeys = Array.from(this.apiKeys.values())
-      .filter(key => key.user_id === user.id);
+    const userApiKeys = Array.from(this.apiKeys.values()).filter((key) => key.user_id === user.id);
 
     const now = new Date();
-    const activeKeys = userApiKeys.filter(key =>
-      key.is_active && (!key.expires_at || new Date(key.expires_at) > now)
+    const activeKeys = userApiKeys.filter(
+      (key) => key.is_active && (!key.expires_at || new Date(key.expires_at) > now)
     );
 
-    const expiredKeys = userApiKeys.filter(key =>
-      key.expires_at && new Date(key.expires_at) <= now
+    const expiredKeys = userApiKeys.filter(
+      (key) => key.expires_at && new Date(key.expires_at) <= now
     );
 
     // Count keys by scope
     const keysByScope: Record<string, number> = {};
-    userApiKeys.forEach(key => {
-      key.scopes.forEach(scope => {
+    userApiKeys.forEach((key) => {
+      key.scopes.forEach((scope) => {
         keysByScope[scope] = (keysByScope[scope] || 0) + 1;
       });
     });
 
     // Recent usage (mock implementation - in real system, track usage count)
     const recentUsage = userApiKeys
-      .filter(key => key.last_used)
+      .filter((key) => key.last_used)
       .sort((a, b) => new Date(b.last_used!).getTime() - new Date(a.last_used!).getTime())
       .slice(0, 10)
-      .map(key => ({
+      .map((key) => ({
         key_id: key.key_id,
         name: key.name,
         last_used: key.last_used,
-        usage_count: Math.floor(Math.random() * 100) // Mock usage count
+        usage_count: Math.floor(Math.random() * 100), // Mock usage count
       }));
 
     return {
@@ -444,7 +443,7 @@ export class ApiKeyService {
       active_keys: activeKeys.length,
       expired_keys: expiredKeys.length,
       keys_by_scope: keysByScope,
-      recent_usage: recentUsage
+      recent_usage: recentUsage,
     };
   }
 
@@ -458,7 +457,8 @@ export class ApiKeyService {
     for (const [keyId, apiKey] of this.apiKeys) {
       const isExpired = apiKey.expires_at && new Date(apiKey.expires_at) <= now;
       const isInactive = !apiKey.is_active;
-      const isOld = new Date(apiKey.created_at) < new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); // 1 year old
+      const isOld =
+        new Date(apiKey.created_at) < new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); // 1 year old
 
       if ((isExpired || isInactive) && isOld) {
         this.apiKeys.delete(keyId);
@@ -495,15 +495,15 @@ export class ApiKeyService {
       user: {
         id: validation.user.id,
         username: validation.user.username,
-        role: validation.user.role
+        role: validation.user.role,
       },
       session: {
         id: `api-key-${validation.api_key.id}`,
         ip_address: context.ip_address,
-        user_agent: context.user_agent
+        user_agent: context.user_agent,
       },
       scopes: validation.scopes || [],
-      token_jti: validation.api_key.id
+      token_jti: validation.api_key.id,
     };
   }
 
@@ -520,7 +520,7 @@ export class ApiKeyService {
       created_at: apiKey.created_at,
       last_used: apiKey.last_used,
       is_active: apiKey.is_active,
-      description: apiKey.description
+      description: apiKey.description,
     };
   }
 
@@ -540,23 +540,23 @@ export class ApiKeyService {
    */
   getHealthStatus(): { status: 'healthy' | 'degraded'; details: any } {
     const now = new Date();
-    const expiredKeys = Array.from(this.apiKeys.values())
-      .filter(key => key.expires_at && new Date(key.expires_at) <= now).length;
+    const expiredKeys = Array.from(this.apiKeys.values()).filter(
+      (key) => key.expires_at && new Date(key.expires_at) <= now
+    ).length;
 
-    const inactiveKeys = Array.from(this.apiKeys.values())
-      .filter(key => !key.is_active).length;
+    const inactiveKeys = Array.from(this.apiKeys.values()).filter((key) => !key.is_active).length;
 
     const details = {
       total_keys: this.apiKeys.size,
       active_keys: this.apiKeys.size - inactiveKeys,
       expired_keys: expiredKeys,
       inactive_keys: inactiveKeys,
-      key_hashes_stored: this.keyHashes.size
+      key_hashes_stored: this.keyHashes.size,
     };
 
     return {
       status: expiredKeys > this.apiKeys.size * 0.2 ? 'degraded' : 'healthy',
-      details
+      details,
     };
   }
 }

@@ -147,11 +147,13 @@ export async function traverseGraph(
   } catch (error) {
     // Fallback: return minimal graph with just the root node
     return {
-      nodes: [{
-        entity_type: startEntityType,
-        entity_id: startEntityId,
-        depth: 0,
-      }],
+      nodes: [
+        {
+          entity_type: startEntityType,
+          entity_id: startEntityId,
+          depth: 0,
+        },
+      ],
       edges: [],
       root_entity_type: startEntityType,
       root_entity_id: startEntityId,
@@ -245,7 +247,6 @@ export async function enrichGraphNodes(nodes: GraphNode[]): Promise<GraphNode[]>
   return enrichedNodes;
 }
 
-
 /**
  * Find shortest path between two entities
  *
@@ -266,7 +267,6 @@ export async function findShortestPath(
   toId: string,
   maxDepth: number = 5
 ): Promise<GraphEdge[] | null> {
-  
   try {
     const result = await qdrant.getClient().$queryRaw<Array<{ edges: Record<string, unknown>[] }>>`
       WITH RECURSIVE path_search AS (

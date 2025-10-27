@@ -26,25 +26,29 @@ export async function memoryStore(items: unknown[]): Promise<MemoryStoreResponse
     // Delegate to the orchestrator which handles all the complex logic
     const result = await memoryStoreOrchestrator.storeItems(items);
 
-    logger.info({
-      itemsStored: result.stored.length,
-      errors: result.errors.length,
-      duration: Date.now()
-    }, 'Memory store operation completed');
+    logger.info(
+      {
+        itemsStored: result.stored.length,
+        errors: result.errors.length,
+        duration: Date.now(),
+      },
+      'Memory store operation completed'
+    );
 
     return result;
-
   } catch (error) {
     logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
 
     // Return a formatted error response
     return {
       stored: [],
-      errors: [{
-        index: 0,
-        error_code: 'SYSTEM_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown system error'
-      }],
+      errors: [
+        {
+          index: 0,
+          error_code: 'SYSTEM_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown system error',
+        },
+      ],
       autonomous_context: {
         action_performed: 'skipped',
         similar_items_checked: 0,
@@ -52,8 +56,8 @@ export async function memoryStore(items: unknown[]): Promise<MemoryStoreResponse
         contradictions_detected: false,
         recommendation: 'System error occurred - please try again',
         reasoning: 'Critical system error during memory store operation',
-        user_message_suggestion: '❌ System error occurred'
-      }
+        user_message_suggestion: '❌ System error occurred',
+      },
     };
   }
 }

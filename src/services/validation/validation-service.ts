@@ -2,7 +2,7 @@ import { logger } from '../../utils/logger.js';
 import type {
   ValidationService as IValidationService,
   KnowledgeItem,
-  StoreError
+  StoreError,
 } from '../../types/core-interfaces.js';
 import {
   MemoryStoreRequestSchema,
@@ -52,11 +52,13 @@ export class ValidationService implements IValidationService {
       logger.error({ error }, 'Validation service error');
       return {
         valid: false,
-        errors: [{
-          index: 0,
-          error_code: 'VALIDATION_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown validation error',
-        }]
+        errors: [
+          {
+            index: 0,
+            error_code: 'VALIDATION_ERROR',
+            message: error instanceof Error ? error.message : 'Unknown validation error',
+          },
+        ],
       };
     }
   }
@@ -69,7 +71,7 @@ export class ValidationService implements IValidationService {
       const requestValidation = MemoryFindRequestSchema.safeParse(input);
 
       if (!requestValidation.success) {
-        const errors = requestValidation.error.errors.map(error => error.message);
+        const errors = requestValidation.error.errors.map((error) => error.message);
         logger.warn({ errors }, 'Find input validation failed');
         return { valid: false, errors };
       }
@@ -79,7 +81,7 @@ export class ValidationService implements IValidationService {
       logger.error({ error }, 'Find validation service error');
       return {
         valid: false,
-        errors: [error instanceof Error ? error.message : 'Unknown validation error']
+        errors: [error instanceof Error ? error.message : 'Unknown validation error'],
       };
     }
   }
@@ -109,9 +111,22 @@ export class ValidationService implements IValidationService {
 
     // Validate kind is one of allowed values
     const allowedKinds = [
-      'section', 'decision', 'issue', 'todo', 'runbook', 'change',
-      'release_note', 'ddl', 'pr_context', 'entity', 'relation',
-      'observation', 'incident', 'release', 'risk', 'assumption'
+      'section',
+      'decision',
+      'issue',
+      'todo',
+      'runbook',
+      'change',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'entity',
+      'relation',
+      'observation',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
 
     if (item.kind && !allowedKinds.includes(item.kind)) {
@@ -132,7 +147,10 @@ export class ValidationService implements IValidationService {
   /**
    * Validate kind-specific data requirements
    */
-  private async validateKindSpecificData(kind: string, data: Record<string, any>): Promise<{ valid: boolean; errors: string[] }> {
+  private async validateKindSpecificData(
+    kind: string,
+    data: Record<string, any>
+  ): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
 
     switch (kind) {

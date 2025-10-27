@@ -15,7 +15,7 @@ export async function storeDDL(data: DDLData): Promise<string> {
       {
         expectedChecksum: data.checksum,
         calculatedChecksum: checksum,
-        ddlId: data.id
+        ddlId: data.id,
       },
       'DDL checksum mismatch: using calculated checksum'
     );
@@ -24,7 +24,7 @@ export async function storeDDL(data: DDLData): Promise<string> {
   // Check if this is an update operation (has ID)
   if (data.id) {
     const existing = await qdrant.ddlHistory.findUnique({
-      where: { id: data.id }
+      where: { id: data.id },
     });
 
     if (existing) {
@@ -35,8 +35,8 @@ export async function storeDDL(data: DDLData): Promise<string> {
           migration_id: data.migration_id ?? existing.migration_id,
           ddl_text: data.ddl_text ?? existing.ddl_text,
           checksum: data.ddl_text ? checksum : existing.checksum,
-          description: data.description ?? existing.description
-        }
+          description: data.description ?? existing.description,
+        },
       });
       return result.id;
     }
@@ -48,8 +48,8 @@ export async function storeDDL(data: DDLData): Promise<string> {
       migration_id: data.migration_id,
       ddl_text: data.ddl_text,
       checksum,
-      description: data.description
-    }
+      description: data.description,
+    },
   });
 
   return result.id;

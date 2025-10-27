@@ -38,8 +38,8 @@ export async function storeRelation(
       to_entity_type: data.to_entity_type,
       to_entity_id: data.to_entity_id,
       relation_type: data.relation_type,
-      deleted_at: null
-    }
+      deleted_at: null,
+    },
   });
   if (results.length > 0) return results[0];
 
@@ -51,8 +51,8 @@ export async function storeRelation(
         where: { id: existing.id },
         data: {
           metadata: data.metadata as any,
-          tags: scope as any
-        }
+          tags: scope as any,
+        },
       });
     }
     return existing.id;
@@ -67,8 +67,8 @@ export async function storeRelation(
       to_entity_id: data.to_entity_id,
       relation_type: data.relation_type,
       metadata: data.metadata as any,
-      tags: scope as any
-    }
+      tags: scope as any,
+    },
   });
 
   return result.id;
@@ -87,11 +87,11 @@ export async function softDeleteRelation(relationId: string): Promise<boolean> {
   const result = await qdrant.knowledgeRelation.updateMany({
     where: {
       id: relationId,
-      deleted_at: null
+      deleted_at: null,
     },
     data: {
-      deleted_at: new Date()
-    }
+      deleted_at: new Date(),
+    },
   });
 
   return result.count > 0;
@@ -126,7 +126,7 @@ export async function getOutgoingRelations(
   const whereClause: any = {
     from_entity_type: entity_type,
     from_entity_id: entity_id,
-    deleted_at: null
+    deleted_at: null,
   };
 
   if (relation_typeFilter) {
@@ -142,17 +142,17 @@ export async function getOutgoingRelations(
       to_entity_id: true,
       relation_type: true,
       metadata: true,
-      created_at: true
-    }
+      created_at: true,
+    },
   });
 
-  return result.map(relation => ({
+  return result.map((relation) => ({
     id: relation.id,
     to_entity_type: relation.to_entity_type,
     to_entity_id: relation.to_entity_id,
     relation_type: relation.relation_type,
     metadata: (relation.metadata as any) || null,
-    created_at: relation.created_at
+    created_at: relation.created_at,
   }));
 }
 
@@ -186,7 +186,7 @@ export async function getIncomingRelations(
   const whereClause: any = {
     to_entity_type: entity_type,
     to_entity_id: entity_id,
-    deleted_at: null
+    deleted_at: null,
   };
 
   if (relation_typeFilter) {
@@ -202,17 +202,17 @@ export async function getIncomingRelations(
       from_entity_id: true,
       relation_type: true,
       metadata: true,
-      created_at: true
-    }
+      created_at: true,
+    },
   });
 
-  return result.map(relation => ({
+  return result.map((relation) => ({
     id: relation.id,
     from_entity_type: relation.from_entity_type,
     from_entity_id: relation.from_entity_id,
     relation_type: relation.relation_type,
     metadata: (relation.metadata as any) || null,
-    created_at: relation.created_at
+    created_at: relation.created_at,
   }));
 }
 
@@ -281,9 +281,9 @@ export async function relationExists(
       to_entity_type: toType,
       to_entity_id: toId,
       relation_type,
-      deleted_at: null
+      deleted_at: null,
     },
-    select: { id: true }
+    select: { id: true },
   });
   if (results.length > 0) return results[0];
 

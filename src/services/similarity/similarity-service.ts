@@ -2,7 +2,7 @@ import { logger } from '../../utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import type {
   SimilarityService as ISimilarityService,
-  KnowledgeItem
+  KnowledgeItem,
 } from '../../types/core-interfaces.js';
 
 /**
@@ -52,14 +52,17 @@ export class SimilarityService implements ISimilarityService {
       content: 0.5,
       title: 0.2,
       kind: 0.1,
-      scope: 0.2
-    }
+      scope: 0.2,
+    },
   };
 
   /**
    * Find items similar to the given item
    */
-  async findSimilar(item: KnowledgeItem, threshold: number = this.config.defaultThreshold): Promise<KnowledgeItem[]> {
+  async findSimilar(
+    item: KnowledgeItem,
+    threshold: number = this.config.defaultThreshold
+  ): Promise<KnowledgeItem[]> {
     if (!this.config.enabled) {
       return [];
     }
@@ -73,14 +76,17 @@ export class SimilarityService implements ISimilarityService {
       // Limit results
       const limitedResults = similarResults.slice(0, this.config.maxResults);
 
-      logger.info({
-        itemKind: item.kind,
-        threshold,
-        candidatesFound: similarResults.length,
-        resultsReturned: limitedResults.length
-      }, 'Similarity search completed');
+      logger.info(
+        {
+          itemKind: item.kind,
+          threshold,
+          candidatesFound: similarResults.length,
+          resultsReturned: limitedResults.length,
+        },
+        'Similarity search completed'
+      );
 
-      return limitedResults.map(result => result.item);
+      return limitedResults.map((result) => result.item);
     } catch (error) {
       logger.error({ error, item }, 'Error finding similar items');
       return [];
@@ -107,7 +113,10 @@ export class SimilarityService implements ISimilarityService {
   /**
    * Perform comprehensive similarity analysis
    */
-  private async analyzeSimilarity(item: KnowledgeItem, threshold: number): Promise<SimilarityResult[]> {
+  private async analyzeSimilarity(
+    item: KnowledgeItem,
+    threshold: number
+  ): Promise<SimilarityResult[]> {
     const results: SimilarityResult[] = [];
 
     // Build database query for similar items
@@ -121,7 +130,7 @@ export class SimilarityService implements ISimilarityService {
           item: candidate,
           score: similarity.overall,
           matchFactors: similarity,
-          reasoning: this.generateReasoning(similarity)
+          reasoning: this.generateReasoning(similarity),
         });
       }
     }
@@ -136,7 +145,7 @@ export class SimilarityService implements ISimilarityService {
     try {
       // Build the where clause for KnowledgeEntity table
       const whereClause: any = {
-        deleted_at: null // Exclude soft-deleted records
+        deleted_at: null, // Exclude soft-deleted records
       };
 
       // Prioritize same entity_type (kind) items
@@ -150,21 +159,21 @@ export class SimilarityService implements ISimilarityService {
           {
             metadata: {
               path: ['scope', 'project'],
-              equals: item.scope.project
-            }
+              equals: item.scope.project,
+            },
           },
           {
             data: {
               path: ['scope', 'project'],
-              equals: item.scope.project
-            }
+              equals: item.scope.project,
+            },
           },
           {
             metadata: {
               path: ['org'],
-              equals: item.scope.org || ''
-            }
-          }
+              equals: item.scope.org || '',
+            },
+          },
         ];
       }
 
@@ -184,17 +193,19 @@ export class SimilarityService implements ISimilarityService {
           metadata: true,
           created_at: true,
           updated_at: true,
-          tags: true
+          tags: true,
         },
         orderBy: { created_at: 'desc' },
-        take: 50 // Limit candidates for performance
+        take: 50, // Limit candidates for performance
       });
 
       // Map database rows to KnowledgeItem interface
       return candidates.map((row: any) => this.mapRowToKnowledgeItem(row));
-
     } catch (error) {
-      logger.error({ error, itemKind: item.kind }, 'Error fetching candidate items from KnowledgeEntity table');
+      logger.error(
+        { error, itemKind: item.kind },
+        'Error fetching candidate items from KnowledgeEntity table'
+      );
       return [];
     }
   }
@@ -211,14 +222,14 @@ export class SimilarityService implements ISimilarityService {
       scope = {
         project: row.metadata.scope.project,
         branch: row.metadata.scope.branch,
-        org: row.metadata.scope.org
+        org: row.metadata.scope.org,
       };
     } else if (row.data?.scope) {
       // Fallback to data field
       scope = {
         project: row.data.scope.project,
         branch: row.data.scope.branch,
-        org: row.data.scope.org
+        org: row.data.scope.org,
       };
     }
 
@@ -228,14 +239,17 @@ export class SimilarityService implements ISimilarityService {
       scope,
       data: row.data || {},
       created_at: row.created_at?.toISOString(),
-      updated_at: row.updated_at?.toISOString()
+      updated_at: row.updated_at?.toISOString(),
     };
   }
 
   /**
    * Compute detailed similarity score between two items
    */
-  private async computeSimilarityScore(item1: KnowledgeItem, item2: KnowledgeItem): Promise<{
+  private async computeSimilarityScore(
+    item1: KnowledgeItem,
+    item2: KnowledgeItem
+  ): Promise<{
     content: number;
     title: number;
     kind: number;
@@ -247,7 +261,7 @@ export class SimilarityService implements ISimilarityService {
       title: 0,
       kind: 0,
       scope: 0,
-      overall: 0
+      overall: 0,
     };
 
     // Content similarity
@@ -277,7 +291,10 @@ export class SimilarityService implements ISimilarityService {
   /**
    * Calculate content similarity using multiple methods
    */
-  private calculateContentSimilarity(data1: Record<string, any>, data2: Record<string, any>): number {
+  private calculateContentSimilarity(
+    data1: Record<string, any>,
+    data2: Record<string, any>
+  ): number {
     try {
       const text1 = JSON.stringify(data1).toLowerCase();
       const text2 = JSON.stringify(data2).toLowerCase();
@@ -289,7 +306,7 @@ export class SimilarityService implements ISimilarityService {
       if (words1.size === 0 && words2.size === 0) return 1.0;
       if (words1.size === 0 || words2.size === 0) return 0.0;
 
-      const intersection = new Set([...words1].filter(word => words2.has(word)));
+      const intersection = new Set([...words1].filter((word) => words2.has(word)));
       const union = new Set([...words1, ...words2]);
 
       return intersection.size / union.size;
@@ -344,9 +361,9 @@ export class SimilarityService implements ISimilarityService {
   private extractWords(text: string): string[] {
     return text
       .split(/\s+/)
-      .filter(word => word.length > 3) // Filter out very short words
-      .filter(word => !/^\d+$/.test(word)) // Filter out pure numbers
-      .filter(word => !this.isStopWord(word)); // Filter out common stop words
+      .filter((word) => word.length > 3) // Filter out very short words
+      .filter((word) => !/^\d+$/.test(word)) // Filter out pure numbers
+      .filter((word) => !this.isStopWord(word)); // Filter out common stop words
   }
 
   /**
@@ -354,12 +371,89 @@ export class SimilarityService implements ISimilarityService {
    */
   private isStopWord(word: string): boolean {
     const stopWords = new Set([
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day',
-      'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did',
-      'she', 'use', 'her', 'many', 'then', 'them', 'these', 'want', 'were', 'will', 'with', 'your', 'from', 'have',
-      'they', 'been', 'call', 'come', 'could', 'does', 'don', 'into', 'just', 'like', 'made', 'make', 'must', 'over',
-      'such', 'that', 'their', 'there', 'thing', 'think', 'time', 'very', 'when', 'more', 'much', 'some', 'said',
-      'still', 'than', 'them', 'well', 'were', 'what', 'will', 'with', 'would', 'your'
+      'the',
+      'and',
+      'for',
+      'are',
+      'but',
+      'not',
+      'you',
+      'all',
+      'can',
+      'had',
+      'her',
+      'was',
+      'one',
+      'our',
+      'out',
+      'day',
+      'get',
+      'has',
+      'him',
+      'his',
+      'how',
+      'its',
+      'may',
+      'new',
+      'now',
+      'old',
+      'see',
+      'two',
+      'way',
+      'who',
+      'boy',
+      'did',
+      'she',
+      'use',
+      'her',
+      'many',
+      'then',
+      'them',
+      'these',
+      'want',
+      'were',
+      'will',
+      'with',
+      'your',
+      'from',
+      'have',
+      'they',
+      'been',
+      'call',
+      'come',
+      'could',
+      'does',
+      'don',
+      'into',
+      'just',
+      'like',
+      'made',
+      'make',
+      'must',
+      'over',
+      'such',
+      'that',
+      'their',
+      'there',
+      'thing',
+      'think',
+      'time',
+      'very',
+      'when',
+      'more',
+      'much',
+      'some',
+      'said',
+      'still',
+      'than',
+      'them',
+      'well',
+      'were',
+      'what',
+      'will',
+      'with',
+      'would',
+      'your',
     ]);
     return stopWords.has(word);
   }
@@ -404,8 +498,8 @@ export class SimilarityService implements ISimilarityService {
       for (let j = 1; j <= len2; j++) {
         const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
         matrix[i][j] = Math.min(
-          matrix[i - 1][j] + 1,      // deletion
-          matrix[i][j - 1] + 1,      // insertion
+          matrix[i - 1][j] + 1, // deletion
+          matrix[i][j - 1] + 1, // insertion
           matrix[i - 1][j - 1] + cost // substitution
         );
       }
@@ -457,7 +551,7 @@ export class SimilarityService implements ISimilarityService {
     this.config = {
       ...this.config,
       ...newConfig,
-      weighting: { ...this.config.weighting, ...newConfig.weighting }
+      weighting: { ...this.config.weighting, ...newConfig.weighting },
     };
     logger.info({ config: this.config }, 'Similarity configuration updated');
   }

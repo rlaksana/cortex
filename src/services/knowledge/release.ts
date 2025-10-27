@@ -1,10 +1,7 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data.js';
 
-export async function storeRelease(
-  data: ReleaseData,
-  scope: ScopeFilter
-): Promise<string> {
+export async function storeRelease(data: ReleaseData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -27,9 +24,9 @@ export async function storeRelease(
       tags: {
         ...scope,
         title: data.title,
-        breaking_changes: data.breaking_changes ? JSON.stringify(data.breaking_changes) : undefined
-      }
-    }
+        breaking_changes: data.breaking_changes ? JSON.stringify(data.breaking_changes) : undefined,
+      },
+    },
   });
 
   return result.id;
@@ -50,22 +47,24 @@ export async function findReleases(
         {
           OR: [
             { version: { contains: query, mode: 'insensitive' } },
-            { scope: { contains: query, mode: 'insensitive' } }
-          ]
+            { scope: { contains: query, mode: 'insensitive' } },
+          ],
         },
-        scope ? {
-          tags: {
-            path: [],
-            string_contains: JSON.stringify(scope)
-          }
-        } : {}
-      ]
+        scope
+          ? {
+              tags: {
+                path: [],
+                string_contains: JSON.stringify(scope),
+              },
+            }
+          : {},
+      ],
     },
     take: limit,
-    orderBy: { created_at: 'desc' }
+    orderBy: { created_at: 'desc' },
   });
 
-  return releases.map(release => ({
+  return releases.map((release) => ({
     id: release.id,
     version: release.version,
     title: (release.tags as any)?.title,
@@ -75,11 +74,15 @@ export async function findReleases(
     release_date: release.deployment_date?.toISOString(),
     release_notes: release.release_notes ? JSON.parse(release.release_notes as string) : undefined,
     features: release.included_changes ? JSON.parse(release.included_changes as string) : undefined,
-    bug_fixes: release.post_release_actions ? JSON.parse(release.post_release_actions as string) : undefined,
-    breaking_changes: (release.tags as any)?.breaking_changes ? JSON.parse((release.tags as any)?.breaking_changes) : undefined,
+    bug_fixes: release.post_release_actions
+      ? JSON.parse(release.post_release_actions as string)
+      : undefined,
+    breaking_changes: (release.tags as any)?.breaking_changes
+      ? JSON.parse((release.tags as any)?.breaking_changes)
+      : undefined,
     rollback_plan: release.rollback_plan || undefined,
     created_at: release.created_at || undefined,
-    updated_at: release.updated_at || undefined
+    updated_at: release.updated_at || undefined,
   }));
 }
 
@@ -93,19 +96,23 @@ export async function updateRelease(
   await db.initialize();
 
   const existing = await db.find('releaseLog', {
-    where: { id }
+    where: { id },
   });
 
   if (!existing) {
     throw new Error(`Release with id ${id} not found`);
   }
 
-  const result = await db.update('releaseLog', { id: id }, {
+  const result = await db.update(
+    'releaseLog',
+    { id },
+    {
       version: data.version ?? existing.version,
       scope: data.description ?? existing.scope,
       status: data.status ?? existing.status,
-      release_type: 'minor'
-    });
+      release_type: 'minor',
+    }
+  );
 
   return result.id;
 }

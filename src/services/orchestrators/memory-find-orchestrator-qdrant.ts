@@ -27,12 +27,9 @@ import type {
   SearchQuery,
   MemoryFindResponse,
   SmartFindRequest,
-  SmartFindResult
+  SmartFindResult,
 } from '../../types/core-interfaces.js';
-import type {
-  IDatabase,
-  SearchOptions
-} from '../../db/database-interface.js';
+import type { IDatabase, SearchOptions } from '../../db/database-interface.js';
 
 /**
  * Search strategy configuration
@@ -103,28 +100,28 @@ export class MemoryFindOrchestratorQdrant {
       type: 'hybrid',
       priority: 1,
       threshold: 0.7,
-      limit: 50
+      limit: 50,
     },
     {
       name: 'semantic',
       type: 'semantic',
       priority: 2,
       threshold: 0.6,
-      limit: 50
+      limit: 50,
     },
     {
       name: 'keyword',
       type: 'keyword',
       priority: 3,
       threshold: 0.4,
-      limit: 50
+      limit: 50,
     },
     {
       name: 'fallback',
       type: 'fallback',
       priority: 4,
-      limit: 25
-    }
+      limit: 25,
+    },
   ];
 
   constructor(database: IDatabase) {
@@ -141,11 +138,14 @@ export class MemoryFindOrchestratorQdrant {
       // Initialize database if needed
       await this.ensureDatabaseInitialized();
 
-      logger.info({
-        query: query.query,
-        mode: query.mode,
-        maxAttempts: query.max_attempts || 3
-      }, 'Memory find operation started (Qdrant)');
+      logger.info(
+        {
+          query: query.query,
+          mode: query.mode,
+          maxAttempts: query.max_attempts || 3,
+        },
+        'Memory find operation started (Qdrant)'
+      );
 
       // Step 1: Parse and validate query
       const { parsed, validation } = this.parseQuery(query);
@@ -157,7 +157,7 @@ export class MemoryFindOrchestratorQdrant {
         originalQuery: query,
         parsed,
         strategy: this.selectSearchStrategy(query, parsed),
-        startTime
+        startTime,
       };
 
       // Step 2: Execute search strategy
@@ -172,22 +172,24 @@ export class MemoryFindOrchestratorQdrant {
       // Step 5: Log operation
       await this.logSearchOperation(query, response, Date.now() - startTime);
 
-      logger.info({
-        resultCount: response.hits.length,
-        executionTime: Date.now() - startTime,
-        strategy: searchResult.strategy.primary.name,
-        fallbackUsed: searchResult.fallbackUsed
-      }, 'Memory find operation completed (Qdrant)');
+      logger.info(
+        {
+          resultCount: response.hits.length,
+          executionTime: Date.now() - startTime,
+          strategy: searchResult.strategy.primary.name,
+          fallbackUsed: searchResult.fallbackUsed,
+        },
+        'Memory find operation completed (Qdrant)'
+      );
 
       return response;
-
     } catch (error) {
       logger.error({ error, query }, 'Memory find operation failed (Qdrant)');
 
       // Log error
       await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
         operation: 'memory_find_qdrant',
-        query: query.query
+        query: query.query,
       });
 
       return this.createErrorResponse(error);
@@ -208,36 +210,39 @@ export class MemoryFindOrchestratorQdrant {
       enable_auto_fix: true,
       return_corrections: true,
       max_attempts: 3,
-      timeout_per_attempt_ms: 10000
+      timeout_per_attempt_ms: 10000,
     };
 
     const result = await this.findItems(smartQuery);
 
     // Convert back to legacy format
     return {
-      results: result.hits.map(hit => ({
+      results: result.hits.map((hit) => ({
         id: hit.id,
         kind: hit.kind,
         scope: hit.scope,
         data: this.extractDataFromHit(hit),
         created_at: hit.updated_at || new Date().toISOString(),
         confidence_score: hit.confidence,
-        match_type: hit.confidence > 0.8 ? 'exact' : hit.confidence > 0.6 ? 'fuzzy' : 'semantic'
+        match_type: hit.confidence > 0.8 ? 'exact' : hit.confidence > 0.6 ? 'fuzzy' : 'semantic',
       })),
       total_count: result.hits.length,
       autonomous_context: {
         search_mode_used: result.autonomous_metadata.strategy_used,
         results_found: result.hits.length,
         confidence_average: result.autonomous_metadata.confidence,
-        user_message_suggestion: result.autonomous_metadata.recommendation
-      }
+        user_message_suggestion: result.autonomous_metadata.recommendation,
+      },
     };
   }
 
   /**
    * Parse and analyze query for optimal search strategy
    */
-  private parseQuery(query: SmartFindRequest): { parsed: ParsedQuery; validation: { valid: boolean; errors: string[] } } {
+  private parseQuery(query: SmartFindRequest): {
+    parsed: ParsedQuery;
+    validation: { valid: boolean; errors: string[] };
+  } {
     const errors: string[] = [];
 
     // Basic validation
@@ -245,7 +250,7 @@ export class MemoryFindOrchestratorQdrant {
       errors.push('Query cannot be empty');
       return {
         parsed: {} as ParsedQuery,
-        validation: { valid: false, errors }
+        validation: { valid: false, errors },
       };
     }
 
@@ -261,12 +266,12 @@ export class MemoryFindOrchestratorQdrant {
       entities,
       scope: query.scope,
       filters: this.extractFilters(query),
-      intent
+      intent,
     };
 
     return {
       parsed,
-      validation: { valid: errors.length === 0, errors }
+      validation: { valid: errors.length === 0, errors },
     };
   }
 
@@ -281,35 +286,35 @@ export class MemoryFindOrchestratorQdrant {
     // Determine primary strategy based on mode and query characteristics
     switch (mode) {
       case 'deep':
-        primaryStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'semantic')!;
+        primaryStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'semantic')!;
         break;
       case 'fast':
-        primaryStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'keyword')!;
+        primaryStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'keyword')!;
         break;
       case 'auto':
       default:
         // Auto-select based on query characteristics
         if (parsed.entities.length > 0 && parsed.keywords.length > 3) {
-          primaryStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'hybrid')!;
+          primaryStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'hybrid')!;
         } else if (parsed.entities.length > 0) {
-          primaryStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'semantic')!;
+          primaryStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'semantic')!;
         } else {
-          primaryStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'keyword')!;
+          primaryStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'keyword')!;
         }
         break;
     }
 
     // Determine fallback strategy
     if (primaryStrategy.type !== 'hybrid') {
-      fallbackStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'hybrid');
+      fallbackStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'hybrid');
     } else {
-      fallbackStrategy = this.SEARCH_STRATEGIES.find(s => s.type === 'semantic');
+      fallbackStrategy = this.SEARCH_STRATEGIES.find((s) => s.type === 'semantic');
     }
 
     return {
       primary: primaryStrategy,
       fallback: fallbackStrategy,
-      alternatives: this.SEARCH_STRATEGIES.filter(s => s !== primaryStrategy)
+      alternatives: this.SEARCH_STRATEGIES.filter((s) => s !== primaryStrategy),
     };
   }
 
@@ -334,20 +339,27 @@ export class MemoryFindOrchestratorQdrant {
           metadata: {
             strategyUsed: strategy.primary.name,
             queryProcessed: parsed.cleaned,
-            resultCount: primaryResults.results.length
-          }
+            resultCount: primaryResults.results.length,
+          },
         };
       }
 
       // Try fallback strategy if primary returned no results
-      logger.warn({
-        primaryStrategy: strategy.primary.name,
-        fallbackStrategy: strategy.fallback?.name,
-        query: originalQuery.query
-      }, 'Primary strategy returned no results, trying fallback');
+      logger.warn(
+        {
+          primaryStrategy: strategy.primary.name,
+          fallbackStrategy: strategy.fallback?.name,
+          query: originalQuery.query,
+        },
+        'Primary strategy returned no results, trying fallback'
+      );
 
       if (strategy.fallback) {
-        const fallbackResults = await this.executeStrategy(strategy.fallback, parsed, originalQuery);
+        const fallbackResults = await this.executeStrategy(
+          strategy.fallback,
+          parsed,
+          originalQuery
+        );
 
         return {
           results: fallbackResults.results,
@@ -359,8 +371,8 @@ export class MemoryFindOrchestratorQdrant {
           metadata: {
             strategyUsed: `${strategy.primary.name} -> ${strategy.fallback.name}`,
             queryProcessed: parsed.cleaned,
-            resultCount: fallbackResults.results.length
-          }
+            resultCount: fallbackResults.results.length,
+          },
         };
       }
 
@@ -375,10 +387,9 @@ export class MemoryFindOrchestratorQdrant {
         metadata: {
           strategyUsed: 'none',
           queryProcessed: parsed.cleaned,
-          resultCount: 0
-        }
+          resultCount: 0,
+        },
       };
-
     } catch (error) {
       logger.error({ error, strategy: strategy.primary.name }, 'Search strategy execution failed');
       throw error;
@@ -388,19 +399,23 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Execute a specific search strategy
    */
-  private async executeStrategy(strategy: SearchStrategy, parsed: ParsedQuery, query: SmartFindRequest): Promise<{ results: SearchResult[]; totalCount: number }> {
+  private async executeStrategy(
+    strategy: SearchStrategy,
+    parsed: ParsedQuery,
+    query: SmartFindRequest
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
     const searchQuery: SearchQuery = {
       query: parsed.cleaned,
       scope: query.scope,
       types: query.types,
       mode: 'auto',
-      limit: strategy.limit || query.top_k || 50
+      limit: strategy.limit || query.top_k || 50,
     };
 
     const options: SearchOptions = {
       includeMetadata: true,
       cache: true,
-      timeout: query.timeout_per_attempt_ms
+      timeout: query.timeout_per_attempt_ms,
     };
 
     switch (strategy.type) {
@@ -420,20 +435,23 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Execute semantic search using vector embeddings
    */
-  private async executeSemanticSearch(query: SearchQuery, options: SearchOptions, threshold?: number): Promise<{ results: SearchResult[]; totalCount: number }> {
+  private async executeSemanticSearch(
+    query: SearchQuery,
+    options: SearchOptions,
+    threshold?: number
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
     try {
       const response = await this.database.search(query, options);
 
       // Filter by confidence threshold
-      const filteredResults = threshold ?
-        response.results.filter(r => r.confidence_score >= threshold!) :
-        response.results;
+      const filteredResults = threshold
+        ? response.results.filter((r) => r.confidence_score >= threshold!)
+        : response.results;
 
       return {
         results: filteredResults,
-        totalCount: filteredResults.length
+        totalCount: filteredResults.length,
       };
-
     } catch (error) {
       logger.error({ error, query: query.query }, 'Semantic search failed');
       throw error;
@@ -443,20 +461,23 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Execute keyword search using traditional methods
    */
-  private async executeKeywordSearch(query: SearchQuery, options: SearchOptions, threshold?: number): Promise<{ results: SearchResult[]; totalCount: number }> {
+  private async executeKeywordSearch(
+    query: SearchQuery,
+    options: SearchOptions,
+    threshold?: number
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
     try {
       const response = await this.database.search(query, options);
 
       // Filter by confidence threshold
-      const filteredResults = threshold ?
-        response.results.filter(r => r.confidence_score >= threshold!) :
-        response.results;
+      const filteredResults = threshold
+        ? response.results.filter((r) => r.confidence_score >= threshold!)
+        : response.results;
 
       return {
         results: filteredResults,
-        totalCount: filteredResults.length
+        totalCount: filteredResults.length,
       };
-
     } catch (error) {
       logger.error({ error, query: query.query }, 'Keyword search failed');
       throw error;
@@ -466,21 +487,24 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Execute hybrid search combining vector and keyword search
    */
-  private async executeHybridSearch(query: SearchQuery, options: SearchOptions, threshold?: number): Promise<{ results: SearchResult[]; totalCount: number }> {
+  private async executeHybridSearch(
+    query: SearchQuery,
+    options: SearchOptions,
+    threshold?: number
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
     try {
       // Use database's built-in hybrid search capabilities
       const response = await this.database.search(query, options);
 
       // Filter by confidence threshold
-      const filteredResults = threshold ?
-        response.results.filter(r => r.confidence_score >= threshold!) :
-        response.results;
+      const filteredResults = threshold
+        ? response.results.filter((r) => r.confidence_score >= threshold!)
+        : response.results;
 
       return {
         results: filteredResults,
-        totalCount: filteredResults.length
+        totalCount: filteredResults.length,
       };
-
     } catch (error) {
       logger.error({ error, query: query.query }, 'Hybrid search failed');
       throw error;
@@ -490,22 +514,24 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Execute fallback search with broadened criteria
    */
-  private async executeFallbackSearch(query: SearchQuery, options: SearchOptions): Promise<{ results: SearchResult[]; totalCount: number }> {
+  private async executeFallbackSearch(
+    query: SearchQuery,
+    options: SearchOptions
+  ): Promise<{ results: SearchResult[]; totalCount: number }> {
     try {
       // Broaden search criteria for fallback
       const broadenedQuery = {
         ...query,
         query: this.broadenQuery(query.query),
-        limit: Math.min(query.limit || 25, 25) // Lower limit for fallback
+        limit: Math.min(query.limit || 25, 25), // Lower limit for fallback
       };
 
       const response = await this.database.search(broadenedQuery, options);
 
       return {
         results: response.results,
-        totalCount: response.results.length
+        totalCount: response.results.length,
       };
-
     } catch (error) {
       logger.error({ error, query: query.query }, 'Fallback search failed');
       throw error;
@@ -515,21 +541,30 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Rank and enhance search results
    */
-  private rankResults(results: SearchResult[], query: SmartFindRequest, parsed: ParsedQuery): SearchResult[] {
+  private rankResults(
+    results: SearchResult[],
+    query: SmartFindRequest,
+    parsed: ParsedQuery
+  ): SearchResult[] {
     // Sort by confidence score
     const ranked = results.sort((a, b) => b.confidence_score - a.confidence_score);
 
     // Apply additional ranking factors
     return ranked.map((result, index) => ({
       ...result,
-      confidence_score: this.adjustConfidence(result, query, parsed, index)
+      confidence_score: this.adjustConfidence(result, query, parsed, index),
     }));
   }
 
   /**
    * Adjust confidence scores based on additional factors
    */
-  private adjustConfidence(result: SearchResult, query: SmartFindRequest, parsed: ParsedQuery, index: number): number {
+  private adjustConfidence(
+    result: SearchResult,
+    query: SmartFindRequest,
+    parsed: ParsedQuery,
+    index: number
+  ): number {
     let adjustedScore = result.confidence_score;
 
     // Boost scores for exact matches
@@ -555,8 +590,12 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Build smart response with autonomous metadata
    */
-  private buildSmartResponse(results: SearchResult[], searchResult: SearchResultData, query: SmartFindRequest): SmartFindResult {
-    const hits = results.map(result => this.searchResultToHit(result));
+  private buildSmartResponse(
+    results: SearchResult[],
+    searchResult: SearchResultData,
+    query: SmartFindRequest
+  ): SmartFindResult {
+    const hits = results.map((result) => this.searchResultToHit(result));
 
     const autonomousMetadata = {
       strategy_used: searchResult.metadata.strategyUsed,
@@ -566,7 +605,7 @@ export class MemoryFindOrchestratorQdrant {
       avg_score: this.calculateAverageScore(hits),
       fallback_attempted: searchResult.fallbackUsed,
       recommendation: this.generateRecommendation(hits, searchResult),
-      user_message_suggestion: this.generateUserMessage(hits, searchResult)
+      user_message_suggestion: this.generateUserMessage(hits, searchResult),
     };
 
     return {
@@ -576,8 +615,8 @@ export class MemoryFindOrchestratorQdrant {
       debug: {
         executionTime: searchResult.executionTime,
         strategyDetails: searchResult.strategy,
-        queryProcessed: searchResult.metadata.queryProcessed
-      }
+        queryProcessed: searchResult.metadata.queryProcessed,
+      },
     };
   }
 
@@ -594,7 +633,7 @@ export class MemoryFindOrchestratorQdrant {
       scope: result.scope,
       updated_at: result.created_at,
       route_used: 'qdrant_vector_search',
-      confidence: result.confidence_score
+      confidence: result.confidence_score,
     };
   }
 
@@ -612,7 +651,7 @@ export class MemoryFindOrchestratorQdrant {
   private extractSnippet(result: SearchResult): string {
     const data = result.data;
     const content = data.content || data.description || data.rationale || '';
-    return content.length > 200 ? `${content.substring(0, 200)  }...` : content;
+    return content.length > 200 ? `${content.substring(0, 200)}...` : content;
   }
 
   /**
@@ -624,7 +663,7 @@ export class MemoryFindOrchestratorQdrant {
       content: hit.snippet,
       kind: hit.kind,
       score: hit.score,
-      confidence: hit.confidence
+      confidence: hit.confidence,
     };
   }
 
@@ -639,7 +678,7 @@ export class MemoryFindOrchestratorQdrant {
       const baseSuggestions = [
         'Try different keywords',
         'Use broader search terms',
-        'Check spelling'
+        'Check spelling',
       ];
       suggestions.push(...baseSuggestions);
     } else if (hits.length < 5) {
@@ -647,7 +686,7 @@ export class MemoryFindOrchestratorQdrant {
     }
 
     // Add kind-specific suggestions
-    const kinds = [...new Set(hits.map(h => h.kind))];
+    const kinds = [...new Set(hits.map((h) => h.kind))];
     if (kinds.length > 1) {
       suggestions.push(`Filter by specific type: ${kinds.join(', ')}`);
     }
@@ -682,9 +721,9 @@ export class MemoryFindOrchestratorQdrant {
    */
   private generateRecommendation(hits: any[], searchResult: SearchResultData): string {
     if (hits.length === 0) {
-      return searchResult.fallbackUsed ?
-        'Try different keywords or broader search terms' :
-        'No relevant items found - try refining your query';
+      return searchResult.fallbackUsed
+        ? 'Try different keywords or broader search terms'
+        : 'No relevant items found - try refining your query';
     }
 
     const confidence = this.calculateOverallConfidence(hits);
@@ -731,8 +770,8 @@ export class MemoryFindOrchestratorQdrant {
     // Simple keyword extraction - can be enhanced with NLP
     return query
       .split(/\s+/)
-      .filter(word => word.length > 2)
-      .filter(word => !this.isStopWord(word));
+      .filter((word) => word.length > 2)
+      .filter((word) => !this.isStopWord(word));
   }
 
   /**
@@ -751,7 +790,7 @@ export class MemoryFindOrchestratorQdrant {
         entities.push({
           text: cleanPhrase,
           type: 'phrase',
-          position
+          position,
         });
       });
     }
@@ -762,7 +801,10 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Detect search intent
    */
-  private detectIntent(query: string, keywords: string[]): 'search' | 'lookup' | 'browse' | 'unknown' {
+  private detectIntent(
+    query: string,
+    keywords: string[]
+  ): 'search' | 'lookup' | 'browse' | 'unknown' {
     if (keywords.length === 1 && keywords[0].length < 10) {
       return 'lookup';
     }
@@ -807,8 +849,21 @@ export class MemoryFindOrchestratorQdrant {
    */
   private isStopWord(word: string): boolean {
     const stopWords = [
-      'the', 'is', 'at', 'which', 'on', 'and', 'or', 'but',
-      'in', 'with', 'for', 'of', 'to', 'a', 'an'
+      'the',
+      'is',
+      'at',
+      'which',
+      'on',
+      'and',
+      'or',
+      'but',
+      'in',
+      'with',
+      'for',
+      'of',
+      'to',
+      'a',
+      'an',
     ];
     return stopWords.includes(word.toLowerCase());
   }
@@ -823,10 +878,10 @@ export class MemoryFindOrchestratorQdrant {
 
     // Adjust based on strategy effectiveness
     const strategyMultiplier = {
-      'hybrid': 1.0,
-      'semantic': 0.95,
-      'keyword': 0.9,
-      'fallback': 0.8
+      hybrid: 1.0,
+      semantic: 0.95,
+      keyword: 0.9,
+      fallback: 0.8,
     };
 
     return avgScore * (strategyMultiplier[strategy.type] || 0.8);
@@ -847,11 +902,11 @@ export class MemoryFindOrchestratorQdrant {
         avg_score: 0,
         fallback_attempted: false,
         recommendation: 'Fix query validation errors',
-        user_message_suggestion: `Query validation failed: ${errors.join(', ')}`
+        user_message_suggestion: `Query validation failed: ${errors.join(', ')}`,
       },
       debug: {
-        validationErrors: errors
-      }
+        validationErrors: errors,
+      },
     };
   }
 
@@ -872,29 +927,28 @@ export class MemoryFindOrchestratorQdrant {
         avg_score: 0,
         fallback_attempted: false,
         recommendation: 'Check query format and system status',
-        user_message_suggestion: `Search failed: ${errorMessage}`
+        user_message_suggestion: `Search failed: ${errorMessage}`,
       },
       debug: {
         error: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined
-      }
+        stack: error instanceof Error ? error.stack : undefined,
+      },
     };
   }
 
   /**
    * Log search operation
    */
-  private async logSearchOperation(query: SmartFindRequest, response: SmartFindResult, executionTime: number): Promise<void> {
-    await auditService.logSearchOperation(
-      query.query,
-      response.hits.length,
-      executionTime,
-      {
-        strategy: response.autonomous_metadata.strategy_used,
-        confidence: response.autonomous_metadata.confidence,
-        fallback: response.autonomous_metadata.fallback_attempted
-      }
-    );
+  private async logSearchOperation(
+    query: SmartFindRequest,
+    response: SmartFindResult,
+    executionTime: number
+  ): Promise<void> {
+    await auditService.logSearchOperation(query.query, response.hits.length, executionTime, {
+      strategy: response.autonomous_metadata.strategy_used,
+      confidence: response.autonomous_metadata.confidence,
+      fallback: response.autonomous_metadata.fallback_attempted,
+    });
   }
 
   /**
@@ -921,7 +975,7 @@ export class MemoryFindOrchestratorQdrant {
     averageResponseTime: number;
   }> {
     return {
-      supportedStrategies: this.SEARCH_STRATEGIES.map(s => s.name),
+      supportedStrategies: this.SEARCH_STRATEGIES.map((s) => s.name),
       capabilities: [
         'semantic_vector_search',
         'keyword_search',
@@ -932,9 +986,9 @@ export class MemoryFindOrchestratorQdrant {
         'result_ranking',
         'autonomous_context_generation',
         'query_parsing',
-        'scope_isolation'
+        'scope_isolation',
       ],
-      averageResponseTime: 0 // Would need to track actual response times
+      averageResponseTime: 0, // Would need to track actual response times
     };
   }
 }

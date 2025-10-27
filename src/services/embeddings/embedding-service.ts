@@ -118,11 +118,11 @@ export class EmbeddingService {
       cacheEnabled: config.cacheEnabled !== false,
       cacheTTL: config.cacheTTL || 3600000, // 1 hour
       cacheMaxSize: config.cacheMaxSize || 10000,
-      timeout: config.timeout || 30000
+      timeout: config.timeout || 30000,
     };
 
     this.openai = new OpenAI({
-      apiKey: this.config.apiKey
+      apiKey: this.config.apiKey,
     });
 
     this.stats = {
@@ -133,7 +133,7 @@ export class EmbeddingService {
       totalTokensUsed: 0,
       errors: 0,
       model: this.config.model,
-      cacheSize: 0
+      cacheSize: 0,
     };
   }
 
@@ -163,7 +163,7 @@ export class EmbeddingService {
             usage: { prompt_tokens: 0, total_tokens: 0 },
             cached: true,
             processingTime: Date.now() - startTime,
-            metadata: cached.metadata
+            metadata: cached.metadata,
           };
         }
         this.stats.cacheMisses++;
@@ -184,7 +184,7 @@ export class EmbeddingService {
           createdAt: Date.now(),
           accessCount: 1,
           lastAccessed: Date.now(),
-          metadata: request.metadata
+          metadata: request.metadata,
         });
       }
 
@@ -197,9 +197,8 @@ export class EmbeddingService {
         usage: response.usage,
         cached: false,
         processingTime,
-        metadata: request.metadata
+        metadata: request.metadata,
       };
-
     } catch (error) {
       this.stats.errors++;
       logger.error({ error, textLength: request.text.length }, 'Embedding generation failed');
@@ -222,7 +221,7 @@ export class EmbeddingService {
       const result = await this.generateEmbedding({
         text: request.texts[0],
         metadata: request.metadata?.[0],
-        priority: request.priority
+        priority: request.priority,
       });
       return [result];
     }
@@ -247,7 +246,7 @@ export class EmbeddingService {
               usage: { prompt_tokens: 0, total_tokens: 0 },
               cached: true,
               processingTime: 0,
-              metadata: request.metadata?.[index]
+              metadata: request.metadata?.[index],
             });
           } else {
             this.stats.cacheMisses++;
@@ -272,7 +271,7 @@ export class EmbeddingService {
                 createdAt: Date.now(),
                 accessCount: 1,
                 lastAccessed: Date.now(),
-                metadata: request.metadata?.[originalIndex]
+                metadata: request.metadata?.[originalIndex],
               });
             }
 
@@ -283,7 +282,7 @@ export class EmbeddingService {
               usage: result.usage,
               cached: false,
               processingTime: 0,
-              metadata: request.metadata?.[originalIndex]
+              metadata: request.metadata?.[originalIndex],
             });
           });
         }
@@ -302,14 +301,17 @@ export class EmbeddingService {
           usage: result.usage,
           cached: false,
           processingTime: 0,
-          metadata: request.metadata?.[index]
+          metadata: request.metadata?.[index],
         }));
       }
-
     } catch (error) {
       this.stats.errors++;
       logger.error({ error, textCount: request.texts.length }, 'Batch embedding generation failed');
-      throw new DatabaseError('Failed to generate batch embeddings', 'BATCH_EMBEDDING_ERROR', error as Error);
+      throw new DatabaseError(
+        'Failed to generate batch embeddings',
+        'BATCH_EMBEDDING_ERROR',
+        error as Error
+      );
     }
   }
 
@@ -320,15 +322,17 @@ export class EmbeddingService {
     try {
       const response = await this.openai.embeddings.create({
         model: this.config.model,
-        input: this.preprocessText(text)
+        input: this.preprocessText(text),
       });
 
       this.stats.totalTokensUsed += response.usage.total_tokens;
       return response;
-
     } catch (error: any) {
       if (attempt < this.config.maxRetries && this.shouldRetry(error)) {
-        logger.warn({ error, attempt, textLength: text.length }, 'Embedding generation failed, retrying...');
+        logger.warn(
+          { error, attempt, textLength: text.length },
+          'Embedding generation failed, retrying...'
+        );
 
         await this.delay(this.config.retryDelay * Math.pow(2, attempt - 1));
         return this.generateEmbeddingWithRetry(text, attempt + 1);
@@ -341,21 +345,26 @@ export class EmbeddingService {
   /**
    * Generate batch embeddings with retry logic
    */
-  private async generateBatchEmbeddingsWithRetry(texts: string[], attempt: number = 1): Promise<any[]> {
+  private async generateBatchEmbeddingsWithRetry(
+    texts: string[],
+    attempt: number = 1
+  ): Promise<any[]> {
     try {
-      const processedTexts = texts.map(text => this.preprocessText(text));
+      const processedTexts = texts.map((text) => this.preprocessText(text));
 
       const response = await this.openai.embeddings.create({
         model: this.config.model,
-        input: processedTexts
+        input: processedTexts,
       });
 
       this.stats.totalTokensUsed += response.usage.total_tokens;
       return response.data;
-
     } catch (error: any) {
       if (attempt < this.config.maxRetries && this.shouldRetry(error)) {
-        logger.warn({ error, attempt, textCount: texts.length }, 'Batch embedding generation failed, retrying...');
+        logger.warn(
+          { error, attempt, textCount: texts.length },
+          'Batch embedding generation failed, retrying...'
+        );
 
         await this.delay(this.config.retryDelay * Math.pow(2, attempt - 1));
         return this.generateBatchEmbeddingsWithRetry(texts, attempt + 1);
@@ -381,7 +390,10 @@ export class EmbeddingService {
     const maxChars = 8000; // Conservative estimate
     if (processed.length > maxChars) {
       processed = processed.substring(0, maxChars);
-      logger.warn({ originalLength: text.length, truncatedLength: processed.length }, 'Text truncated for embedding');
+      logger.warn(
+        { originalLength: text.length, truncatedLength: processed.length },
+        'Text truncated for embedding'
+      );
     }
 
     return processed;
@@ -431,7 +443,7 @@ export class EmbeddingService {
    * Delay for retry logic
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -492,8 +504,9 @@ export class EmbeddingService {
 
     // Clean up oldest entries if cache is too large
     if (this.cache.size > this.config.cacheMaxSize) {
-      const entries = Array.from(this.cache.entries())
-        .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+      const entries = Array.from(this.cache.entries()).sort(
+        (a, b) => a[1].lastAccessed - b[1].lastAccessed
+      );
 
       const toDelete = entries.slice(0, entries.length - this.config.cacheMaxSize);
       toDelete.forEach(([key]) => this.cache.delete(key));
@@ -512,7 +525,8 @@ export class EmbeddingService {
     } else {
       // Exponential moving average
       const alpha = 0.1;
-      this.stats.averageProcessingTime = alpha * newTime + (1 - alpha) * this.stats.averageProcessingTime;
+      this.stats.averageProcessingTime =
+        alpha * newTime + (1 - alpha) * this.stats.averageProcessingTime;
     }
   }
 
@@ -522,7 +536,8 @@ export class EmbeddingService {
   getStats(): EmbeddingStats {
     return {
       ...this.stats,
-      cacheHitRate: this.stats.totalRequests > 0 ? (this.stats.cacheHits / this.stats.totalRequests) : 0
+      cacheHitRate:
+        this.stats.totalRequests > 0 ? this.stats.cacheHits / this.stats.totalRequests : 0,
     };
   }
 
@@ -568,7 +583,6 @@ export class EmbeddingService {
       }
 
       logger.info({ cacheSize: this.stats.cacheSize }, 'Embedding cache warmup completed');
-
     } catch (error) {
       logger.error({ error }, 'Embedding cache warmup failed');
     }
@@ -577,7 +591,10 @@ export class EmbeddingService {
   /**
    * Estimate cost for embedding generation
    */
-  estimateCost(textCount: number, charactersPerText: number = 1000): {
+  estimateCost(
+    textCount: number,
+    charactersPerText: number = 1000
+  ): {
     requests: number;
     tokens: number;
     estimatedCostUSD: number;
@@ -593,7 +610,7 @@ export class EmbeddingService {
     return {
       requests,
       tokens: totalTokens,
-      estimatedCostUSD
+      estimatedCostUSD,
     };
   }
 
@@ -610,12 +627,12 @@ export class EmbeddingService {
     }
 
     // Check for valid numbers
-    if (!vector.every(val => typeof val === 'number' && !isNaN(val))) {
+    if (!vector.every((val) => typeof val === 'number' && !isNaN(val))) {
       return false;
     }
 
     // Check for NaN or Infinity
-    if (vector.some(val => !isFinite(val))) {
+    if (vector.some((val) => !isFinite(val))) {
       return false;
     }
 
@@ -638,14 +655,17 @@ export class EmbeddingService {
     }
 
     // Normalize to unit vector
-    return vector.map(val => val / magnitude);
+    return vector.map((val) => val / magnitude);
   }
 
   /**
    * Calculate similarity between two embeddings
    */
   static calculateSimilarity(vector1: number[], vector2: number[]): number {
-    if (!EmbeddingService.validateEmbedding(vector1) || !EmbeddingService.validateEmbedding(vector2)) {
+    if (
+      !EmbeddingService.validateEmbedding(vector1) ||
+      !EmbeddingService.validateEmbedding(vector2)
+    ) {
       throw new ValidationError('Invalid embedding vectors for similarity calculation');
     }
 
@@ -678,9 +698,9 @@ export class EmbeddingService {
       .map((vector, index) => ({
         vector,
         similarity: EmbeddingService.calculateSimilarity(queryVector, vector),
-        index
+        index,
       }))
-      .filter(item => item.similarity >= threshold)
+      .filter((item) => item.similarity >= threshold)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, topK);
 

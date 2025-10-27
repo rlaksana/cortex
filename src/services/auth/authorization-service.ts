@@ -11,7 +11,7 @@ import {
   ApiKey,
   AuthContext,
   Permission,
-  DEFAULT_ROLE_PERMISSIONS
+  DEFAULT_ROLE_PERMISSIONS,
 } from '../../types/auth-types.js';
 
 export interface ResourceAccessRule {
@@ -64,7 +64,7 @@ export class AuthorizationService {
         reason: `No access rules defined for resource '${resource}' with action '${action}'`,
         required_scopes: [],
         missing_scopes: [],
-        conditions_met: false
+        conditions_met: false,
       };
     }
 
@@ -73,26 +73,29 @@ export class AuthorizationService {
       const decision = await this.evaluateRule(rule, authContext, context);
 
       if (decision.allowed) {
-        logger.debug({
-          user: authContext.user.id,
-          resource,
-          action,
-          rule: rule.required_scopes.join(', ')
-        }, 'Access granted');
+        logger.debug(
+          {
+            user: authContext.user.id,
+            resource,
+            action,
+            rule: rule.required_scopes.join(', '),
+          },
+          'Access granted'
+        );
         return decision;
       }
     }
 
     // No rules allowed access
-    const allRequiredScopes = rules.flatMap(rule => rule.required_scopes);
-    const missingScopes = allRequiredScopes.filter(scope => !userScopes.includes(scope));
+    const allRequiredScopes = rules.flatMap((rule) => rule.required_scopes);
+    const missingScopes = allRequiredScopes.filter((scope) => !userScopes.includes(scope));
 
     return {
       allowed: false,
       reason: `Insufficient permissions for ${action} on ${resource}`,
       required_scopes: allRequiredScopes,
       missing_scopes: missingScopes,
-      conditions_met: false
+      conditions_met: false,
     };
   }
 
@@ -138,13 +141,16 @@ export class AuthorizationService {
   /**
    * Validate that a set of scopes is allowed for a user
    */
-  validateUserScopes(user: User, scopes: AuthScope[]): { valid: boolean; invalidScopes: AuthScope[] } {
+  validateUserScopes(
+    user: User,
+    scopes: AuthScope[]
+  ): { valid: boolean; invalidScopes: AuthScope[] } {
     const allowedScopes = this.getAllowedScopes(user);
-    const invalidScopes = scopes.filter(scope => !allowedScopes.includes(scope));
+    const invalidScopes = scopes.filter((scope) => !allowedScopes.includes(scope));
 
     return {
       valid: invalidScopes.length === 0,
-      invalidScopes
+      invalidScopes,
     };
   }
 
@@ -157,12 +163,15 @@ export class AuthorizationService {
     existingRules.push(rule);
     this.resourceRules.set(key, existingRules);
 
-    logger.info({
-      resource: rule.resource,
-      action: rule.action,
-      required_scopes: rule.required_scopes,
-      conditions: rule.conditions
-    }, 'Added resource access rule');
+    logger.info(
+      {
+        resource: rule.resource,
+        action: rule.action,
+        required_scopes: rule.required_scopes,
+        conditions: rule.conditions,
+      },
+      'Added resource access rule'
+    );
   }
 
   /**
@@ -183,11 +192,14 @@ export class AuthorizationService {
         this.resourceRules.delete(key);
       }
 
-      logger.info({
-        resource,
-        action,
-        index
-      }, 'Removed resource access rule');
+      logger.info(
+        {
+          resource,
+          action,
+          index,
+        },
+        'Removed resource access rule'
+      );
     }
   }
 
@@ -217,8 +229,8 @@ export class AuthorizationService {
 
     // Extract scopes from custom permissions
     const customScopes = [
-      ...customPermissions.flatMap(p => p.required_scopes),
-      ...apiKeyPermissions.flatMap(p => p.required_scopes)
+      ...customPermissions.flatMap((p) => p.required_scopes),
+      ...apiKeyPermissions.flatMap((p) => p.required_scopes),
     ];
 
     // Combine and deduplicate scopes
@@ -237,14 +249,14 @@ export class AuthorizationService {
    * Check if user can access any of the provided scopes
    */
   canAccessAnyScope(authContext: AuthContext, scopes: AuthScope[]): boolean {
-    return scopes.some(scope => authContext.scopes.includes(scope));
+    return scopes.some((scope) => authContext.scopes.includes(scope));
   }
 
   /**
    * Check if user can access all of the provided scopes
    */
   canAccessAllScopes(authContext: AuthContext, scopes: AuthScope[]): boolean {
-    return scopes.every(scope => authContext.scopes.includes(scope));
+    return scopes.every((scope) => authContext.scopes.includes(scope));
   }
 
   /**
@@ -267,8 +279,8 @@ export class AuthorizationService {
     const userRole = authContext.user.role;
 
     // Check if user has required scopes
-    const hasRequiredScopes = rule.required_scopes.every(scope => userScopes.includes(scope));
-    const missingScopes = rule.required_scopes.filter(scope => !userScopes.includes(scope));
+    const hasRequiredScopes = rule.required_scopes.every((scope) => userScopes.includes(scope));
+    const missingScopes = rule.required_scopes.filter((scope) => !userScopes.includes(scope));
 
     if (!hasRequiredScopes) {
       return {
@@ -276,7 +288,7 @@ export class AuthorizationService {
         reason: `Missing required scopes: ${missingScopes.join(', ')}`,
         required_scopes: rule.required_scopes,
         missing_scopes: missingScopes,
-        conditions_met: false
+        conditions_met: false,
       };
     }
 
@@ -291,7 +303,7 @@ export class AuthorizationService {
           required_scopes: rule.required_scopes,
           missing_scopes: [],
           conditions_met: false,
-          details: { conditions: rule.conditions }
+          details: { conditions: rule.conditions },
         };
       }
     }
@@ -301,7 +313,7 @@ export class AuthorizationService {
       reason: 'Access granted',
       required_scopes: rule.required_scopes,
       missing_scopes: [],
-      conditions_met: true
+      conditions_met: true,
     };
   }
 
@@ -342,8 +354,8 @@ export class AuthorizationService {
     if (conditions.project_access && context) {
       const resourceProject = context.project;
       const userProjects = authContext.scopes
-        .filter(scope => scope.startsWith('project:'))
-        .map(scope => scope.replace('project:', ''));
+        .filter((scope) => scope.startsWith('project:'))
+        .map((scope) => scope.replace('project:', ''));
 
       if (resourceProject && !userProjects.includes(resourceProject)) {
         return false;
@@ -361,13 +373,13 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'memory_store',
       action: 'write',
-      required_scopes: [AuthScope.MEMORY_WRITE]
+      required_scopes: [AuthScope.MEMORY_WRITE],
     });
 
     this.addResourceRule({
       resource: 'memory_store',
       action: 'read',
-      required_scopes: [AuthScope.MEMORY_READ]
+      required_scopes: [AuthScope.MEMORY_READ],
     });
 
     this.addResourceRule({
@@ -375,40 +387,40 @@ export class AuthorizationService {
       action: 'delete',
       required_scopes: [AuthScope.MEMORY_DELETE],
       conditions: {
-        scope_isolation: true // Users can only delete their own memories
-      }
+        scope_isolation: true, // Users can only delete their own memories
+      },
     });
 
     // Memory Find rules
     this.addResourceRule({
       resource: 'memory_find',
       action: 'read',
-      required_scopes: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC]
+      required_scopes: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
     });
 
     this.addResourceRule({
       resource: 'memory_find',
       action: 'deep',
-      required_scopes: [AuthScope.SEARCH_DEEP]
+      required_scopes: [AuthScope.SEARCH_DEEP],
     });
 
     this.addResourceRule({
       resource: 'memory_find',
       action: 'advanced',
-      required_scopes: [AuthScope.SEARCH_ADVANCED]
+      required_scopes: [AuthScope.SEARCH_ADVANCED],
     });
 
     // Knowledge operations
     this.addResourceRule({
       resource: 'knowledge',
       action: 'read',
-      required_scopes: [AuthScope.KNOWLEDGE_READ]
+      required_scopes: [AuthScope.KNOWLEDGE_READ],
     });
 
     this.addResourceRule({
       resource: 'knowledge',
       action: 'write',
-      required_scopes: [AuthScope.KNOWLEDGE_WRITE]
+      required_scopes: [AuthScope.KNOWLEDGE_WRITE],
     });
 
     this.addResourceRule({
@@ -416,8 +428,8 @@ export class AuthorizationService {
       action: 'delete',
       required_scopes: [AuthScope.KNOWLEDGE_DELETE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER] // Only admins and users can delete knowledge
-      }
+        user_roles: [UserRole.ADMIN, UserRole.USER], // Only admins and users can delete knowledge
+      },
     });
 
     // System operations
@@ -426,8 +438,8 @@ export class AuthorizationService {
       action: 'read',
       required_scopes: [AuthScope.SYSTEM_READ],
       conditions: {
-        user_roles: [UserRole.ADMIN]
-      }
+        user_roles: [UserRole.ADMIN],
+      },
     });
 
     this.addResourceRule({
@@ -435,8 +447,8 @@ export class AuthorizationService {
       action: 'manage',
       required_scopes: [AuthScope.SYSTEM_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN]
-      }
+        user_roles: [UserRole.ADMIN],
+      },
     });
 
     // User management
@@ -445,8 +457,8 @@ export class AuthorizationService {
       action: 'manage',
       required_scopes: [AuthScope.USER_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN]
-      }
+        user_roles: [UserRole.ADMIN],
+      },
     });
 
     // API Key management
@@ -455,8 +467,8 @@ export class AuthorizationService {
       action: 'manage',
       required_scopes: [AuthScope.API_KEY_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER]
-      }
+        user_roles: [UserRole.ADMIN, UserRole.USER],
+      },
     });
 
     // Audit operations
@@ -465,8 +477,8 @@ export class AuthorizationService {
       action: 'read',
       required_scopes: [AuthScope.AUDIT_READ],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER]
-      }
+        user_roles: [UserRole.ADMIN, UserRole.USER],
+      },
     });
 
     this.addResourceRule({
@@ -474,8 +486,8 @@ export class AuthorizationService {
       action: 'write',
       required_scopes: [AuthScope.AUDIT_WRITE],
       conditions: {
-        user_roles: [UserRole.ADMIN]
-      }
+        user_roles: [UserRole.ADMIN],
+      },
     });
 
     // Scope management
@@ -484,8 +496,8 @@ export class AuthorizationService {
       action: 'manage',
       required_scopes: [AuthScope.SCOPE_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN]
-      }
+        user_roles: [UserRole.ADMIN],
+      },
     });
 
     this.addResourceRule({
@@ -493,8 +505,8 @@ export class AuthorizationService {
       action: 'isolate',
       required_scopes: [AuthScope.SCOPE_ISOLATE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.SERVICE]
-      }
+        user_roles: [UserRole.ADMIN, UserRole.SERVICE],
+      },
     });
 
     // Disable logging during MCP initialization to prevent stdout contamination
@@ -538,7 +550,7 @@ export class AuthorizationService {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

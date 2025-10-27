@@ -37,9 +37,9 @@ export async function addObservation(
       entity_id: data.entity_id,
       observation: data.observation,
       observation_type: data.observation_type || undefined,
-      metadata: data.metadata || undefined as any,
-      tags: {}
-    }
+      metadata: data.metadata || (undefined as any),
+      tags: {},
+    },
   });
 
   return result.id;
@@ -59,11 +59,11 @@ export async function deleteObservation(observationId: string): Promise<boolean>
   const result = await qdrant.knowledgeObservation.updateMany({
     where: {
       id: observationId,
-      deleted_at: null
+      deleted_at: null,
     },
     data: {
-      deleted_at: new Date()
-    }
+      deleted_at: new Date(),
+    },
   });
 
   return result.count > 0;
@@ -93,11 +93,11 @@ export async function deleteObservationsByText(
       entity_type,
       entity_id,
       observation: observationText,
-      deleted_at: null
+      deleted_at: null,
     },
     data: {
-      deleted_at: new Date()
-    }
+      deleted_at: new Date(),
+    },
   });
 
   return result.count;
@@ -132,7 +132,7 @@ export async function getObservations(
   const whereClause: any = {
     entity_type,
     entity_id,
-    deleted_at: null
+    deleted_at: null,
   };
 
   // FIXED: Use direct field access for observation_type filtering
@@ -148,16 +148,16 @@ export async function getObservations(
       observation: true,
       observation_type: true,
       metadata: true,
-      created_at: true
-    }
+      created_at: true,
+    },
   });
 
-  return result.map(observation => ({
+  return result.map((observation) => ({
     id: observation.id,
     observation: observation.observation,
     observation_type: observation.observation_type,
     metadata: observation.metadata as Record<string, unknown> | null,
-    created_at: observation.created_at
+    created_at: observation.created_at,
   }));
 }
 
@@ -171,7 +171,7 @@ export async function getObservations(
  * @returns Array of matching observations with entity context
  */
 export async function searchObservations(
-    searchQuery: string,
+  searchQuery: string,
   entity_typeFilter?: string,
   limit: number = 20
 ): Promise<
@@ -204,15 +204,17 @@ export async function searchObservations(
       .join(' & ');
 
     if (entity_typeFilter) {
-      const result = await qdrant.$queryRaw<Array<{
-        id: string;
-        entity_type: string;
-        entity_id: string;
-        observation: string;
-        observation_type: string | null;
-        metadata: Record<string, unknown> | null;
-        created_at: Date;
-      }>>`
+      const result = await qdrant.$queryRaw<
+        Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>
+      >`
         SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
         FROM knowledge_observation
         WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', ${tsQuery})
@@ -221,15 +223,17 @@ export async function searchObservations(
       `;
       return result.flat();
     } else {
-      const result = await qdrant.$queryRaw<Array<{
-        id: string;
-        entity_type: string;
-        entity_id: string;
-        observation: string;
-        observation_type: string | null;
-        metadata: Record<string, unknown> | null;
-        created_at: Date;
-      }>>`
+      const result = await qdrant.$queryRaw<
+        Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>
+      >`
         SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
         FROM knowledge_observation
         WHERE to_tsvector('english', observation) @@ plainto_tsquery('english', ${tsQuery})
@@ -241,15 +245,17 @@ export async function searchObservations(
   } else {
     // LIKE pattern search
     if (entity_typeFilter) {
-      const result = await qdrant.$queryRaw<Array<{
-        id: string;
-        entity_type: string;
-        entity_id: string;
-        observation: string;
-        observation_type: string | null;
-        metadata: Record<string, unknown> | null;
-        created_at: Date;
-      }>>`
+      const result = await qdrant.$queryRaw<
+        Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>
+      >`
         SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
         FROM knowledge_observation
         WHERE observation ILIKE ${`%${searchQuery}%`}
@@ -258,15 +264,19 @@ export async function searchObservations(
       `;
       return result.flat();
     } else {
-      const result = await qdrant.$queryRaw<Array<Array<{
-        id: string;
-        entity_type: string;
-        entity_id: string;
-        observation: string;
-        observation_type: string | null;
-        metadata: Record<string, unknown> | null;
-        created_at: Date;
-      }>>>`
+      const result = await qdrant.$queryRaw<
+        Array<
+          Array<{
+            id: string;
+            entity_type: string;
+            entity_id: string;
+            observation: string;
+            observation_type: string | null;
+            metadata: Record<string, unknown> | null;
+            created_at: Date;
+          }>
+        >
+      >`
         SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
         FROM knowledge_observation
         WHERE observation ILIKE ${`%${searchQuery}%`}
@@ -297,10 +307,7 @@ export async function searchObservations(
  * @param entity_id - Entity UUID
  * @returns Number of active observations
  */
-export async function getObservationCount(
-    entity_type: string,
-  entity_id: string
-): Promise<number> {
+export async function getObservationCount(entity_type: string, entity_id: string): Promise<number> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -328,7 +335,7 @@ export async function getObservationCount(
  * @returns Array of recent observations
  */
 export async function getRecentObservations(
-    limit: number = 50,
+  limit: number = 50,
   entity_typeFilter?: string
 ): Promise<
   Array<{
@@ -346,15 +353,19 @@ export async function getRecentObservations(
   await db.initialize();
 
   if (entity_typeFilter) {
-    const result = await qdrant.$queryRaw<Array<Array<{
-      id: string;
-      entity_type: string;
-      entity_id: string;
-      observation: string;
-      observation_type: string | null;
-      metadata: Record<string, unknown> | null;
-      created_at: Date;
-    }>>>`
+    const result = await qdrant.$queryRaw<
+      Array<
+        Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>
+      >
+    >`
       SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
       FROM knowledge_observation
       WHERE deleted_at IS NULL AND entity_type = ${entity_typeFilter}
@@ -370,15 +381,19 @@ export async function getRecentObservations(
       created_at: Date;
     }>;
   } else {
-    const result = await qdrant.$queryRaw<Array<Array<{
-      id: string;
-      entity_type: string;
-      entity_id: string;
-      observation: string;
-      observation_type: string | null;
-      metadata: Record<string, unknown> | null;
-      created_at: Date;
-    }>>>`
+    const result = await qdrant.$queryRaw<
+      Array<
+        Array<{
+          id: string;
+          entity_type: string;
+          entity_id: string;
+          observation: string;
+          observation_type: string | null;
+          metadata: Record<string, unknown> | null;
+          created_at: Date;
+        }>
+      >
+    >`
       SELECT id, entity_type, entity_id, observation, observation_type, metadata, created_at
       FROM knowledge_observation
       WHERE deleted_at IS NULL

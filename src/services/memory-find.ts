@@ -27,34 +27,36 @@ export async function memoryFind(query: SearchQuery) {
       scope: query.scope,
       types: query.types,
       mode: query.mode,
-      top_k: query.limit || 50
+      top_k: query.limit || 50,
     });
 
-    logger.info({
-      resultCount: result.hits?.length || 0,
-      totalCount: result.hits?.length || 0
-    }, 'Memory find operation completed');
+    logger.info(
+      {
+        resultCount: result.hits?.length || 0,
+        totalCount: result.hits?.length || 0,
+      },
+      'Memory find operation completed'
+    );
 
     // Convert SmartFindResult to MemoryFindResponse format
     return {
-      results: result.hits.map(hit => ({
+      results: result.hits.map((hit) => ({
         id: hit.id,
         kind: hit.kind,
         scope: hit.scope || {},
         data: { title: hit.title, snippet: hit.snippet },
         created_at: hit.updated_at || new Date().toISOString(),
         confidence_score: hit.confidence,
-        match_type: 'exact' as const
+        match_type: 'exact' as const,
       })),
       total_count: result.hits?.length || 0,
       autonomous_context: {
         search_mode_used: result.autonomous_metadata.strategy_used,
         results_found: result.hits?.length || 0,
         confidence_average: result.autonomous_metadata.avg_score,
-        user_message_suggestion: result.autonomous_metadata.user_message_suggestion
-      }
+        user_message_suggestion: result.autonomous_metadata.user_message_suggestion,
+      },
     };
-
   } catch (error) {
     logger.error({ error, query: query.query }, 'Memory find operation failed');
 
@@ -66,8 +68,8 @@ export async function memoryFind(query: SearchQuery) {
         search_mode_used: 'error',
         results_found: 0,
         confidence_average: 0,
-        user_message_suggestion: '❌ Search failed - please try again'
-      }
+        user_message_suggestion: '❌ Search failed - please try again',
+      },
     };
   }
 }

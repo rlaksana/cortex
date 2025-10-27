@@ -13,7 +13,7 @@ import {
   AuthenticationError,
   ValidationError,
   ServiceErrorHandler,
-  AsyncErrorHandler
+  AsyncErrorHandler,
 } from '../../middleware/error-middleware.js';
 import { BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../../utils/error-handler.js';
 import {
@@ -27,7 +27,7 @@ import {
   AuthContext,
   AuthError,
   TokenRevocationList,
-  DEFAULT_ROLE_PERMISSIONS
+  DEFAULT_ROLE_PERMISSIONS,
 } from '../../types/auth-types.js';
 
 export interface AuthServiceConfig {
@@ -57,16 +57,21 @@ export class AuthService {
   private tokenBlacklist: Set<string> = new Set(); // In-memory cache for performance
   private tokenBlacklistCache: Map<string, { revoked: boolean; timestamp: number }> = new Map(); // Enhanced cache with metadata
   private activeSessions: Map<string, AuthSession> = new Map();
-  private databaseCircuitBreaker: { isOpen: boolean; failureCount: number; lastFailureTime: number; recoveryTimeout: number } = {
+  private databaseCircuitBreaker: {
+    isOpen: boolean;
+    failureCount: number;
+    lastFailureTime: number;
+    recoveryTimeout: number;
+  } = {
     isOpen: false,
     failureCount: 0,
     lastFailureTime: 0,
-    recoveryTimeout: 60000 // 1 minute recovery timeout
+    recoveryTimeout: 60000, // 1 minute recovery timeout
   };
   private distributedSync: { lastSyncTime: number; syncInterval: number; instanceId: string } = {
     lastSyncTime: 0,
     syncInterval: 30000, // 30 seconds
-    instanceId: crypto.randomUUID()
+    instanceId: crypto.randomUUID(),
   };
 
   constructor(config: AuthServiceConfig) {
@@ -121,23 +126,24 @@ export class AuthService {
 
         // Fetch user from database
         const userRecord = await AsyncErrorHandler.retry(
-          () => qdrant.getClient().user.findUnique({
-            where: { username },
-            select: {
-              id: true,
-              username: true,
-              email: true,
-              password_hash: true,
-              role: true,
-              is_active: true,
-              created_at: true,
-              updated_at: true,
-              last_login: true
-            }
-          }),
+          () =>
+            qdrant.getClient().user.findUnique({
+              where: { username },
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                password_hash: true,
+                role: true,
+                is_active: true,
+                created_at: true,
+                updated_at: true,
+                last_login: true,
+              },
+            }),
           {
             maxAttempts: 3,
-            context: { operation: 'findUser', username }
+            context: { operation: 'findUser', username },
           }
         );
 
@@ -167,13 +173,14 @@ export class AuthService {
 
         // Update last login timestamp
         await AsyncErrorHandler.retry(
-          () => qdrant.getClient().user.update({
-            where: { id: userRecord.id },
-            data: { last_login: new Date() }
-          }),
+          () =>
+            qdrant.getClient().user.update({
+              where: { id: userRecord.id },
+              data: { last_login: new Date() },
+            }),
           {
             maxAttempts: 2,
-            context: { operation: 'updateLastLogin', userId: userRecord.id }
+            context: { operation: 'updateLastLogin', userId: userRecord.id },
           }
         );
 
@@ -187,20 +194,23 @@ export class AuthService {
           is_active: userRecord.is_active,
           created_at: userRecord.created_at.toISOString(),
           updated_at: userRecord.updated_at.toISOString(),
-          last_login: userRecord.last_login?.toISOString()
+          last_login: userRecord.last_login?.toISOString(),
         };
 
-        logger.info({
-          userId: user.id,
-          username: user.username,
-          role: user.role
-        }, 'User authenticated successfully via database');
+        logger.info(
+          {
+            userId: user.id,
+            username: user.username,
+            role: user.role,
+          },
+          'User authenticated successfully via database'
+        );
 
         return user;
       },
       {
         category: ErrorCategory.AUTHENTICATION,
-        fallback: () => null
+        fallback: () => null,
       }
     );
   }
@@ -215,13 +225,13 @@ export class AuthService {
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + this.parseExpiration(this.config.jwt_expires_in),
       jti: crypto.randomUUID(),
-      session_id: sessionId
+      session_id: sessionId,
     };
 
     return jwt.sign(payload, this.config.jwt_secret, {
       algorithm: 'HS256',
       issuer: 'cortex-mcp',
-      audience: 'cortex-client'
+      audience: 'cortex-client',
     });
   }
 
@@ -232,12 +242,12 @@ export class AuthService {
       type: 'refresh',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + this.parseExpiration(this.config.jwt_refresh_expires_in),
-      jti: crypto.randomUUID()
+      jti: crypto.randomUUID(),
     };
 
     return jwt.sign(payload, this.config.jwt_refresh_secret, {
       algorithm: 'HS256',
-      issuer: 'cortex-mcp'
+      issuer: 'cortex-mcp',
     });
   }
 
@@ -246,7 +256,7 @@ export class AuthService {
       const decoded = jwt.verify(token, this.config.jwt_secret, {
         algorithms: ['HS256'],
         issuer: 'cortex-mcp',
-        audience: 'cortex-client'
+        audience: 'cortex-client',
       }) as TokenPayload;
 
       // Multi-layered token revocation check with fail-safe defaults
@@ -254,12 +264,15 @@ export class AuthService {
 
       if (isRevoked) {
         // Audit log for security monitoring
-        logger.warn({
-          jti: decoded.jti,
-          userId: decoded.sub,
-          username: decoded.username,
-          reason: 'token_revoked'
-        }, 'Access denied: Token has been revoked');
+        logger.warn(
+          {
+            jti: decoded.jti,
+            userId: decoded.sub,
+            username: decoded.username,
+            reason: 'token_revoked',
+          },
+          'Access denied: Token has been revoked'
+        );
 
         // Store security event
         await this.storeSecurityEvent({
@@ -267,8 +280,8 @@ export class AuthService {
           jti: decoded.jti,
           userId: decoded.sub,
           timestamp: new Date(),
-          severity: 'high'
-        }).catch(err => logger.error({ err }, 'Failed to store security event'));
+          severity: 'high',
+        }).catch((err) => logger.error({ err }, 'Failed to store security event'));
 
         throw new Error('TOKEN_REVOKED');
       }
@@ -283,11 +296,14 @@ export class AuthService {
         throw error;
       } else {
         // Log unexpected errors for security monitoring
-        logger.error({
-          error: error.message,
-          stack: error.stack,
-          context: 'token_verification'
-        }, 'Unexpected error during token verification');
+        logger.error(
+          {
+            error: error.message,
+            stack: error.stack,
+            context: 'token_verification',
+          },
+          'Unexpected error during token verification'
+        );
         throw new Error('TOKEN_VERIFICATION_FAILED');
       }
     }
@@ -315,19 +331,25 @@ export class AuthService {
 
     // Layer 2: Check circuit breaker status
     if (this.databaseCircuitBreaker.isOpen) {
-      if (now - this.databaseCircuitBreaker.lastFailureTime > this.databaseCircuitBreaker.recoveryTimeout) {
+      if (
+        now - this.databaseCircuitBreaker.lastFailureTime >
+        this.databaseCircuitBreaker.recoveryTimeout
+      ) {
         // Attempt to close circuit breaker
         this.databaseCircuitBreaker.isOpen = false;
         this.databaseCircuitBreaker.failureCount = 0;
         logger.info('Database circuit breaker attempting recovery');
       } else {
         // Circuit breaker is still open - default to secure behavior
-        logger.warn({ jti }, 'Database circuit breaker open - defaulting to secure token verification');
+        logger.warn(
+          { jti },
+          'Database circuit breaker open - defaulting to secure token verification'
+        );
 
         // Store temporary revocation entry
         this.tokenBlacklistCache.set(jti, {
           revoked: true,
-          timestamp: now
+          timestamp: now,
         });
         this.tokenBlacklist.add(jti);
 
@@ -342,7 +364,7 @@ export class AuthService {
       // Cache the result
       this.tokenBlacklistCache.set(jti, {
         revoked: isRevoked,
-        timestamp: now
+        timestamp: now,
       });
 
       if (isRevoked) {
@@ -353,22 +375,24 @@ export class AuthService {
       this.databaseCircuitBreaker.failureCount = 0;
 
       return isRevoked;
-
     } catch (dbError) {
       // Handle database failure with fail-safe default
       this.handleDatabaseFailure(dbError);
 
-      logger.error({
-        jti,
-        error: dbError.message,
-        circuitBreakerOpen: this.databaseCircuitBreaker.isOpen
-      }, 'Database token revocation check failed - applying fail-safe security');
+      logger.error(
+        {
+          jti,
+          error: dbError.message,
+          circuitBreakerOpen: this.databaseCircuitBreaker.isOpen,
+        },
+        'Database token revocation check failed - applying fail-safe security'
+      );
 
       // FAIL-SAFE: When database is unavailable, assume token might be revoked
       // This is the critical security fix - default to secure behavior
       this.tokenBlacklistCache.set(jti, {
         revoked: true,
-        timestamp: now
+        timestamp: now,
       });
       this.tokenBlacklist.add(jti);
 
@@ -379,34 +403,39 @@ export class AuthService {
   /**
    * Database token revocation check with exponential backoff retry
    */
-  private async checkDatabaseTokenRevocationWithRetry(jti: string, attempt: number = 1): Promise<boolean> {
+  private async checkDatabaseTokenRevocationWithRetry(
+    jti: string,
+    attempt: number = 1
+  ): Promise<boolean> {
     const maxAttempts = 3;
     const baseDelay = 100; // 100ms base delay
 
     try {
       const revokedToken = await qdrant.getClient().tokenRevocationList.findFirst({
         where: {
-          jti: jti,
+          jti,
           expires_at: {
-            gt: new Date()
-          }
-        }
+            gt: new Date(),
+          },
+        },
       });
 
       return !!revokedToken;
-
     } catch (error) {
       if (attempt < maxAttempts) {
         const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-        logger.warn({
-          jti,
-          attempt,
-          maxAttempts,
-          delay,
-          error: error.message
-        }, 'Database token revocation check failed, retrying...');
+        logger.warn(
+          {
+            jti,
+            attempt,
+            maxAttempts,
+            delay,
+            error: error.message,
+          },
+          'Database token revocation check failed, retrying...'
+        );
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.checkDatabaseTokenRevocationWithRetry(jti, attempt + 1);
       }
 
@@ -424,10 +453,13 @@ export class AuthService {
     // Open circuit breaker after 3 consecutive failures
     if (this.databaseCircuitBreaker.failureCount >= 3) {
       this.databaseCircuitBreaker.isOpen = true;
-      logger.error({
-        failureCount: this.databaseCircuitBreaker.failureCount,
-        error: error.message
-      }, 'Database circuit breaker opened due to consecutive failures');
+      logger.error(
+        {
+          failureCount: this.databaseCircuitBreaker.failureCount,
+          error: error.message,
+        },
+        'Database circuit breaker opened due to consecutive failures'
+      );
     }
   }
 
@@ -435,7 +467,7 @@ export class AuthService {
     try {
       return jwt.verify(token, this.config.jwt_refresh_secret, {
         algorithms: ['HS256'],
-        issuer: 'cortex-mcp'
+        issuer: 'cortex-mcp',
       });
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
@@ -455,7 +487,7 @@ export class AuthService {
     this.tokenBlacklist.add(jti);
     this.tokenBlacklistCache.set(jti, {
       revoked: true,
-      timestamp: now
+      timestamp: now,
     });
 
     // Layer 2: Persist to backup storage
@@ -470,12 +502,15 @@ export class AuthService {
     }
 
     // Log comprehensive audit trail
-    logger.info({
-      jti,
-      reason,
-      databasePersisted,
-      timestamp: new Date(now).toISOString()
-    }, 'Token revoked with multi-layer persistence');
+    logger.info(
+      {
+        jti,
+        reason,
+        databasePersisted,
+        timestamp: new Date(now).toISOString(),
+      },
+      'Token revoked with multi-layer persistence'
+    );
 
     // Store security event for monitoring
     await this.storeSecurityEvent({
@@ -486,15 +521,19 @@ export class AuthService {
       metadata: {
         reason,
         databasePersisted,
-        layers: ['memory', 'backup', databasePersisted ? 'database' : 'database_failed']
-      }
-    }).catch(err => logger.error({ err }, 'Failed to store token revocation security event'));
+        layers: ['memory', 'backup', databasePersisted ? 'database' : 'database_failed'],
+      },
+    }).catch((err) => logger.error({ err }, 'Failed to store token revocation security event'));
   }
 
   /**
    * Persist token revocation to database with exponential backoff retry
    */
-  private async persistTokenRevocationToDatabaseWithRetry(jti: string, reason?: string, attempt: number = 1): Promise<boolean> {
+  private async persistTokenRevocationToDatabaseWithRetry(
+    jti: string,
+    reason?: string,
+    attempt: number = 1
+  ): Promise<boolean> {
     const maxAttempts = 3;
     const baseDelay = 200; // 200ms base delay
 
@@ -504,32 +543,37 @@ export class AuthService {
           jti,
           revoked_at: new Date(),
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-          reason: reason || 'manual_revocation'
-        }
+          reason: reason || 'manual_revocation',
+        },
       });
 
       return true;
-
     } catch (error) {
       if (attempt < maxAttempts) {
         const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-        logger.warn({
-          jti,
-          attempt,
-          maxAttempts,
-          delay,
-          error: error.message
-        }, 'Database token revocation persistence failed, retrying...');
+        logger.warn(
+          {
+            jti,
+            attempt,
+            maxAttempts,
+            delay,
+            error: error.message,
+          },
+          'Database token revocation persistence failed, retrying...'
+        );
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.persistTokenRevocationToDatabaseWithRetry(jti, reason, attempt + 1);
       }
 
-      logger.error({
-        jti,
-        error: error.message,
-        finalAttempt: attempt
-      }, 'Failed to persist token revocation to database after all retries');
+      logger.error(
+        {
+          jti,
+          error: error.message,
+          finalAttempt: attempt,
+        },
+        'Failed to persist token revocation to database after all retries'
+      );
 
       throw error;
     }
@@ -547,7 +591,10 @@ export class AuthService {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+      const backupFile = path.join(
+        this.config.token_blacklist_backup_path,
+        'token-blacklist-backup.json'
+      );
 
       // Ensure directory exists
       await fs.mkdir(path.dirname(backupFile), { recursive: true });
@@ -566,18 +613,20 @@ export class AuthService {
       backup[jti] = timestamp;
 
       // Write backup atomically
-      const tempFile = backupFile + '.tmp';
+      const tempFile = `${backupFile}.tmp`;
       await fs.writeFile(tempFile, JSON.stringify(backup, null, 2));
       await fs.rename(tempFile, backupFile);
 
       logger.debug({ jti, backupFile }, 'Token revocation persisted to backup storage');
-
     } catch (error) {
-      logger.error({
-        jti,
-        error: error.message,
-        backupPath: this.config.token_blacklist_backup_path
-      }, 'Failed to persist token revocation to backup storage');
+      logger.error(
+        {
+          jti,
+          error: error.message,
+          backupPath: this.config.token_blacklist_backup_path,
+        },
+        'Failed to persist token revocation to backup storage'
+      );
     }
   }
 
@@ -593,7 +642,10 @@ export class AuthService {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+      const backupFile = path.join(
+        this.config.token_blacklist_backup_path,
+        'token-blacklist-backup.json'
+      );
 
       const data = await fs.readFile(backupFile, 'utf-8');
       const backup: Record<string, number> = JSON.parse(data);
@@ -608,7 +660,7 @@ export class AuthService {
           this.tokenBlacklist.add(jti);
           this.tokenBlacklistCache.set(jti, {
             revoked: true,
-            timestamp
+            timestamp,
           });
           loadedCount++;
         } else {
@@ -616,18 +668,23 @@ export class AuthService {
         }
       }
 
-      logger.info({
-        backupFile,
-        loadedCount,
-        expiredCount,
-        totalEntries: Object.keys(backup).length
-      }, 'Token blacklist loaded from backup storage');
-
+      logger.info(
+        {
+          backupFile,
+          loadedCount,
+          expiredCount,
+          totalEntries: Object.keys(backup).length,
+        },
+        'Token blacklist loaded from backup storage'
+      );
     } catch (error) {
-      logger.info({
-        error: error.message,
-        backupPath: this.config.token_blacklist_backup_path
-      }, 'No backup token blacklist found or failed to load, starting fresh');
+      logger.info(
+        {
+          error: error.message,
+          backupPath: this.config.token_blacklist_backup_path,
+        },
+        'No backup token blacklist found or failed to load, starting fresh'
+      );
     }
   }
 
@@ -644,16 +701,18 @@ export class AuthService {
           user_id: event.userId,
           timestamp: event.timestamp,
           severity: event.severity,
-          metadata: event.metadata || {}
-        }
+          metadata: event.metadata || {},
+        },
       });
-
     } catch (error) {
       // If database storage fails, log to file as fallback
-      logger.warn({
-        event,
-        error: error.message
-      }, 'Failed to store security event in database, logging to file');
+      logger.warn(
+        {
+          event,
+          error: error.message,
+        },
+        'Failed to store security event in database, logging to file'
+      );
 
       try {
         const fs = await import('fs/promises');
@@ -666,11 +725,10 @@ export class AuthService {
 
         const logEntry = {
           timestamp: event.timestamp.toISOString(),
-          ...event
+          ...event,
         };
 
-        await fs.appendFile(logFile, JSON.stringify(logEntry) + '\n');
-
+        await fs.appendFile(logFile, `${JSON.stringify(logEntry)}\n`);
       } catch (fileError) {
         logger.error({ fileError }, 'Failed to write security event to file');
       }
@@ -693,7 +751,7 @@ export class AuthService {
       user_agent: userAgent,
       created_at: new Date().toISOString(),
       expires_at: expiresAt.toISOString(),
-      is_active: true
+      is_active: true,
     };
 
     this.activeSessions.set(sessionId, session);
@@ -733,13 +791,14 @@ export class AuthService {
   }
 
   private cleanupUserSessions(userId: string): void {
-    const userSessions = Array.from(this.activeSessions.entries())
-      .filter(([_, session]) => session.user_id === userId);
+    const userSessions = Array.from(this.activeSessions.entries()).filter(
+      ([_, session]) => session.user_id === userId
+    );
 
     // Keep only the most recent sessions up to the limit
     if (userSessions.length >= this.config.max_sessions_per_user) {
-      const sortedSessions = userSessions.sort((a, b) =>
-        new Date(b[1].created_at).getTime() - new Date(a[1].created_at).getTime()
+      const sortedSessions = userSessions.sort(
+        (a, b) => new Date(b[1].created_at).getTime() - new Date(a[1].created_at).getTime()
       );
 
       const sessionsToRemove = sortedSessions.slice(this.config.max_sessions_per_user);
@@ -750,96 +809,110 @@ export class AuthService {
   }
 
   private startSessionCleanup(): void {
-    setInterval(async () => {
-      const now = Date.now();
-      const nowDate = new Date(now);
+    setInterval(
+      async () => {
+        const now = Date.now();
+        const nowDate = new Date(now);
 
-      // Clean up expired sessions
-      for (const [sessionId, session] of this.activeSessions) {
-        if (nowDate > new Date(session.expires_at)) {
-          this.activeSessions.delete(sessionId);
-        }
-      }
-
-      // Clean up expired token revocations from enhanced cache
-      const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-      let cacheCleanupCount = 0;
-
-      for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
-        if (now - entry.timestamp > expiryMs) {
-          this.tokenBlacklistCache.delete(jti);
-          this.tokenBlacklist.delete(jti);
-          cacheCleanupCount++;
-        }
-      }
-
-      if (cacheCleanupCount > 0) {
-        logger.debug({ cacheCleanupCount }, 'Cleaned up expired entries from token blacklist cache');
-      }
-
-      // Clean up expired token revocations from database
-      try {
-        const result = await qdrant.getClient().tokenRevocationList.deleteMany({
-          where: {
-            expires_at: {
-              lt: nowDate
-            }
+        // Clean up expired sessions
+        for (const [sessionId, session] of this.activeSessions) {
+          if (nowDate > new Date(session.expires_at)) {
+            this.activeSessions.delete(sessionId);
           }
-        });
-
-        if (result.count > 0) {
-          logger.info({ deletedCount: result.count }, 'Cleaned up expired token revocations from database');
         }
 
-      } catch (error) {
-        logger.error({ error }, 'Failed to cleanup expired token revocations from database');
-      }
-
-      // Clean up backup storage
-      await this.cleanupBackupStorage(now);
-
-      // Aggressive cache cleanup if memory usage is high
-      if (this.tokenBlacklistCache.size > 10000) {
-        // Keep only recent entries (last 1 hour)
-        const oneHourMs = 60 * 60 * 1000;
-        const beforeCount = this.tokenBlacklistCache.size;
+        // Clean up expired token revocations from enhanced cache
+        const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+        let cacheCleanupCount = 0;
 
         for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
-          if (now - entry.timestamp > oneHourMs) {
+          if (now - entry.timestamp > expiryMs) {
             this.tokenBlacklistCache.delete(jti);
             this.tokenBlacklist.delete(jti);
+            cacheCleanupCount++;
           }
         }
 
-        const afterCount = this.tokenBlacklistCache.size;
-        logger.info({
-          beforeCount,
-          afterCount,
-          clearedCount: beforeCount - afterCount
-        }, 'Performed aggressive token blacklist cache cleanup');
-      }
+        if (cacheCleanupCount > 0) {
+          logger.debug(
+            { cacheCleanupCount },
+            'Cleaned up expired entries from token blacklist cache'
+          );
+        }
 
-      // Circuit breaker recovery attempt
-      if (this.databaseCircuitBreaker.isOpen &&
-          now - this.databaseCircuitBreaker.lastFailureTime > this.databaseCircuitBreaker.recoveryTimeout) {
-
-        // Test database connection
+        // Clean up expired token revocations from database
         try {
-          await qdrant.getClient().tokenRevocationList.findFirst({
-            where: { jti: 'circuit-breaker-test' }
+          const result = await qdrant.getClient().tokenRevocationList.deleteMany({
+            where: {
+              expires_at: {
+                lt: nowDate,
+              },
+            },
           });
 
-          this.databaseCircuitBreaker.isOpen = false;
-          this.databaseCircuitBreaker.failureCount = 0;
-          logger.info('Database circuit breaker recovered - connection restored');
-
+          if (result.count > 0) {
+            logger.info(
+              { deletedCount: result.count },
+              'Cleaned up expired token revocations from database'
+            );
+          }
         } catch (error) {
-          this.databaseCircuitBreaker.lastFailureTime = now;
-          logger.debug({ error: error.message }, 'Database circuit breaker test failed, keeping open');
+          logger.error({ error }, 'Failed to cleanup expired token revocations from database');
         }
-      }
 
-    }, 5 * 60 * 1000); // Clean up every 5 minutes
+        // Clean up backup storage
+        await this.cleanupBackupStorage(now);
+
+        // Aggressive cache cleanup if memory usage is high
+        if (this.tokenBlacklistCache.size > 10000) {
+          // Keep only recent entries (last 1 hour)
+          const oneHourMs = 60 * 60 * 1000;
+          const beforeCount = this.tokenBlacklistCache.size;
+
+          for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
+            if (now - entry.timestamp > oneHourMs) {
+              this.tokenBlacklistCache.delete(jti);
+              this.tokenBlacklist.delete(jti);
+            }
+          }
+
+          const afterCount = this.tokenBlacklistCache.size;
+          logger.info(
+            {
+              beforeCount,
+              afterCount,
+              clearedCount: beforeCount - afterCount,
+            },
+            'Performed aggressive token blacklist cache cleanup'
+          );
+        }
+
+        // Circuit breaker recovery attempt
+        if (
+          this.databaseCircuitBreaker.isOpen &&
+          now - this.databaseCircuitBreaker.lastFailureTime >
+            this.databaseCircuitBreaker.recoveryTimeout
+        ) {
+          // Test database connection
+          try {
+            await qdrant.getClient().tokenRevocationList.findFirst({
+              where: { jti: 'circuit-breaker-test' },
+            });
+
+            this.databaseCircuitBreaker.isOpen = false;
+            this.databaseCircuitBreaker.failureCount = 0;
+            logger.info('Database circuit breaker recovered - connection restored');
+          } catch (error) {
+            this.databaseCircuitBreaker.lastFailureTime = now;
+            logger.debug(
+              { error: error.message },
+              'Database circuit breaker test failed, keeping open'
+            );
+          }
+        }
+      },
+      5 * 60 * 1000
+    ); // Clean up every 5 minutes
   }
 
   /**
@@ -854,7 +927,10 @@ export class AuthService {
       const fs = await import('fs/promises');
       const path = await import('path');
 
-      const backupFile = path.join(this.config.token_blacklist_backup_path, 'token-blacklist-backup.json');
+      const backupFile = path.join(
+        this.config.token_blacklist_backup_path,
+        'token-blacklist-backup.json'
+      );
 
       try {
         const data = await fs.readFile(backupFile, 'utf-8');
@@ -874,18 +950,19 @@ export class AuthService {
 
         if (removedCount > 0) {
           // Write cleaned backup atomically
-          const tempFile = backupFile + '.tmp';
+          const tempFile = `${backupFile}.tmp`;
           await fs.writeFile(tempFile, JSON.stringify(cleanedBackup, null, 2));
           await fs.rename(tempFile, backupFile);
 
-          logger.debug({ removedCount, backupFile }, 'Cleaned up expired entries from backup storage');
+          logger.debug(
+            { removedCount, backupFile },
+            'Cleaned up expired entries from backup storage'
+          );
         }
-
       } catch (error) {
         // Backup file doesn't exist or is invalid
         logger.debug({ error: error.message }, 'Backup file cleanup skipped - file not accessible');
       }
-
     } catch (error) {
       logger.error({ error }, 'Failed to cleanup backup storage');
     }
@@ -910,7 +987,9 @@ export class AuthService {
   /**
    * Database-backed API key validation
    */
-  async validateApiKeyWithDatabase(apiKey: string): Promise<{ user: User; scopes: AuthScope[]; apiKeyInfo: ApiKey } | null> {
+  async validateApiKeyWithDatabase(
+    apiKey: string
+  ): Promise<{ user: User; scopes: AuthScope[]; apiKeyInfo: ApiKey } | null> {
     try {
       // Extract key ID from API key format (ck_live_... or ck_test_...)
       const keyIdMatch = apiKey.match(/^(ck_[^_]+)_([a-f0-9]+)/);
@@ -925,7 +1004,7 @@ export class AuthService {
       const apiKeyRecord = await qdrant.getClient().apiKey.findFirst({
         where: {
           key_id: keyId,
-          is_active: true
+          is_active: true,
         },
         include: {
           user: {
@@ -937,10 +1016,10 @@ export class AuthService {
               is_active: true,
               created_at: true,
               updated_at: true,
-              last_login: true
-            }
-          }
-        }
+              last_login: true,
+            },
+          },
+        },
       });
 
       if (!apiKeyRecord) {
@@ -969,13 +1048,13 @@ export class AuthService {
 
       // Parse scopes from JSON
       const scopes: AuthScope[] = Array.isArray(apiKeyRecord.scopes)
-        ? apiKeyRecord.scopes as AuthScope[]
+        ? (apiKeyRecord.scopes as AuthScope[])
         : [];
 
       // Update last used timestamp
       await qdrant.getClient().apiKey.update({
         where: { id: apiKeyRecord.id },
-        data: { last_used: new Date() }
+        data: { last_used: new Date() },
       });
 
       // Convert database user to User interface
@@ -988,7 +1067,7 @@ export class AuthService {
         is_active: apiKeyRecord.user.is_active,
         created_at: apiKeyRecord.user.created_at.toISOString(),
         updated_at: apiKeyRecord.user.updated_at.toISOString(),
-        last_login: apiKeyRecord.user.last_login?.toISOString()
+        last_login: apiKeyRecord.user.last_login?.toISOString(),
       };
 
       // Convert database API key to ApiKey interface
@@ -1004,18 +1083,20 @@ export class AuthService {
         expires_at: apiKeyRecord.expires_at?.toISOString(),
         created_at: apiKeyRecord.created_at.toISOString(),
         last_used: apiKeyRecord.last_used?.toISOString(),
-        updated_at: apiKeyRecord.updated_at.toISOString()
+        updated_at: apiKeyRecord.updated_at.toISOString(),
       };
 
-      logger.info({
-        keyId,
-        userId: user.id,
-        scopes: scopes.length,
-        lastUsed: apiKeyRecord.last_used
-      }, 'API key validated successfully');
+      logger.info(
+        {
+          keyId,
+          userId: user.id,
+          scopes: scopes.length,
+          lastUsed: apiKeyRecord.last_used,
+        },
+        'API key validated successfully'
+      );
 
       return { user, scopes, apiKeyInfo };
-
     } catch (error) {
       logger.error({ error, apiKeyPrefix: apiKey.substring(0, 10) }, 'API key validation failed');
       return null;
@@ -1045,13 +1126,12 @@ export class AuthService {
           description,
           scopes: scopes as any[], // Qdrant Json field
           expires_at: expiresAt,
-          is_active: true
-        }
+          is_active: true,
+        },
       });
 
       logger.info({ keyId, userId, scopes: scopes.length }, 'API key created in database');
       return { keyId, key };
-
     } catch (error) {
       logger.error({ error, userId, name }, 'Failed to create API key in database');
       throw error;
@@ -1070,7 +1150,7 @@ export class AuthService {
 
       const result = await qdrant.getClient().apiKey.updateMany({
         where: whereClause,
-        data: { is_active: false }
+        data: { is_active: false },
       });
 
       const success = result.count > 0;
@@ -1081,7 +1161,6 @@ export class AuthService {
       }
 
       return success;
-
     } catch (error) {
       logger.error({ error, keyId, userId }, 'Failed to revoke API key');
       return false;
@@ -1107,26 +1186,25 @@ export class AuthService {
           expires_at: true,
           created_at: true,
           last_used: true,
-          updated_at: true
+          updated_at: true,
         },
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: 'desc' },
       });
 
-      return apiKeys.map(key => ({
+      return apiKeys.map((key) => ({
         id: key.id,
         key_id: key.key_id,
         key_hash: key.key_hash,
         user_id: key.user_id,
         name: key.name,
         description: key.description || undefined,
-        scopes: Array.isArray(key.scopes) ? key.scopes as AuthScope[] : [],
+        scopes: Array.isArray(key.scopes) ? (key.scopes as AuthScope[]) : [],
         is_active: key.is_active,
         expires_at: key.expires_at?.toISOString(),
         created_at: key.created_at.toISOString(),
         last_used: key.last_used?.toISOString(),
-        updated_at: key.updated_at.toISOString()
+        updated_at: key.updated_at.toISOString(),
       }));
-
     } catch (error) {
       logger.error({ error, userId }, 'Failed to list API keys for user');
       return [];
@@ -1145,10 +1223,15 @@ export class AuthService {
   }
 
   validateScopes(userScopes: AuthScope[], requiredScopes: AuthScope[]): boolean {
-    return requiredScopes.every(scope => userScopes.includes(scope));
+    return requiredScopes.every((scope) => userScopes.includes(scope));
   }
 
-  canAccessResource(user: User, resource: string, action: string, apiKeyScopes?: AuthScope[]): boolean {
+  canAccessResource(
+    user: User,
+    resource: string,
+    action: string,
+    apiKeyScopes?: AuthScope[]
+  ): boolean {
     const userScopes = this.getUserScopes(user);
     const effectiveScopes = apiKeyScopes ? [...userScopes, ...apiKeyScopes] : userScopes;
 
@@ -1160,36 +1243,40 @@ export class AuthService {
 
   private getResourceScopes(resource: string, action: string): AuthScope[] {
     const resourceMap: Record<string, Record<string, AuthScope[]>> = {
-      'memory_store': {
-        'read': [AuthScope.MEMORY_READ],
-        'write': [AuthScope.MEMORY_WRITE],
-        'delete': [AuthScope.MEMORY_DELETE]
+      memory_store: {
+        read: [AuthScope.MEMORY_READ],
+        write: [AuthScope.MEMORY_WRITE],
+        delete: [AuthScope.MEMORY_DELETE],
       },
-      'memory_find': {
-        'read': [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
-        'deep': [AuthScope.SEARCH_DEEP],
-        'advanced': [AuthScope.SEARCH_ADVANCED]
+      memory_find: {
+        read: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
+        deep: [AuthScope.SEARCH_DEEP],
+        advanced: [AuthScope.SEARCH_ADVANCED],
       },
-      'knowledge': {
-        'read': [AuthScope.KNOWLEDGE_READ],
-        'write': [AuthScope.KNOWLEDGE_WRITE],
-        'delete': [AuthScope.KNOWLEDGE_DELETE]
+      knowledge: {
+        read: [AuthScope.KNOWLEDGE_READ],
+        write: [AuthScope.KNOWLEDGE_WRITE],
+        delete: [AuthScope.KNOWLEDGE_DELETE],
       },
-      'audit': {
-        'read': [AuthScope.AUDIT_READ],
-        'write': [AuthScope.AUDIT_WRITE]
+      audit: {
+        read: [AuthScope.AUDIT_READ],
+        write: [AuthScope.AUDIT_WRITE],
       },
-      'system': {
-        'read': [AuthScope.SYSTEM_READ],
-        'manage': [AuthScope.SYSTEM_MANAGE]
-      }
+      system: {
+        read: [AuthScope.SYSTEM_READ],
+        manage: [AuthScope.SYSTEM_MANAGE],
+      },
     };
 
     return resourceMap[resource]?.[action] || [];
   }
 
   // Authentication context creation
-  async createAuthContext(token: string, ipAddress: string, userAgent: string): Promise<AuthContext> {
+  async createAuthContext(
+    token: string,
+    ipAddress: string,
+    userAgent: string
+  ): Promise<AuthContext> {
     const payload = await this.verifyAccessToken(token);
     const session = payload.session_id ? this.getSession(payload.session_id) : null;
 
@@ -1201,15 +1288,15 @@ export class AuthService {
       user: {
         id: payload.sub,
         username: payload.username,
-        role: payload.role
+        role: payload.role,
       },
       session: {
         id: session.id,
         ip_address: session.ip_address,
-        user_agent: session.user_agent
+        user_agent: session.user_agent,
       },
       scopes: payload.scopes as AuthScope[],
-      token_jti: payload.jti
+      token_jti: payload.jti,
     };
   }
 
@@ -1241,7 +1328,7 @@ export class AuthService {
       role: UserRole.USER,
       is_active: true,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     const scopes: AuthScope[] = this.getUserScopes(user);
@@ -1257,7 +1344,7 @@ export class AuthService {
       refresh_token: newRefreshToken,
       token_type: 'Bearer',
       expires_in: this.parseExpiration(this.config.jwt_expires_in),
-      scope: scopes
+      scope: scopes,
     };
   }
 
@@ -1273,11 +1360,16 @@ export class AuthService {
     const unit = match[2];
 
     switch (unit) {
-      case 's': return value;
-      case 'm': return value * 60;
-      case 'h': return value * 60 * 60;
-      case 'd': return value * 24 * 60 * 60;
-      default: throw new Error(`Invalid time unit: ${unit}`);
+      case 's':
+        return value;
+      case 'm':
+        return value * 60;
+      case 'h':
+        return value * 60 * 60;
+      case 'd':
+        return value * 24 * 60 * 60;
+      default:
+        throw new Error(`Invalid time unit: ${unit}`);
     }
   }
 
@@ -1292,7 +1384,7 @@ export class AuthService {
       // New window
       this.rateLimitMap.set(identifier, {
         count: 1,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       });
       return true;
     }
@@ -1333,16 +1425,16 @@ export class AuthService {
       const recentRevocations = await qdrant.getClient().tokenRevocationList.findMany({
         where: {
           revoked_at: {
-            gt: fiveMinutesAgo
-          }
+            gt: fiveMinutesAgo,
+          },
         },
         select: {
           jti: true,
-          revoked_at: true
+          revoked_at: true,
         },
         orderBy: {
-          revoked_at: 'desc'
-        }
+          revoked_at: 'desc',
+        },
       });
 
       let syncCount = 0;
@@ -1356,7 +1448,7 @@ export class AuthService {
           this.tokenBlacklist.add(revocation.jti);
           this.tokenBlacklistCache.set(revocation.jti, {
             revoked: true,
-            timestamp: revocationTime
+            timestamp: revocationTime,
           });
           syncCount++;
         }
@@ -1365,21 +1457,26 @@ export class AuthService {
       this.distributedSync.lastSyncTime = now;
 
       if (syncCount > 0) {
-        logger.info({
-          instanceId: this.distributedSync.instanceId,
-          syncCount,
-          totalRevocations: recentRevocations.length
-        }, 'Distributed token blacklist sync completed');
+        logger.info(
+          {
+            instanceId: this.distributedSync.instanceId,
+            syncCount,
+            totalRevocations: recentRevocations.length,
+          },
+          'Distributed token blacklist sync completed'
+        );
       }
 
       // Update instance heartbeat
       await this.updateInstanceHeartbeat();
-
     } catch (error) {
-      logger.error({
-        instanceId: this.distributedSync.instanceId,
-        error: error.message
-      }, 'Distributed sync failed');
+      logger.error(
+        {
+          instanceId: this.distributedSync.instanceId,
+          error: error.message,
+        },
+        'Distributed sync failed'
+      );
 
       // Don't treat this as a database circuit breaker issue
       // Sync failures shouldn't affect normal token verification
@@ -1396,22 +1493,24 @@ export class AuthService {
         update: {
           last_heartbeat: new Date(),
           token_blacklist_size: this.tokenBlacklist.size,
-          circuit_breaker_open: this.databaseCircuitBreaker.isOpen
+          circuit_breaker_open: this.databaseCircuitBreaker.isOpen,
         },
         create: {
           instance_id: this.distributedSync.instanceId,
           last_heartbeat: new Date(),
           token_blacklist_size: this.tokenBlacklist.size,
           circuit_breaker_open: this.databaseCircuitBreaker.isOpen,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       });
-
     } catch (error) {
-      logger.debug({
-        instanceId: this.distributedSync.instanceId,
-        error: error.message
-      }, 'Failed to update instance heartbeat');
+      logger.debug(
+        {
+          instanceId: this.distributedSync.instanceId,
+          error: error.message,
+        },
+        'Failed to update instance heartbeat'
+      );
     }
   }
 
@@ -1419,15 +1518,19 @@ export class AuthService {
    * Force immediate distributed sync (useful for testing or manual triggers)
    */
   async forceDistributedSync(): Promise<void> {
-    logger.info({ instanceId: this.distributedSync.instanceId }, 'Forcing immediate distributed sync');
+    logger.info(
+      { instanceId: this.distributedSync.instanceId },
+      'Forcing immediate distributed sync'
+    );
     await this.performDistributedSync();
   }
 
   // Health check
   getHealthStatus(): { status: 'healthy' | 'degraded'; details: any } {
     const now = Date.now();
-    const expiredSessions = Array.from(this.activeSessions.values())
-      .filter(session => new Date(session.expires_at) < new Date(now)).length;
+    const expiredSessions = Array.from(this.activeSessions.values()).filter(
+      (session) => new Date(session.expires_at) < new Date(now)
+    ).length;
 
     const details = {
       active_sessions: this.activeSessions.size,
@@ -1438,16 +1541,19 @@ export class AuthService {
       circuit_breaker_open: this.databaseCircuitBreaker.isOpen,
       database_failures: this.databaseCircuitBreaker.failureCount,
       instance_id: this.distributedSync.instanceId,
-      last_distributed_sync: this.distributedSync.lastSyncTime ? new Date(this.distributedSync.lastSyncTime).toISOString() : 'never'
+      last_distributed_sync: this.distributedSync.lastSyncTime
+        ? new Date(this.distributedSync.lastSyncTime).toISOString()
+        : 'never',
     };
 
-    const isDegraded = expiredSessions > 100 ||
-                      this.databaseCircuitBreaker.isOpen ||
-                      (now - this.distributedSync.lastSyncTime > 5 * 60 * 1000); // No sync for 5 minutes
+    const isDegraded =
+      expiredSessions > 100 ||
+      this.databaseCircuitBreaker.isOpen ||
+      now - this.distributedSync.lastSyncTime > 5 * 60 * 1000; // No sync for 5 minutes
 
     return {
       status: isDegraded ? 'degraded' : 'healthy',
-      details
+      details,
     };
   }
 }

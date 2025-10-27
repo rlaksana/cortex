@@ -4,7 +4,7 @@ import {
   logRequestSuccess,
   logRequestError,
   logDatabaseOperation,
-  logBusinessOperation
+  logBusinessOperation,
 } from '../../utils/logging-patterns.js';
 import { softDelete, type DeleteRequest } from '../delete-operations.js';
 import {
@@ -36,7 +36,7 @@ import type {
   StoreResult,
   StoreError,
   AutonomousContext,
-  MemoryStoreResponse
+  MemoryStoreResponse,
 } from '../../types/core-interfaces.js';
 import { validationService } from '../validation/validation-service.js';
 import { auditService } from '../audit/audit-service.js';
@@ -57,82 +57,88 @@ export class MemoryStoreOrchestrator {
       const errors: StoreError[] = [];
 
       try {
-      // Step 1: Validate input
-      const validation = await validationService.validateStoreInput(items);
-      if (!validation.valid) {
-        return this.createErrorResponse(validation.errors);
-      }
-
-      const validItems = items as KnowledgeItem[];
-
-      // Step 2: Process each item
-      for (let index = 0; index < validItems.length; index++) {
-        const item = validItems[index];
-
-        try {
-          const result = await this.processItem(item, index);
-          stored.push(result);
-
-          // Log successful operation
-          await auditService.logStoreOperation(
-            result.status === 'deleted' ? 'delete' :
-            result.status === 'updated' ? 'update' : 'create',
-            item.kind,
-            result.id,
-            item.scope,
-            undefined,
-            true
-          );
-
-        } catch (error) {
-          const storeError: StoreError = {
-            index,
-            error_code: 'PROCESSING_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown processing error'
-          };
-          errors.push(storeError);
-
-          // Log error
-          await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
-            operation: 'store_item',
-            itemIndex: index,
-            itemKind: item.kind
-          });
+        // Step 1: Validate input
+        const validation = await validationService.validateStoreInput(items);
+        if (!validation.valid) {
+          return this.createErrorResponse(validation.errors);
         }
-      }
 
-      // Step 3: Generate autonomous context
-      const autonomousContext = await this.generateAutonomousContext(stored, errors);
+        const validItems = items as KnowledgeItem[];
 
-      // Step 4: Log batch operation
-      await auditService.logBatchOperation(
-        'store',
-        validItems.length,
-        stored.length,
-        errors.length,
-        undefined,
-        undefined,
-        Date.now() - startTime
-      );
+        // Step 2: Process each item
+        for (let index = 0; index < validItems.length; index++) {
+          const item = validItems[index];
 
-      const response = { stored, errors, autonomous_context: autonomousContext };
+          try {
+            const result = await this.processItem(item, index);
+            stored.push(result);
+
+            // Log successful operation
+            await auditService.logStoreOperation(
+              result.status === 'deleted'
+                ? 'delete'
+                : result.status === 'updated'
+                  ? 'update'
+                  : 'create',
+              item.kind,
+              result.id,
+              item.scope,
+              undefined,
+              true
+            );
+          } catch (error) {
+            const storeError: StoreError = {
+              index,
+              error_code: 'PROCESSING_ERROR',
+              message: error instanceof Error ? error.message : 'Unknown processing error',
+            };
+            errors.push(storeError);
+
+            // Log error
+            await auditService.logError(
+              error instanceof Error ? error : new Error('Unknown error'),
+              {
+                operation: 'store_item',
+                itemIndex: index,
+                itemKind: item.kind,
+              }
+            );
+          }
+        }
+
+        // Step 3: Generate autonomous context
+        const autonomousContext = await this.generateAutonomousContext(stored, errors);
+
+        // Step 4: Log batch operation
+        await auditService.logBatchOperation(
+          'store',
+          validItems.length,
+          stored.length,
+          errors.length,
+          undefined,
+          undefined,
+          Date.now() - startTime
+        );
+
+        const response = { stored, errors, autonomous_context: autonomousContext };
         logRequestSuccess(requestLogger, 'memory.store', response);
         return response;
-
       } catch (error) {
         logRequestError(requestLogger, 'memory.store', error, { itemCount: items.length });
 
         // Log critical error
         await auditService.logError(error instanceof Error ? error : new Error('Critical error'), {
           operation: 'memory_store_batch',
-          itemCount: items.length
+          itemCount: items.length,
         });
 
-        return this.createErrorResponse([{
-          index: 0,
-          error_code: 'BATCH_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown batch error'
-        }]);
+        return this.createErrorResponse([
+          {
+            index: 0,
+            error_code: 'BATCH_ERROR',
+            message: error instanceof Error ? error.message : 'Unknown batch error',
+          },
+        ]);
       }
     });
   }
@@ -184,7 +190,7 @@ export class MemoryStoreOrchestrator {
     const deleteRequest: DeleteRequest = {
       entity_type: item.kind,
       entity_id: item.id || item.data?.id || '',
-      cascade_relations: item.data?.cascade_relations || false
+      cascade_relations: item.data?.cascade_relations || false,
     };
 
     if (!deleteRequest.entity_id) {
@@ -201,7 +207,7 @@ export class MemoryStoreOrchestrator {
       id: deleteRequest.entity_id,
       status: 'deleted',
       kind: item.kind,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
   }
 
@@ -268,11 +274,17 @@ export class MemoryStoreOrchestrator {
         case 'ddl':
         case 'pr_context':
           // These types typically don't have strict business rule constraints
-          logger.debug({ kind: item.kind, id: item.id }, 'No specific business rules for this knowledge type');
+          logger.debug(
+            { kind: item.kind, id: item.id },
+            'No specific business rules for this knowledge type'
+          );
           break;
 
         default:
-          logger.warn({ kind: item.kind, id: item.id }, 'Unknown knowledge type for business rule validation');
+          logger.warn(
+            { kind: item.kind, id: item.id },
+            'Unknown knowledge type for business rule validation'
+          );
       }
     }
   }
@@ -298,8 +310,8 @@ export class MemoryStoreOrchestrator {
           title: true,
           rationale: true,
           alternativesConsidered: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -314,8 +326,8 @@ export class MemoryStoreOrchestrator {
           status: existing.status,
           title: existing.title,
           rationale: existing.rationale,
-          alternatives_considered: existing.alternativesConsidered || []
-        }
+          alternatives_considered: existing.alternativesConsidered || [],
+        },
       };
 
       // Check immutability violation
@@ -326,7 +338,6 @@ export class MemoryStoreOrchestrator {
           'decision_content'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -355,8 +366,8 @@ export class MemoryStoreOrchestrator {
           body_text: true,
           heading: true,
           tags: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -370,9 +381,9 @@ export class MemoryStoreOrchestrator {
           title: existing.title,
           body_md: existing.body_md,
           body_text: existing.body_text,
-          heading: existing.heading
+          heading: existing.heading,
         },
-        tags: existing.tags as any || {}
+        tags: (existing.tags as any) || {},
       };
 
       // Check write-lock violation
@@ -383,7 +394,6 @@ export class MemoryStoreOrchestrator {
           'section_content'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -406,8 +416,8 @@ export class MemoryStoreOrchestrator {
           id: true,
           resolution_status: true,
           severity: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -427,14 +437,17 @@ export class MemoryStoreOrchestrator {
       }
 
       // Business rule: Critical incidents require commander assignment
-      if (existing.severity === 'critical' && newStatus === 'investigating' && !item.data.incident_commander) {
+      if (
+        existing.severity === 'critical' &&
+        newStatus === 'investigating' &&
+        !item.data.incident_commander
+      ) {
         throw new ImmutabilityViolationError(
           `Critical incidents require assignment of incident commander before investigation.`,
           'INCIDENT_COMMANDER_REQUIRED',
           'incident_commander'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -458,8 +471,8 @@ export class MemoryStoreOrchestrator {
           status: true,
           version: true,
           created_at: true,
-          tags: true
-        }
+          tags: true,
+        },
       });
 
       if (!existing) {
@@ -486,7 +499,6 @@ export class MemoryStoreOrchestrator {
           'rollback_plan'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -509,8 +521,8 @@ export class MemoryStoreOrchestrator {
           id: true,
           status: true,
           risk_level: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -521,8 +533,11 @@ export class MemoryStoreOrchestrator {
       const currentStatus = existing.status;
 
       // Business rule: Cannot close critical risks without mitigation
-      if (existing.risk_level === 'critical' && newStatus === 'closed' &&
-          (!item.data.mitigation_strategies || item.data.mitigation_strategies.length === 0)) {
+      if (
+        existing.risk_level === 'critical' &&
+        newStatus === 'closed' &&
+        (!item.data.mitigation_strategies || item.data.mitigation_strategies.length === 0)
+      ) {
         throw new ImmutabilityViolationError(
           `Cannot close critical risks without documented mitigation strategies.`,
           'RISK_CLOSURE_VIOLATION',
@@ -538,7 +553,6 @@ export class MemoryStoreOrchestrator {
           'owner'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -560,8 +574,8 @@ export class MemoryStoreOrchestrator {
         select: {
           id: true,
           validation_status: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -572,7 +586,10 @@ export class MemoryStoreOrchestrator {
       const currentStatus = existing.validation_status;
 
       // Business rule: Cannot validate assumptions without validation criteria
-      if (newStatus === 'validated' && (!item.data.validation_criteria || item.data.validation_criteria.length === 0)) {
+      if (
+        newStatus === 'validated' &&
+        (!item.data.validation_criteria || item.data.validation_criteria.length === 0)
+      ) {
         throw new ImmutabilityViolationError(
           `Cannot validate assumptions without explicit validation criteria.`,
           'ASSUMPTION_VALIDATION_VIOLATION',
@@ -588,7 +605,6 @@ export class MemoryStoreOrchestrator {
           'impact_if_invalid'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -610,8 +626,8 @@ export class MemoryStoreOrchestrator {
         select: {
           id: true,
           status: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -636,7 +652,6 @@ export class MemoryStoreOrchestrator {
         // Not throwing error, just warning - auto-set closed_at if not provided
         item.data.closed_at = new Date().toISOString();
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -658,8 +673,8 @@ export class MemoryStoreOrchestrator {
         select: {
           id: true,
           status: true,
-          created_at: true
-        }
+          created_at: true,
+        },
       });
 
       if (!existing) {
@@ -677,7 +692,6 @@ export class MemoryStoreOrchestrator {
           'status'
         );
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -711,7 +725,6 @@ export class MemoryStoreOrchestrator {
           );
         }
       }
-
     } catch (error) {
       if (error instanceof ImmutabilityViolationError) {
         throw error;
@@ -827,9 +840,8 @@ export class MemoryStoreOrchestrator {
         id: storedId,
         status,
         kind: item.kind,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
-
     } catch (error) {
       logger.error({ error, kind: item.kind, id: item.id }, 'Failed to store item by kind');
       throw error;
@@ -838,7 +850,10 @@ export class MemoryStoreOrchestrator {
 
   // Individual kind-specific storage methods
 
-  private async storeSectionItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeSectionItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateSection function
       // For now, just create new section
@@ -848,7 +863,10 @@ export class MemoryStoreOrchestrator {
     return await storeSection(item.data, item.scope);
   }
 
-  private async storeDecisionItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeDecisionItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       await updateDecision(item.id, item.data as any);
       return item.id;
@@ -857,7 +875,10 @@ export class MemoryStoreOrchestrator {
     return await storeDecision(item.data as any, item.scope);
   }
 
-  private async storeTodoItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeTodoItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       const { updateTodo } = await import('../knowledge/todo.js');
       return await updateTodo(item.id, item.data as any, item.scope);
@@ -866,7 +887,10 @@ export class MemoryStoreOrchestrator {
     return await storeTodo(item.data as any, item.scope);
   }
 
-  private async storeIssueItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeIssueItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateIssue function
       logger.warn({ id: item.id }, 'Issue update not fully implemented, creating new issue');
@@ -875,7 +899,10 @@ export class MemoryStoreOrchestrator {
     return await storeIssue(item.data as any, item.scope);
   }
 
-  private async storeRunbookItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeRunbookItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateRunbook function
       logger.warn({ id: item.id }, 'Runbook update not fully implemented, creating new runbook');
@@ -884,7 +911,10 @@ export class MemoryStoreOrchestrator {
     return await storeRunbook(item.data as any, item.scope);
   }
 
-  private async storeChangeItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeChangeItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateChange function
       logger.warn({ id: item.id }, 'Change update not fully implemented, creating new change');
@@ -893,10 +923,16 @@ export class MemoryStoreOrchestrator {
     return await storeChange(item.data as any, item.scope);
   }
 
-  private async storeReleaseNoteItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeReleaseNoteItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateReleaseNote function
-      logger.warn({ id: item.id }, 'ReleaseNote update not fully implemented, creating new release note');
+      logger.warn(
+        { id: item.id },
+        'ReleaseNote update not fully implemented, creating new release note'
+      );
     }
 
     return await storeReleaseNote(item.data as any, item.scope);
@@ -911,21 +947,33 @@ export class MemoryStoreOrchestrator {
     return await storeDDL(item.data as any);
   }
 
-  private async storePRContextItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storePRContextItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updatePRContext function
-      logger.warn({ id: item.id }, 'PRContext update not fully implemented, creating new PR context');
+      logger.warn(
+        { id: item.id },
+        'PRContext update not fully implemented, creating new PR context'
+      );
     }
 
     return await storePRContext(item.data as any, item.scope);
   }
 
-  private async storeEntityItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeEntityItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     // Entity service handles both create and update logic internally
     return await storeEntity(item.data as any, item.scope);
   }
 
-  private async storeRelationItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeRelationItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateRelation function
       logger.warn({ id: item.id }, 'Relation update not fully implemented, creating new relation');
@@ -934,16 +982,25 @@ export class MemoryStoreOrchestrator {
     return await storeRelation(item.data as any, item.scope);
   }
 
-  private async storeObservationItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeObservationItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       // For updates, we'd need to implement updateObservation function
-      logger.warn({ id: item.id }, 'Observation update not fully implemented, creating new observation');
+      logger.warn(
+        { id: item.id },
+        'Observation update not fully implemented, creating new observation'
+      );
     }
 
     return await addObservation(item.data as any, item.scope);
   }
 
-  private async storeIncidentItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeIncidentItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       await updateIncident(item.id, item.data as any);
       return item.id;
@@ -952,7 +1009,10 @@ export class MemoryStoreOrchestrator {
     return await storeIncident(item.data as any, item.scope);
   }
 
-  private async storeReleaseItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeReleaseItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       await updateRelease(item.id, item.data as any);
       return item.id;
@@ -961,7 +1021,10 @@ export class MemoryStoreOrchestrator {
     return await storeRelease(item.data as any, item.scope);
   }
 
-  private async storeRiskItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeRiskItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       await updateRisk(item.id, item.data as any);
       return item.id;
@@ -970,7 +1033,10 @@ export class MemoryStoreOrchestrator {
     return await storeRisk(item.data as any, item.scope);
   }
 
-  private async storeAssumptionItem(item: KnowledgeItem, operation: 'create' | 'update'): Promise<string> {
+  private async storeAssumptionItem(
+    item: KnowledgeItem,
+    operation: 'create' | 'update'
+  ): Promise<string> {
     if (operation === 'update' && item.id) {
       await updateAssumption(item.id, item.data as any);
       return item.id;
@@ -995,10 +1061,10 @@ export class MemoryStoreOrchestrator {
     stored: StoreResult[],
     errors: StoreError[]
   ): Promise<AutonomousContext> {
-    const duplicatesCount = stored.filter(s => s.status === 'skipped_dedupe').length;
-    const updatesCount = stored.filter(s => s.status === 'updated').length;
-    const createsCount = stored.filter(s => s.status === 'inserted').length;
-    const deletesCount = stored.filter(s => s.status === 'deleted').length;
+    const duplicatesCount = stored.filter((s) => s.status === 'skipped_dedupe').length;
+    const updatesCount = stored.filter((s) => s.status === 'updated').length;
+    const createsCount = stored.filter((s) => s.status === 'inserted').length;
+    const deletesCount = stored.filter((s) => s.status === 'deleted').length;
 
     // Determine action performed
     let actionPerformed: AutonomousContext['action_performed'] = 'batch';
@@ -1024,7 +1090,7 @@ export class MemoryStoreOrchestrator {
       contradictions_detected: contradictionsDetected,
       recommendation,
       reasoning,
-      user_message_suggestion: userMessage
+      user_message_suggestion: userMessage,
     };
   }
 
@@ -1035,7 +1101,7 @@ export class MemoryStoreOrchestrator {
     const parts: string[] = [];
 
     if (stored.length > 0) {
-      const successful = stored.filter(s => s.status !== 'skipped_dedupe').length;
+      const successful = stored.filter((s) => s.status !== 'skipped_dedupe').length;
       parts.push(`${successful} items successfully processed`);
     }
 
@@ -1043,7 +1109,7 @@ export class MemoryStoreOrchestrator {
       parts.push(`${errors.length} items failed to process`);
     }
 
-    const duplicates = stored.filter(s => s.status === 'skipped_dedupe').length;
+    const duplicates = stored.filter((s) => s.status === 'skipped_dedupe').length;
     if (duplicates > 0) {
       parts.push(`${duplicates} duplicates detected and skipped`);
     }
@@ -1059,7 +1125,7 @@ export class MemoryStoreOrchestrator {
       return 'Review and fix validation errors before retrying';
     }
 
-    const duplicates = stored.filter(s => s.status === 'skipped_dedupe').length;
+    const duplicates = stored.filter((s) => s.status === 'skipped_dedupe').length;
     if (duplicates > 0) {
       return 'Consider updating existing items instead of creating duplicates';
     }
@@ -1083,16 +1149,22 @@ export class MemoryStoreOrchestrator {
       return `❌ ${errors.length} error${errors.length > 1 ? 's' : ''} occurred`;
     }
 
-    const successful = stored.filter(s => s.status !== 'skipped_dedupe').length;
-    const duplicates = stored.filter(s => s.status === 'skipped_dedupe').length;
+    const successful = stored.filter((s) => s.status !== 'skipped_dedupe').length;
+    const duplicates = stored.filter((s) => s.status === 'skipped_dedupe').length;
 
     switch (action) {
       case 'created':
-        return successful > 0 ? `✅ Created ${successful} item${successful > 1 ? 's' : ''}` : '✅ Item created';
+        return successful > 0
+          ? `✅ Created ${successful} item${successful > 1 ? 's' : ''}`
+          : '✅ Item created';
       case 'updated':
-        return successful > 0 ? `✅ Updated ${successful} item${successful > 1 ? 's' : ''}` : '✅ Item updated';
+        return successful > 0
+          ? `✅ Updated ${successful} item${successful > 1 ? 's' : ''}`
+          : '✅ Item updated';
       case 'deleted':
-        return successful > 0 ? `✅ Deleted ${successful} item${successful > 1 ? 's' : ''}` : '✅ Item deleted';
+        return successful > 0
+          ? `✅ Deleted ${successful} item${successful > 1 ? 's' : ''}`
+          : '✅ Item deleted';
       case 'batch': {
         let message = `✅ Processed ${successful} item${successful > 1 ? 's' : ''}`;
         if (duplicates > 0) {
@@ -1117,7 +1189,7 @@ export class MemoryStoreOrchestrator {
 
     try {
       // Check for multiple decisions on same topic
-      const decisions = stored.filter(s => s.kind === 'decision');
+      const decisions = stored.filter((s) => s.kind === 'decision');
       if (decisions.length > 1) {
         // Would implement actual contradiction detection logic here
         return false; // Placeholder
@@ -1144,8 +1216,8 @@ export class MemoryStoreOrchestrator {
         contradictions_detected: false,
         recommendation: 'Fix validation errors before retrying',
         reasoning: 'Request failed validation',
-        user_message_suggestion: '❌ Request validation failed'
-      }
+        user_message_suggestion: '❌ Request validation failed',
+      },
     };
   }
 }

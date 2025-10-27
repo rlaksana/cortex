@@ -49,12 +49,9 @@ import type {
   StoreResult,
   StoreError,
   AutonomousContext,
-  MemoryStoreResponse
+  MemoryStoreResponse,
 } from '../../types/core-interfaces.js';
-import type {
-  IDatabase,
-  StoreOptions
-} from '../../db/database-interface.js';
+import type { IDatabase, StoreOptions } from '../../db/database-interface.js';
 
 /**
  * Enhanced duplicate detection result
@@ -118,20 +115,22 @@ export class MemoryStoreOrchestratorQdrant {
 
           // Log successful operation
           await auditService.logStoreOperation(
-            result.status === 'deleted' ? 'delete' :
-            result.status === 'updated' ? 'update' : 'create',
+            result.status === 'deleted'
+              ? 'delete'
+              : result.status === 'updated'
+                ? 'update'
+                : 'create',
             item.kind,
             result.id,
             item.scope,
             undefined,
             true
           );
-
         } catch (error) {
           const storeError: StoreError = {
             index,
             error_code: 'PROCESSING_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown processing error'
+            message: error instanceof Error ? error.message : 'Unknown processing error',
           };
           errors.push(storeError);
 
@@ -139,7 +138,7 @@ export class MemoryStoreOrchestratorQdrant {
           await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
             operation: 'store_item',
             itemIndex: index,
-            itemKind: item.kind
+            itemKind: item.kind,
           });
         }
       }
@@ -161,23 +160,24 @@ export class MemoryStoreOrchestratorQdrant {
       return {
         stored,
         errors,
-        autonomous_context: autonomousContext
+        autonomous_context: autonomousContext,
       };
-
     } catch (error) {
       logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
 
       // Log critical error
       await auditService.logError(error instanceof Error ? error : new Error('Critical error'), {
         operation: 'memory_store_batch',
-        itemCount: items.length
+        itemCount: items.length,
       });
 
-      return this.createErrorResponse([{
-        index: 0,
-        error_code: 'BATCH_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown batch error'
-      }]);
+      return this.createErrorResponse([
+        {
+          index: 0,
+          error_code: 'BATCH_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown batch error',
+        },
+      ]);
     }
   }
 
@@ -225,14 +225,14 @@ export class MemoryStoreOrchestratorQdrant {
         kinds: [item.kind],
         scope: item.scope,
         limit: 10,
-        mode: 'deep'
+        mode: 'deep',
       });
 
       if (searchResults.results.length === 0) {
         return {
           isDuplicate: false,
           duplicateType: 'none',
-          reason: 'No similar items found'
+          reason: 'No similar items found',
         };
       }
 
@@ -244,7 +244,7 @@ export class MemoryStoreOrchestratorQdrant {
             similarityScore: 1.0,
             existingItem: this.searchResultToKnowledgeItem(result),
             duplicateType: 'content_hash',
-            reason: 'Exact content hash match'
+            reason: 'Exact content hash match',
           };
         }
       }
@@ -257,22 +257,21 @@ export class MemoryStoreOrchestratorQdrant {
           similarityScore: topResult.confidence_score,
           existingItem: this.searchResultToKnowledgeItem(topResult),
           duplicateType: 'semantic_similarity',
-          reason: `High semantic similarity (${(topResult.confidence_score * 100).toFixed(1)}%)`
+          reason: `High semantic similarity (${(topResult.confidence_score * 100).toFixed(1)}%)`,
         };
       }
 
       return {
         isDuplicate: false,
         duplicateType: 'none',
-        reason: 'No significant similarity found'
+        reason: 'No significant similarity found',
       };
-
     } catch (error) {
       logger.error({ error, itemKind: item.kind }, 'Duplicate detection failed');
       return {
         isDuplicate: false,
         duplicateType: 'none',
-        reason: 'Duplicate detection error - proceeding with storage'
+        reason: 'Duplicate detection error - proceeding with storage',
       };
     }
   }
@@ -284,7 +283,7 @@ export class MemoryStoreOrchestratorQdrant {
     try {
       const response = await this.database.store([item], {
         upsert: true,
-        skipDuplicates: false
+        skipDuplicates: false,
       });
 
       if (response.errors.length > 0) {
@@ -297,7 +296,6 @@ export class MemoryStoreOrchestratorQdrant {
       }
 
       return result;
-
     } catch (error) {
       logger.error({ error, itemKind: item.kind }, 'Failed to store item to database');
       throw error;
@@ -315,7 +313,7 @@ export class MemoryStoreOrchestratorQdrant {
     try {
       const deleteResult = await this.database.delete([item.id], {
         soft: true,
-        cascade: true
+        cascade: true,
       });
 
       if (deleteResult.errors.length > 0) {
@@ -326,9 +324,8 @@ export class MemoryStoreOrchestratorQdrant {
         id: item.id,
         status: 'deleted',
         kind: item.kind,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
-
     } catch (error) {
       logger.error({ error, itemId: item.id }, 'Failed to delete item');
       throw error;
@@ -378,7 +375,7 @@ export class MemoryStoreOrchestratorQdrant {
       item.kind,
       item.scope.project || '',
       item.scope.branch || '',
-      item.scope.org || ''
+      item.scope.org || '',
     ];
 
     // Extract kind-specific canonical content
@@ -422,7 +419,7 @@ export class MemoryStoreOrchestratorQdrant {
         }
     }
 
-    return parts.filter(part => part && part.trim().length > 0).join('|');
+    return parts.filter((part) => part && part.trim().length > 0).join('|');
   }
 
   /**
@@ -435,10 +432,10 @@ export class MemoryStoreOrchestratorQdrant {
       text,
       metadata: {
         kind: item.kind,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       kind: item.kind,
-      scope: item.scope
+      scope: item.scope,
     };
   }
 
@@ -500,7 +497,7 @@ export class MemoryStoreOrchestratorQdrant {
         }
     }
 
-    return parts.filter(part => part && part.trim().length > 0).join(' ');
+    return parts.filter((part) => part && part.trim().length > 0).join(' ');
   }
 
   /**
@@ -513,31 +510,38 @@ export class MemoryStoreOrchestratorQdrant {
       scope: result.scope,
       data: result.data,
       created_at: result.created_at,
-      updated_at: result.data?.updated_at || result.created_at
+      updated_at: result.data?.updated_at || result.created_at,
     };
   }
 
   /**
    * Create duplicate result
    */
-  private createDuplicateResult(item: KnowledgeItem, duplicateResult: DuplicateDetectionResult): StoreResult {
+  private createDuplicateResult(
+    item: KnowledgeItem,
+    duplicateResult: DuplicateDetectionResult
+  ): StoreResult {
     return {
       id: duplicateResult.existingItem?.id || item.id || '',
       status: 'skipped_dedupe',
       kind: item.kind,
-      created_at: duplicateResult.existingItem?.created_at || new Date().toISOString()
+      created_at: duplicateResult.existingItem?.created_at || new Date().toISOString(),
     };
   }
 
   /**
    * Generate enhanced autonomous context
    */
-  private async generateAutonomousContext(stored: StoreResult[], errors: StoreError[]): Promise<AutonomousContext> {
-    const duplicatesFound = stored.filter(item => item.status === 'skipped_dedupe').length;
+  private async generateAutonomousContext(
+    stored: StoreResult[],
+    errors: StoreError[]
+  ): Promise<AutonomousContext> {
+    const duplicatesFound = stored.filter((item) => item.status === 'skipped_dedupe').length;
     const similarItemsChecked = stored.length;
 
     // Calculate success rate
-    const successRate = stored.length > 0 ? (stored.filter(s => s.status !== 'error').length / stored.length) : 0;
+    const successRate =
+      stored.length > 0 ? stored.filter((s) => s.status !== 'error').length / stored.length : 0;
 
     return {
       action_performed: stored.length > 0 ? 'created' : 'none',
@@ -546,14 +550,18 @@ export class MemoryStoreOrchestratorQdrant {
       contradictions_detected: false,
       recommendation: this.generateRecommendation(stored, errors, duplicatesFound),
       reasoning: this.generateReasoning(stored, errors, duplicatesFound, successRate),
-      user_message_suggestion: this.generateUserMessage(stored, errors, duplicatesFound)
+      user_message_suggestion: this.generateUserMessage(stored, errors, duplicatesFound),
     };
   }
 
   /**
    * Generate contextual recommendation
    */
-  private generateRecommendation(stored: StoreResult[], errors: StoreError[], duplicatesFound: number): string {
+  private generateRecommendation(
+    stored: StoreResult[],
+    errors: StoreError[],
+    duplicatesFound: number
+  ): string {
     if (errors.length > 0) {
       return 'Review and fix errors before retrying storage operations';
     }
@@ -566,8 +574,8 @@ export class MemoryStoreOrchestratorQdrant {
       return 'No items were processed - check input format';
     }
 
-    const updatedCount = stored.filter(s => s.status === 'updated').length;
-    const createdCount = stored.filter(s => s.status === 'inserted').length;
+    const updatedCount = stored.filter((s) => s.status === 'updated').length;
+    const createdCount = stored.filter((s) => s.status === 'inserted').length;
 
     if (updatedCount > 0 && createdCount > 0) {
       return `Successfully created ${createdCount} new items and updated ${updatedCount} existing items`;
@@ -581,24 +589,34 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Generate reasoning for autonomous context
    */
-  private generateReasoning(stored: StoreResult[], errors: StoreError[], duplicatesFound: number, successRate: number): string {
+  private generateReasoning(
+    stored: StoreResult[],
+    errors: StoreError[],
+    duplicatesFound: number,
+    successRate: number
+  ): string {
     const totalProcessed = stored.length + errors.length;
     const reasoning = [];
 
     reasoning.push(`Processed ${totalProcessed} items with ${successRate * 100}% success rate`);
 
     if (duplicatesFound > 0) {
-      reasoning.push(`Semantic similarity detection identified ${duplicatesFound} duplicates (85% threshold)`);
+      reasoning.push(
+        `Semantic similarity detection identified ${duplicatesFound} duplicates (85% threshold)`
+      );
     }
 
     if (errors.length > 0) {
       reasoning.push(`Encountered ${errors.length} processing errors`);
     }
 
-    const statusCounts = stored.reduce((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCounts = stored.reduce(
+      (acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     const statusParts = Object.entries(statusCounts)
       .map(([status, count]) => `${count} ${status}`)
@@ -614,7 +632,11 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Generate user-friendly message
    */
-  private generateUserMessage(stored: StoreResult[], errors: StoreError[], duplicatesFound: number): string {
+  private generateUserMessage(
+    stored: StoreResult[],
+    errors: StoreError[],
+    duplicatesFound: number
+  ): string {
     if (errors.length > 0) {
       return `❌ Storage completed with ${errors.length} errors. Check error details for resolution.`;
     }
@@ -623,7 +645,9 @@ export class MemoryStoreOrchestratorQdrant {
       return `✅ Storage completed. Found and skipped ${duplicatesFound} duplicates using semantic similarity detection.`;
     }
 
-    const successCount = stored.filter(s => s.status === 'inserted' || s.status === 'updated').length;
+    const successCount = stored.filter(
+      (s) => s.status === 'inserted' || s.status === 'updated'
+    ).length;
 
     if (successCount === 0) {
       return 'ℹ️ No new items were stored - all were duplicates or already exist.';
@@ -646,8 +670,8 @@ export class MemoryStoreOrchestratorQdrant {
         contradictions_detected: false,
         recommendation: 'Review input format and try again',
         reasoning: `Validation failed with ${errors.length} errors`,
-        user_message_suggestion: `${errors.length} validation errors detected - check item format`
-      }
+        user_message_suggestion: `${errors.length} validation errors detected - check item format`,
+      },
     };
   }
 
@@ -677,9 +701,22 @@ export class MemoryStoreOrchestratorQdrant {
     return {
       similarityThreshold: this.SIMILARITY_THRESHOLD,
       supportedKinds: [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ],
       capabilities: [
         'semantic_similarity_detection',
@@ -688,8 +725,8 @@ export class MemoryStoreOrchestratorQdrant {
         'business_rule_validation',
         'soft_delete',
         'scope_isolation',
-        'autonomous_context_generation'
-      ]
+        'autonomous_context_generation',
+      ],
     };
   }
 }

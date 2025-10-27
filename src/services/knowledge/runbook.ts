@@ -2,10 +2,7 @@ import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
 import { logger } from '../../utils/logger.js';
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
-export async function storeRunbook(
-  data: RunbookData,
-  scope: ScopeFilter
-): Promise<string> {
+export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -19,21 +16,15 @@ export async function storeRunbook(
       service: data.service || null,
       triggers: JSON.stringify(data.triggers || []),
       last_verified_at: data.last_verified_at || null,
-      tags: scope || {}
-    }
+      tags: scope || {},
+    },
   });
 
-  logger.info(
-    { runbookId: result.id, service: data.service },
-    'Runbook stored successfully'
-  );
+  logger.info({ runbookId: result.id, service: data.service }, 'Runbook stored successfully');
   return result.id;
 }
 
-export async function updateRunbook(
-  id: string,
-  data: Partial<RunbookData>
-): Promise<void> {
+export async function updateRunbook(id: string, data: Partial<RunbookData>): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -64,18 +55,18 @@ export async function updateRunbook(
     return; // No updates to perform
   }
 
-  await db.update('runbook', { id }, updateData
+  await db.update('runbook', { id }, updateData);
+  logger.info(
+    { runbookId: id, updates: Object.keys(updateData).length },
+    'Runbook updated successfully'
   );
-  logger.info({ runbookId: id, updates: Object.keys(updateData).length }, 'Runbook updated successfully');
 }
 
-export async function findRunbooks(
-  criteria: {
-    service?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findRunbooks(criteria: {
+  service?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     title: string;
@@ -95,7 +86,7 @@ export async function findRunbooks(
     // FIXED: Use direct field access instead of tags
     whereClause.service = {
       contains: criteria.service,
-      mode: 'insensitive'
+      mode: 'insensitive',
     };
   }
 
@@ -103,15 +94,15 @@ export async function findRunbooks(
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,
-    skip: criteria.offset
+    skip: criteria.offset,
   });
 
-  return result.map(runbook => ({
+  return result.map((runbook) => ({
     id: runbook.id,
     title: runbook.title,
     description: runbook.description || '',
     steps: runbook.steps,
     created_at: runbook.created_at,
-    updated_at: runbook.updated_at
+    updated_at: runbook.updated_at,
   }));
 }

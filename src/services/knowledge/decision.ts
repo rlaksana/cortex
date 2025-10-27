@@ -2,10 +2,7 @@
 import type { DecisionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateADRImmutability } from '../../utils/immutability.js';
 
-export async function storeDecision(
-  data: DecisionData,
-  scope: ScopeFilter
-): Promise<string> {
+export async function storeDecision(data: DecisionData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -18,7 +15,7 @@ export async function storeDecision(
     alternatives_considered: (data.alternatives_considered as string[]) || [],
     tags: scope,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   });
   return result.id;
 }
@@ -28,10 +25,7 @@ export async function storeDecision(
  *
  * @throws ImmutabilityViolationError if ADR status is 'accepted'
  */
-export async function updateDecision(
-  id: string,
-  data: Partial<DecisionData>
-): Promise<void> {
+export async function updateDecision(id: string, data: Partial<DecisionData>): Promise<void> {
   const qdrant = getQdrantClient();
   // Check immutability before allowing update
   await validateADRImmutability(id);
@@ -60,6 +54,6 @@ export async function updateDecision(
 
   await qdrant.adrDecision.update({
     where: { id },
-    data: updateData
+    data: updateData,
   });
 }

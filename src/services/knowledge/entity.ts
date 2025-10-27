@@ -49,10 +49,10 @@ export async function storeEntity(
   const content_hash = generateContentHash(data);
 
   try {
-    // Check for existing entity by content_hash first using PostgreSQL
+    // Check for existing entity by content_hash first using Qdrant
     const existingByHash = await db.find('knowledge_entity', {
       content_hash,
-      deleted_at: null
+      deleted_at: null,
     });
 
     if (existingByHash.length > 0) {
@@ -63,7 +63,7 @@ export async function storeEntity(
     const existingByName = await db.find('knowledge_entity', {
       entity_type: data.entity_type,
       name: data.name,
-      deleted_at: null
+      deleted_at: null,
     });
 
     const entityData = {
@@ -73,7 +73,7 @@ export async function storeEntity(
       content_hash,
       scope,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (existingByName.length > 0) {
@@ -117,11 +117,12 @@ export async function softDeleteEntity(id: string): Promise<boolean> {
   await db.initialize();
 
   try {
-    const result = await db.update('knowledge_entity', 
-      { deleted_at: new Date().toISOString() }, 
+    const result = await db.update(
+      'knowledge_entity',
+      { deleted_at: new Date().toISOString() },
       { id, deleted_at: null }
     );
-    
+
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     console.error('Failed to soft delete entity:', error);
@@ -152,16 +153,16 @@ export async function getEntity(
 
   try {
     const whereConditions: any = { id, deleted_at: null };
-    
+
     // Add scope filtering if provided
     if (scope) {
-      Object.keys(scope).forEach(key => {
+      Object.keys(scope).forEach((key) => {
         whereConditions[`scope->>${key}`] = scope[key];
       });
     }
 
     const results = await db.find('knowledge_entity', whereConditions);
-    
+
     if (results.length === 0) {
       return null;
     }
@@ -172,11 +173,11 @@ export async function getEntity(
       data: {
         entity_type: entity.entity_type,
         name: entity.name,
-        data: entity.data
+        data: entity.data,
       },
       scope: entity.scope,
       created_at: entity.created_at,
-      updated_at: entity.updated_at
+      updated_at: entity.updated_at,
     };
   } catch (error) {
     console.error('Failed to get entity:', error);
@@ -193,7 +194,7 @@ export async function getEntity(
  * @returns Array of matching entities
  */
 /**
- * Search for flexible entities using PostgreSQL full-text search
+ * Search for flexible entities using Qdrant full-text search
  *
  * @param query - Search query string
  * @param filters - Optional filters (entity_type, scope, etc.)
@@ -215,20 +216,20 @@ export async function searchEntities(
 
   try {
     const whereConditions: any = { deleted_at: null };
-    
+
     // Add entity_type filter if provided
     if (filters.entity_type) {
       whereConditions.entity_type = filters.entity_type;
     }
-    
+
     // Add scope filtering if provided
     if (filters.scope) {
-      Object.keys(filters.scope).forEach(key => {
+      Object.keys(filters.scope).forEach((key) => {
         whereConditions[`scope->>${key}`] = filters.scope![key];
       });
     }
 
-    // Use PostgreSQL full-text search if query provided
+    // Use Qdrant full-text search if query provided
     if (query.trim()) {
       const searchResults = await db.fullTextSearch('knowledge_entity', {
         query: query.trim(),
@@ -236,40 +237,40 @@ export async function searchEntities(
         weighting: { D: 0.1, C: 0.2, B: 0.4, A: 1.0 },
         highlight: true,
         snippet_size: 150,
-        max_results: filters.limit || 50
+        max_results: filters.limit || 50,
       });
-      
-      return searchResults.map(result => ({
+
+      return searchResults.map((result) => ({
         id: result.id,
         data: {
           entity_type: result.entity_type,
           name: result.name,
-          data: result.data
+          data: result.data,
         },
         scope: result.scope,
         created_at: result.created_at,
         updated_at: result.updated_at,
         rank: result.rank,
         score: result.score,
-        highlight: result.highlight
+        highlight: result.highlight,
       }));
     } else {
       // Simple filter-based search
       const results = await db.find('knowledge_entity', whereConditions, {
         take: filters.limit || 50,
-        orderBy: { updated_at: 'desc' }
+        orderBy: { updated_at: 'desc' },
       });
-      
-      return results.map(entity => ({
+
+      return results.map((entity) => ({
         id: entity.id,
         data: {
           entity_type: entity.entity_type,
           name: entity.name,
-          data: entity.data
+          data: entity.data,
         },
         scope: entity.scope,
         created_at: entity.created_at,
-        updated_at: entity.updated_at
+        updated_at: entity.updated_at,
       }));
     }
   } catch (error) {

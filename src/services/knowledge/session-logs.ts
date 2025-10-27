@@ -31,7 +31,7 @@ export interface IncidentData {
 }
 
 export async function storeIncident(
-    data: IncidentData,
+  data: IncidentData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
@@ -52,19 +52,16 @@ export async function storeIncident(
         business_impact: data.business_impact,
         recovery_actions: data.recovery_actions ?? [],
         follow_up_required: data.follow_up_required ?? false,
-        incident_commander: data.incident_commander
-      }
-    }
+        incident_commander: data.incident_commander,
+      },
+    },
   });
 
   logger.info({ incidentId: result.id, severity: data.severity }, 'Incident stored successfully');
   return result.id;
 }
 
-export async function updateIncident(
-    id: string,
-  data: Partial<IncidentData>
-): Promise<void> {
+export async function updateIncident(id: string, data: Partial<IncidentData>): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -116,19 +113,19 @@ export async function updateIncident(
     updateData.tags = tagUpdates;
   }
 
-  await db.update('incidentLog', { id }, updateData
+  await db.update('incidentLog', { id }, updateData);
+  logger.info(
+    { incidentId: id, updates: Object.keys(updateData).length },
+    'Incident updated successfully'
   );
-  logger.info({ incidentId: id, updates: Object.keys(updateData).length }, 'Incident updated successfully');
 }
 
-export async function findIncidents(
-    criteria: {
-    severity?: string;
-    status?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findIncidents(criteria: {
+  severity?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     title: string;
@@ -164,18 +161,18 @@ export async function findIncidents(
       impact: true,
       resolution_status: true,
       created_at: true,
-      updated_at: true
-    }
+      updated_at: true,
+    },
   });
 
-  return result.map(incident => ({
+  return result.map((incident) => ({
     id: incident.id,
     title: incident.title,
     severity: incident.severity,
     impact: incident.impact,
     resolution_status: incident.resolution_status,
     created_at: incident.created_at,
-    updated_at: incident.updated_at
+    updated_at: incident.updated_at,
   }));
 }
 
@@ -200,7 +197,7 @@ export interface ReleaseData {
 }
 
 export async function storeRelease(
-    data: ReleaseData,
+  data: ReleaseData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
@@ -223,19 +220,16 @@ export async function storeRelease(
         testing_status: data.testing_status,
         approvers: data.approvers ?? [],
         release_notes: data.release_notes,
-        post_release_actions: data.post_release_actions ?? []
-      }
-    }
+        post_release_actions: data.post_release_actions ?? [],
+      },
+    },
   });
 
   logger.info({ releaseId: result.id, version: data.version }, 'Release stored successfully');
   return result.id;
 }
 
-export async function updateRelease(
-    id: string,
-  data: Partial<ReleaseData>
-): Promise<void> {
+export async function updateRelease(id: string, data: Partial<ReleaseData>): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -284,19 +278,19 @@ export async function updateRelease(
     updateData.tags = tagUpdates;
   }
 
-  await db.update('releaseLog', { id }, updateData
+  await db.update('releaseLog', { id }, updateData);
+  logger.info(
+    { releaseId: id, updates: Object.keys(updateData).length },
+    'Release updated successfully'
   );
-  logger.info({ releaseId: id, updates: Object.keys(updateData).length }, 'Release updated successfully');
 }
 
-export async function findReleases(
-    criteria: {
-    version?: string;
-    status?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findReleases(criteria: {
+  version?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     version: string;
@@ -317,7 +311,7 @@ export async function findReleases(
   if (criteria.version) {
     whereClause.version = {
       contains: criteria.version,
-      mode: 'insensitive'
+      mode: 'insensitive',
     };
   }
   if (criteria.status) {
@@ -337,19 +331,21 @@ export async function findReleases(
       status: true,
       created_at: true,
       updated_at: true,
-      tags: true
-    }
+      tags: true,
+    },
   });
 
-  return result.map(release => ({
+  return result.map((release) => ({
     id: release.id,
     version: release.version,
     release_type: release.release_type,
     scope: release.scope,
-    release_date: (release.tags as any)?.release_date ? new Date((release.tags as any).release_date) : release.created_at,
+    release_date: (release.tags as any)?.release_date
+      ? new Date((release.tags as any).release_date)
+      : release.created_at,
     status: release.status,
     created_at: release.created_at,
-    updated_at: release.updated_at
+    updated_at: release.updated_at,
   }));
 }
 
@@ -374,7 +370,7 @@ export interface RiskData {
 }
 
 export async function storeRisk(
-    data: RiskData,
+  data: RiskData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
@@ -397,9 +393,9 @@ export async function storeRisk(
         review_date: data.review_date ?? null,
         related_decisions: data.related_decisions ?? [],
         monitoring_indicators: data.monitoring_indicators ?? [],
-        contingency_plans: data.contingency_plans ?? null
-      }
-    }
+        contingency_plans: data.contingency_plans ?? null,
+      },
+    },
   });
 
   logger.info({ riskId: result.id, level: data.risk_level }, 'Risk stored successfully');
@@ -457,20 +453,17 @@ export async function updateRisk(id: string, data: Partial<RiskData>): Promise<v
     updateData.tags = tagUpdates;
   }
 
-  await db.update('riskLog', { id }, updateData
-  );
+  await db.update('riskLog', { id }, updateData);
   logger.info({ riskId: id, updates: Object.keys(updateData).length }, 'Risk updated successfully');
 }
 
-export async function findRisks(
-    criteria: {
-    category?: string;
-    level?: string;
-    status?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findRisks(criteria: {
+  category?: string;
+  level?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     title: string;
@@ -511,11 +504,11 @@ export async function findRisks(
       status: true,
       created_at: true,
       updated_at: true,
-      tags: true
-    }
+      tags: true,
+    },
   });
 
-  return result.map(risk => ({
+  return result.map((risk) => ({
     id: risk.id,
     title: risk.title,
     category: risk.category,
@@ -523,7 +516,7 @@ export async function findRisks(
     probability: (risk.tags as any)?.probability || 'unknown',
     status: risk.status,
     created_at: risk.created_at,
-    updated_at: risk.updated_at
+    updated_at: risk.updated_at,
   }));
 }
 
@@ -547,7 +540,7 @@ export interface AssumptionData {
 }
 
 export async function storeAssumption(
-    data: AssumptionData,
+  data: AssumptionData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
@@ -569,9 +562,9 @@ export async function storeAssumption(
         related_assumptions: data.related_assumptions ?? [],
         dependencies: data.dependencies ?? [],
         monitoring_approach: data.monitoring_approach ?? null,
-        review_frequency: data.review_frequency ?? null
-      }
-    }
+        review_frequency: data.review_frequency ?? null,
+      },
+    },
   });
 
   logger.info(
@@ -581,10 +574,7 @@ export async function storeAssumption(
   return result.id;
 }
 
-export async function updateAssumption(
-    id: string,
-  data: Partial<AssumptionData>
-): Promise<void> {
+export async function updateAssumption(id: string, data: Partial<AssumptionData>): Promise<void> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -634,19 +624,19 @@ export async function updateAssumption(
     updateData.tags = tagUpdates;
   }
 
-  await db.update('assumptionLog', { id }, updateData
+  await db.update('assumptionLog', { id }, updateData);
+  logger.info(
+    { assumptionId: id, updates: Object.keys(updateData).length },
+    'Assumption updated successfully'
   );
-  logger.info({ assumptionId: id, updates: Object.keys(updateData).length }, 'Assumption updated successfully');
 }
 
-export async function findAssumptions(
-    criteria: {
-    category?: string;
-    status?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findAssumptions(criteria: {
+  category?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     title: string;
@@ -682,18 +672,18 @@ export async function findAssumptions(
       category: true,
       validation_status: true,
       created_at: true,
-      updated_at: true
-    }
+      updated_at: true,
+    },
   });
 
-  return result.map(assumption => ({
+  return result.map((assumption) => ({
     id: assumption.id,
     title: assumption.title,
     description: assumption.description,
     category: assumption.category,
     validation_status: assumption.validation_status,
     created_at: assumption.created_at,
-    updated_at: assumption.updated_at
+    updated_at: assumption.updated_at,
   }));
 }
 
@@ -712,7 +702,7 @@ export interface SessionLogEntry {
 }
 
 export async function getSessionLogDashboard(
-    criteria: {
+  criteria: {
     type?: string;
     limit?: number;
     offset?: number;
@@ -728,15 +718,17 @@ export async function getSessionLogDashboard(
   const offsetClause = criteria.offset ? `OFFSET ${criteria.offset}` : '';
   const whereClause = criteria.type ? `WHERE log_type = '${criteria.type}'` : '';
 
-  const result = await qdrant.$queryRawUnsafe<Array<{
-    log_type: string;
-    id: string;
-    title: string;
-    status: string;
-    created_at: Date;
-    updated_at: Date;
-    tags: Record<string, unknown>;
-  }>>(
+  const result = await qdrant.$queryRawUnsafe<
+    Array<{
+      log_type: string;
+      id: string;
+      title: string;
+      status: string;
+      created_at: Date;
+      updated_at: Date;
+      tags: Record<string, unknown>;
+    }>
+  >(
     `SELECT log_type, id, title, status, created_at, updated_at, tags
      FROM (
        SELECT 'incident' as log_type, id, title, resolution_status as status, created_at, updated_at, tags FROM incident_log

@@ -24,8 +24,8 @@ export function validateQdrantSchemaCompliance(data: IssueData): void {
       if (field in metadata) {
         throw new Error(
           `qdrant SCHEMA VIOLATION: Field '${field}' must use direct field access (data.${field}) ` +
-          `instead of metadata workaround (data.metadata.${field}). ` +
-          `Database fields must use direct field mapping.`
+            `instead of metadata workaround (data.metadata.${field}). ` +
+            `Database fields must use direct field mapping.`
         );
       }
     }
@@ -40,8 +40,8 @@ export function validateQdrantSchemaCompliance(data: IssueData): void {
       if (field in tags) {
         throw new Error(
           `qdrant SCHEMA VIOLATION: Field '${field}' must use direct field access (data.${field}) ` +
-          `instead of tags workaround (data.tags.${field}). ` +
-          `Database fields must use direct field mapping.`
+            `instead of tags workaround (data.tags.${field}). ` +
+            `Database fields must use direct field mapping.`
         );
       }
     }
@@ -87,8 +87,8 @@ export async function storeIssue(data: IssueData, scope: ScopeFilter): Promise<s
       url: data.url || null,
       assignee: data.assignee || null,
       // Scope tags for project isolation only (NOT for database fields)
-      tags: scope || {}
-    }
+      tags: scope || {},
+    },
   });
   return result.id;
 }

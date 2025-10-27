@@ -2,10 +2,7 @@
 import { computeContentHash } from '../../utils/hash.js';
 import type { ChangeData, ScopeFilter } from '../../types/knowledge-data.js';
 
-export async function storeChange(
-  data: ChangeData,
-  scope: ScopeFilter
-): Promise<string> {
+export async function storeChange(data: ChangeData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -22,9 +19,9 @@ export async function storeChange(
         ...scope,
         details: data.details,
         content_hash: hash,
-        affected_files: JSON.stringify(data.affected_files || [])
-      }
-    }
+        affected_files: JSON.stringify(data.affected_files || []),
+      },
+    },
   });
 
   return result.id;

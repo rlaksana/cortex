@@ -116,7 +116,8 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
   correctionMetadata.patterns_detected = patternsDetected;
 
   // Check for common typos proactively (more conservative patterns)
-  const hasCommonTypos = /\b(deduplicattion+|documantation+|authentikation+|implementaton+)\b/i.test(query);
+  const hasCommonTypos =
+    /\b(deduplicattion+|documantation+|authentikation+|implementaton+)\b/i.test(query);
 
   let workingQuery = query;
 
@@ -147,7 +148,10 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
         correctionMetadata.transformations.push('proactive_moderate_sanitization');
         correctionMetadata.final_sanitization_level = 'moderate';
       } else {
-        logger.warn({ query: workingQuery }, 'Sanitization resulted in empty query, keeping original');
+        logger.warn(
+          { query: workingQuery },
+          'Sanitization resulted in empty query, keeping original'
+        );
         correctionMetadata.recommendation = 'Sanitization would empty query, using original';
       }
     }
@@ -182,10 +186,18 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
       })),
       suggestions: [],
       autonomous_metadata: {
-        strategy_used: result.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+        strategy_used: result.autonomous_context.search_mode_used as
+          | 'fast'
+          | 'deep'
+          | 'fast_then_deep_fallback',
         mode_requested: mode,
         mode_executed: result.autonomous_context.search_mode_used,
-        confidence: result.autonomous_context.confidence_average > 0.8 ? 'high' : result.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+        confidence:
+          result.autonomous_context.confidence_average > 0.8
+            ? 'high'
+            : result.autonomous_context.confidence_average > 0.5
+              ? 'medium'
+              : 'low',
         total_results: result.total_count,
         avg_score: result.autonomous_context.confidence_average,
         fallback_attempted: false,
@@ -320,15 +332,25 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
               })),
               suggestions: [],
               autonomous_metadata: {
-                strategy_used: memoryFindResult.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+                strategy_used: memoryFindResult.autonomous_context.search_mode_used as
+                  | 'fast'
+                  | 'deep'
+                  | 'fast_then_deep_fallback',
                 mode_requested: mode,
                 mode_executed: memoryFindResult.autonomous_context.search_mode_used,
-                confidence: memoryFindResult.autonomous_context.confidence_average > 0.8 ? 'high' : memoryFindResult.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+                confidence:
+                  memoryFindResult.autonomous_context.confidence_average > 0.8
+                    ? 'high'
+                    : memoryFindResult.autonomous_context.confidence_average > 0.5
+                      ? 'medium'
+                      : 'low',
                 total_results: memoryFindResult.total_count,
                 avg_score: memoryFindResult.autonomous_context.confidence_average,
                 fallback_attempted: true,
-                recommendation: 'Query retrieved using aggressive sanitization. Consider using simpler terms for better results.',
-                user_message_suggestion: memoryFindResult.autonomous_context.user_message_suggestion,
+                recommendation:
+                  'Query retrieved using aggressive sanitization. Consider using simpler terms for better results.',
+                user_message_suggestion:
+                  memoryFindResult.autonomous_context.user_message_suggestion,
               },
               debug: {
                 total_attempts: attempts + 1,
@@ -402,14 +424,25 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
     })),
     suggestions: [],
     autonomous_metadata: {
-      strategy_used: finalResult.autonomous_context.search_mode_used as 'fast' | 'deep' | 'fast_then_deep_fallback',
+      strategy_used: finalResult.autonomous_context.search_mode_used as
+        | 'fast'
+        | 'deep'
+        | 'fast_then_deep_fallback',
       mode_requested: mode,
       mode_executed: finalResult.autonomous_context.search_mode_used,
-      confidence: finalResult.autonomous_context.confidence_average > 0.8 ? 'high' : finalResult.autonomous_context.confidence_average > 0.5 ? 'medium' : 'low',
+      confidence:
+        finalResult.autonomous_context.confidence_average > 0.8
+          ? 'high'
+          : finalResult.autonomous_context.confidence_average > 0.5
+            ? 'medium'
+            : 'low',
       total_results: finalResult.total_count,
       avg_score: finalResult.autonomous_context.confidence_average,
       fallback_attempted: false,
-      recommendation: generateRecommendation(correctionMetadata, finalResult.autonomous_context.confidence_average > 0.8 ? 'high' : 'medium'),
+      recommendation: generateRecommendation(
+        correctionMetadata,
+        finalResult.autonomous_context.confidence_average > 0.8 ? 'high' : 'medium'
+      ),
       user_message_suggestion: finalResult.autonomous_context.user_message_suggestion,
     },
     debug: {

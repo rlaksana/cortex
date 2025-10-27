@@ -17,8 +17,8 @@ export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<str
       todo_type: data.todo_type || null,
       text: data.text || null,
       assignee: data.assignee || null,
-      tags: scope || {}
-    }
+      tags: scope || {},
+    },
   });
 
   return result.id;
@@ -34,7 +34,7 @@ export async function updateTodo(
   await db.initialize();
 
   const existing = await db.find('todoLog', {
-    where: { id }
+    where: { id },
   });
 
   if (!existing) {
@@ -42,7 +42,10 @@ export async function updateTodo(
   }
 
   // FIXED: Update existing todo using direct field access
-  const result = await db.update('todoLog', { id: id }, {
+  const result = await db.update(
+    'todoLog',
+    { id },
+    {
       title: data.text || data.todo_type || existing.title,
       description: data.text ?? existing.description,
       status: data.status ?? existing.status,
@@ -52,10 +55,11 @@ export async function updateTodo(
       text: data.text ?? existing.text,
       assignee: data.assignee ?? existing.assignee,
       tags: {
-        ...(existing.tags as any || {}),
-        ...scope
-      }
-    });
+        ...((existing.tags as any) || {}),
+        ...scope,
+      },
+    }
+  );
 
   return result.id;
 }

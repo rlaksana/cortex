@@ -6,10 +6,7 @@ import { logger } from '../../utils/logger.js';
 /**
  * Store a new section in the database
  */
-export async function storeSection(
-  data: SectionData,
-  scope?: ScopeFilter
-): Promise<string> {
+export async function storeSection(data: SectionData, scope?: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
@@ -25,8 +22,8 @@ export async function storeSection(
       document_id: data.document_id || null,
       citation_count: data.citation_count || 0,
       tags: scope || {},
-      metadata: {}
-    }
+      metadata: {},
+    },
   });
 
   logger.info({ sectionId: result.id, title: data.title }, 'Section stored successfully');
@@ -84,22 +81,22 @@ export async function updateSection(
     return; // No updates to perform
   }
 
-  await db.update('section', { id }, updateData
+  await db.update('section', { id }, updateData);
+  logger.info(
+    { sectionId: id, updates: Object.keys(updateData).length },
+    'Section updated successfully'
   );
-  logger.info({ sectionId: id, updates: Object.keys(updateData).length }, 'Section updated successfully');
 }
 
 /**
  * Find sections by various criteria
  */
-export async function findSections(
-  criteria: {
-    title?: string;
-    documentId?: string;
-    limit?: number;
-    offset?: number;
-  }
-): Promise<
+export async function findSections(criteria: {
+  title?: string;
+  documentId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<
   Array<{
     id: string;
     title: string;
@@ -120,7 +117,7 @@ export async function findSections(
   if (criteria.title) {
     whereClause.OR = [
       { title: { contains: criteria.title, mode: 'insensitive' } },
-      { heading: { contains: criteria.title, mode: 'insensitive' } }
+      { heading: { contains: criteria.title, mode: 'insensitive' } },
     ];
   }
 
@@ -144,11 +141,11 @@ export async function findSections(
       document_id: true,
       citation_count: true,
       created_at: true,
-      updated_at: true
-    }
+      updated_at: true,
+    },
   });
 
-  return result.map(section => ({
+  return result.map((section) => ({
     id: section.id,
     title: section.title,
     heading: section.heading || section.title,
@@ -156,6 +153,6 @@ export async function findSections(
     body_md: section.body_md || section.content || '',
     citation_count: section.citation_count || 0,
     created_at: section.created_at,
-    updated_at: section.updated_at
+    updated_at: section.updated_at,
   }));
 }
