@@ -28,6 +28,8 @@ export interface StoreError {
   error_code: string;
   message: string;
   field?: string;
+  stack?: string;
+  timestamp?: string;
 }
 
 export interface AutonomousContext {
@@ -48,6 +50,7 @@ export interface SearchResult {
   created_at: string;
   confidence_score: number;
   match_type: 'exact' | 'fuzzy' | 'semantic';
+  highlight?: string[];
 }
 
 export interface SearchQuery {
@@ -58,7 +61,7 @@ export interface SearchQuery {
     org?: string;
   };
   types?: string[];
-  mode?: 'auto' | 'fast' | 'deep';
+  mode?: 'auto' | 'fast' | 'deep' | 'semantic';
   limit?: number;
   top_k?: number;
 }
@@ -112,7 +115,9 @@ export interface ValidationService {
  * Service interface for deduplication operations
  */
 export interface DeduplicationService {
-  checkDuplicates(items: KnowledgeItem[]): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
+  checkDuplicates(
+    items: KnowledgeItem[]
+  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
   removeDuplicates(items: KnowledgeItem[]): Promise<KnowledgeItem[]>;
 }
 

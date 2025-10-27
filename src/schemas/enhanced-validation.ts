@@ -90,50 +90,56 @@ export const DecisionDataSchema = z
 // qdrant SCHEMA COMPLIANT Issue data schema
 // Uses direct database fields: tracker, external_id, labels, url, assignee
 // NO metadata/tags workarounds for database fields
-export const IssueDataSchema = z.object({
-  id: z.string().uuid().optional(),
-  // Direct database fields (Qdrant Schema compliance)
-  tracker: z.string().max(100, 'Tracker name too long').optional(),
-  external_id: z.string().max(100, 'External ID too long').optional(),
-  title: z
-    .string()
-    .min(1, 'Issue title is required')
-    .max(500, 'Title cannot exceed 500 characters')
-    .trim(),
-  description: z.string().max(50000, 'Description too long').optional(),
-  severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
-  status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
-  // Additional direct fields from Qdrant schema
-  labels: z.array(z.any()).optional(),
-  url: z.string().max(2000, 'URL too long').optional(),
-  assignee: z.string().max(200, 'Assignee name too long').optional(),
-  // Additional properties for validation (NOT for database storage)
-  metadata: z.record(z.unknown()).optional(),
-  tags: z.record(z.unknown()).optional(),
-}).refine((data) => {
-  // qdrant SCHEMA COMPLIANCE: Ensure no metadata workaround usage
-  // All database fields must use direct field access
-  if (data.metadata) {
-    const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
-    for (const field of forbiddenFields) {
-      if (field in data.metadata) {
-        return false;
+export const IssueDataSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    // Direct database fields (Qdrant Schema compliance)
+    tracker: z.string().max(100, 'Tracker name too long').optional(),
+    external_id: z.string().max(100, 'External ID too long').optional(),
+    title: z
+      .string()
+      .min(1, 'Issue title is required')
+      .max(500, 'Title cannot exceed 500 characters')
+      .trim(),
+    description: z.string().max(50000, 'Description too long').optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+    // Additional direct fields from Qdrant schema
+    labels: z.array(z.any()).optional(),
+    url: z.string().max(2000, 'URL too long').optional(),
+    assignee: z.string().max(200, 'Assignee name too long').optional(),
+    // Additional properties for validation (NOT for database storage)
+    metadata: z.record(z.unknown()).optional(),
+    tags: z.record(z.unknown()).optional(),
+  })
+  .refine(
+    (data) => {
+      // qdrant SCHEMA COMPLIANCE: Ensure no metadata workaround usage
+      // All database fields must use direct field access
+      if (data.metadata) {
+        const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
+        for (const field of forbiddenFields) {
+          if (field in data.metadata) {
+            return false;
+          }
+        }
       }
-    }
-  }
-  if (data.tags) {
-    const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
-    for (const field of forbiddenFields) {
-      if (field in data.tags) {
-        return false;
+      if (data.tags) {
+        const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
+        for (const field of forbiddenFields) {
+          if (field in data.tags) {
+            return false;
+          }
+        }
       }
+      return true;
+    },
+    {
+      message:
+        'qdrant SCHEMA VIOLATION: Use direct fields (tracker, external_id, url, assignee, labels) instead of metadata/tags workarounds',
+      path: ['root'],
     }
-  }
-  return true;
-}, {
-  message: 'qdrant SCHEMA VIOLATION: Use direct fields (tracker, external_id, url, assignee, labels) instead of metadata/tags workarounds',
-  path: ['root'],
-});
+  );
 
 // Todo data schema - aligned with database service expectations
 export const TodoDataSchema = z.object({
@@ -147,8 +153,19 @@ export const TodoDataSchema = z.object({
 
 // Change data schema
 export const ChangeDataSchema = z.object({
-  change_type: z.enum(['feature_add', 'feature_modify', 'feature_remove', 'bugfix', 'refactor', 'config_change', 'dependency_update']),
-  subject_ref: z.string().min(1, 'subject_ref is required').max(200, 'subject_ref must be 200 characters or less'),
+  change_type: z.enum([
+    'feature_add',
+    'feature_modify',
+    'feature_remove',
+    'bugfix',
+    'refactor',
+    'config_change',
+    'dependency_update',
+  ]),
+  subject_ref: z
+    .string()
+    .min(1, 'subject_ref is required')
+    .max(200, 'subject_ref must be 200 characters or less'),
   summary: z.string().min(1, 'summary is required'),
   details: z.string().optional(),
   affected_files: z.array(z.string()).optional(),
@@ -158,15 +175,22 @@ export const ChangeDataSchema = z.object({
 
 // Runbook data schema
 export const RunbookDataSchema = z.object({
-  service: z.string().min(1, 'service is required').max(200, 'service must be 200 characters or less'),
+  service: z
+    .string()
+    .min(1, 'service is required')
+    .max(200, 'service must be 200 characters or less'),
   title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
   description: z.string().optional(),
-  steps: z.array(z.object({
-    step_number: z.number().int().positive(),
-    description: z.string().min(1, 'step description is required'),
-    command: z.string().optional(),
-    expected_outcome: z.string().optional(),
-  })).min(1, 'At least one step is required'),
+  steps: z
+    .array(
+      z.object({
+        step_number: z.number().int().positive(),
+        description: z.string().min(1, 'step description is required'),
+        command: z.string().optional(),
+        expected_outcome: z.string().optional(),
+      })
+    )
+    .min(1, 'At least one step is required'),
   triggers: z.array(z.string()).optional(),
   last_verified_at: z.string().datetime().optional(),
 });
@@ -306,7 +330,24 @@ export const KnowledgeItemDiscriminator = z.discriminatedUnion('kind', [
 // Schema for delete operations
 export const DeleteOperationSchema = z.object({
   operation: z.literal('delete'),
-  kind: z.enum(['section', 'decision', 'issue', 'todo', 'change', 'runbook', 'incident', 'release', 'risk', 'assumption', 'release_note', 'ddl', 'pr_context', 'entity', 'relation', 'observation']),
+  kind: z.enum([
+    'section',
+    'decision',
+    'issue',
+    'todo',
+    'change',
+    'runbook',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'entity',
+    'relation',
+    'observation',
+  ]),
   id: z.string().min(1, 'ID is required'),
   scope: ScopeSchema,
   cascade_relations: z.boolean().optional().default(false),
@@ -379,7 +420,8 @@ export function validateKnowledgeItems(items: unknown[]) {
       const validatedData = result.data;
 
       // Check if this is a delete operation
-      const isDeleteOperation = 'operation' in validatedData && validatedData.operation === 'delete';
+      const isDeleteOperation =
+        'operation' in validatedData && validatedData.operation === 'delete';
 
       results.valid.push({
         ...validatedData,
@@ -415,7 +457,11 @@ function generateContentHash(item: Record<string, unknown>): string {
 }
 
 // Helper function to validate array depth
-function validateArrayDepth(obj: unknown, currentDepth: number = 0, maxDepth: number = 3): { valid: boolean; message?: string } {
+function validateArrayDepth(
+  obj: unknown,
+  currentDepth: number = 0,
+  maxDepth: number = 3
+): { valid: boolean; message?: string } {
   if (currentDepth > maxDepth) {
     return { valid: false, message: `Array depth exceeds maximum allowed (${maxDepth} levels)` };
   }
@@ -477,7 +523,9 @@ export type EnhancedSectionData = z.infer<typeof SectionDataSchema>;
 export type EnhancedDecisionData = z.infer<typeof DecisionDataSchema>;
 // Type guard for delete operations
 function isDeleteOperation(item: unknown): item is z.infer<typeof DeleteOperationSchema> {
-  return typeof item === 'object' && item !== null && 'operation' in item && item.operation === 'delete';
+  return (
+    typeof item === 'object' && item !== null && 'operation' in item && item.operation === 'delete'
+  );
 }
 
 export type EnhancedKnowledgeItem = z.infer<typeof AnyKnowledgeItemSchema>;

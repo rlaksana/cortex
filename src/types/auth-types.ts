@@ -65,7 +65,7 @@ export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
   READ_ONLY = 'read_only',
-  SERVICE = 'service'
+  SERVICE = 'service',
 }
 
 export enum AuthScope {
@@ -96,7 +96,7 @@ export enum AuthScope {
 
   // Scope operations
   SCOPE_MANAGE = 'scope:manage',
-  SCOPE_ISOLATE = 'scope:isolate'
+  SCOPE_ISOLATE = 'scope:isolate',
 }
 
 export interface Permission {
@@ -138,7 +138,17 @@ export interface AuthenticatedRequest {
 
 export interface SecurityAuditLog {
   id: string;
-  event_type: 'auth_success' | 'auth_failure' | 'token_revoked' | 'api_key_created' | 'api_key_updated' | 'api_key_revoked' | 'permission_denied' | 'suspicious_activity' | 'ip_validation_failed' | 'ip_validation_bypassed';
+  event_type:
+    | 'auth_success'
+    | 'auth_failure'
+    | 'token_revoked'
+    | 'api_key_created'
+    | 'api_key_updated'
+    | 'api_key_revoked'
+    | 'permission_denied'
+    | 'suspicious_activity'
+    | 'ip_validation_failed'
+    | 'ip_validation_bypassed';
   user_id?: string;
   session_id?: string;
   api_key_id?: string;
@@ -152,9 +162,19 @@ export interface SecurityAuditLog {
 }
 
 export interface AuthError {
-  code: 'INVALID_TOKEN' | 'EXPIRED_TOKEN' | 'INSUFFICIENT_SCOPES' | 'INVALID_API_KEY' | 'USER_INACTIVE' | 'SESSION_EXPIRED' | 'RATE_LIMITED' | 'IP_VALIDATION_FAILED';
+  code:
+    | 'INVALID_TOKEN'
+    | 'EXPIRED_TOKEN'
+    | 'INSUFFICIENT_SCOPES'
+    | 'INVALID_API_KEY'
+    | 'USER_INACTIVE'
+    | 'SESSION_EXPIRED'
+    | 'RATE_LIMITED'
+    | 'IP_VALIDATION_FAILED';
   message: string;
   details?: Record<string, any>;
+  stack?: string;
+  timestamp?: string;
 }
 
 export type IPValidationMode = 'strict' | 'subnet' | 'disabled';
@@ -210,10 +230,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       AuthScope.SEARCH_ADVANCED,
       AuthScope.SEARCH_DEEP,
       AuthScope.SCOPE_MANAGE,
-      AuthScope.SCOPE_ISOLATE
+      AuthScope.SCOPE_ISOLATE,
     ],
     max_scopes: Object.values(AuthScope),
-    description: 'Full system access with all permissions'
+    description: 'Full system access with all permissions',
   },
   [UserRole.USER]: {
     role: UserRole.USER,
@@ -225,7 +245,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       AuthScope.KNOWLEDGE_WRITE,
       AuthScope.KNOWLEDGE_DELETE,
       AuthScope.SEARCH_BASIC,
-      AuthScope.SEARCH_ADVANCED
+      AuthScope.SEARCH_ADVANCED,
     ],
     max_scopes: [
       AuthScope.MEMORY_READ,
@@ -236,24 +256,20 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       AuthScope.KNOWLEDGE_DELETE,
       AuthScope.SEARCH_BASIC,
       AuthScope.SEARCH_ADVANCED,
-      AuthScope.AUDIT_READ
+      AuthScope.AUDIT_READ,
     ],
-    description: 'Standard user access for memory and knowledge operations'
+    description: 'Standard user access for memory and knowledge operations',
   },
   [UserRole.READ_ONLY]: {
     role: UserRole.READ_ONLY,
-    default_scopes: [
-      AuthScope.MEMORY_READ,
-      AuthScope.KNOWLEDGE_READ,
-      AuthScope.SEARCH_BASIC
-    ],
+    default_scopes: [AuthScope.MEMORY_READ, AuthScope.KNOWLEDGE_READ, AuthScope.SEARCH_BASIC],
     max_scopes: [
       AuthScope.MEMORY_READ,
       AuthScope.KNOWLEDGE_READ,
       AuthScope.SEARCH_BASIC,
-      AuthScope.AUDIT_READ
+      AuthScope.AUDIT_READ,
     ],
-    description: 'Read-only access to memory and knowledge'
+    description: 'Read-only access to memory and knowledge',
   },
   [UserRole.SERVICE]: {
     role: UserRole.SERVICE,
@@ -263,7 +279,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       AuthScope.KNOWLEDGE_READ,
       AuthScope.KNOWLEDGE_WRITE,
       AuthScope.SEARCH_BASIC,
-      AuthScope.SEARCH_ADVANCED
+      AuthScope.SEARCH_ADVANCED,
     ],
     max_scopes: [
       AuthScope.MEMORY_READ,
@@ -272,41 +288,41 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
       AuthScope.KNOWLEDGE_WRITE,
       AuthScope.SEARCH_BASIC,
       AuthScope.SEARCH_ADVANCED,
-      AuthScope.SCOPE_ISOLATE
+      AuthScope.SCOPE_ISOLATE,
     ],
-    description: 'Service account access for automated operations'
-  }
+    description: 'Service account access for automated operations',
+  },
 };
 
 // Resource-to-scope mapping
 export const RESOURCE_SCOPE_MAPPING: Record<string, Record<string, AuthScope[]>> = {
-  'memory_store': {
-    'read': [AuthScope.MEMORY_READ],
-    'write': [AuthScope.MEMORY_WRITE],
-    'delete': [AuthScope.MEMORY_DELETE]
+  memory_store: {
+    read: [AuthScope.MEMORY_READ],
+    write: [AuthScope.MEMORY_WRITE],
+    delete: [AuthScope.MEMORY_DELETE],
   },
-  'memory_find': {
-    'read': [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
-    'deep': [AuthScope.SEARCH_DEEP],
-    'advanced': [AuthScope.SEARCH_ADVANCED]
+  memory_find: {
+    read: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
+    deep: [AuthScope.SEARCH_DEEP],
+    advanced: [AuthScope.SEARCH_ADVANCED],
   },
-  'knowledge': {
-    'read': [AuthScope.KNOWLEDGE_READ],
-    'write': [AuthScope.KNOWLEDGE_WRITE],
-    'delete': [AuthScope.KNOWLEDGE_DELETE]
+  knowledge: {
+    read: [AuthScope.KNOWLEDGE_READ],
+    write: [AuthScope.KNOWLEDGE_WRITE],
+    delete: [AuthScope.KNOWLEDGE_DELETE],
   },
-  'audit': {
-    'read': [AuthScope.AUDIT_READ],
-    'write': [AuthScope.AUDIT_WRITE]
+  audit: {
+    read: [AuthScope.AUDIT_READ],
+    write: [AuthScope.AUDIT_WRITE],
   },
-  'system': {
-    'read': [AuthScope.SYSTEM_READ],
-    'manage': [AuthScope.SYSTEM_MANAGE]
+  system: {
+    read: [AuthScope.SYSTEM_READ],
+    manage: [AuthScope.SYSTEM_MANAGE],
   },
-  'user': {
-    'manage': [AuthScope.USER_MANAGE]
+  user: {
+    manage: [AuthScope.USER_MANAGE],
   },
-  'api_key': {
-    'manage': [AuthScope.API_KEY_MANAGE]
-  }
+  api_key: {
+    manage: [AuthScope.API_KEY_MANAGE],
+  },
 };

@@ -10,13 +10,9 @@ export { PerformanceDashboard, performanceDashboard } from './performance-dashbo
 export type {
   PerformanceMetric,
   PerformanceSummary,
-  PerformanceAlert
+  PerformanceAlert,
 } from './performance-collector.js';
 
-export type {
-  PerformanceMiddlewareOptions
-} from './performance-middleware.js';
+export type { PerformanceMiddlewareOptions } from './performance-middleware.js';
 
-export type {
-  DashboardConfig
-} from './performance-dashboard.js';
+export type { DashboardConfig } from './performance-dashboard.js';

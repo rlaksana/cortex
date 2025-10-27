@@ -12,10 +12,7 @@ export type {
   AuthMiddlewareConfig,
   AuthScope,
   SecurityAuditLog,
-  UserRole
+  UserRole,
 } from '../types/auth-types.js';
 
-export type {
-  SecurityConfig,
-  ValidationError
-} from './security-middleware.js';
+export type { SecurityConfig, ValidationError } from './security-middleware.js';

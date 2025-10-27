@@ -14,7 +14,7 @@ import {
   AuthMiddlewareConfig,
   AuthScope,
   SecurityAuditLog,
-  UserRole
+  UserRole,
 } from '../types/auth-types.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -50,7 +50,6 @@ export class AuthMiddleware {
       const apiKeyHeader = req.headers['x-api-key'] as string;
 
       try {
-
         let authContext: AuthContext | null = null;
         let authMethod: 'jwt' | 'api_key' | null = null;
 
@@ -68,15 +67,15 @@ export class AuthMiddleware {
         }
         // If no authentication method found
         else {
-          throw this.createAuthError('INVALID_TOKEN', 'No valid authentication credentials provided');
+          throw this.createAuthError(
+            'INVALID_TOKEN',
+            'No valid authentication credentials provided'
+          );
         }
 
         // Validate required scopes
         if (config.required_scopes && config.required_scopes.length > 0) {
-          const hasRequiredScopes = this.validateScopes(
-            authContext.scopes,
-            config.required_scopes
-          );
+          const hasRequiredScopes = this.validateScopes(authContext.scopes, config.required_scopes);
 
           if (!hasRequiredScopes) {
             throw this.createAuthError(
@@ -88,9 +87,10 @@ export class AuthMiddleware {
 
         // Apply rate limiting if configured
         if (config.rate_limit) {
-          const identifier = authMethod === 'jwt'
-            ? authContext.user.id
-            : authContext.user.id || `api-key-${apiKeyHeader?.substring(0, 10)}`;
+          const identifier =
+            authMethod === 'jwt'
+              ? authContext.user.id
+              : authContext.user.id || `api-key-${apiKeyHeader?.substring(0, 10)}`;
 
           const isAllowed = this.authService.checkRateLimit(
             identifier,
@@ -111,9 +111,9 @@ export class AuthMiddleware {
                 error_message: 'Rate limit exceeded',
                 processing_time_ms: Date.now() - startTime,
                 rate_limit_config: config.rate_limit,
-                identifier
+                identifier,
               },
-              severity: 'medium'
+              severity: 'medium',
             });
 
             // Additional audit logging for rate limiting
@@ -147,13 +147,12 @@ export class AuthMiddleware {
             scopes: authContext.scopes,
             processing_time_ms: Date.now() - startTime,
             resource: req.path,
-            action: req.method
+            action: req.method,
           },
-          severity: 'low'
+          severity: 'low',
         });
 
         next();
-
       } catch (error) {
         const authError = error as AuthError;
 
@@ -169,9 +168,9 @@ export class AuthMiddleware {
             error_message: authError.message,
             processing_time_ms: Date.now() - startTime,
             auth_header: authHeader ? '[REDACTED]' : undefined,
-            api_key_provided: !!req.headers['x-api-key']
+            api_key_provided: !!req.headers['x-api-key'],
           },
-          severity: this.getErrorSeverity(authError.code)
+          severity: this.getErrorSeverity(authError.code),
         });
 
         // Return appropriate error response
@@ -186,7 +185,10 @@ export class AuthMiddleware {
   requireScopes(scopes: AuthScope[]) {
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       if (!req.auth) {
-        return this.sendAuthError(res, this.createAuthError('INVALID_TOKEN', 'Authentication required'));
+        return this.sendAuthError(
+          res,
+          this.createAuthError('INVALID_TOKEN', 'Authentication required')
+        );
       }
 
       const hasRequiredScopes = this.validateScopes(req.auth.scopes, scopes);
@@ -194,14 +196,11 @@ export class AuthMiddleware {
       if (!hasRequiredScopes) {
         return this.sendAuthError(
           res,
-          this.createAuthError(
-            'INSUFFICIENT_SCOPES',
-            `Required scopes: ${scopes.join(', ')}`
-          )
+          this.createAuthError('INSUFFICIENT_SCOPES', `Required scopes: ${scopes.join(', ')}`)
         );
       }
 
-        return next();
+      return next();
     };
   }
 
@@ -213,20 +212,20 @@ export class AuthMiddleware {
 
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       if (!req.auth) {
-        return this.sendAuthError(res, this.createAuthError('INVALID_TOKEN', 'Authentication required'));
+        return this.sendAuthError(
+          res,
+          this.createAuthError('INVALID_TOKEN', 'Authentication required')
+        );
       }
 
       if (!requiredRoles.includes(req.auth.user.role)) {
         return this.sendAuthError(
           res,
-          this.createAuthError(
-            'INSUFFICIENT_SCOPES',
-            `Required roles: ${requiredRoles.join(', ')}`
-          )
+          this.createAuthError('INSUFFICIENT_SCOPES', `Required roles: ${requiredRoles.join(', ')}`)
         );
       }
 
-        return next();
+      return next();
     };
   }
 
@@ -236,7 +235,10 @@ export class AuthMiddleware {
   requireResourceAccess(resource: string, action: string) {
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       if (!req.auth) {
-        return this.sendAuthError(res, this.createAuthError('INVALID_TOKEN', 'Authentication required'));
+        return this.sendAuthError(
+          res,
+          this.createAuthError('INVALID_TOKEN', 'Authentication required')
+        );
       }
 
       const requiredScopes = this.getResourceScopes(resource, action);
@@ -252,7 +254,7 @@ export class AuthMiddleware {
         );
       }
 
-        return next();
+      return next();
     };
   }
 
@@ -279,13 +281,16 @@ export class AuthMiddleware {
         }
       } catch (error) {
         // Optional auth failures are logged but don't block the request
-        logger.warn({
-          error: error instanceof Error ? error.message : String(error),
-          ip: clientInfo.ipAddress
-        }, 'Optional authentication failed');
+        logger.warn(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            ip: clientInfo.ipAddress,
+          },
+          'Optional authentication failed'
+        );
       }
 
-        return next();
+      return next();
     };
   }
 
@@ -298,7 +303,11 @@ export class AuthMiddleware {
     config?: AuthMiddlewareConfig
   ): Promise<AuthContext> {
     try {
-      const authContext = await this.authService.createAuthContext(token, clientInfo.ipAddress, clientInfo.userAgent);
+      const authContext = await this.authService.createAuthContext(
+        token,
+        clientInfo.ipAddress,
+        clientInfo.userAgent
+      );
 
       // Perform secure IP validation based on configuration
       const ipValidationResult = await this.validateIPAddress(
@@ -312,7 +321,9 @@ export class AuthMiddleware {
 
       if (!ipValidationResult.isValid) {
         await this.logAuthEvent({
-          event_type: ipValidationResult.isSuspicious ? 'suspicious_activity' : 'ip_validation_failed',
+          event_type: ipValidationResult.isSuspicious
+            ? 'suspicious_activity'
+            : 'ip_validation_failed',
           user_id: authContext.user.id,
           session_id: authContext.session.id,
           ip_address: clientInfo.ipAddress,
@@ -322,9 +333,9 @@ export class AuthMiddleware {
             session_ip: authContext.session.ip_address,
             current_ip: clientInfo.ipAddress,
             validation_mode: config?.ip_validation?.mode || 'strict',
-            client_info: ipValidationResult.clientInfo
+            client_info: ipValidationResult.clientInfo,
           },
-          severity: ipValidationResult.isSuspicious ? 'high' : 'medium'
+          severity: ipValidationResult.isSuspicious ? 'high' : 'medium',
         });
 
         throw this.createAuthError('IP_VALIDATION_FAILED', ipValidationResult.reason);
@@ -343,9 +354,9 @@ export class AuthMiddleware {
             session_ip: authContext.session.ip_address,
             current_ip: clientInfo.ipAddress,
             validation_mode: config?.ip_validation?.mode || 'strict',
-            bypass_reason: ipValidationResult.bypassReason
+            bypass_reason: ipValidationResult.bypassReason,
           },
-          severity: 'low'
+          severity: 'low',
         });
       }
 
@@ -367,7 +378,10 @@ export class AuthMiddleware {
   /**
    * API key authentication with database validation
    */
-  private async authenticateWithAPIKey(apiKey: string, clientInfo: { ipAddress: string; userAgent: string }): Promise<AuthContext> {
+  private async authenticateWithAPIKey(
+    apiKey: string,
+    clientInfo: { ipAddress: string; userAgent: string }
+  ): Promise<AuthContext> {
     try {
       // Validate API key format first
       if (!apiKey.startsWith('ck_')) {
@@ -388,35 +402,40 @@ export class AuthMiddleware {
         user: {
           id: user.id,
           username: user.username,
-          role: user.role
+          role: user.role,
         },
         session: {
           id: `api-key-${apiKeyInfo.id}`,
           ip_address: clientInfo.ipAddress,
-          user_agent: clientInfo.userAgent
+          user_agent: clientInfo.userAgent,
         },
         scopes,
-        token_jti: randomUUID()
+        token_jti: randomUUID(),
       };
 
       // Store API key info in the request for later use if needed
       // This is already available in the auth context session
 
-      logger.info({
-        apiKeyId: apiKeyInfo.key_id,
-        userId: user.id,
-        scopes: scopes.length,
-        ipAddress: clientInfo.ipAddress
-      }, 'API key authentication successful');
+      logger.info(
+        {
+          apiKeyId: apiKeyInfo.key_id,
+          userId: user.id,
+          scopes: scopes.length,
+          ipAddress: clientInfo.ipAddress,
+        },
+        'API key authentication successful'
+      );
 
       return authContext;
-
     } catch (error) {
-      logger.error({
-        error: error instanceof Error ? error.message : String(error),
-        apiKeyPrefix: apiKey.substring(0, Math.min(10, apiKey.length)),
-        ipAddress: clientInfo.ipAddress
-      }, 'API key authentication failed');
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          apiKeyPrefix: apiKey.substring(0, Math.min(10, apiKey.length)),
+          ipAddress: clientInfo.ipAddress,
+        },
+        'API key authentication failed'
+      );
 
       throw this.createAuthError('INVALID_API_KEY', 'API key validation failed');
     }
@@ -426,7 +445,7 @@ export class AuthMiddleware {
    * Scope validation
    */
   private validateScopes(userScopes: AuthScope[], requiredScopes: AuthScope[]): boolean {
-    return requiredScopes.every(scope => userScopes.includes(scope));
+    return requiredScopes.every((scope) => userScopes.includes(scope));
   }
 
   /**
@@ -434,30 +453,30 @@ export class AuthMiddleware {
    */
   private getResourceScopes(resource: string, action: string): AuthScope[] {
     const resourceScopeMap: Record<string, Record<string, AuthScope[]>> = {
-      'memory_store': {
-        'POST': [AuthScope.MEMORY_WRITE],
-        'GET': [AuthScope.MEMORY_READ],
-        'DELETE': [AuthScope.MEMORY_DELETE]
+      memory_store: {
+        POST: [AuthScope.MEMORY_WRITE],
+        GET: [AuthScope.MEMORY_READ],
+        DELETE: [AuthScope.MEMORY_DELETE],
       },
-      'memory_find': {
-        'POST': [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
-        'GET': [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC]
+      memory_find: {
+        POST: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
+        GET: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
       },
-      'knowledge': {
-        'POST': [AuthScope.KNOWLEDGE_WRITE],
-        'GET': [AuthScope.KNOWLEDGE_READ],
-        'DELETE': [AuthScope.KNOWLEDGE_DELETE]
+      knowledge: {
+        POST: [AuthScope.KNOWLEDGE_WRITE],
+        GET: [AuthScope.KNOWLEDGE_READ],
+        DELETE: [AuthScope.KNOWLEDGE_DELETE],
       },
-      'audit': {
-        'GET': [AuthScope.AUDIT_READ],
-        'POST': [AuthScope.AUDIT_WRITE]
+      audit: {
+        GET: [AuthScope.AUDIT_READ],
+        POST: [AuthScope.AUDIT_WRITE],
       },
-      'system': {
-        'GET': [AuthScope.SYSTEM_READ],
-        'POST': [AuthScope.SYSTEM_MANAGE],
-        'PUT': [AuthScope.SYSTEM_MANAGE],
-        'DELETE': [AuthScope.SYSTEM_MANAGE]
-      }
+      system: {
+        GET: [AuthScope.SYSTEM_READ],
+        POST: [AuthScope.SYSTEM_MANAGE],
+        PUT: [AuthScope.SYSTEM_MANAGE],
+        DELETE: [AuthScope.SYSTEM_MANAGE],
+      },
     };
 
     return resourceScopeMap[resource]?.[action] || [];
@@ -478,9 +497,7 @@ export class AuthMiddleware {
    */
   private extractSecureIPAddress(req: Request): string {
     // Get the direct connection IP first (most reliable)
-    const directIP = req.ip ||
-                     req.socket.remoteAddress ||
-                     req.connection?.remoteAddress;
+    const directIP = req.ip || req.socket.remoteAddress || req.connection?.remoteAddress;
 
     // If we have a direct IP, use it as the primary source
     if (directIP && this.isValidIPAddress(directIP)) {
@@ -490,7 +507,7 @@ export class AuthMiddleware {
     // Handle X-Forwarded-For header only if properly configured
     const forwardedFor = req.headers['x-forwarded-for'] as string;
     if (forwardedFor && this.isValidForwardedHeader(forwardedFor)) {
-      const ips = forwardedFor.split(',').map(ip => ip.trim());
+      const ips = forwardedFor.split(',').map((ip) => ip.trim());
       // The rightmost IP is the most reliable (last proxy)
       // The leftmost IP is the original client (most likely spoofed)
       for (let i = ips.length - 1; i >= 0; i--) {
@@ -527,7 +544,8 @@ export class AuthMiddleware {
     }
 
     // Length validation to prevent DoS
-    if (ip.length > 45) { // Max IPv6 address length
+    if (ip.length > 45) {
+      // Max IPv6 address length
       return false;
     }
 
@@ -535,7 +553,7 @@ export class AuthMiddleware {
     const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
     if (ipv4Regex.test(ip)) {
       const parts = ip.split('.');
-      return parts.every(part => {
+      return parts.every((part) => {
         const num = parseInt(part, 10);
         return num >= 0 && num <= 255;
       });
@@ -560,17 +578,19 @@ export class AuthMiddleware {
     }
 
     // Length validation
-    if (header.length > 1000) { // Reasonable limit for forwarded header
+    if (header.length > 1000) {
+      // Reasonable limit for forwarded header
       return false;
     }
 
     // Basic format validation - should contain IP-like addresses separated by commas
     const ips = header.split(',');
-    if (ips.length > 10) { // Prevent excessive number of hops
+    if (ips.length > 10) {
+      // Prevent excessive number of hops
       return false;
     }
 
-    return ips.every(ip => {
+    return ips.every((ip) => {
       const trimmed = ip.trim();
       return trimmed.length <= 45 && /^[0-9a-fA-F.:]+$/.test(trimmed);
     });
@@ -609,10 +629,14 @@ export class AuthMiddleware {
     }
 
     // IPv6 private ranges (simplified)
-    if (ip.startsWith('fc') || ip.startsWith('fd') || // Unique local
-        ip.startsWith('fe80') || // Link-local
-        ip.startsWith('::1') || // localhost
-        ip.startsWith('::ffff:127')) { // IPv4-mapped localhost
+    if (
+      ip.startsWith('fc') ||
+      ip.startsWith('fd') || // Unique local
+      ip.startsWith('fe80') || // Link-local
+      ip.startsWith('::1') || // localhost
+      ip.startsWith('::ffff:127')
+    ) {
+      // IPv4-mapped localhost
       return true;
     }
 
@@ -634,9 +658,12 @@ export class AuthMiddleware {
     const normalized = ip.toLowerCase();
 
     // Remove leading zeros in each group
-    return normalized.split(':').map(group => {
-      return group.replace(/^0+/, '') || '0';
-    }).join(':');
+    return normalized
+      .split(':')
+      .map((group) => {
+        return group.replace(/^0+/, '') || '0';
+      })
+      .join(':');
   }
 
   /**
@@ -664,7 +691,7 @@ export class AuthMiddleware {
       log_ip_changes: true,
       max_header_length: 1000,
       subnet_mask: 24, // Default for IPv4
-      ...config
+      ...config,
     };
 
     // Handle disabled mode
@@ -674,7 +701,7 @@ export class AuthMiddleware {
         reason: 'IP validation disabled',
         isSuspicious: false,
         wasBypassed: true,
-        bypassReason: 'Validation disabled by configuration'
+        bypassReason: 'Validation disabled by configuration',
       };
     }
 
@@ -688,7 +715,7 @@ export class AuthMiddleware {
         isValid: false,
         reason: 'Invalid or unknown IP address',
         isSuspicious: true,
-        wasBypassed: false
+        wasBypassed: false,
       };
     }
 
@@ -699,14 +726,14 @@ export class AuthMiddleware {
           isValid: true,
           reason: 'IP addresses match exactly',
           isSuspicious: false,
-          wasBypassed: false
+          wasBypassed: false,
         };
       } else {
         return {
           isValid: false,
           reason: 'IP address mismatch (strict validation)',
           isSuspicious: this.isSuspiciousChange(normalizedSessionIP, normalizedCurrentIP),
-          wasBypassed: false
+          wasBypassed: false,
         };
       }
     }
@@ -722,14 +749,14 @@ export class AuthMiddleware {
         isValid: true,
         reason: 'IP addresses match',
         isSuspicious: false,
-        wasBypassed: false
+        wasBypassed: false,
       };
     } else {
       return {
         isValid: false,
         reason: 'IP address validation failed',
         isSuspicious: true,
-        wasBypassed: false
+        wasBypassed: false,
       };
     }
   }
@@ -758,17 +785,17 @@ export class AuthMiddleware {
           isValid: true,
           reason: `IPs are in same subnet (/${config.subnet_mask})`,
           isSuspicious: false,
-          wasBypassed: false
+          wasBypassed: false,
         };
       }
 
       // Check against allowed subnets if configured
       if (config.allowed_subnets && config.allowed_subnets.length > 0) {
-        const isCurrentIPAllowed = config.allowed_subnets.some(subnet =>
+        const isCurrentIPAllowed = config.allowed_subnets.some((subnet) =>
           this.isIPInSubnet(currentIP, subnet)
         );
 
-        const isSessionIPAllowed = config.allowed_subnets.some(subnet =>
+        const isSessionIPAllowed = config.allowed_subnets.some((subnet) =>
           this.isIPInSubnet(sessionIP, subnet)
         );
 
@@ -777,14 +804,14 @@ export class AuthMiddleware {
             isValid: true,
             reason: 'Both IPs are in allowed subnets',
             isSuspicious: false,
-            wasBypassed: false
+            wasBypassed: false,
           };
         }
       }
 
       // Check for trusted proxy scenarios
       if (config.trusted_proxies && config.trusted_proxies.length > 0) {
-        const isCurrentIPTrusted = config.trusted_proxies.some(subnet =>
+        const isCurrentIPTrusted = config.trusted_proxies.some((subnet) =>
           this.isIPInSubnet(currentIP, subnet)
         );
 
@@ -794,7 +821,7 @@ export class AuthMiddleware {
             reason: 'Current IP is from trusted proxy/network',
             isSuspicious: false,
             wasBypassed: true,
-            bypassReason: 'Trusted proxy validation'
+            bypassReason: 'Trusted proxy validation',
           };
         }
       }
@@ -806,9 +833,8 @@ export class AuthMiddleware {
         isValid: false,
         reason: `IP addresses are in different subnets and not in allowed ranges`,
         isSuspicious,
-        wasBypassed: false
+        wasBypassed: false,
       };
-
     } catch (error) {
       logger.error({ error, sessionIP, currentIP }, 'Subnet validation error');
 
@@ -816,7 +842,7 @@ export class AuthMiddleware {
         isValid: false,
         reason: 'IP validation system error',
         isSuspicious: true,
-        wasBypassed: false
+        wasBypassed: false,
       };
     }
   }
@@ -850,7 +876,7 @@ export class AuthMiddleware {
 
     if (ip1Num === null || ip2Num === null) return false;
 
-    const subnetMaskNum = (0xFFFFFFFF << (32 - mask)) >>> 0;
+    const subnetMaskNum = (0xffffffff << (32 - mask)) >>> 0;
 
     return (ip1Num & subnetMaskNum) === (ip2Num & subnetMaskNum);
   }
@@ -876,7 +902,7 @@ export class AuthMiddleware {
 
     // Compare remaining bits
     if (remainingBits > 0 && fullBytes < 16) {
-      const maskByte = (0xFF << (8 - remainingBits)) & 0xFF;
+      const maskByte = (0xff << (8 - remainingBits)) & 0xff;
       return (ip1Bytes[fullBytes] & maskByte) === (ip2Bytes[fullBytes] & maskByte);
     }
 
@@ -903,7 +929,7 @@ export class AuthMiddleware {
   private ipv4ToNumber(ip: string): number | null {
     try {
       const parts = ip.split('.').map(Number);
-      if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) {
+      if (parts.length !== 4 || parts.some((p) => isNaN(p) || p < 0 || p > 255)) {
         return null;
       }
 
@@ -926,10 +952,10 @@ export class AuthMiddleware {
       const bytes: number[] = [];
       for (const group of groups) {
         const num = parseInt(group, 16);
-        if (isNaN(num) || num < 0 || num > 0xFFFF) return null;
+        if (isNaN(num) || num < 0 || num > 0xffff) return null;
 
-        bytes.push((num >> 8) & 0xFF);
-        bytes.push(num & 0xFF);
+        bytes.push((num >> 8) & 0xff);
+        bytes.push(num & 0xff);
       }
 
       return bytes;
@@ -974,7 +1000,7 @@ export class AuthMiddleware {
     if (num === null) return 'unknown';
 
     // Simplified geographic classification based on first octet
-    const firstOctet = (num >>> 24) & 0xFF;
+    const firstOctet = (num >>> 24) & 0xff;
 
     if (firstOctet >= 1 && firstOctet <= 126) return 'public';
     if (firstOctet === 10) return 'private-10';
@@ -1002,8 +1028,8 @@ export class AuthMiddleware {
       error: {
         code: error.code,
         message: error.message,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 

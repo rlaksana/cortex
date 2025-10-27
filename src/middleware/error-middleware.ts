@@ -7,7 +7,13 @@
  * - Database layer
  */
 
-import { ErrorHandler, BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../utils/error-handler.js';
+import {
+  ErrorHandler,
+  BaseError,
+  ErrorCode,
+  ErrorCategory,
+  ErrorSeverity,
+} from '../utils/error-handler.js';
 import { logger } from '../utils/logger.js';
 
 // API Error Handler for MCP tool responses
@@ -15,14 +21,18 @@ export class ApiErrorHandler {
   /**
    * Handle MCP tool errors and return standardized responses
    */
-  static handleToolCall(error: any, toolName: string, args?: any): { content: Array<{ type: string; text: string }> } {
+  static handleToolCall(
+    error: any,
+    toolName: string,
+    args?: any
+  ): { content: Array<{ type: string; text: string }> } {
     const standardError = ErrorHandler.standardize(error, `tool.${toolName}`);
 
     // Log with tool context
     standardError.log({
       tool: toolName,
       arguments: args,
-      layer: 'api'
+      layer: 'api',
     });
 
     // Return user-friendly response
@@ -30,9 +40,9 @@ export class ApiErrorHandler {
       content: [
         {
           type: 'text',
-          text: `❌ ${standardError.userMessage}`
-        }
-      ]
+          text: `❌ ${standardError.userMessage}`,
+        },
+      ],
     };
   }
 
@@ -47,7 +57,7 @@ export class ApiErrorHandler {
         severity: ErrorSeverity.MEDIUM,
         message: 'Arguments must be an object',
         userMessage: 'Invalid arguments provided',
-        context: { received: typeof args }
+        context: { received: typeof args },
       });
     }
 
@@ -56,7 +66,7 @@ export class ApiErrorHandler {
       .filter(([_, config]) => config.required)
       .map(([field]) => field);
 
-    const missing = required.filter(field => !(field in args));
+    const missing = required.filter((field) => !(field in args));
     if (missing.length > 0) {
       throw new BaseError({
         code: ErrorCode.MISSING_REQUIRED_FIELD,
@@ -64,7 +74,7 @@ export class ApiErrorHandler {
         severity: ErrorSeverity.MEDIUM,
         message: `Missing required fields: ${missing.join(', ')}`,
         userMessage: `Missing required fields: ${missing.join(', ')}`,
-        context: { missing, received: Object.keys(args) }
+        context: { missing, received: Object.keys(args) },
       });
     }
 
@@ -81,7 +91,7 @@ export class ApiErrorHandler {
             severity: ErrorSeverity.MEDIUM,
             message: `Field '${field}' must be of type ${expectedType}, got ${typeof value}`,
             userMessage: `Invalid format for field: ${field}`,
-            context: { field, expectedType, receivedType: typeof value, value }
+            context: { field, expectedType, receivedType: typeof value, value },
           });
         }
       }
@@ -107,7 +117,7 @@ export class ServiceErrorHandler {
       operationName: `service.${methodName}`,
       category: options.category,
       fallback: options.fallback,
-      rethrow: options.rethrow
+      rethrow: options.rethrow,
     });
   }
 
@@ -115,7 +125,11 @@ export class ServiceErrorHandler {
    * Handle database operation errors
    */
   static handleDatabaseError(error: any, operation: string, context?: Record<string, any>): never {
-    const standardError = ErrorHandler.standardize(error, `database.${operation}`, ErrorCategory.DATABASE);
+    const standardError = ErrorHandler.standardize(
+      error,
+      `database.${operation}`,
+      ErrorCategory.DATABASE
+    );
 
     // Add database context
     if (context) {
@@ -129,8 +143,16 @@ export class ServiceErrorHandler {
   /**
    * Handle authentication errors
    */
-  static handleAuthenticationError(error: any, operation: string, context?: Record<string, any>): never {
-    const standardError = ErrorHandler.standardize(error, `auth.${operation}`, ErrorCategory.AUTHENTICATION);
+  static handleAuthenticationError(
+    error: any,
+    operation: string,
+    context?: Record<string, any>
+  ): never {
+    const standardError = ErrorHandler.standardize(
+      error,
+      `auth.${operation}`,
+      ErrorCategory.AUTHENTICATION
+    );
 
     if (context) {
       standardError.context = { ...standardError.context, ...context };
@@ -143,8 +165,16 @@ export class ServiceErrorHandler {
   /**
    * Handle authorization errors
    */
-  static handleAuthorizationError(error: any, operation: string, context?: Record<string, any>): never {
-    const standardError = ErrorHandler.standardize(error, `authz.${operation}`, ErrorCategory.AUTHORIZATION);
+  static handleAuthorizationError(
+    error: any,
+    operation: string,
+    context?: Record<string, any>
+  ): never {
+    const standardError = ErrorHandler.standardize(
+      error,
+      `authz.${operation}`,
+      ErrorCategory.AUTHORIZATION
+    );
 
     if (context) {
       standardError.context = { ...standardError.context, ...context };
@@ -168,7 +198,7 @@ export class DatabaseErrorHandler {
       message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}`,
       userMessage: 'Database connection failed',
       context: { ...context, originalError: error instanceof Error ? error.name : 'Unknown' },
-      retryable: true
+      retryable: true,
     });
 
     standardError.log({ layer: 'database', operation: 'connect' });
@@ -185,8 +215,12 @@ export class DatabaseErrorHandler {
       severity: ErrorSeverity.HIGH,
       message: `Database query failed: ${error instanceof Error ? error.message : String(error)}`,
       userMessage: 'Database operation failed',
-      context: { query: query.substring(0, 100), params, originalError: error instanceof Error ? error.name : 'Unknown' },
-      retryable: true
+      context: {
+        query: query.substring(0, 100),
+        params,
+        originalError: error instanceof Error ? error.name : 'Unknown',
+      },
+      retryable: true,
     });
 
     standardError.log({ layer: 'database', operation: 'query' });
@@ -203,7 +237,7 @@ export class DatabaseErrorHandler {
       severity: ErrorSeverity.MEDIUM,
       message: `${entityType} not found: ${JSON.stringify(identifier)}`,
       userMessage: `${entityType} not found`,
-      context: { entityType, identifier }
+      context: { entityType, identifier },
     });
 
     standardError.log({ layer: 'database', operation: 'find' });
@@ -220,7 +254,7 @@ export class DatabaseErrorHandler {
       severity: ErrorSeverity.MEDIUM,
       message: `Duplicate ${entityType}: ${JSON.stringify(identifier)}`,
       userMessage: `${entityType} already exists`,
-      context: { entityType, identifier }
+      context: { entityType, identifier },
     });
 
     standardError.log({ layer: 'database', operation: 'create' });
@@ -237,23 +271,26 @@ export class AsyncErrorHandler {
     operation: () => Promise<T>,
     fallback?: T
   ): Promise<{ success: boolean; data?: T; error?: BaseError }> {
-    return ErrorHandler.wrapAsync(async () => {
-      try {
-        const data = await operation();
-        return { success: true, data };
-      } catch (error) {
-        const standardError = ErrorHandler.standardize(error, 'safe_operation');
-        standardError.log();
-        return {
-          success: false,
-          error: standardError,
-          data: fallback
-        };
+    return ErrorHandler.wrapAsync(
+      async () => {
+        try {
+          const data = await operation();
+          return { success: true, data };
+        } catch (error) {
+          const standardError = ErrorHandler.standardize(error, 'safe_operation');
+          standardError.log();
+          return {
+            success: false,
+            error: standardError,
+            data: fallback,
+          };
+        }
+      },
+      {
+        operationName: 'safe_wrapper',
+        rethrow: false,
       }
-    }, {
-      operationName: 'safe_wrapper',
-      rethrow: false
-    });
+    );
   }
 
   /**
@@ -274,7 +311,7 @@ export class AsyncErrorHandler {
       baseDelay = 1000,
       maxDelay = 10000,
       retryableErrors = [],
-      context = {}
+      context = {},
     } = options;
 
     let lastError: BaseError | null = null;
@@ -286,7 +323,8 @@ export class AsyncErrorHandler {
         lastError = ErrorHandler.standardize(error, 'retry_operation');
 
         // Check if error is retryable
-        const isRetryable = ErrorHandler.isRetryable(lastError) &&
+        const isRetryable =
+          ErrorHandler.isRetryable(lastError) &&
           (retryableErrors.length === 0 || retryableErrors.includes(lastError.code));
 
         if (!isRetryable || attempt === maxAttempts) {
@@ -294,22 +332,22 @@ export class AsyncErrorHandler {
         }
 
         // Log retry attempt
-        logger.warn({
-          attempt,
-          maxAttempts,
-          error: lastError.code,
-          message: lastError.message,
-          ...context
-        }, 'Retrying operation after error');
-
-        // Calculate delay
-        const delay = Math.min(
-          baseDelay * Math.pow(2, attempt - 1),
-          maxDelay
+        logger.warn(
+          {
+            attempt,
+            maxAttempts,
+            error: lastError.code,
+            message: lastError.message,
+            ...context,
+          },
+          'Retrying operation after error'
         );
 
+        // Calculate delay
+        const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
+
         // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
 
@@ -325,7 +363,7 @@ export class AsyncErrorHandler {
       severity: ErrorSeverity.HIGH,
       message: 'All retry attempts failed',
       userMessage: 'Operation failed after multiple attempts',
-      context: { ...context, attempts: maxAttempts }
+      context: { ...context, attempts: maxAttempts },
     });
   }
 }
@@ -347,7 +385,10 @@ export class ErrorRecovery {
       return await primaryOperation();
     } catch (error) {
       lastError = ErrorHandler.standardize(error, 'graceful_degradation');
-      logger.warn({ ...context, operation: 'primary' }, 'Primary operation failed, trying fallbacks');
+      logger.warn(
+        { ...context, operation: 'primary' },
+        'Primary operation failed, trying fallbacks'
+      );
     }
 
     // Try fallback operations
@@ -374,7 +415,7 @@ export class ErrorRecovery {
       severity: ErrorSeverity.HIGH,
       message: 'All operations failed including fallbacks',
       userMessage: 'Service temporarily unavailable',
-      context
+      context,
     });
   }
 
@@ -392,7 +433,7 @@ export class ErrorRecovery {
     const {
       failureThreshold = 5,
       recoveryTimeout = 60000, // 1 minute
-      monitoringPeriod = 10000 // 10 seconds
+      monitoringPeriod = 10000, // 10 seconds
     } = options;
 
     let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
@@ -413,7 +454,7 @@ export class ErrorRecovery {
               message: 'Circuit breaker is OPEN',
               userMessage: 'Service temporarily unavailable',
               context: { state, nextAttempt: new Date(nextAttempt).toISOString() },
-              retryable: false
+              retryable: false,
             });
           }
           state = 'HALF_OPEN';
@@ -436,12 +477,15 @@ export class ErrorRecovery {
           if (failureCount >= failureThreshold) {
             state = 'OPEN';
             nextAttempt = now + recoveryTimeout;
-            logger.warn({
-              failureCount,
-              failureThreshold,
-              recoveryTimeout,
-              nextAttempt: new Date(nextAttempt).toISOString()
-            }, 'Circuit breaker OPENED');
+            logger.warn(
+              {
+                failureCount,
+                failureThreshold,
+                recoveryTimeout,
+                nextAttempt: new Date(nextAttempt).toISOString(),
+              },
+              'Circuit breaker OPENED'
+            );
           }
 
           throw ErrorHandler.standardize(error, 'circuit_breaker');
@@ -454,7 +498,7 @@ export class ErrorRecovery {
           failureCount,
           failureThreshold,
           lastFailureTime,
-          nextAttempt
+          nextAttempt,
         };
       },
 
@@ -464,7 +508,7 @@ export class ErrorRecovery {
         lastFailureTime = 0;
         nextAttempt = 0;
         logger.info('Circuit breaker manually reset');
-      }
+      },
     };
   }
 }

@@ -16,49 +16,83 @@ import { z } from 'zod';
 /**
  * Schema for memory_store tool input validation
  */
-export const MemoryStoreInputSchema = z.object({
-  items: z.array(z.object({
-    kind: z.enum([
-      'section', 'decision', 'issue', 'todo', 'runbook', 'change',
-      'release_note', 'ddl', 'pr_context', 'entity', 'relation',
-      'observation', 'incident', 'release', 'risk', 'assumption'
-    ], {
-      errorMap: () => ({ message: `Invalid knowledge type. Must be one of: section, decision, issue, todo, runbook, change, release_note, ddl, pr_context, entity, relation, observation, incident, release, risk, assumption` })
-    }),
-    scope: z.object({
-      project: z.string().min(1, 'Project name is required'),
-      branch: z.string().optional(),
-      org: z.string().optional()
-    }).strict(),
-    data: z.record(z.any(), {
-      description: 'Knowledge data object'
-    })
-  })).min(1, 'At least one item is required')
-}).strict();
+export const MemoryStoreInputSchema = z
+  .object({
+    items: z
+      .array(
+        z.object({
+          kind: z.enum(
+            [
+              'section',
+              'decision',
+              'issue',
+              'todo',
+              'runbook',
+              'change',
+              'release_note',
+              'ddl',
+              'pr_context',
+              'entity',
+              'relation',
+              'observation',
+              'incident',
+              'release',
+              'risk',
+              'assumption',
+            ],
+            {
+              errorMap: () => ({
+                message: `Invalid knowledge type. Must be one of: section, decision, issue, todo, runbook, change, release_note, ddl, pr_context, entity, relation, observation, incident, release, risk, assumption`,
+              }),
+            }
+          ),
+          scope: z
+            .object({
+              project: z.string().min(1, 'Project name is required'),
+              branch: z.string().optional(),
+              org: z.string().optional(),
+            })
+            .strict(),
+          data: z.record(z.any(), {
+            description: 'Knowledge data object',
+          }),
+        })
+      )
+      .min(1, 'At least one item is required'),
+  })
+  .strict();
 
 /**
  * Schema for memory_find tool input validation
  */
-export const MemoryFindInputSchema = z.object({
-  query: z.string()
-    .min(1, 'Query parameter is required and cannot be empty')
-    .max(1000, 'Query must be 1000 characters or less')
-    .transform(val => val.trim()), // Auto-trim whitespace
-  scope: z.object({
-    project: z.string().optional(),
-    branch: z.string().optional(),
-    org: z.string().optional()
-  }).optional(),
-  types: z.array(z.string()).optional(),
-  mode: z.enum(['auto', 'fast', 'deep'], {
-    errorMap: () => ({ message: `Invalid mode. Must be one of: auto, fast, deep` })
-  }).optional(),
-  top_k: z.number()
-    .int('top_k must be an integer')
-    .min(1, 'top_k must be at least 1')
-    .max(100, 'top_k cannot exceed 100')
-    .optional()
-}).strict();
+export const MemoryFindInputSchema = z
+  .object({
+    query: z
+      .string()
+      .min(1, 'Query parameter is required and cannot be empty')
+      .max(1000, 'Query must be 1000 characters or less')
+      .transform((val) => val.trim()), // Auto-trim whitespace
+    scope: z
+      .object({
+        project: z.string().optional(),
+        branch: z.string().optional(),
+        org: z.string().optional(),
+      })
+      .optional(),
+    types: z.array(z.string()).optional(),
+    mode: z
+      .enum(['auto', 'fast', 'deep'], {
+        errorMap: () => ({ message: `Invalid mode. Must be one of: auto, fast, deep` }),
+      })
+      .optional(),
+    top_k: z
+      .number()
+      .int('top_k must be an integer')
+      .min(1, 'top_k must be at least 1')
+      .max(100, 'top_k cannot exceed 100')
+      .optional(),
+  })
+  .strict();
 
 // ============================================================================
 // Error Types
@@ -92,7 +126,11 @@ export function validateMemoryStoreInput(input: unknown) {
     if (error instanceof z.ZodError) {
       const field = error.errors[0]?.path.join('.');
       const message = error.errors[0]?.message || 'Validation failed';
-      throw new ValidationError(`Memory store validation failed: ${message}`, field, 'VALIDATION_ERROR');
+      throw new ValidationError(
+        `Memory store validation failed: ${message}`,
+        field,
+        'VALIDATION_ERROR'
+      );
     }
     throw new ValidationError('Unknown validation error occurred', undefined, 'UNKNOWN_ERROR');
   }
@@ -108,7 +146,11 @@ export function validateMemoryFindInput(input: unknown) {
     if (error instanceof z.ZodError) {
       const field = error.errors[0]?.path.join('.');
       const message = error.errors[0]?.message || 'Validation failed';
-      throw new ValidationError(`Memory find validation failed: ${message}`, field, 'VALIDATION_ERROR');
+      throw new ValidationError(
+        `Memory find validation failed: ${message}`,
+        field,
+        'VALIDATION_ERROR'
+      );
     }
     throw new ValidationError('Unknown validation error occurred', undefined, 'UNKNOWN_ERROR');
   }

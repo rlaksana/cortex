@@ -28,7 +28,7 @@ export class PerformanceDashboard {
       enableTrendsEndpoint: true,
       requireAuthentication: false,
       cacheTimeout: 30000, // 30 seconds
-      ...config
+      ...config,
     };
 
     this.setupAlertHandling();
@@ -61,7 +61,7 @@ export class PerformanceDashboard {
           summaries: performanceCollector.getAllSummaries(),
           trends: performanceCollector.getPerformanceTrends(timeWindowMinutes),
           memory: performanceCollector.getMemoryUsage(),
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
       }
 
@@ -97,12 +97,12 @@ export class PerformanceDashboard {
 
       // Filter by severity
       if (severity) {
-        filteredAlerts = filteredAlerts.filter(alert => alert.severity === severity);
+        filteredAlerts = filteredAlerts.filter((alert) => alert.severity === severity);
       }
 
       // Filter by operation
       if (operation) {
-        filteredAlerts = filteredAlerts.filter(alert => alert.operation === operation);
+        filteredAlerts = filteredAlerts.filter((alert) => alert.operation === operation);
       }
 
       // Limit results
@@ -112,7 +112,7 @@ export class PerformanceDashboard {
       res.json({
         alerts: filteredAlerts,
         total: filteredAlerts.length,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } catch (error) {
       logger.error({ error }, 'Failed to get alerts');
@@ -136,7 +136,7 @@ export class PerformanceDashboard {
       const cached = this.alertCache.get(cacheKey);
 
       // Return cached data if still valid
-      if (cached && (Date.now() - cached.timestamp) < this.config.cacheTimeout!) {
+      if (cached && Date.now() - cached.timestamp < this.config.cacheTimeout!) {
         return res.json(cached.data);
       }
 
@@ -157,7 +157,7 @@ export class PerformanceDashboard {
       const data = {
         trends,
         timeWindowMinutes,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       // Cache the result
@@ -180,9 +180,9 @@ export class PerformanceDashboard {
       const recentAlerts = this.alerts.slice(-10);
 
       // Determine overall health status
-      const criticalAlerts = recentAlerts.filter(alert => alert.severity === 'critical');
-      const highErrorRates = summaries.filter(summary => summary.successRate < 95);
-      const slowOperations = summaries.filter(summary => summary.averageDuration > 2000);
+      const criticalAlerts = recentAlerts.filter((alert) => alert.severity === 'critical');
+      const highErrorRates = summaries.filter((summary) => summary.successRate < 95);
+      const slowOperations = summaries.filter((summary) => summary.averageDuration > 2000);
 
       let status = 'healthy';
       if (criticalAlerts.length > 0) {
@@ -199,19 +199,20 @@ export class PerformanceDashboard {
         memory: {
           used: memory.heapUsed,
           total: memory.heapTotal,
-          usagePercent: (memory.heapUsed / memory.heapTotal) * 100
+          usagePercent: (memory.heapUsed / memory.heapTotal) * 100,
         },
         performance: {
           totalOperations: summaries.reduce((sum, s) => sum + s.count, 0),
-          averageSuccessRate: summaries.length > 0
-            ? summaries.reduce((sum, s) => sum + s.successRate, 0) / summaries.length
-            : 100,
-          problemOperations: [...highErrorRates, ...slowOperations].map(s => s.operation)
+          averageSuccessRate:
+            summaries.length > 0
+              ? summaries.reduce((sum, s) => sum + s.successRate, 0) / summaries.length
+              : 100,
+          problemOperations: [...highErrorRates, ...slowOperations].map((s) => s.operation),
         },
         alerts: {
           critical: criticalAlerts.length,
-          total: recentAlerts.length
-        }
+          total: recentAlerts.length,
+        },
       };
 
       res.status(status === 'healthy' ? 200 : status === 'degraded' ? 200 : 503).json(healthData);
@@ -220,7 +221,7 @@ export class PerformanceDashboard {
       res.status(500).json({
         status: 'error',
         error: 'Failed to retrieve health status',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -256,25 +257,26 @@ export class PerformanceDashboard {
           uptime: process.uptime(),
           version: process.version,
           platform: process.platform,
-          arch: process.arch
+          arch: process.arch,
         },
         memory: {
           rss: memoryUsage.rss,
           heapTotal: memoryUsage.heapTotal,
           heapUsed: memoryUsage.heapUsed,
           external: memoryUsage.external,
-          arrayBuffers: memoryUsage.arrayBuffers
+          arrayBuffers: memoryUsage.arrayBuffers,
         },
         cpu: {
           user: cpuUsage.user,
-          system: cpuUsage.system
+          system: cpuUsage.system,
         },
         performance: {
-          totalOperations: performanceCollector.getAllSummaries()
+          totalOperations: performanceCollector
+            .getAllSummaries()
             .reduce((sum, s) => sum + s.count, 0),
-          trackedOperations: performanceCollector.getAllSummaries().length
+          trackedOperations: performanceCollector.getAllSummaries().length,
         },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       res.json(systemInfo);
@@ -326,16 +328,28 @@ export class PerformanceDashboard {
     });
 
     // Cleanup old alerts periodically
-    setInterval(() => {
-      const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-      this.alerts = this.alerts.filter(alert => alert.timestamp > cutoffTime);
-    }, 60 * 60 * 1000); // Every hour
+    setInterval(
+      () => {
+        const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+        this.alerts = this.alerts.filter((alert) => alert.timestamp > cutoffTime);
+      },
+      60 * 60 * 1000
+    ); // Every hour
   }
 
   private exportToCSV(data: any): string {
     if (data.summaries) {
       // Export summaries as CSV
-      const headers = ['operation', 'count', 'avgDuration', 'minDuration', 'maxDuration', 'p95', 'p99', 'successRate'];
+      const headers = [
+        'operation',
+        'count',
+        'avgDuration',
+        'minDuration',
+        'maxDuration',
+        'p95',
+        'p99',
+        'successRate',
+      ];
       const rows = data.summaries.map((s: any) => [
         s.operation,
         s.count,
@@ -344,10 +358,10 @@ export class PerformanceDashboard {
         s.maxDuration,
         s.p95,
         s.p99,
-        s.successRate
+        s.successRate,
       ]);
 
-      return [headers, ...rows].map(row => row.join(',')).join('\n');
+      return [headers, ...rows].map((row) => row.join(',')).join('\n');
     }
 
     return JSON.stringify(data, null, 2);
@@ -360,5 +374,5 @@ export const performanceDashboard = new PerformanceDashboard({
   enableAlertsEndpoint: true,
   enableTrendsEndpoint: true,
   requireAuthentication: false,
-  cacheTimeout: 30000
+  cacheTimeout: 30000,
 });

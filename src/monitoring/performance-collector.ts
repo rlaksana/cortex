@@ -75,7 +75,7 @@ export class PerformanceCollector extends EventEmitter {
         duration,
         success: true,
         metadata,
-        tags
+        tags,
       });
     };
   }
@@ -89,8 +89,10 @@ export class PerformanceCollector extends EventEmitter {
 
     // Process batch if it's full or if enough time has passed
     const now = Date.now();
-    if (this.batchMetrics.length >= this.batchSize ||
-        (now - this.lastBatchProcess) >= this.batchProcessIntervalMs) {
+    if (
+      this.batchMetrics.length >= this.batchSize ||
+      now - this.lastBatchProcess >= this.batchProcessIntervalMs
+    ) {
       this.processBatch();
       this.lastBatchProcess = now;
     }
@@ -152,8 +154,8 @@ export class PerformanceCollector extends EventEmitter {
       metadata: {
         ...metadata,
         error: error.message,
-        stack: error.stack
-      }
+        stack: error.stack,
+      },
     };
 
     this.recordMetric(metric);
@@ -192,20 +194,26 @@ export class PerformanceCollector extends EventEmitter {
   /**
    * Get performance metrics for a time range
    */
-  getMetricsInTimeRange(operation: string, startTime: number, endTime: number): PerformanceMetric[] {
+  getMetricsInTimeRange(
+    operation: string,
+    startTime: number,
+    endTime: number
+  ): PerformanceMetric[] {
     const metrics = this.metrics.get(operation) || [];
-    return metrics.filter(metric =>
-      metric.startTime >= startTime && metric.endTime <= endTime
-    );
+    return metrics.filter((metric) => metric.startTime >= startTime && metric.endTime <= endTime);
   }
 
   /**
    * Configure alert thresholds for an operation
    */
-  setAlertThreshold(operation: string, durationThreshold: number, errorRateThreshold: number): void {
+  setAlertThreshold(
+    operation: string,
+    durationThreshold: number,
+    errorRateThreshold: number
+  ): void {
     this.alertThresholds.set(operation, {
       duration: durationThreshold,
-      errorRate: errorRateThreshold
+      errorRate: errorRateThreshold,
     });
   }
 
@@ -214,7 +222,7 @@ export class PerformanceCollector extends EventEmitter {
    */
   getPerformanceTrends(timeWindowMinutes: number = 60): Record<string, any> {
     const now = Date.now();
-    const windowStart = now - (timeWindowMinutes * 60 * 1000);
+    const windowStart = now - timeWindowMinutes * 60 * 1000;
     const trends: Record<string, any> = {};
 
     for (const [operation] of Array.from(this.metrics.keys())) {
@@ -222,8 +230,8 @@ export class PerformanceCollector extends EventEmitter {
 
       if (recentMetrics.length === 0) continue;
 
-      const successMetrics = recentMetrics.filter(m => m.success);
-      const errorMetrics = recentMetrics.filter(m => !m.success);
+      const successMetrics = recentMetrics.filter((m) => m.success);
+      const errorMetrics = recentMetrics.filter((m) => !m.success);
 
       trends[operation] = {
         operation,
@@ -232,12 +240,18 @@ export class PerformanceCollector extends EventEmitter {
         successfulRequests: successMetrics.length,
         failedRequests: errorMetrics.length,
         successRate: (successMetrics.length / recentMetrics.length) * 100,
-        averageDuration: this.calculateAverage(successMetrics.map(m => m.duration)),
-        p95Duration: this.calculatePercentile(successMetrics.map(m => m.duration), 95),
-        p99Duration: this.calculatePercentile(successMetrics.map(m => m.duration), 99),
+        averageDuration: this.calculateAverage(successMetrics.map((m) => m.duration)),
+        p95Duration: this.calculatePercentile(
+          successMetrics.map((m) => m.duration),
+          95
+        ),
+        p99Duration: this.calculatePercentile(
+          successMetrics.map((m) => m.duration),
+          99
+        ),
         requestsPerMinute: recentMetrics.length / timeWindowMinutes,
         errorRate: (errorMetrics.length / recentMetrics.length) * 100,
-        timestamp: now
+        timestamp: now,
       };
     }
 
@@ -299,7 +313,7 @@ export class PerformanceCollector extends EventEmitter {
       heapUsed: usage.heapUsed,
       external: usage.external,
       arrayBuffers: usage.arrayBuffers,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -311,22 +325,26 @@ export class PerformanceCollector extends EventEmitter {
       return this.exportPrometheusMetrics();
     }
 
-    return JSON.stringify({
-      summaries: this.getAllSummaries(),
-      trends: this.getPerformanceTrends(),
-      memory: this.getMemoryUsage(),
-      timestamp: Date.now()
-    }, null, 2);
+    return JSON.stringify(
+      {
+        summaries: this.getAllSummaries(),
+        trends: this.getPerformanceTrends(),
+        memory: this.getMemoryUsage(),
+        timestamp: Date.now(),
+      },
+      null,
+      2
+    );
   }
 
   private updateSummary(operation: string): void {
     const metrics = this.metrics.get(operation) || [];
     if (metrics.length === 0) return;
 
-    const successMetrics = metrics.filter(m => m.success);
-    const errorMetrics = metrics.filter(m => !m.success);
+    const successMetrics = metrics.filter((m) => m.success);
+    const errorMetrics = metrics.filter((m) => !m.success);
 
-    const durations = successMetrics.map(m => m.duration);
+    const durations = successMetrics.map((m) => m.duration);
     const summary: PerformanceSummary = {
       operation,
       count: metrics.length,
@@ -338,7 +356,7 @@ export class PerformanceCollector extends EventEmitter {
       p99: this.calculatePercentile(durations, 99),
       successRate: (successMetrics.length / metrics.length) * 100,
       errorCount: errorMetrics.length,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     this.summaries.set(operation, summary);
@@ -359,7 +377,7 @@ export class PerformanceCollector extends EventEmitter {
         currentValue: summary.averageDuration,
         severity: this.getSeverity(summary.averageDuration, threshold.duration),
         message: `Average duration ${summary.averageDuration}ms exceeds threshold ${threshold.duration}ms`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.emit('alert', alert);
@@ -376,7 +394,7 @@ export class PerformanceCollector extends EventEmitter {
         currentValue: errorRate,
         severity: this.getSeverity(errorRate, threshold.errorRate),
         message: `Error rate ${errorRate}% exceeds threshold ${threshold.errorRate}%`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.emit('alert', alert);
@@ -415,7 +433,7 @@ export class PerformanceCollector extends EventEmitter {
         currentValue: memoryUsagePercent,
         severity: 'critical',
         message: `Memory usage ${memoryUsagePercent.toFixed(2)}% exceeds 90% threshold`,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.emit('alert', alert);
@@ -426,10 +444,10 @@ export class PerformanceCollector extends EventEmitter {
   }
 
   private cleanupOldMetrics(): void {
-    const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // Keep 24 hours
+    const cutoffTime = Date.now() - 24 * 60 * 60 * 1000; // Keep 24 hours
 
     for (const [operation, metrics] of Array.from(this.metrics.entries())) {
-      const filteredMetrics = metrics.filter(m => m.startTime > cutoffTime);
+      const filteredMetrics = metrics.filter((m) => m.startTime > cutoffTime);
       this.metrics.set(operation, filteredMetrics);
     }
   }

@@ -43,7 +43,7 @@ export class SecurityMiddleware {
       maxRequestSize: 10 * 1024 * 1024, // 10MB
       allowedOrigins: ['http://localhost:3000', 'http://localhost:5173'],
       blockedIPs: [],
-      ...config
+      ...config,
     };
 
     this.blockedIPs = new Set(this.config.blockedIPs || []);
@@ -96,18 +96,21 @@ export class SecurityMiddleware {
       standardHeaders: true,
       legacyHeaders: false,
       handler: (req: Request, res: Response) => {
-        logger.warn({
-          ip: req.ip,
-          path: req.path,
-          userAgent: req.headers['user-agent']
-        }, 'Rate limit exceeded');
+        logger.warn(
+          {
+            ip: req.ip,
+            path: req.path,
+            userAgent: req.headers['user-agent'],
+          },
+          'Rate limit exceeded'
+        );
 
         res.status(429).json({
           error: 'Too many requests',
           message: opts.message,
-          retryAfter: Math.ceil(opts.windowMs / 1000)
+          retryAfter: Math.ceil(opts.windowMs / 1000),
         });
-      }
+      },
     };
 
     return rateLimit(opts);
@@ -127,22 +130,25 @@ export class SecurityMiddleware {
         const result = schema.safeParse(data);
 
         if (!result.success) {
-          const errors: ValidationError[] = result.error.issues.map(issue => ({
+          const errors: ValidationError[] = result.error.issues.map((issue) => ({
             field: issue.path.join('.'),
             message: issue.message,
-            value: issue.received
+            value: issue.received,
           }));
 
-          logger.warn({
-            errors,
-            path: req.path,
-            method: req.method,
-            ip: req.ip
-          }, 'Input validation failed');
+          logger.warn(
+            {
+              errors,
+              path: req.path,
+              method: req.method,
+              ip: req.ip,
+            },
+            'Input validation failed'
+          );
 
           return res.status(400).json({
             error: 'Validation failed',
-            errors
+            errors,
           });
         }
 
@@ -165,19 +171,22 @@ export class SecurityMiddleware {
         /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute)\b)/i,
         /(--|;|\/\*|\*\/|xp_|sp_)/i,
         /(\b(or|and)\s+\d+\s*=\s*\d+)/i,
-        /(\b(or|and)\s+['"]?['"]?\s*=\s*['"]?['"]?)/i
+        /(\b(or|and)\s+['"]?['"]?\s*=\s*['"]?['"]?)/i,
       ];
 
       const checkValue = (value: any, path: string): boolean => {
         if (typeof value === 'string') {
           for (const pattern of suspiciousPatterns) {
             if (pattern.test(value)) {
-              logger.warn({
-                path,
-                value: value.substring(0, 100),
-                ip: req.ip,
-                userAgent: req.headers['user-agent']
-              }, 'Potential SQL injection attempt detected');
+              logger.warn(
+                {
+                  path,
+                  value: value.substring(0, 100),
+                  ip: req.ip,
+                  userAgent: req.headers['user-agent'],
+                },
+                'Potential SQL injection attempt detected'
+              );
               return true;
             }
           }
@@ -192,9 +201,10 @@ export class SecurityMiddleware {
       };
 
       // Check request body, query, and params
-      const suspicious = checkValue(req.body, 'body') ||
-                        checkValue(req.query, 'query') ||
-                        checkValue(req.params, 'params');
+      const suspicious =
+        checkValue(req.body, 'body') ||
+        checkValue(req.query, 'query') ||
+        checkValue(req.params, 'params');
 
       if (suspicious) {
         return res.status(400).json({ error: 'Invalid request data' });
@@ -214,7 +224,7 @@ export class SecurityMiddleware {
         /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
         /javascript:/gi,
         /on\w+\s*=/gi,
-        /<img[^>]*src[^>]*javascript:/gi
+        /<img[^>]*src[^>]*javascript:/gi,
       ];
 
       const sanitize = (value: any): any => {
@@ -222,11 +232,14 @@ export class SecurityMiddleware {
           let sanitized = value;
           for (const pattern of xssPatterns) {
             if (pattern.test(sanitized)) {
-              logger.warn({
-                value: sanitized.substring(0, 100),
-                ip: req.ip,
-                path: req.path
-              }, 'Potential XSS attempt detected');
+              logger.warn(
+                {
+                  value: sanitized.substring(0, 100),
+                  ip: req.ip,
+                  path: req.path,
+                },
+                'Potential XSS attempt detected'
+              );
               sanitized = sanitized.replace(pattern, '');
             }
           }
@@ -252,18 +265,32 @@ export class SecurityMiddleware {
   /**
    * File upload security
    */
-  secureFileUpload(options: {
-    maxFileSize?: number;
-    allowedMimeTypes?: string[];
-    allowedExtensions?: string[];
-  } = {}) {
+  secureFileUpload(
+    options: {
+      maxFileSize?: number;
+      allowedMimeTypes?: string[];
+      allowedExtensions?: string[];
+    } = {}
+  ) {
     const opts = {
       maxFileSize: options.maxFileSize || 5 * 1024 * 1024, // 5MB
       allowedMimeTypes: options.allowedMimeTypes || [
-        'image/jpeg', 'image/png', 'image/gif', 'text/plain',
-        'application/json', 'application/pdf'
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'text/plain',
+        'application/json',
+        'application/pdf',
       ],
-      allowedExtensions: options.allowedExtensions || ['.jpg', '.jpeg', '.png', '.gif', '.txt', '.json', '.pdf']
+      allowedExtensions: options.allowedExtensions || [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.txt',
+        '.json',
+        '.pdf',
+      ],
     };
 
     return (req: Request, res: Response, next: NextFunction) => {
@@ -287,11 +314,14 @@ export class SecurityMiddleware {
 
       // Validate API key format
       if (!apiKey.startsWith('ck_') || apiKey.length !== 32) {
-        logger.warn({
-          apiKeyPrefix: apiKey.substring(0, 10),
-          ip: req.ip,
-          path: req.path
-        }, 'Invalid API key format');
+        logger.warn(
+          {
+            apiKeyPrefix: apiKey.substring(0, 10),
+            ip: req.ip,
+            path: req.path,
+          },
+          'Invalid API key format'
+        );
         return res.status(401).json({ error: 'Invalid API key format' });
       }
 
@@ -327,8 +357,8 @@ export class SecurityMiddleware {
       config: {
         rateLimitMax: this.config.rateLimitMax,
         rateLimitWindowMs: this.config.rateLimitWindowMs,
-        maxRequestSize: this.config.maxRequestSize
-      }
+        maxRequestSize: this.config.maxRequestSize,
+      },
     };
   }
 
@@ -394,16 +424,19 @@ export class SecurityMiddleware {
       res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - requestData.count));
       res.setHeader('X-RateLimit-Reset', requestData.resetTime);
 
-      logger.warn({
-        ip: req.ip,
-        path: req.path,
-        count: requestData.count,
-        limit: maxRequests
-      }, 'Rate limit exceeded');
+      logger.warn(
+        {
+          ip: req.ip,
+          path: req.path,
+          count: requestData.count,
+          limit: maxRequests,
+        },
+        'Rate limit exceeded'
+      );
 
       res.status(429).json({
         error: 'Too many requests',
-        retryAfter: resetTimeSeconds
+        retryAfter: resetTimeSeconds,
       });
 
       return false;
@@ -424,26 +457,45 @@ export const securityMiddleware = new SecurityMiddleware();
 export const commonSchemas = {
   memoryStore: z.object({
     content: z.string().min(1).max(1000000),
-    kind: z.enum(['entity', 'relation', 'observation', 'section', 'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption']),
-    items: z.array(z.any()).optional()
+    kind: z.enum([
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
+    ]),
+    items: z.array(z.any()).optional(),
   }),
 
   memoryFind: z.object({
     query: z.string().min(1).max(1000),
     limit: z.number().min(1).max(1000).optional(),
-    scope: z.object({
-      project: z.string().optional(),
-      branch: z.string().optional(),
-      organization: z.string().optional()
-    }).optional(),
-    types: z.array(z.string()).optional()
+    scope: z
+      .object({
+        project: z.string().optional(),
+        branch: z.string().optional(),
+        organization: z.string().optional(),
+      })
+      .optional(),
+    types: z.array(z.string()).optional(),
   }),
 
   pagination: z.object({
     page: z.number().min(1).max(1000).optional(),
     limit: z.number().min(1).max(100).optional(),
-    offset: z.number().min(0).max(10000).optional()
-  })
+    offset: z.number().min(0).max(10000).optional(),
+  }),
 };
 
 // Export commonly used middleware
