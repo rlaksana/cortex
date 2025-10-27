@@ -1,31 +1,38 @@
+/**
+ * Cortex Memory MCP - Qdrant Migration System
+ *
+ * Pure Qdrant-based migration system with:
+ * - Collection configuration migrations
+ * - Payload schema updates
+ * - Index management
+ * - Version tracking
+ * - Rollback capabilities
+ * - Dry-run mode for testing
+ */
+
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
-import { dbPool } from './pool.js';
+import { qdrantConnectionManager } from './pool.js';
 import { logger } from '../utils/logger.js';
 
 /**
- * Database Migration System
- *
- * Features:
- * - Transactional migrations with rollback capability
- * - Migration file discovery and ordering
- * - Checksum-based change detection
- * - Migration versioning and dependency management
- * - Dry-run mode for testing
- * - Migration status tracking
- * - Automatic rollback on failure
+ * Migration interface
  */
-
 interface Migration {
   id: string;
   name: string;
+  version: string;
+  description: string;
   checksum: string;
   applied_at?: Date;
   status: 'pending' | 'applied' | 'failed' | 'rolled_back';
 }
 
+/**
+ * Migration result
+ */
 interface MigrationResult {
   migration_id: string;
   status: 'success' | 'failed' | 'skipped';
@@ -34,6 +41,9 @@ interface MigrationResult {
   error?: string;
 }
 
+/**
+ * Migration options
+ */
 interface MigrationOptions {
   dryRun?: boolean;
   force?: boolean;
@@ -41,14 +51,41 @@ interface MigrationOptions {
   step?: number;
 }
 
+/**
+ * Migration operation types
+ */
+type MigrationOperation =
+  | 'create_collection'
+  | 'delete_collection'
+  | 'update_collection_config'
+  | 'create_index'
+  | 'delete_index'
+  | 'update_payload_schema';
+
+/**
+ * Migration step definition
+ */
+interface MigrationStep {
+  operation: MigrationOperation;
+  collection: string;
+  parameters: Record<string, any>;
+  rollback?: Record<string, any>;
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-class DatabaseMigrator {
+/**
+ * Qdrant Migration Manager
+ *
+ * Manages Qdrant collection and schema migrations with version tracking
+ * and rollback capabilities.
+ */
+class QdrantMigrationManager {
   private migrationsDir: string;
-  private ddlHistoryTable = 'ddl_history';
+  private client = qdrantConnectionManager.getClient();
+  private migrationCollection = 'migrations';
 
   constructor() {
-    // Navigate to migrations directory from db/migrate.ts
     this.migrationsDir = join(__dirname, '..', '..', 'migrations');
   }
 
@@ -66,12 +103,12 @@ class DatabaseMigrator {
         targetVersion,
         step,
       },
-      'Starting database migration'
+      'Starting Qdrant migration'
     );
 
     try {
-      // Ensure DDL history table exists
-      await this.ensureDdlHistoryTable();
+      // Ensure migrations collection exists
+      await this.ensureMigrationsCollection();
 
       // Get all available migrations
       const availableMigrations = await this.getAvailableMigrations();
@@ -93,23 +130,13 @@ class DatabaseMigrator {
 
       logger.info(`Running ${migrationsToRun.length} migrations`);
 
-      // Run migrations in a transaction
-      if (!dryRun) {
-        await dbPool.transaction(async (client) => {
-          for (const migration of migrationsToRun) {
-            const result = await this.runMigration(client, migration, dryRun);
-            results.push(result);
+      // Run migrations
+      for (const migration of migrationsToRun) {
+        const result = await this.runMigration(migration, dryRun);
+        results.push(result);
 
-            if (result.status === 'failed' && !force) {
-              throw new Error(`Migration ${migration.id} failed: ${result.error}`);
-            }
-          }
-        });
-      } else {
-        // Dry run - just validate migrations
-        for (const migration of migrationsToRun) {
-          const result = await this.validateMigration(migration);
-          results.push(result);
+        if (result.status === 'failed' && !force) {
+          throw new Error(`Migration ${migration.id} failed: ${result.error}`);
         }
       }
 
@@ -129,8 +156,8 @@ class DatabaseMigrator {
       );
 
       return results;
-    } catch (error: unknown) {
-      logger.error({ error }, 'Migration failed:');
+    } catch (error) {
+      logger.error({ error }, 'Migration failed');
       throw error;
     }
   }
@@ -155,12 +182,10 @@ class DatabaseMigrator {
 
       logger.info(`Rolling back ${migrationsToRollback.length} migrations`);
 
-      await dbPool.transaction(async (client) => {
-        for (const migration of migrationsToRollback) {
-          const result = await this.rollbackMigration(client, migration);
-          results.push(result);
-        }
-      });
+      for (const migration of migrationsToRollback) {
+        const result = await this.rollbackMigration(migration);
+        results.push(result);
+      }
 
       const successCount = results.filter((r) => r.status === 'success').length;
       const failedCount = results.filter((r) => r.status === 'failed').length;
@@ -175,8 +200,8 @@ class DatabaseMigrator {
       );
 
       return results;
-    } catch (error: unknown) {
-      logger.error({ error }, 'Rollback failed:');
+    } catch (error) {
+      logger.error({ error }, 'Rollback failed');
       throw error;
     }
   }
@@ -204,29 +229,57 @@ class DatabaseMigrator {
   }
 
   /**
-   * Ensure DDL history table exists
+   * Ensure migrations collection exists
    */
-  private async ensureDdlHistoryTable(): Promise<void> {
-    const createTableQuery = `
-      CREATE TABLE IF NOT EXISTS ${this.ddlHistoryTable} (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        migration_id VARCHAR(200) NOT NULL,
-        ddl_text TEXT NOT NULL,
-        checksum VARCHAR(64) NOT NULL,
-        applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        description TEXT,
-        status VARCHAR(20) NOT NULL DEFAULT 'applied',
-        tags JSONB DEFAULT '{}',
-        metadata JSONB DEFAULT '{}',
-        CONSTRAINT ddl_history_migration_id_length CHECK (char_length(migration_id) >= 1 AND char_length(migration_id) <= 200),
-        CONSTRAINT ddl_history_ddl_length CHECK (char_length(ddl_text) >= 1),
-        CONSTRAINT ddl_history_checksum_length CHECK (char_length(checksum) = 64),
-        CONSTRAINT ddl_history_valid_status CHECK (status IN ('pending', 'applied', 'failed', 'rolled_back')),
-        CONSTRAINT ddl_history_unique_migration UNIQUE (migration_id)
-      );
-    `;
+  private async ensureMigrationsCollection(): Promise<void> {
+    try {
+      const collections = await this.client.getCollections();
+      const exists = collections.collections.some((c) => c.name === this.migrationCollection);
 
-    await dbPool.query(createTableQuery);
+      if (!exists) {
+        logger.info(`Creating migrations collection: ${this.migrationCollection}`);
+
+        await this.client.createCollection(this.migrationCollection, {
+          vectors: {
+            size: 1, // Minimal vector size, we don't actually use vectors for migrations
+            distance: 'Cosine',
+          },
+          payload_schema: {
+            type: 'object',
+            properties: {
+              migration_id: { type: 'keyword' },
+              name: { type: 'keyword' },
+              version: { type: 'keyword' },
+              description: { type: 'text' },
+              checksum: { type: 'keyword' },
+              applied_at: { type: 'datetime' },
+              status: { type: 'keyword' },
+            },
+          },
+        });
+
+        // Create indexes for performance
+        await this.client.createCollectionIndex(this.migrationCollection, {
+          field_name: 'migration_id',
+          field_schema: 'keyword',
+        });
+
+        await this.client.createCollectionIndex(this.migrationCollection, {
+          field_name: 'status',
+          field_schema: 'keyword',
+        });
+
+        await this.client.createCollectionIndex(this.migrationCollection, {
+          field_name: 'applied_at',
+          field_schema: 'datetime',
+        });
+
+        logger.info('Migrations collection created successfully');
+      }
+    } catch (error) {
+      logger.error({ error }, 'Failed to ensure migrations collection');
+      throw error;
+    }
   }
 
   /**
@@ -235,58 +288,66 @@ class DatabaseMigrator {
   private async getAvailableMigrations(): Promise<Migration[]> {
     try {
       const files = await fs.readdir(this.migrationsDir);
-      const migrationFiles = files.filter((file) => file.endsWith('.sql')).sort(); // Sort to ensure proper order
+      const migrationFiles = files.filter((file) => file.endsWith('.json')).sort();
 
       const migrations: Migration[] = [];
 
       for (const file of migrationFiles) {
         const filePath = join(this.migrationsDir, file);
         const content = await fs.readFile(filePath, 'utf-8');
+        const migrationData = JSON.parse(content);
         const checksum = this.calculateChecksum(content);
 
-        // Extract migration ID from filename (e.g., 001_create_tables.sql -> 001)
+        // Extract migration info from filename and content
         const id = file.split('_')[0];
-        const name = file.replace('.sql', '');
+        const name = file.replace('.json', '');
 
         migrations.push({
           id,
           name,
+          version: migrationData.version || '1.0.0',
+          description: migrationData.description || `Migration ${id}`,
           checksum,
           status: 'pending',
         });
       }
 
       return migrations;
-    } catch (error: unknown) {
-      logger.error({ error }, 'Failed to read migrations directory:');
+    } catch (error) {
+      logger.error({ error }, 'Failed to read migrations directory');
       throw error;
     }
   }
 
   /**
-   * Get applied migrations from database
+   * Get applied migrations from Qdrant
    */
   private async getAppliedMigrations(): Promise<Migration[]> {
-    const query = `
-      SELECT
-        migration_id as id,
-        migration_id as name,
-        checksum,
-        applied_at,
-        status
-      FROM ${this.ddlHistoryTable}
-      WHERE status = 'applied'
-      ORDER BY applied_at ASC
-    `;
+    try {
+      const searchResult = await this.client.search(this.migrationCollection, {
+        vector: [0], // Dummy vector, we filter by payload
+        filter: {
+          must: [{ key: 'status', match: { value: 'applied' } }],
+        },
+        limit: 1000,
+        with_payload: true,
+      });
 
-    const result = await dbPool.query(query);
-    return result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      checksum: row.checksum,
-      applied_at: row.applied_at,
-      status: row.status,
-    }));
+      return searchResult.map((point) => ({
+        id: point.payload?.migration_id as string,
+        name: point.payload?.name as string,
+        version: point.payload?.version as string,
+        description: point.payload?.description as string,
+        checksum: point.payload?.checksum as string,
+        applied_at: point.payload?.applied_at
+          ? new Date(point.payload.applied_at as string)
+          : undefined,
+        status: 'applied' as const,
+      }));
+    } catch (error) {
+      logger.error({ error }, 'Failed to get applied migrations');
+      return [];
+    }
   }
 
   /**
@@ -306,7 +367,7 @@ class DatabaseMigrator {
 
     // Apply target version filter
     if (targetVersion) {
-      const targetIndex = pending.findIndex((m) => m.id === targetVersion);
+      const targetIndex = pending.findIndex((m) => m.version === targetVersion);
       if (targetIndex !== -1) {
         pending = pending.slice(0, targetIndex + 1);
       }
@@ -323,20 +384,17 @@ class DatabaseMigrator {
   /**
    * Run a single migration
    */
-  private async runMigration(
-    client: import('pg').PoolClient,
-    migration: Migration,
-    dryRun: boolean
-  ): Promise<MigrationResult> {
+  private async runMigration(migration: Migration, dryRun: boolean): Promise<MigrationResult> {
     const startTime = Date.now();
-    const filePath = join(this.migrationsDir, `${migration.name}.sql`);
+    const filePath = join(this.migrationsDir, `${migration.name}.json`);
 
     try {
       // Read migration file
-      const ddlContent = await fs.readFile(filePath, 'utf-8');
+      const content = await fs.readFile(filePath, 'utf-8');
+      const migrationData = JSON.parse(content);
 
       // Verify checksum
-      if (migration.checksum !== this.calculateChecksum(ddlContent)) {
+      if (migration.checksum !== this.calculateChecksum(content)) {
         throw new Error(`Checksum mismatch for migration ${migration.id}`);
       }
 
@@ -349,26 +407,15 @@ class DatabaseMigrator {
         };
       }
 
-      // Record migration start
-      await client.query(
-        `INSERT INTO ${this.ddlHistoryTable}
-         (migration_id, ddl_text, checksum, status, description)
-         VALUES ($1, $2, $3, 'pending', $4)
-         ON CONFLICT (migration_id)
-         DO UPDATE SET status = 'pending', applied_at = NOW()`,
-        [migration.id, ddlContent, migration.checksum, `Applying ${migration.name}`]
-      );
-
-      // Execute migration
-      await client.query(ddlContent);
+      // Execute migration steps
+      if (migrationData.steps && Array.isArray(migrationData.steps)) {
+        for (const step of migrationData.steps) {
+          await this.executeMigrationStep(step);
+        }
+      }
 
       // Record migration success
-      await client.query(
-        `UPDATE ${this.ddlHistoryTable}
-         SET status = 'applied', applied_at = NOW()
-         WHERE migration_id = $1`,
-        [migration.id]
-      );
+      await this.recordMigration(migration, 'applied');
 
       logger.info(`Migration ${migration.id} applied successfully`);
 
@@ -378,20 +425,15 @@ class DatabaseMigrator {
         message: 'Migration applied successfully',
         duration: Date.now() - startTime,
       };
-    } catch (error: unknown) {
-      logger.error({ error }, 'Migration ${migration.id} failed:');
+    } catch (error) {
+      logger.error({ error }, `Migration ${migration.id} failed`);
 
       // Record migration failure
       if (!dryRun) {
         try {
-          await client.query(
-            `UPDATE ${this.ddlHistoryTable}
-             SET status = 'failed'
-             WHERE migration_id = $1`,
-            [migration.id]
-          );
-        } catch (updateError: unknown) {
-          logger.error({ error: updateError }, 'Failed to update migration status:');
+          await this.recordMigration(migration, 'failed');
+        } catch (recordError) {
+          logger.error({ error: recordError }, 'Failed to record migration failure');
         }
       }
 
@@ -406,61 +448,97 @@ class DatabaseMigrator {
   }
 
   /**
-   * Validate a migration (dry run)
+   * Execute a migration step
    */
-  private async validateMigration(migration: Migration): Promise<MigrationResult> {
-    const startTime = Date.now();
-    const filePath = join(this.migrationsDir, `${migration.name}.sql`);
+  private async executeMigrationStep(step: MigrationStep): Promise<void> {
+    switch (step.operation) {
+      case 'create_collection':
+        await this.client.createCollection(step.collection, step.parameters);
+        break;
 
-    try {
-      // Read migration file
-      const ddlContent = await fs.readFile(filePath, 'utf-8');
+      case 'delete_collection':
+        await this.client.deleteCollection(step.collection);
+        break;
 
-      // Verify checksum
-      if (migration.checksum !== this.calculateChecksum(ddlContent)) {
-        throw new Error(`Checksum mismatch for migration ${migration.id}`);
-      }
+      case 'update_collection_config':
+        // Note: Qdrant doesn't support updating collection config directly
+        // This would typically require collection recreation
+        logger.warn(`Collection config update not supported: ${step.collection}`);
+        break;
 
-      // Basic SQL validation (could be enhanced with actual SQL parsing)
-      if (ddlContent.trim() === '') {
-        throw new Error(`Migration ${migration.id} is empty`);
-      }
+      case 'create_index':
+        await this.client.createCollectionIndex(step.collection, {
+          field_name: step.parameters.field_name,
+          field_schema: step.parameters.field_schema,
+        });
+        break;
 
-      return {
-        migration_id: migration.id,
-        status: 'skipped',
-        message: 'Migration validated successfully',
-        duration: Date.now() - startTime,
-      };
-    } catch (error: unknown) {
-      return {
-        migration_id: migration.id,
-        status: 'failed',
-        message: 'Migration validation failed',
-        duration: Date.now() - startTime,
-        error: error instanceof Error ? error.message : String(error),
-      };
+      case 'delete_index':
+        // Note: Qdrant doesn't support index deletion directly
+        logger.warn(
+          `Index deletion not supported: ${step.collection}.${step.parameters.field_name}`
+        );
+        break;
+
+      case 'update_payload_schema':
+        // Note: Qdrant payload schema is flexible, no explicit updates needed
+        logger.debug(`Payload schema update not needed: ${step.collection}`);
+        break;
+
+      default:
+        throw new Error(`Unknown migration operation: ${step.operation}`);
     }
+  }
+
+  /**
+   * Record a migration in the migrations collection
+   */
+  private async recordMigration(migration: Migration, status: string): Promise<void> {
+    const point = {
+      id: migration.id,
+      vector: [0], // Dummy vector
+      payload: {
+        migration_id: migration.id,
+        name: migration.name,
+        version: migration.version,
+        description: migration.description,
+        checksum: migration.checksum,
+        applied_at: new Date().toISOString(),
+        status,
+      },
+    };
+
+    await this.client.upsert(this.migrationCollection, {
+      points: [point],
+    });
   }
 
   /**
    * Rollback a migration
    */
-  private async rollbackMigration(
-    client: import('pg').PoolClient,
-    migration: Migration
-  ): Promise<MigrationResult> {
+  private async rollbackMigration(migration: Migration): Promise<MigrationResult> {
     const startTime = Date.now();
 
     try {
-      // For now, we'll just mark the migration as rolled back
-      // In a more sophisticated system, we would have rollback scripts
-      await client.query(
-        `UPDATE ${this.ddlHistoryTable}
-         SET status = 'rolled_back', applied_at = NOW()
-         WHERE migration_id = $1`,
-        [migration.id]
-      );
+      const filePath = join(this.migrationsDir, `${migration.name}.json`);
+      const content = await fs.readFile(filePath, 'utf-8');
+      const migrationData = JSON.parse(content);
+
+      // Execute rollback steps if available
+      if (migrationData.steps && Array.isArray(migrationData.steps)) {
+        for (const step of migrationData.steps.reverse()) {
+          if (step.rollback) {
+            await this.executeMigrationStep({
+              operation: step.operation,
+              collection: step.collection,
+              parameters: step.rollback,
+            });
+          }
+        }
+      }
+
+      // Record rollback
+      await this.recordMigration(migration, 'rolled_back');
 
       logger.info(`Migration ${migration.id} rolled back successfully`);
 
@@ -470,8 +548,8 @@ class DatabaseMigrator {
         message: 'Migration rolled back successfully',
         duration: Date.now() - startTime,
       };
-    } catch (error: unknown) {
-      logger.error({ error }, 'Rollback for migration ${migration.id} failed:');
+    } catch (error) {
+      logger.error({ error }, `Rollback for migration ${migration.id} failed`);
 
       return {
         migration_id: migration.id,
@@ -492,10 +570,13 @@ class DatabaseMigrator {
 }
 
 // Export singleton instance
-export const dbMigrator = new DatabaseMigrator();
+export const qdrantMigrationManager = new QdrantMigrationManager();
 
 // Export for testing and CLI usage
-export { DatabaseMigrator };
+export { QdrantMigrationManager };
+
+// Export types
+export type { Migration, MigrationResult, MigrationOptions, MigrationStep, MigrationOperation };
 
 // CLI support
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -504,19 +585,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   async function runCLI() {
     try {
-      await dbPool.initialize();
+      await qdrantConnectionManager.initialize();
 
       switch (command) {
         case 'up':
-          await dbMigrator.migrate();
+          await qdrantMigrationManager.migrate();
           break;
         case 'down': {
           const step = parseInt(args[1]) ?? 1;
-          await dbMigrator.rollback(step);
+          await qdrantMigrationManager.rollback(step);
           break;
         }
         case 'status': {
-          const status = await dbMigrator.status();
+          const status = await qdrantMigrationManager.status();
           console.log('Migration Status:');
           console.log(`Available: ${status.available.length}`);
           console.log(`Applied: ${status.applied.length}`);
@@ -524,18 +605,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           break;
         }
         case 'dry-run':
-          await dbMigrator.migrate({ dryRun: true });
+          await qdrantMigrationManager.migrate({ dryRun: true });
           break;
         default:
           console.error('Unknown command:', command);
           console.log('Available commands: up, down, status, dry-run');
           process.exit(1);
       }
-    } catch (error: unknown) {
-      logger.error({ error }, 'CLI failed:');
+    } catch (error) {
+      logger.error({ error }, 'CLI failed');
       process.exit(1);
     } finally {
-      await dbPool.shutdown();
+      await qdrantConnectionManager.shutdown();
     }
   }
 

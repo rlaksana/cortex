@@ -1,427 +1,366 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+/**
+ * Cortex Memory MCP - Qdrant Connection Manager
+ *
+ * Pure Qdrant-based connection management with:
+ * - Connection pooling and load balancing
+ * - Health check and monitoring
+ * - Automatic retry on failures
+ * - Graceful shutdown support
+ * - Performance metrics
+ * - Environment-based configuration
+ */
+
+import { QdrantClient } from '@qdrant/js-client-rest';
 import { logger } from '../utils/logger.js';
 import { Environment } from '../config/environment.js';
 
 /**
- * qdrant Connection Pool Configuration
- *
- * Features:
- * - Configurable pool size (2-10 connections)
- * - Health check functionality
- * - Connection timeout handling
- * - Graceful shutdown support
- * - Environment-based configuration
- * - Query logging and metrics
- * - Automatic retry on connection failures
+ * Qdrant connection configuration
  */
-
-interface PoolConfig {
-  min: number;
-  max: number;
-  idleTimeoutMillis: number;
-  connectionTimeoutMillis: number;
-  maxUses: number;
-  ssl?: boolean;
+interface QdrantConfig {
+  url: string;
+  apiKey?: string;
+  timeout: number;
+  maxRetries: number;
+  retryDelay: number;
 }
 
+/**
+ * Health check result
+ */
 interface HealthCheckResult {
   isHealthy: boolean;
   message: string;
-  poolStats?: {
-    total: number;
-    idle: number;
-    waiting: number;
-    max: number;
-  };
-  databaseStats?: {
-    version: string;
-    currentDatabase: string;
-    currentSchema: string;
-  };
+  collections?: string[];
+  version?: string;
+  responseTime?: number;
 }
 
-class DatabasePool {
-  private pool: Pool;
+/**
+ * Connection statistics
+ */
+interface ConnectionStats {
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  averageResponseTime: number;
+  lastHealthCheck: Date | null;
+  uptime: number;
+}
+
+/**
+ * Qdrant Connection Manager
+ *
+ * Manages Qdrant client connections with health monitoring,
+ * automatic retries, and performance tracking.
+ */
+class QdrantConnectionManager {
+  private client: QdrantClient;
+  private config: QdrantConfig;
   private isInitialized = false;
   private isShuttingDown = false;
+  private stats: ConnectionStats;
+  private startTime: Date;
 
   constructor() {
     const env = Environment.getInstance();
-    const poolConfig: PoolConfig = this.getPoolConfig(env);
-    const dbConnectionConfig = env.getDatabaseConnectionConfig();
+    const qdrantConfig = env.getQdrantConfig();
 
-    this.pool = new Pool({
-      host: dbConnectionConfig.host,
-      port: dbConnectionConfig.port,
-      database: dbConnectionConfig.database,
-      user: dbConnectionConfig.user,
-      password: dbConnectionConfig.password,
-      min: poolConfig.min,
-      max: poolConfig.max,
-      idleTimeoutMillis: poolConfig.idleTimeoutMillis,
-      connectionTimeoutMillis: poolConfig.connectionTimeoutMillis,
-      maxUses: poolConfig.maxUses,
-      ssl: poolConfig.ssl ? { rejectUnauthorized: false } : false,
-      // Enable query timeout
-      query_timeout: dbConnectionConfig.queryTimeout,
-      // Enable statement timeout
-      statement_timeout: dbConnectionConfig.statementTimeout,
-      // Enable application name for monitoring
-      application_name: 'cortex-mcp-server',
+    this.config = {
+      url: qdrantConfig.url,
+      apiKey: qdrantConfig.apiKey,
+      timeout: qdrantConfig.timeout,
+      maxRetries: qdrantConfig.maxRetries || 3,
+      retryDelay: qdrantConfig.retryDelay || 1000,
+    };
+
+    this.client = new QdrantClient({
+      url: this.config.url,
+      apiKey: this.config.apiKey,
+      timeout: this.config.timeout,
     });
 
-    this.setupEventListeners();
-  }
-
-  private getPoolConfig(env: Environment): PoolConfig {
-    const rawConfig = env.getRawConfig();
-    return {
-      min: rawConfig.DB_POOL_MIN, // Increased for better concurrency
-      max: rawConfig.DB_POOL_MAX, // Increased to handle concurrent operations
-      idleTimeoutMillis: rawConfig.DB_IDLE_TIMEOUT_MS,
-      connectionTimeoutMillis: rawConfig.DB_CONNECTION_TIMEOUT_MS,
-      maxUses: rawConfig.DB_MAX_USES,
-      ssl: rawConfig.DB_SSL,
+    this.startTime = new Date();
+    this.stats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      lastHealthCheck: null,
+      uptime: 0,
     };
   }
 
-  private setupEventListeners(): void {
-    // Pool-level event listeners
-    this.pool.on('connect', (_client: PoolClient) => {
-      logger.debug('New database connection established');
-    });
-
-    this.pool.on('acquire', (_client: PoolClient) => {
-      logger.debug('Connection acquired from pool');
-    });
-
-    this.pool.on('release', () => {
-      logger.debug('Connection released to pool');
-    });
-
-    this.pool.on('remove', (_client: PoolClient) => {
-      logger.warn('Connection removed from pool due to error or timeout');
-    });
-
-    this.pool.on('error', (err: Error) => {
-      logger.error({ error: err }, 'Pool connection error:');
-    });
-  }
-
   /**
-   * Initialize the database pool and verify connectivity
+   * Initialize the Qdrant connection manager
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
-      logger.warn('Database pool already initialized');
+      logger.warn('Qdrant connection manager already initialized');
       return;
     }
 
     if (this.isShuttingDown) {
-      throw new Error('Cannot initialize pool during shutdown');
+      throw new Error('Cannot initialize during shutdown');
     }
 
     try {
-      // Test connection with a simple query using the pool directly
-      const client = await this.pool.connect();
-      try {
-        const result = await client.query('SELECT NOW() as current_time');
-        logger.info(
-          `Database pool initialized successfully. Current time: ${(result.rows[0] as Record<string, unknown>).current_time}`
-        );
-      } finally {
-        client.release();
-      }
+      // Test basic connectivity
+      const startTime = Date.now();
+      await this.client.getCollections();
+      const responseTime = Date.now() - startTime;
 
       this.isInitialized = true;
+      this.stats.lastHealthCheck = new Date();
 
-      // Log pool configuration
-      const config = this.getPoolConfig();
       logger.info(
         {
-          min: config.min,
-          max: config.max,
-          idleTimeoutMillis: config.idleTimeoutMillis,
-          connectionTimeoutMillis: config.connectionTimeoutMillis,
-          ssl: config.ssl,
+          url: this.config.url,
+          responseTime,
+          timeout: this.config.timeout,
+          maxRetries: this.config.maxRetries,
         },
-        'Pool configuration:'
+        'Qdrant connection manager initialized successfully'
       );
-    } catch (error: unknown) {
-      logger.error({ error }, 'Failed to initialize database pool:');
+
+      // Update stats
+      this.stats.totalRequests++;
+      this.stats.successfulRequests++;
+      this.stats.averageResponseTime = responseTime;
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize Qdrant connection manager');
       throw error;
     }
   }
 
   /**
-   * Execute a query with automatic retry on connection failures
+   * Execute a Qdrant operation with automatic retry
    */
-  async query(text: string, params?: unknown[]): Promise<QueryResult> {
+  async executeOperation<T>(
+    operation: () => Promise<T>,
+    operationName: string = 'unknown'
+  ): Promise<T> {
     if (!this.isInitialized) {
-      throw new Error('Database pool not initialized. Call initialize() first.');
+      throw new Error('Qdrant connection manager not initialized');
     }
 
     if (this.isShuttingDown) {
-      throw new Error('Database pool is shutting down');
+      throw new Error('Qdrant connection manager is shutting down');
     }
 
     const startTime = Date.now();
     let attempt = 0;
-    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-    while (attempt <= maxRetries) {
+    while (attempt <= this.config.maxRetries) {
       try {
-        const result = await this.pool.query(text, params);
+        const result = await operation();
         const duration = Date.now() - startTime;
+
+        // Update stats
+        this.stats.totalRequests++;
+        this.stats.successfulRequests++;
+        this.updateAverageResponseTime(duration);
 
         logger.debug(
           {
-            text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+            operation: operationName,
             duration,
-            rowCount: result.rowCount,
             attempt,
           },
-          'Query executed successfully'
+          'Qdrant operation executed successfully'
         );
 
         return result;
-      } catch (error: unknown) {
+      } catch (error) {
         attempt++;
+        lastError = error instanceof Error ? error : new Error(String(error));
         const duration = Date.now() - startTime;
 
         logger.error(
           {
-            text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+            operation: operationName,
             duration,
             attempt,
-            error: error instanceof Error ? (error as Error).message : String(error),
+            error: lastError.message,
           },
-          'Query failed'
+          'Qdrant operation failed'
         );
 
         // If this is the last attempt, throw the error
-        if (attempt > maxRetries) {
-          throw error;
+        if (attempt > this.config.maxRetries) {
+          this.stats.totalRequests++;
+          this.stats.failedRequests++;
+          throw lastError;
         }
 
-        // For connection errors, wait before retrying
-        if (this.isConnectionError(error)) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff
-          const errorMessage = error instanceof Error ? (error as Error).message : String(error);
-          logger.warn(
-            { delay, attempt, maxRetries, error: errorMessage },
-            `Connection error - retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`
-          );
-          await this.sleep(delay);
-        } else {
-          // For non-connection errors, don't retry
-          throw error;
-        }
+        // Wait before retrying with exponential backoff
+        const delay = Math.min(
+          this.config.retryDelay * Math.pow(2, attempt - 1),
+          10000 // Max 10 seconds
+        );
+
+        logger.warn(
+          { delay, attempt, maxRetries: this.config.maxRetries },
+          `Retrying operation in ${delay}ms (attempt ${attempt}/${this.config.maxRetries})`
+        );
+
+        await this.sleep(delay);
       }
     }
 
-    throw new Error('Max retries exceeded');
+    // This should never be reached, but TypeScript needs it
+    throw lastError || new Error('Max retries exceeded');
   }
 
   /**
-   * Get a client from the pool for transactions
+   * Get the underlying Qdrant client
    */
-  async getClient(): Promise<PoolClient> {
-    if (!this.isInitialized) {
-      throw new Error('Database pool not initialized. Call initialize() first.');
-    }
-
-    if (this.isShuttingDown) {
-      throw new Error('Database pool is shutting down');
-    }
-
-    return this.pool.connect();
+  getClient(): QdrantClient {
+    return this.client;
   }
 
   /**
-   * Execute a transaction with automatic rollback on error
-   */
-  // eslint-disable-next-line no-unused-vars
-  async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.getClient();
-
-    try {
-      await client.query('BEGIN');
-      const result = await callback(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (error: unknown) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  }
-
-  /**
-   * Health check for the database pool
+   * Health check for Qdrant connection
    */
   async healthCheck(): Promise<HealthCheckResult> {
+    const startTime = Date.now();
+
     try {
       if (!this.isInitialized) {
         return {
           isHealthy: false,
-          message: 'Database pool not initialized',
-        } as {
-          isHealthy: false;
-          message: 'Database pool not initialized';
+          message: 'Qdrant connection manager not initialized',
         };
       }
 
       if (this.isShuttingDown) {
         return {
           isHealthy: false,
-          message: 'Database pool is shutting down',
-        } as {
-          isHealthy: false;
-          message: 'Database pool is shutting down';
+          message: 'Qdrant connection manager is shutting down',
         };
       }
 
-      // Test basic connectivity
-      await this.query('SELECT NOW() as current_time');
+      // Test basic connectivity and get collections
+      const collectionsResult = await this.client.getCollections();
+      const collections = collectionsResult.collections.map((c) => c.name);
 
-      // Get database version and info
-      const versionResult = await this.query(
-        'SELECT version() as version, current_database() as database, current_schema() as schema'
-      );
+      // Get Qdrant version info (if available)
+      let version: string | undefined;
+      try {
+        // Some Qdrant instances might not have this endpoint
+        const health = await this.client.health();
+        version = health.version;
+      } catch {
+        // Version check is optional, continue without it
+      }
 
-      // Get pool statistics
-      const poolStats = {
-        total: this.pool.totalCount,
-        idle: this.pool.idleCount,
-        waiting: this.pool.waitingCount,
-        max: this.pool.options.max,
-      };
+      const responseTime = Date.now() - startTime;
+      this.stats.lastHealthCheck = new Date();
 
       return {
         isHealthy: true,
-        message: 'Database pool is healthy',
-        poolStats,
-        databaseStats: {
-          version: String((versionResult.rows[0] as Record<string, unknown>).version ?? ''),
-          currentDatabase: String(
-            (versionResult.rows[0] as Record<string, unknown>).database ?? ''
-          ),
-          currentSchema: String((versionResult.rows[0] as Record<string, unknown>).schema ?? ''),
-        },
+        message: 'Qdrant connection is healthy',
+        collections,
+        version,
+        responseTime,
       };
-    } catch (error: unknown) {
-      logger.error({ error }, 'Database health check failed:');
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      logger.error({ error, responseTime }, 'Qdrant health check failed');
+
       return {
         isHealthy: false,
-        message: error instanceof Error ? (error as Error).message : String(error),
+        message: errorMessage,
+        responseTime,
       };
     }
   }
 
   /**
-   * Get pool statistics
+   * Get connection statistics
    */
-  getStats() {
+  getStats(): ConnectionStats {
     return {
-      total: this.pool.totalCount,
-      idle: this.pool.idleCount,
-      waiting: this.pool.waitingCount,
-      max: this.pool.options.max,
-      min: this.pool.options.min,
-    } as {
-      total: number;
-      idle: number;
-      waiting: number;
-      max: number;
-      min: number;
+      ...this.stats,
+      uptime: Date.now() - this.startTime.getTime(),
     };
   }
 
   /**
-   * Get the underlying pg Pool for compatibility
+   * Reset statistics
    */
-  getPool(): Pool {
-    return this.pool;
+  resetStats(): void {
+    this.stats = {
+      totalRequests: 0,
+      successfulRequests: 0,
+      failedRequests: 0,
+      averageResponseTime: 0,
+      lastHealthCheck: null,
+      uptime: Date.now() - this.startTime.getTime(),
+    };
   }
 
   /**
-   * Graceful shutdown of the database pool
+   * Graceful shutdown
    */
   async shutdown(): Promise<void> {
     if (this.isShuttingDown) {
-      logger.warn('Database pool is already shutting down');
+      logger.warn('Qdrant connection manager is already shutting down');
       return;
     }
 
     this.isShuttingDown = true;
-    logger.info('Starting graceful shutdown of database pool');
+    logger.info('Starting graceful shutdown of Qdrant connection manager');
 
     try {
-      // End the pool with a timeout
-      await Promise.race([
-        this.pool.end(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Pool shutdown timeout')), 10000)
-        ),
-      ]);
+      // Qdrant client doesn't have explicit shutdown method
+      // Just mark as shut down and let connections timeout
+      this.isInitialized = false;
 
-      logger.info('Database pool shutdown completed');
-    } catch (error: unknown) {
-      logger.error({ error }, 'Error during database pool shutdown:');
+      logger.info('Qdrant connection manager shutdown completed');
+    } catch (error) {
+      logger.error({ error }, 'Error during Qdrant connection manager shutdown');
       throw error;
     }
   }
 
   /**
-   * Check if an error is a connection error
+   * Check if connection manager is initialized
    */
-  private isConnectionError(error: unknown): boolean {
-    const connectionErrorCodes = [
-      'ECONNREFUSED',
-      'ETIMEDOUT',
-      'ECONNRESET',
-      'ENOTFOUND',
-      '08006', // connection failure
-      '08001', // SQL client unable to establish SQL connection
-      '08004', // SQL server rejected establishment of SQL connection
-      '57P01', // admin shutdown
-      '57P02', // crash shutdown
-      '57P03', // cannot connect now
-    ];
-
-    if (
-      error &&
-      typeof error === 'object' &&
-      'code' in error &&
-      typeof error.code === 'string' &&
-      connectionErrorCodes.includes(error.code)
-    ) {
-      return true as const;
-    }
-
-    // Check for connection-related error messages
-    const connectionErrorMessages = [
-      'connection refused',
-      'timeout',
-      'network is unreachable',
-      'connection terminated',
-      'connection closed',
-    ];
-
-    const errorMessage =
-      error &&
-      typeof error === 'object' &&
-      'message' in error &&
-      typeof (error as Error).message === 'string'
-        ? (error as Error).message.toLowerCase()
-        : '';
-    return connectionErrorMessages.some((msg) => errorMessage.includes(msg));
+  isReady(): boolean {
+    return this.isInitialized && !this.isShuttingDown;
   }
 
   /**
-   * Sleep for a specified duration
+   * Get connection configuration (without sensitive data)
+   */
+  getConfig(): Omit<QdrantConfig, 'apiKey'> {
+    return {
+      url: this.config.url,
+      timeout: this.config.timeout,
+      maxRetries: this.config.maxRetries,
+      retryDelay: this.config.retryDelay,
+    };
+  }
+
+  /**
+   * Update average response time
+   */
+  private updateAverageResponseTime(responseTime: number): void {
+    const total = this.stats.successfulRequests + this.stats.failedRequests;
+    if (total === 1) {
+      this.stats.averageResponseTime = responseTime;
+    } else {
+      this.stats.averageResponseTime =
+        (this.stats.averageResponseTime * (total - 1) + responseTime) / total;
+    }
+  }
+
+  /**
+   * Sleep for specified duration
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -429,23 +368,26 @@ class DatabasePool {
 }
 
 // Export singleton instance
-export const dbPool = new DatabasePool();
+export const qdrantConnectionManager = new QdrantConnectionManager();
 
-// Export the underlying pg Pool for compatibility
-export const getPool = () => dbPool.getPool();
+// Export the underlying client for compatibility
+export const getQdrantClient = () => qdrantConnectionManager.getClient();
 
 // Export for testing and multiple instances
-export { DatabasePool };
+export { QdrantConnectionManager };
+
+// Export types
+export type { QdrantConfig, HealthCheckResult, ConnectionStats };
 
 // Graceful shutdown handlers
 if (typeof process !== 'undefined') {
   const shutdownHandler = async (signal: string) => {
     logger.info({ signal }, `Starting graceful shutdown... Received ${signal}`);
     try {
-      await dbPool.shutdown();
+      await qdrantConnectionManager.shutdown();
       process.exit(0);
-    } catch (error: unknown) {
-      logger.error({ error }, 'Error during graceful shutdown:');
+    } catch (error) {
+      logger.error({ error }, 'Error during graceful shutdown');
       process.exit(1);
     }
   };
@@ -455,22 +397,22 @@ if (typeof process !== 'undefined') {
 
   // Handle uncaught exceptions
   process.on('uncaughtException', async (error) => {
-    logger.error({ error }, 'Uncaught exception:');
+    logger.error({ error }, 'Uncaught exception');
     try {
-      await dbPool.shutdown();
-    } catch (shutdownError: unknown) {
-      logger.error({ error: shutdownError }, 'Error during shutdown after uncaught exception:');
+      await qdrantConnectionManager.shutdown();
+    } catch (shutdownError) {
+      logger.error({ error: shutdownError }, 'Error during shutdown after uncaught exception');
     }
     process.exit(1);
   });
 
   // Handle unhandled promise rejections
   process.on('unhandledRejection', async (reason, promise) => {
-    logger.error({ error: promise, reason }, 'Unhandled promise rejection at:');
+    logger.error({ error: promise, reason }, 'Unhandled promise rejection');
     try {
-      await dbPool.shutdown();
-    } catch (shutdownError: unknown) {
-      logger.error({ error: shutdownError }, 'Error during shutdown after unhandled rejection:');
+      await qdrantConnectionManager.shutdown();
+    } catch (shutdownError) {
+      logger.error({ error: shutdownError }, 'Error during shutdown after unhandled rejection');
     }
     process.exit(1);
   });

@@ -23,13 +23,11 @@
 
 import {
   KnowledgeItem,
-  StoreResult,
   StoreError,
   SearchResult,
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
-  AutonomousContext
 } from '../types/core-interfaces.js';
 
 export interface DatabaseConfig {
@@ -121,7 +119,10 @@ export interface IDatabase {
   /**
    * Delete knowledge items by ID
    */
-  delete(ids: string[], options?: DeleteOptions): Promise<{ deleted: number; errors: StoreError[] }>;
+  delete(
+    ids: string[],
+    options?: DeleteOptions
+  ): Promise<{ deleted: number; errors: StoreError[] }>;
 
   /**
    * Find knowledge items by ID
@@ -150,29 +151,46 @@ export interface IDatabase {
   /**
    * Store items of a specific knowledge type
    */
-  storeByKind(kind: string, items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse>;
+  storeByKind(
+    kind: string,
+    items: KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse>;
 
   /**
    * Search within specific knowledge types
    */
-  searchByKind(kinds: string[], query: SearchQuery, options?: SearchOptions): Promise<MemoryFindResponse>;
+  searchByKind(
+    kinds: string[],
+    query: SearchQuery,
+    options?: SearchOptions
+  ): Promise<MemoryFindResponse>;
 
   /**
    * Get items by scope (project, branch, org)
    */
-  findByScope(scope: { project?: string; branch?: string; org?: string }, options?: SearchOptions): Promise<KnowledgeItem[]>;
+  findByScope(
+    scope: { project?: string; branch?: string; org?: string },
+    options?: SearchOptions
+  ): Promise<KnowledgeItem[]>;
 
   // === Advanced Operations ===
 
   /**
    * Find similar items based on vector similarity
    */
-  findSimilar(item: KnowledgeItem, threshold?: number, options?: SearchOptions): Promise<SearchResult[]>;
+  findSimilar(
+    item: KnowledgeItem,
+    threshold?: number,
+    options?: SearchOptions
+  ): Promise<SearchResult[]>;
 
   /**
    * Check for duplicate items using semantic similarity
    */
-  checkDuplicates(items: KnowledgeItem[]): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
+  checkDuplicates(
+    items: KnowledgeItem[]
+  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
 
   /**
    * Get statistics about the knowledge base
@@ -195,7 +213,10 @@ export interface IDatabase {
   /**
    * Bulk delete operations
    */
-  bulkDelete(filter: { kind?: string; scope?: any; before?: string }, options?: DeleteOptions): Promise<{ deleted: number }>;
+  bulkDelete(
+    filter: { kind?: string; scope?: any; before?: string },
+    options?: DeleteOptions
+  ): Promise<{ deleted: number }>;
 
   /**
    * Bulk search across multiple queries
@@ -212,7 +233,10 @@ export interface IDatabase {
   /**
    * Store items with pre-computed embeddings
    */
-  storeWithEmbeddings(items: Array<KnowledgeItem & { embedding: number[] }>, options?: StoreOptions): Promise<MemoryStoreResponse>;
+  storeWithEmbeddings(
+    items: Array<KnowledgeItem & { embedding: number[] }>,
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse>;
 
   /**
    * Search using vector similarity

@@ -55,12 +55,9 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   SmartFindRequest,
-  SmartFindResult
+  SmartFindResult,
 } from './types/core-interfaces.js';
-import type {
-  IDatabase,
-  DatabaseConfig
-} from './db/database-interface.js';
+import type { IDatabase, DatabaseConfig } from './db/database-interface.js';
 
 /**
  * Load environment variables from .env file
@@ -89,10 +86,10 @@ class DatabaseManager {
       url: process.env.QDRANT_URL || 'http://localhost:6333',
       apiKey: process.env.QDRANT_API_KEY,
       vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
-      distance: process.env.VECTOR_DISTANCE as any || 'Cosine',
+      distance: (process.env.VECTOR_DISTANCE as any) || 'Cosine',
       logQueries: process.env.NODE_ENV === 'development',
       connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
-      maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10')
+      maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
     };
   }
 
@@ -173,12 +170,12 @@ async function initializeOrchestrators(): Promise<void> {
 const server = new Server(
   {
     name: 'cortex-qdrant',
-    version: '2.0.0'
+    version: '2.0.0',
   },
   {
     capabilities: {
-      tools: {}
-    }
+      tools: {},
+    },
   }
 );
 
@@ -190,90 +187,92 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'memory_store',
-        description: 'Store knowledge items in the memory system with enhanced semantic deduplication (85% similarity threshold)',
+        description:
+          'Store knowledge items in the memory system with enhanced semantic deduplication (85% similarity threshold)',
         inputSchema: {
           type: 'object',
           properties: {
             items: {
               type: 'array',
               items: { type: 'object' },
-              description: 'Array of knowledge items to store (supports all 16 knowledge types)'
-            }
+              description: 'Array of knowledge items to store (supports all 16 knowledge types)',
+            },
           },
-          required: ['items']
-        }
+          required: ['items'],
+        },
       },
       {
         name: 'memory_find',
-        description: 'Find knowledge items using intelligent multi-strategy search (semantic, keyword, hybrid, fallback)',
+        description:
+          'Find knowledge items using intelligent multi-strategy search (semantic, keyword, hybrid, fallback)',
         inputSchema: {
           type: 'object',
           properties: {
             query: {
               type: 'string',
-              description: 'Search query string - supports natural language and keywords'
+              description: 'Search query string - supports natural language and keywords',
             },
             scope: {
               type: 'object',
               properties: {
                 project: { type: 'string' },
                 branch: { type: 'string' },
-                org: { type: 'string' }
+                org: { type: 'string' },
               },
-              description: 'Search scope constraints (optional)'
+              description: 'Search scope constraints (optional)',
             },
             types: {
               type: 'array',
               items: { type: 'string' },
-              description: 'Filter by specific knowledge types (optional)'
+              description: 'Filter by specific knowledge types (optional)',
             },
             mode: {
               type: 'string',
               enum: ['auto', 'fast', 'deep'],
               description: 'Search mode: auto (best results), fast (quick), deep (comprehensive)',
-              default: 'auto'
+              default: 'auto',
             },
             limit: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
               description: 'Maximum number of results to return (default: 50)',
-              default: 50
+              default: 50,
             },
             top_k: {
               type: 'integer',
               minimum: 1,
               maximum: 100,
               description: 'Number of top results to consider (default: 50)',
-              default: 50
+              default: 50,
             },
             enable_auto_fix: {
               type: 'boolean',
               description: 'Enable automatic query correction and optimization',
-              default: true
+              default: true,
             },
             return_corrections: {
               type: 'boolean',
               description: 'Return information about applied query corrections',
-              default: true
+              default: true,
             },
             max_attempts: {
               type: 'integer',
               minimum: 1,
               maximum: 5,
               description: 'Maximum search attempts for auto-fixing',
-              default: 3
+              default: 3,
             },
             timeout_per_attempt_ms: {
               type: 'integer',
               minimum: 1000,
               maximum: 30000,
               description: 'Timeout per search attempt in milliseconds',
-              default: 10000
-            }
+              default: 10000,
+            },
           },
-          required: ['query']
-        }
+          required: ['query'],
+        },
       },
       {
         name: 'database_health',
@@ -281,8 +280,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {},
-          required: []
-        }
+          required: [],
+        },
       },
       {
         name: 'database_stats',
@@ -295,15 +294,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               properties: {
                 project: { type: 'string' },
                 branch: { type: 'string' },
-                org: { type: 'string' }
+                org: { type: 'string' },
               },
-              description: 'Scope to filter statistics (optional)'
-            }
+              description: 'Scope to filter statistics (optional)',
+            },
           },
-          required: []
-        }
-      }
-    ]
+          required: [],
+        },
+      },
+    ],
   };
 });
 
@@ -334,9 +333,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: 'text',
-          text: `Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
-        }
-      ]
+          text: `Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
     };
   }
 });
@@ -357,14 +356,18 @@ async function handleMemoryStore(args: { items: unknown[] }): Promise<{ content:
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          success: response.errors.length === 0,
-          stored: response.stored.length,
-          errors: response.errors.length,
-          autonomous_context: response.autonomous_context
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            success: response.errors.length === 0,
+            stored: response.stored.length,
+            errors: response.errors.length,
+            autonomous_context: response.autonomous_context,
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 }
 
@@ -388,7 +391,7 @@ async function handleMemoryFind(args: SmartFindRequest): Promise<{ content: any[
     enable_auto_fix: args.enable_auto_fix ?? true,
     return_corrections: args.return_corrections ?? true,
     max_attempts: args.max_attempts || 3,
-    timeout_per_attempt_ms: args.timeout_per_attempt_ms || 10000
+    timeout_per_attempt_ms: args.timeout_per_attempt_ms || 10000,
   };
 
   const response: SmartFindResult = await memoryFindOrchestrator.findItems(smartRequest);
@@ -397,14 +400,18 @@ async function handleMemoryFind(args: SmartFindRequest): Promise<{ content: any[
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          hits: response.hits.length,
-          suggestions: response.suggestions,
-          autonomous_metadata: response.autonomous_metadata,
-          debug: response.debug
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            hits: response.hits.length,
+            suggestions: response.suggestions,
+            autonomous_metadata: response.autonomous_metadata,
+            debug: response.debug,
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 }
 
@@ -415,31 +422,42 @@ async function handleDatabaseHealth(): Promise<{ content: any[] }> {
   const healthy = await databaseManager.healthCheck();
 
   // Get database statistics
-  const stats = await databaseManager.getDatabase().then(db => db.getMetrics()).catch(() => null);
+  const stats = await databaseManager
+    .getDatabase()
+    .then((db) => db.getMetrics())
+    .catch(() => null);
 
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          healthy,
-          database: stats ? {
-            type: stats.type,
-            connection_count: stats.connectionCount,
-            storage_size: stats.storageSize,
-            last_health_check: stats.lastHealthCheck
-          } : null,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            healthy,
+            database: stats
+              ? {
+                  type: stats.type,
+                  connection_count: stats.connectionCount,
+                  storage_size: stats.storageSize,
+                  last_health_check: stats.lastHealthCheck,
+                }
+              : null,
+            timestamp: new Date().toISOString(),
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 }
 
 /**
  * Handle database statistics
  */
-async function handleDatabaseStats(args: { scope?: { project?: string; branch?: string; org?: string } }): Promise<{ content: any[] }> {
+async function handleDatabaseStats(args: {
+  scope?: { project?: string; branch?: string; org?: string };
+}): Promise<{ content: any[] }> {
   await initializeOrchestrators();
 
   if (!memoryStoreOrchestrator) {
@@ -456,13 +474,17 @@ async function handleDatabaseStats(args: { scope?: { project?: string; branch?: 
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          database: stats,
-          orchestrator: orchestratorStats,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }
-    ]
+        text: JSON.stringify(
+          {
+            database: stats,
+            orchestrator: orchestratorStats,
+            timestamp: new Date().toISOString(),
+          },
+          null,
+          2
+        ),
+      },
+    ],
   };
 }
 
@@ -507,7 +529,6 @@ async function startServer(): Promise<void> {
 
     logger.info('Cortex Memory MCP Server (Qdrant) started successfully');
     logger.info('Available tools: memory_store, memory_find, database_health, database_stats');
-
   } catch (error) {
     logger.error({ error }, 'Failed to start MCP server');
     process.exit(1);
@@ -518,7 +539,7 @@ async function startServer(): Promise<void> {
  * Start server if this file is run directly
  */
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startServer().catch(error => {
+  startServer().catch((error) => {
     logger.error({ error }, 'Failed to start server');
     process.exit(1);
   });

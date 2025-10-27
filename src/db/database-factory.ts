@@ -18,17 +18,188 @@
  */
 
 import { logger } from '../utils/logger.js';
-import type {
-  IDatabase,
-  IDatabaseFactory,
-  DatabaseConfig
-} from './database-interface.js';
-import type {
-  DatabaseError,
-  ValidationError,
-  ConnectionError
-} from './database-interface.js';
+import { createHash } from 'node:crypto';
+import type { IDatabase, IDatabaseFactory, DatabaseConfig } from './database-interface.js';
+import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
+import { ValidationError } from '../utils/error-handler.js';
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
+import type {
+  KnowledgeItem,
+  StoreError,
+  SearchResult,
+  SearchQuery,
+  MemoryStoreResponse,
+  MemoryFindResponse,
+} from '../types/core-interfaces.js';
+
+/**
+ * Adapter wrapper that converts IVectorAdapter to IDatabase interface
+ * This bridges the gap between the vector-specific interface and the generic database interface
+ */
+class VectorToDatabaseAdapter implements IDatabase {
+  private vectorAdapter: IVectorAdapter;
+
+  constructor(vectorAdapter: IVectorAdapter) {
+    this.vectorAdapter = vectorAdapter;
+  }
+
+  async initialize(): Promise<void> {
+    return this.vectorAdapter.initialize();
+  }
+
+  async healthCheck(): Promise<boolean> {
+    return this.vectorAdapter.healthCheck();
+  }
+
+  async getMetrics(): Promise<any> {
+    return this.vectorAdapter.getMetrics();
+  }
+
+  async close(): Promise<void> {
+    return this.vectorAdapter.close();
+  }
+
+  async store(items: KnowledgeItem[], options?: any): Promise<MemoryStoreResponse> {
+    return this.vectorAdapter.store(items, options);
+  }
+
+  async update(items: KnowledgeItem[], options?: any): Promise<MemoryStoreResponse> {
+    return this.vectorAdapter.update(items, options);
+  }
+
+  async delete(ids: string[], options?: any): Promise<{ deleted: number; errors: StoreError[] }> {
+    return this.vectorAdapter.delete(ids, options);
+  }
+
+  async findById(ids: string[]): Promise<KnowledgeItem[]> {
+    return this.vectorAdapter.findById(ids);
+  }
+
+  async search(query: SearchQuery, options?: any): Promise<MemoryFindResponse> {
+    return this.vectorAdapter.search(query, options);
+  }
+
+  async semanticSearch(query: string, options?: any): Promise<SearchResult[]> {
+    return this.vectorAdapter.semanticSearch(query, options);
+  }
+
+  async hybridSearch(query: string, options?: any): Promise<MemoryFindResponse> {
+    // Convert SearchResult[] to MemoryFindResponse
+    const searchResults = await this.vectorAdapter.hybridSearch(query, options);
+
+    // Calculate average confidence from search results
+    const confidenceAverage =
+      searchResults.length > 0
+        ? searchResults.reduce((sum, result) => sum + (result.score || 0), 0) / searchResults.length
+        : 0;
+
+    return {
+      results: searchResults,
+      total_count: searchResults.length,
+      autonomous_context: {
+        search_mode_used: 'hybrid',
+        results_found: searchResults.length,
+        confidence_average: confidenceAverage,
+        user_message_suggestion: `Found ${searchResults.length} results matching your query`,
+      },
+    };
+  }
+
+  // Add other required methods with reasonable implementations or delegations
+  async storeByKind(
+    kind: string,
+    items: KnowledgeItem[],
+    options?: any
+  ): Promise<MemoryStoreResponse> {
+    return this.vectorAdapter.storeByKind(kind, items, options);
+  }
+
+  async searchByKind(
+    kinds: string[],
+    query: SearchQuery,
+    options?: any
+  ): Promise<MemoryFindResponse> {
+    return this.vectorAdapter.searchByKind(kinds, query, options);
+  }
+
+  async findByScope(scope: any, options?: any): Promise<KnowledgeItem[]> {
+    return this.vectorAdapter.findByScope(scope, options);
+  }
+
+  async findSimilar(
+    item: KnowledgeItem,
+    threshold?: number,
+    options?: any
+  ): Promise<SearchResult[]> {
+    return this.vectorAdapter.findSimilar(item, threshold, options);
+  }
+
+  async checkDuplicates(
+    items: KnowledgeItem[]
+  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
+    return this.vectorAdapter.checkDuplicates(items);
+  }
+
+  async getStatistics(scope?: any): Promise<any> {
+    return this.vectorAdapter.getStatistics(scope);
+  }
+
+  async bulkStore(items: KnowledgeItem[], options?: any): Promise<MemoryStoreResponse> {
+    return this.vectorAdapter.bulkStore(items, options);
+  }
+
+  async bulkDelete(filter: any, options?: any): Promise<{ deleted: number }> {
+    return this.vectorAdapter.bulkDelete(filter, options);
+  }
+
+  async bulkSearch(queries: SearchQuery[], options?: any): Promise<MemoryFindResponse[]> {
+    return this.vectorAdapter.bulkSearch(queries, options);
+  }
+
+  async generateEmbedding(content: string): Promise<number[]> {
+    return this.vectorAdapter.generateEmbedding(content);
+  }
+
+  async storeWithEmbeddings(items: any[], options?: any): Promise<MemoryStoreResponse> {
+    return this.vectorAdapter.storeWithEmbeddings(items, options);
+  }
+
+  async vectorSearch(embedding: number[], options?: any): Promise<SearchResult[]> {
+    return this.vectorAdapter.vectorSearch(embedding, options);
+  }
+
+  async findNearest(
+    embedding: number[],
+    limit?: number,
+    threshold?: number
+  ): Promise<SearchResult[]> {
+    return this.vectorAdapter.findNearest(embedding, limit, threshold);
+  }
+
+  async backup(destination?: string): Promise<string> {
+    return this.vectorAdapter.backup(destination);
+  }
+
+  async restore(source: string): Promise<void> {
+    return this.vectorAdapter.restore(source);
+  }
+
+  async optimize(): Promise<void> {
+    return this.vectorAdapter.optimize();
+  }
+
+  async validate(): Promise<{ valid: boolean; issues: string[] }> {
+    return this.vectorAdapter.validate();
+  }
+
+  async updateCollectionSchema(config: any): Promise<void> {
+    return this.vectorAdapter.updateCollectionSchema(config);
+  }
+
+  async getCollectionInfo(): Promise<any> {
+    return this.vectorAdapter.getCollectionInfo();
+  }
+}
 
 /**
  * Factory class for creating Qdrant database instances
@@ -81,7 +252,8 @@ export class DatabaseFactory implements IDatabaseFactory {
     }
 
     // Create new Qdrant database instance
-    const database = new QdrantAdapter(config);
+    const vectorAdapter = new QdrantAdapter(config);
+    const database = new VectorToDatabaseAdapter(vectorAdapter);
 
     // Initialize the database
     await database.initialize();
@@ -89,11 +261,14 @@ export class DatabaseFactory implements IDatabaseFactory {
     // Cache the connection
     this.connections.set(configKey, database);
 
-    logger.info({
-      type: config.type,
-      configKey,
-      connectionCount: this.connections.size
-    }, 'Created new Qdrant database connection');
+    logger.info(
+      {
+        type: config.type,
+        configKey,
+        connectionCount: this.connections.size,
+      },
+      'Created new Qdrant database connection'
+    );
 
     return database;
   }
@@ -120,7 +295,7 @@ export class DatabaseFactory implements IDatabaseFactory {
   /**
    * Close specific Qdrant database connection
    */
-  async close(type: string, additionalConfig?: Partial<DatabaseConfig> = {}): Promise<void> {
+  async close(type: string, additionalConfig: Partial<DatabaseConfig> = {}): Promise<void> {
     const config = this.buildConfig(additionalConfig);
     const configKey = this.generateConfigKey(config);
 
@@ -138,14 +313,16 @@ export class DatabaseFactory implements IDatabaseFactory {
    * Close all Qdrant database connections
    */
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.connections.entries()).map(async ([configKey, database]) => {
-      try {
-        await database.close();
-        logger.debug({ configKey }, 'Closed Qdrant database connection');
-      } catch (error) {
-        logger.error({ configKey, error }, 'Failed to close Qdrant database connection');
+    const closePromises = Array.from(this.connections.entries()).map(
+      async ([configKey, database]) => {
+        try {
+          await database.close();
+          logger.debug({ configKey }, 'Closed Qdrant database connection');
+        } catch (error) {
+          logger.error({ configKey, error }, 'Failed to close Qdrant database connection');
+        }
       }
-    });
+    );
 
     await Promise.all(closePromises);
     this.connections.clear();
@@ -163,21 +340,21 @@ export class DatabaseFactory implements IDatabaseFactory {
     const connectionsByType: Record<string, number> = {};
     const details: Array<{ type: string; configKey: string; healthy: boolean }> = [];
 
-    for (const [configKey, database] of this.connections.entries()) {
+    for (const [configKey, _database] of this.connections.entries()) {
       const type = 'qdrant';
       connectionsByType[type] = (connectionsByType[type] || 0) + 1;
 
       details.push({
         type,
         configKey,
-        healthy: false // Would need health check to determine
+        healthy: false, // Would need health check to determine
       });
     }
 
     return {
       activeConnections: this.connections.size,
       connectionsByType,
-      details
+      details,
     };
   }
 
@@ -193,7 +370,7 @@ export class DatabaseFactory implements IDatabaseFactory {
       'maxConnections',
       'vectorSize',
       'distance',
-      'collectionName'
+      'collectionName',
     ];
   }
 
@@ -222,11 +399,16 @@ export class DatabaseFactory implements IDatabaseFactory {
 
     // Validate OpenAI configuration (required for embeddings)
     if (!process.env.OPENAI_API_KEY) {
-      errors.push('OpenAI API key is required for Qdrant vector operations (OPENAI_API_KEY environment variable)');
+      errors.push(
+        'OpenAI API key is required for Qdrant vector operations (OPENAI_API_KEY environment variable)'
+      );
     }
 
     // Validate connection timeout
-    if (config.connectionTimeout && (config.connectionTimeout < 1000 || config.connectionTimeout > 300000)) {
+    if (
+      config.connectionTimeout &&
+      (config.connectionTimeout < 1000 || config.connectionTimeout > 300000)
+    ) {
       errors.push('Connection timeout must be between 1000ms and 300000ms (5 minutes)');
     }
 
@@ -278,9 +460,8 @@ export class DatabaseFactory implements IDatabaseFactory {
         type: config.type,
         connected: true,
         healthy,
-        latency
+        latency,
       };
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error({ type: config.type, error: errorMessage }, 'Qdrant configuration test failed');
@@ -289,7 +470,7 @@ export class DatabaseFactory implements IDatabaseFactory {
         type: config.type,
         connected: false,
         healthy: false,
-        error: errorMessage
+        error: errorMessage,
       };
     }
   }
@@ -297,13 +478,15 @@ export class DatabaseFactory implements IDatabaseFactory {
   /**
    * Test Qdrant configuration
    */
-  async testAllConfigurations(): Promise<Array<{
-    type: string;
-    connected: boolean;
-    healthy: boolean;
-    latency?: number;
-    error?: string;
-  }>> {
+  async testAllConfigurations(): Promise<
+    Array<{
+      type: string;
+      connected: boolean;
+      healthy: boolean;
+      latency?: number;
+      error?: string;
+    }>
+  > {
     const results = [];
 
     try {
@@ -316,7 +499,7 @@ export class DatabaseFactory implements IDatabaseFactory {
         type: 'qdrant',
         connected: false,
         healthy: false,
-        error: errorMessage
+        error: errorMessage,
       });
     }
 
@@ -338,7 +521,7 @@ export class DatabaseFactory implements IDatabaseFactory {
     configuration: Partial<DatabaseConfig>;
     alternatives: string[];
   } {
-    const { requiresVectors, requiresHighPerformance, prefersOpenSource, vectorSize } = useCase;
+    const { requiresVectors, requiresHighPerformance, vectorSize } = useCase;
 
     // Qdrant is always recommended as it's the only supported database
     const recommendedConfig: Partial<DatabaseConfig> = {
@@ -346,7 +529,7 @@ export class DatabaseFactory implements IDatabaseFactory {
       vectorSize: vectorSize || 1536, // Default to OpenAI ada-002 size
       distance: 'Cosine',
       maxConnections: requiresHighPerformance ? 20 : 10,
-      connectionTimeout: requiresHighPerformance ? 15000 : 30000
+      connectionTimeout: requiresHighPerformance ? 15000 : 30000,
     };
 
     let reason = 'Qdrant provides optimal vector similarity search and semantic capabilities.';
@@ -356,7 +539,8 @@ export class DatabaseFactory implements IDatabaseFactory {
     }
 
     if (requiresHighPerformance) {
-      reason = 'Qdrant delivers superior performance for vector similarity search with optimized indexing.';
+      reason =
+        'Qdrant delivers superior performance for vector similarity search with optimized indexing.';
       recommendedConfig.maxConnections = 20;
       recommendedConfig.connectionTimeout = 15000;
     }
@@ -365,7 +549,7 @@ export class DatabaseFactory implements IDatabaseFactory {
       recommended: 'qdrant',
       reason,
       configuration: recommendedConfig,
-      alternatives: [] // No alternatives as Qdrant is the only option
+      alternatives: [], // No alternatives as Qdrant is the only option
     };
   }
 
@@ -376,13 +560,13 @@ export class DatabaseFactory implements IDatabaseFactory {
     const baseConfig: DatabaseConfig = {
       type: 'qdrant',
       url: process.env.QDRANT_URL || 'http://localhost:6333',
-      apiKey: process.env.QDRANT_API_KEY,
+      ...(process.env.QDRANT_API_KEY && { apiKey: process.env.QDRANT_API_KEY }),
       logQueries: process.env.NODE_ENV === 'development',
       connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
       vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
-      distance: process.env.VECTOR_DISTANCE as any || 'Cosine',
-      collectionName: process.env.QDRANT_COLLECTION_NAME || 'cortex-memory'
+      distance: (process.env.VECTOR_DISTANCE as any) || 'Cosine',
+      collectionName: process.env.QDRANT_COLLECTION_NAME || 'cortex-memory',
     };
 
     return { ...baseConfig, ...additionalConfig };
@@ -393,7 +577,9 @@ export class DatabaseFactory implements IDatabaseFactory {
    */
   setDefaultType(type: string): void {
     if (type !== 'qdrant') {
-      throw new ValidationError(`Cannot set default type to unsupported database: ${type}. Only 'qdrant' is supported.`);
+      throw new ValidationError(
+        `Cannot set default type to unsupported database: ${type}. Only 'qdrant' is supported.`
+      );
     }
     this.defaultType = type;
   }
@@ -413,10 +599,10 @@ export class DatabaseFactory implements IDatabaseFactory {
       config.type,
       config.url || '',
       config.collectionName || '',
-      config.maxConnections?.toString() || '10'
+      config.maxConnections?.toString() || '10',
     ];
 
-    return crypto.createHash('md5').update(keyParts.join('|')).digest('hex');
+    return createHash('md5').update(keyParts.join('|')).digest('hex');
   }
 
   /**
@@ -438,13 +624,13 @@ export class DatabaseFactory implements IDatabaseFactory {
     return {
       type: 'qdrant',
       url: process.env.QDRANT_URL || 'http://localhost:6333',
-      apiKey: process.env.QDRANT_API_KEY,
+      ...(process.env.QDRANT_API_KEY && { apiKey: process.env.QDRANT_API_KEY }),
       logQueries: process.env.NODE_ENV === 'development',
       connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
       vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
-      distance: process.env.VECTOR_DISTANCE as any || 'Cosine',
-      collectionName: process.env.QDRANT_COLLECTION_NAME || 'cortex-memory'
+      distance: (process.env.VECTOR_DISTANCE as any) || 'Cosine',
+      collectionName: process.env.QDRANT_COLLECTION_NAME || 'cortex-memory',
     };
   }
 
@@ -474,7 +660,9 @@ export async function createDatabase(config: DatabaseConfig): Promise<IDatabase>
   return await factory.create(config);
 }
 
-export async function createQdrantDatabase(additionalConfig?: Partial<DatabaseConfig>): Promise<IDatabase> {
+export async function createQdrantDatabase(
+  additionalConfig?: Partial<DatabaseConfig>
+): Promise<IDatabase> {
   const factory = DatabaseFactory.getInstance();
   return await factory.getByType('qdrant', additionalConfig);
 }

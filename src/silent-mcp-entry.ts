@@ -30,7 +30,7 @@ function isJsonRpcMessage(data: string): boolean {
 }
 
 // Intercept stdout during server startup
-process.stdout.write = function(...args) {
+process.stdout.write = function (...args) {
   const data = args[0];
 
   if (typeof data === 'string' && isJsonRpcMessage(data)) {
@@ -46,7 +46,7 @@ process.stdout.write = function(...args) {
 const serverPath = join(__dirname, 'index.js');
 const child = spawn('node', [serverPath], {
   stdio: 'inherit',
-  env: process.env
+  env: process.env,
 });
 
 child.on('error', (error) => {

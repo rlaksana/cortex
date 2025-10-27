@@ -7,6 +7,9 @@
  */
 
 import { DatabaseConfig, DatabaseMetrics } from './database-interface.js';
+
+// Re-export DatabaseMetrics for use in other modules
+export type { DatabaseMetrics };
 import {
   KnowledgeItem,
   StoreResult,
@@ -14,13 +17,18 @@ import {
   SearchResult,
   SearchQuery,
   MemoryStoreResponse,
-  MemoryFindResponse
+  MemoryFindResponse,
 } from '../types/core-interfaces.js';
 
 export interface VectorConfig extends DatabaseConfig {
   vectorSize?: number;
   distance?: 'Cosine' | 'Euclidean' | 'DotProduct';
   collectionName?: string;
+  url?: string;
+  apiKey?: string;
+  logQueries?: boolean;
+  connectionTimeout?: number;
+  maxConnections?: number;
 }
 
 export interface SearchOptions {
@@ -31,6 +39,8 @@ export interface SearchOptions {
   limit?: number;
   score_threshold?: number;
   searchMode?: 'semantic' | 'hybrid' | 'exact';
+  keyword_weight?: number;
+  semantic_weight?: number;
 }
 
 export interface StoreOptions {
@@ -88,7 +98,10 @@ export interface IVectorAdapter {
   /**
    * Delete knowledge items by ID
    */
-  delete(ids: string[], options?: DeleteOptions): Promise<{
+  delete(
+    ids: string[],
+    options?: DeleteOptions
+  ): Promise<{
     deleted: number;
     errors: StoreError[];
   }>;
@@ -125,28 +138,43 @@ export interface IVectorAdapter {
   /**
    * Store items of a specific knowledge type
    */
-  storeByKind(kind: string, items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse>;
+  storeByKind(
+    kind: string,
+    items: KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse>;
 
   /**
    * Search within specific knowledge types
    */
-  searchByKind(kinds: string[], query: SearchQuery, options?: SearchOptions): Promise<MemoryFindResponse>;
+  searchByKind(
+    kinds: string[],
+    query: SearchQuery,
+    options?: SearchOptions
+  ): Promise<MemoryFindResponse>;
 
   /**
    * Get items by scope (project, branch, org)
    */
-  findByScope(scope: {
-    project?: string;
-    branch?: string;
-    org?: string;
-  }, options?: SearchOptions): Promise<KnowledgeItem[]>;
+  findByScope(
+    scope: {
+      project?: string;
+      branch?: string;
+      org?: string;
+    },
+    options?: SearchOptions
+  ): Promise<KnowledgeItem[]>;
 
   // === Advanced Operations ===
 
   /**
    * Find similar items based on vector similarity
    */
-  findSimilar(item: KnowledgeItem, threshold?: number, options?: SearchOptions): Promise<SearchResult[]>;
+  findSimilar(
+    item: KnowledgeItem,
+    threshold?: number,
+    options?: SearchOptions
+  ): Promise<SearchResult[]>;
 
   /**
    * Check for duplicate items using semantic similarity
@@ -159,11 +187,7 @@ export interface IVectorAdapter {
   /**
    * Get statistics about the knowledge base
    */
-  getStatistics(scope?: {
-    project?: string;
-    branch?: string;
-    org?: string;
-  }): Promise<{
+  getStatistics(scope?: { project?: string; branch?: string; org?: string }): Promise<{
     totalItems: number;
     itemsByKind: Record<string, number>;
     storageSize: number;
@@ -181,11 +205,14 @@ export interface IVectorAdapter {
   /**
    * Bulk delete operations
    */
-  bulkDelete(filter: {
-    kind?: string;
-    scope?: any;
-    before?: string;
-  }, options?: DeleteOptions): Promise<{ deleted: number }>;
+  bulkDelete(
+    filter: {
+      kind?: string;
+      scope?: any;
+      before?: string;
+    },
+    options?: DeleteOptions
+  ): Promise<{ deleted: number }>;
 
   /**
    * Bulk search across multiple queries
@@ -202,7 +229,10 @@ export interface IVectorAdapter {
   /**
    * Store items with pre-computed embeddings
    */
-  storeWithEmbeddings(items: Array<KnowledgeItem & { embedding: number[] }>, options?: StoreOptions): Promise<MemoryStoreResponse>;
+  storeWithEmbeddings(
+    items: Array<KnowledgeItem & { embedding: number[] }>,
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse>;
 
   /**
    * Search using vector similarity

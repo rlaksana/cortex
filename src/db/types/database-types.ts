@@ -18,27 +18,18 @@ export type {
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
-  AutonomousContext
+  AutonomousContext,
 } from '../../types/core-interfaces.js';
 
-// Re-export adapter interfaces
-export type {
-  IPostgreSQLAdapter,
-  PostgreSQLConfig,
-  QueryOptions,
-  FullTextSearchOptions,
-  SearchResult as PostgreSQLSearchResult,
-  UUIDGenerationOptions,
-  ExplainOptions,
-  ExplainResult
-} from '../interfaces/postgresql-adapter.interface.js';
+// PostgreSQL interfaces and types removed - PostgreSQL is no longer supported
+// Only Qdrant vector database interfaces are available in this Qdrant-only architecture
 
 export type {
   IVectorAdapter,
   VectorConfig,
   SearchOptions as VectorSearchOptions,
   StoreOptions as VectorStoreOptions,
-  DeleteOptions as VectorDeleteOptions
+  DeleteOptions as VectorDeleteOptions,
 } from '../interfaces/vector-adapter.interface.js';
 
 export type {
@@ -46,13 +37,12 @@ export type {
   DatabaseFactoryConfig,
   DatabaseType,
   DatabaseAdapters,
-  AdapterCapabilities
+  AdapterCapabilities,
 } from '../interfaces/database-factory.interface.js';
 
 // Database configuration types
 export interface DatabaseConfig {
-  type: 'postgresql' | 'qdrant' | 'hybrid';
-  postgres?: PostgreSQLConfig;
+  type: 'qdrant';
   qdrant?: VectorConfig;
   fallback?: FallbackConfig;
 }
@@ -84,7 +74,10 @@ export class ConnectionError extends DatabaseError {
 }
 
 export class ValidationError extends DatabaseError {
-  constructor(message: string, public readonly field?: string) {
+  constructor(
+    message: string,
+    public readonly field?: string
+  ) {
     super(message, 'VALIDATION_ERROR', undefined, { field });
     this.name = 'ValidationError';
   }

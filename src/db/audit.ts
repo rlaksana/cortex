@@ -1,5 +1,5 @@
-// Using UnifiedDatabaseLayer for PostgreSQL operations instead of qdrant
-import { UnifiedDatabaseLayer } from './unified-database-layer.js';
+// Using UnifiedDatabaseLayer for Qdrant operations
+import { QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer } from './unified-database-layer-v2.js';
 import { logger } from '../utils/logger.js';
 import * as crypto from 'crypto';
 
@@ -22,8 +22,8 @@ export interface AuditEvent {
   table_name: string;
   record_id: string;
   operation: 'INSERT' | 'UPDATE' | 'DELETE';
-  old_data?: Record<string, unknown>;
-  new_data?: Record<string, unknown>;
+  old_data?: Record<string, unknown> | null;
+  new_data?: Record<string, unknown> | null;
   changed_by?: string;
   tags?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
@@ -87,7 +87,23 @@ class AuditLogger {
     }
 
     const processedEvent = await this.processEvent(event);
-    const db = new UnifiedDatabaseLayer();
+
+    const qdrantConfig: any = {
+      url: process.env.QDRANT_URL || 'http://localhost:6333',
+      collectionName: 'cortex-audit',
+      timeout: 30000,
+      batchSize: 100,
+      maxRetries: 3,
+    };
+
+    if (process.env.QDRANT_API_KEY) {
+      qdrantConfig.apiKey = process.env.QDRANT_API_KEY;
+    }
+
+    const db = new UnifiedDatabaseLayer({
+      type: 'qdrant',
+      qdrant: qdrantConfig,
+    });
     await db.initialize();
 
     try {
@@ -97,12 +113,18 @@ class AuditLogger {
         table_name: processedEvent.table_name,
         record_id: processedEvent.record_id,
         operation: processedEvent.operation,
-        old_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.old_data ?? {}),
-        new_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.new_data ?? {}),
+        old_data: this.filterSensitiveData(
+          processedEvent.table_name,
+          processedEvent.old_data ?? {}
+        ),
+        new_data: this.filterSensitiveData(
+          processedEvent.table_name,
+          processedEvent.new_data ?? {}
+        ),
         changed_by: processedEvent.changed_by ?? 'system',
         tags: processedEvent.tags ?? {},
         metadata: processedEvent.metadata ?? {},
-        changed_at: new Date().toISOString()
+        changed_at: new Date().toISOString(),
       });
 
       logger.debug(
@@ -133,10 +155,25 @@ class AuditLogger {
     }
 
     try {
-      const db = new UnifiedDatabaseLayer();
+      const config: any = {
+        type: 'qdrant',
+        qdrant: {
+          url: process.env.QDRANT_URL || 'http://localhost:6333',
+          collectionName: 'cortex-audit',
+          timeout: 30000,
+          batchSize: 100,
+          maxRetries: 3,
+        },
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
 
-      // Use PostgreSQL for batch insert
+      // Use Qdrant for batch insert
       const auditData = await Promise.all(
         processedEvents.map(async (event) => ({
           id: event.id ?? (await this.generateUUID()),
@@ -149,11 +186,11 @@ class AuditLogger {
           changed_by: event.changed_by ?? 'system',
           tags: event.tags ?? {},
           metadata: event.metadata ?? {},
-          changed_at: new Date().toISOString()
+          changed_at: new Date().toISOString(),
         }))
       );
 
-      // Create audit records in batch using PostgreSQL
+      // Create audit records in batch using Qdrant
       for (const record of auditData) {
         await db.create('event_audit', record);
       }
@@ -190,10 +227,25 @@ class AuditLogger {
     total: number;
   }> {
     try {
-      const db = new UnifiedDatabaseLayer();
+      const config: any = {
+        type: 'qdrant',
+        qdrant: {
+          url: process.env.QDRANT_URL || 'http://localhost:6333',
+          collectionName: 'cortex-audit',
+          timeout: 30000,
+          batchSize: 100,
+          maxRetries: 3,
+        },
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
 
-      // Build where conditions for PostgreSQL query
+      // Build where conditions for Qdrant query
       const whereConditions: any = {};
 
       if (options.eventType) {
@@ -226,23 +278,31 @@ class AuditLogger {
         }
       }
 
-      // Query events using PostgreSQL
+      // Query events using Qdrant
       const events = await db.find('event_audit', whereConditions, {
         take: options.limit || 100,
-        orderBy: { [options.orderBy || 'changed_at']: options.orderDirection || 'DESC' }
+        orderBy: { [options.orderBy || 'changed_at']: options.orderDirection || 'DESC' },
       });
 
       // Get total count
-      const totalResult = await db.query(`SELECT COUNT(*) as count FROM event_audit WHERE 1=1 ${Object.keys(whereConditions).length > 0 ? `AND ${  Object.entries(whereConditions).map(([key, value]) => {
-        if (typeof value === 'object' && value.gte) {
-          return `${key} >= '${value.gte}'`;
-        }
-        if (typeof value === 'object' && value.lte) {
-          return `${key} <= '${value.lte}'`;
-        }
-        return `${key} = '${value}'`;
-      }).join(' AND ')}` : ''}`);
-      
+      const totalResult = await db.query(
+        `SELECT COUNT(*) as count FROM event_audit WHERE 1=1 ${
+          Object.keys(whereConditions).length > 0
+            ? `AND ${Object.entries(whereConditions)
+                .map(([key, value]) => {
+                  if (typeof value === 'object' && value !== null && 'gte' in value) {
+                    return `${key} >= '${(value as any).gte}'`;
+                  }
+                  if (typeof value === 'object' && value !== null && 'lte' in value) {
+                    return `${key} <= '${(value as any).lte}'`;
+                  }
+                  return `${key} = '${value}'`;
+                })
+                .join(' AND ')}`
+            : ''
+        }`
+      );
+
       const total = parseInt(totalResult.rows[0].count);
 
       // Transform results to match expected format
@@ -257,7 +317,7 @@ class AuditLogger {
         changed_by: event.changed_by,
         tags: event.tags,
         metadata: event.metadata,
-        changed_at: event.changed_at
+        changed_at: event.changed_at,
       }));
 
       return { events: transformedEvents, total };
@@ -271,9 +331,7 @@ class AuditLogger {
    * Get audit event history for a specific record
    */
   async getRecordHistory(table_name: string, record_id: string): Promise<AuditEvent[]> {
-    return this.queryEvents({ table_name, record_id }).then(
-      (result) => result.events
-    );
+    return this.queryEvents({ table_name, record_id }).then((result) => result.events);
   }
 
   /**
@@ -294,20 +352,35 @@ class AuditLogger {
    * Generate UUID using qdrant gen_random_uuid()
    */
   /**
- * Generate UUID using PostgreSQL gen_random_uuid() or fallback to crypto
- */
-private async generateUUID(): Promise<string> {
-  try {
-    const db = new UnifiedDatabaseLayer();
-    await db.initialize();
-    
-    const result = await db.query(`SELECT gen_random_uuid() as uuid`);
-    return result.rows[0].uuid;
-  } catch (error) {
-    logger.warn({ error }, 'Failed to generate UUID with PostgreSQL, using fallback');
-    return crypto.randomUUID();
+   * Generate UUID using Qdrant gen_random_uuid() or fallback to crypto
+   */
+  private async generateUUID(): Promise<string> {
+    try {
+      const qdrantConfig: any = {
+        url: process.env.QDRANT_URL || 'http://localhost:6333',
+        collectionName: 'cortex-audit',
+        timeout: 30000,
+        batchSize: 100,
+        maxRetries: 3,
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        qdrantConfig.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer({
+        type: 'qdrant',
+        qdrant: qdrantConfig,
+      });
+      await db.initialize();
+
+      const result = await db.query(`SELECT gen_random_uuid() as uuid`);
+      return result.rows[0].uuid;
+    } catch (error) {
+      logger.warn({ error }, 'Failed to generate UUID with Qdrant, using fallback');
+      return crypto.randomUUID();
+    }
   }
-}
 
   /**
    * Check if event should be logged based on filters
@@ -425,10 +498,25 @@ private async generateUUID(): Promise<string> {
     this.batchQueue = [];
 
     try {
-      const db = new UnifiedDatabaseLayer();
+      const config: any = {
+        type: 'qdrant',
+        qdrant: {
+          url: process.env.QDRANT_URL || 'http://localhost:6333',
+          collectionName: 'cortex-audit',
+          timeout: 30000,
+          batchSize: 100,
+          maxRetries: 3,
+        },
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
 
-      const auditData = processedEvents.map(event => ({
+      const auditData = processedEvents.map((event) => ({
         id: event.id ?? crypto.randomUUID(),
         event_type: event.eventType,
         table_name: event.table_name,
@@ -439,10 +527,10 @@ private async generateUUID(): Promise<string> {
         changed_by: event.changed_by ?? 'system',
         tags: event.tags ?? {},
         metadata: event.metadata ?? {},
-        changed_at: new Date().toISOString()
+        changed_at: new Date().toISOString(),
       }));
 
-      // Create audit records in batch using PostgreSQL
+      // Create audit records in batch using Qdrant
       for (const record of auditData) {
         await db.create('event_audit', record);
       }
@@ -469,7 +557,22 @@ private async generateUUID(): Promise<string> {
     };
   }> {
     try {
-      const db = new UnifiedDatabaseLayer();
+      const config: any = {
+        type: 'qdrant',
+        qdrant: {
+          url: process.env.QDRANT_URL || 'http://localhost:6333',
+          collectionName: 'cortex-audit',
+          timeout: 30000,
+          batchSize: 100,
+          maxRetries: 3,
+        },
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
 
       const now = new Date();
@@ -477,7 +580,7 @@ private async generateUUID(): Promise<string> {
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      // Execute all queries in parallel for better performance using PostgreSQL
+      // Execute all queries in parallel for better performance using Qdrant
       const [
         totalEvents,
         eventsByType,
@@ -485,30 +588,68 @@ private async generateUUID(): Promise<string> {
         eventsByOperation,
         lastHourCount,
         last24HoursCount,
-        last7DaysCount
+        last7DaysCount,
       ] = await Promise.all([
         // Total events
-        db.query(`SELECT COUNT(*) as count FROM event_audit`).then(r => parseInt(r.rows[0].count)),
+        db
+          .query(`SELECT COUNT(*) as count FROM event_audit`)
+          .then((r) => parseInt(r.rows[0].count)),
 
         // Events by type
-        db.query(`SELECT event_type, COUNT(*) as count FROM event_audit GROUP BY event_type`).then(r => 
-          r.rows.reduce((acc, row) => ({ ...acc, [row.event_type]: parseInt(row.count) }), {})
-        ),
+        db
+          .query(`SELECT event_type, COUNT(*) as count FROM event_audit GROUP BY event_type`)
+          .then((r) =>
+            r.rows.reduce(
+              (acc: Record<string, number>, row: any) => ({
+                ...acc,
+                [row.event_type]: parseInt(row.count),
+              }),
+              {}
+            )
+          ),
 
         // Events by table
-        db.query(`SELECT table_name, COUNT(*) as count FROM event_audit GROUP BY table_name`).then(r => 
-          r.rows.reduce((acc, row) => ({ ...acc, [row.table_name]: parseInt(row.count) }), {})
-        ),
+        db
+          .query(`SELECT table_name, COUNT(*) as count FROM event_audit GROUP BY table_name`)
+          .then((r) =>
+            r.rows.reduce(
+              (acc: Record<string, number>, row: any) => ({
+                ...acc,
+                [row.table_name]: parseInt(row.count),
+              }),
+              {}
+            )
+          ),
 
         // Events by operation
-        db.query(`SELECT operation, COUNT(*) as count FROM event_audit GROUP BY operation`).then(r => 
-          r.rows.reduce((acc, row) => ({ ...acc, [row.operation]: parseInt(row.count) }), {})
-        ),
+        db
+          .query(`SELECT operation, COUNT(*) as count FROM event_audit GROUP BY operation`)
+          .then((r) =>
+            r.rows.reduce(
+              (acc: Record<string, number>, row: any) => ({
+                ...acc,
+                [row.operation]: parseInt(row.count),
+              }),
+              {}
+            )
+          ),
 
         // Recent activity counts
-        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [oneHourAgo.toISOString()]).then(r => parseInt(r.rows[0].count)),
-        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [oneDayAgo.toISOString()]).then(r => parseInt(r.rows[0].count)),
-        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [sevenDaysAgo.toISOString()]).then(r => parseInt(r.rows[0].count))
+        db
+          .query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [
+            oneHourAgo.toISOString(),
+          ])
+          .then((r) => parseInt(r.rows[0].count)),
+        db
+          .query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [
+            oneDayAgo.toISOString(),
+          ])
+          .then((r) => parseInt(r.rows[0].count)),
+        db
+          .query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [
+            sevenDaysAgo.toISOString(),
+          ])
+          .then((r) => parseInt(r.rows[0].count)),
       ]);
 
       return {
@@ -519,8 +660,8 @@ private async generateUUID(): Promise<string> {
         recentActivity: {
           lastHour: lastHourCount,
           last24Hours: last24HoursCount,
-          last7Days: last7DaysCount
-        }
+          last7Days: last7DaysCount,
+        },
       };
     } catch (error) {
       logger.error('Failed to get audit statistics:', error);
@@ -536,10 +677,25 @@ private async generateUUID(): Promise<string> {
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     try {
-      const db = new UnifiedDatabaseLayer();
+      const config: any = {
+        type: 'qdrant',
+        qdrant: {
+          url: process.env.QDRANT_URL || 'http://localhost:6333',
+          collectionName: 'cortex-audit',
+          timeout: 30000,
+          batchSize: 100,
+          maxRetries: 3,
+        },
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
 
-      // Use PostgreSQL DELETE for cleanup
+      // Use Qdrant DELETE for cleanup
       const deleteResult = await db.query(
         `DELETE FROM event_audit WHERE changed_at < $1 RETURNING COUNT(*) as count`,
         [cutoffDate.toISOString()]
@@ -594,8 +750,8 @@ export async function auditLog(
       new_data:
         typeof new_data === 'object' && new_data !== null
           ? (new_data as Record<string, unknown>)
-          : undefined,
-      changed_by: changed_by ?? undefined,
+          : null,
+      ...(changed_by && { changed_by }),
       metadata: {
         pool_used: true,
         timestamp: new Date().toISOString(),

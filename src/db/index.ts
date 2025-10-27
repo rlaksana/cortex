@@ -11,36 +11,28 @@
  */
 
 // === Core Adapters ===
-export { PostgreSQLAdapter } from './adapters/postgresql-adapter.js';
 export { QdrantAdapter } from './adapters/qdrant-adapter.js';
 
 // === Factory ===
 export { DatabaseFactory, databaseFactory } from './factory/database-factory.js';
 
 // === Unified Database Layer ===
-export { UnifiedDatabaseLayer, createUnifiedDatabaseLayer, database as defaultDatabase } from './unified-database-layer-v2.js';
+export {
+  QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer,
+  createQdrantOnlyDatabase as createUnifiedDatabaseLayer,
+} from './unified-database-layer-v2.js';
 
 // === Legacy Compatibility (deprecated) ===
 export { UnifiedDatabaseLayer as LegacyUnifiedDatabaseLayer } from './unified-database-layer.js';
 
 // === Interfaces ===
-export type {
-  IPostgreSQLAdapter,
-  PostgreSQLConfig,
-  QueryOptions,
-  FullTextSearchOptions,
-  SearchResult as PostgreSQLSearchResult,
-  UUIDGenerationOptions,
-  ExplainOptions,
-  ExplainResult
-} from './interfaces/postgresql-adapter.interface.js';
 
 export type {
   IVectorAdapter,
   VectorConfig,
   SearchOptions as VectorSearchOptions,
   StoreOptions as VectorStoreOptions,
-  DeleteOptions as VectorDeleteOptions
+  DeleteOptions as VectorDeleteOptions,
 } from './interfaces/vector-adapter.interface.js';
 
 export type {
@@ -48,7 +40,7 @@ export type {
   DatabaseFactoryConfig,
   DatabaseType,
   DatabaseAdapters,
-  AdapterCapabilities
+  AdapterCapabilities,
 } from './interfaces/database-factory.interface.js';
 
 // === Database Interface (Legacy) ===
@@ -59,7 +51,7 @@ export type {
   DatabaseMetrics,
   SearchOptions as LegacySearchOptions,
   StoreOptions as LegacyStoreOptions,
-  DeleteOptions as LegacyDeleteOptions
+  DeleteOptions as LegacyDeleteOptions,
 } from './database-interface.js';
 
 // === Types ===
@@ -116,7 +108,7 @@ export type {
   isConnectionError,
   isValidationError,
   isNotFoundError,
-  isDuplicateError
+  isDuplicateError,
 } from './types/database-types.js';
 
 // === Error Classes ===
@@ -125,7 +117,7 @@ export {
   ConnectionError,
   ValidationError,
   NotFoundError,
-  DuplicateError
+  DuplicateError,
 } from './types/database-types.js';
 
 // === Re-export errors from legacy interface ===
@@ -137,7 +129,7 @@ export {
   DuplicateError as LegacyDuplicateError,
   EmbeddingError,
   CollectionError,
-  VectorError
+  VectorError,
 } from './database-interface.js';
 
 // === Factory Errors ===
@@ -145,7 +137,7 @@ export {
   DatabaseFactoryError,
   ConfigurationError,
   AdapterCreationError,
-  UnsupportedDatabaseError
+  UnsupportedDatabaseError,
 } from './interfaces/database-factory.interface.js';
 
 // === Utility Functions ===
@@ -160,21 +152,17 @@ export async function createDatabaseFromEnvironment(): Promise<UnifiedDatabaseLa
 
   return new UnifiedDatabaseLayer({
     type: adapters.type,
-    postgres: adapters.config.postgres ? {
-      connectionString: adapters.config.postgres?.postgresConnectionString,
-      maxConnections: adapters.config.postgres?.maxConnections,
-      connectionTimeout: adapters.config.postgres?.connectionTimeout,
-      logQueries: adapters.config.postgres?.logQueries
-    } : undefined,
-    qdrant: adapters.config.qdrant ? {
-      url: adapters.config.qdrant?.url,
-      apiKey: adapters.config.qdrant?.apiKey,
-      vectorSize: adapters.config.qdrant?.vectorSize,
-      distance: adapters.config.qdrant?.distance,
-      connectionTimeout: adapters.config.qdrant?.connectionTimeout,
-      maxConnections: adapters.config.qdrant?.maxConnections,
-      logQueries: adapters.config.qdrant?.logQueries
-    } : undefined
+    qdrant: adapters.config.qdrant
+      ? {
+          url: adapters.config.qdrant?.url,
+          apiKey: adapters.config.qdrant?.apiKey,
+          vectorSize: adapters.config.qdrant?.vectorSize,
+          distance: adapters.config.qdrant?.distance,
+          connectionTimeout: adapters.config.qdrant?.connectionTimeout,
+          maxConnections: adapters.config.qdrant?.maxConnections,
+          logQueries: adapters.config.qdrant?.logQueries,
+        }
+      : undefined,
   });
 }
 
@@ -187,24 +175,19 @@ export async function validateDatabaseConfig(config: DatabaseConfig): Promise<Va
 
   const factoryConfig: DatabaseFactoryConfig = {
     type: config.type,
-    postgres: config.postgres ? {
-      type: 'postgresql',
-      postgresConnectionString: config.postgres.connectionString,
-      logQueries: config.postgres.logQueries,
-      connectionTimeout: config.postgres.connectionTimeout,
-      maxConnections: config.postgres.maxConnections
-    } : undefined,
-    qdrant: config.qdrant ? {
-      type: 'qdrant',
-      url: config.qdrant.url,
-      apiKey: config.qdrant.apiKey,
-      vectorSize: config.qdrant.vectorSize,
-      distance: config.qdrant.distance,
-      logQueries: config.qdrant.logQueries,
-      connectionTimeout: config.qdrant.connectionTimeout,
-      maxConnections: config.qdrant.maxConnections
-    } : undefined,
-    fallback: config.fallback
+    qdrant: config.qdrant
+      ? {
+          type: 'qdrant',
+          url: config.qdrant.url,
+          apiKey: config.qdrant.apiKey,
+          vectorSize: config.qdrant.vectorSize,
+          distance: config.qdrant.distance,
+          logQueries: config.qdrant.logQueries,
+          connectionTimeout: config.qdrant.connectionTimeout,
+          maxConnections: config.qdrant.maxConnections,
+        }
+      : undefined,
+    fallback: config.fallback,
   };
 
   return await factory.validateConfig(factoryConfig);
@@ -214,7 +197,6 @@ export async function validateDatabaseConfig(config: DatabaseConfig): Promise<Va
  * Test database connectivity
  */
 export async function testDatabaseConnectivity(config: DatabaseConfig): Promise<{
-  postgresql: boolean;
   qdrant: boolean;
   overall: boolean;
 }> {
@@ -222,22 +204,16 @@ export async function testDatabaseConnectivity(config: DatabaseConfig): Promise<
   const factory = new DatabaseFactory();
 
   const results = {
-    postgresql: false,
     qdrant: false,
-    overall: false
+    overall: false,
   };
 
   try {
-    if (config.postgres) {
-      results.postgresql = await factory.testConnection('postgresql', config.postgres);
-    }
-
     if (config.qdrant) {
       results.qdrant = await factory.testConnection('qdrant', config.qdrant);
     }
 
-    results.overall = results.postgresql && results.qdrant;
-
+    results.overall = results.qdrant;
   } catch (error) {
     console.error('Database connectivity test failed:', error);
   }
@@ -255,15 +231,6 @@ export async function getDatabaseCapabilities(type: DatabaseType): Promise<Adapt
 }
 
 /**
- * Create a PostgreSQL adapter directly
- */
-export async function createPostgreSQLAdapter(config: PostgreSQLConfig): Promise<IPostgreSQLAdapter> {
-  const { DatabaseFactory } = await import('./factory/database-factory.js');
-  const factory = new DatabaseFactory();
-  return await factory.createPostgreSQLAdapter(config);
-}
-
-/**
  * Create a vector adapter directly
  */
 export async function createVectorAdapter(config: VectorConfig): Promise<IVectorAdapter> {
@@ -275,7 +242,6 @@ export async function createVectorAdapter(config: VectorConfig): Promise<IVector
 // === Default Export ===
 export default {
   // Adapters
-  PostgreSQLAdapter,
   QdrantAdapter,
 
   // Factory
@@ -294,7 +260,6 @@ export default {
   validateDatabaseConfig,
   testDatabaseConnectivity,
   getDatabaseCapabilities,
-  createPostgreSQLAdapter,
   createVectorAdapter,
 
   // Types (re-exported)

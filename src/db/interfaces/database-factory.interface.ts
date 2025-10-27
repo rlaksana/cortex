@@ -5,15 +5,13 @@
  * based on configuration and runtime requirements.
  */
 
-import { IPostgreSQLAdapter, PostgreSQLConfig } from './postgresql-adapter.interface.js';
 import { IVectorAdapter, VectorConfig } from './vector-adapter.interface.js';
 import { DatabaseConfig, DatabaseMetrics } from './database-interface.js';
 
-export type DatabaseType = 'postgresql' | 'qdrant' | 'hybrid';
+export type DatabaseType = 'qdrant';
 
 export interface DatabaseFactoryConfig {
   type: DatabaseType;
-  postgres?: PostgreSQLConfig;
   qdrant?: VectorConfig;
   fallback?: {
     enabled: boolean;
@@ -39,11 +37,6 @@ export interface IDatabaseFactory {
    * Create database adapter(s) based on configuration
    */
   create(config: DatabaseFactoryConfig): Promise<DatabaseAdapters>;
-
-  /**
-   * Create PostgreSQL adapter only
-   */
-  createPostgreSQLAdapter(config: PostgreSQLConfig): Promise<IPostgreSQLAdapter>;
 
   /**
    * Create vector adapter only
@@ -79,7 +72,6 @@ export interface IDatabaseFactory {
  * Container for created database adapters
  */
 export interface DatabaseAdapters {
-  postgres?: IPostgreSQLAdapter;
   vector?: IVectorAdapter;
   type: DatabaseType;
   config: DatabaseFactoryConfig;
@@ -101,7 +93,10 @@ export class DatabaseFactoryError extends Error {
 }
 
 export class ConfigurationError extends DatabaseFactoryError {
-  constructor(message: string, public readonly field?: string) {
+  constructor(
+    message: string,
+    public readonly field?: string
+  ) {
     super(message, 'CONFIGURATION_ERROR');
     this.name = 'ConfigurationError';
   }

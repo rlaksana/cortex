@@ -22,14 +22,14 @@ import { logger } from './utils/logger.js';
 import {
   ApiErrorHandler,
   AsyncErrorHandler,
-  ErrorRecovery
+  ErrorRecovery,
 } from './middleware/error-middleware.js';
 import {
   ConfigurationError,
   ExternalApiError,
   NetworkError,
   ValidationError,
-  globalErrorBoundary
+  globalErrorBoundary,
 } from './utils/error-handler.js';
 
 import { QdrantClient } from '@qdrant/js-client-rest';
@@ -72,11 +72,11 @@ try {
 const CONFIG = {
   qdrant: {
     url: 'http://localhost:6333',
-    collectionName: 'knowledge_items'
+    collectionName: 'knowledge_items',
   },
   openai: {
-    apiKey: OPENAI_API_KEY
-  }
+    apiKey: OPENAI_API_KEY,
+  },
 };
 
 class SimpleCortexServer {
@@ -85,14 +85,17 @@ class SimpleCortexServer {
   private openai: OpenAI;
 
   constructor() {
-    this.server = new Server({
-      name: 'cortex-memory',
-      version: '1.0.0',
-    }, {
-      capabilities: {
-        tools: {},
+    this.server = new Server(
+      {
+        name: 'cortex-memory',
+        version: '1.0.0',
       },
-    });
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
 
     this.qdrant = new QdrantClient({ url: CONFIG.qdrant.url });
     this.openai = new OpenAI({ apiKey: CONFIG.openai.apiKey });
@@ -113,12 +116,30 @@ class SimpleCortexServer {
               properties: {
                 content: {
                   type: 'string',
-                  description: 'Content to store in memory (simple format)'
+                  description: 'Content to store in memory (simple format)',
                 },
                 kind: {
                   type: 'string',
-                  description: 'Type of knowledge (entity, relation, observation, decision, todo, etc.)',
-                  enum: ['entity', 'relation', 'observation', 'section', 'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption']
+                  description:
+                    'Type of knowledge (entity, relation, observation, decision, todo, etc.)',
+                  enum: [
+                    'entity',
+                    'relation',
+                    'observation',
+                    'section',
+                    'runbook',
+                    'change',
+                    'issue',
+                    'decision',
+                    'todo',
+                    'release_note',
+                    'ddl',
+                    'pr_context',
+                    'incident',
+                    'release',
+                    'risk',
+                    'assumption',
+                  ],
                 },
                 items: {
                   type: 'array',
@@ -128,16 +149,13 @@ class SimpleCortexServer {
                     properties: {
                       kind: { type: 'string' },
                       data: { type: 'object' },
-                      content: { type: 'string' }
-                    }
-                  }
-                }
+                      content: { type: 'string' },
+                    },
+                  },
+                },
               },
-              anyOf: [
-                { required: ['content', 'kind'] },
-                { required: ['items'] }
-              ]
-            }
+              anyOf: [{ required: ['content', 'kind'] }, { required: ['items'] }],
+            },
           },
           {
             name: 'memory_find',
@@ -147,18 +165,18 @@ class SimpleCortexServer {
               properties: {
                 query: {
                   type: 'string',
-                  description: 'Search query'
+                  description: 'Search query',
                 },
                 limit: {
                   type: 'number',
                   description: 'Maximum number of results (default: 10)',
-                  default: 10
-                }
+                  default: 10,
+                },
               },
-              required: ['query']
-            }
-          }
-        ]
+              required: ['query'],
+            },
+          },
+        ],
       };
     });
 
@@ -196,11 +214,11 @@ class SimpleCortexServer {
                 content: [
                   {
                     type: 'text',
-                    text: `⚠️ ${name} is currently experiencing issues. Please try again later.`
-                  }
-                ]
+                    text: `⚠️ ${name} is currently experiencing issues. Please try again later.`,
+                  },
+                ],
               };
-            }
+            },
           ],
           { tool: name, arguments: args }
         );
@@ -208,7 +226,6 @@ class SimpleCortexServer {
         // Record successful operation
         globalErrorBoundary.reset();
         return result;
-
       } catch (error) {
         // Record error
         const standardError = ApiErrorHandler.handleToolCall(error, name, args);
@@ -224,7 +241,7 @@ class SimpleCortexServer {
       ApiErrorHandler.validateArguments(args, {
         content: { type: 'string', required: false },
         kind: { type: 'string', required: false },
-        items: { type: 'object', required: false }
+        items: { type: 'object', required: false },
       });
 
       const { content, kind, items } = args;
@@ -249,9 +266,9 @@ class SimpleCortexServer {
             content: [
               {
                 type: 'text',
-                text: '❌ Items array is empty'
-              }
-            ]
+                text: '❌ Items array is empty',
+              },
+            ],
           };
         }
       }
@@ -262,9 +279,9 @@ class SimpleCortexServer {
           content: [
             {
               type: 'text',
-              text: '❌ Content is required. Provide either: {content: string, kind: string} or {items: [{kind: string, data: {...}}]}'
-            }
-          ]
+              text: '❌ Content is required. Provide either: {content: string, kind: string} or {items: [{kind: string, data: {...}}]}',
+            },
+          ],
         };
       }
 
@@ -273,9 +290,9 @@ class SimpleCortexServer {
           content: [
             {
               type: 'text',
-              text: '❌ Kind is required. Must be one of: entity, relation, observation, section, runbook, change, issue, decision, todo, release_note, ddl, pr_context, incident, release, risk, assumption'
-            }
-          ]
+              text: '❌ Kind is required. Must be one of: entity, relation, observation, section, runbook, change, issue, decision, todo, release_note, ddl, pr_context, incident, release, risk, assumption',
+            },
+          ],
         };
       }
 
@@ -285,9 +302,9 @@ class SimpleCortexServer {
         content: [
           {
             type: 'text',
-            text: `❌ Memory store error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          }
-        ]
+            text: `❌ Memory store error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        ],
       };
     }
   }
@@ -300,9 +317,9 @@ class SimpleCortexServer {
           content: [
             {
               type: 'text',
-              text: '❌ Invalid content: must be a non-empty string'
-            }
-          ]
+              text: '❌ Invalid content: must be a non-empty string',
+            },
+          ],
         };
       }
 
@@ -311,9 +328,9 @@ class SimpleCortexServer {
           content: [
             {
               type: 'text',
-              text: '❌ Invalid kind: must be a non-empty string'
-            }
-          ]
+              text: '❌ Invalid kind: must be a non-empty string',
+            },
+          ],
         };
       }
 
@@ -326,9 +343,9 @@ class SimpleCortexServer {
           content: [
             {
               type: 'text',
-              text: '❌ Failed to generate valid embedding'
-            }
-          ]
+              text: '❌ Failed to generate valid embedding',
+            },
+          ],
         };
       }
 
@@ -340,21 +357,23 @@ class SimpleCortexServer {
           content,
           kind,
           created_at: new Date().toISOString(),
-          scope: { project: 'default', branch: 'main' }
-        }
+          scope: { project: 'default', branch: 'main' },
+        },
       };
 
       // Check if collection exists, create if not
       try {
         const collections = await this.qdrant.getCollections();
-        const collectionExists = collections.collections.some(c => c.name === CONFIG.qdrant.collectionName);
+        const collectionExists = collections.collections.some(
+          (c) => c.name === CONFIG.qdrant.collectionName
+        );
 
         if (!collectionExists) {
           await this.qdrant.createCollection(CONFIG.qdrant.collectionName, {
             vectors: {
               size: 1536,
-              distance: 'Cosine'
-            }
+              distance: 'Cosine',
+            },
           });
         }
       } catch (dbError) {
@@ -363,25 +382,25 @@ class SimpleCortexServer {
       }
 
       await this.qdrant.upsert(CONFIG.qdrant.collectionName, {
-        points: [point]
+        points: [point],
       });
 
       return {
         content: [
           {
             type: 'text',
-            text: `✅ Successfully stored ${kind} in memory`
-          }
-        ]
+            text: `✅ Successfully stored ${kind} in memory`,
+          },
+        ],
       };
     } catch (error) {
       return {
         content: [
           {
             type: 'text',
-            text: `❌ Storage failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-          }
-        ]
+            text: `❌ Storage failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+        ],
       };
     }
   }
@@ -396,25 +415,25 @@ class SimpleCortexServer {
     const searchResult = await this.qdrant.search(CONFIG.qdrant.collectionName, {
       vector: queryEmbedding,
       limit,
-      with_payload: true
+      with_payload: true,
     });
 
-    const results = searchResult.map(hit => ({
+    const results = searchResult.map((hit) => ({
       content: hit.payload?.content || '',
       kind: hit.payload?.kind || '',
       score: hit.score || 0,
-      created_at: hit.payload?.created_at || ''
+      created_at: hit.payload?.created_at || '',
     }));
 
     return {
       content: [
         {
           type: 'text',
-          text: `Found ${results.length} results:\n\n${results.map((r, i) =>
-            `${i + 1}. [${r.kind}] ${r.content} (score: ${r.score.toFixed(3)})`
-          ).join('\n\n')}`
-        }
-      ]
+          text: `Found ${results.length} results:\n\n${results
+            .map((r, i) => `${i + 1}. [${r.kind}] ${r.content} (score: ${r.score.toFixed(3)})`)
+            .join('\n\n')}`,
+        },
+      ],
     };
   }
 
@@ -423,13 +442,14 @@ class SimpleCortexServer {
 
     try {
       const response = await AsyncErrorHandler.retry(
-        () => this.openai.embeddings.create({
-          model: 'text-embedding-ada-002',
-          input: text
-        }),
+        () =>
+          this.openai.embeddings.create({
+            model: 'text-embedding-ada-002',
+            input: text,
+          }),
         {
           maxAttempts: 3,
-          context: { operation: 'embedding_generation', textLength: text.length }
+          context: { operation: 'embedding_generation', textLength: text.length },
         }
       );
 
@@ -478,9 +498,9 @@ class SimpleCortexServer {
 
   private generateUUID(): string {
     // Generate a proper UUID v4
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }
