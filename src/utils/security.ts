@@ -78,19 +78,22 @@ export class SecurityUtils {
       errors.push('Password must contain at least one number');
     }
 
-    if (this.config.password_require_symbols && !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    if (
+      this.config.password_require_symbols &&
+      !/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+    ) {
       errors.push('Password must contain at least one special character');
     }
 
     // Check for common weak passwords
     const commonPasswords = ['password', '123456', 'qwerty', 'admin', 'letmein'];
-    if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
+    if (commonPasswords.some((common) => password.toLowerCase().includes(common))) {
       errors.push('Password contains common patterns');
     }
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -123,7 +126,10 @@ export class SecurityUtils {
     }
 
     // Shuffle the password
-    return password.split('').sort(() => crypto.randomInt(0, 1) - 0.5).join('');
+    return password
+      .split('')
+      .sort(() => crypto.randomInt(0, 1) - 0.5)
+      .join('');
   }
 
   // Token utilities
@@ -184,20 +190,23 @@ export class SecurityUtils {
 
     // Keep only attempts within the window
     const windowStart = now - this.config.login_attempt_window_ms;
-    const recentAttempts = attempts.filter(attempt => attempt.timestamp > windowStart);
+    const recentAttempts = attempts.filter((attempt) => attempt.timestamp > windowStart);
 
     this.loginAttempts.set(identifier, recentAttempts);
 
     // Check for account lockout
     if (!success) {
-      const failedAttempts = recentAttempts.filter(attempt => !attempt.success);
+      const failedAttempts = recentAttempts.filter((attempt) => !attempt.success);
       if (failedAttempts.length >= this.config.max_login_attempts) {
         this.lockAccount(identifier, 'Too many failed login attempts');
-        logger.warn({
-          identifier,
-          ip,
-          attempts: failedAttempts.length
-        }, 'Account locked due to failed attempts');
+        logger.warn(
+          {
+            identifier,
+            ip,
+            attempts: failedAttempts.length,
+          },
+          'Account locked due to failed attempts'
+        );
       }
     }
   }
@@ -217,7 +226,7 @@ export class SecurityUtils {
     return {
       locked: true,
       reason: lockInfo.reason,
-      until: new Date(lockInfo.until)
+      until: new Date(lockInfo.until),
     };
   }
 
@@ -225,7 +234,7 @@ export class SecurityUtils {
     const lockDuration = duration || this.config.account_lockout_duration_ms;
     this.lockedAccounts.set(identifier, {
       until: Date.now() + lockDuration,
-      reason
+      reason,
     });
   }
 
@@ -245,7 +254,7 @@ export class SecurityUtils {
       // New window
       this.rateLimitMap.set(identifier, {
         count: 1,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       });
       return true;
     }
@@ -271,7 +280,7 @@ export class SecurityUtils {
 
     return {
       remaining: Math.max(0, this.config.rate_limit_max_requests - record.count),
-      resetTime: new Date(record.resetTime)
+      resetTime: new Date(record.resetTime),
     };
   }
 
@@ -284,7 +293,7 @@ export class SecurityUtils {
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       'Content-Security-Policy': "default-src 'self'",
-      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+      'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     };
   }
 
@@ -298,10 +307,10 @@ export class SecurityUtils {
   }
 
   validateScopes(scopes: string[]): { valid: boolean; invalid: string[] } {
-    const invalid = scopes.filter(scope => !this.isValidScope(scope));
+    const invalid = scopes.filter((scope) => !this.isValidScope(scope));
     return {
       valid: invalid.length === 0,
-      invalid
+      invalid,
     };
   }
 
@@ -357,9 +366,12 @@ export class SecurityUtils {
 
   // Cleanup expired data
   private startCleanupTimer(): void {
-    setInterval(() => {
-      this.cleanupExpiredData();
-    }, 5 * 60 * 1000); // Run every 5 minutes
+    setInterval(
+      () => {
+        this.cleanupExpiredData();
+      },
+      5 * 60 * 1000
+    ); // Run every 5 minutes
   }
 
   private cleanupExpiredData(): void {
@@ -369,7 +381,7 @@ export class SecurityUtils {
     // Clean up old login attempts
     for (const [identifier, attempts] of this.loginAttempts) {
       const windowStart = now - this.config.login_attempt_window_ms;
-      const recentAttempts = attempts.filter(attempt => attempt.timestamp > windowStart);
+      const recentAttempts = attempts.filter((attempt) => attempt.timestamp > windowStart);
 
       if (recentAttempts.length === 0) {
         this.loginAttempts.delete(identifier);
@@ -413,26 +425,33 @@ export class SecurityUtils {
     let failedLoginsLastHour = 0;
     for (const attempts of this.loginAttempts.values()) {
       const recentFailures = attempts.filter(
-        attempt => !attempt.success && attempt.timestamp > oneHourAgo
+        (attempt) => !attempt.success && attempt.timestamp > oneHourAgo
       );
       failedLoginsLastHour += recentFailures.length;
     }
 
     return {
-      login_attempts: Array.from(this.loginAttempts.values()).reduce((sum, attempts) => sum + attempts.length, 0),
+      login_attempts: Array.from(this.loginAttempts.values()).reduce(
+        (sum, attempts) => sum + attempts.length,
+        0
+      ),
       locked_accounts: this.lockedAccounts.size,
       active_rate_limits: this.rateLimitMap.size,
-      failed_logins_last_hour: failedLoginsLastHour
+      failed_logins_last_hour: failedLoginsLastHour,
     };
   }
 
   // Security audit helpers
-  auditLog(action: string, details: Record<string, any>, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'): void {
+  auditLog(
+    action: string,
+    details: Record<string, any>,
+    severity: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  ): void {
     const auditEntry = {
       timestamp: new Date().toISOString(),
       action,
       details,
-      severity
+      severity,
     };
 
     logger.info(auditEntry, 'Security audit log');
@@ -440,7 +459,8 @@ export class SecurityUtils {
 
   // IP address utilities
   isValidIP(ip: string): boolean {
-    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    const ipv4Regex =
+      /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 
     return ipv4Regex.test(ip) || ipv6Regex.test(ip);
@@ -455,16 +475,18 @@ export class SecurityUtils {
       /^169\.254\./,
       /^::1$/,
       /^fc00:/,
-      /^fe80:/
+      /^fe80:/,
     ];
 
-    return privateRanges.some(range => range.test(ip));
+    return privateRanges.some((range) => range.test(ip));
   }
 
   extractIPFromRequest(headers: Record<string, string>): string {
-    return headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-           headers['x-real-ip'] ||
-           headers['cf-connecting-ip'] ||
-           'unknown';
+    return (
+      headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+      headers['x-real-ip'] ||
+      headers['cf-connecting-ip'] ||
+      'unknown'
+    );
   }
 }

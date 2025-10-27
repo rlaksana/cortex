@@ -48,7 +48,7 @@ class MCPSafeLogger {
       environment: this.baseContext.environment,
       msg,
       ...(correlationId && { correlation_id: correlationId }),
-      ...obj
+      ...obj,
     };
 
     const logLine = `${JSON.stringify(logEntry)}\n`;
@@ -125,23 +125,25 @@ const correlationMixin = () => {
   return correlationId ? { correlation_id: correlationId } : {};
 };
 
-export const logger = isMcpMode ? new MCPSafeLogger() : pino({
-  level: process.env.LOG_LEVEL ?? 'info',
-  formatters: {
-    level: (label) => ({ level: label }),
-  },
-  base: {
-    service: 'cortex-mcp',
-    environment: process.env.NODE_ENV ?? 'development',
-  },
-  timestamp: pino.stdTimeFunctions.isoTime,
-  mixin: correlationMixin,
-  redact: {
-    paths: ['*.idempotency_key', '*.actor'],
-    remove: true,
-  },
-  transport: {
-    target: 'pino/file',
-    options: { destination: 2 }
-  }
-});
+export const logger = isMcpMode
+  ? new MCPSafeLogger()
+  : pino({
+      level: process.env.LOG_LEVEL ?? 'info',
+      formatters: {
+        level: (label) => ({ level: label }),
+      },
+      base: {
+        service: 'cortex-mcp',
+        environment: process.env.NODE_ENV ?? 'development',
+      },
+      timestamp: pino.stdTimeFunctions.isoTime,
+      mixin: correlationMixin,
+      redact: {
+        paths: ['*.idempotency_key', '*.actor'],
+        remove: true,
+      },
+      transport: {
+        target: 'pino/file',
+        options: { destination: 2 },
+      },
+    });

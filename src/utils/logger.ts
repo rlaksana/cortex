@@ -1,12 +1,8 @@
-import pino from 'pino';
 import { logger } from './mcp-logger.js';
 import {
   generateCorrelationId,
-  getCorrelationId,
-  setCorrelationId,
   withCorrelationId,
   getOrCreateCorrelationId,
-  extractCorrelationIdFromRequest
 } from './correlation-id.js';
 
 /**
@@ -29,12 +25,11 @@ import {
 export { logger };
 export {
   generateCorrelationId,
-  getCorrelationId,
   setCorrelationId,
   withCorrelationId,
   getOrCreateCorrelationId,
-  extractCorrelationIdFromRequest
-};
+  extractCorrelationIdFromRequest,
+} from './correlation-id.js';
 
 /**
  * Create a child logger with additional context
@@ -65,7 +60,7 @@ export function createRequestLogger(toolName: string, correlationId?: string) {
   const cid = correlationId || getOrCreateCorrelationId();
   return createChildLogger({
     tool_name: toolName,
-    request_id: cid
+    request_id: cid,
   });
 }
 
@@ -83,11 +78,7 @@ export function createRequestLogger(toolName: string, correlationId?: string) {
  *   return await storeMemory(data);
  * });
  */
-export function withRequestLogging<T>(
-  toolName: string,
-  fn: () => T,
-  correlationId?: string
-): T {
+export function withRequestLogging<T>(toolName: string, fn: () => T, correlationId?: string): T {
   const cid = correlationId || generateCorrelationId();
 
   return withCorrelationId(cid, () => {

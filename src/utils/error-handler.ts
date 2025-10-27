@@ -12,7 +12,7 @@ export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 // Error categories for classification
@@ -27,7 +27,7 @@ export enum ErrorCategory {
   SYSTEM = 'system',
   CONFIGURATION = 'configuration',
   RATE_LIMIT = 'rate_limit',
-  IMMUTABILITY = 'immutability'
+  IMMUTABILITY = 'immutability',
 }
 
 // Standard error codes
@@ -93,7 +93,7 @@ export enum ErrorCode {
   // Generic errors (9000-9999)
   UNKNOWN_ERROR = 'E9001',
   PROCESSING_ERROR = 'E9002',
-  BATCH_ERROR = 'E9003'
+  BATCH_ERROR = 'E9003',
 }
 
 // Base error class
@@ -115,7 +115,7 @@ export abstract class BaseError extends Error {
     userMessage,
     context,
     technicalDetails,
-    retryable = false
+    retryable = false,
   }: {
     code: ErrorCode;
     category: ErrorCategory;
@@ -131,9 +131,9 @@ export abstract class BaseError extends Error {
     this.code = code;
     this.category = category;
     this.severity = severity;
-    this.context = context;
+    this.context = context ?? {};
     this.userMessage = userMessage;
-    this.technicalDetails = technicalDetails;
+    this.technicalDetails = technicalDetails ?? '';
     this.timestamp = new Date().toISOString();
     this.retryable = retryable;
 
@@ -151,11 +151,13 @@ export abstract class BaseError extends Error {
         category: this.category,
         severity: this.severity,
         message: this.userMessage,
-        technical_details: this.technicalDetails,
+        ...(this.technicalDetails !== undefined
+          ? { technical_details: this.technicalDetails }
+          : {}),
         timestamp: this.timestamp,
         retryable: this.retryable,
-        context: this.context
-      }
+        ...(this.context !== undefined ? { context: this.context } : {}),
+      },
     };
   }
 
@@ -169,8 +171,8 @@ export abstract class BaseError extends Error {
         severity: this.severity,
         message: this.message,
         technicalDetails: this.technicalDetails,
-        context: { ...this.context, ...additionalContext }
-      }
+        context: { ...this.context, ...additionalContext },
+      },
     };
 
     switch (this.severity) {
@@ -190,40 +192,52 @@ export abstract class BaseError extends Error {
 
 // Specific error classes
 export class ValidationError extends BaseError {
-  constructor(message: string, userMessage: string = 'Invalid input provided', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Invalid input provided',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.VALIDATION_FAILED,
       category: ErrorCategory.VALIDATION,
       severity: ErrorSeverity.MEDIUM,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
 
 export class AuthenticationError extends BaseError {
-  constructor(message: string, userMessage: string = 'Authentication failed', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Authentication failed',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.INVALID_CREDENTIALS,
       category: ErrorCategory.AUTHENTICATION,
       severity: ErrorSeverity.HIGH,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
 
 export class AuthorizationError extends BaseError {
-  constructor(message: string, userMessage: string = 'Access denied', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Access denied',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.INSUFFICIENT_PERMISSIONS,
       category: ErrorCategory.AUTHORIZATION,
       severity: ErrorSeverity.HIGH,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
@@ -236,62 +250,78 @@ export class DatabaseError extends BaseError {
       severity: ErrorSeverity.HIGH,
       message,
       userMessage: 'Database operation failed',
-      context,
-      retryable
+      ...(context !== undefined ? { context } : {}),
+      retryable,
     });
   }
 }
 
 export class NetworkError extends BaseError {
-  constructor(message: string, userMessage: string = 'Network connection failed', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Network connection failed',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.NETWORK_UNREACHABLE,
       category: ErrorCategory.NETWORK,
       severity: ErrorSeverity.MEDIUM,
       message,
       userMessage,
-      context,
-      retryable: true
+      ...(context !== undefined ? { context } : {}),
+      retryable: true,
     });
   }
 }
 
 export class ExternalApiError extends BaseError {
-  constructor(message: string, userMessage: string = 'External service unavailable', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'External service unavailable',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.EXTERNAL_API_ERROR,
       category: ErrorCategory.EXTERNAL_API,
       severity: ErrorSeverity.MEDIUM,
       message,
       userMessage,
-      context,
-      retryable: true
+      ...(context !== undefined ? { context } : {}),
+      retryable: true,
     });
   }
 }
 
 export class BusinessLogicError extends BaseError {
-  constructor(message: string, userMessage: string = 'Operation not allowed', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Operation not allowed',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.BUSINESS_RULE_VIOLATION,
       category: ErrorCategory.BUSINESS_LOGIC,
       severity: ErrorSeverity.MEDIUM,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
 
 export class ImmutabilityViolationError extends BaseError {
-  constructor(message: string, userMessage: string = 'Cannot modify immutable data', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Cannot modify immutable data',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.IMMUTABILITY_VIOLATION,
       category: ErrorCategory.IMMUTABILITY,
       severity: ErrorSeverity.HIGH,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
@@ -304,34 +334,42 @@ export class SystemError extends BaseError {
       severity: ErrorSeverity.CRITICAL,
       message,
       userMessage: 'System error occurred',
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
 
 export class ConfigurationError extends BaseError {
-  constructor(message: string, userMessage: string = 'System configuration error', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'System configuration error',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.CONFIGURATION_ERROR,
       category: ErrorCategory.CONFIGURATION,
       severity: ErrorSeverity.CRITICAL,
       message,
       userMessage,
-      context
+      ...(context !== undefined ? { context } : {}),
     });
   }
 }
 
 export class RateLimitError extends BaseError {
-  constructor(message: string, userMessage: string = 'Rate limit exceeded', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Rate limit exceeded',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.RATE_LIMIT_EXCEEDED,
       category: ErrorCategory.RATE_LIMIT,
       severity: ErrorSeverity.MEDIUM,
       message,
       userMessage,
-      context,
-      retryable: true
+      ...(context !== undefined ? { context } : {}),
+      retryable: true,
     });
   }
 }
@@ -367,7 +405,7 @@ export class ErrorHandler {
     try {
       return await operation();
     } catch (error) {
-      const standardError = ErrorHandler.standardize(error, context.operationName, context.category);
+      const standardError = ErrorHandler.standardize(error, context.operationName);
 
       // Log the error
       standardError.log({ operation: context.operationName });
@@ -390,7 +428,7 @@ export class ErrorHandler {
   /**
    * Standardize any error into our error classes
    */
-  static standardize(error: any, operationName: string, defaultCategory?: ErrorCategory): BaseError {
+  static standardize(error: any, operationName: string): BaseError {
     // If it's already a BaseError, return as-is
     if (error instanceof BaseError) {
       return error;
@@ -409,27 +447,27 @@ export class ErrorHandler {
         return new AuthorizationError(message, 'Access denied', context);
       }
       if (message.includes('database') || message.includes('connection')) {
-        return new DatabaseError(message, context);
+        return new DatabaseError(message);
       }
       if (message.includes('network') || message.includes('timeout')) {
-        return new NetworkError(message, undefined, context);
+        return new NetworkError(message);
       }
       if (message.includes('rate limit') || message.includes('quota')) {
-        return new RateLimitError(message, undefined, context);
+        return new RateLimitError(message);
       }
       if (message.includes('immutable') || message.includes('cannot modify')) {
-        return new ImmutabilityViolationError(message, undefined, context);
+        return new ImmutabilityViolationError(message);
       }
 
       // Default to system error
-      return new SystemError(message, context);
+      return new SystemError(message);
     }
 
     // For non-Error objects, create a generic error
-    return new SystemError(
-      `Unknown error: ${String(error)}`,
-      { originalValue: error, operationName }
-    );
+    return new SystemError(`Unknown error: ${String(error)}`, {
+      originalValue: error,
+      operationName,
+    });
   }
 
   /**
@@ -446,9 +484,9 @@ export class ErrorHandler {
       content: [
         {
           type: 'text',
-          text: `❌ ${standardError.userMessage}`
-        }
-      ]
+          text: `❌ ${standardError.userMessage}`,
+        },
+      ],
     };
   }
 
@@ -463,9 +501,7 @@ export class ErrorHandler {
   /**
    * Get recommended retry delay in milliseconds
    */
-  static getRetryDelay(error: any, attempt: number = 1): number {
-    const standardError = ErrorHandler.standardize(error, 'unknown');
-
+  static getRetryDelay(_error: any, attempt: number = 1): number {
     // Base delay with exponential backoff
     const baseDelay = 1000; // 1 second
     const maxDelay = 30000; // 30 seconds
@@ -494,7 +530,7 @@ export class ErrorBoundary {
   shouldTrip(): boolean {
     const now = Date.now();
     const recentErrors = this.errors.filter(
-      error => now - new Date(error.timestamp).getTime() < this.timeWindow
+      (error) => now - new Date(error.timestamp).getTime() < this.timeWindow
     );
 
     this.errors = recentErrors;
@@ -510,7 +546,7 @@ export class ErrorBoundary {
     // Clean old errors
     const now = Date.now();
     this.errors = this.errors.filter(
-      error => now - new Date(error.timestamp).getTime() < this.timeWindow
+      (error) => now - new Date(error.timestamp).getTime() < this.timeWindow
     );
   }
 
@@ -524,11 +560,15 @@ export class ErrorBoundary {
   /**
    * Get error statistics
    */
-  getStats(): { totalErrors: number; errorsByCategory: Record<string, number>; errorsBySeverity: Record<string, number> } {
+  getStats(): {
+    totalErrors: number;
+    errorsByCategory: Record<string, number>;
+    errorsBySeverity: Record<string, number>;
+  } {
     const errorsByCategory: Record<string, number> = {};
     const errorsBySeverity: Record<string, number> = {};
 
-    this.errors.forEach(error => {
+    this.errors.forEach((error) => {
       errorsByCategory[error.category] = (errorsByCategory[error.category] || 0) + 1;
       errorsBySeverity[error.severity] = (errorsBySeverity[error.severity] || 0) + 1;
     });
@@ -536,7 +576,7 @@ export class ErrorBoundary {
     return {
       totalErrors: this.errors.length,
       errorsByCategory,
-      errorsBySeverity
+      errorsBySeverity,
     };
   }
 }

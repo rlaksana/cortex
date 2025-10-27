@@ -5,11 +5,7 @@
  * for consistent, structured logging across the entire codebase.
  */
 
-import {
-  createRequestLogger,
-  withRequestLogging,
-  logger as baseLogger
-} from './logger.js';
+import { createRequestLogger, logger as baseLogger } from './logger.js';
 
 /**
  * Log Level Guidelines
@@ -55,7 +51,7 @@ export function logRequestStart(toolName: string, params?: Record<string, any>) 
   requestLogger.info(
     {
       tool_name: toolName,
-      ...(params && { params: sanitizeLogParams(params) })
+      ...(params && { params: sanitizeLogParams(params) }),
     },
     `${toolName} request started`
   );
@@ -77,7 +73,7 @@ export function logRequestSuccess(
   requestLogger.info(
     {
       tool_name: toolName,
-      ...(result && { result_summary: summarizeResult(result) })
+      ...(result && { result_summary: summarizeResult(result) }),
     },
     `${toolName} request completed successfully`
   );
@@ -100,12 +96,15 @@ export function logRequestError(
   requestLogger.error(
     {
       tool_name: toolName,
-      error: error instanceof Error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : error,
-      ...context
+      error:
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : error,
+      ...context,
     },
     `${toolName} request failed`
   );
@@ -128,7 +127,7 @@ export function logDatabaseOperation(
   const logData: any = {
     operation,
     table,
-    sql_duration_ms: duration_ms
+    sql_duration_ms: duration_ms,
   };
 
   if (recordCount !== undefined) {
@@ -161,7 +160,7 @@ export function logAuthenticationEvent(
 ) {
   const logData: any = {
     auth_event: event,
-    success
+    success,
   };
 
   if (userId) logData.user_id = userId;
@@ -197,7 +196,7 @@ export function logBusinessOperation(
       entity_type,
       ...(entity_id && { entity_id }),
       ...(action && { action }),
-      ...(result && { result })
+      ...(result && { result }),
     },
     `Business operation: ${operation}`
   );
@@ -211,14 +210,20 @@ export function logBusinessOperation(
  */
 function sanitizeLogParams(params: Record<string, any>): Record<string, any> {
   const sensitiveFields = [
-    'password', 'token', 'key', 'secret', 'authorization',
-    'api_key', 'openai_api_key', 'credentials'
+    'password',
+    'token',
+    'key',
+    'secret',
+    'authorization',
+    'api_key',
+    'openai_api_key',
+    'credentials',
   ];
 
   const sanitized: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(params)) {
-    if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+    if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
       sanitized[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
       // Recursively sanitize nested objects
@@ -283,7 +288,7 @@ export function logPerformance(
     {
       operation,
       duration_ms,
-      ...context
+      ...context,
     },
     `Performance: ${operation} completed in ${duration_ms}ms`
   );
@@ -293,7 +298,7 @@ export function logPerformance(
       {
         operation,
         duration_ms,
-        ...context
+        ...context,
       },
       `Slow operation detected: ${operation} took ${duration_ms}ms`
     );

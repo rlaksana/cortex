@@ -47,7 +47,7 @@ export class LRUCache<K, V> {
     hits: 0,
     misses: 0,
     expired: 0,
-    evicted: 0
+    evicted: 0,
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 
@@ -96,7 +96,9 @@ export class LRUCache<K, V> {
 
     // Check if single item exceeds memory limit
     if (size > this.options.maxMemoryBytes) {
-      throw new Error(`Item size (${size} bytes) exceeds cache memory limit (${this.options.maxMemoryBytes} bytes)`);
+      throw new Error(
+        `Item size (${size} bytes) exceeds cache memory limit (${this.options.maxMemoryBytes} bytes)`
+      );
     }
 
     // Create new node
@@ -106,9 +108,13 @@ export class LRUCache<K, V> {
       size,
       prev: null,
       next: null,
-      ttl: ttlMs || this.options.ttlMs,
+      ...(ttlMs !== undefined
+        ? { ttl: ttlMs }
+        : this.options.ttlMs !== undefined
+          ? { ttl: this.options.ttlMs }
+          : {}),
       createdAt: Date.now(),
-      lastAccessed: Date.now()
+      lastAccessed: Date.now(),
     };
 
     // Add to cache and front of list
@@ -173,7 +179,7 @@ export class LRUCache<K, V> {
       totalHits: this.stats.hits,
       totalMisses: this.stats.misses,
       expiredItems: this.stats.expired,
-      evictedItems: this.stats.evicted
+      evictedItems: this.stats.evicted,
     };
   }
 
@@ -195,7 +201,6 @@ export class LRUCache<K, V> {
    */
   cleanupExpired(): number {
     let cleanedCount = 0;
-    const now = Date.now();
 
     for (const [key, node] of Array.from(this.cache.entries())) {
       if (this.isExpired(node)) {
@@ -280,7 +285,7 @@ export class LRUCache<K, V> {
    */
   private isExpired(node: CacheNode<K, V>): boolean {
     if (!node.ttl) return false;
-    return (Date.now() - node.createdAt) > node.ttl;
+    return Date.now() - node.createdAt > node.ttl;
   }
 
   /**
@@ -364,7 +369,7 @@ export class CacheFactory {
       maxSize: maxItems,
       maxMemoryBytes: 50 * 1024 * 1024, // 50MB
       ttlMs: 5 * 60 * 1000, // 5 minutes
-      cleanupIntervalMs: 60 * 1000 // 1 minute
+      cleanupIntervalMs: 60 * 1000, // 1 minute
     });
   }
 
@@ -377,7 +382,7 @@ export class CacheFactory {
       maxMemoryBytes: 100 * 1024 * 1024, // 100MB
       ttlMs: 60 * 60 * 1000, // 1 hour
       cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
-      sizeEstimator: (embedding: number[]) => embedding.length * 8 // 8 bytes per float
+      sizeEstimator: (embedding: number[]) => embedding.length * 8, // 8 bytes per float
     });
   }
 
@@ -389,7 +394,7 @@ export class CacheFactory {
       maxSize: maxItems,
       maxMemoryBytes: 20 * 1024 * 1024, // 20MB
       ttlMs: 30 * 60 * 1000, // 30 minutes
-      cleanupIntervalMs: 10 * 60 * 1000 // 10 minutes
+      cleanupIntervalMs: 10 * 60 * 1000, // 10 minutes
     });
   }
 
@@ -401,7 +406,7 @@ export class CacheFactory {
       maxSize: 500,
       maxMemoryBytes: 10 * 1024 * 1024, // 10MB
       ttlMs: 24 * 60 * 60 * 1000, // 24 hours
-      cleanupIntervalMs: 60 * 60 * 1000 // 1 hour
+      cleanupIntervalMs: 60 * 60 * 1000, // 1 hour
     });
   }
 }

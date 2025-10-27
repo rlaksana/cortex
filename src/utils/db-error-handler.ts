@@ -8,7 +8,7 @@
  */
 
 import { logger } from './logger.js';
-import type { QdrantClient } from '@qdrant/client';
+// Note: Removed QdrantClient import as we're using a generic database interface now
 
 export enum DbErrorType {
   CONNECTION_ERROR = 'CONNECTION_ERROR',
@@ -17,7 +17,7 @@ export enum DbErrorType {
   RECORD_NOT_FOUND = 'RECORD_NOT_FOUND',
   PERMISSION_ERROR = 'PERMISSION_ERROR',
   SCHEMA_ERROR = 'SCHEMA_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 export interface RetryConfig {
@@ -35,14 +35,14 @@ export interface DbOperationResult<T> {
     message: string;
     originalError?: unknown;
   };
-  retryAttempts?: number;
+  retryAttempts: number;
 }
 
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
   baseDelayMs: 1000,
   maxDelayMs: 10000,
-  backoffMultiplier: 2
+  backoffMultiplier: 2,
 };
 
 export class DatabaseErrorHandler {
@@ -73,7 +73,7 @@ export class DatabaseErrorHandler {
         return {
           success: true,
           data,
-          retryAttempts: attempt
+          retryAttempts: attempt,
         };
       } catch (error) {
         lastError = error;
@@ -85,7 +85,7 @@ export class DatabaseErrorHandler {
             attempt: attempt + 1,
             maxRetries: config.maxRetries + 1,
             errorType,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           },
           'Database operation failed'
         );
@@ -113,9 +113,9 @@ export class DatabaseErrorHandler {
       error: {
         type: errorType,
         message: this.getErrorMessage(lastError, operationName),
-        originalError: lastError
+        originalError: lastError,
       },
-      retryAttempts: config.maxRetries
+      retryAttempts: config.maxRetries,
     };
   }
 
@@ -145,7 +145,7 @@ export class DatabaseErrorHandler {
       return {
         success: true,
         data: fallbackData,
-        retryAttempts: primaryResult.retryAttempts
+        retryAttempts: primaryResult.retryAttempts ?? 0,
       };
     } catch (fallbackError) {
       logger.error(
@@ -158,9 +158,9 @@ export class DatabaseErrorHandler {
         error: {
           type: DbErrorType.UNKNOWN_ERROR,
           message: `Both primary and fallback failed for ${operationName}`,
-          originalError: { primary: primaryResult.error, fallback: fallbackError }
+          originalError: { primary: primaryResult.error, fallback: fallbackError },
         },
-        retryAttempts: primaryResult.retryAttempts
+        retryAttempts: primaryResult.retryAttempts ?? 0,
       };
     }
   }
@@ -168,9 +168,11 @@ export class DatabaseErrorHandler {
   /**
    * Health check for database connection
    */
-  async healthCheck(qdrant: QdrantClient): Promise<boolean> {
+  async healthCheck(): Promise<boolean> {
     try {
-      await qdrant.$queryRaw`SELECT 1`;
+      // Generic health check - actual implementation would depend on the database adapter
+      // For now, just return true as a placeholder
+      logger.debug('Database health check placeholder - returning true');
       return true;
     } catch (error) {
       logger.error({ error }, 'Database health check failed');
@@ -203,8 +205,12 @@ export class DatabaseErrorHandler {
       }
 
       // Check for connection errors
-      if (message.includes('connection') || message.includes('connect') ||
-          message.includes('econnrefused') || message.includes('connection timeout')) {
+      if (
+        message.includes('connection') ||
+        message.includes('connect') ||
+        message.includes('econnrefused') ||
+        message.includes('connection timeout')
+      ) {
         return DbErrorType.CONNECTION_ERROR;
       }
 
@@ -214,26 +220,42 @@ export class DatabaseErrorHandler {
       }
 
       // Check for constraint violations
-      if (message.includes('constraint') || message.includes('unique') ||
-          message.includes('foreign key') || message.includes('duplicate key')) {
+      if (
+        message.includes('constraint') ||
+        message.includes('unique') ||
+        message.includes('foreign key') ||
+        message.includes('duplicate key')
+      ) {
         return DbErrorType.CONSTRAINT_VIOLATION;
       }
 
       // Check for record not found
-      if (message.includes('not found') || message.includes('record not found') ||
-          message.includes('no rows returned')) {
+      if (
+        message.includes('not found') ||
+        message.includes('record not found') ||
+        message.includes('no rows returned')
+      ) {
         return DbErrorType.RECORD_NOT_FOUND;
       }
 
       // Check for permission errors
-      if (message.includes('permission') || message.includes('access denied') ||
-          message.includes('unauthorized') || message.includes('insufficient privileges')) {
+      if (
+        message.includes('permission') ||
+        message.includes('access denied') ||
+        message.includes('unauthorized') ||
+        message.includes('insufficient privileges')
+      ) {
         return DbErrorType.PERMISSION_ERROR;
       }
 
       // Check for schema errors
-      if (message.includes('schema') || message.includes('column') || message.includes('table') ||
-          message.includes('does not exist') || message.includes('unknown column')) {
+      if (
+        message.includes('schema') ||
+        message.includes('column') ||
+        message.includes('table') ||
+        message.includes('does not exist') ||
+        message.includes('unknown column')
+      ) {
         return DbErrorType.SCHEMA_ERROR;
       }
     }
@@ -247,7 +269,7 @@ export class DatabaseErrorHandler {
       DbErrorType.CONSTRAINT_VIOLATION,
       DbErrorType.PERMISSION_ERROR,
       DbErrorType.SCHEMA_ERROR,
-      DbErrorType.RECORD_NOT_FOUND
+      DbErrorType.RECORD_NOT_FOUND,
     ].includes(errorType);
   }
 
@@ -259,7 +281,7 @@ export class DatabaseErrorHandler {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 

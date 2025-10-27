@@ -21,8 +21,6 @@ import { logger } from './logger.js';
 import { config } from '../config/environment.js';
 import { databaseConfig } from '../config/database-config.js';
 import { configValidator } from '../config/validation.js';
-import type { CompleteDatabaseConfig } from '../config/database-config.js';
-import type { ValidationResult } from '../config/validation.js';
 
 export interface TestResult {
   name: string;
@@ -122,7 +120,7 @@ export class ConfigurationTester {
         suites.push(suite);
 
         // Collect recommendations and warnings
-        suite.tests.forEach(test => {
+        suite.tests.forEach((test) => {
           if (!test.passed && test.details?.recommendation) {
             recommendations.push(test.details.recommendation);
           }
@@ -130,7 +128,6 @@ export class ConfigurationTester {
             warnings.push(test.details.warning);
           }
         });
-
       } catch (error) {
         logger.error({ suite: suiteName, error }, `Test suite failed: ${suiteName}`);
         suites.push({
@@ -139,7 +136,7 @@ export class ConfigurationTester {
           duration: 0,
           passed: false,
           passedCount: 0,
-          totalCount: 0
+          totalCount: 0,
         });
       }
     }
@@ -155,7 +152,7 @@ export class ConfigurationTester {
       configuration: {
         databaseType: databaseConfig.getConfiguration().selection.type,
         migrationMode: databaseConfig.getConfiguration().selection.migrationMode,
-        features: databaseConfig.getFeatureFlags()
+        features: databaseConfig.getFeatureFlags(),
       },
       suites,
       summary: {
@@ -164,18 +161,21 @@ export class ConfigurationTester {
         passedTests,
         failedTests: totalTests - passedTests,
         totalDuration,
-        success
+        success,
       },
       recommendations: [...new Set(recommendations)], // Remove duplicates
-      warnings: [...new Set(warnings)]
+      warnings: [...new Set(warnings)],
     };
 
-    logger.info({
-      success: report.summary.success,
-      passed: report.summary.passedTests,
-      failed: report.summary.failedTests,
-      duration: report.summary.totalDuration
-    }, 'Configuration testing completed');
+    logger.info(
+      {
+        success: report.summary.success,
+        passed: report.summary.passedTests,
+        failed: report.summary.failedTests,
+        duration: report.summary.totalDuration,
+      },
+      'Configuration testing completed'
+    );
 
     return report;
   }
@@ -200,47 +200,48 @@ export class ConfigurationTester {
         details: {
           errors: validationResult.errors.length,
           warnings: validationResult.warnings.length,
-          recommendation: validationResult.errors.length > 0 ? 'Fix validation errors before proceeding' : undefined
-        }
+          recommendation:
+            validationResult.errors.length > 0
+              ? 'Fix validation errors before proceeding'
+              : undefined,
+        },
       });
-
     } catch (error) {
       tests.push({
         name: 'schema-validation',
         passed: false,
         duration: 0,
         message: 'Schema validation threw error',
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(String(error)),
       });
     }
 
     // Test environment configuration
     try {
       const envConfig = config.getConfig();
-      const hasRequiredVars = !!(
-        envConfig.DB_HOST &&
-        envConfig.DB_NAME &&
-        envConfig.DB_USER
-      );
+      const hasRequiredVars = !!(envConfig.DB_HOST && envConfig.DB_NAME && envConfig.DB_USER);
 
       tests.push({
         name: 'environment-variables',
         passed: hasRequiredVars,
         duration: 0,
-        message: hasRequiredVars ? 'Environment variables present' : 'Missing required environment variables',
+        message: hasRequiredVars
+          ? 'Environment variables present'
+          : 'Missing required environment variables',
         details: {
           missing: hasRequiredVars ? undefined : ['DB_HOST', 'DB_NAME', 'DB_USER'],
-          recommendation: hasRequiredVars ? undefined : 'Set required environment variables in .env file'
-        }
+          recommendation: hasRequiredVars
+            ? undefined
+            : 'Set required environment variables in .env file',
+        },
       });
-
     } catch (error) {
       tests.push({
         name: 'environment-variables',
         passed: false,
         duration: 0,
         message: 'Environment variable check failed',
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(String(error)),
       });
     }
 
@@ -248,9 +249,9 @@ export class ConfigurationTester {
       name: 'Configuration Validation',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -277,17 +278,18 @@ export class ConfigurationTester {
           message: validation.qdrant ? 'qdrant connection successful' : 'qdrant connection failed',
           details: {
             errors: validation.errors,
-            recommendation: validation.qdrant ? undefined : 'Check qdrant configuration and connectivity'
-          }
+            recommendation: validation.qdrant
+              ? undefined
+              : 'Check qdrant configuration and connectivity',
+          },
         });
-
       } catch (error) {
         tests.push({
           name: 'qdrant-connectivity',
           passed: false,
           duration: 0,
           message: 'qdrant connectivity test failed',
-          error: error instanceof Error ? error : new Error(String(error))
+          error: error instanceof Error ? error : new Error(String(error)),
         });
       }
     }
@@ -306,17 +308,18 @@ export class ConfigurationTester {
           message: validation.qdrant ? 'Qdrant connection successful' : 'Qdrant connection failed',
           details: {
             errors: validation.errors,
-            recommendation: validation.qdrant ? undefined : 'Check Qdrant URL and API key configuration'
-          }
+            recommendation: validation.qdrant
+              ? undefined
+              : 'Check Qdrant URL and API key configuration',
+          },
         });
-
       } catch (error) {
         tests.push({
           name: 'qdrant-connectivity',
           passed: false,
           duration: 0,
           message: 'Qdrant connectivity test failed',
-          error: error instanceof Error ? error : new Error(String(error))
+          error: error instanceof Error ? error : new Error(String(error)),
         });
       }
     }
@@ -325,9 +328,9 @@ export class ConfigurationTester {
       name: 'Database Connectivity',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -352,8 +355,8 @@ export class ConfigurationTester {
       details: {
         currentMode: migrationConfig.mode,
         validModes,
-        recommendation: modeValid ? undefined : `Use one of: ${validModes.join(', ')}`
-      }
+        recommendation: modeValid ? undefined : `Use one of: ${validModes.join(', ')}`,
+      },
     });
 
     // Test migration batch size
@@ -366,8 +369,8 @@ export class ConfigurationTester {
       message: batchSizeValid ? 'Migration batch size is valid' : 'Invalid migration batch size',
       details: {
         currentSize: migrationConfig.batchSize,
-        recommendation: batchSizeValid ? undefined : 'Set batch size between 1 and 10000'
-      }
+        recommendation: batchSizeValid ? undefined : 'Set batch size between 1 and 10000',
+      },
     });
 
     // Test migration concurrency
@@ -377,38 +380,45 @@ export class ConfigurationTester {
       name: 'migration-concurrency',
       passed: concurrencyValid,
       duration: 0,
-      message: concurrencyValid ? 'Migration concurrency is valid' : 'Invalid migration concurrency',
+      message: concurrencyValid
+        ? 'Migration concurrency is valid'
+        : 'Invalid migration concurrency',
       details: {
         currentConcurrency: migrationConfig.concurrency,
-        recommendation: concurrencyValid ? undefined : 'Set concurrency between 1 and 10'
-      }
+        recommendation: concurrencyValid ? undefined : 'Set concurrency between 1 and 10',
+      },
     });
 
     // Test safety settings
-    const safeForProduction = this.environment === 'production'
-      ? (migrationConfig.dryRun === false && migrationConfig.preservePg === true)
-      : true;
+    const safeForProduction =
+      this.environment === 'production'
+        ? migrationConfig.dryRun === false && migrationConfig.preservePg === true
+        : true;
 
     tests.push({
       name: 'migration-safety',
       passed: safeForProduction,
       duration: 0,
-      message: safeForProduction ? 'Migration safety settings are appropriate' : 'Migration safety settings need review',
+      message: safeForProduction
+        ? 'Migration safety settings are appropriate'
+        : 'Migration safety settings need review',
       details: {
         environment: this.environment,
         dryRun: migrationConfig.dryRun,
         preservePg: migrationConfig.preservePg,
-        recommendation: safeForProduction ? undefined : 'Review safety settings for production environment'
-      }
+        recommendation: safeForProduction
+          ? undefined
+          : 'Review safety settings for production environment',
+      },
     });
 
     return {
       name: 'Migration Configuration',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -433,22 +443,25 @@ export class ConfigurationTester {
       details: {
         min: poolConfig.min,
         max: poolConfig.max,
-        recommendation: poolValid ? undefined : 'Ensure min <= max and max <= 100'
-      }
+        recommendation: poolValid ? undefined : 'Ensure min <= max and max <= 100',
+      },
     });
 
     // Test timeout settings
-    const timeoutValid = poolConfig.connectionTimeout >= 1000 && poolConfig.connectionTimeout <= 300000;
+    const timeoutValid =
+      poolConfig.connectionTimeout >= 1000 && poolConfig.connectionTimeout <= 300000;
 
     tests.push({
       name: 'timeout-configuration',
       passed: timeoutValid,
       duration: 0,
-      message: timeoutValid ? 'Timeout configuration is reasonable' : 'Timeout configuration may need adjustment',
+      message: timeoutValid
+        ? 'Timeout configuration is reasonable'
+        : 'Timeout configuration may need adjustment',
       details: {
         timeout: poolConfig.connectionTimeout,
-        recommendation: timeoutValid ? undefined : 'Consider timeout between 1-300 seconds'
-      }
+        recommendation: timeoutValid ? undefined : 'Consider timeout between 1-300 seconds',
+      },
     });
 
     // Test environment-specific performance settings
@@ -473,21 +486,23 @@ export class ConfigurationTester {
       name: 'environment-performance',
       passed: performanceOptimal,
       duration: 0,
-      message: performanceOptimal ? 'Performance settings are optimal for environment' : 'Performance settings could be optimized',
+      message: performanceOptimal
+        ? 'Performance settings are optimal for environment'
+        : 'Performance settings could be optimized',
       details: {
         environment: this.environment,
         recommendations,
-        recommendation: recommendations.length > 0 ? recommendations[0] : undefined
-      }
+        recommendation: recommendations.length > 0 ? recommendations[0] : undefined,
+      },
     });
 
     return {
       name: 'Performance Configuration',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -508,11 +523,15 @@ export class ConfigurationTester {
       name: 'database-password-security',
       passed: hasSecurePassword,
       duration: 0,
-      message: hasSecurePassword ? 'Database password meets security requirements' : 'Database password may be weak',
+      message: hasSecurePassword
+        ? 'Database password meets security requirements'
+        : 'Database password may be weak',
       details: {
         passwordLength: envConfig.DB_PASSWORD?.length || 0,
-        recommendation: hasSecurePassword ? undefined : 'Use a strong password (minimum 8 characters)'
-      }
+        recommendation: hasSecurePassword
+          ? undefined
+          : 'Use a strong password (minimum 8 characters)',
+      },
     });
 
     // Test for API key security
@@ -527,10 +546,10 @@ export class ConfigurationTester {
       duration: 0,
       message: apiKeySecure ? 'API keys appear secure' : 'API key security needs attention',
       details: {
-        hasApiKey: !!(dbConfig.vector.openaiApiKey),
+        hasApiKey: !!dbConfig.vector.openaiApiKey,
         keyLength: dbConfig.vector.openaiApiKey?.length || 0,
-        recommendation: apiKeySecure ? undefined : 'Use valid API keys from your provider'
-      }
+        recommendation: apiKeySecure ? undefined : 'Use valid API keys from your provider',
+      },
     });
 
     // Test for encryption configuration
@@ -545,17 +564,18 @@ export class ConfigurationTester {
       details: {
         environment: this.environment,
         hasEncryptionKey: hasEncryption,
-        recommendation: encryptionRequired && !hasEncryption ? 'Set ENCRYPTION_KEY for production' : undefined
-      }
+        recommendation:
+          encryptionRequired && !hasEncryption ? 'Set ENCRYPTION_KEY for production' : undefined,
+      },
     });
 
     return {
       name: 'Security Configuration',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -577,7 +597,11 @@ export class ConfigurationTester {
       warnings.push('Hybrid mode may be complex for testing');
     }
 
-    if (this.environment === 'production' && dbConfig.selection.type === 'qdrant' && dbConfig.features.migrationMode) {
+    if (
+      this.environment === 'production' &&
+      dbConfig.selection.type === 'qdrant' &&
+      dbConfig.features.migrationMode
+    ) {
       warnings.push('Consider using hybrid mode for production with migration');
     }
 
@@ -585,13 +609,15 @@ export class ConfigurationTester {
       name: 'database-type-compatibility',
       passed: typeCompatible,
       duration: 0,
-      message: typeCompatible ? 'Database type is compatible with environment' : 'Database type may not be optimal',
+      message: typeCompatible
+        ? 'Database type is compatible with environment'
+        : 'Database type may not be optimal',
       details: {
         environment: this.environment,
         databaseType: dbConfig.selection.type,
         warnings,
-        recommendation: warnings.length > 0 ? warnings[0] : undefined
-      }
+        recommendation: warnings.length > 0 ? warnings[0] : undefined,
+      },
     });
 
     // Test feature compatibility
@@ -604,17 +630,17 @@ export class ConfigurationTester {
       message: 'Features are compatible with environment',
       details: {
         environment: this.environment,
-        features: dbConfig.features
-      }
+        features: dbConfig.features,
+      },
     });
 
     return {
       name: 'Environment Compatibility',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -634,36 +660,45 @@ export class ConfigurationTester {
       name: 'migration-flag-consistency',
       passed: migrationConsistent,
       duration: 0,
-      message: migrationConsistent ? 'Migration flags are consistent' : 'Migration flags may be inconsistent',
+      message: migrationConsistent
+        ? 'Migration flags are consistent'
+        : 'Migration flags may be inconsistent',
       details: {
         migrationMode: features.migrationMode,
         healthChecks: features.healthChecks,
-        recommendation: migrationConsistent ? undefined : 'Enable health checks when migration mode is active'
-      }
+        recommendation: migrationConsistent
+          ? undefined
+          : 'Enable health checks when migration mode is active',
+      },
     });
 
     // Test debug mode appropriateness
-    const debugAppropriate = this.environment === 'development' ? features.debugMode : !features.debugMode;
+    const debugAppropriate =
+      this.environment === 'development' ? features.debugMode : !features.debugMode;
 
     tests.push({
       name: 'debug-mode-appropriateness',
       passed: debugAppropriate,
       duration: 0,
-      message: debugAppropriate ? 'Debug mode is appropriate for environment' : 'Debug mode may not be appropriate',
+      message: debugAppropriate
+        ? 'Debug mode is appropriate for environment'
+        : 'Debug mode may not be appropriate',
       details: {
         environment: this.environment,
         debugMode: features.debugMode,
-        recommendation: debugAppropriate ? undefined : 'Consider adjusting debug mode for this environment'
-      }
+        recommendation: debugAppropriate
+          ? undefined
+          : 'Consider adjusting debug mode for this environment',
+      },
     });
 
     return {
       name: 'Feature Flags',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 
@@ -683,20 +718,21 @@ export class ConfigurationTester {
         name: 'factory-integration',
         passed: factoryValid,
         duration: 0,
-        message: factoryValid ? 'Configuration factory integration works' : 'Configuration factory integration failed',
+        message: factoryValid
+          ? 'Configuration factory integration works'
+          : 'Configuration factory integration failed',
         details: {
           configKeys: Object.keys(factoryConfig),
-          recommendation: factoryValid ? undefined : 'Check database configuration integration'
-        }
+          recommendation: factoryValid ? undefined : 'Check database configuration integration',
+        },
       });
-
     } catch (error) {
       tests.push({
         name: 'factory-integration',
         passed: false,
         duration: 0,
         message: 'Factory integration test failed',
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(String(error)),
       });
     }
 
@@ -712,17 +748,16 @@ export class ConfigurationTester {
         message: exportValid ? 'Configuration export works' : 'Configuration export failed',
         details: {
           exportedKeys: Object.keys(exportedConfig),
-          recommendation: exportValid ? undefined : 'Check configuration export functionality'
-        }
+          recommendation: exportValid ? undefined : 'Check configuration export functionality',
+        },
       });
-
     } catch (error) {
       tests.push({
         name: 'configuration-export',
         passed: false,
         duration: 0,
         message: 'Configuration export test failed',
-        error: error instanceof Error ? error : new Error(String(error))
+        error: error instanceof Error ? error : new Error(String(error)),
       });
     }
 
@@ -730,9 +765,9 @@ export class ConfigurationTester {
       name: 'Integration Tests',
       tests,
       duration: Date.now() - startTime,
-      passed: tests.every(t => t.passed),
-      passedCount: tests.filter(t => t.passed).length,
-      totalCount: tests.length
+      passed: tests.every((t) => t.passed),
+      passedCount: tests.filter((t) => t.passed).length,
+      totalCount: tests.length,
     };
   }
 

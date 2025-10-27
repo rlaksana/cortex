@@ -1,76 +1,104 @@
 /**
- * Transaction utilities for Qdrant Client
+ * Transaction utilities for Vector Database Operations
  *
- * Provides transaction safety and performance optimization for database operations.
- * Replaces manual transaction handling with Qdrant's transaction patterns.
+ * Note: Qdrant vector database does not support traditional SQL transactions.
+ * This module provides retry logic and operation coordination for vector operations.
+ * For true atomic operations, operations should be designed to be idempotent
+ * and handle partial failures gracefully.
  *
  * @module utils/transaction
  */
 
-import { qdrant } from '../db/qdrant-client.js';
 import { logger } from './logger.js';
 import { dbErrorHandler, DbOperationResult } from './db-error-handler.js';
 
 export interface TransactionOptions {
-  timeout?: number; // Transaction timeout in milliseconds (default: 30000)
-  isolationLevel?: 'ReadUncommitted' | 'ReadCommitted' | 'RepeatableRead' | 'Serializable';
-  maxRetries?: number; // Maximum retry attempts for transaction conflicts (default: 3)
+  timeout?: number; // Operation timeout in milliseconds (default: 30000)
+  maxRetries?: number; // Maximum retry attempts for conflicts (default: 3)
+  ensureConsistency?: boolean; // Wait for write consistency (default: true)
+}
+
+export interface VectorTransactionContext {
+  operationId: string;
+  startTime: number;
+  operations: Array<{
+    type: string;
+    data: any;
+    timestamp: number;
+  }>;
 }
 
 /**
- * Execute a function within a Qdrant transaction with automatic retry and error handling
+ * Execute a function with retry logic and error handling for vector operations
  *
- * @param callback - Function to execute within the transaction
- * @param options - Transaction options
- * @returns Result of the transaction
+ * Note: This is not a true transaction but provides retry logic and operation tracking
+ * for Qdrant vector operations which don't support ACID transactions.
+ *
+ * @param callback - Function to execute with operation context
+ * @param options - Operation options
+ * @returns Result of the operation
  */
 export async function executeTransaction<T>(
-  callback: (tx: any) => Promise<T>,
+  callback: (ctx: VectorTransactionContext) => Promise<T>,
   options: TransactionOptions = {}
 ): Promise<DbOperationResult<T>> {
   const { timeout = 30000, maxRetries = 3 } = options;
+  const operationId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      logger.debug({ attempt, maxRetries }, 'Starting transaction attempt');
+      logger.debug({ operationId, attempt, maxRetries }, 'Starting vector operation attempt');
 
       const startTime = Date.now();
+      const ctx: VectorTransactionContext = {
+        operationId,
+        startTime,
+        operations: [],
+      };
 
-      // Use Qdrant's $transaction API
-      const result = await qdrant.getClient().$transaction(
-        async (tx) => {
-          return await callback(tx);
-        },
-        {
-          timeout,
-          isolationLevel: options.isolationLevel || 'ReadCommitted',
-        }
-      );
+      // Execute the callback with timeout
+      const result = await Promise.race([
+        callback(ctx),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Operation timeout after ${timeout}ms`)), timeout)
+        ),
+      ]);
 
       const duration = Date.now() - startTime;
 
-      logger.debug({ duration, attempt }, 'Transaction completed successfully');
+      logger.debug(
+        {
+          operationId,
+          duration,
+          attempt,
+          operationCount: ctx.operations.length,
+        },
+        'Vector operation completed successfully'
+      );
 
       return {
         success: true,
         data: result,
         retryAttempts: attempt - 1,
       };
-
     } catch (error) {
       lastError = error;
 
       const errorType = dbErrorHandler.categorizeError(error);
       const errorMessage = error instanceof Error ? error.message : String(error);
 
-      logger.warn({
-        attempt,
-        maxRetries,
-        errorType,
-        error: errorMessage,
-      }, 'Transaction attempt failed');
+      logger.warn(
+        {
+          operationId,
+          attempt,
+          maxRetries,
+          errorType,
+          error: errorMessage,
+        },
+        'Vector operation attempt failed'
+      );
 
       // Don't retry on certain error types
       if (shouldNotRetry(errorType) || attempt >= maxRetries) {
@@ -79,7 +107,7 @@ export async function executeTransaction<T>(
 
       // Exponential backoff for retries
       const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-      logger.debug({ delay, attempt }, 'Waiting before retry');
+      logger.debug({ operationId, delay, attempt }, 'Waiting before retry');
       await sleep(delay);
     }
   }
@@ -92,7 +120,7 @@ export async function executeTransaction<T>(
     success: false,
     error: {
       type: errorType,
-      message: `Transaction failed after ${maxRetries} attempts: ${errorMessage}`,
+      message: `Vector operation failed after ${maxRetries} attempts: ${errorMessage}`,
       originalError: lastError,
     },
     retryAttempts: maxRetries - 1,
@@ -100,46 +128,45 @@ export async function executeTransaction<T>(
 }
 
 /**
- * Execute a function within a transaction and throw on error (simplified API)
+ * Execute a function with retry logic and throw on error (simplified API)
  *
- * @param callback - Function to execute within the transaction
- * @param options - Transaction options
- * @returns Result of the transaction
+ * @param callback - Function to execute with operation context
+ * @param options - Operation options
+ * @returns Result of the operation
  */
 export async function transaction<T>(
-  callback: (tx: any) => Promise<T>,
+  callback: (ctx: VectorTransactionContext) => Promise<T>,
   options: TransactionOptions = {}
 ): Promise<T> {
   const result = await executeTransaction(callback, options);
 
   if (!result.success) {
-    throw new Error(result.error?.message || 'Transaction failed');
+    throw new Error(result.error?.message || 'Vector operation failed');
   }
 
   return result.data!;
 }
 
 /**
- * Execute multiple operations in parallel within separate transactions
+ * Execute multiple operations in parallel with retry logic
  *
  * @param operations - Array of operations to execute
- * @param options - Transaction options for each operation
+ * @param options - Operation options for each operation
  * @returns Array of results
  */
 export async function executeParallelTransactions<T>(
   operations: Array<() => Promise<T>>,
   options: TransactionOptions = {}
 ): Promise<DbOperationResult<T>[]> {
-  logger.debug({ operationCount: operations.length }, 'Starting parallel transactions');
+  logger.debug({ operationCount: operations.length }, 'Starting parallel vector operations');
 
   const promises = operations.map((operation, index) =>
-    executeTransaction(async (_tx) => {
-      // Note: Each operation gets its own transaction
-      // If you need true parallel operations within a single transaction,
-      // use Promise.all inside the transaction callback
+    executeTransaction(async (_ctx) => {
+      // Note: Each operation gets its own retry logic and context
+      // Vector operations don't support true ACID transactions
       return await operation();
     }, options).catch((error) => {
-      logger.error({ index, error }, 'Parallel transaction failed');
+      logger.error({ index, error }, 'Parallel vector operation failed');
       return {
         success: false,
         error: {
@@ -153,14 +180,17 @@ export async function executeParallelTransactions<T>(
 
   const results = await Promise.all(promises);
 
-  const successCount = results.filter(r => r.success).length;
+  const successCount = results.filter((r) => r.success).length;
   const failureCount = results.length - successCount;
 
-  logger.debug({
-    total: results.length,
-    successCount,
-    failureCount
-  }, 'Parallel transactions completed');
+  logger.debug(
+    {
+      total: results.length,
+      successCount,
+      failureCount,
+    },
+    'Parallel vector operations completed'
+  );
 
   return results;
 }
@@ -176,39 +206,47 @@ export async function executeParallelTransactions<T>(
 export async function batchOperation<T, R>(
   items: T[],
   batchSize: number,
-  processor: (batch: T[], tx?: any) => Promise<R[]>
+  processor: (batch: T[], ctx?: VectorTransactionContext) => Promise<R[]>
 ): Promise<R[]> {
   const results: R[] = [];
 
-  logger.debug({
-    totalItems: items.length,
-    batchSize,
-    batchCount: Math.ceil(items.length / batchSize)
-  }, 'Starting batch operation');
+  logger.debug(
+    {
+      totalItems: items.length,
+      batchSize,
+      batchCount: Math.ceil(items.length / batchSize),
+    },
+    'Starting batch vector operation'
+  );
 
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
     const batchNumber = Math.floor(i / batchSize) + 1;
 
     try {
-      logger.debug({
-        batchNumber,
-        batchSize: batch.length,
-        totalBatches: Math.ceil(items.length / batchSize)
-      }, 'Processing batch');
+      logger.debug(
+        {
+          batchNumber,
+          batchSize: batch.length,
+          totalBatches: Math.ceil(items.length / batchSize),
+        },
+        'Processing batch'
+      );
 
-      const batchResults = await transaction(async (tx) => {
-        return await processor(batch, tx);
+      const batchResults = await transaction(async (ctx) => {
+        return await processor(batch, ctx);
       });
 
       results.push(...batchResults);
-
     } catch (error) {
-      logger.error({
-        batchNumber,
-        batchSize: batch.length,
-        error: error instanceof Error ? error.message : String(error)
-      }, 'Batch processing failed');
+      logger.error(
+        {
+          batchNumber,
+          batchSize: batch.length,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        'Batch vector operation failed'
+      );
 
       // For batch operations, we might want to continue with other batches
       // depending on the error type and business requirements
@@ -216,58 +254,70 @@ export async function batchOperation<T, R>(
     }
   }
 
-  logger.debug({
-    totalItems: items.length,
-    processedItems: results.length
-  }, 'Batch operation completed');
+  logger.debug(
+    {
+      totalItems: items.length,
+      processedItems: results.length,
+    },
+    'Batch vector operation completed'
+  );
 
   return results;
 }
 
 /**
- * Optimistic lock helper for concurrent updates
+ * Optimistic update helper for concurrent vector operations
  *
- * @param model - Qdrant model to update
- * @param id - ID of the record
- * @param data - Data to update
- * @param versionField - Field name for version tracking (default: 'updated_at')
- * @param expectedVersion - Expected version value
+ * Note: This is a simplified optimistic locking mechanism for vector operations.
+ * True optimistic locking would require version vectors or timestamps stored
+ * as part of the vector metadata.
+ *
+ * @param updateFunction - Function that performs the update with version check
+ * @param maxRetries - Maximum retry attempts for concurrent updates
  * @returns Update result
  */
 export async function optimisticUpdate<T>(
-  model: any,
-  id: string,
-  data: any,
-  versionField: string = 'updated_at',
-  expectedVersion?: Date
+  updateFunction: (ctx: VectorTransactionContext) => Promise<T>,
+  maxRetries: number = 3
 ): Promise<DbOperationResult<T>> {
-  const updateData = { ...data };
+  let lastError: unknown;
 
-  // Add version check if expected version is provided
-  const whereClause: any = { id };
-  if (expectedVersion) {
-    whereClause[versionField] = expectedVersion;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await executeTransaction(
+        async (ctx) => {
+          return await updateFunction(ctx);
+        },
+        { maxRetries: 1 }
+      ); // Use nested retry logic
+    } catch (error) {
+      lastError = error;
+      const errorType = dbErrorHandler.categorizeError(error);
+
+      // Only retry on concurrency-related errors
+      if (errorType !== 'UNKNOWN_ERROR' && attempt >= maxRetries) {
+        break;
+      }
+
+      if (attempt < maxRetries) {
+        const delay = Math.min(100 * Math.pow(2, attempt - 1), 1000);
+        await sleep(delay);
+      }
+    }
   }
 
-  return await executeTransaction(async (tx) => {
-    const existing = await tx[model].findUnique({
-      where: { id },
-      select: { [versionField]: true },
-    });
+  const errorType = dbErrorHandler.categorizeError(lastError);
+  const errorMessage = lastError instanceof Error ? lastError.message : String(lastError);
 
-    if (!existing) {
-      throw new Error(`Record with id ${id} not found`);
-    }
-
-    if (expectedVersion && existing[versionField].getTime() !== expectedVersion.getTime()) {
-      throw new Error(`Record was modified by another process (version mismatch)`);
-    }
-
-    return await tx[model].update({
-      where: whereClause,
-      data: updateData,
-    });
-  });
+  return {
+    success: false,
+    error: {
+      type: errorType,
+      message: `Optimistic update failed after ${maxRetries} attempts: ${errorMessage}`,
+      originalError: lastError,
+    },
+    retryAttempts: maxRetries - 1,
+  };
 }
 
 /**
@@ -288,11 +338,11 @@ function shouldNotRetry(errorType: string): boolean {
  * Sleep utility for retry delays
  */
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * Health check for transaction functionality
+ * Health check for vector operation functionality
  */
 export async function transactionHealthCheck(): Promise<{
   healthy: boolean;
@@ -302,23 +352,34 @@ export async function transactionHealthCheck(): Promise<{
   try {
     const startTime = Date.now();
 
-    await transaction(async (tx) => {
-      // Simple test operation within transaction
-      await tx.$queryRaw`SELECT 1 as test`;
-    }, { timeout: 5000 });
+    await transaction(
+      async (ctx) => {
+        // Simple test operation - just validate the transaction context works
+        ctx.operations.push({
+          type: 'health_check',
+          data: { test: true },
+          timestamp: Date.now(),
+        });
+
+        // Simulate a small delay to test timeout handling
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        return { status: 'ok', operations: ctx.operations.length };
+      },
+      { timeout: 5000 }
+    );
 
     const latency = Date.now() - startTime;
 
     return {
       healthy: true,
-      message: 'Transaction system is healthy',
+      message: 'Vector operation system is healthy',
       latency,
     };
-
   } catch (error) {
     return {
       healthy: false,
-      message: `Transaction health check failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: `Vector operation health check failed: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 }

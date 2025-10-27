@@ -1,11 +1,14 @@
-import { getQdrantClient } from '../db/qdrant.js';
+import { logger } from './logger.js';
 
 /**
- * Generate highlighted snippet from text using qdrant ts_headline
+ * Generate highlighted snippet from text using simple text matching
+ *
+ * Note: This is a simplified implementation that replaces PostgreSQL ts_headline
+ * functionality since we're now using Qdrant vector database instead of PostgreSQL.
  *
  * @param bodyText - Full text content to extract snippet from
  * @param query - Search query string
- * @param options - ts_headline options
+ * @param options - Snippet generation options
  * @returns Highlighted excerpt with <b>...</b> tags around matches
  */
 export async function generateSnippet(
@@ -20,35 +23,71 @@ export async function generateSnippet(
     fragmentDelimiter?: string;
   } = {}
 ): Promise<string> {
-  const qdrant = getQdrantClient();
-  const {
-    maxWords = 30,
-    minWords = 15,
-    shortWord = 3,
-    highlightAll = false,
-    maxFragments = 1,
-    fragmentDelimiter = ' ... ',
-  } = options;
-
-  // Build ts_headline options string
-  const hlOptions = [
-    `MaxWords=${maxWords}`,
-    `MinWords=${minWords}`,
-    `ShortWord=${shortWord}`,
-    `HighlightAll=${highlightAll}`,
-    `MaxFragments=${maxFragments}`,
-    `FragmentDelimiter=${fragmentDelimiter}`,
-  ].join(', ');
+  const { maxWords = 30, minWords = 15, shortWord = 3, highlightAll = false } = options;
 
   try {
-    const result = await qdrant.$queryRaw<Array<{ snippet: string }>>`
-      SELECT ts_headline('english', ${bodyText}, plainto_tsquery('english', ${query}), ${hlOptions}) AS snippet
-    `;
+    // Simple text-based snippet generation for vector database context
+    const queryWords = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length >= shortWord);
 
-    return result[0]?.snippet ?? bodyText.substring(0, maxWords * 5);
-  } catch {
-    // Fallback to simple truncation if ts_headline fails
-    return `${bodyText.substring(0, maxWords * 5)}...`;
+    if (queryWords.length === 0) {
+      return extractPlainSnippet(bodyText, maxWords * 5);
+    }
+
+    // Find the best matching fragment
+    const words = bodyText.split(/\s+/);
+    const bodyTextLower = bodyText.toLowerCase();
+
+    let bestMatch: { index: number; score: number } = { index: 0, score: 0 };
+
+    // Find the best fragment containing query terms
+    for (let i = 0; i <= words.length - minWords; i++) {
+      let score = 0;
+      const fragmentStart = words.slice(0, i).join(' ').length;
+      const fragmentEnd = words.slice(0, i + minWords + (maxWords - minWords)).join(' ').length;
+      const fragment = bodyTextLower.substring(fragmentStart, fragmentEnd);
+
+      // Score based on query term matches
+      for (const queryWord of queryWords) {
+        const matches = (fragment.match(new RegExp(queryWord, 'g')) || []).length;
+        score += matches;
+      }
+
+      // Prefer fragments that start earlier
+      score -= i * 0.01;
+
+      if (score > bestMatch.score) {
+        bestMatch = { index: i, score };
+      }
+    }
+
+    // Extract the fragment around the best match
+    const fragmentWords = Math.min(maxWords, words.length - bestMatch.index);
+    let snippet = words.slice(bestMatch.index, bestMatch.index + fragmentWords).join(' ');
+
+    // Highlight matches
+    if (highlightAll || queryWords.length > 0) {
+      for (const queryWord of queryWords) {
+        const regex = new RegExp(`(${queryWord})`, 'gi');
+        snippet = snippet.replace(regex, '<b>$1</b>');
+      }
+    }
+
+    // Add ellipsis if we're in the middle of the text
+    if (bestMatch.index > 0) {
+      snippet = `... ${snippet}`;
+    }
+    if (bestMatch.index + fragmentWords < words.length) {
+      snippet = `${snippet} ...`;
+    }
+
+    return snippet || extractPlainSnippet(bodyText, maxWords * 5);
+  } catch (error) {
+    logger.error({ error, query: query.substring(0, 100) }, 'Failed to generate snippet');
+    // Fallback to simple truncation if highlighting fails
+    return extractPlainSnippet(bodyText, maxWords * 5);
   }
 }
 

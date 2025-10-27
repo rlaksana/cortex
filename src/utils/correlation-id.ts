@@ -51,10 +51,7 @@ export function setCorrelationId(correlationId: string): string {
  * @param fn - Function to execute within the correlation context
  * @returns Result of the function execution
  */
-export function withCorrelationId<T>(
-  correlationId: string,
-  fn: () => T
-): T {
+export function withCorrelationId<T>(correlationId: string, fn: () => T): T {
   return correlationContext.run(correlationId, fn);
 }
 
@@ -82,7 +79,7 @@ export function getOrCreateCorrelationId(): string {
  */
 export function extractCorrelationIdFromRequest(request: any): string | undefined {
   // Try to get correlation ID from various request locations
-  return request?.params?.meta?.correlationId ||
-         request?.meta?.correlationId ||
-         request?.correlationId;
+  return (
+    request?.params?.meta?.correlationId || request?.meta?.correlationId || request?.correlationId
+  );
 }
