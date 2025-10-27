@@ -68,30 +68,33 @@ export async function findSimilar(
       title,
       content,
       timestamp: new Date().toISOString(),
-      scope: 'global' // Default scope for legacy compatibility
+      scope: 'global', // Default scope for legacy compatibility
     };
 
     // Find similar items using the unified service
     const similarItems = await service.findSimilar(queryItem, {
       threshold: 0.6, // Slightly lower threshold for legacy compatibility
-      maxResults: 10
+      maxResults: 10,
     });
 
     // Convert unified results to legacy format
-    const legacyItems: SimilarItem[] = similarItems.map(result => ({
+    const legacyItems: SimilarItem[] = similarItems.map((result) => ({
       id: result.item.id || 'unknown',
       kind: result.item.kind || kind,
       title: result.item.title || 'Untitled',
       snippet: (result.item.content || '').substring(0, 200),
       similarity_score: result.score,
-      similarity_type: result.score >= 0.9 ? 'exact_duplicate' :
-                     result.score >= 0.7 ? 'high_similarity' : 'medium_similarity',
-      content_hash: result.item.id ? computeContentHash(result.item.content || '') : undefined
+      similarity_type:
+        result.score >= 0.9
+          ? 'exact_duplicate'
+          : result.score >= 0.7
+            ? 'high_similarity'
+            : 'medium_similarity',
+      content_hash: result.item.id ? computeContentHash(result.item.content || '') : undefined,
     }));
 
     // Analyze results and provide recommendation
     return analyzeLegacyResults(legacyItems);
-
   } catch (error) {
     logger.error({ error, kind, title }, 'Legacy similarity check failed');
 
@@ -128,8 +131,8 @@ function analyzeLegacyResults(similarItems: SimilarItem[]): SimilarityResult {
   }
 
   const highestSim = similarItems[0];
-  const hasDuplicates = similarItems.some(item => item.similarity_type === 'exact_duplicate');
-  const hasHighSimilarity = similarItems.some(item => item.similarity_type === 'high_similarity');
+  const hasDuplicates = similarItems.some((item) => item.similarity_type === 'exact_duplicate');
+  const hasHighSimilarity = similarItems.some((item) => item.similarity_type === 'high_similarity');
 
   if (hasDuplicates) {
     return {
@@ -159,9 +162,9 @@ function analyzeLegacyResults(similarItems: SimilarItem[]): SimilarityResult {
     has_contradictions: false,
     similar_items: similarItems,
     recommendation: 'add',
-    reasoning: hasHighSimilarity ?
-      `Medium similarity found but not high enough to suggest update. Different enough to add as new item.` :
-      'Low similarity. Safe to add as new item.',
+    reasoning: hasHighSimilarity
+      ? `Medium similarity found but not high enough to suggest update. Different enough to add as new item.`
+      : 'Low similarity. Safe to add as new item.',
   };
 }
 
