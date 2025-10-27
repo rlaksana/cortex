@@ -1,13 +1,15 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { AssumptionData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeAssumption(
   data: AssumptionData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.assumptionLog.create({
+  const result = await qdrant.assumptionLog.create({
     data: {
       category: data.category || "general",
       title: data.title,
@@ -36,9 +38,11 @@ export async function findAssumptions(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<AssumptionData[]> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const assumptions = await prisma.assumptionLog.findMany({
+  const assumptions = return await db.find('assumptionLog', {
     where: {
       AND: [
         {
@@ -51,7 +55,7 @@ export async function findAssumptions(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope)
+            string_contains: JSON.stringify(scope);
           }
         } : {}
       ]
@@ -82,9 +86,11 @@ export async function updateAssumption(
   data: Partial<AssumptionData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const existing = await prisma.assumptionLog.findUnique({
+  const existing = await qdrant.assumptionLog.findUnique({
     where: { id }
   });
 
@@ -92,9 +98,7 @@ export async function updateAssumption(
     throw new Error(`Assumption with id ${id} not found`);
   }
 
-  const result = await prisma.assumptionLog.update({
-    where: { id },
-    data: {
+  const result = await db.update('assumptionLog', { id }, {
       title: data.title ?? existing.title,
       category: data.category ?? existing.category,
       description: data.description ?? existing.description,
@@ -107,7 +111,7 @@ export async function updateAssumption(
       monitoring_approach: data.validation_method ?? existing.monitoring_approach,
       review_frequency: (data as any).review_frequency ?? existing.review_frequency,
       tags: {
-        ...(existing.tags as any || {}),
+        ...(existing.tags as any || {);,
         ...scope,
         dependencies: data.dependencies ?? (existing.tags as any)?.dependencies,
         expiry_date: data.expiry_date ?? (existing.tags as any)?.expiry_date

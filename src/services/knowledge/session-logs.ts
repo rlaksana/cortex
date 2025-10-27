@@ -9,7 +9,7 @@
  * Provides comprehensive CRUD operations for session persistence.
  */
 
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { logger } from '../../utils/logger.js';
 
 // ============================================================================
@@ -34,9 +34,11 @@ export async function storeIncident(
     data: IncidentData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.incidentLog.create({
+  const result = await qdrant.incidentLog.create({
     data: {
       title: data.title,
       severity: data.severity,
@@ -63,7 +65,9 @@ export async function updateIncident(
     id: string,
   data: Partial<IncidentData>
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const updateData: any = {};
 
@@ -112,10 +116,8 @@ export async function updateIncident(
     updateData.tags = tagUpdates;
   }
 
-  await prisma.incidentLog.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('incidentLog', { id }, updateData
+  );
   logger.info({ incidentId: id, updates: Object.keys(updateData).length }, 'Incident updated successfully');
 }
 
@@ -137,7 +139,9 @@ export async function findIncidents(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -148,7 +152,7 @@ export async function findIncidents(
     whereClause.resolution_status = criteria.status;
   }
 
-  const result = await prisma.incidentLog.findMany({
+  const result = return await db.find('incidentLog', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     take: criteria.limit,
@@ -199,9 +203,11 @@ export async function storeRelease(
     data: ReleaseData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.releaseLog.create({
+  const result = await qdrant.releaseLog.create({
     data: {
       version: data.version,
       release_type: data.release_type,
@@ -230,7 +236,9 @@ export async function updateRelease(
     id: string,
   data: Partial<ReleaseData>
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const updateData: any = {};
   const tagUpdates: any = {};
@@ -276,10 +284,8 @@ export async function updateRelease(
     updateData.tags = tagUpdates;
   }
 
-  await prisma.releaseLog.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('releaseLog', { id }, updateData
+  );
   logger.info({ releaseId: id, updates: Object.keys(updateData).length }, 'Release updated successfully');
 }
 
@@ -302,7 +308,9 @@ export async function findReleases(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -316,7 +324,7 @@ export async function findReleases(
     whereClause.status = criteria.status;
   }
 
-  const result = await prisma.releaseLog.findMany({
+  const result = return await db.find('releaseLog', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     take: criteria.limit,
@@ -369,9 +377,11 @@ export async function storeRisk(
     data: RiskData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.riskLog.create({
+  const result = await qdrant.riskLog.create({
     data: {
       title: data.title,
       category: data.category,
@@ -397,7 +407,9 @@ export async function storeRisk(
 }
 
 export async function updateRisk(id: string, data: Partial<RiskData>): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const updateData: any = {};
   const tagUpdates: any = {};
@@ -445,10 +457,8 @@ export async function updateRisk(id: string, data: Partial<RiskData>): Promise<v
     updateData.tags = tagUpdates;
   }
 
-  await prisma.riskLog.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('riskLog', { id }, updateData
+  );
   logger.info({ riskId: id, updates: Object.keys(updateData).length }, 'Risk updated successfully');
 }
 
@@ -472,7 +482,9 @@ export async function findRisks(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -486,7 +498,7 @@ export async function findRisks(
     whereClause.status = criteria.status;
   }
 
-  const result = await prisma.riskLog.findMany({
+  const result = return await db.find('riskLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,
@@ -538,9 +550,11 @@ export async function storeAssumption(
     data: AssumptionData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.assumptionLog.create({
+  const result = await qdrant.assumptionLog.create({
     data: {
       title: data.title,
       description: data.description,
@@ -571,7 +585,9 @@ export async function updateAssumption(
     id: string,
   data: Partial<AssumptionData>
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const updateData: any = {};
   const tagUpdates: any = {};
@@ -618,10 +634,8 @@ export async function updateAssumption(
     updateData.tags = tagUpdates;
   }
 
-  await prisma.assumptionLog.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('assumptionLog', { id }, updateData
+  );
   logger.info({ assumptionId: id, updates: Object.keys(updateData).length }, 'Assumption updated successfully');
 }
 
@@ -643,7 +657,9 @@ export async function findAssumptions(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -654,7 +670,7 @@ export async function findAssumptions(
     whereClause.validation_status = criteria.status;
   }
 
-  const result = await prisma.assumptionLog.findMany({
+  const result = return await db.find('assumptionLog', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,
@@ -702,15 +718,17 @@ export async function getSessionLogDashboard(
     offset?: number;
   } = {}
 ): Promise<SessionLogEntry[]> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  // Since we can't easily replicate the UNION ALL with Prisma queries,
+  // Since we can't easily replicate the UNION ALL with Qdrant queries,
   // we'll use $queryRawUnsafe with proper template literal
   const limitClause = criteria.limit ? `LIMIT ${criteria.limit}` : '';
   const offsetClause = criteria.offset ? `OFFSET ${criteria.offset}` : '';
   const whereClause = criteria.type ? `WHERE log_type = '${criteria.type}'` : '';
 
-  const result = await prisma.$queryRawUnsafe<Array<{
+  const result = await qdrant.$queryRawUnsafe<Array<{
     log_type: string;
     id: string;
     title: string;

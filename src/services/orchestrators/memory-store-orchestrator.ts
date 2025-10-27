@@ -1,4 +1,11 @@
-import { logger } from '../../utils/logger.js';
+import { logger, withRequestLogging } from '../../utils/logger.js';
+import {
+  logRequestStart,
+  logRequestSuccess,
+  logRequestError,
+  logDatabaseOperation,
+  logBusinessOperation
+} from '../../utils/logging-patterns.js';
 import { softDelete, type DeleteRequest } from '../delete-operations.js';
 import {
   storeRunbook,
@@ -43,11 +50,13 @@ export class MemoryStoreOrchestrator {
    * Main entry point for storing knowledge items
    */
   async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
-    const startTime = Date.now();
-    const stored: StoreResult[] = [];
-    const errors: StoreError[] = [];
+    return withRequestLogging('memory.store', async () => {
+      const requestLogger = logRequestStart('memory.store', { itemCount: items.length });
+      const startTime = Date.now();
+      const stored: StoreResult[] = [];
+      const errors: StoreError[] = [];
 
-    try {
+      try {
       // Step 1: Validate input
       const validation = await validationService.validateStoreInput(items);
       if (!validation.valid) {
@@ -106,23 +115,26 @@ export class MemoryStoreOrchestrator {
         Date.now() - startTime
       );
 
-      return { stored, errors, autonomous_context: autonomousContext };
+      const response = { stored, errors, autonomous_context: autonomousContext };
+        logRequestSuccess(requestLogger, 'memory.store', response);
+        return response;
 
-    } catch (error) {
-      logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
+      } catch (error) {
+        logRequestError(requestLogger, 'memory.store', error, { itemCount: items.length });
 
-      // Log critical error
-      await auditService.logError(error instanceof Error ? error : new Error('Critical error'), {
-        operation: 'memory_store_batch',
-        itemCount: items.length
-      });
+        // Log critical error
+        await auditService.logError(error instanceof Error ? error : new Error('Critical error'), {
+          operation: 'memory_store_batch',
+          itemCount: items.length
+        });
 
-      return this.createErrorResponse([{
-        index: 0,
-        error_code: 'BATCH_ERROR',
-        message: error instanceof Error ? error.message : 'Unknown batch error'
-      }]);
-    }
+        return this.createErrorResponse([{
+          index: 0,
+          error_code: 'BATCH_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown batch error'
+        }]);
+      }
+    });
   }
 
   /**
@@ -274,10 +286,10 @@ export class MemoryStoreOrchestrator {
       const { violatesADRImmutability } = await import('../../schemas/knowledge-types.js');
 
       // Get existing decision from database
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.adrDecision.findUnique({
+      const existing = await qdrant.adrDecision.findUnique({
         where: { id },
         select: {
           id: true,
@@ -331,10 +343,10 @@ export class MemoryStoreOrchestrator {
       const { violatesSpecWriteLock } = await import('../../schemas/knowledge-types.js');
 
       // Get existing section from database
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.section.findUnique({
+      const existing = await qdrant.section.findUnique({
         where: { id },
         select: {
           id: true,
@@ -385,10 +397,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateIncidentUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.incidentLog.findUnique({
+      const existing = await qdrant.incidentLog.findUnique({
         where: { id },
         select: {
           id: true,
@@ -436,10 +448,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateReleaseUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.releaseLog.findUnique({
+      const existing = await qdrant.releaseLog.findUnique({
         where: { id },
         select: {
           id: true,
@@ -488,10 +500,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateRiskUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.riskLog.findUnique({
+      const existing = await qdrant.riskLog.findUnique({
         where: { id },
         select: {
           id: true,
@@ -540,10 +552,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateAssumptionUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.assumptionLog.findUnique({
+      const existing = await qdrant.assumptionLog.findUnique({
         where: { id },
         select: {
           id: true,
@@ -590,10 +602,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateTodoUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.todoLog.findUnique({
+      const existing = await qdrant.todoLog.findUnique({
         where: { id },
         select: {
           id: true,
@@ -638,10 +650,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateIssueUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getPrismaClient } = await import('../../db/prisma.js');
-      const prisma = getPrismaClient();
+      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const qdrant = getQdrantClient();
 
-      const existing = await prisma.issueLog.findUnique({
+      const existing = await qdrant.issueLog.findUnique({
         where: { id },
         select: {
           id: true,

@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger.js';
-import { prisma } from '../../db/prisma-client.js';
+import { qdrant } from '../../db/qdrant-client.js';
 import type {
   DeduplicationService as IDeduplicationService,
   KnowledgeItem
@@ -38,7 +38,7 @@ export class DeduplicationService implements IDeduplicationService {
   };
 
   /**
-   * Map knowledge kinds to their corresponding Prisma table names
+   * Map knowledge kinds to their corresponding Qdrant table names
    */
   private getTableNameForKind(kind: string): string | null {
     const kindToTableMap: Record<string, string> = {
@@ -247,7 +247,7 @@ export class DeduplicationService implements IDeduplicationService {
       return null; // Unknown knowledge kind
     }
 
-    const existing = await (prisma as any)[tableName].findFirst({
+    const existing = await (qdrant as any)[tableName].findFirst({
       where: whereClause,
       select: { id: true }
     });
@@ -287,7 +287,7 @@ export class DeduplicationService implements IDeduplicationService {
         return null;
       }
 
-      const recentItems = await (prisma as any)[tableName].findMany({
+      const recentItems = await (qdrant as any)[tableName].findMany({
         where: whereClause,
         select: { id: true, data: true },
         orderBy: { created_at: 'desc' },

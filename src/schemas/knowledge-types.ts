@@ -9,7 +9,7 @@
  * - Minimal API (Principle I): 16 core types, extensible via tags
  * - Immutability (Principle IV): ADR content immutable, approved specs write-locked
  *
- * @version 2.1.0 - Updated for PostgreSQL 18 schema alignment with 8-LOG SYSTEM
+ * @version 2.1.0 - Updated for qdrant 18 schema alignment with 8-LOG SYSTEM
  */
 
 import { z } from 'zod';

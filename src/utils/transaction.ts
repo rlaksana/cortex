@@ -1,13 +1,13 @@
 /**
- * Transaction utilities for Prisma Client
+ * Transaction utilities for Qdrant Client
  *
  * Provides transaction safety and performance optimization for database operations.
- * Replaces manual transaction handling with Prisma's transaction patterns.
+ * Replaces manual transaction handling with Qdrant's transaction patterns.
  *
  * @module utils/transaction
  */
 
-import { prisma } from '../db/prisma-client.js';
+import { qdrant } from '../db/qdrant-client.js';
 import { logger } from './logger.js';
 import { dbErrorHandler, DbOperationResult } from './db-error-handler.js';
 
@@ -18,7 +18,7 @@ export interface TransactionOptions {
 }
 
 /**
- * Execute a function within a Prisma transaction with automatic retry and error handling
+ * Execute a function within a Qdrant transaction with automatic retry and error handling
  *
  * @param callback - Function to execute within the transaction
  * @param options - Transaction options
@@ -38,8 +38,8 @@ export async function executeTransaction<T>(
 
       const startTime = Date.now();
 
-      // Use Prisma's $transaction API
-      const result = await prisma.getClient().$transaction(
+      // Use Qdrant's $transaction API
+      const result = await qdrant.getClient().$transaction(
         async (tx) => {
           return await callback(tx);
         },
@@ -227,7 +227,7 @@ export async function batchOperation<T, R>(
 /**
  * Optimistic lock helper for concurrent updates
  *
- * @param model - Prisma model to update
+ * @param model - Qdrant model to update
  * @param id - ID of the record
  * @param data - Data to update
  * @param versionField - Field name for version tracking (default: 'updated_at')

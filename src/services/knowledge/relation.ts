@@ -7,7 +7,7 @@
  * @module services/knowledge/relation
  */
 
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { RelationItem } from '../../schemas/knowledge-types.js';
 
 /**
@@ -27,9 +27,11 @@ export async function storeRelation(
   data: RelationItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   // Check for existing relation with same (from, to, relation_type) - unique constraint
-  const existing = await prisma.knowledgeRelation.findFirst({
+  const existing = const results = await db.find('knowledgeRelation', {
     where: {
       from_entity_type: data.from_entity_type,
       from_entity_id: data.from_entity_id,
@@ -39,12 +41,13 @@ export async function storeRelation(
       deleted_at: null
     }
   });
+  if (results.length > 0) return results[0];
 
   if (existing) {
     // Relation already exists, return existing ID (idempotent)
     // Optionally update metadata if provided
     if (data.metadata) {
-      await prisma.knowledgeRelation.update({
+      await qdrant.knowledgeRelation.update({
         where: { id: existing.id },
         data: {
           metadata: data.metadata as any,
@@ -56,7 +59,7 @@ export async function storeRelation(
   }
 
   // Insert new relation
-  const result = await prisma.knowledgeRelation.create({
+  const result = await qdrant.knowledgeRelation.create({
     data: {
       from_entity_type: data.from_entity_type,
       from_entity_id: data.from_entity_id,
@@ -78,8 +81,10 @@ export async function storeRelation(
  * @returns true if deleted, false if not found
  */
 export async function softDeleteRelation(relationId: string): Promise<boolean> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeRelation.updateMany({
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+  const result = await qdrant.knowledgeRelation.updateMany({
     where: {
       id: relationId,
       deleted_at: null
@@ -114,7 +119,9 @@ export async function getOutgoingRelations(
     created_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {
     from_entity_type: entity_type,
@@ -126,7 +133,7 @@ export async function getOutgoingRelations(
     whereClause.relation_type = relation_typeFilter;
   }
 
-  const result = await prisma.knowledgeRelation.findMany({
+  const result = return await db.find('knowledgeRelation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {
@@ -152,7 +159,7 @@ export async function getOutgoingRelations(
 /**
  * Get incoming relations to an entity
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type (e.g., "issue", "entity")
  * @param entity_id - Entity UUID
  * @param relation_typeFilter - Optional filter by relation type
@@ -172,7 +179,9 @@ export async function getIncomingRelations(
     created_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {
     to_entity_type: entity_type,
@@ -184,7 +193,7 @@ export async function getIncomingRelations(
     whereClause.relation_type = relation_typeFilter;
   }
 
-  const result = await prisma.knowledgeRelation.findMany({
+  const result = return await db.find('knowledgeRelation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {
@@ -210,7 +219,7 @@ export async function getIncomingRelations(
 /**
  * Get all relations for an entity (both incoming and outgoing)
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @returns Object with outgoing and incoming relations
@@ -247,7 +256,7 @@ export async function getAllRelations(
 /**
  * Check if a relation exists between two entities
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param fromType - Source entity type
  * @param fromId - Source entity UUID
  * @param toType - Target entity type
@@ -262,8 +271,10 @@ export async function relationExists(
   toId: string,
   relation_type: string
 ): Promise<boolean> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeRelation.findFirst({
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+  const result = const results = await db.find('knowledgeRelation', {
     where: {
       from_entity_type: fromType,
       from_entity_id: fromId,
@@ -274,6 +285,7 @@ export async function relationExists(
     },
     select: { id: true }
   });
+  if (results.length > 0) return results[0];
 
   return result !== null;
 }

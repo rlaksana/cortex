@@ -1,7 +1,7 @@
 import type { SectionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateSpecWriteLock } from '../../utils/immutability.js';
 import { logger } from '../../utils/logger.js';
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
 /**
  * Store a new section in the database
@@ -10,10 +10,12 @@ export async function storeSection(
   data: SectionData,
   scope?: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // FIXED: Use direct field access for new fields instead of metadata workaround
-  const result = await prisma.section.create({
+  const result = await qdrant.section.create({
     data: {
       title: data.title || data.heading || 'Untitled Section',
       content: data.body_text || data.body_md || '',
@@ -41,7 +43,9 @@ export async function updateSection(
   data: Partial<SectionData>,
   scope?: ScopeFilter
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   // Check write-lock before allowing update
   await validateSpecWriteLock(id);
 
@@ -80,10 +84,8 @@ export async function updateSection(
     return; // No updates to perform
   }
 
-  await prisma.section.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('section', { id }, updateData
+  );
   logger.info({ sectionId: id, updates: Object.keys(updateData).length }, 'Section updated successfully');
 }
 
@@ -109,7 +111,9 @@ export async function findSections(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -125,7 +129,7 @@ export async function findSections(
     whereClause.document_id = criteria.documentId;
   }
 
-  const result = await prisma.section.findMany({
+  const result = return await db.find('section', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,

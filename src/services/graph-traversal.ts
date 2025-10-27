@@ -1,13 +1,13 @@
 /**
  * Graph traversal service
  *
- * Implements recursive graph traversal using PostgreSQL CTEs.
+ * Implements recursive graph traversal using qdrant CTEs.
  * Supports depth limits, cycle detection, and relation type filtering.
  *
  * @module services/graph-traversal
  */
 
-import { prisma } from '../db/prisma-client.js';
+import { qdrant } from '../db/qdrant-client.js';
 
 export interface TraversalOptions {
   depth?: number; // Max depth (default: 2)
@@ -48,7 +48,7 @@ export interface GraphTraversalResult {
  * - Relation type filtering
  * - Bidirectional traversal support
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param startEntityType - Starting entity type
  * @param startEntityId - Starting entity UUID
  * @param options - Traversal options
@@ -63,8 +63,8 @@ export async function traverseGraph(
   const direction = options.direction ?? 'outgoing';
 
   try {
-    // Use simplified Prisma query for graph traversal
-    const result = await prisma.getClient().$queryRaw`
+    // Use simplified Qdrant query for graph traversal
+    const result = await qdrant.getClient().$queryRaw`
       WITH RECURSIVE graph_traverse AS (
         -- Base case: start node
         SELECT
@@ -165,7 +165,7 @@ export async function traverseGraph(
  *
  * Fetches entity data for all nodes in the graph from their respective tables.
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param nodes - Graph nodes to enrich
  * @returns Enriched nodes with data
  */
@@ -187,37 +187,37 @@ export async function enrichGraphNodes(nodes: GraphNode[]): Promise<GraphNode[]>
     const ids = typeNodes.map((n) => n.entity_id);
 
     try {
-      // Use Prisma based on entity type
+      // Use Qdrant based on entity type
       let entities: any[] = [];
 
       switch (entity_type) {
         case 'section':
-          entities = await prisma.getClient().section.findMany({
+          entities = await qdrant.getClient().section.findMany({
             where: { id: { in: ids } },
           });
           break;
         case 'decision':
-          entities = await prisma.getClient().adrDecision.findMany({
+          entities = await qdrant.getClient().adrDecision.findMany({
             where: { id: { in: ids } },
           });
           break;
         case 'issue':
-          entities = await prisma.getClient().issueLog.findMany({
+          entities = await qdrant.getClient().issueLog.findMany({
             where: { id: { in: ids } },
           });
           break;
         case 'runbook':
-          entities = await prisma.getClient().runbook.findMany({
+          entities = await qdrant.getClient().runbook.findMany({
             where: { id: { in: ids } },
           });
           break;
         case 'todo':
-          entities = await prisma.getClient().todoLog.findMany({
+          entities = await qdrant.getClient().todoLog.findMany({
             where: { id: { in: ids } },
           });
           break;
         case 'entity':
-          entities = await prisma.getClient().knowledgeEntity.findMany({
+          entities = await qdrant.getClient().knowledgeEntity.findMany({
             where: { id: { in: ids } },
           });
           break;
@@ -251,7 +251,7 @@ export async function enrichGraphNodes(nodes: GraphNode[]): Promise<GraphNode[]>
  *
  * Uses BFS (via recursive CTE with depth ordering) to find shortest path.
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param fromType - Source entity type
  * @param fromId - Source entity UUID
  * @param toType - Target entity type
@@ -268,7 +268,7 @@ export async function findShortestPath(
 ): Promise<GraphEdge[] | null> {
   
   try {
-    const result = await prisma.getClient().$queryRaw<Array<{ edges: Record<string, unknown>[] }>>`
+    const result = await qdrant.getClient().$queryRaw<Array<{ edges: Record<string, unknown>[] }>>`
       WITH RECURSIVE path_search AS (
         -- Base case: start node
         SELECT

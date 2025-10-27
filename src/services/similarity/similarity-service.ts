@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger.js';
-import { prisma } from '../../db/prisma-client.js';
+import { qdrant } from '../../db/qdrant-client.js';
 import type {
   SimilarityService as ISimilarityService,
   KnowledgeItem
@@ -174,7 +174,7 @@ export class SimilarityService implements ISimilarityService {
       whereClause.created_at = { gte: recentCutoff };
 
       // Query the KnowledgeEntity table
-      const candidates = await prisma.getClient().knowledgeEntity.findMany({
+      const candidates = await qdrant.getClient().knowledgeEntity.findMany({
         where: whereClause,
         select: {
           id: true,

@@ -1,13 +1,15 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { RiskData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRisk(
   data: RiskData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.riskLog.create({
+  const result = await qdrant.riskLog.create({
     data: {
       title: data.title,
       category: data.category || 'general',
@@ -36,9 +38,11 @@ export async function findRisks(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<RiskData[]> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const risks = await prisma.riskLog.findMany({
+  const risks = return await db.find('riskLog', {
     where: {
       AND: [
         {
@@ -50,7 +54,7 @@ export async function findRisks(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope)
+            string_contains: JSON.stringify(scope);
           }
         } : {}
       ]
@@ -83,9 +87,11 @@ export async function updateRisk(
   data: Partial<RiskData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const existing = await prisma.riskLog.findUnique({
+  const existing = await qdrant.riskLog.findUnique({
     where: { id }
   });
 
@@ -93,9 +99,7 @@ export async function updateRisk(
     throw new Error(`Risk with id ${id} not found`);
   }
 
-  const result = await prisma.riskLog.update({
-    where: { id },
-    data: {
+  const result = await db.update('riskLog', { id }, {
       title: data.title ?? existing.title,
       category: data.category ?? existing.category,
       impact_description: data.description ?? data.impact ?? existing.impact_description,
@@ -108,7 +112,7 @@ export async function updateRisk(
       monitoring_indicators: existing.monitoring_indicators as any,
       contingency_plans: (data.contingency_plan ?? existing.contingency_plans) || undefined,
       tags: {
-        ...(existing.tags as any || {}),
+        ...(existing.tags as any || {);,
         ...scope,
         identified_date: data.identified_date ?? (existing.tags as any)?.identified_date,
         impact: data.impact ?? (existing.tags as any)?.impact

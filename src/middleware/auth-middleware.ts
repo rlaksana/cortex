@@ -294,7 +294,7 @@ export class AuthMiddleware {
    */
   private async authenticateWithJWT(token: string, clientInfo: { ipAddress: string; userAgent: string }): Promise<AuthContext> {
     try {
-      const authContext = this.authService.createAuthContext(token, clientInfo.ipAddress, clientInfo.userAgent);
+      const authContext = await this.authService.createAuthContext(token, clientInfo.ipAddress, clientInfo.userAgent);
 
       // Validate session IP address for security
       if (authContext.session.ip_address !== clientInfo.ipAddress) {

@@ -1,27 +1,27 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ReleaseNoteData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeReleaseNote(
   data: ReleaseNoteData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // Check if this is an update operation (has ID)
   if (data.id) {
-    const existing = await prisma.releaseNote.findUnique({
+    const existing = await qdrant.releaseNote.findUnique({
       where: { id: data.id }
     });
 
     if (existing) {
       // Update existing release note
-      const result = await prisma.releaseNote.update({
-        where: { id: data.id },
-        data: {
+      const result = await db.update('releaseNote', { id: data.id }, {
           version: data.version ?? existing.version,
           summary: data.summary ?? existing.summary,
           tags: {
-            ...(existing.tags as any || {}),
+            ...(existing.tags as any || {);,
             ...scope,
             release_date: data.release_date ?? (existing.tags as any)?.release_date,
             breaking_changes: data.breaking_changes ?? (existing.tags as any)?.breaking_changes,
@@ -36,7 +36,7 @@ export async function storeReleaseNote(
   }
 
   // Create new release note
-  const result = await prisma.releaseNote.create({
+  const result = await qdrant.releaseNote.create({
     data: {
       version: data.version,
       summary: data.summary,

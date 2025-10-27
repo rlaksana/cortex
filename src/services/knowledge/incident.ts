@@ -1,13 +1,15 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { IncidentData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeIncident(
   data: IncidentData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.incidentLog.create({
+  const result = await qdrant.incidentLog.create({
     data: {
       title: data.title,
       severity: data.severity || 'medium',
@@ -36,9 +38,11 @@ export async function findIncidents(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<IncidentData[]> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const incidents = await prisma.incidentLog.findMany({
+  const incidents = return await db.find('incidentLog', {
     where: {
       AND: [
         {
@@ -51,7 +55,7 @@ export async function findIncidents(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope)
+            string_contains: JSON.stringify(scope);
           }
         } : {}
       ]
@@ -84,9 +88,11 @@ export async function updateIncident(
   data: Partial<IncidentData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const existing = await prisma.incidentLog.findUnique({
+  const existing = await qdrant.incidentLog.findUnique({
     where: { id }
   });
 
@@ -94,9 +100,7 @@ export async function updateIncident(
     throw new Error(`Incident with id ${id} not found`);
   }
 
-  const result = await prisma.incidentLog.update({
-    where: { id },
-    data: {
+  const result = await db.update('incidentLog', { id }, {
       title: data.title ?? existing.title,
       severity: data.severity ?? existing.severity,
       impact: data.impact_level ?? existing.impact,
@@ -110,7 +114,7 @@ export async function updateIncident(
       root_cause_analysis: data.root_cause_analysis ?? existing.root_cause_analysis,
       resolution: data.resolution ?? existing.resolution,
       tags: {
-        ...(existing.tags as any || {}),
+        ...(existing.tags as any || {);,
         ...scope,
         lessons_learned: data.lessons_learned ?? (existing.tags as any)?.lessons_learned
       }

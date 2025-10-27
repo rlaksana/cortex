@@ -1,5 +1,5 @@
-// Using gen_random_uuid() from PostgreSQL instead of UUID library
-import { prisma } from './prisma-client.js';
+// Using UnifiedDatabaseLayer for PostgreSQL operations instead of qdrant
+import { UnifiedDatabaseLayer } from './unified-database-layer.js';
 import { logger } from '../utils/logger.js';
 import * as crypto from 'crypto';
 
@@ -87,35 +87,35 @@ class AuditLogger {
     }
 
     const processedEvent = await this.processEvent(event);
+    const db = new UnifiedDatabaseLayer();
+    await db.initialize();
 
     try {
-      await prisma.getClient().eventAudit.create({
-        data: {
-          id: processedEvent.id ?? (await this.generateUUID()),
-          event_type: processedEvent.eventType,
-          table_name: processedEvent.table_name,
-          record_id: processedEvent.record_id,
-          operation: processedEvent.operation,
-          old_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.old_data ?? {}) as any,
-          new_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.new_data ?? {}) as any,
-          changed_by: processedEvent.changed_by ?? 'system',
-          tags: processedEvent.tags ?? {} as any,
-          metadata: processedEvent.metadata ?? {} as any,
-        }
+      await db.create('event_audit', {
+        id: processedEvent.id ?? (await this.generateUUID()),
+        event_type: processedEvent.eventType,
+        table_name: processedEvent.table_name,
+        record_id: processedEvent.record_id,
+        operation: processedEvent.operation,
+        old_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.old_data ?? {}),
+        new_data: this.filterSensitiveData(processedEvent.table_name, processedEvent.new_data ?? {}),
+        changed_by: processedEvent.changed_by ?? 'system',
+        tags: processedEvent.tags ?? {},
+        metadata: processedEvent.metadata ?? {},
+        changed_at: new Date().toISOString()
       });
 
       logger.debug(
         {
           eventId: processedEvent.id,
-          event_type: processedEvent.eventType,
-          table_name: processedEvent.table_name,
+          tableName: processedEvent.table_name,
           operation: processedEvent.operation,
         },
-        'Audit event logged'
+        'Audit event logged successfully'
       );
     } catch (error) {
-      logger.error({ error }, 'Failed to log audit event');
-      // Don't throw - audit failures shouldn't break the main operation
+      logger.error({ error, event: processedEvent }, 'Failed to log audit event');
+      // Don't throw - audit logging failures shouldn't break the main operation
     }
   }
 
@@ -133,7 +133,10 @@ class AuditLogger {
     }
 
     try {
-      // Use Prisma createMany for batch insert
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
+      // Use PostgreSQL for batch insert
       const auditData = await Promise.all(
         processedEvents.map(async (event) => ({
           id: event.id ?? (await this.generateUUID()),
@@ -141,17 +144,19 @@ class AuditLogger {
           table_name: event.table_name,
           record_id: event.record_id,
           operation: event.operation,
-          old_data: this.filterSensitiveData(event.table_name, event.old_data ?? {}) as any,
-          new_data: this.filterSensitiveData(event.table_name, event.new_data ?? {}) as any,
+          old_data: this.filterSensitiveData(event.table_name, event.old_data ?? {}),
+          new_data: this.filterSensitiveData(event.table_name, event.new_data ?? {}),
           changed_by: event.changed_by ?? 'system',
-          tags: event.tags ?? {} as any,
-          metadata: event.metadata ?? {} as any,
+          tags: event.tags ?? {},
+          metadata: event.metadata ?? {},
+          changed_at: new Date().toISOString()
         }))
       );
 
-      await prisma.getClient().eventAudit.createMany({
-        data: auditData,
-      });
+      // Create audit records in batch using PostgreSQL
+      for (const record of auditData) {
+        await db.create('event_audit', record);
+      }
 
       logger.debug({ count: processedEvents.length }, 'Batch audit events logged');
     } catch (error) {
@@ -185,49 +190,80 @@ class AuditLogger {
     total: number;
   }> {
     try {
-      // Use Prisma to query audit events with filtering and pagination
-      const whereClause: any = {};
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
+      // Build where conditions for PostgreSQL query
+      const whereConditions: any = {};
+
+      if (options.eventType) {
+        whereConditions.event_type = options.eventType;
+      }
 
       if (options.table_name) {
-        whereClause.table_name = options.table_name;
+        whereConditions.table_name = options.table_name;
       }
 
       if (options.record_id) {
-        whereClause.record_id = options.record_id;
+        whereConditions.record_id = options.record_id;
       }
 
       if (options.operation) {
-        whereClause.operation = options.operation;
+        whereConditions.operation = options.operation;
+      }
+
+      if (options.changed_by) {
+        whereConditions.changed_by = options.changed_by;
       }
 
       if (options.startDate || options.endDate) {
-        whereClause.created_at = {};
-        if (options.startDate) whereClause.created_at.gte = options.startDate;
-        if (options.endDate) whereClause.created_at.lte = options.endDate;
+        whereConditions.changed_at = {};
+        if (options.startDate) {
+          whereConditions.changed_at.gte = options.startDate.toISOString();
+        }
+        if (options.endDate) {
+          whereConditions.changed_at.lte = options.endDate.toISOString();
+        }
       }
 
-      const [eventsResult, totalResult] = await Promise.all([
-        prisma.getClient().eventAudit.findMany({
-          where: whereClause,
-          orderBy: { created_at: (options.orderDirection?.toLowerCase() || 'desc') as 'asc' | 'desc' },
-          take: options.limit || 100,
-          skip: options.offset || 0,
-        }),
-        prisma.getClient().eventAudit.count({ where: whereClause }),
-      ]);
+      // Query events using PostgreSQL
+      const events = await db.find('event_audit', whereConditions, {
+        take: options.limit || 100,
+        orderBy: { [options.orderBy || 'changed_at']: options.orderDirection || 'DESC' }
+      });
 
-      return {
-        events: eventsResult.map((event: any) => ({
-          ...event,
-          eventType: event.eventType,
-          table_name: event.table_name,
-          record_id: event.record_id,
-        })) as AuditEvent[],
-        total: totalResult,
-      };
+      // Get total count
+      const totalResult = await db.query(`SELECT COUNT(*) as count FROM event_audit WHERE 1=1 ${Object.keys(whereConditions).length > 0 ? `AND ${  Object.entries(whereConditions).map(([key, value]) => {
+        if (typeof value === 'object' && value.gte) {
+          return `${key} >= '${value.gte}'`;
+        }
+        if (typeof value === 'object' && value.lte) {
+          return `${key} <= '${value.lte}'`;
+        }
+        return `${key} = '${value}'`;
+      }).join(' AND ')}` : ''}`);
+      
+      const total = parseInt(totalResult.rows[0].count);
+
+      // Transform results to match expected format
+      const transformedEvents = events.map((event: any) => ({
+        id: event.id,
+        eventType: event.event_type,
+        table_name: event.table_name,
+        record_id: event.record_id,
+        operation: event.operation,
+        old_data: event.old_data,
+        new_data: event.new_data,
+        changed_by: event.changed_by,
+        tags: event.tags,
+        metadata: event.metadata,
+        changed_at: event.changed_at
+      }));
+
+      return { events: transformedEvents, total };
     } catch (error) {
-      logger.error({ error }, 'Failed to query audit events');
-      throw error;
+      logger.error({ error, options }, 'Failed to query audit events');
+      throw new Error(`Audit query failed: ${(error as Error).message}`);
     }
   }
 
@@ -255,12 +291,23 @@ class AuditLogger {
   }
 
   /**
-   * Generate UUID using PostgreSQL gen_random_uuid()
+   * Generate UUID using qdrant gen_random_uuid()
    */
-  private async generateUUID(): Promise<string> {
-    const result = await prisma.getClient().$queryRaw<Array<{ uuid: string }>>`SELECT gen_random_uuid() as uuid`;
-    return result[0]?.uuid || crypto.randomUUID();
+  /**
+ * Generate UUID using PostgreSQL gen_random_uuid() or fallback to crypto
+ */
+private async generateUUID(): Promise<string> {
+  try {
+    const db = new UnifiedDatabaseLayer();
+    await db.initialize();
+    
+    const result = await db.query(`SELECT gen_random_uuid() as uuid`);
+    return result.rows[0].uuid;
+  } catch (error) {
+    logger.warn({ error }, 'Failed to generate UUID with PostgreSQL, using fallback');
+    return crypto.randomUUID();
   }
+}
 
   /**
    * Check if event should be logged based on filters
@@ -374,20 +421,36 @@ class AuditLogger {
       return;
     }
 
-    if (this.batchTimeout) {
-      clearTimeout(this.batchTimeout);
-      this.batchTimeout = null;
-    }
-
-    const eventsToLog = [...this.batchQueue];
+    const processedEvents = [...this.batchQueue];
     this.batchQueue = [];
 
     try {
-      await this.logBatchEvents(eventsToLog);
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
+      const auditData = processedEvents.map(event => ({
+        id: event.id ?? crypto.randomUUID(),
+        event_type: event.eventType,
+        table_name: event.table_name,
+        record_id: event.record_id,
+        operation: event.operation,
+        old_data: this.filterSensitiveData(event.table_name, event.old_data ?? {}),
+        new_data: this.filterSensitiveData(event.table_name, event.new_data ?? {}),
+        changed_by: event.changed_by ?? 'system',
+        tags: event.tags ?? {},
+        metadata: event.metadata ?? {},
+        changed_at: new Date().toISOString()
+      }));
+
+      // Create audit records in batch using PostgreSQL
+      for (const record of auditData) {
+        await db.create('event_audit', record);
+      }
+
+      logger.debug({ count: processedEvents.length }, 'Batch audit events logged');
     } catch (error) {
-      logger.error({ error }, 'Failed to flush audit batch');
-      // Put events back in queue for retry
-      this.batchQueue.unshift(...eventsToLog);
+      logger.error({ error }, 'Failed to log batch audit events');
+      // Don't throw - audit failures shouldn't break the main operation
     }
   }
 
@@ -406,12 +469,15 @@ class AuditLogger {
     };
   }> {
     try {
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      // Execute all queries in parallel for better performance
+      // Execute all queries in parallel for better performance using PostgreSQL
       const [
         totalEvents,
         eventsByType,
@@ -422,75 +488,42 @@ class AuditLogger {
         last7DaysCount
       ] = await Promise.all([
         // Total events
-        prisma.getClient().eventAudit.count(),
+        db.query(`SELECT COUNT(*) as count FROM event_audit`).then(r => parseInt(r.rows[0].count)),
 
         // Events by type
-        prisma.getClient().eventAudit.groupBy({
-          by: ['event_type'],
-          _count: true,
-        }),
+        db.query(`SELECT event_type, COUNT(*) as count FROM event_audit GROUP BY event_type`).then(r => 
+          r.rows.reduce((acc, row) => ({ ...acc, [row.event_type]: parseInt(row.count) }), {})
+        ),
 
         // Events by table
-        prisma.getClient().eventAudit.groupBy({
-          by: ['table_name'],
-          _count: true,
-        }),
+        db.query(`SELECT table_name, COUNT(*) as count FROM event_audit GROUP BY table_name`).then(r => 
+          r.rows.reduce((acc, row) => ({ ...acc, [row.table_name]: parseInt(row.count) }), {})
+        ),
 
         // Events by operation
-        prisma.getClient().eventAudit.groupBy({
-          by: ['operation'],
-          _count: true,
-        }),
+        db.query(`SELECT operation, COUNT(*) as count FROM event_audit GROUP BY operation`).then(r => 
+          r.rows.reduce((acc, row) => ({ ...acc, [row.operation]: parseInt(row.count) }), {})
+        ),
 
         // Recent activity counts
-        prisma.getClient().eventAudit.count({
-          where: { created_at: { gte: oneHourAgo } }
-        }),
-        prisma.getClient().eventAudit.count({
-          where: { created_at: { gte: oneDayAgo } }
-        }),
-        prisma.getClient().eventAudit.count({
-          where: { created_at: { gte: sevenDaysAgo } }
-        }),
+        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [oneHourAgo.toISOString()]).then(r => parseInt(r.rows[0].count)),
+        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [oneDayAgo.toISOString()]).then(r => parseInt(r.rows[0].count)),
+        db.query(`SELECT COUNT(*) as count FROM event_audit WHERE changed_at >= $1`, [sevenDaysAgo.toISOString()]).then(r => parseInt(r.rows[0].count))
       ]);
 
-      // Process groupBy results
-      const eventsByTypeMap: Record<string, number> = {};
-      eventsByType.forEach((item: any) => {
-        if (item.eventType) {
-          eventsByTypeMap[item.eventType] = item._count;
-        }
-      });
-
-      const eventsByTableMap: Record<string, number> = {};
-      eventsByTable.forEach((item: any) => {
-        if (item.table_name) {
-          eventsByTableMap[item.table_name] = item._count;
-        }
-      });
-
-      const eventsByOperationMap: Record<string, number> = {};
-      eventsByOperation.forEach((item: any) => {
-        eventsByOperationMap[item.operation] = item._count;
-      });
-
-      const statistics = {
+      return {
         totalEvents,
-        eventsByType: eventsByTypeMap,
-        eventsByTable: eventsByTableMap,
-        eventsByOperation: eventsByOperationMap,
+        eventsByType,
+        eventsByTable,
+        eventsByOperation,
         recentActivity: {
           lastHour: lastHourCount,
           last24Hours: last24HoursCount,
-          last7Days: last7DaysCount,
-        },
+          last7Days: last7DaysCount
+        }
       };
-
-      logger.debug({ statistics }, 'Retrieved comprehensive audit statistics');
-
-      return statistics;
     } catch (error) {
-      logger.error({ error }, 'Failed to get audit statistics');
+      logger.error('Failed to get audit statistics:', error);
       throw error;
     }
   }
@@ -503,13 +536,16 @@ class AuditLogger {
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     try {
-      // Use Prisma deleteMany for cleanup
-      const deleteResult = await prisma.getClient().eventAudit.deleteMany({
-        where: {
-          created_at: { lt: cutoffDate }
-        }
-      });
-      const deletedCount = deleteResult.count;
+      const db = new UnifiedDatabaseLayer();
+      await db.initialize();
+
+      // Use PostgreSQL DELETE for cleanup
+      const deleteResult = await db.query(
+        `DELETE FROM event_audit WHERE changed_at < $1 RETURNING COUNT(*) as count`,
+        [cutoffDate.toISOString()]
+      );
+
+      const deletedCount = parseInt(deleteResult.rows[0].count);
 
       logger.info({ deletedCount, olderThanDays }, `Cleaned up ${deletedCount} old audit events`);
 

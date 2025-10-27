@@ -1,23 +1,23 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { PRContextData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storePRContext(
   data: PRContextData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // Check if this is an update operation (has ID)
   if (data.id) {
-    const existing = await prisma.prContext.findUnique({
+    const existing = await qdrant.prContext.findUnique({
       where: { id: data.id }
     });
 
     if (existing) {
       // Update existing PR context
-      const result = await prisma.prContext.update({
-        where: { id: data.id },
-        data: {
+      const result = await db.update('prContext', { id: data.id }, {
           pr_number: data.pr_number ?? existing.pr_number,
           title: data.title ?? existing.title,
           description: data.description ?? existing.description,
@@ -25,7 +25,7 @@ export async function storePRContext(
           status: data.status ?? existing.status,
           merged_at: data.merged_at ? new Date(data.merged_at) : existing.merged_at,
           tags: {
-            ...(existing.tags as any || {}),
+            ...(existing.tags as any || {);,
             ...scope,
             base_branch: data.base_branch ?? (existing.tags as any)?.base_branch,
             head_branch: data.head_branch ?? (existing.tags as any)?.head_branch,
@@ -40,7 +40,7 @@ export async function storePRContext(
   }
 
   // Create new PR context
-  const result = await prisma.prContext.create({
+  const result = await qdrant.prContext.create({
     data: {
       pr_number: data.pr_number,
       title: data.title,

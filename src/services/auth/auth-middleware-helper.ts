@@ -7,6 +7,7 @@ import { AuthService } from './auth-service.js';
 import { AuthorizationService } from './authorization-service.js';
 import { AuditService } from '../audit/audit-service.js';
 import { AuthContext, AuthScope, UserRole } from '../../types/auth-types.js';
+import { logger } from '../../utils/logger.js';
 
 export interface MCPAuthContext {
   user: {
@@ -61,7 +62,7 @@ export class MCPAuthHelper {
     try {
       // Try JWT token first
       if (authToken.startsWith('eyJ')) {
-        const authContext = this.authService.createAuthContext(
+        const authContext = await this.authService.createAuthContext(
           authToken,
           requestInfo.ip_address,
           requestInfo.user_agent
@@ -127,7 +128,7 @@ export class MCPAuthHelper {
       );
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
-      console.error('Failed to log auth success:', error);
+      logger.error({ error, userId, sessionId, method }, 'Failed to log auth success');
     }
   }
 
@@ -150,7 +151,7 @@ export class MCPAuthHelper {
       );
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
-      console.error('Failed to log auth failure:', error);
+      logger.error({ error, userId, sessionId, reason }, 'Failed to log auth failure');
     }
   }
 
@@ -177,7 +178,7 @@ export class MCPAuthHelper {
       );
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
-      console.error('Failed to log permission denied:', error);
+      logger.error({ error, userId, resource, action, requiredScopes, userScopes }, 'Failed to log permission denied');
     }
   }
 }

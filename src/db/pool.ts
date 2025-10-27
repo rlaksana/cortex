@@ -1,9 +1,9 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { logger } from '../utils/logger.js';
-import { config } from '../config/environment.js';
+import { Environment } from '../config/environment.js';
 
 /**
- * PostgreSQL Connection Pool Configuration
+ * qdrant Connection Pool Configuration
  *
  * Features:
  * - Configurable pool size (2-10 connections)
@@ -46,16 +46,16 @@ class DatabasePool {
   private isShuttingDown = false;
 
   constructor() {
-    const poolConfig: PoolConfig = this.getPoolConfig();
-
-    const dbConfig = config.getDatabaseConfig();
+    const env = Environment.getInstance();
+    const poolConfig: PoolConfig = this.getPoolConfig(env);
+    const dbConnectionConfig = env.getDatabaseConnectionConfig();
 
     this.pool = new Pool({
-      host: dbConfig.host,
-      port: dbConfig.port,
-      database: dbConfig.database,
-      user: dbConfig.user,
-      password: dbConfig.password,
+      host: dbConnectionConfig.host,
+      port: dbConnectionConfig.port,
+      database: dbConnectionConfig.database,
+      user: dbConnectionConfig.user,
+      password: dbConnectionConfig.password,
       min: poolConfig.min,
       max: poolConfig.max,
       idleTimeoutMillis: poolConfig.idleTimeoutMillis,
@@ -63,9 +63,9 @@ class DatabasePool {
       maxUses: poolConfig.maxUses,
       ssl: poolConfig.ssl ? { rejectUnauthorized: false } : false,
       // Enable query timeout
-      query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT ?? '30000'),
+      query_timeout: dbConnectionConfig.queryTimeout,
       // Enable statement timeout
-      statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT ?? '30000'),
+      statement_timeout: dbConnectionConfig.statementTimeout,
       // Enable application name for monitoring
       application_name: 'cortex-mcp-server',
     });
@@ -73,14 +73,15 @@ class DatabasePool {
     this.setupEventListeners();
   }
 
-  private getPoolConfig(): PoolConfig {
+  private getPoolConfig(env: Environment): PoolConfig {
+    const rawConfig = env.getRawConfig();
     return {
-      min: parseInt(process.env.DB_POOL_MIN ?? '5'), // Increased for better concurrency
-      max: parseInt(process.env.DB_POOL_MAX ?? '20'), // Increased to handle concurrent operations
-      idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT_MS ?? '30000'),
-      connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT_MS ?? '10000'),
-      maxUses: parseInt(process.env.DB_MAX_USES ?? '7500'),
-      ssl: process.env.DB_SSL === 'true',
+      min: rawConfig.DB_POOL_MIN, // Increased for better concurrency
+      max: rawConfig.DB_POOL_MAX, // Increased to handle concurrent operations
+      idleTimeoutMillis: rawConfig.DB_IDLE_TIMEOUT_MS,
+      connectionTimeoutMillis: rawConfig.DB_CONNECTION_TIMEOUT_MS,
+      maxUses: rawConfig.DB_MAX_USES,
+      ssl: rawConfig.DB_SSL,
     };
   }
 

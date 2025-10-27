@@ -1,13 +1,15 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRelease(
   data: ReleaseData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const result = await prisma.releaseLog.create({
+  const result = await qdrant.releaseLog.create({
     data: {
       version: data.version,
       scope: data.description || '',
@@ -38,9 +40,11 @@ export async function findReleases(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<ReleaseData[]> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const releases = await prisma.releaseLog.findMany({
+  const releases = return await db.find('releaseLog', {
     where: {
       AND: [
         {
@@ -52,7 +56,7 @@ export async function findReleases(
         scope ? {
           tags: {
             path: [],
-            string_contains: JSON.stringify(scope)
+            string_contains: JSON.stringify(scope);
           }
         } : {}
       ]
@@ -84,9 +88,11 @@ export async function updateRelease(
   data: Partial<ReleaseData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const existing = await prisma.releaseLog.findUnique({
+  const existing = await qdrant.releaseLog.findUnique({
     where: { id }
   });
 
@@ -94,9 +100,7 @@ export async function updateRelease(
     throw new Error(`Release with id ${id} not found`);
   }
 
-  const result = await prisma.releaseLog.update({
-    where: { id },
-    data: {
+  const result = await db.update('releaseLog', { id }, {
       version: data.version ?? existing.version,
       scope: data.description ?? existing.scope,
       status: data.status ?? existing.status,
@@ -111,7 +115,7 @@ export async function updateRelease(
       release_notes: data.release_notes ? JSON.stringify(data.release_notes) : existing.release_notes || undefined,
       post_release_actions: data.bug_fixes ? JSON.stringify(data.bug_fixes) : existing.post_release_actions || undefined,
       tags: {
-        ...(existing.tags as any || {}),
+        ...(existing.tags as any || {);,
         ...scope,
         title: data.title ?? (existing.tags as any)?.title,
         breaking_changes: data.breaking_changes ? JSON.stringify(data.breaking_changes) : (existing.tags as any)?.breaking_changes

@@ -1,5 +1,5 @@
 import { logger } from '../../utils/logger.js';
-import { prisma } from '../../db/prisma-client.js';
+import { qdrant } from '../../db/qdrant-client.js';
 import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal.js';
 import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
 import { queryParser, type ParsedQuery } from '../search/query-parser.js';
@@ -40,7 +40,7 @@ export class MemoryFindOrchestrator {
   ) {}
 
   /**
-   * Map knowledge kinds to their corresponding Prisma table names
+   * Map knowledge kinds to their corresponding Qdrant table names
    */
   private getTableNameForKind(kind: string): string | null {
     const kindToTableMap: Record<string, string> = {
@@ -82,14 +82,14 @@ export class MemoryFindOrchestrator {
         const tableSpecificWhere = this.buildTableSpecificWhereClause(tableName, whereClause, kind);
         const tableSpecificSelect = this.buildTableSpecificSelect(tableName, select, kind);
 
-        const tableResults = await (prisma as any)[tableName].findMany({
+        const tableResults = await (qdrant as any)[tableName].findMany({
           where: tableSpecificWhere,
           select: tableSpecificSelect,
           orderBy: orderBy || { updated_at: 'desc' },
           take: take || 50
         });
 
-        const tableCount = await (prisma as any)[tableName].count({
+        const tableCount = await (qdrant as any)[tableName].count({
           where: tableSpecificWhere
         });
 

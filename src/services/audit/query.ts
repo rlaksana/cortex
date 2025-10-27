@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../db/prisma.js';
+import { getQdrantClient } from '../../db/qdrant.js';
 import { logger } from '../../utils/logger.js';
 
 export interface AuditLogEntry {
@@ -53,11 +53,11 @@ export async function queryAuditLog(
     order_dir?: 'ASC' | 'DESC';
   } = {}
 ): Promise<AuditLogQueryResult> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
   const { page = 1, page_size = 50, order_by = 'created_at', order_dir = 'DESC' } = options;
 
   try {
-    // Build Prisma where clause
+    // Build Qdrant where clause
     const whereClause: any = {};
 
     if (filters.table_name) {
@@ -92,8 +92,8 @@ export async function queryAuditLog(
 
     // Execute count and data queries in parallel
     const [totalResult, entriesResult] = await Promise.all([
-      prisma.eventAudit.count({ where: whereClause }),
-      prisma.eventAudit.findMany({
+      qdrant.eventAudit.count({ where: whereClause }),
+      qdrant.eventAudit.findMany({
         where: whereClause,
         orderBy: { [order_by]: order_dir.toLowerCase() as 'asc' | 'desc' },
         skip: offset,
@@ -201,10 +201,10 @@ export async function getEntityAuditTrail(
 export async function getRecentAuditActivity(
   limit: number = 20
 ): Promise<AuditLogEntry[]> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
   try {
-    const entries = await prisma.eventAudit.findMany({
+    const entries = await qdrant.eventAudit.findMany({
       orderBy: { created_at: 'desc' },
       take: limit,
       select: {
@@ -260,7 +260,7 @@ export async function getAuditStatistics(
   events_by_operation: Record<string, number>;
   unique_actors: number;
 }> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
   try {
     // Build where clause for date filtering
@@ -274,24 +274,24 @@ export async function getAuditStatistics(
       actorResult
     ] = await Promise.all([
       // Total events
-      prisma.eventAudit.count({ where: whereClause }),
+      qdrant.eventAudit.count({ where: whereClause }),
 
       // Events by table name (entity type)
-      prisma.eventAudit.groupBy({
+      qdrant.eventAudit.groupBy({
         by: ['table_name'],
         where: whereClause,
         _count: true,
       }),
 
       // Events by operation
-      prisma.eventAudit.groupBy({
+      qdrant.eventAudit.groupBy({
         by: ['operation'],
         where: whereClause,
         _count: true,
       }),
 
       // Unique actors
-      prisma.eventAudit.groupBy({
+      qdrant.eventAudit.groupBy({
         by: ['changed_by'],
         where: whereClause,
       }),

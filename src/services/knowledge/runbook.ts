@@ -1,15 +1,17 @@
 import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
 import { logger } from '../../utils/logger.js';
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
 export async function storeRunbook(
   data: RunbookData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // FIXED: Use direct field access for new fields instead of tags workaround
-  const result = await prisma.runbook.create({
+  const result = await qdrant.runbook.create({
     data: {
       title: data.title || 'Untitled Runbook',
       description: data.description || null,
@@ -32,7 +34,9 @@ export async function updateRunbook(
   id: string,
   data: Partial<RunbookData>
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   const updateData: any = {};
 
   if (data.title !== undefined) {
@@ -60,10 +64,8 @@ export async function updateRunbook(
     return; // No updates to perform
   }
 
-  await prisma.runbook.update({
-    where: { id },
-    data: updateData
-  });
+  await db.update('runbook', { id }, updateData
+  );
   logger.info({ runbookId: id, updates: Object.keys(updateData).length }, 'Runbook updated successfully');
 }
 
@@ -83,7 +85,9 @@ export async function findRunbooks(
     updated_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {};
 
@@ -95,7 +99,7 @@ export async function findRunbooks(
     };
   }
 
-  const result = await prisma.runbook.findMany({
+  const result = return await db.find('runbook', {
     where: whereClause,
     orderBy: { updated_at: 'desc' },
     take: criteria.limit,

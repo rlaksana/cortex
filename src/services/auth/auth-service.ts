@@ -7,7 +7,15 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { logger } from '../../utils/logger.js';
-import { prisma } from '../../db/prisma-client.js';
+import { qdrant } from '../../db/qdrant-client.js';
+import {
+  ConfigurationError,
+  AuthenticationError,
+  ValidationError,
+  ServiceErrorHandler,
+  AsyncErrorHandler
+} from '../../middleware/error-middleware.js';
+import { BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../../utils/error-handler.js';
 import {
   User,
   ApiKey,
@@ -36,7 +44,7 @@ export interface AuthServiceConfig {
 
 export class AuthService {
   private config: AuthServiceConfig;
-  private tokenBlacklist: Set<string> = new Set();
+  private tokenBlacklist: Set<string> = new Set(); // In-memory cache for performance
   private activeSessions: Map<string, AuthSession> = new Map();
 
   constructor(config: AuthServiceConfig) {
@@ -47,10 +55,18 @@ export class AuthService {
 
   private validateConfig(): void {
     if (!this.config.jwt_secret || this.config.jwt_secret.length < 32) {
-      throw new Error('JWT_SECRET must be at least 32 characters long');
+      throw new ConfigurationError(
+        'JWT_SECRET must be at least 32 characters long',
+        'Invalid JWT secret configuration',
+        { secretLength: this.config.jwt_secret?.length || 0 }
+      );
     }
     if (!this.config.jwt_refresh_secret || this.config.jwt_refresh_secret.length < 32) {
-      throw new Error('JWT_REFRESH_SECRET must be at least 32 characters long');
+      throw new ConfigurationError(
+        'JWT_REFRESH_SECRET must be at least 32 characters long',
+        'Invalid JWT refresh secret configuration',
+        { secretLength: this.config.jwt_refresh_secret?.length || 0 }
+      );
     }
   }
 
@@ -67,72 +83,102 @@ export class AuthService {
    * Database-backed user authentication
    */
   async validateUserWithDatabase(username: string, password: string): Promise<User | null> {
-    try {
-      // Fetch user from database
-      const userRecord = await prisma.getClient().user.findUnique({
-        where: { username },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          password_hash: true,
-          role: true,
-          is_active: true,
-          created_at: true,
-          updated_at: true,
-          last_login: true
+    return ServiceErrorHandler.wrapServiceMethod(
+      'validateUserWithDatabase',
+      async () => {
+        // Validate input
+        if (!username || !password) {
+          throw new ValidationError(
+            'Username and password are required',
+            'Please provide both username and password',
+            { username: !!username, password: !!password }
+          );
         }
-      });
 
-      if (!userRecord) {
-        logger.warn({ username }, 'User not found in database');
-        return null;
+        // Fetch user from database
+        const userRecord = await AsyncErrorHandler.retry(
+          () => qdrant.getClient().user.findUnique({
+            where: { username },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              password_hash: true,
+              role: true,
+              is_active: true,
+              created_at: true,
+              updated_at: true,
+              last_login: true
+            }
+          }),
+          {
+            maxAttempts: 3,
+            context: { operation: 'findUser', username }
+          }
+        );
+
+        if (!userRecord) {
+          logger.warn({ username }, 'User not found in database');
+          return null;
+        }
+
+        // Check if user account is active
+        if (!userRecord.is_active) {
+          throw new AuthenticationError(
+            `User account ${username} is inactive`,
+            'Account is disabled',
+            { userId: userRecord.id, username }
+          );
+        }
+
+        // Verify password
+        const isValidPassword = await this.verifyPassword(password, userRecord.password_hash);
+        if (!isValidPassword) {
+          throw new AuthenticationError(
+            'Invalid password provided',
+            'Invalid username or password',
+            { userId: userRecord.id, username }
+          );
+        }
+
+        // Update last login timestamp
+        await AsyncErrorHandler.retry(
+          () => qdrant.getClient().user.update({
+            where: { id: userRecord.id },
+            data: { last_login: new Date() }
+          }),
+          {
+            maxAttempts: 2,
+            context: { operation: 'updateLastLogin', userId: userRecord.id }
+          }
+        );
+
+        // Convert database user to User interface
+        const user: User = {
+          id: userRecord.id,
+          username: userRecord.username,
+          email: userRecord.email,
+          password_hash: userRecord.password_hash,
+          role: userRecord.role as UserRole,
+          is_active: userRecord.is_active,
+          created_at: userRecord.created_at.toISOString(),
+          updated_at: userRecord.updated_at.toISOString(),
+          last_login: userRecord.last_login?.toISOString()
+        };
+
+        logger.info({
+          userId: user.id,
+          username: user.username,
+          role: user.role
+        }, 'User authenticated successfully via database');
+
+        return user;
+      },
+      {
+        category: ErrorCategory.AUTHENTICATION,
+        fallback: () => null
       }
-
-      // Check if user account is active
-      if (!userRecord.is_active) {
-        logger.warn({ username, userId: userRecord.id }, 'User account is inactive');
-        return null;
-      }
-
-      // Verify password
-      const isValidPassword = await this.verifyPassword(password, userRecord.password_hash);
-      if (!isValidPassword) {
-        logger.warn({ username, userId: userRecord.id }, 'Invalid password provided');
-        return null;
-      }
-
-      // Update last login timestamp
-      await prisma.getClient().user.update({
-        where: { id: userRecord.id },
-        data: { last_login: new Date() }
-      });
-
-      // Convert database user to User interface
-      const user: User = {
-        id: userRecord.id,
-        username: userRecord.username,
-        email: userRecord.email,
-        password_hash: userRecord.password_hash,
-        role: userRecord.role as UserRole,
-        is_active: userRecord.is_active,
-        created_at: userRecord.created_at.toISOString(),
-        updated_at: userRecord.updated_at.toISOString(),
-        last_login: userRecord.last_login?.toISOString()
-      };
-
-      logger.info({
-        userId: user.id,
-        username: user.username,
-        role: user.role
-      }, 'User authenticated successfully via database');
-
-      return user;
-
-    } catch (error) {
-      logger.error({ error, username }, 'Database user validation failed');
-      return null;
-    }
+    );
   }
 
   // JWT token operations
@@ -171,7 +217,7 @@ export class AuthService {
     });
   }
 
-  verifyAccessToken(token: string): TokenPayload {
+  async verifyAccessToken(token: string): Promise<TokenPayload> {
     try {
       const decoded = jwt.verify(token, this.config.jwt_secret, {
         algorithms: ['HS256'],
@@ -179,9 +225,30 @@ export class AuthService {
         audience: 'cortex-client'
       }) as TokenPayload;
 
-      // Check if token is blacklisted
+      // First check in-memory cache for performance
       if (this.tokenBlacklist.has(decoded.jti)) {
         throw new Error('Token has been revoked');
+      }
+
+      // Then check database for distributed consistency
+      try {
+        const revokedToken = await qdrant.getClient().tokenRevocationList.findFirst({
+          where: {
+            jti: decoded.jti,
+            expires_at: {
+              gt: new Date()
+            }
+          }
+        });
+
+        if (revokedToken) {
+          // Add to in-memory cache for future checks
+          this.tokenBlacklist.add(decoded.jti);
+          throw new Error('Token has been revoked');
+        }
+      } catch (dbError) {
+        logger.warn({ jti: decoded.jti, error: dbError }, 'Failed to check token revocation status in database');
+        // If database check fails, proceed cautiously but log the issue
       }
 
       return decoded;
@@ -213,9 +280,24 @@ export class AuthService {
     }
   }
 
-  revokeToken(jti: string): void {
+  async revokeToken(jti: string): Promise<void> {
+    // Add to in-memory cache for immediate effect
     this.tokenBlacklist.add(jti);
-    logger.info({ jti }, 'Token revoked');
+
+    // Persist to database for distributed consistency
+    try {
+      await qdrant.getClient().tokenRevocationList.create({
+        data: {
+          jti,
+          revoked_at: new Date(),
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+        }
+      });
+      logger.info({ jti }, 'Token revoked and persisted to database');
+    } catch (error) {
+      logger.error({ jti, error }, 'Failed to persist token revocation to database');
+      // Still consider it revoked due to in-memory cache
+    }
   }
 
   // Session management
@@ -291,12 +373,33 @@ export class AuthService {
   }
 
   private startSessionCleanup(): void {
-    setInterval(() => {
+    setInterval(async () => {
       const now = new Date();
+
+      // Clean up expired sessions
       for (const [sessionId, session] of this.activeSessions) {
         if (now > new Date(session.expires_at)) {
           this.activeSessions.delete(sessionId);
         }
+      }
+
+      // Clean up expired token revocations from database
+      try {
+        await qdrant.getClient().tokenRevocationList.deleteMany({
+          where: {
+            expires_at: {
+              lt: now
+            }
+          }
+        });
+      } catch (error) {
+        logger.error({ error }, 'Failed to cleanup expired token revocations from database');
+      }
+
+      // Clean up in-memory cache periodically (prevent memory leaks)
+      if (this.tokenBlacklist.size > 10000) {
+        this.tokenBlacklist.clear();
+        logger.info('Cleared in-memory token blacklist cache (size limit reached)');
       }
     }, 5 * 60 * 1000); // Clean up every 5 minutes
   }
@@ -332,7 +435,7 @@ export class AuthService {
       const keyId = `${keyIdMatch[1]}_${keyIdMatch[2]}`;
 
       // Fetch API key from database with user information
-      const apiKeyRecord = await prisma.getClient().apiKey.findFirst({
+      const apiKeyRecord = await qdrant.getClient().apiKey.findFirst({
         where: {
           key_id: keyId,
           is_active: true
@@ -383,7 +486,7 @@ export class AuthService {
         : [];
 
       // Update last used timestamp
-      await prisma.getClient().apiKey.update({
+      await qdrant.getClient().apiKey.update({
         where: { id: apiKeyRecord.id },
         data: { last_used: new Date() }
       });
@@ -446,14 +549,14 @@ export class AuthService {
       const { keyId, key } = this.generateApiKey();
       const keyHash = await this.hashApiKey(key);
 
-      await prisma.getClient().apiKey.create({
+      await qdrant.getClient().apiKey.create({
         data: {
           key_id: keyId,
           key_hash: keyHash,
           user_id: userId,
           name,
           description,
-          scopes: scopes as any[], // Prisma Json field
+          scopes: scopes as any[], // Qdrant Json field
           expires_at: expiresAt,
           is_active: true
         }
@@ -478,7 +581,7 @@ export class AuthService {
         whereClause.user_id = userId;
       }
 
-      const result = await prisma.getClient().apiKey.updateMany({
+      const result = await qdrant.getClient().apiKey.updateMany({
         where: whereClause,
         data: { is_active: false }
       });
@@ -503,7 +606,7 @@ export class AuthService {
    */
   async listApiKeysForUser(userId: string): Promise<ApiKey[]> {
     try {
-      const apiKeys = await prisma.getClient().apiKey.findMany({
+      const apiKeys = await qdrant.getClient().apiKey.findMany({
         where: { user_id: userId },
         select: {
           id: true,
@@ -599,8 +702,8 @@ export class AuthService {
   }
 
   // Authentication context creation
-  createAuthContext(token: string, ipAddress: string, userAgent: string): AuthContext {
-    const payload = this.verifyAccessToken(token);
+  async createAuthContext(token: string, ipAddress: string, userAgent: string): Promise<AuthContext> {
+    const payload = await this.verifyAccessToken(token);
     const session = payload.session_id ? this.getSession(payload.session_id) : null;
 
     if (!session) {
@@ -635,8 +738,8 @@ export class AuthService {
     // Revoke old access token if it exists
     if (session.refresh_token) {
       try {
-        const oldTokenPayload = this.verifyAccessToken(session.refresh_token);
-        this.revokeToken(oldTokenPayload.jti);
+        const oldTokenPayload = await this.verifyAccessToken(session.refresh_token);
+        await this.revokeToken(oldTokenPayload.jti);
       } catch {
         // Old token might be invalid, ignore
       }

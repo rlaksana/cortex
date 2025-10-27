@@ -1,4 +1,4 @@
-import { prisma } from '../../db/prisma-client.js';
+import { qdrant } from '../../db/qdrant-client.js';
 
 export interface Suggestion {
   type: 'spelling' | 'filter' | 'broader' | 'alternative';
@@ -107,8 +107,8 @@ async function checkSpelling(query: string): Promise<string[]> {
 
   for (const word of words) {
     try {
-      // Find similar words in section titles and content using Prisma
-      const sections = await prisma.getClient().section.findMany({
+      // Find similar words in section titles and content using Qdrant
+      const sections = await qdrant.getClient().section.findMany({
         select: {
           title: true,
           content: true,

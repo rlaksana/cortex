@@ -7,10 +7,23 @@
  * @module services/knowledge/entity
  */
 
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'crypto';
 import type { EntityItem } from '../../schemas/knowledge-types.js';
 
+/**
+ * Store a flexible entity in knowledge_entity table
+ *
+ * Features:
+ * - Content-hash based deduplication
+ * - Soft delete support
+ * - Flexible JSONB schema (no validation)
+ * - Unique constraint on (entity_type, name) for active entities
+ *
+ * @param data - Entity data (entity_type, name, data)
+ * @param scope - Scope metadata (org, project, branch, etc.)
+ * @returns UUID of stored entity
+ */
 /**
  * Store a flexible entity in knowledge_entity table
  *
@@ -28,69 +41,62 @@ export async function storeEntity(
   data: EntityItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // FIXED: Use content_hash for proper deduplication
   const content_hash = generateContentHash(data);
 
-  // Check for existing entity by content_hash first
-  const existingByHash = await prisma.knowledgeEntity.findFirst({
-    where: {
+  try {
+    // Check for existing entity by content_hash first using PostgreSQL
+    const existingByHash = await db.find('knowledge_entity', {
       content_hash,
       deleted_at: null
-    }
-  });
-
-  if (existingByHash) {
-    return existingByHash.id;
-  }
-
-  // Check for existing entity with same (entity_type, name) - update case
-  const existingByName = await prisma.knowledgeEntity.findFirst({
-    where: {
-      entity_type: data.entity_type,
-      name: data.name,
-      deleted_at: null
-    }
-  });
-
-  if (existingByName) {
-    // Update existing entity
-    const result = await prisma.knowledgeEntity.update({
-      where: { id: existingByName.id },
-      data: {
-        data: data.data as any,
-        content_hash,
-        tags: scope as any
-      }
     });
-    return result.id;
-  }
 
-  // Insert new entity
-  const result = await prisma.knowledgeEntity.create({
-    data: {
+    if (existingByHash.length > 0) {
+      return existingByHash[0].id;
+    }
+
+    // Check for existing entity with same (entity_type, name) - update case
+    const existingByName = await db.find('knowledge_entity', {
       entity_type: data.entity_type,
       name: data.name,
-      data: data.data as any,
-      content_hash,
-      tags: scope as any
-    }
-  });
+      deleted_at: null
+    });
 
-  return result.id;
+    const entityData = {
+      entity_type: data.entity_type,
+      name: data.name,
+      data: data.data,
+      content_hash,
+      scope,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    if (existingByName.length > 0) {
+      // Update existing entity
+      await db.update('knowledge_entity', entityData, { id: existingByName[0].id });
+      return existingByName[0].id;
+    } else {
+      // Create new entity
+      const result = await db.create('knowledge_entity', entityData);
+      return result.id;
+    }
+  } catch (error) {
+    console.error('Failed to store entity:', error);
+    throw new Error(`Entity storage failed: ${(error as Error).message}`);
+  }
 }
 
 /**
  * Generate content hash for entity deduplication
  */
-function generateContentHash(data: EntityItem['data']): string {
-  const content = JSON.stringify({
-    entity_type: data.entity_type,
-    name: data.name,
-    data: data.data
-  });
-  return createHash('sha256').update(content).digest('hex').substring(0, 128);
+function generateContentHash(data: any): string {
+  const content = JSON.stringify(data, Object.keys(data).sort());
+  return createHash('sha256').update(content).digest('hex');
 }
 
 /**
@@ -99,19 +105,28 @@ function generateContentHash(data: EntityItem['data']): string {
  * @param entity_id - UUID of entity to delete
  * @returns true if deleted, false if not found
  */
-export async function softDeleteEntity(entity_id: string): Promise<boolean> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeEntity.updateMany({
-    where: {
-      id: entity_id,
-      deleted_at: null
-    },
-    data: {
-      deleted_at: new Date()
-    }
-  });
+/**
+ * Soft delete an entity by marking it as deleted
+ *
+ * @param id - Entity UUID
+ * @returns True if entity was deleted, false if not found
+ */
+export async function softDeleteEntity(id: string): Promise<boolean> {
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  return result.count > 0;
+  try {
+    const result = await db.update('knowledge_entity', 
+      { deleted_at: new Date().toISOString() }, 
+      { id, deleted_at: null }
+    );
+    
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    console.error('Failed to soft delete entity:', error);
+    throw new Error(`Entity soft delete failed: ${(error as Error).message}`);
+  }
 }
 
 /**
@@ -120,38 +135,53 @@ export async function softDeleteEntity(entity_id: string): Promise<boolean> {
  * @param entity_id - UUID of entity
  * @returns Entity data or null if not found
  */
+/**
+ * Retrieve a flexible entity by ID with optional scope filtering
+ *
+ * @param id - Entity UUID
+ * @param scope - Scope filter (org, project, branch, etc.)
+ * @returns Entity data or null if not found
+ */
 export async function getEntity(
-  entity_id: string
-): Promise<{
-  id: string;
-  entity_type: string;
-  name: string;
-  data: Record<string, unknown>;
-  tags: Record<string, unknown>;
-  created_at: Date;
-  updated_at: Date;
-} | null> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeEntity.findFirst({
-    where: {
-      id: entity_id,
-      deleted_at: null
+  id: string,
+  scope?: Record<string, unknown>
+): Promise<EntityItem | null> {
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+
+  try {
+    const whereConditions: any = { id, deleted_at: null };
+    
+    // Add scope filtering if provided
+    if (scope) {
+      Object.keys(scope).forEach(key => {
+        whereConditions[`scope->>${key}`] = scope[key];
+      });
     }
-  });
 
-  if (!result) {
-    return null;
+    const results = await db.find('knowledge_entity', whereConditions);
+    
+    if (results.length === 0) {
+      return null;
+    }
+
+    const entity = results[0];
+    return {
+      id: entity.id,
+      data: {
+        entity_type: entity.entity_type,
+        name: entity.name,
+        data: entity.data
+      },
+      scope: entity.scope,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at
+    };
+  } catch (error) {
+    console.error('Failed to get entity:', error);
+    throw new Error(`Entity retrieval failed: ${(error as Error).message}`);
   }
-
-  return {
-    id: result.id,
-    entity_type: result.entity_type,
-    name: result.name,
-    data: (result.data as any) || {},
-    tags: (result.tags as any) || {},
-    created_at: result.created_at,
-    updated_at: result.updated_at
-  };
 }
 
 /**
@@ -162,51 +192,88 @@ export async function getEntity(
  * @param limit - Result limit
  * @returns Array of matching entities
  */
+/**
+ * Search for flexible entities using PostgreSQL full-text search
+ *
+ * @param query - Search query string
+ * @param filters - Optional filters (entity_type, scope, etc.)
+ * @param options - Search options (limit, offset, etc.)
+ * @returns Array of matching entities
+ */
 export async function searchEntities(
-  entity_type?: string,
-  namePattern?: string,
-  limit: number = 20
-): Promise<
-  Array<{
-    id: string;
-    entity_type: string;
-    name: string;
-    data: Record<string, unknown>;
-    tags: Record<string, unknown>;
-    created_at: Date;
-    updated_at: Date;
-  }>
-> {
-  const prisma = getPrismaClient();
+  query: string,
+  filters: {
+    entity_type?: string;
+    scope?: Record<string, unknown>;
+    limit?: number;
+    offset?: number;
+  } = {}
+): Promise<EntityItem[]> {
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const whereClause: any = {
-    deleted_at: null
-  };
+  try {
+    const whereConditions: any = { deleted_at: null };
+    
+    // Add entity_type filter if provided
+    if (filters.entity_type) {
+      whereConditions.entity_type = filters.entity_type;
+    }
+    
+    // Add scope filtering if provided
+    if (filters.scope) {
+      Object.keys(filters.scope).forEach(key => {
+        whereConditions[`scope->>${key}`] = filters.scope![key];
+      });
+    }
 
-  if (entity_type) {
-    whereClause.entity_type = entity_type;
+    // Use PostgreSQL full-text search if query provided
+    if (query.trim()) {
+      const searchResults = await db.fullTextSearch('knowledge_entity', {
+        query: query.trim(),
+        config: 'english',
+        weighting: { D: 0.1, C: 0.2, B: 0.4, A: 1.0 },
+        highlight: true,
+        snippet_size: 150,
+        max_results: filters.limit || 50
+      });
+      
+      return searchResults.map(result => ({
+        id: result.id,
+        data: {
+          entity_type: result.entity_type,
+          name: result.name,
+          data: result.data
+        },
+        scope: result.scope,
+        created_at: result.created_at,
+        updated_at: result.updated_at,
+        rank: result.rank,
+        score: result.score,
+        highlight: result.highlight
+      }));
+    } else {
+      // Simple filter-based search
+      const results = await db.find('knowledge_entity', whereConditions, {
+        take: filters.limit || 50,
+        orderBy: { updated_at: 'desc' }
+      });
+      
+      return results.map(entity => ({
+        id: entity.id,
+        data: {
+          entity_type: entity.entity_type,
+          name: entity.name,
+          data: entity.data
+        },
+        scope: entity.scope,
+        created_at: entity.created_at,
+        updated_at: entity.updated_at
+      }));
+    }
+  } catch (error) {
+    console.error('Failed to search entities:', error);
+    throw new Error(`Entity search failed: ${(error as Error).message}`);
   }
-
-  if (namePattern) {
-    whereClause.name = {
-      contains: namePattern,
-      mode: 'insensitive'
-    };
-  }
-
-  const result = await prisma.knowledgeEntity.findMany({
-    where: whereClause,
-    orderBy: { updated_at: 'desc' },
-    take: limit
-  });
-
-  return result.map(entity => ({
-    id: entity.id,
-    entity_type: entity.entity_type,
-    name: entity.name,
-    data: (entity.data as any) || {},
-    tags: (entity.tags as any) || {},
-    created_at: entity.created_at,
-    updated_at: entity.updated_at
-  }));
 }

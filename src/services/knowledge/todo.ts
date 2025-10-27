@@ -1,11 +1,13 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { TodoData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   // FIXED: Use direct field access for new fields instead of tags workaround
-  const result = await prisma.todoLog.create({
+  const result = await qdrant.todoLog.create({
     data: {
       title: data.text || data.todo_type || 'Untitled Todo',
       description: data.text,
@@ -27,9 +29,11 @@ export async function updateTodo(
   data: Partial<TodoData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
-  const existing = await prisma.todoLog.findUnique({
+  const existing = await qdrant.todoLog.findUnique({
     where: { id }
   });
 
@@ -38,9 +42,7 @@ export async function updateTodo(
   }
 
   // FIXED: Update existing todo using direct field access
-  const result = await prisma.todoLog.update({
-    where: { id },
-    data: {
+  const result = await db.update('todoLog', { id }, {
       title: data.text || data.todo_type || existing.title,
       description: data.text ?? existing.description,
       status: data.status ?? existing.status,
@@ -50,7 +52,7 @@ export async function updateTodo(
       text: data.text ?? existing.text,
       assignee: data.assignee ?? existing.assignee,
       tags: {
-        ...(existing.tags as any || {}),
+        ...(existing.tags as any || {);,
         ...scope
       }
     }

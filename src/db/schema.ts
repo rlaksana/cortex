@@ -1,11 +1,11 @@
 /**
- * Cortex Memory MCP - PostgreSQL 18 Database Schema
+ * Cortex Memory MCP - qdrant 18 Database Schema
  *
  * Production-ready schema with comprehensive tables, indexes, and constraints.
  * Supports all 16 knowledge types with full-text search, graph relationships,
  * and audit trail capabilities.
  *
- * PostgreSQL 18 Features Used:
+ * qdrant 18 Features Used:
  * - gen_random_uuid() for UUID generation
  * - Generated columns for FTS optimization
  * - JSONB with GIN indexes for flexible metadata
@@ -15,6 +15,7 @@
  */
 
 import { Client } from 'pg';
+import { logger } from '../utils/logger.js';
 
 /**
  * Complete database schema definition for Cortex Memory MCP
@@ -758,19 +759,19 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO PUBLIC;
  */
 export async function createSchema(client: Client): Promise<void> {
   try {
-    console.log('Creating Cortex Memory MCP database schema...');
+    logger.info('Creating Cortex Memory MCP database schema...');
 
     // Execute the complete schema DDL
     await client.query(SCHEMA_DDL);
 
-    console.log('✓ Database schema created successfully');
-    console.log('✓ All tables created with proper constraints and indexes');
-    console.log('✓ Audit triggers installed for all tables');
-    console.log('✓ Updated_at triggers installed for timestamp management');
-    console.log('✓ Performance indexes created for optimal query performance');
-    console.log('✓ Views created for common query patterns');
+    logger.info('Database schema created successfully');
+    logger.info('All tables created with proper constraints and indexes');
+    logger.info('Audit triggers installed for all tables');
+    logger.info('Updated_at triggers installed for timestamp management');
+    logger.info('Performance indexes created for optimal query performance');
+    logger.info('Views created for common query patterns');
   } catch (error) {
-    console.error('Error creating database schema:', error);
+    logger.error({ error }, 'Error creating database schema');
     throw error;
   }
 }

@@ -87,12 +87,12 @@ export const DecisionDataSchema = z
     path: ['rationale'],
   });
 
-// PRISMA SCHEMA COMPLIANT Issue data schema
+// qdrant SCHEMA COMPLIANT Issue data schema
 // Uses direct database fields: tracker, external_id, labels, url, assignee
 // NO metadata/tags workarounds for database fields
 export const IssueDataSchema = z.object({
   id: z.string().uuid().optional(),
-  // Direct database fields (Prisma Schema compliance)
+  // Direct database fields (Qdrant Schema compliance)
   tracker: z.string().max(100, 'Tracker name too long').optional(),
   external_id: z.string().max(100, 'External ID too long').optional(),
   title: z
@@ -103,7 +103,7 @@ export const IssueDataSchema = z.object({
   description: z.string().max(50000, 'Description too long').optional(),
   severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
-  // Additional direct fields from Prisma schema
+  // Additional direct fields from Qdrant schema
   labels: z.array(z.any()).optional(),
   url: z.string().max(2000, 'URL too long').optional(),
   assignee: z.string().max(200, 'Assignee name too long').optional(),
@@ -111,7 +111,7 @@ export const IssueDataSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
   tags: z.record(z.unknown()).optional(),
 }).refine((data) => {
-  // PRISMA SCHEMA COMPLIANCE: Ensure no metadata workaround usage
+  // qdrant SCHEMA COMPLIANCE: Ensure no metadata workaround usage
   // All database fields must use direct field access
   if (data.metadata) {
     const forbiddenFields = ['tracker', 'external_id', 'url', 'assignee', 'labels'];
@@ -131,7 +131,7 @@ export const IssueDataSchema = z.object({
   }
   return true;
 }, {
-  message: 'PRISMA SCHEMA VIOLATION: Use direct fields (tracker, external_id, url, assignee, labels) instead of metadata/tags workarounds',
+  message: 'qdrant SCHEMA VIOLATION: Use direct fields (tracker, external_id, url, assignee, labels) instead of metadata/tags workarounds',
   path: ['root'],
 });
 

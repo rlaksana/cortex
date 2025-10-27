@@ -8,7 +8,7 @@
  */
 
 import { logger } from './logger.js';
-import type { PrismaClient } from '@prisma/client';
+import type { QdrantClient } from '@qdrant/client';
 
 export enum DbErrorType {
   CONNECTION_ERROR = 'CONNECTION_ERROR',
@@ -168,9 +168,9 @@ export class DatabaseErrorHandler {
   /**
    * Health check for database connection
    */
-  async healthCheck(prisma: PrismaClient): Promise<boolean> {
+  async healthCheck(qdrant: QdrantClient): Promise<boolean> {
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await qdrant.$queryRaw`SELECT 1`;
       return true;
     } catch (error) {
       logger.error({ error }, 'Database health check failed');
@@ -182,12 +182,12 @@ export class DatabaseErrorHandler {
     if (error instanceof Error) {
       const message = error.message.toLowerCase();
 
-      // Check for Prisma-specific errors
+      // Check for Qdrant-specific errors
       if ('code' in error) {
-        const prismaErrorCode = (error as any).code;
+        const qdrantErrorCode = (error as any).code;
 
-        // Prisma error codes
-        switch (prismaErrorCode) {
+        // Qdrant error codes
+        switch (qdrantErrorCode) {
           case 'P2002':
             return DbErrorType.CONSTRAINT_VIOLATION; // Unique constraint
           case 'P2003':

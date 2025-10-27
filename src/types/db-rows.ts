@@ -1,6 +1,6 @@
 /**
  * Database Row Type Definitions
- * Updated to match PostgreSQL 18 schema with all 16 knowledge types and 8-LOG SYSTEM
+ * Updated to match qdrant 18 schema with all 16 knowledge types and 8-LOG SYSTEM
  */
 
 // ============================================================================

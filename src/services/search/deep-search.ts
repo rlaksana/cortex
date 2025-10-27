@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../db/prisma.js';
+import { getQdrantClient } from '../../db/qdrant.js';
 
 export interface DeepSearchResult {
   id: string;
@@ -35,12 +35,12 @@ export async function deepSearch(
   topK: number = 20,
   minSimilarity: number = 0.3
 ): Promise<DeepSearchResult[]> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
   const results: DeepSearchResult[] = [];
 
   // Search sections with FTS + trigram similarity
   if (searchTypes.includes('section')) {
-    const sectionResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
+    const sectionResult = await qdrant.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'section' AS kind,
@@ -65,7 +65,7 @@ export async function deepSearch(
 
   // Search runbook with trigram on service name + steps
   if (searchTypes.includes('runbook')) {
-    const runbookResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
+    const runbookResult = await qdrant.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'runbook' AS kind,
@@ -88,7 +88,7 @@ export async function deepSearch(
 
   // Search change_log with trigram on summary
   if (searchTypes.includes('change')) {
-    const changeResult = await prisma.$queryRaw<Array<DeepSearchResult>>`
+    const changeResult = await qdrant.$queryRaw<Array<DeepSearchResult>>`
       SELECT
         id,
         'change' AS kind,
@@ -121,8 +121,8 @@ export async function calculateSimilarity(
   text1: string,
   text2: string
 ): Promise<number> {
-  const prisma = getPrismaClient();
-  const result = await prisma.$queryRaw<Array<{ score: number }>>`
+  const qdrant = getQdrantClient();
+  const result = await qdrant.$queryRaw<Array<{ score: number }>>`
     SELECT similarity(${text1}, ${text2}) AS score
   `;
   if (result.length > 0) {

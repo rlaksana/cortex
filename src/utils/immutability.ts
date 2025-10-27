@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../db/prisma.js';
+import { getQdrantClient } from '../db/qdrant.js';
 
 export class ImmutabilityViolationError extends Error {
   constructor(
@@ -23,9 +23,9 @@ export class ImmutabilityViolationError extends Error {
  * @throws ImmutabilityViolationError if ADR is accepted
  */
 export async function validateADRImmutability(id: string): Promise<void> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
-  const decision = await prisma.adrDecision.findUnique({
+  const decision = await qdrant.adrDecision.findUnique({
     where: { id },
     select: { status: true },
   });
@@ -56,10 +56,10 @@ export async function validateADRImmutability(id: string): Promise<void> {
  * @throws ImmutabilityViolationError if parent document is approved
  */
 export async function validateSpecWriteLock(sectionId: string): Promise<void> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
   // First get the section to verify it exists
-  const section = await prisma.section.findUnique({
+  const section = await qdrant.section.findUnique({
     where: { id: sectionId },
     select: { id: true },
   });

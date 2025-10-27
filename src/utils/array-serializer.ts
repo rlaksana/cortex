@@ -1,15 +1,15 @@
 /**
- * Array Serialization Utilities for PostgreSQL
+ * Array Serialization Utilities for qdrant
  *
- * Handles conversion between JavaScript arrays and PostgreSQL array format.
- * PostgreSQL expects arrays in format: {"item1","item2","item3"}
+ * Handles conversion between JavaScript arrays and qdrant array format.
+ * qdrant expects arrays in format: {"item1","item2","item3"}
  * while JSON.stringify produces: ["item1","item2","item3"]
  */
 
 /**
- * Convert JavaScript array to PostgreSQL array string format
+ * Convert JavaScript array to qdrant array string format
  * @param arr - JavaScript array to convert
- * @returns PostgreSQL array string literal
+ * @returns qdrant array string literal
  */
 export function serializeArray(arr: string[] | null | undefined): string[] | null {
   if (!arr || arr.length === 0) {
@@ -25,8 +25,8 @@ export function serializeArray(arr: string[] | null | undefined): string[] | nul
 }
 
 /**
- * Convert PostgreSQL array string back to JavaScript array
- * @param pgArray - PostgreSQL array string
+ * Convert qdrant array string back to JavaScript array
+ * @param pgArray - qdrant array string
  * @returns JavaScript array
  */
 export function deserializeArray(pgArray: string[] | null): string[] {
@@ -35,16 +35,16 @@ export function deserializeArray(pgArray: string[] | null): string[] {
   }
 
   return pgArray.map(item => {
-    // Unescape PostgreSQL array elements
+    // Unescape qdrant array elements
     return item.replace(/''/g, "'").replace(/\\\\/g, "\\");
   });
 }
 
 /**
  * Handle array serialization for database storage
- * Converts arrays to PostgreSQL format, keeps other types unchanged
+ * Converts arrays to qdrant format, keeps other types unchanged
  * @param value - Value to serialize
- * @returns Serialized value ready for PostgreSQL
+ * @returns Serialized value ready for qdrant
  */
 export function serializeForDatabase(value: any): any {
   if (Array.isArray(value)) {
@@ -69,6 +69,6 @@ export function serializeForDatabase(value: any): any {
  * @returns Deserialized JavaScript value
  */
 export function deserializeFromDatabase(value: any): any {
-  // PostgreSQL arrays come back as arrays, no conversion needed
+  // qdrant arrays come back as arrays, no conversion needed
   return value;
 }

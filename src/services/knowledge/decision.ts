@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { DecisionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateADRImmutability } from '../../utils/immutability.js';
 
@@ -6,16 +6,19 @@ export async function storeDecision(
   data: DecisionData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
-  const result = await prisma.adrDecision.create({
-    data: {
-      component: data.component,
-      status: data.status,
-      title: data.title,
-      rationale: data.rationale,
-      alternativesConsidered: (data.alternatives_considered as string[]) || [],
-      tags: scope
-    }
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+
+  const result = await db.create('adr_decision', {
+    component: data.component,
+    status: data.status,
+    title: data.title,
+    rationale: data.rationale,
+    alternatives_considered: (data.alternatives_considered as string[]) || [],
+    tags: scope,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   });
   return result.id;
 }
@@ -29,7 +32,7 @@ export async function updateDecision(
   id: string,
   data: Partial<DecisionData>
 ): Promise<void> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
   // Check immutability before allowing update
   await validateADRImmutability(id);
 
@@ -55,7 +58,7 @@ export async function updateDecision(
     return; // No updates to perform
   }
 
-  await prisma.adrDecision.update({
+  await qdrant.adrDecision.update({
     where: { id },
     data: updateData
   });

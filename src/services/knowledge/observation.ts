@@ -7,7 +7,7 @@
  * @module services/knowledge/observation
  */
 
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ObservationItem } from '../../schemas/knowledge-types.js';
 
 /**
@@ -27,9 +27,11 @@ export async function addObservation(
   data: ObservationItem['data'],
   _scope?: Record<string, unknown>
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   // FIXED: Use direct field access for observation_type and store metadata properly
-  const result = await prisma.knowledgeObservation.create({
+  const result = await qdrant.knowledgeObservation.create({
     data: {
       entity_type: data.entity_type,
       entity_id: data.entity_id,
@@ -46,13 +48,15 @@ export async function addObservation(
 /**
  * Soft delete an observation by ID
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param observationId - UUID of observation to delete
  * @returns true if deleted, false if not found
  */
 export async function deleteObservation(observationId: string): Promise<boolean> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeObservation.updateMany({
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+  const result = await qdrant.knowledgeObservation.updateMany({
     where: {
       id: observationId,
       deleted_at: null
@@ -70,7 +74,7 @@ export async function deleteObservation(observationId: string): Promise<boolean>
  *
  * Useful for removing specific facts without knowing observation IDs.
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @param observationText - Exact observation text to delete
@@ -81,8 +85,10 @@ export async function deleteObservationsByText(
   entity_id: string,
   observationText: string
 ): Promise<number> {
-  const prisma = getPrismaClient();
-  const result = await prisma.knowledgeObservation.updateMany({
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+  const result = await qdrant.knowledgeObservation.updateMany({
     where: {
       entity_type,
       entity_id,
@@ -100,7 +106,7 @@ export async function deleteObservationsByText(
 /**
  * Get all active observations for an entity
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @param observationTypeFilter - Optional filter by observation_type
@@ -119,7 +125,9 @@ export async function getObservations(
     created_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   const whereClause: any = {
     entity_type,
@@ -132,7 +140,7 @@ export async function getObservations(
     whereClause.observation_type = observationTypeFilter;
   }
 
-  const result = await prisma.knowledgeObservation.findMany({
+  const result = return await db.find('knowledgeObservation', {
     where: whereClause,
     orderBy: { created_at: 'desc' },
     select: {
@@ -156,7 +164,7 @@ export async function getObservations(
 /**
  * Search observations by text pattern (FTS)
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param searchQuery - Search query (FTS or LIKE pattern)
  * @param entity_typeFilter - Optional filter by entity_type
  * @param limit - Result limit
@@ -177,7 +185,9 @@ export async function searchObservations(
     created_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   // Use FTS if query looks like search terms, otherwise use LIKE
   const useFts = searchQuery.split(/\s+/).length > 1;
 
@@ -187,14 +197,14 @@ export async function searchObservations(
       .split(/\s+/)
       .filter((w) => w.trim().length > 0) // Remove empty words
       .map((w) => {
-        // Escape special PostgreSQL tsquery characters
+        // Escape special qdrant tsquery characters
         const escaped = w.replace(/[&|!():*]/g, '\\$&');
         return `${escaped}:*`;
       })
       .join(' & ');
 
     if (entity_typeFilter) {
-      const result = await prisma.$queryRaw<Array<{
+      const result = await qdrant.$queryRaw<Array<{
         id: string;
         entity_type: string;
         entity_id: string;
@@ -211,7 +221,7 @@ export async function searchObservations(
       `;
       return result.flat();
     } else {
-      const result = await prisma.$queryRaw<Array<{
+      const result = await qdrant.$queryRaw<Array<{
         id: string;
         entity_type: string;
         entity_id: string;
@@ -231,7 +241,7 @@ export async function searchObservations(
   } else {
     // LIKE pattern search
     if (entity_typeFilter) {
-      const result = await prisma.$queryRaw<Array<{
+      const result = await qdrant.$queryRaw<Array<{
         id: string;
         entity_type: string;
         entity_id: string;
@@ -248,7 +258,7 @@ export async function searchObservations(
       `;
       return result.flat();
     } else {
-      const result = await prisma.$queryRaw<Array<Array<{
+      const result = await qdrant.$queryRaw<Array<Array<{
         id: string;
         entity_type: string;
         entity_id: string;
@@ -282,7 +292,7 @@ export async function searchObservations(
 /**
  * Get observation count for an entity
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @returns Number of active observations
@@ -291,8 +301,10 @@ export async function getObservationCount(
     entity_type: string,
   entity_id: string
 ): Promise<number> {
-  const prisma = getPrismaClient();
-  const result = await prisma.$queryRaw`
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
+  const result = await qdrant.$queryRaw`
     SELECT COUNT(*) as count
      FROM knowledge_observation
      WHERE entity_type = ${entity_type} AND entity_id = ${entity_id} AND deleted_at IS NULL
@@ -310,7 +322,7 @@ export async function getObservationCount(
  *
  * Useful for activity feeds or audit trails.
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param limit - Result limit
  * @param entity_typeFilter - Optional filter by entity_type
  * @returns Array of recent observations
@@ -329,10 +341,12 @@ export async function getRecentObservations(
     created_at: Date;
   }>
 > {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
 
   if (entity_typeFilter) {
-    const result = await prisma.$queryRaw<Array<Array<{
+    const result = await qdrant.$queryRaw<Array<Array<{
       id: string;
       entity_type: string;
       entity_id: string;
@@ -356,7 +370,7 @@ export async function getRecentObservations(
       created_at: Date;
     }>;
   } else {
-    const result = await prisma.$queryRaw<Array<Array<{
+    const result = await qdrant.$queryRaw<Array<Array<{
       id: string;
       entity_type: string;
       entity_id: string;

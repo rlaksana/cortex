@@ -4,13 +4,13 @@
  * Implements threshold-based automatic cleanup of old data.
  * Triggers when time threshold (24h) OR operation threshold (1000 ops) exceeded.
  *
- * Pattern: PostgreSQL autovacuum-inspired opportunistic cleanup
+ * Pattern: qdrant autovacuum-inspired opportunistic cleanup
  *
  * @module services/auto-purge
  */
 
 import { logger } from '../utils/logger.js';
-import { prisma } from '../db/prisma-client.js';
+import { qdrant } from '../db/qdrant-client.js';
 import { dbErrorHandler } from '../utils/db-error-handler.js';
 
 export interface PurgeResult {
@@ -33,7 +33,7 @@ export async function checkAndPurge(
   try {
     // Update operation counter with error handling
     const updateResult = await dbErrorHandler.executeWithRetry(
-      () => prisma.getClient().purgeMetadata.update({
+      () => qdrant.getClient().purgeMetadata.update({
         where: { id: 1 },
         data: {
           operations_since_purge: { increment: 1 }
@@ -49,13 +49,13 @@ export async function checkAndPurge(
     }
 
     // Get current state
-    const meta = await prisma.getClient().purgeMetadata.findUnique({
+    const meta = await qdrant.getClient().purgeMetadata.findUnique({
       where: { id: 1 }
     });
 
     if (!meta) {
       logger.error('Purge metadata not found, creating initial record');
-      await prisma.getClient().purgeMetadata.create({
+      await qdrant.getClient().purgeMetadata.create({
         data: {
           id: 1,
           time_threshold_hours: 24,
@@ -135,7 +135,7 @@ async function runPurge(
 
   try {
     // Rule 1: Delete closed todos > 90 days
-    const r1 = await prisma.getClient().todoLog.deleteMany({
+    const r1 = await qdrant.getClient().todoLog.deleteMany({
       where: {
         status: { in: ['done', 'cancelled'] },
         closed_at: { lt: ninetyDaysAgo }
@@ -144,7 +144,7 @@ async function runPurge(
     deleted_counts.todo = r1.count;
 
     // Rule 2: Delete old changes > 90 days
-    const r2 = await prisma.getClient().changeLog.deleteMany({
+    const r2 = await qdrant.getClient().changeLog.deleteMany({
       where: {
         created_at: { lt: ninetyDaysAgo }
       }
@@ -152,7 +152,7 @@ async function runPurge(
     deleted_counts.change = r2.count;
 
     // Rule 3: Delete merged PRs > 30 days
-    const r3 = await prisma.getClient().prContext.deleteMany({
+    const r3 = await qdrant.getClient().prContext.deleteMany({
       where: {
         status: 'merged',
         merged_at: { lt: thirtyDaysAgo }
@@ -161,7 +161,7 @@ async function runPurge(
     deleted_counts.pr_context = r3.count;
 
     // Rule 4: Delete closed issues > 90 days
-    const r4 = await prisma.getClient().issueLog.deleteMany({
+    const r4 = await qdrant.getClient().issueLog.deleteMany({
       where: {
         status: { in: ['closed', 'wont_fix'] },
         updated_at: { lt: ninetyDaysAgo }
@@ -170,7 +170,7 @@ async function runPurge(
     deleted_counts.issue = r4.count;
 
     // Rule 5: Hard delete soft-deleted graph entities > 90 days
-    const r5 = await prisma.getClient().knowledgeEntity.deleteMany({
+    const r5 = await qdrant.getClient().knowledgeEntity.deleteMany({
       where: {
         deleted_at: { lt: ninetyDaysAgo }
       }
@@ -178,7 +178,7 @@ async function runPurge(
     deleted_counts.entity = r5.count;
 
     // Rule 6: Hard delete soft-deleted relations > 90 days
-    const r6 = await prisma.getClient().knowledgeRelation.deleteMany({
+    const r6 = await qdrant.getClient().knowledgeRelation.deleteMany({
       where: {
         deleted_at: { lt: ninetyDaysAgo }
       }
@@ -186,7 +186,7 @@ async function runPurge(
     deleted_counts.relation = r6.count;
 
     // Rule 7: Hard delete soft-deleted observations > 90 days
-    const r7 = await prisma.getClient().knowledgeObservation.deleteMany({
+    const r7 = await qdrant.getClient().knowledgeObservation.deleteMany({
       where: {
         deleted_at: { lt: ninetyDaysAgo }
       }
@@ -194,7 +194,7 @@ async function runPurge(
     deleted_counts.observation = r7.count;
 
     // Rule 8: Delete resolved incidents > 90 days
-    const r8 = await prisma.getClient().incidentLog.deleteMany({
+    const r8 = await qdrant.getClient().incidentLog.deleteMany({
       where: {
         resolution_status: { in: ['resolved', 'closed'] },
         updated_at: { lt: ninetyDaysAgo }
@@ -203,7 +203,7 @@ async function runPurge(
     deleted_counts.incident = r8.count;
 
     // Rule 9: Delete completed releases > 90 days
-    const r9 = await prisma.getClient().releaseLog.deleteMany({
+    const r9 = await qdrant.getClient().releaseLog.deleteMany({
       where: {
         status: { in: ['completed', 'rolled_back'] },
         updated_at: { lt: ninetyDaysAgo }
@@ -212,7 +212,7 @@ async function runPurge(
     deleted_counts.release = r9.count;
 
     // Rule 10: Delete closed risks > 90 days
-    const r10 = await prisma.getClient().riskLog.deleteMany({
+    const r10 = await qdrant.getClient().riskLog.deleteMany({
       where: {
         status: { in: ['closed', 'accepted'] },
         updated_at: { lt: ninetyDaysAgo }
@@ -221,7 +221,7 @@ async function runPurge(
     deleted_counts.risk = r10.count;
 
     // Rule 11: Delete validated assumptions > 90 days
-    const r11 = await prisma.getClient().assumptionLog.deleteMany({
+    const r11 = await qdrant.getClient().assumptionLog.deleteMany({
       where: {
         validation_status: 'validated',
         updated_at: { lt: ninetyDaysAgo }
@@ -233,7 +233,7 @@ async function runPurge(
     const totalDeleted = Object.values(deleted_counts).reduce((sum, n) => sum + n, 0);
 
     // Update purge metadata
-    await prisma.getClient().purgeMetadata.update({
+    await qdrant.getClient().purgeMetadata.update({
       where: { id: 1 },
       data: {
         last_purge_at: new Date(),
@@ -283,7 +283,7 @@ export async function manualPurge(): Promise<PurgeResult> {
  * @returns Purge metadata
  */
 export async function getPurgeStatus() {
-  const meta = await prisma.getClient().purgeMetadata.findUnique({
+  const meta = await qdrant.getClient().purgeMetadata.findUnique({
     where: { id: 1 }
   });
 

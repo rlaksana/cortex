@@ -3,9 +3,11 @@
  *
  * This logger implementation bypasses Pino's problematic destination
  * configuration on Windows and directly writes to stderr for MCP compatibility.
+ * Enhanced with correlation ID support for request tracing.
  */
 
 import pino from 'pino';
+import { getCorrelationId } from './correlation-id.js';
 
 interface LogEntry {
   level: string;
@@ -13,6 +15,7 @@ interface LogEntry {
   service: string;
   environment: string;
   msg: string;
+  correlation_id?: string;
   [key: string]: any;
 }
 
@@ -36,16 +39,19 @@ class MCPSafeLogger {
   private writeLog(level: string, msg: string, obj?: any): void {
     if (!this.shouldLog(level)) return;
 
+    const correlationId = getCorrelationId();
+
     const logEntry: LogEntry = {
       level,
       time: new Date().toISOString(),
       service: this.baseContext.service,
       environment: this.baseContext.environment,
       msg,
+      ...(correlationId && { correlation_id: correlationId }),
       ...obj
     };
 
-    const logLine = `${JSON.stringify(logEntry)  }\n`;
+    const logLine = `${JSON.stringify(logEntry)}\n`;
 
     // Force write to stderr (file descriptor 2) for MCP stdio compatibility
     process.stderr.write(logLine);
@@ -112,6 +118,13 @@ class MCPSafeLogger {
 
 // Conditional logger: MCP-safe for stdio transport, regular Pino for other modes
 const isMcpMode = process.env.MCP_TRANSPORT === 'stdio';
+
+// Create a mixin function to automatically add correlation ID
+const correlationMixin = () => {
+  const correlationId = getCorrelationId();
+  return correlationId ? { correlation_id: correlationId } : {};
+};
+
 export const logger = isMcpMode ? new MCPSafeLogger() : pino({
   level: process.env.LOG_LEVEL ?? 'info',
   formatters: {
@@ -122,6 +135,7 @@ export const logger = isMcpMode ? new MCPSafeLogger() : pino({
     environment: process.env.NODE_ENV ?? 'development',
   },
   timestamp: pino.stdTimeFunctions.isoTime,
+  mixin: correlationMixin,
   redact: {
     paths: ['*.idempotency_key', '*.actor'],
     remove: true,

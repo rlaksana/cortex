@@ -7,7 +7,7 @@
  * @module services/delete-operations
  */
 
-import { getPrismaClient } from '../db/prisma.js';
+import { getQdrantClient } from '../db/qdrant.js';
 import { softDeleteEntity } from './knowledge/entity.js';
 import { softDeleteRelation } from './knowledge/relation.js';
 import { deleteObservation } from './knowledge/observation.js';
@@ -36,12 +36,12 @@ export interface DeleteResult {
  * - Respects immutability constraints (e.g., accepted ADRs cannot be deleted)
  * - Optional cascade delete for relations
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param request - Delete request
  * @returns Delete result
  */
 export async function softDelete(request: DeleteRequest): Promise<DeleteResult> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
   const { entity_type, entity_id, cascade_relations = false } = request;
 
   // Handle graph extension types first
@@ -132,11 +132,11 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
     };
   }
 
-  // Handle typed knowledge types with Prisma Client
+  // Handle typed knowledge types with Qdrant Client
   try {
     // Check immutability constraints for decisions
     if (entity_type === 'decision') {
-      const decision = await prisma.adrDecision.findUnique({
+      const decision = await qdrant.adrDecision.findUnique({
         where: { id: entity_id },
         select: { status: true }
       });
@@ -153,36 +153,36 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
 
     // Check if entity exists first
     const findOperations: Record<string, () => Promise<{ id: string } | null>> = {
-      section: () => prisma.section.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      runbook: () => prisma.runbook.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      change: () => prisma.changeLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      issue: () => prisma.issueLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      decision: () => prisma.adrDecision.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      todo: () => prisma.todoLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      release_note: () => prisma.releaseNote.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      ddl: () => prisma.ddlHistory.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      pr_context: () => prisma.prContext.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      incident: () => prisma.incidentLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      release: () => prisma.releaseLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      risk: () => prisma.riskLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
-      assumption: () => prisma.assumptionLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      section: () => qdrant.section.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      runbook: () => qdrant.runbook.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      change: () => qdrant.changeLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      issue: () => qdrant.issueLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      decision: () => qdrant.adrDecision.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      todo: () => qdrant.todoLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release_note: () => qdrant.releaseNote.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      ddl: () => qdrant.ddlHistory.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      pr_context: () => qdrant.prContext.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      incident: () => qdrant.incidentLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      release: () => qdrant.releaseLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      risk: () => qdrant.riskLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
+      assumption: () => qdrant.assumptionLog.findUnique({ where: { id: entity_id }, select: { id: true } }),
     };
 
-    // Use Prisma model map for type-safe delete operations
+    // Use Qdrant model map for type-safe delete operations
     const deleteOperations: Record<string, () => Promise<any>> = {
-      section: () => prisma.section.delete({ where: { id: entity_id } }),
-      runbook: () => prisma.runbook.delete({ where: { id: entity_id } }),
-      change: () => prisma.changeLog.delete({ where: { id: entity_id } }),
-      issue: () => prisma.issueLog.delete({ where: { id: entity_id } }),
-      decision: () => prisma.adrDecision.delete({ where: { id: entity_id } }),
-      todo: () => prisma.todoLog.delete({ where: { id: entity_id } }),
-      release_note: () => prisma.releaseNote.delete({ where: { id: entity_id } }),
-      ddl: () => prisma.ddlHistory.delete({ where: { id: entity_id } }),
-      pr_context: () => prisma.prContext.delete({ where: { id: entity_id } }),
-      incident: () => prisma.incidentLog.delete({ where: { id: entity_id } }),
-      release: () => prisma.releaseLog.delete({ where: { id: entity_id } }),
-      risk: () => prisma.riskLog.delete({ where: { id: entity_id } }),
-      assumption: () => prisma.assumptionLog.delete({ where: { id: entity_id } }),
+      section: () => qdrant.section.delete({ where: { id: entity_id } }),
+      runbook: () => qdrant.runbook.delete({ where: { id: entity_id } }),
+      change: () => qdrant.changeLog.delete({ where: { id: entity_id } }),
+      issue: () => qdrant.issueLog.delete({ where: { id: entity_id } }),
+      decision: () => qdrant.adrDecision.delete({ where: { id: entity_id } }),
+      todo: () => qdrant.todoLog.delete({ where: { id: entity_id } }),
+      release_note: () => qdrant.releaseNote.delete({ where: { id: entity_id } }),
+      ddl: () => qdrant.ddlHistory.delete({ where: { id: entity_id } }),
+      pr_context: () => qdrant.prContext.delete({ where: { id: entity_id } }),
+      incident: () => qdrant.incidentLog.delete({ where: { id: entity_id } }),
+      release: () => qdrant.releaseLog.delete({ where: { id: entity_id } }),
+      risk: () => qdrant.riskLog.delete({ where: { id: entity_id } }),
+      assumption: () => qdrant.assumptionLog.delete({ where: { id: entity_id } }),
     };
 
     const findOperation = findOperations[entity_type];
@@ -254,7 +254,7 @@ export async function softDelete(request: DeleteRequest): Promise<DeleteResult> 
 /**
  * Cascade delete all relations pointing to/from an entity
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @returns Number of relations deleted
@@ -263,10 +263,10 @@ async function cascadeDeleteRelations(
   entity_type: string,
   entity_id: string
 ): Promise<number> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
   try {
-    const result = await prisma.knowledgeRelation.updateMany({
+    const result = await qdrant.knowledgeRelation.updateMany({
       where: {
         AND: [
           {
@@ -317,7 +317,7 @@ async function cascadeDeleteRelations(
 /**
  * Bulk delete operation
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param requests - Array of delete requests
  * @returns Array of delete results
  */
@@ -335,18 +335,18 @@ export async function bulkDelete(requests: DeleteRequest[]): Promise<DeleteResul
 /**
  * Undelete (restore) a soft-deleted entity
  *
- * @param pool - PostgreSQL connection pool
+ * @param pool - qdrant connection pool
  * @param entity_type - Entity type
  * @param entity_id - Entity UUID
  * @returns true if restored, false if not found
  */
 export async function undelete(entity_type: string, entity_id: string): Promise<boolean> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
 
   try {
     // Handle graph extension types with soft delete support
     if (entity_type === 'entity') {
-      const result = await prisma.knowledgeEntity.updateMany({
+      const result = await qdrant.knowledgeEntity.updateMany({
         where: {
           id: entity_id,
           deleted_at: { not: null },
@@ -359,7 +359,7 @@ export async function undelete(entity_type: string, entity_id: string): Promise<
     }
 
     if (entity_type === 'relation') {
-      const result = await prisma.knowledgeRelation.updateMany({
+      const result = await qdrant.knowledgeRelation.updateMany({
         where: {
           id: entity_id,
           deleted_at: { not: null },
@@ -372,7 +372,7 @@ export async function undelete(entity_type: string, entity_id: string): Promise<
     }
 
     if (entity_type === 'observation') {
-      const result = await prisma.knowledgeObservation.updateMany({
+      const result = await qdrant.knowledgeObservation.updateMany({
         where: {
           id: entity_id,
           deleted_at: { not: null },

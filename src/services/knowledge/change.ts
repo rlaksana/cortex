@@ -1,4 +1,4 @@
-import { getPrismaClient } from '../../db/prisma.js';
+// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { computeContentHash } from '../../utils/hash.js';
 import type { ChangeData, ScopeFilter } from '../../types/knowledge-data.js';
 
@@ -6,10 +6,12 @@ export async function storeChange(
   data: ChangeData,
   scope: ScopeFilter
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const db = new UnifiedDatabaseLayer();
+  await db.initialize();
   const hash = computeContentHash(data.summary);
 
-  const result = await prisma.changeLog.create({
+  const result = await qdrant.changeLog.create({
     data: {
       change_type: data.change_type,
       subject_ref: data.subject_ref,

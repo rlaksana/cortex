@@ -1,5 +1,5 @@
 /**
- * Query Sanitizer - Progressive query cleaning for PostgreSQL tsquery compatibility
+ * Query Sanitizer - Progressive query cleaning for qdrant tsquery compatibility
  *
  * Handles syntax errors by detecting and removing problematic characters
  * while preserving query intent through intelligent sanitization strategies.

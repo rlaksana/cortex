@@ -1,7 +1,7 @@
-import { getPrismaClient } from '../db/prisma.js';
+import { getQdrantClient } from '../db/qdrant.js';
 
 /**
- * Generate highlighted snippet from text using PostgreSQL ts_headline
+ * Generate highlighted snippet from text using qdrant ts_headline
  *
  * @param bodyText - Full text content to extract snippet from
  * @param query - Search query string
@@ -20,7 +20,7 @@ export async function generateSnippet(
     fragmentDelimiter?: string;
   } = {}
 ): Promise<string> {
-  const prisma = getPrismaClient();
+  const qdrant = getQdrantClient();
   const {
     maxWords = 30,
     minWords = 15,
@@ -41,7 +41,7 @@ export async function generateSnippet(
   ].join(', ');
 
   try {
-    const result = await prisma.$queryRaw<Array<{ snippet: string }>>`
+    const result = await qdrant.$queryRaw<Array<{ snippet: string }>>`
       SELECT ts_headline('english', ${bodyText}, plainto_tsquery('english', ${query}), ${hlOptions}) AS snippet
     `;
 
