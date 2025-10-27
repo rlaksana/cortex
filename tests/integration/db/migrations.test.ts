@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 
 /**
  * T009: Migration smoke test (RED phase)
@@ -43,14 +43,14 @@ describe('Database Migrations', () => {
 
   it('should have pgcrypto extension installed', async () => {
     const result = await client.query(
-      `SELECT extname FROM pg_extension WHERE extname = 'pgcrypto'`
+      `// PostgreSQL system query removed WHERE extname = 'pgcrypto'`
     );
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].extname).toBe('pgcrypto');
   });
 
   it('should have pg_trgm extension installed', async () => {
-    const result = await client.query(`SELECT extname FROM pg_extension WHERE extname = 'pg_trgm'`);
+    const result = await client.query(`// PostgreSQL system query removed'`);
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].extname).toBe('pg_trgm');
   });

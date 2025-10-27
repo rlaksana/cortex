@@ -63,7 +63,7 @@ export class ConfigTestHelper {
   private initializeTrackedVariables(): void {
     const variables: EnvironmentVariableUsage[] = [
       // Database variables
-      { variable: 'DATABASE_URL', files: ['src/db/unified-database-layer.ts', 'src/index-claude.ts'], required: false, defaultValue: 'http://localhost:6333', category: 'database' },
+      { variable: 'QDRANT_URL', files: ['src/db/unified-database-layer.ts', 'src/index-claude.ts'], required: false, defaultValue: 'http://localhost:6333', category: 'database' },
       { variable: 'QDRANT_URL', files: ['src/db/unified-database-layer.ts', 'src/index-qdrant.ts'], required: true, defaultValue: 'http://localhost:6333', category: 'database' },
       { variable: 'QDRANT_API_KEY', files: ['src/db/unified-database-layer.ts', 'src/index-qdrant.ts'], required: false, category: 'database' },
       { variable: 'DB_HOST', files: ['src/db/pool.ts', 'start-cortex.js'], required: false, defaultValue: 'localhost', category: 'database' },
@@ -137,7 +137,7 @@ export class ConfigTestHelper {
 
       // Testing configuration
       { variable: 'TEST_MODE', files: ['src/config/environment.ts'], required: false, defaultValue: 'false', category: 'testing' },
-      { variable: 'TEST_DATABASE_URL', files: ['tests/e2e/*.test.ts', 'tests/integration/*.test.ts'], required: false, category: 'testing' },
+      { variable: 'TEST_QDRANT_URL', files: ['tests/e2e/*.test.ts', 'tests/integration/*.test.ts'], required: false, category: 'testing' },
       { variable: 'MOCK_EXTERNAL_SERVICES', files: ['src/config/environment.ts'], required: false, defaultValue: 'false', category: 'testing' },
 
       // CI/CD configuration

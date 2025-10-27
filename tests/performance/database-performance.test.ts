@@ -956,7 +956,7 @@ describe('DATABASE QUERY PERFORMANCE', () => {
       const poolingEfficiency = heavyLoad.connectionEfficiency / lightLoad.connectionEfficiency;
 
       const result = {
-        test: 'Database Connection Pooling',
+        test: 'Database Connection QdrantClienting',
         connectionResults,
         poolingEfficiency
       };
@@ -970,7 +970,7 @@ describe('DATABASE QUERY PERFORMANCE', () => {
       connectionResults.forEach(result => {
         console.log(`   ${result.name}: ${result.operations} ops, ${result.totalTime.toFixed(2)}ms total, ${result.avgTimePerOperation.toFixed(2)}ms avg, ${result.connectionEfficiency.toFixed(1)} ops/sec, ${result.successRate.toFixed(1)}% success`);
       });
-      console.log(`   Pooling efficiency ratio: ${poolingEfficiency.toFixed(2)}x`);
+      console.log(`   QdrantClienting efficiency ratio: ${poolingEfficiency.toFixed(2)}x`);
     });
   });
 

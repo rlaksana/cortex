@@ -643,7 +643,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
                   actor: 'incident-commander'
                 }
               ],
-              root_cause_analysis: 'Database connection pool was not configured to handle increased traffic from new feature deployment. Pool size was set too low for production load.',
+              root_cause_analysis: 'Database connection pool was not configured to handle increased traffic from new feature deployment. QdrantClient size was set too low for production load.',
               resolution: 'Increased database connection pool size by 300% and implemented connection monitoring',
               affected_services: ['authentication-service', 'api-gateway'],
               business_impact: 'Customer login failure rate increased by 100%',
@@ -733,7 +733,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
             kind: 'risk',
             scope: TEST_SCOPE,
             data: {
-              title: 'Database Connection Pool Exhaustion',
+              title: 'Database Connection QdrantClient Exhaustion',
               category: 'technical',
               risk_level: 'high',
               probability: 'likely',
@@ -772,7 +772,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
 
         expect(result.hits).toHaveLength(1);
         expect(result.hits[0].kind).toBe('risk');
-        expect(result.hits[0].title).toContain('RISK: Database Connection Pool Exhaustion');
+        expect(result.hits[0].title).toContain('RISK: Database Connection QdrantClient Exhaustion');
 
         console.log('✅ Risk retrieved successfully:', result.hits[0].id);
       });

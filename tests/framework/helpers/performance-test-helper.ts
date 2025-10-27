@@ -5,7 +5,7 @@
  * speed, memory usage, and scalability.
  */
 
-import type { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { memoryStore } from '../../../src/services/memory-store.js';
 import { memoryFind } from '../../../src/services/memory-find.js';
 import { softDelete } from '../../../src/services/delete-operations.js';

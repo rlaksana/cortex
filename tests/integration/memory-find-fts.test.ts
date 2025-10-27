@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { memoryFind } from '../services/memory-find.ts';
 
 /**
@@ -12,13 +12,13 @@ import { memoryFind } from '../services/memory-find.ts';
  * - Results ordered by score descending
  */
 describe('memory.find Full-Text Search', () => {
-  let pool: Pool;
+  let pool: QdrantClient;
   const testDocId = '123e4567-e89b-12d3-a456-426614174000';
 
   beforeAll(() => {
-    pool = new Pool({
+    pool = new QdrantClient({
       connectionString:
-        process.env.DATABASE_URL || 'postgresql://cortex:cortex@localhost:5432/cortex_test',
+        process.env.QDRANT_URL || 'http://cortex:cortex@localhost:5432/cortex_test',
     });
   });
 

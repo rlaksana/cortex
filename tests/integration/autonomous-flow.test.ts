@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
 import { loadEnv } from '../config/environment.ts';
@@ -12,23 +12,11 @@ import { loadEnv } from '../config/environment.ts';
 loadEnv();
 
 describe('Autonomous Collaboration Flows', () => {
-  let client: Client;
   const testScope = { project: 'test-autonomous', branch: 'test-branch' };
 
   beforeAll(async () => {
-    client = new Client({ connectionString: process.env.DATABASE_URL });
-    await client.connect();
-
-    // Clean up test data
-    await client.query(`DELETE FROM section WHERE (tags->>'project') = 'test-autonomous'`);
-    await client.query(`DELETE FROM adr_decision WHERE (tags->>'project') = 'test-autonomous'`);
-  });
-
-  afterAll(async () => {
-    // Clean up
-    await client.query(`DELETE FROM section WHERE (tags->>'project') = 'test-autonomous'`);
-    await client.query(`DELETE FROM adr_decision WHERE (tags->>'project') = 'test-autonomous'`);
-    await client.end();
+    // PostgreSQL setup removed - Qdrant only
+    // Test data cleanup will be handled by Qdrant operations
   });
 
   describe('Scenario 1: Store New Information', () => {

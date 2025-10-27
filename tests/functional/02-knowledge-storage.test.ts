@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../services/memory-store.ts';
-import { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 
 const TEST_SCOPE = {
   project: 'test-project',
@@ -16,12 +16,12 @@ const TEST_SCOPE = {
 };
 
 describe('Category 2: Knowledge Storage', () => {
-  let pool: Pool;
+  let pool: QdrantClient;
 
   beforeAll(() => {
-    pool = new Pool({
+    pool = new QdrantClient({
       connectionString:
-        process.env.DATABASE_URL || 'postgresql://cortex:trust@localhost:5433/cortex_prod',
+        process.env.QDRANT_URL || 'http://cortex:trust@localhost:5433/cortex_prod',
     });
   });
 

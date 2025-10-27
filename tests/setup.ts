@@ -118,7 +118,7 @@ export const createTestKnowledgeItem = (overrides: any = {}) => ({
 });
 
 // Mock database pool for unit tests
-export const mockDbPool = {
+export const mockDbQdrantClient = {
   query: vi.fn(),
   initialize: vi.fn(),
   close: vi.fn(),

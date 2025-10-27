@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { dbPool } from '../db/pool.ts';
+import { dbQdrantClient } from '../db/pool.ts';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
@@ -19,7 +19,7 @@ import { smartMemoryFind } from '../services/smart-find.ts';
 
 describe('Search and Ranking Integration Tests', () => {
   beforeAll(async () => {
-    await dbPool.initialize();
+    await dbQdrantClient.initialize();
   });
 
   afterAll(async () => {
@@ -33,7 +33,7 @@ describe('Search and Ranking Integration Tests', () => {
 
     for (const table of cleanupTables) {
       try {
-        await dbPool.query(`DELETE FROM ${table} WHERE tags @> '{"search_test": true}'::jsonb`);
+        await dbQdrantClient.query(`DELETE FROM ${table} WHERE tags @> '{"search_test": true}'::jsonb`);
       } catch (error) {
         // Table might not exist, continue
       }

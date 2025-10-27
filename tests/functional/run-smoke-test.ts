@@ -9,7 +9,7 @@
  * Usage: npm run test:smoke
  */
 
-import { Pool, Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import net from 'net';
 import { loadEnv } from '../../src/config/environment.js';
 
@@ -36,7 +36,7 @@ const section = (msg: string) => {
 
 const DB_CONFIG = {
   connectionString:
-    process.env.DATABASE_URL || 'postgresql://cortex:trust@localhost:5433/cortex_prod',
+    process.env.QDRANT_URL || 'http://cortex:trust@localhost:5433/cortex_prod',
 };
 
 // Test configuration
@@ -96,7 +96,7 @@ async function runSmokeTests() {
     failure(`Authentication failed: ${err}`);
     testsFailed++;
     console.log(`${colors.yellow}\nPlease check:${colors.reset}`);
-    console.log('  1. DATABASE_URL is correct');
+    console.log('  1. QDRANT_URL is correct');
     console.log('  2. Password is correct\n');
     process.exit(1);
   }
@@ -116,7 +116,7 @@ async function runSmokeTests() {
 
   // Test 4: Check Tables Exist
   section('[4/5] CHECK TABLES');
-  const pool = new Pool(DB_CONFIG);
+  const pool = new QdrantClient(DB_CONFIG);
   try {
     const result = await pool.query(`
       SELECT table_name

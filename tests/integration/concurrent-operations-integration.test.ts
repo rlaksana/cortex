@@ -11,20 +11,20 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { Pool } from 'pg';
-import { dbPool } from '../db/pool.ts';
+// PostgreSQL import removed - now using Qdrant;
+import { dbQdrantClient } from '../db/pool.ts';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
 
 describe('Concurrent Operations Integration Tests', () => {
-  let testPool: Pool;
+  let testQdrantClient: QdrantClient;
 
   beforeAll(async () => {
-    await dbPool.initialize();
+    await dbQdrantClient.initialize();
 
     // Create separate test pool for concurrent testing
-    testPool = new Pool({
+    testQdrantClient = new QdrantClient({
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT || '5433'),
       database: process.env.DB_NAME || 'cortex_prod',
@@ -48,13 +48,13 @@ describe('Concurrent Operations Integration Tests', () => {
 
     for (const table of cleanupTables) {
       try {
-        await dbPool.query(`DELETE FROM ${table} WHERE tags @> '{"concurrent_test": true}'::jsonb`);
+        await dbQdrantClient.query(`DELETE FROM ${table} WHERE tags @> '{"concurrent_test": true}'::jsonb`);
       } catch (error) {
         // Table might not exist, continue
       }
     }
 
-    await testPool.end();
+    await testQdrantClient.end();
   });
 
   describe('Concurrent Data Storage', () => {
@@ -527,7 +527,7 @@ describe('Concurrent Operations Integration Tests', () => {
       const itemsPerTransaction = 5;
 
       const transactionPromises = Array.from({ length: concurrentTransactions }, async (txIndex) => {
-        return dbPool.transaction(async (client) => {
+        return dbQdrantClient.transaction(async (client) => {
           const storedItems = [];
 
           for (let i = 0; i < itemsPerTransaction; i++) {
@@ -573,7 +573,7 @@ describe('Concurrent Operations Integration Tests', () => {
       });
 
       // Verify total data in database
-      const totalResult = await dbPool.query(`
+      const totalResult = await dbQdrantClient.query(`
         SELECT COUNT(*) as count
         FROM section
         WHERE tags->>'transaction_test' = 'true'
@@ -586,7 +586,7 @@ describe('Concurrent Operations Integration Tests', () => {
       const failingTransactions = 5;
 
       const successfulPromises = Array.from({ length: successfulTransactions }, async (txIndex) => {
-        return dbPool.transaction(async (client) => {
+        return dbQdrantClient.transaction(async (client) => {
           await client.query(`
             INSERT INTO section (title, heading, body_text, tags)
             VALUES ($1, $2, $3, $4)
@@ -608,7 +608,7 @@ describe('Concurrent Operations Integration Tests', () => {
 
       const failingPromises = Array.from({ length: failingTransactions }, async (txIndex) => {
         try {
-          return await dbPool.transaction(async (client) => {
+          return await dbQdrantClient.transaction(async (client) => {
             await client.query(`
               INSERT INTO section (title, heading, body_text, tags)
               VALUES ($1, $2, $3, $4)
@@ -645,14 +645,14 @@ describe('Concurrent Operations Integration Tests', () => {
       expect(failResults.length).toBe(failingTransactions);
 
       // Verify only successful transactions persisted
-      const successCount = await dbPool.query(`
+      const successCount = await dbQdrantClient.query(`
         SELECT COUNT(*) as count
         FROM section
         WHERE tags->>'tx_type' = 'successful'
       `);
       expect(parseInt(successCount.rows[0].count)).toBe(successfulTransactions);
 
-      const failCount = await dbPool.query(`
+      const failCount = await dbQdrantClient.query(`
         SELECT COUNT(*) as count
         FROM section
         WHERE tags->>'tx_type' = 'failing'
@@ -662,14 +662,14 @@ describe('Concurrent Operations Integration Tests', () => {
 
     it('should prevent deadlocks in concurrent operations', async () => {
       // Create test tables for deadlock scenario
-      await testPool.query(`
+      await testQdrantClient.query(`
         CREATE TABLE deadlock_test_a (
           id SERIAL PRIMARY KEY,
           value INTEGER
         );
       `);
 
-      await testPool.query(`
+      await testQdrantClient.query(`
         CREATE TABLE deadlock_test_b (
           id SERIAL PRIMARY KEY,
           value INTEGER
@@ -677,11 +677,11 @@ describe('Concurrent Operations Integration Tests', () => {
       `);
 
       // Insert initial data
-      await testPool.query('INSERT INTO deadlock_test_a (value) VALUES (1), (2)');
-      await testPool.query('INSERT INTO deadlock_test_b (value) VALUES (10), (20)');
+      await testQdrantClient.query('INSERT INTO deadlock_test_a (value) VALUES (1), (2)');
+      await testQdrantClient.query('INSERT INTO deadlock_test_b (value) VALUES (10), (20)');
 
       const deadlockPromises = Array.from({ length: 10 }, async (index) => {
-        return testPool.transaction(async (client) => {
+        return testQdrantClient.transaction(async (client) => {
           // Access tables in different order to potentially cause deadlock
           if (index % 2 === 0) {
             await client.query('UPDATE deadlock_test_a SET value = value + 1 WHERE id = 1');
@@ -709,7 +709,7 @@ describe('Concurrent Operations Integration Tests', () => {
       expect(successful).toBeGreaterThan(results.length * 0.7);
 
       // Clean up
-      await testPool.query('DROP TABLE deadlock_test_a, deadlock_test_b');
+      await testQdrantClient.query('DROP TABLE deadlock_test_a, deadlock_test_b');
     });
   });
 
@@ -719,7 +719,7 @@ describe('Concurrent Operations Integration Tests', () => {
       const concurrentOperations = 20;
 
       // Create limited pool
-      const limitedPool = new Pool({
+      const limitedQdrantClient = new QdrantClient({
         host: process.env.DB_HOST || 'localhost',
         port: parseInt(process.env.DB_PORT || '5433'),
         database: process.env.DB_NAME || 'cortex_prod',
@@ -734,7 +734,7 @@ describe('Concurrent Operations Integration Tests', () => {
       const operationPromises = Array.from({ length: concurrentOperations }, async (opIndex) => {
         const startTime = Date.now();
         try {
-          const result = await limitedPool.query(`
+          const result = await limitedQdrantClient.query(`
             SELECT pg_sleep(0.1), ${opIndex} as operation_id, NOW() as start_time
           `);
           const duration = Date.now() - startTime;
@@ -762,13 +762,13 @@ describe('Concurrent Operations Integration Tests', () => {
       const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
       const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
 
-      console.log(`Pool exhaustion test: ${successful} successful, ${failed} failed`);
+      console.log(`QdrantClient exhaustion test: ${successful} successful, ${failed} failed`);
 
       // Some operations should succeed, some might fail due to pool limits
       expect(successful + failed).toBe(concurrentOperations);
       expect(successful).toBeGreaterThan(0);
 
-      await limitedPool.end();
+      await limitedQdrantClient.end();
     });
 
     it('should maintain performance under high memory load', async () => {

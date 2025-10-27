@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
-import { dbPool } from '../db/pool.ts';
+import { dbQdrantClient } from '../db/pool.ts';
 import { traverseGraph, findShortestPath } from '../services/graph-traversal.ts';
 
 describe('Graph Traversal Integration Tests', () => {
@@ -19,7 +19,7 @@ describe('Graph Traversal Integration Tests', () => {
     // A → B → C
     // A → D
     // C → D (creates a diamond pattern)
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     await pool.query('SELECT 1');
 
     // Create nodes
@@ -123,7 +123,7 @@ describe('Graph Traversal Integration Tests', () => {
 
   afterAll(async () => {
     // Cleanup
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     await pool.query(
       'DELETE FROM knowledge_relation WHERE tags @> \'{"test": true, "graph": "traversal"}\'::jsonb'
     );
@@ -134,7 +134,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should traverse 1-hop outgoing relations', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     const result = await traverseGraph(pool, 'entity', nodeA, { depth: 1, direction: 'outgoing' });
 
     // Should find: A (depth 0), B (depth 1), D (depth 1)
@@ -148,7 +148,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should traverse 2-hop outgoing relations', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     const result = await traverseGraph(pool, 'entity', nodeA, { depth: 2, direction: 'outgoing' });
 
     // Should find: A (depth 0), B (depth 1), D (depth 1), C (depth 2)
@@ -160,7 +160,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should detect and prevent cycles', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create a cycle: D → A (back to start)
     await memoryStore([
@@ -187,7 +187,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should filter relations by relation_type', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create a relation with different type
     await memoryStore([
@@ -217,7 +217,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should traverse incoming relations', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Traverse from D backwards
     const result = await traverseGraph(pool, 'entity', nodeD, { depth: 2, direction: 'incoming' });
@@ -228,7 +228,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should traverse bidirectionally', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Traverse from B in both directions
     const result = await traverseGraph(pool, 'entity', nodeB, { depth: 1, direction: 'both' });
@@ -240,7 +240,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should respect depth limits', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Traverse with depth=0 (only start node)
     const result = await traverseGraph(pool, 'entity', nodeA, { depth: 0 });
@@ -270,7 +270,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should find shortest path between two nodes', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Find path from A to C
     const path = await findShortestPath(pool, 'entity', nodeA, 'entity', nodeC);
@@ -287,7 +287,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should return null when no path exists', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create isolated node
     const isolatedResult = await memoryStore([
@@ -311,7 +311,7 @@ describe('Graph Traversal Integration Tests', () => {
   });
 
   it('should handle large graphs efficiently', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     const startTime = Date.now();
 
     // Traverse with reasonable depth

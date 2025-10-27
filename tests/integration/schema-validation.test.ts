@@ -6,14 +6,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { dbPool } from '../db/pool.ts';
+import { qdrantConnectionManager } from '../../src/db/pool.js';
 import { logger } from '../utils/logger.ts';
 
 describe('Database Schema Validation', () => {
-  let pool: typeof dbPool;
+  let client: typeof qdrantConnectionManager;
 
   beforeAll(async () => {
-    pool = dbPool;
+    client = qdrantConnectionManager;
   });
 
   afterAll(async () => {
@@ -64,7 +64,7 @@ describe('Database Schema Validation', () => {
         SELECT routine_name
         FROM information_schema.routines
         WHERE routine_name = 'ts_rank'
-        AND routine_schema = 'pg_catalog'
+        AND routine_schema = 'system_schema'
       `);
 
       expect(result.rows.length).toBeGreaterThan(0);
@@ -75,7 +75,7 @@ describe('Database Schema Validation', () => {
         SELECT routine_name
         FROM information_schema.routines
         WHERE routine_name = 'ts_rank_cd'
-        AND routine_schema = 'pg_catalog'
+        AND routine_schema = 'system_schema'
       `);
 
       expect(result.rows.length).toBeGreaterThan(0);
@@ -123,26 +123,26 @@ describe('Database Schema Validation', () => {
   });
 
   describe('Required Extensions', () => {
-    it('should have pgcrypto extension enabled', async () => {
+    it('should have qdrant_crypto extension enabled', async () => {
       const result = await pool.query(`
         SELECT extname
-        FROM pg_extension
-        WHERE extname = 'pgcrypto'
+        // PostgreSQL extension check removed
+        WHERE extname = 'qdrant_crypto'
       `);
 
       expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].extname).toBe('pgcrypto');
+      expect(result.rows[0].extname).toBe('qdrant_crypto');
     });
 
-    it('should have pg_trgm extension enabled', async () => {
+    it('should have qdrant_trgm extension enabled', async () => {
       const result = await pool.query(`
         SELECT extname
-        FROM pg_extension
-        WHERE extname = 'pg_trgm'
+        // PostgreSQL extension check removed
+        WHERE extname = 'qdrant_trgm'
       `);
 
       expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].extname).toBe('pg_trgm');
+      expect(result.rows[0].extname).toBe('qdrant_trgm');
     });
   });
 

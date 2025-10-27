@@ -106,8 +106,8 @@ describe('Environment Configuration Validation', () => {
       expect(dbConfig.maxUses).toBe(10000);
     });
 
-    it('should handle DATABASE_URL fallback', () => {
-      process.env.DATABASE_URL = 'http://qdrant.example.com:6333';
+    it('should handle QDRANT_URL fallback', () => {
+      process.env.QDRANT_URL = 'http://qdrant.example.com:6333';
       process.env.QDRANT_URL = '';
 
       const env = Environment.getInstance();
@@ -243,7 +243,7 @@ describe('Environment Configuration Validation', () => {
 
   describe('Testing Configuration Validation', () => {
     it('should validate testing configuration', () => {
-      process.env.TEST_DATABASE_URL = 'http://localhost:6333/test';
+      process.env.TEST_QDRANT_URL = 'http://localhost:6333/test';
       process.env.GITHUB_ACTIONS = 'true';
       process.env.CODECOV_TOKEN = 'test-token';
       process.env.GITHUB_SHA = 'abc123';
@@ -268,7 +268,7 @@ describe('Environment Configuration Validation', () => {
       const validation = env.validateEnvironmentSpecificRequirements();
 
       expect(validation.valid).toBe(false);
-      expect(validation.errors).toContain('TEST_DATABASE_URL or DATABASE_URL is required in test mode');
+      expect(validation.errors).toContain('TEST_QDRANT_URL or QDRANT_URL is required in test mode');
     });
   });
 
@@ -431,7 +431,7 @@ describe('Environment Configuration Validation', () => {
   describe('Integration with Existing Code', () => {
     it('should be compatible with existing environment variable usage', () => {
       // Test all the environment variables found in the codebase
-      process.env.DATABASE_URL = 'http://localhost:6333';
+      process.env.QDRANT_URL = 'http://localhost:6333';
       process.env.DB_HOST = 'localhost';
       process.env.DB_PORT = '5433';
       process.env.DB_NAME = 'cortex_prod';
@@ -460,7 +460,7 @@ describe('Environment Configuration Validation', () => {
       process.env.JWT_SECRET = 'a'.repeat(32);
       process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.ENCRYPTION_KEY = 'c'.repeat(32);
-      process.env.TEST_DATABASE_URL = 'http://localhost:6333/test';
+      process.env.TEST_QDRANT_URL = 'http://localhost:6333/test';
       process.env.CODECOV_TOKEN = 'codecov-token';
       process.env.GITHUB_SHA = 'abc123';
       process.env.GITHUB_REF_NAME = 'main';

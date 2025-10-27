@@ -456,7 +456,7 @@ describe('Security Validation Tests', () => {
         { query: '../../.env' },
         { query: '/etc/passwd' },
         { query: 'C:\\Windows\\System32\\config\\SAM' },
-        { query: 'process.env.DATABASE_URL' },
+        { query: 'process.env.QDRANT_URL' },
         { query: 'process.env.API_KEY' }
       ];
 
@@ -465,7 +465,7 @@ describe('Security Validation Tests', () => {
           validateMemoryFindInput(input);
         } catch (error) {
           expect(error.message).not.toContain('password');
-          expect(error.message).not.toContain('DATABASE_URL');
+          expect(error.message).not.toContain('QDRANT_URL');
           expect(error.message).not.toContain('API_KEY');
           expect(error.message).not.toContain('C:\\Windows');
           expect(error.message).not.toContain('/etc/passwd');

@@ -22,8 +22,8 @@ interface TestServer {
 
 describe('Complete Workflows E2E', () => {
   let server: TestServer;
-  const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
-    'postgresql://cortex:trust@localhost:5433/cortex_test_e2e';
+  const TEST_DB_URL = process.env.TEST_QDRANT_URL ||
+    'http://cortex:trust@localhost:5433/cortex_test_e2e';
 
   beforeAll(async () => {
     // Setup test database
@@ -415,7 +415,7 @@ describe('Complete Workflows E2E', () => {
           kind: 'runbook',
           scope: { project: 'production-system' },
           data: {
-            title: 'Database Connection Pool Recovery',
+            title: 'Database Connection QdrantClient Recovery',
             description: 'Steps to recover from database connection pool exhaustion',
             triggers: ['Database connection timeout errors', 'High connection pool usage'],
             steps: [
@@ -713,7 +713,7 @@ async function startMCPServer(): Promise<TestServer> {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      DATABASE_URL: TEST_DB_URL,
+      QDRANT_URL: TEST_DB_URL,
       NODE_ENV: 'test'
     }
   });

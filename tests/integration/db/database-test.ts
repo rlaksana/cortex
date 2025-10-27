@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { getTestContainer } from '../../helpers/testcontainers.js';
-import { Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -73,7 +73,7 @@ describe('Database Integration Tests', () => {
       const extensions = ['pgcrypto', 'pg_trgm'];
 
       for (const ext of extensions) {
-        const result = await client.query(`SELECT extname FROM pg_extension WHERE extname = $1`, [
+        const result = await client.query(`// PostgreSQL system query removed WHERE extname = $1`, [
           ext,
         ]);
         expect(result.rows).toHaveLength(1);
@@ -102,7 +102,7 @@ describe('Database Integration Tests', () => {
       ];
 
       for (const table of expectedTables) {
-        const result = await client.query(`SELECT tablename FROM pg_tables WHERE tablename = $1`, [
+        const result = await client.query(`SELECT tablename FROM .collections WHERE tablename = $1`, [
           table,
         ]);
         expect(result.rows).toHaveLength(1);

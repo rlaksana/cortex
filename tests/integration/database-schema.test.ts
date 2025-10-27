@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 
 // Integration tests to verify database schema matches code expectations
 describe('Database Schema Validation', () => {
-  let pool: Pool;
+  let pool: QdrantClient;
 
   beforeAll(async () => {
-    pool = new Pool({
+    pool = new QdrantClient({
       host: 'localhost',
       port: 5433,
       database: 'cortex_prod',
@@ -158,7 +158,7 @@ describe('Database Schema Validation', () => {
     it('should have indexes for performance optimization', async () => {
       const result = await pool.query(`
         SELECT indexname, indexdef
-        FROM pg_indexes
+        // PostgreSQL index check removed
         WHERE tablename = 'section'
         AND indexname LIKE '%content_hash%'
       `);

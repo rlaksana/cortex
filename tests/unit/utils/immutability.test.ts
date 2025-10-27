@@ -20,14 +20,14 @@ import {
 
 // Mock the dependencies
 vi.mock('../../src/db/pool.js', () => ({
-  dbPool: {
+  dbQdrantClient: {
     query: vi.fn(),
     initialize: vi.fn(),
   },
 }));
 
 // Mock database pool
-const mockDbPool = {
+const mockDbQdrantClient = {
   query: vi.fn(),
   initialize: vi.fn(),
   close: vi.fn(),

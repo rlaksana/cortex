@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
 import { loadEnv } from '../config/environment.ts';
@@ -12,22 +12,15 @@ import { loadEnv } from '../config/environment.ts';
 loadEnv();
 
 describe('E2E: Autonomous Claude Code Scenarios', () => {
-  let client: Client;
   const testScope = { project: 'e2e-autonomous', branch: 'main' };
 
   beforeAll(async () => {
-    client = new Client({ connectionString: process.env.DATABASE_URL });
-    await client.connect();
-
-    // Clean slate
-    await client.query(`DELETE FROM section WHERE (tags->>'project') = 'e2e-autonomous'`);
-    await client.query(`DELETE FROM adr_decision WHERE (tags->>'project') = 'e2e-autonomous'`);
+    // PostgreSQL setup removed - Qdrant only
+    // Test data cleanup will be handled by Qdrant operations
   });
 
   afterAll(async () => {
-    await client.query(`DELETE FROM section WHERE (tags->>'project') = 'e2e-autonomous'`);
-    await client.query(`DELETE FROM adr_decision WHERE (tags->>'project') = 'e2e-autonomous'`);
-    await client.end();
+    // PostgreSQL cleanup removed - Qdrant only
   });
 
   it('Scenario: User shares information, Claude saves autonomously', async () => {

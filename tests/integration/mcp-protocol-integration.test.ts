@@ -21,7 +21,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.ts';
 import { memoryStore } from '../services/memory-store.ts';
 import { smartMemoryFind } from '../services/smart-find.ts';
-import { dbPool } from '../db/pool.ts';
+import { dbQdrantClient } from '../db/pool.ts';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 
 describe('MCP Protocol Integration Tests', () => {
@@ -30,7 +30,7 @@ describe('MCP Protocol Integration Tests', () => {
 
   beforeAll(async () => {
     // Initialize database for testing
-    await dbPool.initialize();
+    await dbQdrantClient.initialize();
 
     // Create test server instance
     server = new Server(
@@ -101,12 +101,12 @@ describe('MCP Protocol Integration Tests', () => {
 
   afterAll(async () => {
     // Cleanup test data using proper table names
-    await dbPool.query(`DELETE FROM section WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM adr_decision WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM issue_log WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM runbook WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM knowledge_entity WHERE tags @> '{"test": true}'::jsonb`);
-    await dbPool.query(`DELETE FROM knowledge_relation WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM section WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM adr_decision WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM issue_log WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM runbook WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM knowledge_entity WHERE tags @> '{"test": true}'::jsonb`);
+    await dbQdrantClient.query(`DELETE FROM knowledge_relation WHERE tags @> '{"test": true}'::jsonb`);
   });
 
   describe('Tool Registration and Discovery', () => {

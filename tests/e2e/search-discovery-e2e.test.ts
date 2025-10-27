@@ -36,8 +36,8 @@ interface SearchResult {
 
 describe('Search and Discovery E2E', () => {
   let server: TestServer;
-  const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
-    'postgresql://cortex:trust@localhost:5433/cortex_test_e2e';
+  const TEST_DB_URL = process.env.TEST_QDRANT_URL ||
+    'http://cortex:trust@localhost:5433/cortex_test_e2e';
 
   beforeAll(async () => {
     await setupTestDatabase();
@@ -631,7 +631,7 @@ They use lifecycle methods for managing component behavior.
             kind: 'section',
             scope: { project: projectId },
             data: {
-              title: 'Database Connection Pooling',
+              title: 'Database Connection QdrantClienting',
               body_md: 'Implement database connection pooling for better performance'
             }
           },
@@ -663,7 +663,7 @@ They use lifecycle methods for managing component behavior.
       });
 
       expect(phraseSearch.hits).toHaveLength(1);
-      expect(phraseSearch.hits[0].data?.title).toBe('Database Connection Pooling');
+      expect(phraseSearch.hits[0].data?.title).toBe('Database Connection QdrantClienting');
 
       // Test multi-term search (implicit AND)
       const multiTermSearch = await callMCPTool('memory_find', {
@@ -1233,7 +1233,7 @@ async function startMCPServer(): Promise<TestServer> {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      DATABASE_URL: TEST_DB_URL,
+      QDRANT_URL: TEST_DB_URL,
       NODE_ENV: 'test'
     }
   });

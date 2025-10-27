@@ -161,7 +161,7 @@ describe('Complete Configuration Validation Integration', () => {
       process.env.NODE_ENV = 'test';
       process.env.QDRANT_URL = 'http://localhost:6333';
       process.env.OPENAI_API_KEY = 'test-key';
-      process.env.TEST_DATABASE_URL = 'http://localhost:6334/test';
+      process.env.TEST_QDRANT_URL = 'http://localhost:6334/test';
       process.env.LOG_LEVEL = 'error';
       process.env.METRICS_ENABLED = 'false';
       process.env.ENABLE_AUTH = 'false';
@@ -185,13 +185,13 @@ describe('Complete Configuration Validation Integration', () => {
       process.env.NODE_ENV = 'test';
       process.env.QDRANT_URL = 'http://localhost:6333';
       process.env.OPENAI_API_KEY = 'test-key';
-      // TEST_DATABASE_URL not set
+      // TEST_QDRANT_URL not set
 
       const validation = await validateCompleteConfiguration();
 
       expect(validation.allValid).toBe(false);
       expect(validation.environmentSpecific.errors).toContain(
-        'TEST_DATABASE_URL or DATABASE_URL is required in test mode'
+        'TEST_QDRANT_URL or QDRANT_URL is required in test mode'
       );
     });
   });
@@ -380,7 +380,7 @@ describe('Complete Configuration Validation Integration', () => {
       process.env.NODE_ENV = 'test';
       process.env.QDRANT_URL = 'http://localhost:6333';
       process.env.OPENAI_API_KEY = 'sk-test-key';
-      process.env.TEST_DATABASE_URL = 'http://localhost:6334/ci_test';
+      process.env.TEST_QDRANT_URL = 'http://localhost:6334/ci_test';
       process.env.LOG_LEVEL = 'error';
       process.env.GITHUB_ACTIONS = 'true';
       process.env.GITHUB_SHA = 'abc123def456';

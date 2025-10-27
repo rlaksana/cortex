@@ -39,8 +39,8 @@ interface MCPMessage {
 describe('MCP Client Operations E2E', () => {
   let server: MCPServer;
   let messageId = 1;
-  const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
-    'postgresql://cortex:trust@localhost:5433/cortex_test_e2e';
+  const TEST_DB_URL = process.env.TEST_QDRANT_URL ||
+    'http://cortex:trust@localhost:5433/cortex_test_e2e';
 
   beforeAll(async () => {
     await setupTestDatabase();
@@ -727,7 +727,7 @@ async function startMCPServer(): Promise<MCPServer> {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      DATABASE_URL: TEST_DB_URL,
+      QDRANT_URL: TEST_DB_URL,
       NODE_ENV: 'test'
     }
   });

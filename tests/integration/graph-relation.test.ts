@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../services/memory-store.ts';
-import { dbPool } from '../db/pool.ts';
+import { dbQdrantClient } from '../db/pool.ts';
 import {
   getOutgoingRelations,
   getIncomingRelations,
@@ -18,7 +18,7 @@ describe('Relation Storage Integration Tests', () => {
 
   beforeAll(async () => {
     // Setup: Create test entities
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     await pool.query('SELECT 1');
 
     // Create test decision
@@ -56,7 +56,7 @@ describe('Relation Storage Integration Tests', () => {
 
   afterAll(async () => {
     // Cleanup
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     await pool.query('DELETE FROM knowledge_relation WHERE tags @> \'{"test": true}\'::jsonb');
     await pool.query('DELETE FROM adr_decision WHERE tags @> \'{"test": true}\'::jsonb');
     await pool.query('DELETE FROM issue_log WHERE tags @> \'{"test": true}\'::jsonb');
@@ -110,7 +110,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query outgoing relations from an entity', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create relation
     await memoryStore([
@@ -139,7 +139,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query incoming relations to an entity', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create relation
     await memoryStore([
@@ -168,7 +168,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should query all relations (bidirectional)', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Query all relations for decision
     const relations = await getAllRelations(pool, 'decision', testDecisionId);
@@ -178,7 +178,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should filter relations by relation_type', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create multiple relation types
     await memoryStore([
@@ -203,7 +203,7 @@ describe('Relation Storage Integration Tests', () => {
   });
 
   it('should check relation existence', async () => {
-    const pool = dbPool;
+    const pool = dbQdrantClient;
 
     // Create relation
     await memoryStore([
@@ -259,7 +259,7 @@ describe('Relation Storage Integration Tests', () => {
     expect(result.stored[0].status).toBe('inserted');
 
     // Query and verify metadata
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     const relations = await getOutgoingRelations(pool, 'decision', testDecisionId, 'depends_on');
     const relation = relations.find((r) => r.relation_type === 'depends_on');
 
@@ -306,7 +306,7 @@ describe('Relation Storage Integration Tests', () => {
     expect(result.stored[0].status).toBe('inserted');
 
     // Verify polymorphic relation
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     const relations = await getOutgoingRelations(pool, 'entity', userId);
     expect(relations.some((r) => r.to_entity_type === 'decision')).toBe(true);
   });

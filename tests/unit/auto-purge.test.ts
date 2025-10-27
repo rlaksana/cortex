@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 
 // Mock the dependencies
 vi.mock('../../src/utils/logger', () => ({

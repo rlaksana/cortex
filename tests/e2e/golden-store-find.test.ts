@@ -23,8 +23,8 @@ describe('Golden Path: Store → Find Round-Trip', () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        DATABASE_URL:
-          process.env.DATABASE_URL || 'postgresql://cortex:cortex@localhost:5432/cortex_test',
+        QDRANT_URL:
+          process.env.QDRANT_URL || 'http://cortex:cortex@localhost:5432/cortex_test',
         NODE_ENV: 'test',
       },
     });

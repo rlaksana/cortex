@@ -640,7 +640,7 @@ describe('SYSTEM STRESS TESTING', () => {
       const maxErrorsPerWorker = Math.max(...Object.values(errorByWorker), 0);
 
       const result = {
-        test: 'Connection Pool Exhaustion',
+        test: 'Connection QdrantClient Exhaustion',
         totalOperations,
         successfulOperations: successfulOperations.length,
         connectionErrors: connectionErrors.length,

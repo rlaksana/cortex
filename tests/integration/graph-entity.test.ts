@@ -5,17 +5,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
-import { dbPool } from '../db/pool.ts';
+import { dbQdrantClient } from '../db/pool.ts';
 
 describe('Entity Storage Integration Tests', () => {
   beforeAll(async () => {
     // Ensure database connection
-    await dbPool.query('SELECT 1');
+    await dbQdrantClient.query('SELECT 1');
   });
 
   afterAll(async () => {
     // Cleanup test data
-    const pool = dbPool;
+    const pool = dbQdrantClient;
     await pool.query('DELETE FROM knowledge_entity WHERE tags @> \'{"test": true}\'::jsonb');
     // Don't close the shared pool in tests
   });

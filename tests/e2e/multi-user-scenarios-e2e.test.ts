@@ -43,8 +43,8 @@ interface CollaborationSession {
 
 describe('Multi-User Scenarios E2E', () => {
   let server: TestServer;
-  const TEST_DB_URL = process.env.TEST_DATABASE_URL ||
-    'postgresql://cortex:trust@localhost:5433/cortex_test_e2e';
+  const TEST_DB_URL = process.env.TEST_QDRANT_URL ||
+    'http://cortex:trust@localhost:5433/cortex_test_e2e';
 
   // Mock users for testing
   const users: User[] = [
@@ -1527,7 +1527,7 @@ async function startMCPServer(): Promise<TestServer> {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      DATABASE_URL: TEST_DB_URL,
+      QDRANT_URL: TEST_DB_URL,
       NODE_ENV: 'test'
     }
   });

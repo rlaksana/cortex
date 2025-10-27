@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Pool } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { storeDecision, updateDecision } from '../services/knowledge/decision.ts';
 import { ImmutabilityViolationError } from '../utils/immutability.ts';
 
@@ -13,12 +13,12 @@ import { ImmutabilityViolationError } from '../utils/immutability.ts';
  * - Supersedes mechanism works as alternative to modification
  */
 describe('ADR Immutability Enforcement', () => {
-  let pool: Pool;
+  let pool: QdrantClient;
 
   beforeAll(() => {
-    pool = new Pool({
+    pool = new QdrantClient({
       connectionString:
-        process.env.DATABASE_URL || 'postgresql://cortex:cortex@localhost:5432/cortex_test',
+        process.env.QDRANT_URL || 'http://cortex:cortex@localhost:5432/cortex_test',
     });
   });
 

@@ -5,8 +5,8 @@
  * for all 16 knowledge types and their operations.
  */
 
-import type { Pool } from 'pg';
-import { getPool } from '../../database/connection.js';
+// PostgreSQL import removed - now using Qdrant;
+import { getQdrantClient } from '../../database/connection.js';
 import {
   TestDataFactory,
   DatabaseTestHelper,
@@ -19,11 +19,11 @@ import {
  * Main test framework class
  */
 export class CortexMemoryTestFramework {
-  private pool: Pool;
+  private pool: QdrantClient;
   private testDatabases: string[] = [];
 
   constructor() {
-    this.pool = getPool();
+    this.pool = getQdrantClient();
   }
 
   /**
@@ -46,7 +46,7 @@ export class CortexMemoryTestFramework {
   /**
    * Create a test database and return its connection
    */
-  async createTestDatabase(name?: string): Promise<Pool> {
+  async createTestDatabase(name?: string): Promise<QdrantClient> {
     const dbName = name || `test_cortex_memory_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     this.testDatabases.push(dbName);
     return DatabaseTestHelper.setupTestDatabase(dbName);
@@ -86,7 +86,7 @@ export class CortexMemoryTestFramework {
  */
 export interface TestContext {
   framework: CortexMemoryTestFramework;
-  testDb: Pool;
+  testDb: QdrantClient;
   dataFactory: TestDataFactory;
   performanceHelper: PerformanceTestHelper;
   validationHelper: ValidationTestHelper;

@@ -11,20 +11,20 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { Pool } from 'pg';
-import { dbPool } from '../db/pool.ts';
+// PostgreSQL import removed - now using Qdrant;
+import { dbQdrantClient } from '../db/pool.ts';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 import { memoryStore } from '../services/memory-store.ts';
 import { memoryFind } from '../services/memory-find.ts';
 import { logger } from '../utils/logger.ts';
 
 describe('Database Operations Integration Tests', () => {
-  let pool: Pool;
+  let pool: QdrantClient;
   let testDbConfig: any;
 
   beforeAll(async () => {
     // Initialize database connections
-    await dbPool.initialize();
+    await dbQdrantClient.initialize();
 
     // Create direct pool for test isolation
     testDbConfig = {
@@ -35,7 +35,7 @@ describe('Database Operations Integration Tests', () => {
       password: process.env.DB_PASSWORD || '',
     };
 
-    pool = new Pool(testDbConfig);
+    pool = new QdrantClient(testDbConfig);
 
     // Ensure test isolation by creating test schema if needed
     await pool.query(`
@@ -65,9 +65,9 @@ describe('Database Operations Integration Tests', () => {
     // Don't close shared pools
   });
 
-  describe('Connection Pool Management', () => {
+  describe('Connection QdrantClient Management', () => {
     it('should maintain healthy connection pool', async () => {
-      const healthCheck = await dbPool.healthCheck();
+      const healthCheck = await dbQdrantClient.healthCheck();
       expect(healthCheck.isHealthy).toBe(true);
       expect(healthCheck.poolStats).toBeDefined();
       expect(healthCheck.databaseStats).toBeDefined();
@@ -105,7 +105,7 @@ describe('Database Operations Integration Tests', () => {
     });
 
     it('should respect pool configuration limits', async () => {
-      const stats = dbPool.getStats();
+      const stats = dbQdrantClient.getStats();
       expect(stats.max).toBeGreaterThan(0);
       expect(stats.total).toBeLessThanOrEqual(stats.max);
       expect(stats.idle).toBeGreaterThanOrEqual(0);
@@ -114,7 +114,7 @@ describe('Database Operations Integration Tests', () => {
 
   describe('Transaction Management', () => {
     it('should handle single transaction successfully', async () => {
-      await dbPool.transaction(async (client) => {
+      await dbQdrantClient.transaction(async (client) => {
         // Insert test data
         const result = await client.query(`
           INSERT INTO section (title, heading, body_text, tags)
@@ -154,7 +154,7 @@ describe('Database Operations Integration Tests', () => {
       const initialCountNum = parseInt(initialCount.rows[0].count);
 
       try {
-        await dbPool.transaction(async (client) => {
+        await dbQdrantClient.transaction(async (client) => {
           // Insert test data
           await client.query(`
             INSERT INTO section (title, heading, body_text, tags)
@@ -184,7 +184,7 @@ describe('Database Operations Integration Tests', () => {
     });
 
     it('should handle nested transaction logic', async () => {
-      await dbPool.transaction(async (client) => {
+      await dbQdrantClient.transaction(async (client) => {
         // Create parent record
         const parentResult = await client.query(`
           INSERT INTO document (title, description, tags)
@@ -629,7 +629,7 @@ describe('Database Operations Integration Tests', () => {
   describe('Error Handling and Recovery', () => {
     it('should handle database connection failures gracefully', async () => {
       // Simulate connection failure by using invalid credentials
-      const badPool = new Pool({
+      const badQdrantClient = new QdrantClient({
         host: 'localhost',
         port: 5433,
         database: 'nonexistent_db',
@@ -639,12 +639,12 @@ describe('Database Operations Integration Tests', () => {
       });
 
       try {
-        await badPool.query('SELECT 1');
+        await badQdrantClient.query('SELECT 1');
         expect.fail('Should have thrown connection error');
       } catch (error) {
         expect(error.message).toContain('connection');
       } finally {
-        await badPool.end();
+        await badQdrantClient.end();
       }
     });
 
@@ -692,7 +692,7 @@ describe('Database Operations Integration Tests', () => {
       const initialCountNum = parseInt(initialCount.rows[0].count);
 
       try {
-        await dbPool.transaction(async (client) => {
+        await dbQdrantClient.transaction(async (client) => {
           // Insert some data
           await client.query(`
             INSERT INTO section (title, heading, body_text, tags)

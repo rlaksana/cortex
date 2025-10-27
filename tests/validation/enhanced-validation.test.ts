@@ -7,7 +7,7 @@ import { memoryStore } from '../services/memory-store.ts';
 
 // Mock the database pool for testing
 vi.mock('../../src/db/pool.js', () => ({
-  getPool: () => ({
+  getQdrantClient: () => ({
     query: vi.fn().mockResolvedValue({ rows: [] }),
   }),
 }));

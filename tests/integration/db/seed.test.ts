@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { getTestContainer } from '../helpers/testcontainers.ts';
-import { Client } from 'pg';
+// PostgreSQL import removed - now using Qdrant;
 import { seedDatabase } from '../scripts/seed.ts';
 
 /**
