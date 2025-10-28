@@ -108,7 +108,7 @@ export class ServiceErrorHandler {
     methodName: string,
     operation: () => Promise<T>,
     options: {
-      fallback?: (error: BaseError) => T;
+      fallback?: (_error: BaseError) => T;
       rethrow?: boolean;
       category?: ErrorCategory;
     } = {}
@@ -433,7 +433,7 @@ export class ErrorRecovery {
     const {
       failureThreshold = 5,
       recoveryTimeout = 60000, // 1 minute
-      monitoringPeriod = 10000, // 10 seconds
+      _monitoringPeriod = 10000, // 10 seconds
     } = options;
 
     let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';

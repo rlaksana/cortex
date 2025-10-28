@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   validateKnowledgeItems,
   MemoryStoreRequestSchema,
-} from '../../src/schemas/enhanced-validation.js';
-import { memoryStore } from '../../src/services/memory-store.js';
+} from '../../../src/schemas/enhanced-validation.js';
+import { memoryStore } from '../../../src/services/memory-store.js';
 
 // Mock the database pool for testing
-vi.mock('../../src/db/pool.js', () => ({
+vi.mock('../../../src/db/pool.js', () => ({
   getQdrantClient: () => ({
     query: vi.fn().mockResolvedValue({ rows: [] }),
   }),
 }));
 
-vi.mock('../../src/services/auto-purge.js', () => ({
+vi.mock('../../../src/services/auto-purge.js', () => ({
   checkAndPurge: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../src/services/similarity.js', () => ({
+vi.mock('../../../src/services/similarity.js', () => ({
   findSimilar: vi.fn().mockResolvedValue({
     has_duplicates: false,
     has_similar: false,

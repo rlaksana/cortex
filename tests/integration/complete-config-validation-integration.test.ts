@@ -10,8 +10,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Environment } from '../../src/config/environment.ts';
-import { configValidator } from '../../src/config/validation.ts';
+import { Environment } from ' '../../src/config/environment.js';
+import { configValidator } from ' '../../src/config/validation.js';
 
 describe('Complete Configuration Validation Integration', () => {
   let originalEnv: NodeJS.ProcessEnv;

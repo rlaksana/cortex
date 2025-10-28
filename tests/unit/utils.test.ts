@@ -7,10 +7,10 @@ import {
   withCorrelationId,
   getOrCreateCorrelationId,
   extractCorrelationIdFromRequest
-} from '../../src/utils/correlation-id';
-import { SecurityUtils } from '../../src/utils/security';
-import { LRUCache } from '../../src/utils/lru-cache';
-import { logger } from '../../src/utils/logger';
+} from '../../../src/utils/correlation-id';
+import { SecurityUtils } from '../../../src/utils/security';
+import { LRUCache } from '../../../src/utils/lru-cache';
+import { logger } from '../../../src/utils/logger';
 
 describe('Correlation ID Utilities', () => {
   beforeEach(() => {

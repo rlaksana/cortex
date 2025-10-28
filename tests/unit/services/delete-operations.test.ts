@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock the dependencies
-vi.mock('../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     error: vi.fn(),
@@ -21,19 +21,19 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-vi.mock('../../src/db/unified-database-layer.js', () => ({
+vi.mock('../../../src/db/unified-database-layer.js', () => ({
   UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockUnifiedDatabaseLayer),
 }));
 
-vi.mock('../../src/services/knowledge/entity.js', () => ({
+vi.mock('../../../src/services/knowledge/entity.js', () => ({
   softDeleteEntity: vi.fn(),
 }));
 
-vi.mock('../../src/services/knowledge/relation.js', () => ({
+vi.mock('../../../src/services/knowledge/relation.js', () => ({
   softDeleteRelation: vi.fn(),
 }));
 
-vi.mock('../../src/services/knowledge/observation.js', () => ({
+vi.mock('../../../src/services/knowledge/observation.js', () => ({
   deleteObservation: vi.fn(),
 }));
 
@@ -48,7 +48,7 @@ const mockUnifiedDatabaseLayer = {
   query: vi.fn(),
 };
 
-import type { DeleteRequest, DeleteResult } from '../../src/services/delete-operations';
+import type { DeleteRequest, DeleteResult } from '../../../src/services/delete-operations';
 
 describe('Delete Operations Service', () => {
   beforeEach(() => {

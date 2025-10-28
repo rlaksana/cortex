@@ -20,7 +20,7 @@ const mockDatabaseLayer = {
 };
 
 // Mock the dependencies
-vi.mock('../../src/utils/logger', () => ({
+vi.mock('../../../src/utils/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -29,11 +29,11 @@ vi.mock('../../src/utils/logger', () => ({
   },
 }));
 
-vi.mock('../../src/db/unified-database-layer-v2', () => ({
+vi.mock('../../../src/db/unified-database-layer-v2', () => ({
   QdrantOnlyDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
-vi.mock('../../src/config/environment', () => ({
+vi.mock('../../../src/config/environment', () => ({
   Environment: {
     getInstance: vi.fn().mockReturnValue({
       getRawConfig: vi.fn().mockReturnValue({

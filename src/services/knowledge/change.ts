@@ -8,7 +8,8 @@ export async function storeChange(data: ChangeData, scope: ScopeFilter): Promise
   await db.initialize();
   const hash = computeContentHash(data.summary);
 
-  const result = await qdrant.changeLog.create({
+  const result = await db.storeItem({
+          kind: 'change',({
     data: {
       change_type: data.change_type,
       subject_ref: data.subject_ref,

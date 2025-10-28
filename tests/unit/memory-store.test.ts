@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { VectorDatabase } from '../../src/index';
+import { VectorDatabase } from '../../../src/index.js';
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({
@@ -191,7 +191,7 @@ describe('VectorDatabase - memory_store functionality', () => {
       }));
 
       const result = await db.storeItems(items);
-      const ids = result.stored.map(item => item.id);
+      const ids = (result.stored || []).map(item => item.id);
       const uniqueIds = new Set(ids);
 
       expect(ids).toHaveLength(100);

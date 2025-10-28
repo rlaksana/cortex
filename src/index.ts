@@ -260,7 +260,7 @@ class VectorDatabase {
   private generateUUID(): string {
     // Generate proper UUID v4
     const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
+    globalThis.crypto?.getRandomValues?.(bytes) || require('crypto').webcrypto.getRandomValues(bytes);
 
     // Set version (4) and variant bits
     bytes[6] = (bytes[6] & 0x0f) | 0x40;

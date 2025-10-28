@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock the dependencies
-vi.mock('../../src/db/unified-database-layer.js', () => ({
+vi.mock('../../../src/db/unified-database-layer.js', () => ({
   UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
@@ -46,7 +46,7 @@ import type {
   GraphNode,
   GraphEdge,
   GraphTraversalResult
-} from '../../src/services/graph-traversal';
+} from '../../../src/services/graph-traversal';
 
 describe('Graph Traversal Service', () => {
   beforeEach(() => {

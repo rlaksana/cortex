@@ -16,10 +16,10 @@ import {
   validateAuditAppendOnly,
   checkImmutabilityConstraint,
   ImmutabilityViolationError,
-} from '../../src/utils/immutability';
+} from '../../../src/utils/immutability.js';
 
 // Mock the dependencies
-vi.mock('../../src/db/pool.js', () => ({
+vi.mock('../../../src/db/pool.js', () => ({
   dbQdrantClient: {
     query: vi.fn(),
     initialize: vi.fn(),

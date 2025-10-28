@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AuthService, AuthServiceConfig } from '../../../src/services/auth/auth-service.ts';
-import { UserRole, AuthScope, User, AuthSession } from '../../../src/types/auth-types.ts';
-import { logger } from '../../../src/utils/logger.ts';
+import { AuthService, AuthServiceConfig } from ' '../../../src/services/auth/auth-service.js';
+import { UserRole, AuthScope, User, AuthSession } from ' '../../../src/types/auth-types.js';
+import { logger } from ' '../../../src/utils/logger.js';
 
 // Mock external dependencies
 vi.mock('bcryptjs', () => ({
@@ -73,7 +73,7 @@ vi.mock('../../../src/db/qdrant.ts', () => ({
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { qdrant } from '../../../src/db/qdrant.ts';
+import { qdrant } from ' '../../../src/db/qdrant.js';
 
 const mockedBcrypt = bcrypt as any;
 const mockedJwt = jwt as any;

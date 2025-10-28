@@ -3,11 +3,11 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../services/memory-store.ts';
-import { dbQdrantClient } from '../db/pool.ts';
-import { softDelete, undelete } from '../services/delete-operations.ts';
-import { softDeleteEntity } from '../services/knowledge/entity.ts';
-import { relationExists } from '../services/knowledge/relation.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { dbQdrantClient } from ' '../../src/db/pool.js';
+import { softDelete, undelete } from ' '../../src/services/delete-operations.js';
+import { softDeleteEntity } from ' '../../src/services/knowledge/entity.js';
+import { relationExists } from ' '../../src/services/knowledge/relation.js';
 
 describe('Delete Operations Integration Tests', () => {
   let testEntityId: string;

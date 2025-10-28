@@ -1001,7 +1001,7 @@ export class QdrantAdapter implements IVectorAdapter {
       // Test vector search
       try {
         await this.vectorSearch(new Array(1536).fill(0));
-      } catch (error) {
+      } catch (_error) {
         issues.push('Vector search functionality failed');
       }
 

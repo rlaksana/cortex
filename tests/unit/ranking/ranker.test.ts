@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { computeFinalScore } from '../../src/services/ranking/ranker';
+import { computeFinalScore } from '../../../src/services/ranking/ranker.js';
 
 describe('Result Ranking Algorithms', () => {
   describe('computeFinalScore', () => {

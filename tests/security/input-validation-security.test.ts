@@ -17,10 +17,10 @@ import {
   validateMemoryStoreInput,
   validateMemoryFindInput,
   ValidationError
-} from '../schemas/mcp-inputs.ts';
-import { sanitizeQuery, type SanitizationLevel } from '../utils/query-sanitizer.ts';
-import { memoryStore } from '../services/memory-store.ts';
-import { smartMemoryFind } from '../services/smart-find.ts';
+} from ' '../../src/schemas/mcp-inputs.js';
+import { sanitizeQuery, type SanitizationLevel } from ' '../../src/utils/query-sanitizer.js';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { smartMemoryFind } from ' '../../src/services/smart-find.js';
 
 describe('Input Validation Security Tests', () => {
 

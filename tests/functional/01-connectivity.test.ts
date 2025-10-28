@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { qdrantConnectionManager } from '../../src/db/pool.js';
+import { qdrantConnectionManager } from '../../../src/db/pool.js';
 
 const QDRANT_CONFIG = {
   url: process.env.QDRANT_URL || 'http://localhost:6333',

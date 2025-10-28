@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseErrorHandler, DbErrorType, RetryConfig } from '../utils/db-error-handler.ts';
+import { DatabaseErrorHandler, DbErrorType, RetryConfig } from ' '../../src/utils/db-error-handler.js';
 
 describe('DatabaseErrorHandler', () => {
   let errorHandler: DatabaseErrorHandler;

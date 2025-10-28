@@ -500,6 +500,6 @@ export const commonSchemas = {
 
 // Export commonly used middleware
 export const security = securityMiddleware.security();
-export const rateLimit = securityMiddleware.rateLimit();
+export const rateLimitMiddleware = securityMiddleware.rateLimit();
 export const preventSQLInjection = securityMiddleware.preventSQLInjection();
 export const preventXSS = securityMiddleware.preventXSS();

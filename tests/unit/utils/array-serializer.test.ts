@@ -15,7 +15,7 @@ import {
   deserializeArray,
   serializeForDatabase,
   deserializeFromDatabase,
-} from '../../src/utils/array-serializer';
+} from '../../../src/utils/array-serializer';
 
 describe('Array Serialization Utilities', () => {
   describe('serializeArray', () => {

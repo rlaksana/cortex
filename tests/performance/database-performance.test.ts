@@ -7,9 +7,9 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestRunner, TestAssertions } from '../framework/test-setup.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
-import { softDelete } from '../../src/services/delete-operations.js';
+import { memoryStore } from '../../../src/services/memory-store.js';
+import { memoryFind } from '../../../src/services/memory-find.js';
+import { softDelete } from '../../../src/services/delete-operations.js';
 import type { TestContext } from '../framework/test-setup.js';
 
 describe('DATABASE QUERY PERFORMANCE', () => {

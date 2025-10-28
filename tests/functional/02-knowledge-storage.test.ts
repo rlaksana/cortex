@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../services/memory-store.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
 // PostgreSQL import removed - now using Qdrant;
 
 const TEST_SCOPE = {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 // PostgreSQL import removed - now using Qdrant;
-import { storeDecision, updateDecision } from '../services/knowledge/decision.ts';
-import { ImmutabilityViolationError } from '../utils/immutability.ts';
+import { storeDecision, updateDecision } from ' '../../src/services/knowledge/decision.js';
+import { ImmutabilityViolationError } from ' '../../src/utils/immutability.js';
 
 /**
  * T064: ADR Immutability Test

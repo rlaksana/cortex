@@ -11,11 +11,11 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { dbQdrantClient } from '../db/pool.ts';
+import { dbQdrantClient } from ' '../../src/db/pool.js';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
-import { memoryStore } from '../services/memory-store.ts';
-import { memoryFind } from '../services/memory-find.ts';
-import { smartMemoryFind } from '../services/smart-find.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { memoryFind } from ' '../../src/services/memory-find.js';
+import { smartMemoryFind } from ' '../../src/services/smart-find.js';
 
 describe('Search and Ranking Integration Tests', () => {
   beforeAll(async () => {

@@ -7,7 +7,7 @@ import {
   generateSanitizationOptions,
   type SanitizationLevel,
   type SanitizationResult
-} from '../../src/utils/query-sanitizer';
+} from '../../../src/utils/query-sanitizer';
 
 describe('Query Sanitizer', () => {
   describe('sanitizeQuery', () => {

@@ -15,6 +15,7 @@ import {
   AuthScope,
   SecurityAuditLog,
   UserRole,
+  IPValidationConfig,
 } from '../types/auth-types';
 
 export interface AuthenticatedRequest extends Request {

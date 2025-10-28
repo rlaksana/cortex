@@ -13,9 +13,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { qdrantConnectionManager } from '../../src/db/pool.js';
-import { qdrantSchemaManager } from '../../src/db/schema.js';
-import { qdrantMigrationManager } from '../../src/db/migrate.js';
+import { qdrantConnectionManager } from '../../../src/db/pool.js';
+import { qdrantSchemaManager } from '../../../src/db/schema.js';
+import { qdrantMigrationManager } from '../../../src/db/migrate.js';
 
 describe('Migration Integration Tests', () => {
   let testClient: QdrantClient;

@@ -11,17 +11,17 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.ts';
+import { StdioServerTransport } from ' '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
   JSONRPCMessage,
   ErrorCode,
   McpError,
-} from '@modelcontextprotocol/sdk/types.ts';
-import { memoryStore } from '../services/memory-store.ts';
-import { smartMemoryFind } from '../services/smart-find.ts';
-import { dbQdrantClient } from '../db/pool.ts';
+} from ' '@modelcontextprotocol/sdk/types.js';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { smartMemoryFind } from ' '../../src/services/smart-find.js';
+import { dbQdrantClient } from ' '../../src/db/pool.js';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
 
 describe('MCP Protocol Integration Tests', () => {

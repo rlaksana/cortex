@@ -6,15 +6,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AuthService } from '../../src/services/auth/auth-service.js';
-import { AuthMiddleware } from '../../src/middleware/auth-middleware.js';
-import { UnifiedSimilarityService } from '../../src/services/similarity/unified-similarity-service.js';
-import { memoryStore, memoryFind } from '../../src/services/memory-store.js';
-import { AuthScope, UserRole } from '../../src/types/auth-types.js';
-import type { KnowledgeItem } from '../../src/types/core-interfaces.js';
+import { AuthService } from '../../../src/services/auth/auth-service.js';
+import { AuthMiddleware } from '../../../src/middleware/auth-middleware.js';
+import { UnifiedSimilarityService } from '../../../src/services/similarity/unified-similarity-service.js';
+import { memoryStore, memoryFind } from '../../../src/services/memory-store.js';
+import { AuthScope, UserRole } from '../../../src/types/auth-types.js';
+import type { KnowledgeItem } from '../../../src/types/core-interfaces.js';
 
 // Mock Qdrant adapter for testing
-vi.mock('../src/db/adapters/qdrant-adapter.js', () => ({
+vi.mock('../../src/db/adapters/qdrant-adapter.js', () => ({
   QdrantAdapter: vi.fn().mockImplementation(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
     search: vi.fn().mockResolvedValue({
@@ -38,12 +38,12 @@ vi.mock('../src/db/adapters/qdrant-adapter.js', () => ({
 }));
 
 // Mock memory service
-vi.mock('../src/services/memory-find.js', () => ({
+vi.mock('../../src/services/memory-find.js', () => ({
   memoryFind: vi.fn()
 }));
 
 // Mock environment configuration
-vi.mock('../src/config/environment.js', () => ({
+vi.mock('../../src/config/environment.js', () => ({
   environment: {
     getQdrantConfig: () => ({
       url: 'http://localhost:6333',
@@ -58,7 +58,7 @@ vi.mock('../src/config/environment.js', () => ({
 }));
 
 // Mock logger
-vi.mock('../src/utils/logger.js', () => ({
+vi.mock('../../src/utils/logger.js', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),

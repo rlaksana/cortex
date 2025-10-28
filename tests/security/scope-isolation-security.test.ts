@@ -16,9 +16,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { memoryStore } from '../services/memory-store.ts';
-import { smartMemoryFind } from '../services/smart-find.ts';
-import { inferScope, type Scope } from '../utils/scope.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { smartMemoryFind } from ' '../../src/services/smart-find.js';
+import { inferScope, type Scope } from ' '../../src/utils/scope.js';
 // Prisma client removed - system now uses Qdrant + PostgreSQL architecture
 
 describe('Scope Isolation Security Tests', () => {

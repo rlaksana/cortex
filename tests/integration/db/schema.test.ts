@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestContainer } from '../helpers/testcontainers.ts';
+import { getTestContainer } from ' '../helpers/testcontainers.js';
 
 /**
  * T010: Qdrant Collection Schema validation test (RED phase)

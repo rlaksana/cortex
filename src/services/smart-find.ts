@@ -173,7 +173,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
     // Convert MemoryFindResponse to SmartFindResult format
     const smartFindResult: SmartFindResult = {
-      hits: result.results.map((resultItem: any) => ({
+      hits: (result.results || []).map((resultItem: any) => ({
         kind: resultItem.kind,
         id: resultItem.id,
         title: resultItem.data.title || resultItem.id,
@@ -319,7 +319,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
             // Convert MemoryFindResponse to SmartFindResult format
             const smartFindResult: SmartFindResult = {
-              hits: memoryFindResult.results.map((result: any) => ({
+              hits: (memoryFindResult.results || []).map((result: any) => ({
                 kind: result.kind,
                 id: result.id,
                 title: result.data.title || result.id,
@@ -411,7 +411,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
   // Convert memoryFind result to SmartFindResult format
   const smartFindResult: SmartFindResult = {
-    hits: finalResult.results.map((result: any) => ({
+    hits: (finalResult.results || []).map((result: any) => ({
       kind: result.kind,
       id: result.id,
       title: result.data.title || result.id,

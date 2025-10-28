@@ -33,8 +33,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { memoryFind } from '../../src/services/memory-find.js';
+import { memoryStore } from '../../../src/services/memory-store.js';
+import { memoryFind } from '../../../src/services/memory-find.js';
 
 const TEST_SCOPE = {
   project: 'cortex-test-comprehensive',
@@ -78,7 +78,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored[0].kind).toBe('section');
         expect(result.stored[0].status).toBe('inserted');
 
-        storedIds.section = result.stored.map(s => s.id);
+        storedIds.section = (result.stored || []).map(s => s.id);
         console.log('✅ Section stored successfully:', result.stored[0].id);
       });
 
@@ -120,7 +120,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('decision');
 
-        storedIds.decision = result.stored.map(s => s.id);
+        storedIds.decision = (result.stored || []).map(s => s.id);
         console.log('✅ Decision (ADR) stored successfully:', result.stored[0].id);
       });
 
@@ -163,7 +163,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('issue');
 
-        storedIds.issue = result.stored.map(s => s.id);
+        storedIds.issue = (result.stored || []).map(s => s.id);
         console.log('✅ Issue stored successfully:', result.stored[0].id);
       });
 
@@ -205,7 +205,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('todo');
 
-        storedIds.todo = result.stored.map(s => s.id);
+        storedIds.todo = (result.stored || []).map(s => s.id);
         console.log('✅ Todo stored successfully:', result.stored[0].id);
       });
 
@@ -259,7 +259,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('runbook');
 
-        storedIds.runbook = result.stored.map(s => s.id);
+        storedIds.runbook = (result.stored || []).map(s => s.id);
         console.log('✅ Runbook stored successfully:', result.stored[0].id);
       });
 
@@ -301,7 +301,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('change');
 
-        storedIds.change = result.stored.map(s => s.id);
+        storedIds.change = (result.stored || []).map(s => s.id);
         console.log('✅ Change stored successfully:', result.stored[0].id);
       });
 
@@ -342,7 +342,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('release_note');
 
-        storedIds.release_note = result.stored.map(s => s.id);
+        storedIds.release_note = (result.stored || []).map(s => s.id);
         console.log('✅ Release Note stored successfully:', result.stored[0].id);
       });
 
@@ -382,7 +382,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('ddl');
 
-        storedIds.ddl = result.stored.map(s => s.id);
+        storedIds.ddl = (result.stored || []).map(s => s.id);
         console.log('✅ DDL stored successfully:', result.stored[0].id);
       });
 
@@ -426,7 +426,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('pr_context');
 
-        storedIds.pr_context = result.stored.map(s => s.id);
+        storedIds.pr_context = (result.stored || []).map(s => s.id);
         console.log('✅ PR Context stored successfully:', result.stored[0].id);
       });
 
@@ -474,7 +474,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('entity');
 
-        storedIds.entity = result.stored.map(s => s.id);
+        storedIds.entity = (result.stored || []).map(s => s.id);
         console.log('✅ Entity stored successfully:', result.stored[0].id);
       });
 
@@ -539,7 +539,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('relation');
 
-        storedIds.relation = result.stored.map(s => s.id);
+        storedIds.relation = (result.stored || []).map(s => s.id);
         storedIds.service_entity = [serviceEntityId];
         console.log('✅ Relation stored successfully:', result.stored[0].id);
       });
@@ -584,7 +584,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('observation');
 
-        storedIds.observation = result.stored.map(s => s.id);
+        storedIds.observation = (result.stored || []).map(s => s.id);
         console.log('✅ Observation stored successfully:', result.stored[0].id);
       });
 
@@ -659,7 +659,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('incident');
 
-        storedIds.incident = result.stored.map(s => s.id);
+        storedIds.incident = (result.stored || []).map(s => s.id);
         console.log('✅ Incident stored successfully:', result.stored[0].id);
       });
 
@@ -707,7 +707,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('release');
 
-        storedIds.release = result.stored.map(s => s.id);
+        storedIds.release = (result.stored || []).map(s => s.id);
         console.log('✅ Release stored successfully:', result.stored[0].id);
       });
 
@@ -759,7 +759,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('risk');
 
-        storedIds.risk = result.stored.map(s => s.id);
+        storedIds.risk = (result.stored || []).map(s => s.id);
         console.log('✅ Risk stored successfully:', result.stored[0].id);
       });
 
@@ -811,7 +811,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
         expect(result.stored).toHaveLength(1);
         expect(result.stored[0].kind).toBe('assumption');
 
-        storedIds.assumption = result.stored.map(s => s.id);
+        storedIds.assumption = (result.stored || []).map(s => s.id);
         console.log('✅ Assumption stored successfully:', result.stored[0].id);
       });
 
@@ -845,7 +845,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
       expect(result.hits.length).toBeGreaterThan(10);
 
       // Verify we have hits from multiple knowledge types
-      const knowledgeTypesFound = new Set(result.hits.map(h => h.kind));
+      const knowledgeTypesFound = new Set((result.hits || []).map(h => h.kind));
       console.log('🔍 Found knowledge types in comprehensive search:', Array.from(knowledgeTypesFound));
 
       // Should include at least section, decision, issue, todo, incident, release, risk, assumption
@@ -988,7 +988,7 @@ describe('COMPREHENSIVE CORTEX MCP KNOWLEDGE MANAGEMENT TEST SUITE', () => {
       expect(result.stored).toHaveLength(3);
       expect(result.autonomous_context.action_performed).toBe('batch');
 
-      const storedKinds = result.stored.map(s => s.kind).sort();
+      const storedKinds = (result.stored || []).map(s => s.kind).sort();
       const expectedKinds = ['observation', 'section', 'todo'].sort();
       expect(storedKinds).toEqual(expectedKinds);
 

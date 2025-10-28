@@ -31,10 +31,10 @@ import {
   type KnowledgeItem,
   type SectionItem,
   type DecisionItem
-} from '../schemas/knowledge-types.ts';
-import { memoryStore } from '../services/memory-store.ts';
-import { memoryFind } from '../services/memory-find.ts';
-import { softDelete } from '../services/delete-operations.ts';
+} from ' '../../src/schemas/knowledge-types.js';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { memoryFind } from ' '../../src/services/memory-find.js';
+import { softDelete } from ' '../../src/services/delete-operations.js';
 
 describe('Schema Integration Tests - All 16 Knowledge Types', () => {
   const baseScope = {

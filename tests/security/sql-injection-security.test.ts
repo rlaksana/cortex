@@ -18,11 +18,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { qdrantConnectionManager } from '../../src/db/pool.js';
-import { memoryStore } from '../../src/services/memory-store.js';
-import { smartMemoryFind } from '../../src/services/smart-find.js';
-import { sanitizeFilter } from '../../src/utils/filter-sanitizer.js';
-import { logger } from '../../src/utils/logger.js';
+import { qdrantConnectionManager } from '../../../src/db/pool.js';
+import { memoryStore } from '../../../src/services/memory-store.js';
+import { smartMemoryFind } from '../../../src/services/smart-find.js';
+import { sanitizeFilter } from '../../../src/utils/filter-sanitizer.js';
+import { logger } from '../../../src/utils/logger.js';
 
 // Mock Qdrant client for security testing
 const createMockQdrantClient = () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 // PostgreSQL import removed - now using Qdrant;
-import { memoryStore } from '../services/memory-store.ts';
-import { ImmutabilityViolationError } from '../utils/immutability.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { ImmutabilityViolationError } from ' '../../src/utils/immutability.js';
 
 /**
  * T089: memory.store UPDATE Functionality Test

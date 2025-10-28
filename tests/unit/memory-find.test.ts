@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { VectorDatabase } from '../../src/index';
+import { VectorDatabase } from '../../../src/index.js';
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({

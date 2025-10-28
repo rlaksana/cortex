@@ -3,14 +3,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../services/memory-store.ts';
-import { dbQdrantClient } from '../db/pool.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { dbQdrantClient } from ' '../../src/db/pool.js';
 import {
   getOutgoingRelations,
   getIncomingRelations,
   getAllRelations,
   relationExists,
-} from '../services/knowledge/relation.ts';
+} from ' '../../src/services/knowledge/relation.js';
 
 describe('Relation Storage Integration Tests', () => {
   let testDecisionId: string;

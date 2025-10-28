@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { memoryStore } from '../services/memory-store.ts';
-import { memoryFind } from '../services/memory-find.ts';
-import { dbQdrantClient } from '../db/pool.ts';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { memoryFind } from ' '../../src/services/memory-find.js';
+import { dbQdrantClient } from ' '../../src/db/pool.js';
 
 describe('Entity Storage Integration Tests', () => {
   beforeAll(async () => {

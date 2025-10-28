@@ -1,17 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { memoryFind } from '../../src/services/memory-find.js';
+import { memoryFind } from '../../../src/services/memory-find.js';
 import {
   smartMemoryFind,
   type CorrectionMetadata,
   type SmartFindResult
-} from '../../src/services/smart-find.js';
+} from '../../../src/services/smart-find.js';
 import {
   sanitizeQuery,
   type SanitizationResult
-} from '../../src/utils/query-sanitizer.js';
+} from '../../../src/utils/query-sanitizer.js';
 
 // Mock the memoryFind function
-vi.mock('../../src/services/memory-find.js');
+vi.mock('../../../src/services/memory-find.js');
 const mockedMemoryFind = memoryFind as any;
 
 describe('Smart Memory Find', () => {

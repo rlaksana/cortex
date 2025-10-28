@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { qdrantConnectionManager } from '../../src/db/pool.js';
-import { logger } from '../utils/logger.ts';
+import { qdrantConnectionManager } from '../../../src/db/pool.js';
+import { logger } from ' '../../src/utils/logger.js';
 
 describe('Database Schema Validation', () => {
   let client: typeof qdrantConnectionManager;

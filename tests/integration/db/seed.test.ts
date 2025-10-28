@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { getTestContainer } from '../helpers/testcontainers.ts';
+import { getTestContainer } from ' '../helpers/testcontainers.js';
 // PostgreSQL import removed - now using Qdrant;
-import { seedDatabase } from '../scripts/seed.ts';
+import { seedDatabase } from ' '../scripts/seed.js';
 
 /**
  * T011: Seed data test (RED phase)

@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AuthService } from '../../../src/services/auth/auth-service.ts';
-import { UserRole, AuthScope, User } from '../../../src/types/auth-types.ts';
+import { AuthService } from ' '../../../src/services/auth/auth-service.js';
+import { UserRole, AuthScope, User } from ' '../../../src/types/auth-types.js';
 
 // Mock external dependencies
 vi.mock('bcryptjs', () => ({
@@ -558,7 +558,7 @@ describe('AuthService', () => {
       expect(authService.checkRateLimit(identifier, limit, windowMs)).toBe(false);
     });
 
-    it('should reset rate limits after window expires', (done) => {
+    it('should reset rate limits after window expires', async () => {
       const identifier = 'test-user';
       const limit = 1;
       const windowMs = 10; // 10ms
@@ -570,10 +570,8 @@ describe('AuthService', () => {
       expect(authService.checkRateLimit(identifier, limit, windowMs)).toBe(false);
 
       // Wait for window to reset
-      setTimeout(() => {
-        expect(authService.checkRateLimit(identifier, limit, windowMs)).toBe(true);
-        done();
-      }, 20);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      expect(authService.checkRateLimit(identifier, limit, windowMs)).toBe(true);
     });
   });
 

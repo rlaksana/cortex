@@ -26,6 +26,8 @@ import type {
   DatabaseType,
   DatabaseAdapters,
   AdapterCapabilities,
+} from '../interfaces/database-factory.interface';
+import {
   DatabaseFactoryError,
   ConfigurationError,
   AdapterCreationError,
@@ -192,10 +194,9 @@ export class DatabaseFactory implements IDatabaseFactory {
       logger.debug({ type }, 'Testing database connection');
 
       switch (type) {
-        case 'qdrant': {
+        case 'qdrant':
           const vectorAdapter = new QdrantAdapter(config as VectorConfig);
           return await vectorAdapter.healthCheck();
-        }
 
         default:
           throw new UnsupportedDatabaseError(type);

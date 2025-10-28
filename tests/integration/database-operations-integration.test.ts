@@ -11,11 +11,11 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { QdrantAdapter } from '../../src/db/adapters/qdrant-adapter.ts';
-import { memoryStore } from '../../src/services/memory-store.ts';
-import { memoryFind } from '../../src/services/memory-find.ts';
-import { logger } from '../../src/utils/logger.ts';
-import type { KnowledgeItem, VectorConfig } from '../../src/types/core-interfaces';
+import { QdrantAdapter } from ' '../../src/db/adapters/qdrant-adapter.js';
+import { memoryStore } from ' '../../src/services/memory-store.js';
+import { memoryFind } from ' '../../src/services/memory-find.js';
+import { logger } from ' '../../src/utils/logger.js';
+import type { KnowledgeItem, VectorConfig } from '../../../src/types/core-interfaces';
 
 describe('Database Operations Integration Tests', () => {
   let qdrantAdapter: QdrantAdapter;

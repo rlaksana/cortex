@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 // PostgreSQL import removed - now using Qdrant;
-import { memoryFind } from '../services/memory-find.ts';
+import { memoryFind } from ' '../../src/services/memory-find.js';
 
 /**
  * T032: FTS Search Test

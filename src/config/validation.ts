@@ -44,7 +44,7 @@ export interface ValidationResult {
 
 export interface ValidationRule {
   name: string;
-  validator: (config: any) => ValidationError[];
+  validator: (_config: any) => ValidationError[];
   enabled: boolean;
   category: 'security' | 'performance' | 'connectivity' | 'compatibility' | 'best-practices';
 }
