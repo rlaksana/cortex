@@ -5,12 +5,12 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server';
-import { AuthService } from '../services/auth/auth-service.ts';
-import { AuthorizationService } from '../services/auth/authorization-service.ts';
-import { ApiKeyService } from '../services/auth/api-key-service.ts';
-import { AuditService } from '../services/audit/audit-service.ts';
-import { AuthMiddleware } from '../middleware/auth-middleware.ts';
-import { UserRole, AuthScope } from '../types/auth-types.ts';
+import { AuthService } from '../../src/services/auth/auth-service.ts';
+import { AuthorizationService } from '../../src/services/auth/authorization-service.ts';
+import { ApiKeyService } from '../../src/services/auth/api-key-service.ts';
+import { AuditService } from '../../src/services/audit/query.ts';
+import { AuthMiddleware } from '../../src/middleware/auth-middleware.ts';
+import { UserRole, AuthScope } from '../../src/types/auth-types.ts';
 
 describe('Authentication Integration Tests', () => {
   let authService: AuthService;

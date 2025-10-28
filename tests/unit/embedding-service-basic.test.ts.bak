@@ -8,21 +8,16 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { EmbeddingService } from '../../../src/services/embeddings/embedding-service.js';
 
-// Mock OpenAI - define the mock inline to avoid hoisting issues
-vi.mock('openai', () => {
-  const mockCreate = vi.fn();
-  class MockOpenAI {
-    embeddings = {
-      create: mockCreate,
-    };
-    constructor() {}
-  }
-  return {
-    OpenAI: MockOpenAI,
-    __mockCreate: mockCreate, // Export for test access
-  };
-});
+// Mock OpenAI at the top level with proper factory function
+vi.mock('openai', () => ({
+  OpenAI: vi.fn().mockImplementation(() => ({
+    embeddings: {
+      create: vi.fn()
+    }
+  }))
+}));
 
 // Mock dependencies
 vi.mock('../../../src/utils/logger.js', () => ({
@@ -30,19 +25,13 @@ vi.mock('../../../src/utils/logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn(),
-  },
+    debug: vi.fn()
+  }
 }));
-
-// Import after mocking
-import { EmbeddingService } from '../../../src/services/embeddings/embedding-service.js';
-
-// Get the mock function
-const mockOpenAIModule = await import('openai');
-const mockCreate = mockOpenAIModule.__mockCreate as any;
 
 describe('EmbeddingService (Basic)', () => {
   let embeddingService: any;
+  let mockOpenAI: any;
 
   const sampleEmbedding = Array.from({ length: 1536 }, () => Math.random() - 0.5);
 
@@ -50,8 +39,12 @@ describe('EmbeddingService (Basic)', () => {
     // Create fresh service instance
     embeddingService = new EmbeddingService({
       apiKey: 'test-key',
-      cacheEnabled: true,
+      cacheEnabled: true
     });
+
+    // Get reference to mocked OpenAI instance
+    const { OpenAI } = await import('openai');
+    mockOpenAI = OpenAI();
 
     // Clear all mock history
     vi.clearAllMocks();
@@ -65,6 +58,7 @@ describe('EmbeddingService (Basic)', () => {
 
   describe('Basic Functionality', () => {
     it('should create instance with default configuration', () => {
+      embeddingService = new EmbeddingService(
       const service = new EmbeddingService();
 
       expect(service).toBeDefined();
@@ -74,34 +68,35 @@ describe('EmbeddingService (Basic)', () => {
     it('should handle simple text embedding', async () => {
       const mockResponse = {
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 5 },
+        usage: { total_tokens: 5 }
       };
-      mockCreate.mockResolvedValue(mockResponse);
+      mockOpenAI.embeddings.create.mockResolvedValue(mockResponse);
 
       const result = await embeddingService.generateEmbedding('Hello world');
 
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockOpenAI.embeddings.create).toHaveBeenCalledWith({
         model: expect.any(String),
-        input: 'Hello world',
+        input: 'Hello world'
       });
-      expect(result.vector).toEqual(sampleEmbedding);
-      expect(typeof result.text).toBe('undefined'); // New interface doesn't include text
+      expect(result.embedding).toEqual(sampleEmbedding);
+      expect(result.text).toBe('Hello world');
     });
 
     it('should handle empty string', async () => {
       const mockResponse = {
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 1 },
+        usage: { total_tokens: 1 }
       };
-      mockCreate.mockResolvedValue(mockResponse);
+      mockOpenAI.embeddings.create.mockResolvedValue(mockResponse);
 
       const result = await embeddingService.generateEmbedding('');
 
-      expect(result.vector).toEqual(sampleEmbedding);
+      expect(result.embedding).toEqual(sampleEmbedding);
+      expect(result.text).toBe('');
     });
 
     it('should handle API errors gracefully', async () => {
-      mockCreate.mockRejectedValue(new Error('API Error'));
+      mockOpenAI.embeddings.create.mockRejectedValue(new Error('API Error'));
 
       await expect(embeddingService.generateEmbedding('test')).rejects.toThrow('API Error');
     });
@@ -109,49 +104,52 @@ describe('EmbeddingService (Basic)', () => {
     it('should use caching for identical requests', async () => {
       const mockResponse = {
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 5 },
+        usage: { total_tokens: 5 }
       };
-      mockCreate.mockResolvedValue(mockResponse);
+      mockOpenAI.embeddings.create.mockResolvedValue(mockResponse);
 
       // First call
       await embeddingService.generateEmbedding('test text');
-      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.embeddings.create).toHaveBeenCalledTimes(1);
 
       // Second call should use cache
       await embeddingService.generateEmbedding('test text');
-      expect(mockCreate).toHaveBeenCalledTimes(1); // Still called once
+      expect(mockOpenAI.embeddings.create).toHaveBeenCalledTimes(1); // Still called once
     });
 
     it('should handle batch requests', async () => {
       const mockResponse = {
-        data: [{ embedding: sampleEmbedding }, { embedding: sampleEmbedding.map((x) => x + 0.1) }],
-        usage: { total_tokens: 10 },
+        data: [
+          { embedding: sampleEmbedding },
+          { embedding: sampleEmbedding.map(x => x + 0.1) }
+        ],
+        usage: { total_tokens: 10 }
       };
-      mockCreate.mockResolvedValue(mockResponse);
+      mockOpenAI.embeddings.create.mockResolvedValue(mockResponse);
 
       const result = await embeddingService.generateBatchEmbeddings({
-        texts: ['Text 1', 'Text 2'],
+        texts: ['Text 1', 'Text 2']
       });
 
       expect(result).toHaveLength(2);
-      expect(result[0].vector).toEqual(sampleEmbedding);
-      expect(result[1].vector).toEqual(sampleEmbedding.map((x) => x + 0.1));
+      expect(result[0].text).toBe('Text 1');
+      expect(result[1].text).toBe('Text 2');
     });
 
     it('should handle health check', async () => {
-      mockCreate.mockResolvedValue({
+      mockOpenAI.embeddings.create.mockResolvedValue({
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 1 },
+        usage: { total_tokens: 1 }
       });
 
       const isHealthy = await embeddingService.healthCheck();
 
       expect(isHealthy).toBe(true);
-      expect(mockCreate).toHaveBeenCalledTimes(1);
+      expect(mockOpenAI.embeddings.create).toHaveBeenCalledTimes(1);
     });
 
     it('should handle health check failure', async () => {
-      mockCreate.mockRejectedValue(new Error('Service down'));
+      mockOpenAI.embeddings.create.mockRejectedValue(new Error('Service down'));
 
       const isHealthy = await embeddingService.healthCheck();
 
@@ -161,44 +159,47 @@ describe('EmbeddingService (Basic)', () => {
 
   describe('Configuration', () => {
     it('should accept custom configuration', () => {
+      embeddingService = new EmbeddingService(
       const customService = new EmbeddingService({
         apiKey: 'custom-key',
         model: 'text-embedding-3-small',
-        cacheEnabled: false,
+        cacheEnabled: false
       });
 
       expect(customService).toBeDefined();
     });
 
     it('should handle cache disabled', async () => {
+      embeddingService = new EmbeddingService(
       const noCacheService = new EmbeddingService({ cacheEnabled: false });
 
-      // Mock response
-      const mockResponse = {
+      // Mock OpenAI for this service
+      const { OpenAI } = await import('openai');
+      const mockOpenAINoCache = OpenAI();
+      mockOpenAINoCache.embeddings.create.mockResolvedValue({
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 5 },
-      };
-      mockCreate.mockResolvedValue(mockResponse);
+        usage: { total_tokens: 5 }
+      });
 
       // Both calls should hit the API
       await noCacheService.generateEmbedding('test');
       await noCacheService.generateEmbedding('test');
 
-      expect(mockCreate).toHaveBeenCalledTimes(2);
+      expect(mockOpenAINoCache.embeddings.create).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('Error Handling', () => {
     it('should handle network timeouts', async () => {
-      mockCreate.mockRejectedValue(new Error('Request timeout'));
+      mockOpenAI.embeddings.create.mockRejectedValue(new Error('Request timeout'));
 
       await expect(embeddingService.generateEmbedding('test')).rejects.toThrow('Request timeout');
     });
 
     it('should handle invalid responses', async () => {
-      mockCreate.mockResolvedValue({
+      mockOpenAI.embeddings.create.mockResolvedValue({
         data: [], // Empty data - invalid
-        usage: { total_tokens: 0 },
+        usage: { total_tokens: 0 }
       });
 
       await expect(embeddingService.generateEmbedding('test')).rejects.toThrow();
@@ -213,26 +214,28 @@ describe('EmbeddingService (Basic)', () => {
   describe('Edge Cases', () => {
     it('should handle very long text', async () => {
       const longText = 'a'.repeat(1000);
-      mockCreate.mockResolvedValue({
+      mockOpenAI.embeddings.create.mockResolvedValue({
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 250 },
+        usage: { total_tokens: 250 }
       });
 
       const result = await embeddingService.generateEmbedding(longText);
 
-      expect(result.vector).toEqual(sampleEmbedding);
+      expect(result.text).toBe(longText);
+      expect(result.embedding).toEqual(sampleEmbedding);
     });
 
     it('should handle special characters', async () => {
       const unicodeText = 'Hello 世界 🌍 ñáéíóú';
-      mockCreate.mockResolvedValue({
+      mockOpenAI.embeddings.create.mockResolvedValue({
         data: [{ embedding: sampleEmbedding }],
-        usage: { total_tokens: 10 },
+        usage: { total_tokens: 10 }
       });
 
       const result = await embeddingService.generateEmbedding(unicodeText);
 
-      expect(result.vector).toEqual(sampleEmbedding);
+      expect(result.text).toBe(unicodeText);
+      expect(result.embedding).toEqual(sampleEmbedding);
     });
   });
 });

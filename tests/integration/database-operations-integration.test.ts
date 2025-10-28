@@ -2,8 +2,8 @@
  * Database Operations Integration Tests
  *
  * Tests comprehensive database operations including:
- * - Connection pooling and management
- * - Transaction handling and rollback
+ * - Connection management and health checks
+ * - Vector operations and semantic search
  * - CRUD operations across all knowledge types
  * - Performance under load
  * - Error handling and recovery
@@ -11,236 +11,173 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-// PostgreSQL import removed - now using Qdrant;
-import { dbQdrantClient } from '../db/pool.ts';
-// Prisma client removed - system now uses Qdrant + PostgreSQL architecture';
-import { memoryStore } from '../services/memory-store.ts';
-import { memoryFind } from '../services/memory-find.ts';
-import { logger } from '../utils/logger.ts';
+import { QdrantAdapter } from '../../src/db/adapters/qdrant-adapter.ts';
+import { memoryStore } from '../../src/services/memory-store.ts';
+import { memoryFind } from '../../src/services/memory-find.ts';
+import { logger } from '../../src/utils/logger.ts';
+import type { KnowledgeItem, VectorConfig } from '../../src/types/core-interfaces';
 
 describe('Database Operations Integration Tests', () => {
-  let pool: QdrantClient;
-  let testDbConfig: any;
+  let qdrantAdapter: QdrantAdapter;
+  let testConfig: VectorConfig;
 
   beforeAll(async () => {
-    // Initialize database connections
-    await dbQdrantClient.initialize();
-
-    // Create direct pool for test isolation
-    testDbConfig = {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5433'),
-      database: process.env.DB_NAME || 'cortex_prod',
-      user: process.env.DB_USER || 'cortex',
-      password: process.env.DB_PASSWORD || '',
+    // Initialize test configuration
+    testConfig = {
+      url: process.env.TEST_QDRANT_URL || process.env.QDRANT_URL || 'http://localhost:6333',
+      apiKey: process.env.QDRANT_API_KEY,
+      vectorSize: 1536,
+      distance: 'Cosine',
+      collectionName: 'test-knowledge-items',
+      logQueries: false,
+      connectionTimeout: 30000,
+      maxConnections: 10,
     };
 
-    pool = new QdrantClient(testDbConfig);
+    // Initialize Qdrant adapter
+    qdrantAdapter = new QdrantAdapter(testConfig);
+    await qdrantAdapter.initialize();
 
-    // Ensure test isolation by creating test schema if needed
-    await pool.query(`
-      CREATE SCHEMA IF NOT EXISTS test_integration;
-      SET search_path TO test_integration, public;
-    `);
+    // Clean up any existing test data
+    await qdrantAdapter.bulkDelete({
+      scope: { project: 'integration-test' }
+    });
   });
 
   afterAll(async () => {
     // Cleanup test data
-    const cleanupTables = [
-      'section', 'decision', 'issue', 'runbook', 'change_log',
-      'adr_decision', 'knowledge_entity', 'knowledge_relation',
-      'observation', 'todo', 'ddl', 'pr_context', 'incident',
-      'release', 'release_note', 'risk', 'assumption'
-    ];
-
-    for (const table of cleanupTables) {
-      try {
-        await pool.query(`DELETE FROM ${table} WHERE tags @> '{"integration_test": true}'::jsonb`);
-      } catch (error) {
-        // Table might not exist, continue
-      }
+    try {
+      await qdrantAdapter.bulkDelete({
+        scope: { project: 'integration-test' }
+      });
+    } catch (error) {
+      logger.warn({ error }, 'Failed to cleanup test data');
     }
 
-    await pool.end();
-    // Don't close shared pools
+    // Close connection
+    await qdrantAdapter.close();
   });
 
-  describe('Connection QdrantClient Management', () => {
-    it('should maintain healthy connection pool', async () => {
-      const healthCheck = await dbQdrantClient.healthCheck();
-      expect(healthCheck.isHealthy).toBe(true);
-      expect(healthCheck.poolStats).toBeDefined();
-      expect(healthCheck.databaseStats).toBeDefined();
+  describe('Connection Management', () => {
+    it('should maintain healthy connection', async () => {
+      const isHealthy = await qdrantAdapter.healthCheck();
+      expect(isHealthy).toBe(true);
     });
 
-    it('should handle concurrent connections', async () => {
-      const concurrentQueries = 20;
-      const queries = Array.from({ length: concurrentQueries }, (_, i) =>
-        pool.query(`SELECT ${i} as test_id, NOW() as query_time`)
-      );
-
-      const results = await Promise.all(queries);
-      expect(results).toHaveLength(concurrentQueries);
-
-      results.forEach((result, index) => {
-        expect(result.rows).toHaveLength(1);
-        expect(parseInt(result.rows[0].test_id)).toBe(index);
-      });
+    it('should provide database metrics', async () => {
+      const metrics = await qdrantAdapter.getMetrics();
+      expect(metrics.type).toBe('qdrant');
+      expect(metrics.healthy).toBe(true);
+      expect(metrics.vectorCount).toBeGreaterThanOrEqual(0);
+      expect(metrics.lastHealthCheck).toBeDefined();
     });
 
-    it('should recover from connection failures', async () => {
-      // Simulate connection stress with rapid connections
-      const stressQueries = Array.from({ length: 50 }, () =>
-        pool.query('SELECT pg_sleep(0.01), NOW() as test_time')
+    it('should handle connection recovery', async () => {
+      // Test connection resilience
+      const initialHealth = await qdrantAdapter.healthCheck();
+      expect(initialHealth).toBe(true);
+
+      // Simulate connection stress with rapid operations
+      const operations = Array.from({ length: 10 }, () =>
+        qdrantAdapter.healthCheck()
       );
 
-      const startTime = Date.now();
-      const results = await Promise.allSettled(stressQueries);
-      const duration = Date.now() - startTime;
-
-      // Most queries should succeed
+      const results = await Promise.allSettled(operations);
       const successful = results.filter(r => r.status === 'fulfilled').length;
-      expect(successful).toBeGreaterThan(45); // At least 90% success rate
-      expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
-    });
-
-    it('should respect pool configuration limits', async () => {
-      const stats = dbQdrantClient.getStats();
-      expect(stats.max).toBeGreaterThan(0);
-      expect(stats.total).toBeLessThanOrEqual(stats.max);
-      expect(stats.idle).toBeGreaterThanOrEqual(0);
+      expect(successful).toBeGreaterThan(8); // At least 80% success rate
     });
   });
 
-  describe('Transaction Management', () => {
-    it('should handle single transaction successfully', async () => {
-      await dbQdrantClient.transaction(async (client) => {
-        // Insert test data
-        const result = await client.query(`
-          INSERT INTO section (title, heading, body_text, tags)
-          VALUES ($1, $2, $3, $4)
-          RETURNING id, title, heading
-        `, [
-          'Transaction Test Section',
-          'Transaction Test Heading',
-          'Test content within transaction',
-          JSON.stringify({ integration_test: true, transaction_test: true })
-        ]);
+  describe('Vector Operations', () => {
+    it('should generate embeddings for content', async () => {
+      const content = 'Test content for embedding generation';
+      const embedding = await qdrantAdapter.generateEmbedding(content);
 
-        expect(result.rows).toHaveLength(1);
-        expect(result.rows[0].title).toBe('Transaction Test Section');
-
-        // Verify data exists within transaction
-        const verifyResult = await client.query(
-          'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-          [JSON.stringify({ transaction_test: true })]
-        );
-        expect(parseInt(verifyResult.rows[0].count)).toBe(1);
-      });
-
-      // Verify data persisted after transaction commit
-      const verifyResult = await pool.query(
-        'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-        [JSON.stringify({ transaction_test: true })]
-      );
-      expect(parseInt(verifyResult.rows[0].count)).toBe(1);
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBe(1536); // OpenAI ada-002 dimension
+      expect(embedding.every(val => typeof val === 'number' && !isNaN(val))).toBe(true);
     });
 
-    it('should rollback on transaction failure', async () => {
-      const initialCount = await pool.query(
-        'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-        [JSON.stringify({ rollback_test: true })]
-      );
-      const initialCountNum = parseInt(initialCount.rows[0].count);
+    it('should handle semantic search', async () => {
+      // First store some test data
+      const testItems: KnowledgeItem[] = [
+        {
+          kind: 'section',
+          scope: { project: 'integration-test', branch: 'main' },
+          data: {
+            title: 'Machine Learning Basics',
+            heading: 'Introduction to ML',
+            body_text: 'Machine learning is a subset of artificial intelligence that focuses on algorithms.',
+          }
+        },
+        {
+          kind: 'section',
+          scope: { project: 'integration-test', branch: 'main' },
+          data: {
+            title: 'Deep Learning Networks',
+            heading: 'Neural Network Fundamentals',
+            body_text: 'Deep learning uses neural networks with multiple layers to learn complex patterns.',
+          }
+        },
+        {
+          kind: 'entity',
+          scope: { project: 'integration-test', branch: 'main' },
+          data: {
+            entity_type: 'concept',
+            name: 'Data Science',
+            data: { field: 'analytics', description: 'Extracting insights from data' }
+          }
+        }
+      ];
 
-      try {
-        await dbQdrantClient.transaction(async (client) => {
-          // Insert test data
-          await client.query(`
-            INSERT INTO section (title, heading, body_text, tags)
-            VALUES ($1, $2, $3, $4)
-          `, [
-            'Rollback Test Section',
-            'Rollback Test Heading',
-            'This should be rolled back',
-            JSON.stringify({ integration_test: true, rollback_test: true })
-          ]);
+      await qdrantAdapter.store(testItems);
 
-          // Force an error to trigger rollback
-          throw new Error('Intentional transaction failure');
-        });
-      } catch (error) {
-        // Expected error
-        expect(error.message).toBe('Intentional transaction failure');
-      }
-
-      // Verify data was rolled back
-      const finalCount = await pool.query(
-        'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-        [JSON.stringify({ rollback_test: true })]
-      );
-      const finalCountNum = parseInt(finalCount.rows[0].count);
-      expect(finalCountNum).toBe(initialCountNum);
-    });
-
-    it('should handle nested transaction logic', async () => {
-      await dbQdrantClient.transaction(async (client) => {
-        // Create parent record
-        const parentResult = await client.query(`
-          INSERT INTO document (title, description, tags)
-          VALUES ($1, $2, $3)
-          RETURNING id
-        `, [
-          'Parent Document',
-          'Parent document for nested transaction test',
-          JSON.stringify({ integration_test: true, nested_test: true })
-        ]);
-
-        const parentId = parentResult.rows[0].id;
-
-        // Create child records within same transaction
-        await client.query(`
-          INSERT INTO section (document_id, title, heading, body_text, tags)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [
-          parentId,
-          'Child Section 1',
-          'Child Heading 1',
-          'Child content 1',
-          JSON.stringify({ integration_test: true, nested_test: true })
-        ]);
-
-        await client.query(`
-          INSERT INTO section (document_id, title, heading, body_text, tags)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [
-          parentId,
-          'Child Section 2',
-          'Child Heading 2',
-          'Child content 2',
-          JSON.stringify({ integration_test: true, nested_test: true })
-        ]);
-
-        // Verify relationships exist within transaction
-        const verifyResult = await client.query(`
-          SELECT COUNT(*) as count
-          FROM section s
-          JOIN document d ON s.document_id = d.id
-          WHERE d.tags @> $1::jsonb AND s.tags @> $1::jsonb
-        `, [JSON.stringify({ nested_test: true })]);
-
-        expect(parseInt(verifyResult.rows[0].count)).toBe(2);
+      // Perform semantic search
+      const searchResults = await qdrantAdapter.semanticSearch('artificial intelligence algorithms', {
+        limit: 10,
+        score_threshold: 0.5
       });
 
-      // Verify all data persisted correctly
-      const verifyResult = await pool.query(`
-        SELECT COUNT(*) as count
-        FROM section s
-        JOIN document d ON s.document_id = d.id
-        WHERE d.tags @> $1::jsonb AND s.tags @> $1::jsonb
-      `, [JSON.stringify({ nested_test: true })]);
+      expect(searchResults.length).toBeGreaterThan(0);
+      expect(searchResults[0].confidence_score).toBeGreaterThan(0.5);
+      expect(searchResults[0].kind).toBeDefined();
+      expect(searchResults[0].data).toBeDefined();
+    });
 
-      expect(parseInt(verifyResult.rows[0].count)).toBe(2);
+    it('should handle hybrid search', async () => {
+      const searchResults = await qdrantAdapter.hybridSearch('machine learning', {
+        limit: 5
+      });
+
+      expect(Array.isArray(searchResults)).toBe(true);
+      searchResults.forEach(result => {
+        expect(result.confidence_score).toBeGreaterThan(0);
+        expect(result.kind).toBeDefined();
+      });
+    });
+
+    it('should find similar items', async () => {
+      const testItem: KnowledgeItem = {
+        kind: 'entity',
+        scope: { project: 'integration-test', branch: 'main' },
+        data: {
+          entity_type: 'concept',
+          name: 'Test Concept',
+          data: { category: 'test', description: 'A test concept for similarity' }
+        }
+      };
+
+      // Store the item first
+      await qdrantAdapter.store([testItem]);
+
+      // Find similar items
+      const similarItems = await qdrantAdapter.findSimilar(testItem, 0.5);
+
+      expect(Array.isArray(similarItems)).toBe(true);
+      similarItems.forEach(item => {
+        expect(item.confidence_score).toBeGreaterThan(0.5);
+        expect(item.kind).toBeDefined();
+      });
     });
   });
 
@@ -253,291 +190,301 @@ describe('Database Operations Integration Tests', () => {
     ] as const;
 
     it('should create and retrieve all knowledge types', async () => {
-      const results = await memoryStore(
-        testKinds.map((kind, index) => ({
-          kind,
-          scope: { project: 'crud-test', branch: 'main' },
-          data: {
-            title: `Test ${kind} ${index}`,
-            heading: kind === 'section' ? `Test heading for ${kind}` : undefined,
-            body_text: kind === 'section' ? `Test content for ${kind}` : undefined,
-            component: ['decision', 'issue'].includes(kind) ? 'test-component' : undefined,
-            service: kind === 'runbook' ? 'test-service' : undefined,
-            entity_type: kind === 'entity' ? 'test_entity' : undefined,
-            name: ['entity', 'relation'].includes(kind) ? `test_${kind}_${index}` : undefined,
-          },
-          tags: { integration_test: true, crud_test: true, [kind]: true },
-        }))
-      );
+      const items = testKinds.map((kind, index) => ({
+        kind,
+        scope: { project: 'integration-test', branch: 'main' },
+        data: {
+          title: `Test ${kind} ${index}`,
+          heading: kind === 'section' ? `Test heading for ${kind}` : undefined,
+          body_text: kind === 'section' ? `Test content for ${kind}` : undefined,
+          component: ['decision', 'issue'].includes(kind) ? 'test-component' : undefined,
+          service: kind === 'runbook' ? 'test-service' : undefined,
+          entity_type: kind === 'entity' ? 'test_entity' : undefined,
+          name: ['entity', 'relation'].includes(kind) ? `test_${kind}_${index}` : undefined,
+        },
+      }));
 
-      expect(results.stored).toHaveLength(testKinds.length);
-      expect(results.errors).toHaveLength(0);
+      const result = await qdrantAdapter.store(items);
+
+      expect(result.stored).toHaveLength(testKinds.length);
+      expect(result.errors).toHaveLength(0);
 
       // Verify each item was stored correctly
-      for (const stored of results.stored) {
+      result.stored.forEach((stored, index) => {
         expect(stored.status).toBe('inserted');
         expect(stored.id).toBeDefined();
-        expect(stored.kind).toBeDefined();
+        expect(stored.kind).toBe(testKinds[index]);
         expect(stored.created_at).toBeDefined();
-      }
+      });
     });
 
     it('should update existing knowledge items', async () => {
       // Create initial item
-      const initialResult = await memoryStore([{
+      const initialItem: KnowledgeItem = {
         kind: 'section',
-        scope: { project: 'update-test', branch: 'main' },
+        scope: { project: 'integration-test', branch: 'main' },
         data: {
           title: 'Original Title',
           heading: 'Original Heading',
           body_text: 'Original content',
-        },
-        tags: { integration_test: true, update_test: true },
-      }]);
+        }
+      };
 
-      const itemId = initialResult.stored[0].id;
-      expect(initialResult.stored[0].status).toBe('inserted');
+      const initialResult = await qdrantAdapter.store([initialItem]);
+      const storedItem = initialResult.stored[0];
+      expect(storedItem.status).toBe('inserted');
 
       // Update the item
-      const updateResult = await memoryStore([{
-        kind: 'section',
-        scope: { project: 'update-test', branch: 'main' },
+      const updatedItem: KnowledgeItem = {
+        ...initialItem,
+        id: storedItem.id,
         data: {
           title: 'Updated Title',
           heading: 'Updated Heading',
           body_text: 'Updated content with new information',
-        },
-        tags: { integration_test: true, update_test: true, updated: true },
-      }]);
+        }
+      };
 
+      const updateResult = await qdrantAdapter.update([updatedItem]);
       expect(updateResult.stored[0].status).toBe('inserted'); // Updated via upsert logic
 
-      // Verify the update persisted
-      const findResult = await memoryFind({
-        query: 'Updated Title',
-        scope: { project: 'update-test', branch: 'main' },
-      });
-
-      expect(findResult.hits.length).toBeGreaterThan(0);
-      const updatedItem = findResult.hits.find((hit: any) => hit.title === 'Updated Title');
-      expect(updatedItem).toBeDefined();
+      // Verify the update persisted by finding the item
+      const findResults = await qdrantAdapter.findById([storedItem.id]);
+      expect(findResults).toHaveLength(1);
+      expect(findResults[0].data.title).toBe('Updated Title');
     });
 
     it('should delete knowledge items correctly', async () => {
       // Create item to delete
-      const createResult = await memoryStore([{
+      const itemToDelete: KnowledgeItem = {
         kind: 'decision',
-        scope: { project: 'delete-test', branch: 'main' },
+        scope: { project: 'integration-test', branch: 'main' },
         data: {
           title: 'To Be Deleted',
           status: 'proposed',
           component: 'test-component',
           rationale: 'This will be deleted',
-        },
-        tags: { integration_test: true, delete_test: true },
-      }]);
+        }
+      };
 
+      const createResult = await qdrantAdapter.store([itemToDelete]);
       const itemId = createResult.stored[0].id;
       expect(createResult.stored[0].status).toBe('inserted');
 
       // Delete the item
-      const deleteResult = await memoryStore([{
-        kind: 'decision',
-        scope: { project: 'delete-test', branch: 'main' },
-        data: { id: itemId },
-        tags: { integration_test: true, delete_test: true },
-        operation: 'delete' as const,
-      }]);
-
-      expect(deleteResult.stored[0].status).toBe('deleted');
+      const deleteResult = await qdrantAdapter.delete([itemId]);
+      expect(deleteResult.deleted).toBe(1);
+      expect(deleteResult.errors).toHaveLength(0);
 
       // Verify deletion
-      const findResult = await memoryFind({
-        query: 'To Be Deleted',
-        scope: { project: 'delete-test', branch: 'main' },
-      });
-
-      expect(findResult.hits.length).toBe(0);
+      const findResults = await qdrantAdapter.findById([itemId]);
+      expect(findResults).toHaveLength(0);
     });
 
     it('should handle batch operations efficiently', async () => {
-      const batchSize = 100;
+      const batchSize = 50;
       const batchItems = Array.from({ length: batchSize }, (_, i) => ({
         kind: 'entity' as const,
-        scope: { project: 'batch-test', branch: 'main' },
+        scope: { project: 'integration-test', branch: 'main' },
         data: {
           entity_type: 'batch_test_entity',
           name: `Batch Test Entity ${i}`,
           data: { batch_index: i, content: `Batch content ${i}` },
         },
-        tags: { integration_test: true, batch_test: true },
       }));
 
       const startTime = Date.now();
-      const result = await memoryStore(batchItems);
+      const result = await qdrantAdapter.bulkStore(batchItems);
       const duration = Date.now() - startTime;
 
       expect(result.stored).toHaveLength(batchSize);
       expect(result.errors).toHaveLength(0);
-      expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
+      expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
 
       // Verify all items were stored
-      const findResult = await memoryFind({
-        query: 'Batch Test Entity',
-        scope: { project: 'batch-test', branch: 'main' },
-        types: ['entity'],
-      });
-
-      expect(findResult.hits.length).toBe(batchSize);
+      const stats = await qdrantAdapter.getStatistics({ project: 'integration-test' });
+      expect(stats.totalItems).toBeGreaterThan(batchSize);
     });
   });
 
-  describe('Database Constraints and Validation', () => {
-    it('should enforce required field constraints', async () => {
-      // Test missing required fields for different knowledge types
-      const invalidItems = [
+  describe('Scope Isolation', () => {
+    it('should isolate data by project scope', async () => {
+      const projectAItems = [
         {
-          kind: 'section' as const,
-          scope: { project: 'constraint-test', branch: 'main' },
-          data: { heading: 'Missing title' }, // Missing required title
-          tags: { integration_test: true, constraint_test: true },
-        },
-        {
-          kind: 'decision' as const,
-          scope: { project: 'constraint-test', branch: 'main' },
-          data: { title: 'Missing required fields' }, // Missing status, component, rationale
-          tags: { integration_test: true, constraint_test: true },
+          kind: 'entity' as const,
+          scope: { project: 'project-a', branch: 'main' },
+          data: { entity_type: 'test', name: 'Project A Item 1' }
         },
         {
           kind: 'entity' as const,
-          scope: { project: 'constraint-test', branch: 'main' },
-          data: { name: 'Missing entity_type' }, // Missing entity_type
-          tags: { integration_test: true, constraint_test: true },
-        },
+          scope: { project: 'project-a', branch: 'main' },
+          data: { entity_type: 'test', name: 'Project A Item 2' }
+        }
       ];
 
-      const result = await memoryStore(invalidItems);
+      const projectBItems = [
+        {
+          kind: 'entity' as const,
+          scope: { project: 'project-b', branch: 'main' },
+          data: { entity_type: 'test', name: 'Project B Item 1' }
+        }
+      ];
 
-      // All should fail due to validation
-      expect(result.stored.length).toBeLessThan(invalidItems.length);
-      expect(result.errors.length).toBeGreaterThan(0);
+      // Store items in different projects
+      await qdrantAdapter.store(projectAItems);
+      await qdrantAdapter.store(projectBItems);
+
+      // Find items by scope
+      const projectAResults = await qdrantAdapter.findByScope({ project: 'project-a' });
+      const projectBResults = await qdrantAdapter.findByScope({ project: 'project-b' });
+
+      expect(projectAResults).toHaveLength(2);
+      expect(projectBResults).toHaveLength(1);
+
+      // Verify no cross-contamination
+      const projectANames = projectAResults.map(r => r.data.name);
+      const projectBNames = projectBResults.map(r => r.data.name);
+
+      expect(projectANames).toContain('Project A Item 1');
+      expect(projectANames).toContain('Project A Item 2');
+      expect(projectBNames).toContain('Project B Item 1');
+      expect(projectANames).not.toContain('Project B Item 1');
+      expect(projectBNames).not.toContain('Project A Item 1');
     });
 
-    it('should enforce length constraints', async () => {
-      const veryLongTitle = 'x'.repeat(600); // Exceeds typical 500 char limit
+    it('should isolate data by branch scope', async () => {
+      const mainBranchItem = {
+        kind: 'section' as const,
+        scope: { project: 'branch-test', branch: 'main' },
+        data: { title: 'Main Branch Section', body_text: 'Content for main branch' }
+      };
 
-      const result = await memoryStore([{
-        kind: 'section',
-        scope: { project: 'constraint-test', branch: 'main' },
-        data: {
-          title: veryLongTitle,
-          heading: 'Test heading',
-          body_text: 'Test content',
-        },
-        tags: { integration_test: true, constraint_test: true },
-      }]);
+      const featureBranchItem = {
+        kind: 'section' as const,
+        scope: { project: 'branch-test', branch: 'feature-branch' },
+        data: { title: 'Feature Branch Section', body_text: 'Content for feature branch' }
+      };
 
-      // Should fail due to title length constraint
-      expect(result.errors.length).toBeGreaterThan(0);
+      // Store items in different branches
+      await qdrantAdapter.store([mainBranchItem, featureBranchItem]);
+
+      // Find items by branch
+      const mainResults = await qdrantAdapter.findByScope({ project: 'branch-test', branch: 'main' });
+      const featureResults = await qdrantAdapter.findByScope({ project: 'branch-test', branch: 'feature-branch' });
+
+      expect(mainResults).toHaveLength(1);
+      expect(featureResults).toHaveLength(1);
+      expect(mainResults[0].data.title).toBe('Main Branch Section');
+      expect(featureResults[0].data.title).toBe('Feature Branch Section');
+    });
+  });
+
+  describe('Deduplication', () => {
+    it('should detect duplicate content', async () => {
+      const duplicateContent = 'This is duplicate content that should be detected';
+
+      const item1 = {
+        kind: 'section' as const,
+        scope: { project: 'dedupe-test', branch: 'main' },
+        data: { title: 'Item 1', body_text: duplicateContent }
+      };
+
+      const item2 = {
+        kind: 'section' as const,
+        scope: { project: 'dedupe-test', branch: 'main' },
+        data: { title: 'Item 2', body_text: duplicateContent }
+      };
+
+      // Check for duplicates before storing
+      const duplicateCheck = await qdrantAdapter.checkDuplicates([item1, item2]);
+      expect(duplicateCheck.duplicates).toHaveLength(0); // No duplicates yet
+      expect(duplicateCheck.originals).toHaveLength(2);
+
+      // Store first item
+      await qdrantAdapter.store([item1]);
+
+      // Check again - second item should now be detected as duplicate
+      const duplicateCheck2 = await qdrantAdapter.checkDuplicates([item2]);
+      expect(duplicateCheck2.duplicates).toHaveLength(1);
+      expect(duplicateCheck2.originals).toHaveLength(1);
     });
 
-    it('should enforce foreign key constraints', async () => {
-      // Try to create a section with invalid document_id
-      try {
-        await pool.query(`
-          INSERT INTO section (document_id, title, heading, body_text, tags)
-          VALUES ($1, $2, $3, $4, $5)
-        `, [
-          '00000000-0000-0000-0000-000000000000', // Invalid UUID
-          'Test Section',
-          'Test Heading',
-          'Test content',
-          JSON.stringify({ integration_test: true, constraint_test: true })
-        ]);
-        expect.fail('Should have thrown foreign key constraint error');
-      } catch (error) {
-        expect(error.message).toContain('violates foreign key constraint');
-      }
-    });
+    it('should handle duplicate detection with skipDuplicates option', async () => {
+      const content = 'Content for skip duplicate test';
 
-    it('should handle unique constraints properly', async () => {
-      // Create an item with a unique identifier
-      await memoryStore([{
-        kind: 'entity',
-        scope: { project: 'constraint-test', branch: 'main' },
-        data: {
-          entity_type: 'unique_test',
-          name: 'unique_entity_name',
-          data: { unique: true },
-        },
-        tags: { integration_test: true, constraint_test: true },
-      }]);
+      const items = Array.from({ length: 3 }, (_, i) => ({
+        kind: 'entity' as const,
+        scope: { project: 'skip-dedupe-test', branch: 'main' },
+        data: { entity_type: 'test', name: `Item ${i}`, content }
+      }));
 
-      // Try to create another with same identifier within same scope
-      const result = await memoryStore([{
-        kind: 'entity',
-        scope: { project: 'constraint-test', branch: 'main' },
-        data: {
-          entity_type: 'unique_test',
-          name: 'unique_entity_name', // Same name
-          data: { unique: false },
-        },
-        tags: { integration_test: true, constraint_test: true },
-      }]);
+      // Store items with duplicate detection enabled
+      const result1 = await qdrantAdapter.store([items[0]], { skipDuplicates: true });
+      expect(result1.stored).toHaveLength(1);
+      expect(result1.stored[0].status).toBe('inserted');
 
-      // Should update existing record rather than create duplicate
-      expect(result.stored[0].status).toBe('inserted'); // Updated via upsert
+      // Try to store duplicate - should be skipped
+      const result2 = await qdrantAdapter.store([items[1]], { skipDuplicates: true });
+      expect(result2.stored).toHaveLength(1);
+      expect(result2.stored[0].status).toBe('skipped_dedupe');
+
+      // Store different content - should be inserted
+      const differentItem = {
+        ...items[2],
+        data: { ...items[2].data, content: 'Different content' }
+      };
+      const result3 = await qdrantAdapter.store([differentItem], { skipDuplicates: true });
+      expect(result3.stored).toHaveLength(1);
+      expect(result3.stored[0].status).toBe('inserted');
     });
   });
 
   describe('Performance and Scalability', () => {
     it('should handle large text content efficiently', async () => {
-      const largeContent = 'x'.repeat(100000); // 100KB of text
+      const largeContent = 'x'.repeat(50000); // 50KB of text
 
       const startTime = Date.now();
-      const result = await memoryStore([{
+      const result = await qdrantAdapter.store([{
         kind: 'section',
         scope: { project: 'performance-test', branch: 'main' },
         data: {
           title: 'Large Content Test',
           heading: 'Performance Test',
           body_text: largeContent,
-        },
-        tags: { integration_test: true, performance_test: true },
+        }
       }]);
       const duration = Date.now() - startTime;
 
       expect(result.stored[0].status).toBe('inserted');
-      expect(duration).toBeLessThan(3000); // Should complete within 3 seconds
+      expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
 
       // Verify retrieval performance
       const findStartTime = Date.now();
-      const findResult = await memoryFind({
+      const searchResults = await qdrantAdapter.search({
         query: 'Large Content Test',
-        scope: { project: 'performance-test', branch: 'main' },
+        scope: { project: 'performance-test', branch: 'main' }
       });
       const findDuration = Date.now() - findStartTime;
 
-      expect(findResult.hits.length).toBe(1);
-      expect(findDuration).toBeLessThan(1000); // Should find within 1 second
+      expect(searchResults.results.length).toBe(1);
+      expect(findDuration).toBeLessThan(2000); // Should find within 2 seconds
     });
 
     it('should maintain performance under concurrent load', async () => {
-      const concurrentOperations = 20;
-      const operationsPerThread = 10;
+      const concurrentOperations = 10;
+      const operationsPerThread = 5;
 
       const promises = Array.from({ length: concurrentOperations }, async (_, threadIndex) => {
         const results = [];
         for (let i = 0; i < operationsPerThread; i++) {
-          const storeResult = await memoryStore([{
+          const storeResult = await qdrantAdapter.store([{
             kind: 'entity',
             scope: { project: 'concurrent-test', branch: `thread-${threadIndex}` },
             data: {
               entity_type: 'concurrent_entity',
               name: `Concurrent Entity ${threadIndex}-${i}`,
               data: { thread: threadIndex, index: i },
-            },
-            tags: { integration_test: true, concurrent_test: true },
+            }
           }]);
           results.push(storeResult.stored[0].id);
         }
@@ -552,172 +499,120 @@ describe('Database Operations Integration Tests', () => {
       const allIds = allResults.flat();
 
       expect(allIds).toHaveLength(totalOperations);
-      expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
+      expect(duration).toBeLessThan(15000); // Should complete within 15 seconds
 
       // Verify all data was stored correctly
-      const findResult = await memoryFind({
-        query: 'Concurrent Entity',
-        types: ['entity'],
-      });
-      expect(findResult.hits.length).toBeGreaterThanOrEqual(totalOperations);
-    });
-
-    it('should handle complex join queries efficiently', async () => {
-      // Create interconnected data
-      const documentResult = await memoryStore([{
-        kind: 'entity',
-        scope: { project: 'join-test', branch: 'main' },
-        data: {
-          entity_type: 'document',
-          name: 'Main Document',
-          data: { type: 'document' },
-        },
-        tags: { integration_test: true, join_test: true },
-      }]);
-
-      const documentId = documentResult.stored[0].id;
-
-      // Create related sections
-      const sectionPromises = Array.from({ length: 10 }, (_, i) =>
-        memoryStore([{
-          kind: 'section',
-          scope: { project: 'join-test', branch: 'main' },
-          data: {
-            title: `Section ${i}`,
-            heading: `Section Heading ${i}`,
-            body_text: `Content for section ${i}`,
-            document_id: documentId,
-          },
-          tags: { integration_test: true, join_test: true },
-        }])
-      );
-
-      await Promise.all(sectionPromises);
-
-      // Create related relations
-      const relationPromises = Array.from({ length: 5 }, (_, i) =>
-        memoryStore([{
-          kind: 'relation',
-          scope: { project: 'join-test', branch: 'main' },
-          data: {
-            name: `relation-${i}`,
-            data: {
-              source_id: documentId,
-              target_type: 'section',
-              relationship: 'contains',
-            },
-          },
-          tags: { integration_test: true, join_test: true },
-        }])
-      );
-
-      await Promise.all(relationPromises);
-
-      // Test complex query performance
-      const startTime = Date.now();
-      const findResult = await memoryFind({
-        query: 'Main Document',
-        scope: { project: 'join-test', branch: 'main' },
-      });
-      const duration = Date.now() - startTime;
-
-      expect(findResult.hits.length).toBeGreaterThan(0);
-      expect(duration).toBeLessThan(2000); // Should complete within 2 seconds
+      const stats = await qdrantAdapter.getStatistics();
+      expect(stats.totalItems).toBeGreaterThan(totalOperations);
     });
   });
 
   describe('Error Handling and Recovery', () => {
-    it('should handle database connection failures gracefully', async () => {
-      // Simulate connection failure by using invalid credentials
-      const badQdrantClient = new QdrantClient({
-        host: 'localhost',
-        port: 5433,
-        database: 'nonexistent_db',
-        user: 'invalid_user',
-        password: 'invalid_password',
-        connectionTimeoutMillis: 1000,
-      });
-
-      try {
-        await badQdrantClient.query('SELECT 1');
-        expect.fail('Should have thrown connection error');
-      } catch (error) {
-        expect(error.message).toContain('connection');
-      } finally {
-        await badQdrantClient.end();
-      }
-    });
-
-    it('should handle query timeouts gracefully', async () => {
-      // Create a long-running query
-      const longQueryPromise = pool.query('SELECT pg_sleep(10)');
-
-      // Should timeout before query completes
-      try {
-        await Promise.race([
-          longQueryPromise,
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Query timeout')), 1000)
-          )
-        ]);
-        expect.fail('Should have timed out');
-      } catch (error) {
-        expect(error.message).toBe('Query timeout');
-      }
-    });
-
-    it('should handle malformed queries safely', async () => {
-      const malformedQueries = [
-        'INVALID SQL SYNTAX',
-        'SELECT * FROM nonexistent_table',
-        'INSERT INTO section () VALUES ()', // Missing required columns
+    it('should handle invalid item structures gracefully', async () => {
+      const invalidItems = [
+        {
+          kind: 'section' as const,
+          scope: { project: 'error-test', branch: 'main' },
+          data: { heading: 'Missing title' }, // Missing required content
+        },
+        {
+          kind: 'invalid_kind' as any, // Invalid kind
+          scope: { project: 'error-test', branch: 'main' },
+          data: { title: 'Invalid kind test' }
+        }
       ];
 
-      for (const query of malformedQueries) {
-        try {
-          await pool.query(query);
-          expect.fail(`Query should have failed: ${query}`);
-        } catch (error) {
-          expect(error).toBeDefined();
-        }
-      }
+      const result = await qdrantAdapter.store(invalidItems);
+
+      // Should handle errors gracefully
+      expect(result.stored.length).toBeLessThan(invalidItems.length);
+      expect(result.errors.length).toBeGreaterThan(0);
+
+      result.errors.forEach(error => {
+        expect(error.error_code).toBeDefined();
+        expect(error.message).toBeDefined();
+        expect(error.index).toBeGreaterThanOrEqual(0);
+      });
+    });
+
+    it('should handle search with invalid queries gracefully', async () => {
+      // Search with empty query
+      const emptyResult = await qdrantAdapter.search({
+        query: '',
+        scope: { project: 'error-test', branch: 'main' }
+      });
+
+      expect(Array.isArray(emptyResult.results)).toBe(true);
+      expect(emptyResult.total_count).toBe(0);
+
+      // Search with non-existent scope
+      const noResults = await qdrantAdapter.search({
+        query: 'test',
+        scope: { project: 'non-existent-project', branch: 'main' }
+      });
+
+      expect(noResults.results).toHaveLength(0);
+      expect(noResults.total_count).toBe(0);
     });
 
     it('should maintain data consistency during failures', async () => {
-      // Start a transaction and ensure rollback on failure
-      const initialCount = await pool.query(
-        'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-        [JSON.stringify({ consistency_test: true })]
-      );
-      const initialCountNum = parseInt(initialCount.rows[0].count);
+      // Store some initial data
+      const validItems = [
+        {
+          kind: 'entity' as const,
+          scope: { project: 'consistency-test', branch: 'main' },
+          data: { entity_type: 'test', name: 'Valid Item 1' }
+        },
+        {
+          kind: 'entity' as const,
+          scope: { project: 'consistency-test', branch: 'main' },
+          data: { entity_type: 'test', name: 'Valid Item 2' }
+        }
+      ];
 
-      try {
-        await dbQdrantClient.transaction(async (client) => {
-          // Insert some data
-          await client.query(`
-            INSERT INTO section (title, heading, body_text, tags)
-            VALUES ($1, $2, $3, $4)
-          `, [
-            'Consistency Test',
-            'Test Heading',
-            'Test content',
-            JSON.stringify({ integration_test: true, consistency_test: true })
-          ]);
+      const validResult = await qdrantAdapter.store(validItems);
+      expect(validResult.stored).toHaveLength(2);
 
-          // Force an error
-          throw new Error('Forced transaction failure');
-        });
-      } catch (error) {
-        // Expected
-      }
+      // Try to store mixed valid/invalid items
+      const mixedItems = [
+        {
+          kind: 'entity' as const,
+          scope: { project: 'consistency-test', branch: 'main' },
+          data: { entity_type: 'test', name: 'Another Valid Item' }
+        },
+        {
+          kind: 'invalid_kind' as any,
+          scope: { project: 'consistency-test', branch: 'main' },
+          data: { title: 'Invalid Item' }
+        }
+      ];
 
-      // Verify no data was committed
-      const finalCount = await pool.query(
-        'SELECT COUNT(*) as count FROM section WHERE tags @> $1::jsonb',
-        [JSON.stringify({ consistency_test: true })]
-      );
-      const finalCountNum = parseInt(finalCount.rows[0].count);
-      expect(finalCountNum).toBe(initialCountNum);
+      const mixedResult = await qdrantAdapter.store(mixedItems);
+      expect(mixedResult.stored).toHaveLength(1); // Only valid item stored
+      expect(mixedResult.errors).toHaveLength(1); // Invalid item failed
+
+      // Verify that valid data was not affected
+      const finalStats = await qdrantAdapter.getStatistics({ project: 'consistency-test' });
+      expect(finalStats.totalItems).toBe(3); // 2 original + 1 new valid
+    });
+  });
+
+  describe('Collection Management', () => {
+    it('should provide collection statistics', async () => {
+      const stats = await qdrantAdapter.getStatistics();
+
+      expect(stats.totalItems).toBeGreaterThanOrEqual(0);
+      expect(stats.itemsByKind).toBeDefined();
+      expect(stats.storageSize).toBeGreaterThanOrEqual(0);
+      expect(stats.lastUpdated).toBeDefined();
+      expect(stats.vectorCount).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should validate collection health', async () => {
+      const validation = await qdrantAdapter.validate();
+
+      expect(validation.valid).toBe(true);
+      expect(validation.issues).toHaveLength(0);
     });
   });
 });

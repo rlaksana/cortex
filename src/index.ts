@@ -239,7 +239,7 @@ class VectorDatabase {
 
     const searchResult = await this.client.search(this.collectionName, {
       vector: embedding,
-      limit: limit,
+      limit,
       with_payload: true,
     });
 
@@ -537,7 +537,7 @@ async function handleMemoryFind(args: { query: string; limit?: number; types?: s
           strategy: response.strategy,
           confidence: response.confidence,
           total: items.length,
-          items: items
+          items
         }, null, 2)
       }
     ]
@@ -615,8 +615,13 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Start the server
-startServer().catch((error) => {
-  logger.error('Fatal error during server startup:', error);
-  process.exit(1);
-});
+// Export VectorDatabase for testing
+export { VectorDatabase };
+
+// Start the server only when not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch((error) => {
+    logger.error('Fatal error during server startup:', error);
+    process.exit(1);
+  });
+}

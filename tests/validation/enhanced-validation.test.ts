@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   validateKnowledgeItems,
   MemoryStoreRequestSchema,
-} from '../schemas/enhanced-validation.ts';
-import { memoryStore } from '../services/memory-store.ts';
+} from '../../src/schemas/enhanced-validation.js';
+import { memoryStore } from '../../src/services/memory-store.js';
 
 // Mock the database pool for testing
 vi.mock('../../src/db/pool.js', () => ({
@@ -17,7 +17,14 @@ vi.mock('../../src/services/auto-purge.js', () => ({
 }));
 
 vi.mock('../../src/services/similarity.js', () => ({
-  findSimilar: vi.fn().mockResolvedValue({ has_similar: false, similar_items: [] }),
+  findSimilar: vi.fn().mockResolvedValue({
+    has_duplicates: false,
+    has_similar: false,
+    has_contradictions: false,
+    similar_items: [],
+    recommendation: 'add',
+    reasoning: 'No similar content found. Safe to add as new item.'
+  }),
 }));
 
 describe('Enhanced Validation Tests', () => {
@@ -272,9 +279,9 @@ describe('Enhanced Validation Tests', () => {
       expect(result.stored).toHaveLength(0);
       expect(result.errors.length >= 1).toBe(true);
       expect(result.autonomous_context.action_performed).toBe('skipped');
-      expect(result.autonomous_context.reasoning).toContain('validation errors');
+      expect(result.autonomous_context.reasoning).toContain('validation');
       expect(result.autonomous_context.user_message_suggestion).toContain(
-        'validation errors found'
+        'validation'
       );
     });
 

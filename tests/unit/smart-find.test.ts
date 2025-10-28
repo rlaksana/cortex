@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { memoryFind } from '../services/memory-find.ts';
+import { memoryFind } from '../../src/services/memory-find.js';
 import {
   smartMemoryFind,
   type CorrectionMetadata,
   type SmartFindResult
-} from '../services/smart-find.ts';
+} from '../../src/services/smart-find.js';
 import {
   sanitizeQuery,
   type SanitizationResult
-} from '../utils/query-sanitizer.ts';
+} from '../../src/utils/query-sanitizer.js';
 
 // Mock the memoryFind function
 vi.mock('../../src/services/memory-find.js');

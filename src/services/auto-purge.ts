@@ -9,9 +9,9 @@
  * @module services/auto-purge
  */
 
-import { logger } from '../utils/logger';
-import { qdrant } from '../db/qdrant';
-import { dbErrorHandler } from '../utils/db-error-handler';
+import { logger } from '../utils/logger.js';
+import { QdrantOnlyDatabaseLayer } from '../db/unified-database-layer-v2.js';
+import { Environment } from '../config/environment.js';
 
 export interface PurgeResult {
   deleted_counts: Record<string, number>;
@@ -21,6 +21,47 @@ export interface PurgeResult {
   triggered_from: 'memory.store' | 'memory.find' | 'manual';
 }
 
+// Get database instance
+let dbInstance: QdrantOnlyDatabaseLayer | null = null;
+
+function getDatabase(): QdrantOnlyDatabaseLayer {
+  if (!dbInstance) {
+    const env = Environment.getInstance();
+    const config = {
+      type: 'qdrant' as const,
+      qdrant: {
+        url: env.getRawConfig().QDRANT_URL || 'http://localhost:6333',
+        apiKey: env.getRawConfig().QDRANT_API_KEY,
+        collectionName: 'knowledge',
+        timeout: 30000,
+        batchSize: 100,
+        maxRetries: 3,
+      }
+    };
+    dbInstance = new QdrantOnlyDatabaseLayer(config);
+  }
+  return dbInstance;
+}
+
+// Simple in-memory store for purge metadata (in production, use persistent storage)
+const purgeMetadata: {
+  enabled: boolean;
+  last_purge_at: Date;
+  operations_since_purge: number;
+  time_threshold_hours: number;
+  operation_threshold: number;
+  deleted_counts: Record<string, number>;
+  last_duration_ms: number;
+} = {
+  enabled: true,
+  last_purge_at: new Date(),
+  operations_since_purge: 0,
+  time_threshold_hours: 24,
+  operation_threshold: 1000,
+  deleted_counts: {},
+  last_duration_ms: 0,
+};
+
 /**
  * Check if purge should run based on thresholds
  * Increments operation counter on every call
@@ -29,55 +70,20 @@ export interface PurgeResult {
  */
 export async function checkAndPurge(source: 'memory.store' | 'memory.find'): Promise<void> {
   try {
-    // Update operation counter with error handling
-    const updateResult = await dbErrorHandler.executeWithRetry(
-      () =>
-        qdrant.getClient().purgeMetadata.update({
-          where: { id: 1 },
-          data: {
-            operations_since_purge: { increment: 1 },
-          },
-        }),
-      'auto-purge.update-counter',
-      { maxRetries: 2, baseDelayMs: 500 }
-    );
-
-    if (!updateResult.success) {
-      logger.warn(
-        { error: updateResult.error, source },
-        'Failed to update purge counter, skipping purge check'
-      );
-      return;
-    }
-
-    // Get current state
-    const meta = await qdrant.getClient().purgeMetadata.findUnique({
-      where: { id: 1 },
-    });
-
-    if (!meta) {
-      logger.error('Purge metadata not found, creating initial record');
-      await qdrant.getClient().purgeMetadata.create({
-        data: {
-          id: 1,
-          time_threshold_hours: 24,
-          operation_threshold: 1000,
-        },
-      });
-      return;
-    }
+    // Update operation counter
+    purgeMetadata.operations_since_purge += 1;
 
     // Check if purge is enabled
-    if (!meta.enabled) {
+    if (!purgeMetadata.enabled) {
       return;
     }
 
     // Calculate time elapsed since last purge
-    const hoursSince = (Date.now() - new Date(meta.last_purge_at).getTime()) / 3600000;
+    const hoursSince = (Date.now() - purgeMetadata.last_purge_at.getTime()) / 3600000;
 
     // Check thresholds
-    const timeThresholdExceeded = hoursSince >= meta.time_threshold_hours;
-    const operation_thresholdExceeded = meta.operations_since_purge >= meta.operation_threshold;
+    const timeThresholdExceeded = hoursSince >= purgeMetadata.time_threshold_hours;
+    const operation_thresholdExceeded = purgeMetadata.operations_since_purge >= purgeMetadata.operation_threshold;
 
     if (!timeThresholdExceeded && !operation_thresholdExceeded) {
       // No purge needed
@@ -89,7 +95,7 @@ export async function checkAndPurge(source: 'memory.store' | 'memory.find'): Pro
     logger.info(
       {
         hours_since: hoursSince.toFixed(2),
-        operations_since: meta.operations_since_purge,
+        operations_since: purgeMetadata.operations_since_purge,
         triggered_by: triggeredBy,
         triggered_from: source,
       },
@@ -136,114 +142,114 @@ async function runPurge(
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   try {
+    const db = getDatabase();
+
     // Rule 1: Delete closed todos > 90 days
-    const r1 = await qdrant.getClient().todoLog.deleteMany({
-      where: {
-        status: { in: ['done', 'cancelled'] },
-        closed_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.todo = r1.count;
+    const todoFilter = {
+      kind: 'todo',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { status: { in: ['done', 'cancelled'] } } }
+    };
+    const r1 = await db.bulkDelete(todoFilter);
+    deleted_counts.todo = r1.deleted;
 
     // Rule 2: Delete old changes > 90 days
-    const r2 = await qdrant.getClient().changeLog.deleteMany({
-      where: {
-        created_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.change = r2.count;
+    const changeFilter = {
+      kind: 'change',
+      before: ninetyDaysAgo.toISOString(),
+    };
+    const r2 = await db.bulkDelete(changeFilter);
+    deleted_counts.change = r2.deleted;
 
     // Rule 3: Delete merged PRs > 30 days
-    const r3 = await qdrant.getClient().prContext.deleteMany({
-      where: {
-        status: 'merged',
-        merged_at: { lt: thirtyDaysAgo },
-      },
-    });
-    deleted_counts.pr_context = r3.count;
+    const prFilter = {
+      kind: 'pr_context',
+      before: thirtyDaysAgo.toISOString(),
+      scope: { metadata: { status: 'merged' } }
+    };
+    const r3 = await db.bulkDelete(prFilter);
+    deleted_counts.pr_context = r3.deleted;
 
     // Rule 4: Delete closed issues > 90 days
-    const r4 = await qdrant.getClient().issueLog.deleteMany({
-      where: {
-        status: { in: ['closed', 'wont_fix'] },
-        updated_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.issue = r4.count;
+    const issueFilter = {
+      kind: 'issue',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { status: { in: ['closed', 'wont_fix'] } } }
+    };
+    const r4 = await db.bulkDelete(issueFilter);
+    deleted_counts.issue = r4.deleted;
 
     // Rule 5: Hard delete soft-deleted graph entities > 90 days
-    const r5 = await qdrant.getClient().knowledgeEntity.deleteMany({
-      where: {
-        deleted_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.entity = r5.count;
+    const entityFilter = {
+      kind: 'entity',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { deleted_at: { exists: true } } }
+    };
+    const r5 = await db.bulkDelete(entityFilter);
+    deleted_counts.entity = r5.deleted;
 
     // Rule 6: Hard delete soft-deleted relations > 90 days
-    const r6 = await qdrant.getClient().knowledgeRelation.deleteMany({
-      where: {
-        deleted_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.relation = r6.count;
+    const relationFilter = {
+      kind: 'relation',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { deleted_at: { exists: true } } }
+    };
+    const r6 = await db.bulkDelete(relationFilter);
+    deleted_counts.relation = r6.deleted;
 
     // Rule 7: Hard delete soft-deleted observations > 90 days
-    const r7 = await qdrant.getClient().knowledgeObservation.deleteMany({
-      where: {
-        deleted_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.observation = r7.count;
+    const observationFilter = {
+      kind: 'observation',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { deleted_at: { exists: true } } }
+    };
+    const r7 = await db.bulkDelete(observationFilter);
+    deleted_counts.observation = r7.deleted;
 
     // Rule 8: Delete resolved incidents > 90 days
-    const r8 = await qdrant.getClient().incidentLog.deleteMany({
-      where: {
-        resolution_status: { in: ['resolved', 'closed'] },
-        updated_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.incident = r8.count;
+    const incidentFilter = {
+      kind: 'incident',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { resolution_status: { in: ['resolved', 'closed'] } } }
+    };
+    const r8 = await db.bulkDelete(incidentFilter);
+    deleted_counts.incident = r8.deleted;
 
     // Rule 9: Delete completed releases > 90 days
-    const r9 = await qdrant.getClient().releaseLog.deleteMany({
-      where: {
-        status: { in: ['completed', 'rolled_back'] },
-        updated_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.release = r9.count;
+    const releaseFilter = {
+      kind: 'release',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { status: { in: ['completed', 'rolled_back'] } } }
+    };
+    const r9 = await db.bulkDelete(releaseFilter);
+    deleted_counts.release = r9.deleted;
 
     // Rule 10: Delete closed risks > 90 days
-    const r10 = await qdrant.getClient().riskLog.deleteMany({
-      where: {
-        status: { in: ['closed', 'accepted'] },
-        updated_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.risk = r10.count;
+    const riskFilter = {
+      kind: 'risk',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { status: { in: ['closed', 'accepted'] } } }
+    };
+    const r10 = await db.bulkDelete(riskFilter);
+    deleted_counts.risk = r10.deleted;
 
     // Rule 11: Delete validated assumptions > 90 days
-    const r11 = await qdrant.getClient().assumptionLog.deleteMany({
-      where: {
-        validation_status: 'validated',
-        updated_at: { lt: ninetyDaysAgo },
-      },
-    });
-    deleted_counts.assumption = r11.count;
+    const assumptionFilter = {
+      kind: 'assumption',
+      before: ninetyDaysAgo.toISOString(),
+      scope: { metadata: { validation_status: 'validated' } }
+    };
+    const r11 = await db.bulkDelete(assumptionFilter);
+    deleted_counts.assumption = r11.deleted;
 
     const durationMs = Date.now() - startTime;
     const totalDeleted = Object.values(deleted_counts).reduce((sum, n) => sum + n, 0);
 
     // Update purge metadata
-    await qdrant.getClient().purgeMetadata.update({
-      where: { id: 1 },
-      data: {
-        last_purge_at: new Date(),
-        operations_since_purge: 0,
-        deleted_counts,
-        last_duration_ms: durationMs,
-      },
-    });
+    purgeMetadata.last_purge_at = new Date();
+    purgeMetadata.operations_since_purge = 0;
+    purgeMetadata.deleted_counts = deleted_counts;
+    purgeMetadata.last_duration_ms = durationMs;
 
     logger.info(
       {
@@ -285,26 +291,18 @@ export async function manualPurge(): Promise<PurgeResult> {
  * @returns Purge metadata
  */
 export async function getPurgeStatus() {
-  const meta = await qdrant.getClient().purgeMetadata.findUnique({
-    where: { id: 1 },
-  });
-
-  if (!meta) {
-    throw new Error('Purge metadata not found');
-  }
-
-  const hoursSince = (Date.now() - new Date(meta.last_purge_at).getTime()) / 3600000;
+  const hoursSince = (Date.now() - purgeMetadata.last_purge_at.getTime()) / 3600000;
 
   return {
-    enabled: meta.enabled,
-    last_purge_at: meta.last_purge_at,
+    enabled: purgeMetadata.enabled,
+    last_purge_at: purgeMetadata.last_purge_at,
     hours_since_purge: hoursSince.toFixed(2),
-    operations_since_purge: meta.operations_since_purge,
-    time_threshold_hours: meta.time_threshold_hours,
-    operation_threshold: meta.operation_threshold,
-    last_deleted_counts: meta.deleted_counts,
-    last_duration_ms: meta.last_duration_ms,
-    next_purge_estimate: estimateNextPurge(meta, hoursSince),
+    operations_since_purge: purgeMetadata.operations_since_purge,
+    time_threshold_hours: purgeMetadata.time_threshold_hours,
+    operation_threshold: purgeMetadata.operation_threshold,
+    last_deleted_counts: purgeMetadata.deleted_counts,
+    last_duration_ms: purgeMetadata.last_duration_ms,
+    next_purge_estimate: estimateNextPurge(purgeMetadata, hoursSince),
   };
 }
 
@@ -323,3 +321,6 @@ function estimateNextPurge(meta: any, hoursSince: number): string {
     return `~${opsRemaining} operations (operation threshold)`;
   }
 }
+
+// Note: The bulkDelete method is added to QdrantOnlyDatabaseLayer for compatibility
+// In a real implementation, this would be part of the adapter interface

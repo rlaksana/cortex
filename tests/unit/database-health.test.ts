@@ -3,7 +3,7 @@ import { VectorDatabase } from '../../src/index';
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({
-  QdrantClient: class {
+  QdrantClient: class MockQdrantClient {
     constructor() {
       this.getCollections = vi.fn();
       this.createCollection = vi.fn();
@@ -14,16 +14,32 @@ vi.mock('@qdrant/js-client-rest', () => ({
   }
 }));
 
+// Mock environment variables for tests
+vi.mock('dotenv', () => ({
+  config: vi.fn()
+}));
+
 describe('VectorDatabase - database_health functionality', () => {
   let db: VectorDatabase;
+  let mockClient: any;
 
   beforeEach(() => {
+    // Reset all mocks before each test
+    vi.clearAllMocks();
+
     db = new VectorDatabase();
+
+    // Get the mock client instance from the created database
+    mockClient = (db as any).client;
+
+    // Mock successful collection response for initialization
+    mockClient.getCollections.mockResolvedValue({
+      collections: [{ name: 'cortex-memory' }]
+    });
   });
 
   describe('getHealth', () => {
     test('should return healthy status when connected', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: [
           { name: 'collection1' },
@@ -42,7 +58,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should return unhealthy status when connection fails', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockRejectedValue(new Error('Connection failed'));
 
       const result = await db.getHealth();
@@ -52,7 +67,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should handle empty collections list', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: []
       });
@@ -64,7 +78,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should handle network timeout', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockRejectedValue(new Error('Timeout'));
 
       const result = await db.getHealth();
@@ -74,7 +87,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should handle authentication errors', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockRejectedValue(new Error('Authentication failed'));
 
       const result = await db.getHealth();
@@ -83,7 +95,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should return consistent health status format', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: [{ name: 'test-collection' }]
       });
@@ -97,7 +108,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should handle malformed response from Qdrant', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({ invalid: 'response' });
 
       const result = await db.getHealth();
@@ -107,7 +117,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should complete health check quickly', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: [{ name: 'test-collection' }]
       });
@@ -121,7 +130,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should handle concurrent health checks', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: [{ name: 'test-collection' }]
       });
@@ -139,7 +147,6 @@ describe('VectorDatabase - database_health functionality', () => {
 
   describe('health check reliability', () => {
     test('should maintain consistent results across multiple calls', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollections.mockResolvedValue({
         collections: [
           { name: 'collection1' },
@@ -156,8 +163,6 @@ describe('VectorDatabase - database_health functionality', () => {
     });
 
     test('should recover from temporary connection issues', async () => {
-      const mockClient = (db as any).client;
-      
       // First call fails
       mockClient.getCollections.mockRejectedValueOnce(new Error('Temporary failure'));
       const result1 = await db.getHealth();

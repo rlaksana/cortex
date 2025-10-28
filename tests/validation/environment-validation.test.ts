@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Environment } from '../config/environment.ts';
+import { Environment } from '../../src/config/environment.ts';
 
 describe('Environment Configuration Validation', () => {
   let originalEnv: NodeJS.ProcessEnv;

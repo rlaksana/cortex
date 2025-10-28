@@ -232,6 +232,26 @@ export class QdrantOnlyDatabaseLayer {
     return this.isHealthy;
   }
 
+  /**
+   * Bulk delete items based on filter criteria
+   */
+  async bulkDelete(filter: {
+    kind?: string;
+    scope?: any;
+    before?: string;
+  }): Promise<{ deleted: number }> {
+    if (!this.isHealthy) {
+      await this.initialize();
+    }
+
+    try {
+      return await this.adapter.bulkDelete(filter);
+    } catch (error) {
+      logger.error('Failed to bulk delete items', error);
+      throw error;
+    }
+  }
+
   // === Compatibility Methods for Audit System ===
 
   /**
@@ -396,5 +416,23 @@ export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
   }): Promise<any[]> {
     // For now, return empty results - this would need proper implementation
     return [];
+  }
+
+  // Add bulkDelete method for auto-purge service compatibility
+  async bulkDelete(filter: {
+    kind?: string;
+    scope?: any;
+    before?: string;
+  }): Promise<{ deleted: number }> {
+    if (!this.isHealthy) {
+      await this.initialize();
+    }
+
+    try {
+      return await this.adapter.bulkDelete(filter);
+    } catch (error) {
+      logger.error('Failed to bulk delete items', error);
+      throw error;
+    }
   }
 }

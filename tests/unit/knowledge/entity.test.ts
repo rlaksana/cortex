@@ -6,7 +6,7 @@ import {
   searchEntities
 } from '../../../src/services/knowledge/entity';
 
-// Mock the UnifiedDatabaseLayer
+// Mock the UnifiedDatabaseLayer with a proper class structure
 const mockDb = {
   initialize: vi.fn().mockResolvedValue(undefined),
   find: vi.fn(),
@@ -15,8 +15,14 @@ const mockDb = {
   fullTextSearch: vi.fn(),
 };
 
-// Create a proper mock constructor
-const MockUnifiedDatabaseLayer = vi.fn().mockImplementation(() => mockDb);
+// Create a proper mock class that can be instantiated
+class MockUnifiedDatabaseLayer {
+  initialize = mockDb.initialize;
+  find = mockDb.find;
+  create = mockDb.create;
+  update = mockDb.update;
+  fullTextSearch = mockDb.fullTextSearch;
+}
 
 vi.mock('../../../src/db/unified-database-layer-v2', () => ({
   UnifiedDatabaseLayer: MockUnifiedDatabaseLayer,

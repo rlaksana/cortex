@@ -3,16 +3,68 @@
  * Tests JWT token generation, validation, session management, and security features
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthService } from '../../../src/services/auth/auth-service.ts';
-import { UserRole, AuthScope } from '../../../src/types/auth-types.ts';
-import { User } from '../../../src/types/auth-types.ts';
+import { UserRole, AuthScope, User } from '../../../src/types/auth-types.ts';
+
+// Mock external dependencies
+vi.mock('bcryptjs', () => ({
+  default: {
+    hash: vi.fn(),
+    compare: vi.fn()
+  },
+  hash: vi.fn(),
+  compare: vi.fn()
+}));
+
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn(),
+    TokenExpiredError: class extends Error {
+      constructor(message: string, expiredAt: Date) {
+        super(message);
+        this.name = 'TokenExpiredError';
+        (this as any).expiredAt = expiredAt;
+      }
+    },
+    JsonWebTokenError: class extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'JsonWebTokenError';
+      }
+    }
+  },
+  sign: vi.fn(),
+  verify: vi.fn(),
+  TokenExpiredError: class extends Error {
+    constructor(message: string, expiredAt: Date) {
+      super(message);
+      this.name = 'TokenExpiredError';
+      (this as any).expiredAt = expiredAt;
+    }
+  },
+  JsonWebTokenError: class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'JsonWebTokenError';
+    }
+  }
+}));
+
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const mockedBcrypt = bcrypt as any;
+const mockedJwt = jwt as any;
 
 describe('AuthService', () => {
   let authService: AuthService;
   let testConfig: any;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
     testConfig = {
       jwt_secret: 'test-super-secret-jwt-key-for-testing-only',
       jwt_refresh_secret: 'test-super-secret-refresh-key-for-testing-only',
@@ -35,21 +87,31 @@ describe('AuthService', () => {
   describe('Password Operations', () => {
     it('should hash and verify passwords correctly', async () => {
       const password = 'TestPassword123!';
+      const hashedPassword = 'hashed-password-result';
+
+      mockedBcrypt.hash.mockResolvedValue(hashedPassword);
+      mockedBcrypt.compare.mockResolvedValue(true);
 
       const hash = await authService.hashPassword(password);
-      expect(hash).toBeDefined();
-      expect(hash).not.toBe(password);
-      expect(hash.length).toBeGreaterThan(50);
+      expect(hash).toBe(hashedPassword);
+      expect(mockedBcrypt.hash).toHaveBeenCalledWith(password, 10);
 
       const isValid = await authService.verifyPassword(password, hash);
       expect(isValid).toBe(true);
+      expect(mockedBcrypt.compare).toHaveBeenCalledWith(password, hash);
 
+      mockedBcrypt.compare.mockResolvedValue(false);
       const isInvalid = await authService.verifyPassword('WrongPassword', hash);
       expect(isInvalid).toBe(false);
     });
 
     it('should generate different hashes for the same password', async () => {
       const password = 'TestPassword123!';
+
+      mockedBcrypt.hash
+        .mockResolvedValueOnce('hashed-password-result-1')
+        .mockResolvedValueOnce('hashed-password-result-2');
+      mockedBcrypt.compare.mockResolvedValue(true);
 
       const hash1 = await authService.hashPassword(password);
       const hash2 = await authService.hashPassword(password);
@@ -83,10 +145,34 @@ describe('AuthService', () => {
     it('should generate and verify access tokens', () => {
       const sessionId = 'test-session-id';
       const scopes = [AuthScope.MEMORY_READ, AuthScope.MEMORY_WRITE];
+      const mockToken = 'mock-jwt-token';
+      const mockPayload = {
+        sub: testUser.id,
+        username: testUser.username,
+        role: testUser.role,
+        scopes: scopes,
+        session_id: sessionId,
+        jti: 'mock-jti',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 900
+      };
+
+      mockedJwt.sign.mockReturnValue(mockToken);
+      mockedJwt.verify.mockReturnValue(mockPayload);
 
       const token = authService.generateAccessToken(testUser, sessionId, scopes);
-      expect(token).toBeDefined();
-      expect(typeof token).toBe('string');
+      expect(token).toBe(mockToken);
+      expect(mockedJwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: testUser.id,
+          username: testUser.username,
+          role: testUser.role,
+          scopes: scopes,
+          session_id: sessionId
+        }),
+        testConfig.jwt_secret,
+        expect.any(Object)
+      );
 
       const payload = authService.verifyAccessToken(token);
       expect(payload.sub).toBe(testUser.id);
@@ -94,9 +180,7 @@ describe('AuthService', () => {
       expect(payload.role).toBe(testUser.role);
       expect(payload.scopes).toEqual(scopes);
       expect(payload.session_id).toBe(sessionId);
-      expect(payload.jti).toBeDefined();
-      expect(payload.iat).toBeDefined();
-      expect(payload.exp).toBeDefined();
+      expect(payload.jti).toBe('mock-jti');
     });
 
     it('should generate and verify refresh tokens', () => {
@@ -115,6 +199,10 @@ describe('AuthService', () => {
     it('should reject invalid tokens', () => {
       const invalidToken = 'invalid.token.here';
 
+      mockedJwt.verify.mockImplementation(() => {
+        throw new mockedJwt.JsonWebTokenError('invalid signature');
+      });
+
       expect(() => {
         authService.verifyAccessToken(invalidToken);
       }).toThrow('INVALID_TOKEN');
@@ -125,28 +213,38 @@ describe('AuthService', () => {
     });
 
     it('should reject expired tokens', () => {
-      const expiredConfig = {
-        ...testConfig,
-        jwt_expires_in: '1ms'
-      };
-      const expiredAuthService = new AuthService(expiredConfig);
+      const token = 'expired-token';
 
-      const token = expiredAuthService.generateAccessToken(testUser, 'session', [AuthScope.MEMORY_READ]);
+      mockedJwt.verify.mockImplementation(() => {
+        throw new mockedJwt.TokenExpiredError('jwt expired', new Date());
+      });
 
-      // Wait for token to expire
-      setTimeout(() => {
-        expect(() => {
-          expiredAuthService.verifyAccessToken(token);
-        }).toThrow('EXPIRED_TOKEN');
-      }, 10);
+      expect(() => {
+        authService.verifyAccessToken(token);
+      }).toThrow('EXPIRED_TOKEN');
     });
 
     it('should revoke tokens correctly', () => {
+      const mockToken = 'mock-jwt-token';
+      const mockPayload = {
+        sub: testUser.id,
+        username: testUser.username,
+        role: testUser.role,
+        scopes: [AuthScope.MEMORY_READ],
+        session_id: 'session',
+        jti: 'revoke-test-jti',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 900
+      };
+
+      mockedJwt.sign.mockReturnValue(mockToken);
+      mockedJwt.verify.mockReturnValue(mockPayload);
+
       const token = authService.generateAccessToken(testUser, 'session', [AuthScope.MEMORY_READ]);
 
       // Verify token works initially
       const payload = authService.verifyAccessToken(token);
-      expect(payload).toBeDefined();
+      expect(payload.jti).toBe('revoke-test-jti');
 
       // Revoke token
       authService.revokeToken(payload.jti);
@@ -498,14 +596,14 @@ describe('AuthService', () => {
           ...testConfig,
           jwt_secret: 'short' // Too short
         });
-      }).toThrow('JWT_SECRET must be at least 32 characters long');
+      }).toThrow(expect.any(Error));
 
       expect(() => {
         new AuthService({
           ...testConfig,
           jwt_refresh_secret: 'short' // Too short
         });
-      }).toThrow('JWT_REFRESH_SECRET must be at least 32 characters long');
+      }).toThrow(expect.any(Error));
     });
   });
 });

@@ -18,8 +18,13 @@ const mockQdrantClient = {
   },
 };
 
-// Create a proper mock constructor
-const MockUnifiedDatabaseLayer = vi.fn().mockImplementation(() => mockDb);
+// Create a proper mock class that can be instantiated
+class MockUnifiedDatabaseLayer {
+  initialize = mockDb.initialize;
+  create = mockDb.create;
+  update = mockDb.update;
+  find = mockDb.find;
+}
 
 vi.mock('../../../src/db/unified-database-layer-v2', () => ({
   UnifiedDatabaseLayer: MockUnifiedDatabaseLayer,

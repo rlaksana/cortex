@@ -6,19 +6,74 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AuthService, AuthServiceConfig } from '../services/auth/auth-service.ts';
-import { UserRole, AuthScope, User, AuthSession } from '../types/auth-types.ts';
-import { logger } from '../utils/logger.ts';
+import { AuthService, AuthServiceConfig } from '../../../src/services/auth/auth-service.ts';
+import { UserRole, AuthScope, User, AuthSession } from '../../../src/types/auth-types.ts';
+import { logger } from '../../../src/utils/logger.ts';
 
 // Mock external dependencies
-vi.mock('bcryptjs');
-vi.mock('jsonwebtoken');
-vi.mock('../../src/utils/logger.js');
-vi.mock('../../src/db/qdrant.js');
+vi.mock('bcryptjs', () => ({
+  default: {
+    hash: vi.fn(),
+    compare: vi.fn()
+  },
+  hash: vi.fn(),
+  compare: vi.fn()
+}));
+
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn(),
+    TokenExpiredError: class extends Error {
+      constructor(message: string, expiredAt: Date) {
+        super(message);
+        this.name = 'TokenExpiredError';
+        (this as any).expiredAt = expiredAt;
+      }
+    },
+    JsonWebTokenError: class extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'JsonWebTokenError';
+      }
+    }
+  },
+  sign: vi.fn(),
+  verify: vi.fn(),
+  TokenExpiredError: class extends Error {
+    constructor(message: string, expiredAt: Date) {
+      super(message);
+      this.name = 'TokenExpiredError';
+      (this as any).expiredAt = expiredAt;
+    }
+  },
+  JsonWebTokenError: class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'JsonWebTokenError';
+    }
+  }
+}));
+
+vi.mock('../../../src/utils/logger.ts', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
+vi.mock('../../../src/db/qdrant.ts', () => ({
+  qdrant: {
+    getClient: vi.fn()
+  },
+  getQdrantClient: vi.fn()
+}));
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { qdrant } from '../db/qdrant.ts';
+import { qdrant } from '../../../src/db/qdrant.ts';
 
 const mockedBcrypt = bcrypt as any;
 const mockedJwt = jwt as any;

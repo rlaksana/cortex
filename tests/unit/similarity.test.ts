@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { detectContradiction } from '../services/similarity.ts';
+import { detectContradiction } from '../../src/services/similarity.js';
 
 describe('Similarity Detection Service', () => {
   describe('detectContradiction', () => {

@@ -3,7 +3,7 @@ import { VectorDatabase } from '../../src/index';
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({
-  QdrantClient: class {
+  QdrantClient: class MockQdrantClient {
     constructor() {
       this.getCollections = vi.fn();
       this.createCollection = vi.fn();
@@ -14,16 +14,32 @@ vi.mock('@qdrant/js-client-rest', () => ({
   }
 }));
 
+// Mock environment variables for tests
+vi.mock('dotenv', () => ({
+  config: vi.fn()
+}));
+
 describe('VectorDatabase - database_stats functionality', () => {
   let db: VectorDatabase;
+  let mockClient: any;
 
   beforeEach(() => {
+    // Reset all mocks before each test
+    vi.clearAllMocks();
+
     db = new VectorDatabase();
+
+    // Get the mock client instance from the created database
+    mockClient = (db as any).client;
+
+    // Mock successful collection response for initialization
+    mockClient.getCollections.mockResolvedValue({
+      collections: [{ name: 'cortex-memory' }]
+    });
   });
 
   describe('getStats', () => {
     test('should return accurate statistics for healthy database', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollection.mockResolvedValue({
         points_count: 42,
         status: 'green',
@@ -53,7 +69,6 @@ describe('VectorDatabase - database_stats functionality', () => {
     });
 
     test('should return zero stats for empty database', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollection.mockResolvedValue({
         points_count: 0,
         status: 'green',
@@ -73,7 +88,6 @@ describe('VectorDatabase - database_stats functionality', () => {
     });
 
     test('should handle database connection errors', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollection.mockRejectedValue(new Error('Database connection failed'));
 
       const result = await db.getStats();
@@ -83,7 +97,6 @@ describe('VectorDatabase - database_stats functionality', () => {
     });
 
     test('should return consistent stats format', async () => {
-      const mockClient = (db as any).client;
       mockClient.getCollection.mockResolvedValue({
         points_count: 100,
         status: 'green'
