@@ -18,7 +18,7 @@
  */
 
 import { logger } from './logger.js';
-import { config } from '../config/environment.js';
+import { loadEnv } from '../config/environment.js';
 import { databaseConfig } from '../config/database-config.js';
 import { configValidator } from '../config/validation.js';
 

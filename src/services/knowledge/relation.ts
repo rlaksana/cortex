@@ -8,7 +8,7 @@
  */
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { RelationItem } from '../../schemas/knowledge-types.js';
+import type { RelationItem } from '../../schemas/knowledge-types';
 
 /**
  * Store a relation in knowledge_relation table
@@ -27,7 +27,7 @@ export async function storeRelation(
   data: RelationItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Check for existing relation with same (from, to, relation_type) - unique constraint
@@ -81,7 +81,7 @@ export async function storeRelation(
  * @returns true if deleted, false if not found
  */
 export async function softDeleteRelation(relationId: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.knowledgeRelation.updateMany({
@@ -119,7 +119,7 @@ export async function getOutgoingRelations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -179,7 +179,7 @@ export async function getIncomingRelations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -271,7 +271,7 @@ export async function relationExists(
   toId: string,
   relation_type: string
 ): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await db.find('knowledgeRelation', {

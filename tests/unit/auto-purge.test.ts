@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 // PostgreSQL import removed - now using Qdrant;
 
 // Mock the dependencies
-vi.mock('../../src/utils/logger', () => ({
+vi.mock('../../../src/utils/logger', () => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -22,11 +22,11 @@ vi.mock('../../src/utils/logger', () => ({
   },
 }));
 
-vi.mock('../../src/db/unified-database-layer.js', () => ({
+vi.mock('../../../src/db/unified-database-layer.js', () => ({
   UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
-vi.mock('../../src/utils/db-error-handler', () => ({
+vi.mock('../../../src/utils/db-error-handler', () => ({
   dbErrorHandler: {
     executeWithRetry: vi.fn(),
   },
@@ -81,7 +81,7 @@ describe('Auto-Purge Service', () => {
     vi.resetAllMocks();
 
     // Default successful mock for dbErrorHandler
-    const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+    const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
     dbErrorHandler.executeWithRetry.mockResolvedValue({
       success: true,
       data: { operations_since_purge: 1 }
@@ -95,7 +95,7 @@ describe('Auto-Purge Service', () => {
   describe('checkAndPurge', () => {
     it('should increment operation counter on every call', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -124,8 +124,8 @@ describe('Auto-Purge Service', () => {
 
     it('should trigger purge when time threshold exceeded', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
-      const { logger } = require('../../src/utils/logger');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -157,8 +157,8 @@ describe('Auto-Purge Service', () => {
 
     it('should trigger purge when operation threshold exceeded', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
-      const { logger } = require('../../src/utils/logger');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -188,7 +188,7 @@ describe('Auto-Purge Service', () => {
 
     it('should skip purge when disabled', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -213,8 +213,8 @@ describe('Auto-Purge Service', () => {
 
     it('should handle counter update failure gracefully', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
-      const { logger } = require('../../src/utils/logger');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock counter update failure
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -239,8 +239,8 @@ describe('Auto-Purge Service', () => {
 
     it('should create initial metadata record if not found', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
-      const { logger } = require('../../src/utils/logger');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -269,8 +269,8 @@ describe('Auto-Purge Service', () => {
 
     it('should handle database errors during purge gracefully', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
-      const { logger } = require('../../src/utils/logger');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -317,7 +317,7 @@ describe('Auto-Purge Service', () => {
 
     it('should execute all TTL-based purge rules', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger');
+      const { logger } = require('../../../src/utils/logger');
 
       const result = await manualPurge();
 
@@ -378,7 +378,7 @@ describe('Auto-Purge Service', () => {
 
     it('should handle database errors during purge execution', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock database error
       mockDatabaseLayer.todoLog.deleteMany.mockRejectedValue(new Error('Connection failed'));
@@ -545,7 +545,7 @@ describe('Auto-Purge Service', () => {
   describe('Performance Considerations', () => {
     it('should run purge asynchronously without blocking', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -572,7 +572,7 @@ describe('Auto-Purge Service', () => {
 
     it('should handle concurrent checkAndPurge calls safely', async () => {
       const { checkAndPurge } = await import('../../src/services/auto-purge.js');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // Mock successful counter update
       dbErrorHandler.executeWithRetry.mockResolvedValue({
@@ -601,7 +601,7 @@ describe('Auto-Purge Service', () => {
   describe('Error Recovery', () => {
     it('should continue operation if some delete operations fail', async () => {
       const { manualPurge } = await import('../../src/services/auto-purge.js');
-      const { logger } = require('../../src/utils/logger');
+      const { logger } = require('../../../src/utils/logger');
 
       // Mock partial failure - some operations succeed, others fail
       mockDatabaseLayer.todoLog.deleteMany.mockResolvedValue({ count: 5 });

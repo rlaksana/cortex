@@ -1,4 +1,4 @@
-import { getQdrantClient } from '../../db/qdrant.js';
+import { getQdrantClient } from '../../db/qdrant';
 
 export interface DeepSearchResult {
   id: string;

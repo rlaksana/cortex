@@ -3,7 +3,7 @@
  * Implements scope-based access control with fine-grained permissions
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 import {
   AuthScope,
   UserRole,
@@ -12,7 +12,7 @@ import {
   AuthContext,
   Permission,
   DEFAULT_ROLE_PERMISSIONS,
-} from '../../types/auth-types.js';
+} from '../../types/auth-types';
 
 export interface ResourceAccessRule {
   resource: string;

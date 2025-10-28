@@ -6,19 +6,18 @@
  * vector similarity operations.
  */
 
-import { DatabaseConfig, DatabaseMetrics } from './database-interface.js';
-
-// Re-export DatabaseMetrics for use in other modules
-export type { DatabaseMetrics };
+import { DatabaseConfig, DatabaseMetrics } from '../database-interface.js';
 import {
   KnowledgeItem,
-  StoreResult,
   StoreError,
   SearchResult,
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
 } from '../types/core-interfaces.js';
+
+// Re-export DatabaseMetrics for use in other modules
+export type { DatabaseMetrics };
 
 export interface VectorConfig extends DatabaseConfig {
   vectorSize?: number;

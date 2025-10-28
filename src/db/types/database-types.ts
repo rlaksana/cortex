@@ -19,7 +19,7 @@ export type {
   MemoryStoreResponse,
   MemoryFindResponse,
   AutonomousContext,
-} from '../../types/core-interfaces.js';
+} from '../../types/core-interfaces';
 
 // PostgreSQL interfaces and types removed - PostgreSQL is no longer supported
 // Only Qdrant vector database interfaces are available in this Qdrant-only architecture
@@ -30,7 +30,7 @@ export type {
   SearchOptions as VectorSearchOptions,
   StoreOptions as VectorStoreOptions,
   DeleteOptions as VectorDeleteOptions,
-} from '../interfaces/vector-adapter.interface.js';
+} from '../interfaces/vector-adapter.interface';
 
 export type {
   IDatabaseFactory,
@@ -38,7 +38,7 @@ export type {
   DatabaseType,
   DatabaseAdapters,
   AdapterCapabilities,
-} from '../interfaces/database-factory.interface.js';
+} from '../interfaces/database-factory.interface';
 
 // Database configuration types
 export interface DatabaseConfig {

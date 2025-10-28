@@ -1,8 +1,8 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { AssumptionData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { AssumptionData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeAssumption(data: AssumptionData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -33,7 +33,7 @@ export async function findAssumptions(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<AssumptionData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -86,7 +86,7 @@ export async function updateAssumption(
   data: Partial<AssumptionData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 import { z, ZodSchema } from 'zod';
 
 export interface SecurityConfig {

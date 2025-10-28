@@ -426,7 +426,7 @@ class DependencyAuditor {
 
     // Check for common patterns and CLI tools
     const commonPatterns = [
-      'typescript', 'eslint', 'prettier', 'vitest', 'jest',
+      'typescript', 'eslint', 'prettier', 'vitest',
       'rollup', 'webpack', 'babel', 'nodemon', 'ts-node'
     ];
 

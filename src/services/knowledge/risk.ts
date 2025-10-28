@@ -1,8 +1,8 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { RiskData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { RiskData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeRisk(data: RiskData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -35,7 +35,7 @@ export async function findRisks(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<RiskData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -90,7 +90,7 @@ export async function updateRisk(
   data: Partial<RiskData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

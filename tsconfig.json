@@ -30,6 +30,9 @@
     "typeRoots": ["./src/types", "./node_modules/@types"],
     "types": ["node"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/index.ts"],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

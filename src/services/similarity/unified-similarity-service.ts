@@ -16,15 +16,15 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
-import { QdrantAdapter } from '../../db/adapters/qdrant-adapter.js';
-import { environment } from '../../config/environment.js';
+import { logger } from '../../utils/logger';
+import { QdrantAdapter } from '../../db/adapters/qdrant-adapter';
+import { environment } from '../../config/environment';
 import type {
   SimilarityService as ISimilarityService,
   KnowledgeItem,
   MemoryStoreResponse,
-} from '../../types/core-interfaces.js';
-import type { DatabaseConfig } from '../../db/database-interface.js';
+} from '../../types/core-interfaces';
+import type { DatabaseConfig } from '../../db/database-interface';
 
 /**
  * Similarity analysis configuration

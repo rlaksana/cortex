@@ -9,7 +9,7 @@
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'crypto';
-import type { EntityItem } from '../../schemas/knowledge-types.js';
+import type { EntityItem } from '../../schemas/knowledge-types';
 
 /**
  * Store a flexible entity in knowledge_entity table
@@ -41,7 +41,7 @@ export async function storeEntity(
   data: EntityItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -112,7 +112,7 @@ function generateContentHash(data: any): string {
  * @returns True if entity was deleted, false if not found
  */
 export async function softDeleteEntity(id: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -147,7 +147,7 @@ export async function getEntity(
   id: string,
   scope?: Record<string, unknown>
 ): Promise<EntityItem | null> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -210,7 +210,7 @@ export async function searchEntities(
     offset?: number;
   } = {}
 ): Promise<EntityItem[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

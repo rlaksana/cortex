@@ -1,10 +1,10 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'crypto';
-import type { DDLData } from '../../types/knowledge-data.js';
-import { logger } from '../../utils/logger.js';
+import type { DDLData } from '../../types/knowledge-data';
+import { logger } from '../../utils/logger';
 
 export async function storeDDL(data: DDLData): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const checksum = createHash('sha256').update(data.ddl_text).digest('hex');

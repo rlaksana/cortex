@@ -209,7 +209,7 @@ tests/
 ```typescript
 // tests/unit/services/similarity.test.ts
 import { SimilarityService } from '../../../src/services/similarity/similarity-service.js';
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('SimilarityService', () => {
   let service: SimilarityService;
@@ -270,36 +270,49 @@ describe('Memory Store API', () => {
 
 ### 3. Test Configuration
 
-Jest configuration in `jest.config.js`:
+Vitest configuration in `vitest.config.ts`:
 
-```javascript
-export default {
-  preset: 'ts-jest/presets/default-esm',
-  extensionsToTreatAsEsm: ['.ts'],
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      useESM: true,
-      tsconfig: {
-        module: 'ESNext',
-        target: 'ES2022'
+```typescript
+import { defineConfig } from 'vitest/config';
+import { resolve } from 'path';
+
+export default defineConfig({
+  test: {
+    environment: 'node',
+    globals: true,
+    root: '.',
+    include: [
+      'tests/**/*.test.ts',
+      'src/**/*.test.ts'
+    ],
+    exclude: [
+      'node_modules',
+      'dist',
+      'coverage'
+    ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules',
+        'dist',
+        'coverage',
+        '**/*.d.ts',
+        '**/*.config.ts'
+      ],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
       }
-    }]
+    }
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/index.ts'
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src')
     }
   }
 };
@@ -779,7 +792,7 @@ docker push your-registry/cortex-memory-mcp:v1.0.0
 ### Tools and Libraries
 
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
+- [Vitest Testing Framework](https://vitest.dev/guide/)
 - [Qdrant Documentation](https://qdrant.tech/documentation/)
 - [Express.js Guide](https://expressjs.com/en/guide/)
 

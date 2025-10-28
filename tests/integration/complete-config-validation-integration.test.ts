@@ -9,7 +9,7 @@
  * @since 2025
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Environment } from '../config/environment.ts';
 import { configValidator } from '../config/validation.ts';
 import {

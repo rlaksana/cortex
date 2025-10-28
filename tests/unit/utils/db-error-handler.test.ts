@@ -6,7 +6,25 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DatabaseErrorHandler, DbErrorType, RetryConfig, safeDbOperation } from '../utils/db-error-handler.ts';
+import { DatabaseErrorHandler, DbErrorType, RetryConfig, safeDbOperation, dbErrorHandler } from '../../../src/utils/db-error-handler.js';
+import { logger } from '../../../src/utils/logger.js';
+
+// Mock the logger
+vi.mock('../../../src/utils/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
+const mockedLogger = {
+  info: logger.info,
+  warn: logger.warn,
+  error: logger.error,
+  debug: logger.debug
+};
 
 describe('DatabaseErrorHandler', () => {
   let errorHandler: DatabaseErrorHandler;
@@ -177,7 +195,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should retry on timeout errors', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValueOnce(new Error('Operation timed out'))
         .mockRejectedValueOnce(new Error('Connection timeout'))
         .mockResolvedValue('success');
@@ -195,7 +213,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should not retry constraint violations', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Unique constraint violation'));
 
       const result = await errorHandler.executeWithRetry(
@@ -211,7 +229,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should not retry permission errors', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Access denied'));
 
       const result = await errorHandler.executeWithRetry(
@@ -227,7 +245,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should not retry schema errors', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Table does not exist'));
 
       const result = await errorHandler.executeWithRetry(
@@ -243,7 +261,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should exhaust max retries', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Connection refused'));
 
       const result = await errorHandler.executeWithRetry(
@@ -259,7 +277,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should use exponential backoff', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Connection refused'));
 
       const startTime = Date.now();
@@ -278,7 +296,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should respect max delay limit', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Connection refused'));
 
       const startTime = Date.now();
@@ -306,8 +324,8 @@ describe('DatabaseErrorHandler', () => {
 
   describe('Fallback Mechanism', () => {
     it('should use fallback when primary fails', async () => {
-      const primaryOperation = jest.fn().mockRejectedValue(new Error('Connection refused'));
-      const fallbackOperation = jest.fn().mockResolvedValue('fallback-success');
+      const primaryOperation = vi.fn().mockRejectedValue(new Error('Connection refused'));
+      const fallbackOperation = vi.fn().mockResolvedValue('fallback-success');
 
       const result = await errorHandler.executeWithFallback(
         primaryOperation,
@@ -322,8 +340,8 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should use primary when it succeeds', async () => {
-      const primaryOperation = jest.fn().mockResolvedValue('primary-success');
-      const fallbackOperation = jest.fn().mockResolvedValue('fallback-success');
+      const primaryOperation = vi.fn().mockResolvedValue('primary-success');
+      const fallbackOperation = vi.fn().mockResolvedValue('fallback-success');
 
       const result = await errorHandler.executeWithFallback(
         primaryOperation,
@@ -338,8 +356,8 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should fail when both primary and fallback fail', async () => {
-      const primaryOperation = jest.fn().mockRejectedValue(new Error('Primary failed'));
-      const fallbackOperation = jest.fn().mockRejectedValue(new Error('Fallback failed'));
+      const primaryOperation = vi.fn().mockRejectedValue(new Error('Primary failed'));
+      const fallbackOperation = vi.fn().mockRejectedValue(new Error('Fallback failed'));
 
       const result = await errorHandler.executeWithFallback(
         primaryOperation,
@@ -355,12 +373,12 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should apply retry logic to primary operation in fallback', async () => {
-      const primaryOperation = jest.fn()
+      const primaryOperation = vi.fn()
         .mockRejectedValueOnce(new Error('Connection refused'))
         .mockRejectedValueOnce(new Error('Connection refused'))
         .mockRejectedValue(new Error('Connection refused')); // Still fails after retries
 
-      const fallbackOperation = jest.fn().mockResolvedValue('fallback-success');
+      const fallbackOperation = vi.fn().mockResolvedValue('fallback-success');
 
       const result = await errorHandler.executeWithFallback(
         primaryOperation,
@@ -377,7 +395,7 @@ describe('DatabaseErrorHandler', () => {
 
   describe('Logging', () => {
     it('should log successful operations after retries', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValueOnce(new Error('Connection refused'))
         .mockResolvedValue('success');
 
@@ -394,7 +412,7 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should log operation failures', async () => {
-      const mockOperation = jest.fn()
+      const mockOperation = vi.fn()
         .mockRejectedValue(new Error('Connection refused'));
 
       await errorHandler.executeWithRetry(
@@ -416,8 +434,8 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should log fallback usage', async () => {
-      const primaryOperation = jest.fn().mockRejectedValue(new Error('Primary failed'));
-      const fallbackOperation = jest.fn().mockResolvedValue('success');
+      const primaryOperation = vi.fn().mockRejectedValue(new Error('Primary failed'));
+      const fallbackOperation = vi.fn().mockResolvedValue('success');
 
       await errorHandler.executeWithFallback(
         primaryOperation,
@@ -432,8 +450,8 @@ describe('DatabaseErrorHandler', () => {
     });
 
     it('should log when both operations fail', async () => {
-      const primaryOperation = jest.fn().mockRejectedValue(new Error('Primary failed'));
-      const fallbackOperation = jest.fn().mockRejectedValue(new Error('Fallback failed'));
+      const primaryOperation = vi.fn().mockRejectedValue(new Error('Primary failed'));
+      const fallbackOperation = vi.fn().mockRejectedValue(new Error('Fallback failed'));
 
       await errorHandler.executeWithFallback(
         primaryOperation,
@@ -477,7 +495,7 @@ describe('DatabaseErrorHandler', () => {
   describe('Health Check', () => {
     it('should return true for successful health check', async () => {
       const mockQdrant = {
-        $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }])
+        $queryRaw: vi.fn().mockResolvedValue([{ 1: 1 }])
       };
 
       const result = await errorHandler.healthCheck(mockQdrant as any);
@@ -487,7 +505,7 @@ describe('DatabaseErrorHandler', () => {
 
     it('should return false for failed health check', async () => {
       const mockQdrant = {
-        $queryRaw: jest.fn().mockRejectedValue(new Error('Connection failed'))
+        $queryRaw: vi.fn().mockRejectedValue(new Error('Connection failed'))
       };
 
       const result = await errorHandler.healthCheck(mockQdrant as any);
@@ -501,11 +519,11 @@ describe('DatabaseErrorHandler', () => {
 });
 
 describe('safeDbOperation Helper', () => {
-  let mockErrorHandler: jest.Mocked<DatabaseErrorHandler>;
+  let mockErrorHandler: any;
 
   beforeEach(() => {
     mockErrorHandler = {
-      executeWithRetry: jest.fn()
+      executeWithRetry: vi.fn()
     } as any;
 
     // Replace the singleton for testing
@@ -518,7 +536,7 @@ describe('safeDbOperation Helper', () => {
   });
 
   it('should return data when operation succeeds', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('test-data');
+    const mockOperation = vi.fn().mockResolvedValue('test-data');
     mockErrorHandler.executeWithRetry.mockResolvedValue({
       success: true,
       data: 'test-data',
@@ -535,7 +553,7 @@ describe('safeDbOperation Helper', () => {
   });
 
   it('should throw error when operation fails', async () => {
-    const mockOperation = jest.fn();
+    const mockOperation = vi.fn();
     mockErrorHandler.executeWithRetry.mockResolvedValue({
       success: false,
       error: {
@@ -554,7 +572,7 @@ describe('safeDbOperation Helper', () => {
   });
 
   it('should throw generic error when no error message provided', async () => {
-    const mockOperation = jest.fn();
+    const mockOperation = vi.fn();
     mockErrorHandler.executeWithRetry.mockResolvedValue({
       success: false,
       error: undefined
@@ -600,9 +618,9 @@ describe('Integration Tests', () => {
       baseDelayMs: 10
     });
 
-    const operation1 = jest.fn().mockResolvedValue('result1');
-    const operation2 = jest.fn().mockResolvedValue('result2');
-    const operation3 = jest.fn().mockRejectedValue(new Error('Operation 3 failed'));
+    const operation1 = vi.fn().mockResolvedValue('result1');
+    const operation2 = vi.fn().mockResolvedValue('result2');
+    const operation3 = vi.fn().mockRejectedValue(new Error('Operation 3 failed'));
 
     const results = await Promise.allSettled([
       errorHandler.executeWithRetry(operation1, 'operation1'),

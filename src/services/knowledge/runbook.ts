@@ -1,9 +1,9 @@
-import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
-import { logger } from '../../utils/logger.js';
+import type { RunbookData, ScopeFilter } from '../../types/knowledge-data';
+import { logger } from '../../utils/logger';
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
 export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -25,7 +25,7 @@ export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promi
 }
 
 export async function updateRunbook(id: string, data: Partial<RunbookData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const updateData: any = {};
@@ -76,7 +76,7 @@ export async function findRunbooks(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

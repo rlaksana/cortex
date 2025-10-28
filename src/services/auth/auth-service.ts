@@ -6,16 +6,16 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { logger } from '../../utils/logger.js';
-import { qdrant } from '../../db/qdrant-client.js';
+import { logger } from '../../utils/logger';
+import { qdrant } from '../../db/qdrant-client';
 import {
   ConfigurationError,
   AuthenticationError,
   ValidationError,
   ServiceErrorHandler,
   AsyncErrorHandler,
-} from '../../middleware/error-middleware.js';
-import { BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../../utils/error-handler.js';
+} from '../../middleware/error-middleware';
+import { BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../../utils/error-handler';
 import {
   User,
   ApiKey,
@@ -28,7 +28,7 @@ import {
   AuthError,
   TokenRevocationList,
   DEFAULT_ROLE_PERMISSIONS,
-} from '../../types/auth-types.js';
+} from '../../types/auth-types';
 
 export interface AuthServiceConfig {
   jwt_secret: string;

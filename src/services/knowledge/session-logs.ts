@@ -10,7 +10,7 @@
  */
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 
 // ============================================================================
 // INCIDENT LOG OPERATIONS
@@ -34,7 +34,7 @@ export async function storeIncident(
   data: IncidentData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -62,7 +62,7 @@ export async function storeIncident(
 }
 
 export async function updateIncident(id: string, data: Partial<IncidentData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -136,7 +136,7 @@ export async function findIncidents(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -200,7 +200,7 @@ export async function storeRelease(
   data: ReleaseData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -230,7 +230,7 @@ export async function storeRelease(
 }
 
 export async function updateRelease(id: string, data: Partial<ReleaseData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -302,7 +302,7 @@ export async function findReleases(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -373,7 +373,7 @@ export async function storeRisk(
   data: RiskData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -403,7 +403,7 @@ export async function storeRisk(
 }
 
 export async function updateRisk(id: string, data: Partial<RiskData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -475,7 +475,7 @@ export async function findRisks(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -543,7 +543,7 @@ export async function storeAssumption(
   data: AssumptionData,
   scope: Record<string, unknown> = {}
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -575,7 +575,7 @@ export async function storeAssumption(
 }
 
 export async function updateAssumption(id: string, data: Partial<AssumptionData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -647,7 +647,7 @@ export async function findAssumptions(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -708,7 +708,7 @@ export async function getSessionLogDashboard(
     offset?: number;
   } = {}
 ): Promise<SessionLogEntry[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

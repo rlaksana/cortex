@@ -17,23 +17,23 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
-import { Environment } from '../../config/environment.js';
-import { QdrantAdapter } from '../adapters/qdrant-adapter.js';
+import { logger } from '../../utils/logger';
+import { Environment } from '../../config/environment';
+import { QdrantAdapter } from '../adapters/qdrant-adapter';
 import type {
   IDatabaseFactory,
   DatabaseFactoryConfig,
   DatabaseType,
   DatabaseAdapters,
   AdapterCapabilities,
-} from '../interfaces/database-factory.interface.js';
+} from '../interfaces/database-factory.interface';
 import {
   DatabaseFactoryError,
   ConfigurationError,
   AdapterCreationError,
   UnsupportedDatabaseError,
-} from '../interfaces/database-factory.interface.js';
-import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface.js';
+} from '../interfaces/database-factory.interface';
+import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface';
 
 /**
  * Database factory implementation

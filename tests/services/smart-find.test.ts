@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { memoryFind } from '../services/memory-find.ts';
 import {
   smartMemoryFind,
@@ -10,8 +11,8 @@ import {
 } from '../utils/query-sanitizer.ts';
 
 // Mock the memoryFind function
-jest.mock('../../src/services/memory-find.js');
-const mockedMemoryFind = memoryFind as jest.MockedFunction<typeof memoryFind>;
+vi.mock('../../src/services/memory-find.js');
+const mockedMemoryFind = memoryFind as any;
 
 describe('Smart Memory Find', () => {
   const mockSuccessfulResult = {
@@ -50,7 +51,7 @@ describe('Smart Memory Find', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockedMemoryFind.mockClear();
   });
 

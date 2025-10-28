@@ -6,7 +6,7 @@
  */
 
 import { IVectorAdapter, VectorConfig } from './vector-adapter.interface.js';
-import { DatabaseConfig, DatabaseMetrics } from './database-interface.js';
+import { DatabaseConfig } from '../database-interface.js';
 
 export type DatabaseType = 'qdrant';
 

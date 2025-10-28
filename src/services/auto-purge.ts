@@ -9,9 +9,9 @@
  * @module services/auto-purge
  */
 
-import { logger } from '../utils/logger.js';
-import { qdrant } from '../db/qdrant.js';
-import { dbErrorHandler } from '../utils/db-error-handler.js';
+import { logger } from '../utils/logger';
+import { qdrant } from '../db/qdrant';
+import { dbErrorHandler } from '../utils/db-error-handler';
 
 export interface PurgeResult {
   deleted_counts: Record<string, number>;

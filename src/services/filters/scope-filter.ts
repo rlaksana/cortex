@@ -1,4 +1,4 @@
-import type { Scope } from '../../utils/scope.js';
+import type { Scope } from '../../utils/scope';
 
 export function buildScopeFilter(scope?: Scope): { where: string; params: unknown[] } {
   if (!scope) return { where: '', params: [] };

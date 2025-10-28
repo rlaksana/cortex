@@ -1,8 +1,8 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { TodoData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { TodoData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -29,7 +29,7 @@ export async function updateTodo(
   data: Partial<TodoData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

@@ -1,4 +1,4 @@
-import { qdrant } from '../../db/qdrant-client.js';
+import { qdrant } from '../../db/qdrant-client';
 
 export interface Suggestion {
   type: 'spelling' | 'filter' | 'broader' | 'alternative';

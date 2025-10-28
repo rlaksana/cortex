@@ -1,9 +1,9 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { DecisionData, ScopeFilter } from '../../types/knowledge-data.js';
-import { validateADRImmutability } from '../../utils/immutability.js';
+import type { DecisionData, ScopeFilter } from '../../types/knowledge-data';
+import { validateADRImmutability } from '../../utils/immutability';
 
 export async function storeDecision(data: DecisionData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -26,6 +26,7 @@ export async function storeDecision(data: DecisionData, scope: ScopeFilter): Pro
  * @throws ImmutabilityViolationError if ADR status is 'accepted'
  */
 export async function updateDecision(id: string, data: Partial<DecisionData>): Promise<void> {
+  const { getQdrantClient } = await import('../../db/qdrant-client');
   const qdrant = getQdrantClient();
   // Check immutability before allowing update
   await validateADRImmutability(id);

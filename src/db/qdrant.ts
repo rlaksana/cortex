@@ -5,7 +5,7 @@
  * Re-exports the qdrant client from qdrant-client.ts
  */
 
-export { qdrant, getQdrantClient } from './qdrant-client.js';
+export { qdrant, getQdrantClient } from './qdrant-client';
 
 // Default export for compatibility
-export { qdrant as default } from './qdrant-client.js';
+export { qdrant as default } from './qdrant-client';

@@ -1,29 +1,27 @@
-import type { SectionData, ScopeFilter } from '../../types/knowledge-data.js';
-import { validateSpecWriteLock } from '../../utils/immutability.js';
-import { logger } from '../../utils/logger.js';
+import type { SectionData, ScopeFilter } from '../../types/knowledge-data';
+import { validateSpecWriteLock } from '../../utils/immutability';
+import { logger } from '../../utils/logger';
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
 /**
  * Store a new section in the database
  */
 export async function storeSection(data: SectionData, scope?: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  // FIXED: Use direct field access for new fields instead of metadata workaround
-  const result = await qdrant.section.create({
-    data: {
-      title: data.title || data.heading || 'Untitled Section',
-      content: data.body_text || data.body_md || '',
-      heading: data.heading || null,
-      body_md: data.body_md || null,
-      body_text: data.body_text || null,
-      document_id: data.document_id || null,
-      citation_count: data.citation_count || 0,
-      tags: scope || {},
-      metadata: {},
-    },
+  // FIXED: Use UnifiedDatabaseLayer instead of direct qdrant access
+  const result = await db.create('section', {
+    title: data.title || data.heading || 'Untitled Section',
+    content: data.body_text || data.body_md || '',
+    heading: data.heading || null,
+    body_md: data.body_md || null,
+    body_text: data.body_text || null,
+    document_id: data.document_id || null,
+    citation_count: data.citation_count || 0,
+    tags: scope || {},
+    metadata: {},
   });
 
   logger.info({ sectionId: result.id, title: data.title }, 'Section stored successfully');
@@ -40,7 +38,7 @@ export async function updateSection(
   data: Partial<SectionData>,
   scope?: ScopeFilter
 ): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Check write-lock before allowing update
@@ -108,7 +106,7 @@ export async function findSections(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

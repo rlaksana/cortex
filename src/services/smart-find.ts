@@ -1,5 +1,5 @@
 import { logger } from '../utils/logger.js';
-import { memoryFind } from './memory-find.js';
+import { coreMemoryFind } from './core-memory-find.js';
 import { sanitizeQuery, type SanitizationLevel } from '../utils/query-sanitizer.js';
 
 /**
@@ -160,11 +160,11 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
   // If auto-fix disabled, return original query
   if (!enable_auto_fix) {
     logger.warn({ query }, 'Auto-fix disabled for query');
-    const result = await memoryFind({
+    const result = await coreMemoryFind({
       query,
       scope,
       types,
-      top_k,
+      limit: top_k,
       mode,
     });
 
@@ -227,11 +227,11 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
 
     try {
       const result = await Promise.race([
-        memoryFind({
+        coreMemoryFind({
           query: currentQuery,
           scope,
           types,
-          top_k,
+          limit: top_k,
           mode: currentMode,
         }),
         new Promise<never>((_, reject) =>
@@ -309,11 +309,11 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
             correctionMetadata.final_sanitization_level = 'aggressive';
 
             // Try one final time
-            const memoryFindResult = await memoryFind({
+            const memoryFindResult = await coreMemoryFind({
               query: currentQuery,
               scope,
               types,
-              top_k,
+              limit: top_k,
               mode: 'deep',
             });
 

@@ -1,14 +1,14 @@
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 import type {
   ValidationService as IValidationService,
   KnowledgeItem,
   StoreError,
-} from '../../types/core-interfaces.js';
+} from '../../types/core-interfaces';
 import {
   MemoryStoreRequestSchema,
   MemoryFindRequestSchema,
   validateKnowledgeItems,
-} from '../../schemas/enhanced-validation.js';
+} from '../../schemas/enhanced-validation';
 
 /**
  * Validation service for input validation and business rule enforcement

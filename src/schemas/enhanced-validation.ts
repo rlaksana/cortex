@@ -12,7 +12,7 @@ import {
   RiskDataSchema,
   AssumptionDataSchema,
   ScopeSchema,
-} from './knowledge-types.js';
+} from './knowledge-types';
 
 /**
  * Enhanced Zod schemas with comprehensive validation to prevent database constraint violations

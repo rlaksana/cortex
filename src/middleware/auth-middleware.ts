@@ -5,9 +5,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { logger } from '../utils/logger.js';
-import { AuthService } from '../services/auth/auth-service.js';
-import { AuditService } from '../services/audit/audit-service.js';
+import { logger } from '../utils/logger';
+import { AuthService } from '../services/auth/auth-service';
+import { AuditService } from '../services/audit/audit-service';
 import {
   AuthContext,
   AuthError,
@@ -15,7 +15,7 @@ import {
   AuthScope,
   SecurityAuditLog,
   UserRole,
-} from '../types/auth-types.js';
+} from '../types/auth-types';
 
 export interface AuthenticatedRequest extends Request {
   auth?: AuthContext;

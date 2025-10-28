@@ -13,8 +13,8 @@ import {
   ErrorCode,
   ErrorCategory,
   ErrorSeverity,
-} from '../utils/error-handler.js';
-import { logger } from '../utils/logger.js';
+} from '../utils/error-handler';
+import { logger } from '../utils/logger';
 
 // API Error Handler for MCP tool responses
 export class ApiErrorHandler {

@@ -20,8 +20,8 @@
  */
 
 import { OpenAI } from 'openai';
-import { logger } from '../../utils/logger.js';
-import { DatabaseError, ValidationError } from '../../db/database-interface.js';
+import { logger } from '../../utils/logger';
+import { DatabaseError, ValidationError } from '../../db/database-interface';
 
 /**
  * Embedding configuration options

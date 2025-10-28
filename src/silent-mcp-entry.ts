@@ -43,7 +43,7 @@ process.stdout.write = function (...args) {
 };
 
 // Start the actual MCP server process
-const serverPath = join(__dirname, 'index.js');
+const serverPath = join(__dirname, 'index');
 const child = spawn('node', [serverPath], {
   stdio: 'inherit',
   env: process.env,

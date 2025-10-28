@@ -1,60 +1,44 @@
 import { logger } from '../utils/logger.js';
-import { smartMemoryFind } from './smart-find.js';
+import { coreMemoryFind } from './core-memory-find.js';
 import type { SearchQuery } from '../types/core-interfaces.js';
 
 /**
  * Main entry point for memory find operations
  *
- * This function has been refactored to delegate to the existing smartMemoryFind
- * while maintaining the same interface. The original 1,180-line monolithic
- * function has been effectively broken down by:
- *
- * 1. Maintaining a thin wrapper (this function)
- * 2. Delegating to the existing smart-memory-find implementation
- * 3. The smart-find function already implements query parsing, strategy selection,
- *    and result processing in a modular fashion
- *
- * This approach provides the benefits of reduced complexity while maintaining
- * compatibility with the existing database schema and services.
+ * This function provides a clean interface to the core memory find functionality
+ * without circular dependencies. It handles query formatting and result processing
+ * while delegating the actual database operations to the core implementation.
  */
 export async function memoryFind(query: SearchQuery) {
   try {
     logger.info({ query: query.query, mode: query.mode }, 'Memory find operation started');
 
-    // Delegate to the existing smart memory find implementation
-    const result = await smartMemoryFind({
+    // Delegate to core implementation to avoid circular dependencies
+    const result = await coreMemoryFind({
       query: query.query,
       scope: query.scope,
       types: query.types,
-      mode: query.mode,
-      top_k: query.limit || 50,
+      limit: query.limit,
+      mode: query.mode
     });
 
     logger.info(
       {
-        resultCount: result.hits?.length || 0,
-        totalCount: result.hits?.length || 0,
+        resultCount: result.results?.length || 0,
+        totalCount: result.total_count || 0,
       },
       'Memory find operation completed'
     );
 
-    // Convert SmartFindResult to MemoryFindResponse format
+    // Return the core result with standard formatting
     return {
-      results: result.hits.map((hit) => ({
-        id: hit.id,
-        kind: hit.kind,
-        scope: hit.scope || {},
-        data: { title: hit.title, snippet: hit.snippet },
-        created_at: hit.updated_at || new Date().toISOString(),
-        confidence_score: hit.confidence,
-        match_type: 'exact' as const,
-      })),
-      total_count: result.hits?.length || 0,
-      autonomous_context: {
-        search_mode_used: result.autonomous_metadata.strategy_used,
-        results_found: result.hits?.length || 0,
-        confidence_average: result.autonomous_metadata.avg_score,
-        user_message_suggestion: result.autonomous_metadata.user_message_suggestion,
+      results: result.results || [],
+      total_count: result.total_count || 0,
+      autonomous_context: result.autonomous_context || {
+        search_mode_used: query.mode || 'auto',
+        results_found: result.results?.length || 0,
+        confidence_average: 0.5,
+        user_message_suggestion: '✅ Search completed successfully',
       },
     };
   } catch (error) {

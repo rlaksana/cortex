@@ -5,49 +5,49 @@
  */
 
 // Section knowledge type
-export * from './section.js';
+export * from './section';
 
 // Decision knowledge type (ADR - Architecture Decision Records)
-export * from './decision.js';
+export * from './decision';
 
 // Issue knowledge type
-export * from './issue.js';
+export * from './issue';
 
 // Todo knowledge type
-export * from './todo.js';
+export * from './todo';
 
 // Runbook knowledge type
-export * from './runbook.js';
+export * from './runbook';
 
 // Change knowledge type
-export * from './change.js';
+export * from './change';
 
 // Release Note knowledge type
-export * from './release_note.js';
+export * from './release_note';
 
 // DDL knowledge type
-export * from './ddl.js';
+export * from './ddl';
 
 // PR Context knowledge type
-export * from './pr_context.js';
+export * from './pr_context';
 
 // Entity knowledge type
-export * from './entity.js';
+export * from './entity';
 
 // Relation knowledge type
-export * from './relation.js';
+export * from './relation';
 
 // Observation knowledge type
-export * from './observation.js';
+export * from './observation';
 
 // Incident knowledge type
-export * from './incident.js';
+export * from './incident';
 
 // Release knowledge type
-export * from './release.js';
+export * from './release';
 
 // Risk knowledge type
-export * from './risk.js';
+export * from './risk';
 
 // Assumption knowledge type
-export * from './assumption.js';
+export * from './assumption';

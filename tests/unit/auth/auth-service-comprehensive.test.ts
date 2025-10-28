@@ -5,32 +5,32 @@
  * for the AuthService class and related authentication functionality.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthService, AuthServiceConfig } from '../services/auth/auth-service.ts';
 import { UserRole, AuthScope, User, AuthSession } from '../types/auth-types.ts';
 import { logger } from '../utils/logger.ts';
 
 // Mock external dependencies
-jest.mock('bcryptjs');
-jest.mock('jsonwebtoken');
-jest.mock('../../src/utils/logger.js');
-jest.mock('../../src/db/qdrant.js');
+vi.mock('bcryptjs');
+vi.mock('jsonwebtoken');
+vi.mock('../../src/utils/logger.js');
+vi.mock('../../src/db/qdrant.js');
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { qdrant } from '../db/qdrant.ts';
 
-const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
-const mockedJwt = jwt as jest.Mocked<typeof jwt>;
-const mockedLogger = logger as jest.Mocked<typeof logger>;
-const mockedQdrant = qdrant as jest.Mocked<typeof qdrant>;
+const mockedBcrypt = bcrypt as any;
+const mockedJwt = jwt as any;
+const mockedLogger = logger as any;
+const mockedQdrant = qdrant as any;
 
 describe('AuthService Comprehensive Tests', () => {
   let authService: AuthService;
   let mockConfig: AuthServiceConfig;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     mockConfig = {
       jwt_secret: 'test-jwt-secret-that-is-at-least-32-characters-long',
@@ -45,17 +45,17 @@ describe('AuthService Comprehensive Tests', () => {
     };
 
     // Mock database client
-    mockedQdrant.getClient = jest.fn().mockReturnValue({
+    mockedQdrant.getClient = vi.fn().mockReturnValue({
       user: {
-        findUnique: jest.fn(),
-        update: jest.fn()
+        findUnique: vi.fn(),
+        update: vi.fn()
       },
       apiKey: {
-        findFirst: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-        create: jest.fn(),
-        findMany: jest.fn()
+        findFirst: vi.fn(),
+        update: vi.fn(),
+        updateMany: vi.fn(),
+        create: vi.fn(),
+        findMany: vi.fn()
       }
     });
 
@@ -63,7 +63,7 @@ describe('AuthService Comprehensive Tests', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Configuration Validation', () => {
@@ -140,8 +140,8 @@ describe('AuthService Comprehensive Tests', () => {
     it('should authenticate valid user', async () => {
       const mockDbClient = mockedQdrant.getClient();
       mockedBcrypt.compare.mockResolvedValue(true);
-      (mockDbClient.user.findUnique as jest.Mock).mockResolvedValue(mockUserRecord);
-      (mockDbClient.user.update as jest.Mock).mockResolvedValue(mockUserRecord);
+      (mockDbClient.user.findUnique as any).mockResolvedValue(mockUserRecord);
+      (mockDbClient.user.update as any).mockResolvedValue(mockUserRecord);
 
       const result = await authService.validateUserWithDatabase('testuser', 'password');
 
@@ -164,7 +164,7 @@ describe('AuthService Comprehensive Tests', () => {
 
     it('should reject non-existent user', async () => {
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (mockDbClient.user.findUnique as any).mockResolvedValue(null);
 
       const result = await authService.validateUserWithDatabase('nonexistent', 'password');
 
@@ -174,7 +174,7 @@ describe('AuthService Comprehensive Tests', () => {
     it('should reject inactive user', async () => {
       const inactiveUser = { ...mockUserRecord, is_active: false };
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.user.findUnique as jest.Mock).mockResolvedValue(inactiveUser);
+      (mockDbClient.user.findUnique as any).mockResolvedValue(inactiveUser);
 
       await expect(authService.validateUserWithDatabase('testuser', 'password'))
         .rejects.toThrow('Account is disabled');
@@ -182,7 +182,7 @@ describe('AuthService Comprehensive Tests', () => {
 
     it('should reject incorrect password', async () => {
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.user.findUnique as jest.Mock).mockResolvedValue(mockUserRecord);
+      (mockDbClient.user.findUnique as any).mockResolvedValue(mockUserRecord);
       mockedBcrypt.compare.mockResolvedValue(false);
 
       await expect(authService.validateUserWithDatabase('testuser', 'wrongpassword'))
@@ -192,8 +192,8 @@ describe('AuthService Comprehensive Tests', () => {
     it('should update last login timestamp', async () => {
       const mockDbClient = mockedQdrant.getClient();
       mockedBcrypt.compare.mockResolvedValue(true);
-      (mockDbClient.user.findUnique as jest.Mock).mockResolvedValue(mockUserRecord);
-      (mockDbClient.user.update as jest.Mock).mockResolvedValue(mockUserRecord);
+      (mockDbClient.user.findUnique as any).mockResolvedValue(mockUserRecord);
+      (mockDbClient.user.update as any).mockResolvedValue(mockUserRecord);
 
       await authService.validateUserWithDatabase('testuser', 'password');
 
@@ -523,9 +523,9 @@ describe('AuthService Comprehensive Tests', () => {
         }
       };
 
-      (mockDbClient.apiKey.findFirst as jest.Mock).mockResolvedValue(mockApiKeyRecord);
+      (mockDbClient.apiKey.findFirst as any).mockResolvedValue(mockApiKeyRecord);
       mockedBcrypt.compare.mockResolvedValue(true);
-      (mockDbClient.apiKey.update as jest.Mock).mockResolvedValue(mockApiKeyRecord);
+      (mockDbClient.apiKey.update as any).mockResolvedValue(mockApiKeyRecord);
 
       const result = await authService.validateApiKeyWithDatabase('ck_test_12345678abcdef12345678');
 
@@ -543,7 +543,7 @@ describe('AuthService Comprehensive Tests', () => {
 
     it('should reject non-existent API key', async () => {
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.apiKey.findFirst as jest.Mock).mockResolvedValue(null);
+      (mockDbClient.apiKey.findFirst as any).mockResolvedValue(null);
 
       const result = await authService.validateApiKeyWithDatabase('ck_test_nonexistent');
 
@@ -556,7 +556,7 @@ describe('AuthService Comprehensive Tests', () => {
         ...mockDbClient.apiKey.findFirst,
         is_active: false
       };
-      (mockDbClient.apiKey.findFirst as jest.Mock).mockResolvedValue(mockApiKeyRecord);
+      (mockDbClient.apiKey.findFirst as any).mockResolvedValue(mockApiKeyRecord);
 
       const result = await authService.validateApiKeyWithDatabase('ck_test_inactive');
 
@@ -569,7 +569,7 @@ describe('AuthService Comprehensive Tests', () => {
         ...mockDbClient.apiKey.findFirst,
         expires_at: new Date('2020-01-01') // Expired
       };
-      (mockDbClient.apiKey.findFirst as jest.Mock).mockResolvedValue(mockApiKeyRecord);
+      (mockDbClient.apiKey.findFirst as any).mockResolvedValue(mockApiKeyRecord);
 
       const result = await authService.validateApiKeyWithDatabase('ck_test_expired');
 
@@ -578,7 +578,7 @@ describe('AuthService Comprehensive Tests', () => {
 
     it('should create API key in database', async () => {
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.apiKey.create as jest.Mock).mockResolvedValue({ id: 'new-key-id' });
+      (mockDbClient.apiKey.create as any).mockResolvedValue({ id: 'new-key-id' });
 
       const result = await authService.createApiKeyInDatabase(
         'user-123',
@@ -600,7 +600,7 @@ describe('AuthService Comprehensive Tests', () => {
 
     it('should revoke API key', async () => {
       const mockDbClient = mockedQdrant.getClient();
-      (mockDbClient.apiKey.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (mockDbClient.apiKey.updateMany as any).mockResolvedValue({ count: 1 });
 
       const result = await authService.revokeApiKey('ck_test_12345678', 'user-123');
 
@@ -629,7 +629,7 @@ describe('AuthService Comprehensive Tests', () => {
           updated_at: new Date('2023-01-01')
         }
       ];
-      (mockDbClient.apiKey.findMany as jest.Mock).mockResolvedValue(mockApiKeys);
+      (mockDbClient.apiKey.findMany as any).mockResolvedValue(mockApiKeys);
 
       const result = await authService.listApiKeysForUser('user-123');
 

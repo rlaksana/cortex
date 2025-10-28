@@ -1,8 +1,8 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeRelease(data: ReleaseData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -37,7 +37,7 @@ export async function findReleases(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<ReleaseData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -91,7 +91,7 @@ export async function updateRelease(
   data: Partial<ReleaseData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

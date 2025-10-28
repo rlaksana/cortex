@@ -1,12 +1,12 @@
-import { logger, withRequestLogging } from '../../utils/logger.js';
+import { logger, withRequestLogging } from '../../utils/logger';
 import {
   logRequestStart,
   logRequestSuccess,
   logRequestError,
   logDatabaseOperation,
   logBusinessOperation,
-} from '../../utils/logging-patterns.js';
-import { softDelete, type DeleteRequest } from '../delete-operations.js';
+} from '../../utils/logging-patterns';
+import { softDelete, type DeleteRequest } from '../delete-operations';
 import {
   storeRunbook,
   storeChange,
@@ -26,20 +26,20 @@ import {
   updateRisk,
   storeAssumption,
   updateAssumption,
-} from '../knowledge/index.js';
-import { storeDecision, updateDecision } from '../knowledge/decision.js';
-import { storeSection } from '../knowledge/section.js';
-import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types.js';
-import { ImmutabilityViolationError } from '../../utils/immutability.js';
+} from '../knowledge/index';
+import { storeDecision, updateDecision } from '../knowledge/decision';
+import { storeSection } from '../knowledge/section';
+import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
+import { ImmutabilityViolationError } from '../../utils/immutability';
 import type {
   KnowledgeItem,
   StoreResult,
   StoreError,
   AutonomousContext,
   MemoryStoreResponse,
-} from '../../types/core-interfaces.js';
-import { validationService } from '../validation/validation-service.js';
-import { auditService } from '../audit/audit-service.js';
+} from '../../types/core-interfaces';
+import { validationService } from '../validation/validation-service';
+import { auditService } from '../audit/audit-service';
 
 /**
  * Orchestrator for memory store operations
@@ -295,10 +295,10 @@ export class MemoryStoreOrchestrator {
   private async validateDecisionImmutability(id: string, item: KnowledgeItem): Promise<void> {
     try {
       // Import and use the validation function from knowledge types
-      const { violatesADRImmutability } = await import('../../schemas/knowledge-types.js');
+      const { violatesADRImmutability } = await import('../../schemas/knowledge-types');
 
       // Get existing decision from database
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.adrDecision.findUnique({
@@ -351,10 +351,10 @@ export class MemoryStoreOrchestrator {
    */
   private async validateSectionWriteLock(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { violatesSpecWriteLock } = await import('../../schemas/knowledge-types.js');
+      const { violatesSpecWriteLock } = await import('../../schemas/knowledge-types');
 
       // Get existing section from database
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.section.findUnique({
@@ -407,7 +407,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateIncidentUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.incidentLog.findUnique({
@@ -461,7 +461,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateReleaseUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.releaseLog.findUnique({
@@ -512,7 +512,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateRiskUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.riskLog.findUnique({
@@ -566,7 +566,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateAssumptionUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.assumptionLog.findUnique({
@@ -618,7 +618,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateTodoUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.todoLog.findUnique({
@@ -665,7 +665,7 @@ export class MemoryStoreOrchestrator {
    */
   private async validateIssueUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
     try {
-      const { getQdrantClient } = await import('../../db/qdrant.js');
+      const { getQdrantClient } = await import('../../db/qdrant');
       const qdrant = getQdrantClient();
 
       const existing = await qdrant.issueLog.findUnique({
@@ -880,7 +880,7 @@ export class MemoryStoreOrchestrator {
     operation: 'create' | 'update'
   ): Promise<string> {
     if (operation === 'update' && item.id) {
-      const { updateTodo } = await import('../knowledge/todo.js');
+      const { updateTodo } = await import('../knowledge/todo');
       return await updateTodo(item.id, item.data as any, item.scope);
     }
 

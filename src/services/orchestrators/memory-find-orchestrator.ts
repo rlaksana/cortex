@@ -1,13 +1,13 @@
-import { logger } from '../../utils/logger.js';
-import { qdrant } from '../../db/qdrant-client.js';
-import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal.js';
-import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
-import { queryParser, type ParsedQuery } from '../search/query-parser.js';
-import { searchStrategySelector, type StrategySelection } from '../search/search-strategy.js';
-import { searchService } from '../search/search-service.js';
-import { entityMatchingService } from '../search/entity-matching-service.js';
-import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
-import { auditService } from '../audit/audit-service.js';
+import { logger } from '../../utils/logger';
+import { qdrant } from '../../db/qdrant-client';
+import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal';
+import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces';
+import { queryParser, type ParsedQuery } from '../search/query-parser';
+import { searchStrategySelector, type StrategySelection } from '../search/search-strategy';
+import { searchService } from '../search/search-service';
+import { entityMatchingService } from '../search/entity-matching-service';
+import { resultRanker, type ResultRanker } from '../ranking/result-ranker';
+import { auditService } from '../audit/audit-service';
 
 /**
  * Search execution context

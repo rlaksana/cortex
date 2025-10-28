@@ -20,7 +20,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
 import crypto from 'crypto';
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -30,7 +30,7 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   AutonomousContext,
-} from '../../types/core-interfaces.js';
+} from '../../types/core-interfaces';
 import type {
   IVectorAdapter,
   VectorConfig,
@@ -38,8 +38,8 @@ import type {
   StoreOptions,
   DeleteOptions,
   DatabaseMetrics,
-} from '../interfaces/vector-adapter.interface.js';
-import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface.js';
+} from '../interfaces/vector-adapter.interface';
+import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface';
 
 /**
  * Qdrant collection information interface

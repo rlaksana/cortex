@@ -1,5 +1,5 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { IssueData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { IssueData, ScopeFilter } from '../../types/knowledge-data';
 
 /**
  * qdrant SCHEMA COMPLIANT ISSUELOG SERVICE
@@ -69,9 +69,13 @@ export async function storeIssue(data: IssueData, scope: ScopeFilter): Promise<s
   // ENFORCE qdrant SCHEMA COMPLIANCE
   validateQdrantSchemaCompliance(data);
 
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
+
+  // Get qdrant client for direct database access
+  const { getQdrantClient } = await import('../../db/qdrant-client');
+  const qdrant = getQdrantClient();
 
   // qdrant SCHEMA COMPLIANCE: Use direct database fields only
   // NO metadata workarounds allowed for tracker/external_id

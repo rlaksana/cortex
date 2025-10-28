@@ -10,17 +10,17 @@
 /*
 TODO: Rewrite this test for Qdrant + PostgreSQL architecture
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { AuthService } from '../services/auth/auth-service.ts';
-import { AuthMiddleware } from '../middleware/auth-middleware.ts';
-import { SimilarityService } from '../services/similarity/similarity-service.ts';
-import { AuditService } from '../services/audit/audit-service.ts';
-import { AuthScope, UserRole } from '../types/auth-types.ts';
-import { KnowledgeItem } from '../types/core-interfaces.ts';
+// import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+// import { AuthService } from '../services/auth/auth-service.ts';
+// import { AuthMiddleware } from '../middleware/auth-middleware.ts';
+// import { SimilarityService } from '../services/similarity/similarity-service.ts';
+// import { AuditService } from '../services/audit/audit-service.ts';
+// import { AuthScope, UserRole } from '../types/auth-types.ts';
+// import { KnowledgeItem } from '../types/core-interfaces.ts';
 
 // Mock dependencies for new architecture
-jest.mock('../src/utils/logger.js');
-jest.mock('../src/db/database-factory.js');
+// vi.mock('../src/utils/logger.js');
+// vi.mock('../src/db/database-factory.js');
 
 describe.skip('Authentication and Similarity Integration Tests (DISABLED - Needs Rewrite)', () => {
   let authService: AuthService;
@@ -65,11 +65,11 @@ describe.skip('Authentication and Similarity Integration Tests (DISABLED - Needs
     } as any);
 
     // Reset all mocks
-    jest.clearAllMocks();
-  });
+    // jest.clearAllMocks();
+  // });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
+  // afterEach(() => {
+  // jest.restoreAllMocks();
   });
 
   describe('API Key Authentication', () => {

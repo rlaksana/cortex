@@ -18,14 +18,14 @@ import {
   batchOperation,
   optimisticUpdate,
   transactionHealthCheck,
-} from '../../src/utils/transaction';
+} from '../../../src/utils/transaction';
 
 // Mock the dependencies
-vi.mock('../../src/db/unified-database-layer.js', () => ({
+vi.mock('../../../src/db/unified-database-layer.js', () => ({
   UnifiedDatabaseLayer: vi.fn().mockImplementation(() => mockDatabaseLayer),
 }));
 
-vi.mock('../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
     debug: vi.fn(),
     warn: vi.fn(),
@@ -33,7 +33,7 @@ vi.mock('../../src/utils/logger.js', () => ({
   },
 }));
 
-vi.mock('../../src/utils/db-error-handler.js', () => ({
+vi.mock('../../../src/utils/db-error-handler.js', () => ({
   dbErrorHandler: {
     categorizeError: vi.fn(),
   },
@@ -60,7 +60,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     // Default successful error categorization
-    const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+    const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
     dbErrorHandler.categorizeError.mockReturnValue('UNKNOWN_ERROR');
   });
 
@@ -82,7 +82,7 @@ describe('Transaction Handling Utilities', () => {
   describe('executeTransaction', () => {
     it('should execute transaction successfully', async () => {
       const callback = vi.fn().mockResolvedValue('success');
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       dbErrorHandler.categorizeError.mockReturnValue('UNKNOWN_ERROR');
 
@@ -128,7 +128,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should retry on retryable errors', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // First call fails, second succeeds
       const callback = vi.fn()
@@ -159,7 +159,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should fail after max retries exceeded', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const callback = vi.fn().mockRejectedValue(new Error('Persistent error'));
       dbErrorHandler.categorizeError.mockReturnValue('CONFLICT');
@@ -182,7 +182,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should not retry on non-retryable errors', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const callback = vi.fn().mockRejectedValue(new Error('Constraint violation'));
       dbErrorHandler.categorizeError.mockReturnValue('CONSTRAINT_VIOLATION');
@@ -195,7 +195,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should use exponential backoff for retries', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const callback = vi.fn().mockRejectedValue(new Error('Retryable error'));
       dbErrorHandler.categorizeError.mockReturnValue('CONFLICT');
@@ -217,7 +217,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should cap retry delay at maximum', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const callback = vi.fn().mockRejectedValue(new Error('Retryable error'));
       dbErrorHandler.categorizeError.mockReturnValue('CONFLICT');
@@ -241,7 +241,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should log debug information during execution', async () => {
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../../src/utils/logger');
       const callback = vi.fn().mockResolvedValue('success');
 
       await executeTransaction(callback);
@@ -258,7 +258,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should log warnings for failed attempts', async () => {
-      const { logger, dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { logger, dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const callback = vi.fn().mockRejectedValue(new Error('Test error'));
       dbErrorHandler.categorizeError.mockReturnValue('CONFLICT');
@@ -353,7 +353,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should handle mixed success and failure operations', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       const operations = [
         vi.fn().mockResolvedValue('result1'),
@@ -396,7 +396,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should log parallel transaction statistics', async () => {
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../../src/utils/logger');
 
       const operations = [
         vi.fn().mockResolvedValue('result1'),
@@ -423,7 +423,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should handle individual transaction errors gracefully', async () => {
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../../src/utils/logger');
 
       const operations = [
         vi.fn().mockRejectedValue(new Error('Individual error')),
@@ -481,7 +481,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should log batch processing information', async () => {
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../../src/utils/logger');
 
       const items = Array.from({ length: 10 }, (_, i) => `item${i}`);
       const processor = vi.fn().mockResolvedValue([]);
@@ -508,7 +508,7 @@ describe('Transaction Handling Utilities', () => {
     });
 
     it('should log batch completion', async () => {
-      const { logger } = require('../../src/utils/logger.js');
+      const { logger } = require('../../../src/utils/logger');
 
       const items = ['item1', 'item2'];
       const processor = vi.fn().mockResolvedValue(['processed1', 'processed2']);
@@ -733,7 +733,7 @@ describe('Transaction Handling Utilities', () => {
   describe('Error Handling and Edge Cases', () => {
     it('should handle transaction timeout errors', async () => {
       const callback = vi.fn().mockRejectedValue(new Error('Transaction timeout'));
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       dbErrorHandler.categorizeError.mockReturnValue('TIMEOUT_ERROR');
 
@@ -745,7 +745,7 @@ describe('Transaction Handling Utilities', () => {
 
     it('should handle deadlock errors', async () => {
       const callback = vi.fn().mockRejectedValue(new Error('Deadlock detected'));
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       dbErrorHandler.categorizeError.mockReturnValue('DEADLOCK');
 
@@ -765,7 +765,7 @@ describe('Transaction Handling Utilities', () => {
 
     it('should handle connection pool exhaustion', async () => {
       const callback = vi.fn().mockRejectedValue(new Error('Connection pool exhausted'));
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       dbErrorHandler.categorizeError.mockReturnValue('CONNECTION_ERROR');
 
@@ -843,7 +843,7 @@ describe('Transaction Handling Utilities', () => {
 
   describe('Integration Scenarios', () => {
     it('should handle complete workflow with retry and batch processing', async () => {
-      const { dbErrorHandler } = require('../../src/utils/db-error-handler.js');
+      const { dbErrorHandler } = require('../../../src/utils/db-error-handler');
 
       // Simulate a scenario where some operations need retry
       let attemptCount = 0;

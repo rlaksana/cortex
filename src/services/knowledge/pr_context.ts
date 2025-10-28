@@ -1,8 +1,8 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { PRContextData, ScopeFilter } from '../../types/knowledge-data.js';
+import type { PRContextData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storePRContext(data: PRContextData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

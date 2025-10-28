@@ -8,7 +8,7 @@
  */
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { ObservationItem } from '../../schemas/knowledge-types.js';
+import type { ObservationItem } from '../../schemas/knowledge-types';
 
 /**
  * Add an observation to an entity
@@ -27,7 +27,7 @@ export async function addObservation(
   data: ObservationItem['data'],
   _scope?: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // FIXED: Use direct field access for observation_type and store metadata properly
@@ -53,7 +53,7 @@ export async function addObservation(
  * @returns true if deleted, false if not found
  */
 export async function deleteObservation(observationId: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.knowledgeObservation.updateMany({
@@ -85,7 +85,7 @@ export async function deleteObservationsByText(
   entity_id: string,
   observationText: string
 ): Promise<number> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.knowledgeObservation.updateMany({
@@ -125,7 +125,7 @@ export async function getObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -185,7 +185,7 @@ export async function searchObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Use FTS if query looks like search terms, otherwise use LIKE
@@ -308,7 +308,7 @@ export async function searchObservations(
  * @returns Number of active observations
  */
 export async function getObservationCount(entity_type: string, entity_id: string): Promise<number> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.$queryRaw`
@@ -348,7 +348,7 @@ export async function getRecentObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer.js');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

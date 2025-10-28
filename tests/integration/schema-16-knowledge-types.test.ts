@@ -5,7 +5,7 @@
  * for all 16 knowledge types in the Cortex Memory MCP system.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   KnowledgeItemSchema,
   SectionSchema,

@@ -20,16 +20,16 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
-import { auditService } from '../audit/audit-service.js';
+import { logger } from '../../utils/logger';
+import { auditService } from '../audit/audit-service';
 import type {
   SearchResult,
   SearchQuery,
   MemoryFindResponse,
   SmartFindRequest,
   SmartFindResult,
-} from '../../types/core-interfaces.js';
-import type { IDatabase, SearchOptions } from '../../db/database-interface.js';
+} from '../../types/core-interfaces';
+import type { IDatabase, SearchOptions } from '../../db/database-interface';
 
 /**
  * Search strategy configuration

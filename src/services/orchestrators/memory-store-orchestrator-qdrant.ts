@@ -39,19 +39,19 @@
  */
 
 import { createHash } from 'crypto';
-import { logger } from '../../utils/logger.js';
-import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types.js';
-import { ImmutabilityViolationError } from '../../utils/immutability.js';
-import { validationService } from '../validation/validation-service.js';
-import { auditService } from '../audit/audit-service.js';
+import { logger } from '../../utils/logger';
+import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
+import { ImmutabilityViolationError } from '../../utils/immutability';
+import { validationService } from '../validation/validation-service';
+import { auditService } from '../audit/audit-service';
 import type {
   KnowledgeItem,
   StoreResult,
   StoreError,
   AutonomousContext,
   MemoryStoreResponse,
-} from '../../types/core-interfaces.js';
-import type { IDatabase, StoreOptions } from '../../db/database-interface.js';
+} from '../../types/core-interfaces';
+import type { IDatabase, StoreOptions } from '../../db/database-interface';
 
 /**
  * Enhanced duplicate detection result
