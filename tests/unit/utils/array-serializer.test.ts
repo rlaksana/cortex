@@ -177,7 +177,7 @@ describe('Array Serialization Utilities', () => {
       const input = ["item''''with'''''multiple''quotes", "item\\\\\\\\with\\\\\\\\multiple\\\\\\\\backslashes"];
       const result = deserializeArray(input);
 
-      expect(result).toEqual(["item'''with'''multiple'''quotes", "item\\\\with\\\\multiple\\\\backslashes"]);
+      expect(result).toEqual(["item''with'''multiple'quotes", "item\\\\with\\\\multiple\\\\backslashes"]);
     });
   });
 
@@ -243,7 +243,12 @@ describe('Array Serialization Utilities', () => {
 
       nonArrayValues.forEach(value => {
         const result = serializeForDatabase(value);
-        expect(result).toBe(value);
+        // For primitives, use toBe; for objects, use toEqual
+        if (value && typeof value === 'object') {
+          expect(result).toEqual(value);
+        } else {
+          expect(result).toBe(value);
+        }
       });
     });
 

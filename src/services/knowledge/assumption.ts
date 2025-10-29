@@ -2,7 +2,7 @@
 import type { AssumptionData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeAssumption(data: AssumptionData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -33,7 +33,7 @@ export async function findAssumptions(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<AssumptionData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -61,24 +61,33 @@ export async function findAssumptions(
     orderBy: { created_at: 'desc' },
   });
 
-  return assumptions.map((assumption) => ({
-    id: assumption.id,
-    title: assumption.title,
-    description: assumption.description,
-    category: assumption.category,
-    validation_status: assumption.validation_status,
-    impact_if_invalid: assumption.impact_if_invalid,
-    validation_method:
+  return assumptions.map((assumption) => {
+    const result: AssumptionData = {
+      id: assumption.id,
+      title: assumption.title,
+      description: assumption.description,
+      category: assumption.category,
+      validation_status: assumption.validation_status,
+      impact_if_invalid: assumption.impact_if_invalid,
+      validation_date: assumption.validation_date || undefined,
+      owner: assumption.owner || undefined,
+      dependencies: assumption.dependencies ?? undefined,
+      expiry_date: (assumption.tags as any)?.expiry_date,
+      created_at: assumption.created_at,
+      updated_at: assumption.updated_at,
+    };
+
+    const validationMethod =
       Array.isArray(assumption.validation_criteria) && assumption.validation_criteria.length > 0
         ? String(assumption.validation_criteria[0])
-        : undefined,
-    validation_date: assumption.validation_date || undefined,
-    owner: assumption.owner || undefined,
-    dependencies: assumption.dependencies,
-    expiry_date: (assumption.tags as any)?.expiry_date,
-    created_at: assumption.created_at,
-    updated_at: assumption.updated_at,
-  }));
+        : undefined;
+
+    if (validationMethod) {
+      result.validation_method = validationMethod;
+    }
+
+    return result;
+  });
 }
 
 export async function updateAssumption(
@@ -86,42 +95,44 @@ export async function updateAssumption(
   data: Partial<AssumptionData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await db.findUnique('assumptionLog', { id });
+  const existing = await db.findById([id]);
 
-  if (!existing) {
+  if (!existing.items.length) {
     throw new Error(`Assumption with id ${id} not found`);
   }
 
-  const result = await db.update(
-    'assumptionLog',
-    { id },
+  // Delete the old item and store a new one
+  await db.delete([id]);
+
+  const existingItem = existing.results[0];
+
+  const result = await db.store([
     {
-      title: data.title ?? existing.title,
-      category: data.category ?? existing.category,
-      description: data.description ?? existing.description,
-      validation_status: data.validation_status ?? existing.validation_status,
-      impact_if_invalid: data.impact_if_invalid ?? existing.impact_if_invalid,
-      validation_criteria: data.validation_method
-        ? [data.validation_method]
-        : (existing.validation_criteria as any),
-      validation_date:
-        (data as any).validation_date ?? data.validation_date ?? existing.validation_date,
-      owner: (data as any).owner ?? data.owner ?? existing.owner,
-      related_assumptions: existing.related_assumptions as any,
-      monitoring_approach: data.validation_method ?? existing.monitoring_approach,
-      review_frequency: (data as any).review_frequency ?? existing.review_frequency,
-      tags: {
-        ...((existing.tags as any) || {}),
-        ...scope,
-        dependencies: data.dependencies ?? (existing.tags as any)?.dependencies,
-        expiry_date: data.expiry_date ?? (existing.tags as any)?.expiry_date,
+      kind: 'assumption',
+      content: `${data.title ?? existingItem.data.title} - ${data.description ?? existingItem.data.description}`,
+      data: {
+        id,
+        title: data.title ?? existingItem.data.title,
+        category: data.category ?? existingItem.data.category,
+        description: data.description ?? existingItem.data.description,
+        validation_status: data.validation_status ?? existingItem.data.validation_status,
+        impact_if_invalid: data.impact_if_invalid ?? existingItem.data.impact_if_invalid,
+        validation_method: data.validation_method ?? existingItem.data.validation_method,
+        validation_date: data.validation_date ?? existingItem.data.validation_date,
+        owner: data.owner ?? existingItem.data.owner,
+        dependencies: data.dependencies ?? existingItem.data.dependencies,
+        expiry_date: data.expiry_date ?? existingItem.data.expiry_date,
       },
-    }
-  );
+      scope: {
+        ...existingItem.scope,
+        ...scope,
+      },
+    },
+  ]);
 
   return result.id;
 }

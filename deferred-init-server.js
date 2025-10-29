@@ -17,18 +17,18 @@ const authService = {
     }
     throw new Error('Invalid token');
   },
-  generateAccessToken: (user, sessionId, scopes) => 'test-access-token',
-  generateRefreshToken: (user, sessionId) => 'test-refresh-token',
-  refreshToken: (refreshToken) => ({
+  generateAccessToken: (_user, _sessionId, _scopes) => 'test-access-token',
+  generateRefreshToken: (_user, _sessionId) => 'test-refresh-token',
+  refreshToken: (_refreshToken) => ({
     access_token: 'new-access-token',
     refresh_token: 'new-refresh-token',
     token_type: 'Bearer',
     expires_in: 900
   }),
-  revokeToken: (tokenId) => {},
-  revokeSession: (sessionId) => {},
-  createSession: (user, ip, userAgent) => ({ id: 'session-id' }),
-  getUserScopes: (user) => ['memory:read', 'memory:write', 'search:basic']
+  revokeToken: (_tokenId) => {},
+  revokeSession: (_sessionId) => {},
+  createSession: (_user, _ip, _userAgent) => ({ id: 'session-id' }),
+  getUserScopes: (_user) => ['memory:read', 'memory:write', 'search:basic']
 };
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({

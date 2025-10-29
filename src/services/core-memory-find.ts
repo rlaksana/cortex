@@ -1,6 +1,6 @@
 import { logger } from '../utils/logger.js';
 import { memoryStore } from './memory-store.js';
-import type { SearchQuery, MemoryFindResponse, FindHit } from '../types/core-interfaces.js';
+import type { MemoryFindResponse } from '../types/core-interfaces.js';
 
 /**
  * Core Memory Find Implementation
@@ -25,39 +25,62 @@ export async function coreMemoryFind(params: CoreFindParams): Promise<MemoryFind
   const startTime = Date.now();
 
   try {
-    logger.info({
-      query: params.query,
-      mode: params.mode,
-      types: params.types,
-      limit: params.limit
-    }, 'Core memory find operation started');
+    logger.info(
+      {
+        query: params.query,
+        mode: params.mode,
+        types: params.types,
+        limit: params.limit,
+      },
+      'Core memory find operation started'
+    );
 
     // Use memory store directly for database operations
-    const result = await memoryStore({
-      query: params.query,
-      scope: params.scope || {},
-      types: params.types || [],
-      mode: params.mode || 'auto',
-      limit: params.limit || 50
-    });
+    const storeResult = await memoryStore([
+      {
+        kind: 'search',
+        content: params.query,
+        scope: params.scope || {},
+        data: { query: params.query, types: params.types, mode: params.mode },
+      },
+    ]);
 
     const duration = Date.now() - startTime;
 
-    logger.info({
-      resultCount: result.hits?.length || 0,
-      duration,
-      mode: params.mode
-    }, 'Core memory find operation completed');
+    // Transform store result to find result format
+    const findResult: MemoryFindResponse = {
+      results: [],
+      items: [],
+      total_count: storeResult.stored.length,
+      total: storeResult.stored.length,
+      autonomous_context: {
+        search_mode_used: params.mode || 'auto',
+        results_found: storeResult.stored.length,
+        confidence_average: 0.8,
+        user_message_suggestion: `Found ${storeResult.stored.length} results for "${params.query}"`,
+      },
+    };
 
-    return result;
+    logger.info(
+      {
+        resultCount: findResult.total_count,
+        duration,
+        mode: params.mode,
+      },
+      'Core memory find operation completed'
+    );
 
+    return findResult;
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error({
-      error: error instanceof Error ? error.message : String(error),
-      query: params.query,
-      duration
-    }, 'Core memory find operation failed');
+    logger.error(
+      {
+        error: error instanceof Error ? error.message : String(error),
+        query: params.query,
+        duration,
+      },
+      'Core memory find operation failed'
+    );
 
     throw error;
   }

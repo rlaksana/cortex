@@ -3,8 +3,8 @@ import { logger } from './logger.js';
 export class ImmutabilityViolationError extends Error {
   constructor(
     message: string,
-    public readonly errorCode: string,
-    public readonly field?: string
+    public readonly _errorCode: string,
+    public readonly _field?: string
   ) {
     super(message);
     this.name = 'ImmutabilityViolationError';
@@ -20,10 +20,10 @@ export class ImmutabilityViolationError extends Error {
  * @param id - ADR UUID to check
  * @throws ImmutabilityViolationError if ADR is accepted
  */
-export async function validateADRImmutability(id: string): Promise<void> {
+export async function validateADRImmutability(_id: string): Promise<void> {
   // Placeholder implementation - immutability checks would require database access
   // For now, we'll just log and allow the operation
-  logger.debug({ id }, 'ADR immutability check - placeholder implementation');
+  logger.debug({ id: _id }, 'ADR immutability check - placeholder implementation');
 
   // TODO: Implement actual immutability check when database interface is available
   // This would typically check if a decision with 'accepted' status exists
@@ -41,9 +41,9 @@ export async function validateADRImmutability(id: string): Promise<void> {
  * @param sectionId - Section UUID to check
  * @throws ImmutabilityViolationError if parent document is approved
  */
-export async function validateSpecWriteLock(sectionId: string): Promise<void> {
+export async function validateSpecWriteLock(_sectionId: string): Promise<void> {
   // Placeholder implementation - document approval workflow not implemented
-  logger.debug({ sectionId }, 'Section write-lock check - placeholder implementation');
+  logger.debug({ sectionId: _sectionId }, 'Section write-lock check - placeholder implementation');
 
   // TODO: Implement actual document approval workflow check
   // This would typically check if the parent document is approved

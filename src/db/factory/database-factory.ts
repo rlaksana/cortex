@@ -20,7 +20,7 @@
 import { logger } from '../../utils/logger';
 import { Environment } from '../../config/environment';
 import { QdrantAdapter } from '../adapters/qdrant-adapter';
-import type {
+import {
   IDatabaseFactory,
   DatabaseFactoryConfig,
   DatabaseType,

@@ -109,42 +109,42 @@ export interface IDatabase {
   /**
    * Store one or more knowledge items with vector embeddings
    */
-  store(items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse>;
+  store(_items: KnowledgeItem[], _options?: StoreOptions): Promise<MemoryStoreResponse>;
 
   /**
    * Update existing knowledge items
    */
-  update(items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse>;
+  update(_items: KnowledgeItem[], _options?: StoreOptions): Promise<MemoryStoreResponse>;
 
   /**
    * Delete knowledge items by ID
    */
   delete(
-    ids: string[],
-    options?: DeleteOptions
+    _ids: string[],
+    _options?: DeleteOptions
   ): Promise<{ deleted: number; errors: StoreError[] }>;
 
   /**
    * Find knowledge items by ID
    */
-  findById(ids: string[]): Promise<KnowledgeItem[]>;
+  findById(_ids: string[]): Promise<KnowledgeItem[]>;
 
   // === Search Operations ===
 
   /**
    * Search knowledge items using semantic vector similarity
    */
-  search(query: SearchQuery, options?: SearchOptions): Promise<MemoryFindResponse>;
+  search(_query: SearchQuery, _options?: SearchOptions): Promise<MemoryFindResponse>;
 
   /**
    * Semantic search using vector embeddings
    */
-  semanticSearch(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+  semanticSearch(_query: string, _options?: SearchOptions): Promise<SearchResult[]>;
 
   /**
    * Hybrid search combining semantic and exact results
    */
-  hybridSearch(query: string, options?: SearchOptions): Promise<MemoryFindResponse>;
+  hybridSearch(_query: string, _options?: SearchOptions): Promise<MemoryFindResponse>;
 
   // === Knowledge Type Specific Operations ===
 
@@ -152,26 +152,26 @@ export interface IDatabase {
    * Store items of a specific knowledge type
    */
   storeByKind(
-    kind: string,
-    items: KnowledgeItem[],
-    options?: StoreOptions
+    _kind: string,
+    _items: KnowledgeItem[],
+    _options?: StoreOptions
   ): Promise<MemoryStoreResponse>;
 
   /**
    * Search within specific knowledge types
    */
   searchByKind(
-    kinds: string[],
-    query: SearchQuery,
-    options?: SearchOptions
+    _kinds: string[],
+    _query: SearchQuery,
+    _options?: SearchOptions
   ): Promise<MemoryFindResponse>;
 
   /**
    * Get items by scope (project, branch, org)
    */
   findByScope(
-    scope: { project?: string; branch?: string; org?: string },
-    options?: SearchOptions
+    _scope: { project?: string; branch?: string; org?: string },
+    _options?: SearchOptions
   ): Promise<KnowledgeItem[]>;
 
   // === Advanced Operations ===
@@ -180,22 +180,22 @@ export interface IDatabase {
    * Find similar items based on vector similarity
    */
   findSimilar(
-    item: KnowledgeItem,
-    threshold?: number,
-    options?: SearchOptions
+    _item: KnowledgeItem,
+    _threshold?: number,
+    _options?: SearchOptions
   ): Promise<SearchResult[]>;
 
   /**
    * Check for duplicate items using semantic similarity
    */
   checkDuplicates(
-    items: KnowledgeItem[]
+    _items: KnowledgeItem[]
   ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
 
   /**
    * Get statistics about the knowledge base
    */
-  getStatistics(scope?: { project?: string; branch?: string; org?: string }): Promise<{
+  getStatistics(_scope?: { project?: string; branch?: string; org?: string }): Promise<{
     totalItems: number;
     itemsByKind: Record<string, number>;
     storageSize: number;
@@ -208,57 +208,57 @@ export interface IDatabase {
   /**
    * Bulk operations for improved performance
    */
-  bulkStore(items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse>;
+  bulkStore(_items: KnowledgeItem[], _options?: StoreOptions): Promise<MemoryStoreResponse>;
 
   /**
    * Bulk delete operations
    */
   bulkDelete(
-    filter: { kind?: string; scope?: any; before?: string },
-    options?: DeleteOptions
+    _filter: { kind?: string; scope?: any; before?: string },
+    _options?: DeleteOptions
   ): Promise<{ deleted: number }>;
 
   /**
    * Bulk search across multiple queries
    */
-  bulkSearch(queries: SearchQuery[], options?: SearchOptions): Promise<MemoryFindResponse[]>;
+  bulkSearch(_queries: SearchQuery[], _options?: SearchOptions): Promise<MemoryFindResponse[]>;
 
   // === Vector Operations (Qdrant Core) ===
 
   /**
    * Generate embeddings for content
    */
-  generateEmbedding(content: string): Promise<number[]>;
+  generateEmbedding(_content: string): Promise<number[]>;
 
   /**
    * Store items with pre-computed embeddings
    */
   storeWithEmbeddings(
-    items: Array<KnowledgeItem & { embedding: number[] }>,
-    options?: StoreOptions
+    _items: Array<KnowledgeItem & { embedding: number[] }>,
+    _options?: StoreOptions
   ): Promise<MemoryStoreResponse>;
 
   /**
    * Search using vector similarity
    */
-  vectorSearch(embedding: number[], options?: SearchOptions): Promise<SearchResult[]>;
+  vectorSearch(_embedding: number[], _options?: SearchOptions): Promise<SearchResult[]>;
 
   /**
    * Find nearest neighbors for a vector
    */
-  findNearest(embedding: number[], limit?: number, threshold?: number): Promise<SearchResult[]>;
+  findNearest(_embedding: number[], _limit?: number, _threshold?: number): Promise<SearchResult[]>;
 
   // === Administrative Operations ===
 
   /**
    * Backup Qdrant collection
    */
-  backup(destination?: string): Promise<string>;
+  backup(_destination?: string): Promise<string>;
 
   /**
    * Restore Qdrant collection from backup
    */
-  restore(source: string): Promise<void>;
+  restore(_source: string): Promise<void>;
 
   /**
    * Optimize Qdrant collection performance
@@ -273,7 +273,7 @@ export interface IDatabase {
   /**
    * Create or update collection schema
    */
-  updateCollectionSchema(config: any): Promise<void>;
+  updateCollectionSchema(_config: any): Promise<void>;
 
   /**
    * Get collection information
@@ -288,7 +288,7 @@ export interface IDatabaseFactory {
   /**
    * Create a Qdrant database instance based on configuration
    */
-  create(config: DatabaseConfig): Promise<IDatabase>;
+  create(_config: DatabaseConfig): Promise<IDatabase>;
 
   /**
    * Get supported configuration options
@@ -298,7 +298,7 @@ export interface IDatabaseFactory {
   /**
    * Validate Qdrant configuration
    */
-  validateConfig(config: DatabaseConfig): Promise<{ valid: boolean; errors: string[] }>;
+  validateConfig(_config: DatabaseConfig): Promise<{ valid: boolean; errors: string[] }>;
 }
 
 /**
@@ -325,7 +325,7 @@ export interface IDatabaseAdapter extends IDatabase {
   /**
    * Test specific Qdrant functionality
    */
-  testFunctionality(operation: string, params?: any): Promise<boolean>;
+  testFunctionality(_operation: string, _params?: any): Promise<boolean>;
 
   /**
    * Get collection statistics
@@ -352,7 +352,7 @@ export interface IConnectionPool {
   /**
    * Release a connection back to the pool
    */
-  releaseConnection(connection: any): Promise<void>;
+  releaseConnection(_connection: any): Promise<void>;
 
   /**
    * Close all connections in the pool
@@ -377,12 +377,12 @@ export interface ICollectionManager {
   /**
    * Create a new collection
    */
-  createCollection(name: string, config: any): Promise<void>;
+  createCollection(_name: string, _config: any): Promise<void>;
 
   /**
    * Delete a collection
    */
-  deleteCollection(name: string): Promise<void>;
+  deleteCollection(_name: string): Promise<void>;
 
   /**
    * List all collections
@@ -392,12 +392,12 @@ export interface ICollectionManager {
   /**
    * Get collection configuration
    */
-  getCollectionConfig(name: string): Promise<any>;
+  getCollectionConfig(_name: string): Promise<any>;
 
   /**
    * Update collection configuration
    */
-  updateCollectionConfig(name: string, config: any): Promise<void>;
+  updateCollectionConfig(_name: string, _config: any): Promise<void>;
 }
 
 /**
@@ -405,61 +405,61 @@ export interface ICollectionManager {
  */
 export class DatabaseError extends Error {
   constructor(
-    message: string,
-    public readonly code: string,
-    public readonly originalError?: Error,
-    public readonly context?: Record<string, any>
+    _message: string,
+    public readonly _code: string,
+    public readonly _originalError?: Error,
+    public readonly _context?: Record<string, any>
   ) {
-    super(message);
+    super(_message);
     this.name = 'DatabaseError';
   }
 }
 
 export class ConnectionError extends DatabaseError {
-  constructor(message: string, originalError?: Error) {
-    super(message, 'CONNECTION_ERROR', originalError);
+  constructor(_message: string, _originalError?: Error) {
+    super(_message, 'CONNECTION_ERROR', _originalError);
     this.name = 'ConnectionError';
   }
 }
 
 export class ValidationError extends DatabaseError {
-  constructor(message: string, field?: string) {
-    super(message, 'VALIDATION_ERROR', undefined, { field });
+  constructor(_message: string, _field?: string) {
+    super(_message, 'VALIDATION_ERROR', undefined, { field: _field });
     this.name = 'ValidationError';
   }
 }
 
 export class NotFoundError extends DatabaseError {
-  constructor(id: string, type: string = 'item') {
-    super(`${type} with id '${id}' not found`, 'NOT_FOUND', undefined, { id, type });
+  constructor(_id: string, _type: string = 'item') {
+    super(`${_type} with id '${_id}' not found`, 'NOT_FOUND', undefined, { id: _id, type: _type });
     this.name = 'NotFoundError';
   }
 }
 
 export class DuplicateError extends DatabaseError {
-  constructor(id: string, type: string = 'item') {
-    super(`${type} with id '${id}' already exists`, 'DUPLICATE_ERROR', undefined, { id, type });
+  constructor(_id: string, _type: string = 'item') {
+    super(`${_type} with id '${_id}' already exists`, 'DUPLICATE_ERROR', undefined, { id: _id, type: _type });
     this.name = 'DuplicateError';
   }
 }
 
 export class EmbeddingError extends DatabaseError {
-  constructor(message: string, originalError?: Error) {
-    super(message, 'EMBEDDING_ERROR', originalError);
+  constructor(_message: string, _originalError?: Error) {
+    super(_message, 'EMBEDDING_ERROR', _originalError);
     this.name = 'EmbeddingError';
   }
 }
 
 export class CollectionError extends DatabaseError {
-  constructor(message: string, collection?: string, originalError?: Error) {
-    super(message, 'COLLECTION_ERROR', originalError, { collection });
+  constructor(_message: string, _collection?: string, _originalError?: Error) {
+    super(_message, 'COLLECTION_ERROR', _originalError, { collection: _collection });
     this.name = 'CollectionError';
   }
 }
 
 export class VectorError extends DatabaseError {
-  constructor(message: string, vectorSize?: number, expectedSize?: number) {
-    super(message, 'VECTOR_ERROR', undefined, { vectorSize, expectedSize });
+  constructor(_message: string, _vectorSize?: number, _expectedSize?: number) {
+    super(_message, 'VECTOR_ERROR', undefined, { vectorSize: _vectorSize, expectedSize: _expectedSize });
     this.name = 'VectorError';
   }
 }

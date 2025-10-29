@@ -84,7 +84,7 @@ setTimeout(() => {
       try {
         const response = JSON.parse(lines[0]);
         console.log('Response:', JSON.stringify(response, null, 2));
-      } catch (e) {
+      } catch {
         console.log('Could not parse response as JSON');
       }
     }

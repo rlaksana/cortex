@@ -11,9 +11,9 @@ import { Environment } from './environment.js';
  * Get authentication configuration from unified environment system
  */
 export function getAuthConfig() {
-  const env = Environment.getInstance();
-  const securityConfig = env.getSecurityConfig();
-  const apiConfig = env.getApiConfig();
+  const _env = Environment.getInstance();
+  const securityConfig = _env.getSecurityConfig();
+  const apiConfig = _env.getApiConfig();
 
   return {
     // JWT configuration from unified environment

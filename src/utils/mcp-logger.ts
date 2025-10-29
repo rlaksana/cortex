@@ -20,8 +20,8 @@ interface LogEntry {
 }
 
 class MCPSafeLogger {
-  private level: string;
-  private baseContext: Record<string, any>;
+  public level: string;
+  public baseContext: Record<string, any>;
 
   constructor() {
     this.level = process.env.LOG_LEVEL === 'error' ? 'error' : 'info';
@@ -31,12 +31,12 @@ class MCPSafeLogger {
     };
   }
 
-  private shouldLog(level: string): boolean {
+  public shouldLog(level: string): boolean {
     const levels = { debug: 10, info: 20, warn: 30, error: 40, fatal: 50 };
     return levels[level as keyof typeof levels] >= levels[this.level as keyof typeof levels];
   }
 
-  private writeLog(level: string, msg: string, obj?: any): void {
+  public writeLog(level: string, msg: string, obj?: any): void {
     if (!this.shouldLog(level)) return;
 
     const correlationId = getCorrelationId();

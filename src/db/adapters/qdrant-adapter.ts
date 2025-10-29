@@ -91,6 +91,7 @@ export class QdrantAdapter implements IVectorAdapter {
     const apiKey = config.apiKey || process.env.QDRANT_API_KEY;
 
     this.config = {
+      type: 'qdrant',
       url: config.url || process.env.QDRANT_URL || 'http://localhost:6333',
       ...(apiKey && { apiKey }),
       vectorSize: config.vectorSize || 1536, // OpenAI ada-002
@@ -99,7 +100,6 @@ export class QdrantAdapter implements IVectorAdapter {
       connectionTimeout: config.connectionTimeout || 30000,
       maxConnections: config.maxConnections || 10,
       collectionName: config.collectionName || 'knowledge_items',
-      ...config,
     };
 
     // Initialize Qdrant client
@@ -405,8 +405,8 @@ export class QdrantAdapter implements IVectorAdapter {
       let searchResults: SearchResult[];
 
       switch (mode) {
-        case 'semantic':
-          searchResults = await this.semanticSearch(query.query, options);
+        case 'auto':
+          searchResults = await this.hybridSearch(query.query, options);
           break;
         case 'deep':
           searchResults = await this.semanticSearch(query.query, options);
@@ -414,7 +414,6 @@ export class QdrantAdapter implements IVectorAdapter {
         case 'fast':
           searchResults = await this.exactSearch(query.query, options);
           break;
-        case 'auto':
         default:
           searchResults = await this.hybridSearch(query.query, options);
           break;
@@ -458,6 +457,7 @@ export class QdrantAdapter implements IVectorAdapter {
 
       return {
         results: limitedResults,
+        items: limitedResults,
         total_count: limitedResults.length,
         autonomous_context: autonomousContext,
       };
@@ -1001,7 +1001,7 @@ export class QdrantAdapter implements IVectorAdapter {
       // Test vector search
       try {
         await this.vectorSearch(new Array(1536).fill(0));
-      } catch (_error) {
+      } catch {
         issues.push('Vector search functionality failed');
       }
 

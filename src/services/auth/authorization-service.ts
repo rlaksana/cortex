@@ -52,7 +52,6 @@ export class AuthorizationService {
     action: string,
     context?: Record<string, any>
   ): Promise<AccessDecision> {
-    const userRole = authContext.user.role;
     const userScopes = authContext.scopes;
 
     // Get applicable rules for this resource and action
@@ -276,7 +275,6 @@ export class AuthorizationService {
     context?: Record<string, any>
   ): Promise<AccessDecision> {
     const userScopes = authContext.scopes;
-    const userRole = authContext.user.role;
 
     // Check if user has required scopes
     const hasRequiredScopes = rule.required_scopes.every((scope) => userScopes.includes(scope));

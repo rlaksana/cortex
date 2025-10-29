@@ -68,15 +68,30 @@ export class PerformanceCollector extends EventEmitter {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      this.recordMetric({
+      const metric: {
+        operation: string;
+        startTime: number;
+        endTime: number;
+        duration: number;
+        success: boolean;
+        metadata?: Record<string, any>;
+        tags?: string[];
+      } = {
         operation,
         startTime,
         endTime,
         duration,
         success: true,
-        metadata,
-        tags,
-      });
+      };
+
+      if (metadata !== undefined) {
+        metric.metadata = metadata;
+      }
+      if (tags !== undefined) {
+        metric.tags = tags;
+      }
+
+      this.recordMetric(metric);
     };
   }
 

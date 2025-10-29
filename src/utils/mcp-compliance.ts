@@ -12,23 +12,23 @@ import { logger } from './logger.js';
  */
 export enum MCPErrorCode {
   // Parse errors ( -32700 to -32000 are JSON-RPC reserved)
-  PARSE_ERROR = -32700,
-  INVALID_REQUEST = -32600,
-  METHOD_NOT_FOUND = -32601,
-  INVALID_PARAMS = -32602,
-  INTERNAL_ERROR = -32603,
+  _PARSE_ERROR = -32700,
+  _INVALID_REQUEST = -32600,
+  _METHOD_NOT_FOUND = -32601,
+  _INVALID_PARAMS = -32602,
+  _INTERNAL_ERROR = -32603,
 
   // MCP-specific error codes (32000-32999)
-  TOOL_EXECUTION_ERROR = 32000,
-  VALIDATION_ERROR = 32001,
-  DATABASE_ERROR = 32002,
-  AUTHENTICATION_ERROR = 32003,
-  AUTHORIZATION_ERROR = 32004,
-  RATE_LIMIT_ERROR = 32005,
-  TIMEOUT_ERROR = 32006,
-  RESOURCE_NOT_FOUND = 32007,
-  CONFLICT_ERROR = 32008,
-  UNAVAILABLE_ERROR = 32009
+  _TOOL_EXECUTION_ERROR = 32000,
+  _VALIDATION_ERROR = 32001,
+  _DATABASE_ERROR = 32002,
+  _AUTHENTICATION_ERROR = 32003,
+  _AUTHORIZATION_ERROR = 32004,
+  _RATE_LIMIT_ERROR = 32005,
+  _TIMEOUT_ERROR = 32006,
+  _RESOURCE_NOT_FOUND = 32007,
+  _CONFLICT_ERROR = 32008,
+  _UNAVAILABLE_ERROR = 32009,
 }
 
 /**
@@ -81,16 +81,19 @@ export function createMCPError(
     error: {
       code,
       message,
-      data
-    }
+      data,
+    },
   };
 
-  logger.error({
-    error_code: code,
-    error_message: message,
-    error_data: data,
-    request_id: id
-  }, `MCP Error: ${message}`);
+  logger.error(
+    {
+      error_code: code,
+      error_message: message,
+      error_data: data,
+      request_id: id,
+    },
+    `MCP Error: ${message}`
+  );
 
   return errorResponse;
 }
@@ -98,20 +101,20 @@ export function createMCPError(
 /**
  * Create standardized MCP success response
  */
-export function createMCPSuccess(
-  result: any,
-  id?: string | number | null
-): MCPSuccessResponse {
+export function createMCPSuccess(result: any, id?: string | number | null): MCPSuccessResponse {
   const successResponse: MCPSuccessResponse = {
     jsonrpc: '2.0',
     id: id || null,
-    result
+    result,
   };
 
-  logger.debug({
-    response_type: 'success',
-    request_id: id
-  }, 'MCP Success response');
+  logger.debug(
+    {
+      response_type: 'success',
+      request_id: id,
+    },
+    'MCP Success response'
+  );
 
   return successResponse;
 }
@@ -145,7 +148,7 @@ export function errorToMCPResponse(
       {
         stack: error.stack,
         name: error.name,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       id
     );
@@ -163,7 +166,10 @@ export function errorToMCPResponse(
 /**
  * Validate tool input against schema
  */
-export function validateToolInput(input: any, schema: any): { isValid: boolean; errors?: string[] } {
+export function validateToolInput(
+  input: any,
+  schema: any
+): { isValid: boolean; errors?: string[] } {
   const errors: string[] = [];
 
   // Basic validation logic
@@ -184,12 +190,16 @@ export function validateToolInput(input: any, schema: any): { isValid: boolean; 
 
           // Type validation
           if (fieldDef.type && typeof value !== fieldDef.type) {
-            errors.push(`Field '${fieldName}' must be of type ${fieldDef.type}, got ${typeof value}`);
+            errors.push(
+              `Field '${fieldName}' must be of type ${fieldDef.type}, got ${typeof value}`
+            );
           }
 
           // Enum validation
           if (fieldDef.enum && !fieldDef.enum.includes(value)) {
-            errors.push(`Field '${fieldName}' must be one of: ${fieldDef.enum.join(', ')}, got ${value}`);
+            errors.push(
+              `Field '${fieldName}' must be one of: ${fieldDef.enum.join(', ')}, got ${value}`
+            );
           }
 
           // Array validation
@@ -201,9 +211,7 @@ export function validateToolInput(input: any, schema: any): { isValid: boolean; 
     }
   }
 
-  return errors.length === 0
-    ? { isValid: true }
-    : { isValid: false, errors };
+  return errors.length === 0 ? { isValid: true } : { isValid: false, errors };
 }
 
 /**
@@ -219,10 +227,10 @@ export function createToolResponse(
       {
         type: 'text',
         text: content,
-        ...(mimeType !== 'text/plain' && { mimeType })
-      }
+        ...(mimeType !== 'text/plain' && { mimeType }),
+      },
     ],
-    isError
+    isError,
   };
 }
 
@@ -231,7 +239,7 @@ export function createToolResponse(
  */
 export function withMCPCompliance(
   toolName: string,
-  handler: (args: any) => Promise<MCPToolResponse>
+  handler: (_args: any) => Promise<MCPToolResponse>
 ) {
   return async (args: any): Promise<MCPToolResponse> => {
     const startTime = Date.now();
@@ -241,22 +249,28 @@ export function withMCPCompliance(
       const result = await handler(args);
 
       const duration = Date.now() - startTime;
-      logger.info({
-        tool: toolName,
-        duration_ms: duration,
-        success: true
-      }, `Tool ${toolName} completed successfully`);
+      logger.info(
+        {
+          tool: toolName,
+          duration_ms: duration,
+          success: true,
+        },
+        `Tool ${toolName} completed successfully`
+      );
 
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
 
-      logger.error({
-        tool: toolName,
-        duration_ms: duration,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        success: false
-      }, `Tool ${toolName} failed`);
+      logger.error(
+        {
+          tool: toolName,
+          duration_ms: duration,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          success: false,
+        },
+        `Tool ${toolName} failed`
+      );
 
       // Return MCP-compliant error response
       return createToolResponse(

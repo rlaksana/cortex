@@ -27,7 +27,7 @@ export interface SanitizationResult {
 export interface SafePatternDetection {
   pattern: RegExp;
   name: string;
-  handler: (input: string) => string;
+  handler: (_input: string) => string;
   description: string;
   max_execution_time: number; // milliseconds
   complexity_score: number; // 1-10, higher is more complex
@@ -72,7 +72,7 @@ class SafeRegexExecutor {
   static executeWithTimeout<T>(
     regex: RegExp,
     input: string,
-    operation: (regex: RegExp, input: string) => T,
+    operation: (_regex: RegExp, _input: string) => T,
     timeoutMs: number = SECURITY_CONFIG.default_timeout_ms
   ): T | null {
     const patternName = regex.source;
@@ -649,7 +649,7 @@ export function isLikelyToCauseTsqueryError(query: string): boolean {
     );
 
     return problematicCharsResult === true || taskIdResult === true;
-  } catch (error) {
+  } catch {
     // If error occurs, be conservative
     return true;
   }
@@ -792,7 +792,7 @@ export function testRedosResistance(): {
       });
 
       totalTime += executionTime;
-    } catch (error) {
+    } catch {
       const executionTime = Date.now() - startTime;
       results.push({
         input: input.substring(0, 50) + (input.length > 50 ? '...' : ''),
@@ -862,7 +862,7 @@ export function verifySqlInjectionPrevention(): {
         sanitized: result.cleaned,
         containsInjection,
       });
-    } catch (error) {
+    } catch {
       // If sanitization fails, count as blocked
       blockedCount++;
       results.push({

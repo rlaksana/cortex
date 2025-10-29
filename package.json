@@ -19,6 +19,10 @@
     "type-check": "tsc --noEmit",
     "type-check:index": "tsc src/index.ts --noEmit",
     "quality-check": "npm run lint && npm run type-check",
+    "format": "prettier --write \"src/**/*.{ts,js,json,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json,md}\"",
+    "dead-code": "ts-prune -p tsconfig.json",
+    "complexity": "complexity-report -o complexity-report.json src/",
     "db:health": "node -e \"import('./dist/index.js').then(m => m.databaseManager.healthCheck()).then(healthy => console.log(healthy ? '✅ Qdrant DB healthy' : '❌ Qdrant DB unhealthy')).catch(console.error)\"",
     "db:generate": "echo 'Database schema generation - Qdrant automatically manages schema'",
     "db:push": "echo 'Database schema push - Qdrant handles schema automatically'",
@@ -69,13 +73,16 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@qdrant/js-client-rest": "^1.13.0",
+    "@types/helmet": "^0.0.48",
     "bcryptjs": "^3.0.2",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
     "openai": "^4.104.0",
     "pino": "^10.1.0",
+    "tsx": "^4.20.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -90,17 +97,21 @@
     "@typescript-eslint/parser": "^8.46.1",
     "@vitest/coverage-v8": "^4.0.4",
     "@vitest/ui": "^4.0.4",
+    "complexity-report": "^2.0.0-alpha",
     "eslint": "^9.38.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-security": "^3.0.1",
     "glob": "^11.0.3",
+    "prettier": "^3.6.2",
     "sinon": "^21.0.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
+    "ts-prune": "^0.10.3",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vitest": "^4.0.3"
+    "vitest": "^4.0.3",
+    "vitest-tsconfig-paths": "^3.4.1"
   },
   "engines": {
     "node": ">=20.0.0"

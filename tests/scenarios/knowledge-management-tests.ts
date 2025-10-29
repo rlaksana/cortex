@@ -4,9 +4,9 @@
  * Comprehensive test scenarios for all knowledge management operations
  */
 
-import type { TestScenario, TestContext } from '../framework/test-setup.js';
-import { TestAssertions } from '../framework/test-setup.js';
-import { memoryStore, memoryFind, softDelete } from '../../src/services/index.js';
+import type { TestScenario, TestContext } from '../framework/test-setup';
+import { TestAssertions } from '../framework/test-setup';
+import { memoryStore, memoryFind, softDelete } from '../../src/services/index';
 
 /**
  * Test scenario for basic knowledge CRUD operations

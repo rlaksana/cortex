@@ -120,12 +120,12 @@ async function checkSpelling(query: string): Promise<string[]> {
       const sectionWords = new Set<string>();
       for (const section of sections) {
         if (section.title) {
-          section.title.toLowerCase().split(/\s+/).forEach(w => {
+          section.title.toLowerCase().split(/\s+/).forEach((w: string) => {
             if (w.length > 3) sectionWords.add(w);
           });
         }
         if (section.content) {
-          section.content.toLowerCase().split(/\s+/).forEach(w => {
+          section.content.toLowerCase().split(/\s+/).forEach((w: string) => {
             if (w.length > 3) sectionWords.add(w);
           });
         }

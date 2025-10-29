@@ -10,7 +10,7 @@
  */
 
 import { logger } from '../utils/logger.js';
-import { QdrantOnlyDatabaseLayer } from '../db/unified-database-layer-v2.js';
+import { QdrantOnlyDatabaseLayer, QdrantDatabaseConfig } from '../db/unified-database-layer-v2.js';
 import { Environment } from '../config/environment.js';
 
 export interface PurgeResult {
@@ -27,16 +27,23 @@ let dbInstance: QdrantOnlyDatabaseLayer | null = null;
 function getDatabase(): QdrantOnlyDatabaseLayer {
   if (!dbInstance) {
     const env = Environment.getInstance();
-    const config = {
-      type: 'qdrant' as const,
-      qdrant: {
-        url: env.getRawConfig().QDRANT_URL || 'http://localhost:6333',
-        apiKey: env.getRawConfig().QDRANT_API_KEY,
-        collectionName: 'knowledge',
-        timeout: 30000,
-        batchSize: 100,
-        maxRetries: 3,
-      }
+    const rawConfig = env.getRawConfig();
+    const qdrantConfig: any = {
+      url: rawConfig.QDRANT_URL || 'http://localhost:6333',
+      collectionName: 'knowledge',
+      timeout: 30000,
+      batchSize: 100,
+      maxRetries: 3,
+    };
+
+    // Only add apiKey if it exists (exactOptionalPropertyTypes compatibility)
+    if (rawConfig.QDRANT_API_KEY) {
+      qdrantConfig.apiKey = rawConfig.QDRANT_API_KEY;
+    }
+
+    const config: QdrantDatabaseConfig = {
+      type: 'qdrant',
+      qdrant: qdrantConfig,
     };
     dbInstance = new QdrantOnlyDatabaseLayer(config);
   }
@@ -83,7 +90,8 @@ export async function checkAndPurge(source: 'memory.store' | 'memory.find'): Pro
 
     // Check thresholds
     const timeThresholdExceeded = hoursSince >= purgeMetadata.time_threshold_hours;
-    const operation_thresholdExceeded = purgeMetadata.operations_since_purge >= purgeMetadata.operation_threshold;
+    const operation_thresholdExceeded =
+      purgeMetadata.operations_since_purge >= purgeMetadata.operation_threshold;
 
     if (!timeThresholdExceeded && !operation_thresholdExceeded) {
       // No purge needed
@@ -148,7 +156,7 @@ async function runPurge(
     const todoFilter = {
       kind: 'todo',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { status: { in: ['done', 'cancelled'] } } }
+      scope: { metadata: { status: { in: ['done', 'cancelled'] } } },
     };
     const r1 = await db.bulkDelete(todoFilter);
     deleted_counts.todo = r1.deleted;
@@ -165,7 +173,7 @@ async function runPurge(
     const prFilter = {
       kind: 'pr_context',
       before: thirtyDaysAgo.toISOString(),
-      scope: { metadata: { status: 'merged' } }
+      scope: { metadata: { status: 'merged' } },
     };
     const r3 = await db.bulkDelete(prFilter);
     deleted_counts.pr_context = r3.deleted;
@@ -174,7 +182,7 @@ async function runPurge(
     const issueFilter = {
       kind: 'issue',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { status: { in: ['closed', 'wont_fix'] } } }
+      scope: { metadata: { status: { in: ['closed', 'wont_fix'] } } },
     };
     const r4 = await db.bulkDelete(issueFilter);
     deleted_counts.issue = r4.deleted;
@@ -183,7 +191,7 @@ async function runPurge(
     const entityFilter = {
       kind: 'entity',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { deleted_at: { exists: true } } }
+      scope: { metadata: { deleted_at: { exists: true } } },
     };
     const r5 = await db.bulkDelete(entityFilter);
     deleted_counts.entity = r5.deleted;
@@ -192,7 +200,7 @@ async function runPurge(
     const relationFilter = {
       kind: 'relation',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { deleted_at: { exists: true } } }
+      scope: { metadata: { deleted_at: { exists: true } } },
     };
     const r6 = await db.bulkDelete(relationFilter);
     deleted_counts.relation = r6.deleted;
@@ -201,7 +209,7 @@ async function runPurge(
     const observationFilter = {
       kind: 'observation',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { deleted_at: { exists: true } } }
+      scope: { metadata: { deleted_at: { exists: true } } },
     };
     const r7 = await db.bulkDelete(observationFilter);
     deleted_counts.observation = r7.deleted;
@@ -210,7 +218,7 @@ async function runPurge(
     const incidentFilter = {
       kind: 'incident',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { resolution_status: { in: ['resolved', 'closed'] } } }
+      scope: { metadata: { resolution_status: { in: ['resolved', 'closed'] } } },
     };
     const r8 = await db.bulkDelete(incidentFilter);
     deleted_counts.incident = r8.deleted;
@@ -219,7 +227,7 @@ async function runPurge(
     const releaseFilter = {
       kind: 'release',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { status: { in: ['completed', 'rolled_back'] } } }
+      scope: { metadata: { status: { in: ['completed', 'rolled_back'] } } },
     };
     const r9 = await db.bulkDelete(releaseFilter);
     deleted_counts.release = r9.deleted;
@@ -228,7 +236,7 @@ async function runPurge(
     const riskFilter = {
       kind: 'risk',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { status: { in: ['closed', 'accepted'] } } }
+      scope: { metadata: { status: { in: ['closed', 'accepted'] } } },
     };
     const r10 = await db.bulkDelete(riskFilter);
     deleted_counts.risk = r10.deleted;
@@ -237,7 +245,7 @@ async function runPurge(
     const assumptionFilter = {
       kind: 'assumption',
       before: ninetyDaysAgo.toISOString(),
-      scope: { metadata: { validation_status: 'validated' } }
+      scope: { metadata: { validation_status: 'validated' } },
     };
     const r11 = await db.bulkDelete(assumptionFilter);
     deleted_counts.assumption = r11.deleted;

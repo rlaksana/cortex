@@ -6,14 +6,14 @@
  * Executes all test scenarios and provides comprehensive reporting
  */
 
-import { runTests, TestRunner } from './framework/test-setup.js';
+import { runTests, TestRunner } from './framework/test-setup';
 import {
   basicKnowledgeManagement,
   advancedSearchFunctionality,
   similarityAndDeduplication,
   immutabilityAndBusinessRules,
   performanceAndScalability,
-} from './scenarios/knowledge-management-tests.js';
+} from './scenarios/knowledge-management-tests';
 
 /**
  * Main test execution

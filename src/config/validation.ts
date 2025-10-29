@@ -90,11 +90,9 @@ export class ConfigurationValidator {
     // Vector configuration validation
     this.schemas.set(
       'vectorSize',
-      z
-        .number()
-        .refine((size) => [384, 768, 1024, 1536, 2048, 3072].includes(size), {
-          message: 'Vector size must be one of: 384, 768, 1024, 1536, 2048, 3072',
-        })
+      z.number().refine((size) => [384, 768, 1024, 1536, 2048, 3072].includes(size), {
+        message: 'Vector size must be one of: 384, 768, 1024, 1536, 2048, 3072',
+      })
     );
 
     this.schemas.set('vectorDistance', z.enum(['Cosine', 'Euclidean', 'DotProduct']));

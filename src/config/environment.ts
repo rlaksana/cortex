@@ -404,14 +404,14 @@ export class Environment {
    * Generate configuration hash for caching
    */
   generateConfigHash(): string {
-    const configString = JSON.stringify({
+    const _configString = JSON.stringify({
       database: this.getQdrantConfig(),
       embeddings: this.getEmbeddingConfig(),
       search: this.getSearchConfig(),
       cache: this.getCacheConfig(),
     });
 
-    return crypto.createHash('sha256').update(configString).digest('hex');
+    return crypto.createHash('sha256').update(_configString).digest('hex');
   }
 
   /**
@@ -582,10 +582,10 @@ export class Environment {
    * Get environment-specific configuration
    */
   getEnvironmentSpecificConfig() {
-    const defaults = this.getEnvironmentSpecificDefaults();
+    const _defaults = this.getEnvironmentSpecificDefaults();
 
     return {
-      ...defaults,
+      ..._defaults,
       database: this.getQdrantConfig(),
       embeddings: this.getEmbeddingConfig(),
       search: this.getSearchConfig(),
@@ -693,19 +693,19 @@ export function isTest() {
  * Export environment configuration functions for compatibility with env.ts
  */
 export function loadEnv() {
-  const config = environment.getRawConfig();
+  const _config = environment.getRawConfig();
   return {
     // DATABASE_URL removed - only QDRANT_URL is supported
-    QDRANT_URL: config.QDRANT_URL,
-    DB_POOL_MIN: config.DB_POOL_MIN,
-    DB_POOL_MAX: config.DB_POOL_MAX,
-    DB_IDLE_TIMEOUT_MS: config.DB_IDLE_TIMEOUT_MS,
-    LOG_LEVEL: config.LOG_LEVEL,
-    NODE_ENV: config.NODE_ENV,
-    MCP_TRANSPORT: config.MCP_TRANSPORT,
-    CORTEX_ORG: config.CORTEX_ORG,
-    CORTEX_PROJECT: config.CORTEX_PROJECT,
-    CORTEX_BRANCH: config.CORTEX_BRANCH,
+    QDRANT_URL: _config.QDRANT_URL,
+    DB_POOL_MIN: _config.DB_POOL_MIN,
+    DB_POOL_MAX: _config.DB_POOL_MAX,
+    DB_IDLE_TIMEOUT_MS: _config.DB_IDLE_TIMEOUT_MS,
+    LOG_LEVEL: _config.LOG_LEVEL,
+    NODE_ENV: _config.NODE_ENV,
+    MCP_TRANSPORT: _config.MCP_TRANSPORT,
+    CORTEX_ORG: _config.CORTEX_ORG,
+    CORTEX_PROJECT: _config.CORTEX_PROJECT,
+    CORTEX_BRANCH: _config.CORTEX_BRANCH,
   };
 }
 

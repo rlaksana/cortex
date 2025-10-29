@@ -90,11 +90,13 @@ class VectorToDatabaseAdapter implements IDatabase {
     // Calculate average confidence from search results
     const confidenceAverage =
       searchResults.length > 0
-        ? searchResults.reduce((sum, result) => sum + (result.score || 0), 0) / searchResults.length
+        ? searchResults.reduce((sum, result) => sum + (result.confidence_score || 0), 0) /
+          searchResults.length
         : 0;
 
     return {
       results: searchResults,
+      items: searchResults,
       total_count: searchResults.length,
       autonomous_context: {
         search_mode_used: 'hybrid',

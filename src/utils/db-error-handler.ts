@@ -11,13 +11,13 @@ import { logger } from './logger.js';
 // Note: Removed QdrantClient import as we're using a generic database interface now
 
 export enum DbErrorType {
-  CONNECTION_ERROR = 'CONNECTION_ERROR',
-  TIMEOUT_ERROR = 'TIMEOUT_ERROR',
-  CONSTRAINT_VIOLATION = 'CONSTRAINT_VIOLATION',
-  RECORD_NOT_FOUND = 'RECORD_NOT_FOUND',
-  PERMISSION_ERROR = 'PERMISSION_ERROR',
-  SCHEMA_ERROR = 'SCHEMA_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  _CONNECTION_ERROR = 'CONNECTION_ERROR',
+  _TIMEOUT_ERROR = 'TIMEOUT_ERROR',
+  _CONSTRAINT_VIOLATION = 'CONSTRAINT_VIOLATION',
+  _RECORD_NOT_FOUND = 'RECORD_NOT_FOUND',
+  _PERMISSION_ERROR = 'PERMISSION_ERROR',
+  _SCHEMA_ERROR = 'SCHEMA_ERROR',
+  _UNKNOWN_ERROR = 'UNKNOWN_ERROR',
 }
 
 export interface RetryConfig {
@@ -46,7 +46,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 };
 
 export class DatabaseErrorHandler {
-  constructor(private retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG) {}
+  constructor(private _retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG) {}
 
   /**
    * Execute database operation with retry logic and error handling
@@ -56,7 +56,7 @@ export class DatabaseErrorHandler {
     operationName: string,
     customRetryConfig?: Partial<RetryConfig>
   ): Promise<DbOperationResult<T>> {
-    const config = { ...this.retryConfig, ...customRetryConfig };
+    const config = { ...this._retryConfig, ...customRetryConfig };
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
@@ -174,8 +174,8 @@ export class DatabaseErrorHandler {
       // For now, just return true as a placeholder
       logger.debug('Database health check placeholder - returning true');
       return true;
-    } catch (error) {
-      logger.error({ error }, 'Database health check failed');
+    } catch {
+      // Suppress unused variable warning and return false on any error
       return false;
     }
   }

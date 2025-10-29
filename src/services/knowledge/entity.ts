@@ -77,8 +77,17 @@ export async function storeEntity(
     };
 
     if (existingByName.length > 0) {
-      // Update existing entity
-      await db.update('knowledge_entity', entityData, { id: existingByName[0].id });
+      // Update existing entity using store method
+      const knowledgeItem: any = {
+        id: existingByName[0].id,
+        kind: 'entity',
+        content: JSON.stringify(entityData),
+        data: entityData,
+        scope,
+        created_at: existingByName[0].created_at,
+        updated_at: new Date().toISOString(),
+      };
+      await db.store([knowledgeItem]);
       return existingByName[0].id;
     } else {
       // Create new entity
@@ -117,13 +126,25 @@ export async function softDeleteEntity(id: string): Promise<boolean> {
   await db.initialize();
 
   try {
-    const result = await db.update(
-      'knowledge_entity',
-      { deleted_at: new Date().toISOString() },
-      { id, deleted_at: null }
-    );
+    // Find the existing entity first
+    const existing = await db.find('knowledge_entity', { id, deleted_at: null });
+    if (existing.length === 0) {
+      return false;
+    }
 
-    return result.rowCount ? result.rowCount > 0 : false;
+    // Update using store method
+    const knowledgeItem: any = {
+      id: existing[0].id,
+      kind: 'entity',
+      content: JSON.stringify({ ...existing[0], deleted_at: new Date().toISOString() }),
+      data: { ...existing[0], deleted_at: new Date().toISOString() },
+      scope: existing[0].scope,
+      created_at: existing[0].created_at,
+      updated_at: new Date().toISOString(),
+    };
+    await db.store([knowledgeItem]);
+
+    return true;
   } catch (error) {
     console.error('Failed to soft delete entity:', error);
     throw new Error(`Entity soft delete failed: ${(error as Error).message}`);
@@ -169,7 +190,8 @@ export async function getEntity(
 
     const entity = results[0];
     return {
-      id: entity.id,
+      ...(entity.id && { id: entity.id }),
+      kind: 'entity',
       data: {
         entity_type: entity.entity_type,
         name: entity.name,
@@ -242,6 +264,7 @@ export async function searchEntities(
 
       return searchResults.map((result) => ({
         id: result.id,
+        kind: 'entity',
         data: {
           entity_type: result.entity_type,
           name: result.name,
@@ -263,6 +286,7 @@ export async function searchEntities(
 
       return results.map((entity) => ({
         id: entity.id,
+        kind: 'entity',
         data: {
           entity_type: entity.entity_type,
           name: entity.name,

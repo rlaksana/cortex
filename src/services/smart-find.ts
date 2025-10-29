@@ -162,8 +162,8 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
     logger.warn({ query }, 'Auto-fix disabled for query');
     const result = await coreMemoryFind({
       query,
-      scope,
-      types,
+      ...(scope && { scope }),
+      ...(types && { types }),
       limit: top_k,
       mode,
     });
@@ -209,14 +209,14 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
         patterns_detected: patternsDetected.length,
         total_attempts: 1,
       },
-      corrections: return_corrections ? correctionMetadata : undefined,
+      ...(return_corrections && { corrections: correctionMetadata }),
     };
 
     return smartFindResult;
   }
 
   // Phase 2: Progressive retry strategy
-  let finalResult: Awaited<ReturnType<typeof memoryFind>> | undefined;
+  let finalResult: Awaited<ReturnType<typeof coreMemoryFind>> | undefined;
   let currentQuery = workingQuery;
   let currentMode = mode;
   let attempts = 0;
@@ -229,8 +229,8 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
       const result = await Promise.race([
         coreMemoryFind({
           query: currentQuery,
-          scope,
-          types,
+          ...(scope && { scope }),
+          ...(types && { types }),
           limit: top_k,
           mode: currentMode,
         }),
@@ -311,8 +311,8 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
             // Try one final time
             const memoryFindResult = await coreMemoryFind({
               query: currentQuery,
-              scope,
-              types,
+              ...(scope && { scope }),
+              ...(types && { types }),
               limit: top_k,
               mode: 'deep',
             });
@@ -356,7 +356,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
                 total_attempts: attempts + 1,
                 final_sanitization_level: 'aggressive',
               },
-              corrections: return_corrections ? correctionMetadata : undefined,
+              ...(return_corrections && { corrections: correctionMetadata }),
             };
 
             return smartFindResult;
@@ -452,7 +452,7 @@ export async function smartMemoryFind(params: SmartFindParams): Promise<SmartFin
       corrections_applied: correctionMetadata.auto_fixes_applied.length,
       final_sanitization_level: correctionMetadata.final_sanitization_level,
     },
-    corrections: return_corrections ? correctionMetadata : undefined,
+    ...(return_corrections && { corrections: correctionMetadata }),
   };
 
   return smartFindResult;
@@ -541,7 +541,7 @@ function createErrorResult(
   correctionMetadata: CorrectionMetadata,
   return_corrections: boolean
 ): SmartFindResult {
-  return {
+  const result: SmartFindResult = {
     hits: [],
     suggestions: ['Try simpler terms', 'Remove special characters', 'Check spelling'],
     autonomous_metadata: {
@@ -556,19 +556,23 @@ function createErrorResult(
         'Query failed due to syntax errors. Try removing special characters and hyphens.',
       user_message_suggestion: 'Query failed. Try simpler terms without special characters.',
     },
-    corrections: return_corrections
-      ? {
-          ...correctionMetadata,
-          recommendation:
-            'All attempts failed. Query contains characters that cannot be processed automatically.',
-        }
-      : undefined,
     debug: {
       error: error instanceof Error ? error.message : String(error),
       total_attempts: correctionMetadata.attempts.length,
       auto_fix_enabled: true,
     },
   };
+
+  // Only add corrections if return_corrections is true (exactOptionalPropertyTypes compatibility)
+  if (return_corrections) {
+    result.corrections = {
+      ...correctionMetadata,
+      recommendation:
+        'All attempts failed. Query contains characters that cannot be processed automatically.',
+    };
+  }
+
+  return result;
 }
 
 /**

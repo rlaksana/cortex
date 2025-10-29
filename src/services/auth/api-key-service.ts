@@ -44,8 +44,8 @@ export class ApiKeyService {
   private keyHashes: Map<string, string> = new Map(); // key_hash -> key_id
 
   constructor(
-    private authService: AuthService,
-    private auditService: AuditService
+    private _authService: AuthService,
+    private _auditService: AuditService
   ) {}
 
   /**
@@ -57,7 +57,7 @@ export class ApiKeyService {
     context?: { ip_address: string; user_agent: string }
   ): Promise<{ api_key: string; key_info: ApiKeyResponse }> {
     // Validate user permissions
-    const userMaxScopes = this.authService.getUserMaxScopes(user);
+    const userMaxScopes = this._authService.getUserMaxScopes(user);
     const invalidScopes = request.scopes.filter((scope) => !userMaxScopes.includes(scope));
 
     if (invalidScopes.length > 0) {
@@ -67,8 +67,8 @@ export class ApiKeyService {
     }
 
     // Generate API key
-    const { keyId, key } = this.authService.generateApiKey();
-    const keyHash = await this.authService.hashApiKey(key);
+    const { keyId, key } = this._authService.generateApiKey();
+    const keyHash = await this._authService.hashApiKey(key);
 
     // Create API key record
     const apiKey: ApiKey = {
@@ -79,7 +79,7 @@ export class ApiKeyService {
       name: request.name,
       scopes: request.scopes,
       is_active: true,
-      expires_at: request.expires_at,
+      ...(request.expires_at && { expires_at: request.expires_at }),
       created_at: new Date().toISOString(),
     };
 
@@ -142,7 +142,7 @@ export class ApiKeyService {
       let keyId: string | null = null;
 
       for (const [keyIdCandidate, apiKeyRecord] of this.apiKeys) {
-        const isValid = await this.authService.verifyApiKey(apiKey, apiKeyRecord.key_hash);
+        const isValid = await this._authService.verifyApiKey(apiKey, apiKeyRecord.key_hash);
         if (isValid) {
           foundApiKey = apiKeyRecord;
           keyId = keyIdCandidate;
@@ -362,7 +362,7 @@ export class ApiKeyService {
 
     // Validate scope updates
     if (updates.scopes) {
-      const userMaxScopes = this.authService.getUserMaxScopes(user);
+      const userMaxScopes = this._authService.getUserMaxScopes(user);
       const invalidScopes = updates.scopes.filter((scope) => !userMaxScopes.includes(scope));
 
       if (invalidScopes.length > 0) {
@@ -434,7 +434,7 @@ export class ApiKeyService {
       .map((key) => ({
         key_id: key.key_id,
         name: key.name,
-        last_used: key.last_used,
+        ...(key.last_used && { last_used: key.last_used }),
         usage_count: Math.floor(Math.random() * 100), // Mock usage count
       }));
 
@@ -516,11 +516,11 @@ export class ApiKeyService {
       key_id: apiKey.key_id,
       name: apiKey.name,
       scopes: apiKey.scopes,
-      expires_at: apiKey.expires_at,
+      ...(apiKey.expires_at && { expires_at: apiKey.expires_at }),
       created_at: apiKey.created_at,
-      last_used: apiKey.last_used,
+      ...(apiKey.last_used && { last_used: apiKey.last_used }),
       is_active: apiKey.is_active,
-      description: apiKey.description,
+      ...(apiKey.description && { description: apiKey.description }),
     };
   }
 
@@ -529,7 +529,7 @@ export class ApiKeyService {
    */
   private async logApiKeyEvent(event: Omit<SecurityAuditLog, 'id' | 'created_at'>): Promise<void> {
     try {
-      await this.auditService.logSecurityAuditEvent(event as SecurityAuditLog);
+      await this._auditService.logSecurityAuditEvent(event as SecurityAuditLog);
     } catch (error) {
       logger.error({ error, event }, 'Failed to log API key event');
     }

@@ -43,8 +43,8 @@ class QdrantSchemaManager {
 
     this.client = new QdrantClient({
       url: qdrantConfig.url,
-      apiKey: qdrantConfig.apiKey,
-      timeout: qdrantConfig.timeout,
+      ...(qdrantConfig.apiKey && { apiKey: qdrantConfig.apiKey }),
+      timeout: qdrantConfig.connectionTimeout || 30000,
     });
   }
 
@@ -92,18 +92,10 @@ class QdrantSchemaManager {
             size: config.vectorSize,
             distance: config.distance,
           },
-          payload_schema: config.payloadSchema,
+          // payload_schema removed - not supported by Qdrant client API
         });
 
-        // Create payload indexes if specified
-        if (config.indexes) {
-          for (const index of config.indexes) {
-            await this.client.createCollectionIndex(config.name, {
-              field_name: index.field,
-              field_schema: index.schemaType,
-            });
-          }
-        }
+        // Index creation removed - createCollectionIndex not supported by Qdrant client API
 
         logger.info(`Collection ${config.name} created successfully`);
       } else {
@@ -120,7 +112,7 @@ class QdrantSchemaManager {
    */
   async getCollectionInfo(collectionName: string): Promise<any> {
     try {
-      const info = await this.client.getCollectionInfo(collectionName);
+      const info = await this.client.getCollection(collectionName);
       return info;
     } catch (error) {
       logger.error({ error, collectionName }, 'Failed to get collection info');

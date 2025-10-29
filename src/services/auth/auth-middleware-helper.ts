@@ -47,9 +47,9 @@ export function convertToAuthContext(mcpAuth: MCPAuthContext): AuthContext {
 
 export class MCPAuthHelper {
   constructor(
-    private authService: AuthService,
-    private authorizationService: AuthorizationService,
-    private auditService: AuditService
+    private _authService: AuthService,
+    private _authorizationService: AuthorizationService,
+    private _auditService: AuditService
   ) {}
 
   /**
@@ -62,7 +62,7 @@ export class MCPAuthHelper {
     try {
       // Try JWT token first
       if (authToken.startsWith('eyJ')) {
-        const authContext = await this.authService.createAuthContext(
+        const authContext = await this._authService.createAuthContext(
           authToken,
           requestInfo.ip_address,
           requestInfo.user_agent
@@ -94,7 +94,7 @@ export class MCPAuthHelper {
   ): Promise<{ allowed: boolean; reason: string; required_scopes: AuthScope[] }> {
     try {
       const authContext = convertToAuthContext(auth);
-      const decision = await this.authorizationService.checkAccess(
+      const decision = await this._authorizationService.checkAccess(
         authContext,
         resource,
         action,
@@ -125,7 +125,7 @@ export class MCPAuthHelper {
     scopes: AuthScope[]
   ): Promise<void> {
     try {
-      await this.auditService.logAuthSuccess(
+      await this._auditService.logAuthSuccess(
         userId,
         sessionId,
         method,
@@ -149,7 +149,7 @@ export class MCPAuthHelper {
     sessionId?: string
   ): Promise<void> {
     try {
-      await this.auditService.logAuthFailure(
+      await this._auditService.logAuthFailure(
         requestInfo.ip_address,
         requestInfo.user_agent,
         reason,
@@ -174,7 +174,7 @@ export class MCPAuthHelper {
     requestInfo: MCPRequestInfo
   ): Promise<void> {
     try {
-      await this.auditService.logPermissionDenied(
+      await this._auditService.logPermissionDenied(
         userId,
         resource,
         action,

@@ -1,0 +1,557 @@
+
+> cortex-memory-mcp@2.0.0 type-check
+> tsc --noEmit
+
+src/middleware/error-middleware.ts(99,46): error TS2379: Argument of type '{ operationName: string; category: ErrorCategory | undefined; fallback: ((_error: Error) => T) | undefined; rethrow: boolean | undefined; }' is not assignable to parameter of type '{ operationName: string; category?: ErrorCategory; fallback?: (error: Error) => T; rethrow?: boolean; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'category' are incompatible.
+    Type 'ErrorCategory | undefined' is not assignable to type 'ErrorCategory'.
+      Type 'undefined' is not assignable to type 'ErrorCategory'.
+src/middleware/error-middleware.ts(227,7): error TS2375: Type '{ success: false; error: BaseError; data: T | undefined; }' is not assignable to type '{ success: boolean; data?: T; error?: BaseError; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'data' are incompatible.
+    Type 'T | undefined' is not assignable to type 'T'.
+      'T' could be instantiated with an arbitrary type which could be unrelated to 'T | undefined'.
+src/middleware/error-middleware.ts(253,7): error TS2339: Property 'context' does not exist on type '{ maxAttempts?: number; baseDelay?: number; maxDelay?: number; retryableErrors?: ErrorCode[]; _context?: Record<string, any>; }'.
+src/middleware/error-middleware.ts(299,27): error TS2345: Argument of type '{ code: ErrorCode; category: ErrorCategory; severity: ErrorSeverity; message: string; userMessage: string; context: any; }' is not assignable to parameter of type 'string'.
+src/middleware/error-middleware.ts(328,14): error TS2552: Cannot find name 'context'. Did you mean '_context'?
+src/middleware/error-middleware.ts(337,26): error TS2552: Cannot find name 'context'. Did you mean '_context'?
+src/middleware/error-middleware.ts(341,26): error TS2552: Cannot find name 'context'. Did you mean '_context'?
+src/middleware/error-middleware.ts(347,26): error TS2552: Cannot find name 'context'. Did you mean '_context'?
+src/middleware/error-middleware.ts(351,27): error TS2345: Argument of type '{ code: ErrorCode; category: ErrorCategory; severity: ErrorSeverity; message: string; userMessage: string; context: any; }' is not assignable to parameter of type 'string'.
+src/middleware/error-middleware.ts(357,7): error TS2552: Cannot find name 'context'. Did you mean '_context'?
+src/middleware/error-middleware.ts(375,7): error TS2339: Property '_monitoringPeriod' does not exist on type '{ failureThreshold?: number; recoveryTimeout?: number; monitoringPeriod?: number; }'.
+src/middleware/error-middleware.ts(375,7): error TS6133: '_monitoringPeriod' is declared but its value is never read.
+src/middleware/error-middleware.ts(389,36): error TS2345: Argument of type '{ code: ErrorCode; category: ErrorCategory; severity: ErrorSeverity; message: string; userMessage: string; context: { state: "OPEN"; nextAttempt: string; }; retryable: boolean; }' is not assignable to parameter of type 'string'.
+src/middleware/security-middleware.ts(8,20): error TS2307: Cannot find module 'helmet' or its corresponding type declarations.
+src/middleware/security-middleware.ts(56,12): error TS7030: Not all code paths return a value.
+src/middleware/security-middleware.ts(136,26): error TS2339: Property 'received' does not exist on type 'ZodIssue'.
+  Property 'received' does not exist on type 'ZodCustomIssue & { fatal?: boolean | undefined; message: string; }'.
+src/middleware/security-middleware.ts(169,12): error TS7030: Not all code paths return a value.
+src/middleware/security-middleware.ts(221,27): error TS6133: 'res' is declared but its value is never read.
+src/middleware/security-middleware.ts(275,11): error TS6133: 'opts' is declared but its value is never read.
+src/middleware/security-middleware.ts(296,13): error TS6133: 'req' is declared but its value is never read.
+src/middleware/security-middleware.ts(296,27): error TS6133: 'res' is declared but its value is never read.
+src/middleware/security-middleware.ts(308,12): error TS7030: Not all code paths return a value.
+src/middleware/security-middleware.ts(329,11): error TS2339: Property 'apiKey' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>'.
+src/monitoring/performance-collector.ts(71,25): error TS2379: Argument of type '{ operation: string; startTime: number; endTime: number; duration: number; success: true; metadata: Record<string, any> | undefined; tags: string[] | undefined; }' is not assignable to parameter of type 'PerformanceMetric' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/monitoring/performance-dashboard.ts(42,7): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(55,11): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(71,9): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(76,9): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(91,7): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(128,7): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(140,9): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(150,11): error TS2322: Type 'Response<any, Record<string, any>>' is not assignable to type 'void'.
+src/monitoring/performance-dashboard.ts(176,13): error TS6133: 'req' is declared but its value is never read.
+src/monitoring/performance-dashboard.ts(232,16): error TS6133: 'req' is declared but its value is never read.
+src/monitoring/performance-dashboard.ts(249,17): error TS6133: 'req' is declared but its value is never read.
+src/monitoring/performance-dashboard.ts(297,19): error TS6133: 'req' is declared but its value is never read.
+src/monitoring/performance-dashboard.ts(297,33): error TS6133: 'res' is declared but its value is never read.
+src/monitoring/performance-middleware.ts(7,32): error TS6133: 'PerformanceMetric' is declared but its value is never read.
+src/monitoring/performance-middleware.ts(65,25): error TS2552: Cannot find name 'options'. Did you mean 'Option'?
+src/services/audit/audit-service.ts(57,11): error TS2375: Type '{ operation: string; resource: string; userId: string | undefined; timestamp: Date; severity: "info"; success: true; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(78,7): error TS2375: Type '{ message: string; code: any; stack: string | undefined; }' is not assignable to type '{ message: string; code?: string; stack?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'stack' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(101,11): error TS2375: Type '{ operation: string; resource: string; resourceId: string; scope: Record<string, any> | undefined; userId: string | undefined; timestamp: Date; severity: "info" | "error"; success: boolean; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(113,7): error TS2375: Type '{ message: string; code: any; stack: string | undefined; }' is not assignable to type '{ message: string; code?: string; stack?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'stack' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(134,11): error TS2375: Type '{ operation: string; scope: Record<string, any> | undefined; userId: string | undefined; timestamp: Date; severity: "info"; success: true; duration: number | undefined; metadata: { ...; }; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(164,11): error TS2375: Type '{ operation: string; scope: Record<string, any> | undefined; userId: string | undefined; timestamp: Date; severity: "info" | "warn"; success: boolean; duration: number | undefined; metadata: { ...; }; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(192,11): error TS2375: Type '{ operation: string; userId: string | undefined; timestamp: Date; severity: "warn" | "critical"; success: false; metadata: Record<string, any>; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(208,11): error TS2375: Type '{ operation: string; userId: string | undefined; timestamp: Date; severity: "info" | "error" | "warn" | "critical"; success: boolean; resource: string | undefined; metadata: { session_id: string | undefined; api_key_id: string | undefined; ip_address: string; user_agent: string; action: string | undefined; }; }' is not assignable to type 'AuditEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'userId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(281,11): error TS2375: Type '{ id: string; event_type: "auth_failure"; user_id: string | undefined; session_id: string | undefined; api_key_id: string | undefined; ip_address: string; user_agent: string; details: { ...; }; severity: "medium"; created_at: string; }' is not assignable to type 'SecurityAuditLog' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'user_id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/audit-service.ts(465,11): error TS2375: Type '{ id: string; event_type: "auth_failure"; user_id: string | undefined; ip_address: string; user_agent: string; resource: string; details: { rate_limit_exceeded: boolean; limit: number; window_ms: number; identifier: string; timestamp: string; }; severity: "medium"; created_at: string; }' is not assignable to type 'SecurityAuditLog' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'user_id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/audit/query.ts(95,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(96,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(207,34): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(277,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(280,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(287,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/audit/query.ts(294,14): error TS2339: Property 'eventAudit' does not exist on type 'QdrantClient'.
+src/services/auth/api-key-service.ts(74,11): error TS2375: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; key_id: string; key_hash: string; user_id: string; name: string; scopes: AuthScope[]; is_active: true; expires_at: string | undefined; created_at: string; }' is not assignable to type 'ApiKey' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'expires_at' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/auth/api-key-service.ts(446,7): error TS2322: Type '{ key_id: string; name: string; last_used: string | undefined; usage_count: number; }[]' is not assignable to type '{ key_id: string; name: string; last_used?: string; usage_count: number; }[]'.
+  Type '{ key_id: string; name: string; last_used: string | undefined; usage_count: number; }' is not assignable to type '{ key_id: string; name: string; last_used?: string; usage_count: number; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'last_used' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/services/auth/api-key-service.ts(514,5): error TS2375: Type '{ id: string; key_id: string; name: string; scopes: AuthScope[]; expires_at: string | undefined; created_at: string; last_used: string | undefined; is_active: boolean; description: string | undefined; }' is not assignable to type 'ApiKeyResponse' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'expires_at' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/auth/auth-service.ts(12,3): error TS2305: Module '"../../middleware/error-middleware"' has no exported member 'ConfigurationError'.
+src/services/auth/auth-service.ts(13,3): error TS2305: Module '"../../middleware/error-middleware"' has no exported member 'AuthenticationError'.
+src/services/auth/auth-service.ts(14,3): error TS2459: Module '"../../middleware/error-middleware"' declares 'ValidationError' locally, but it is not exported.
+src/services/auth/auth-service.ts(18,10): error TS6133: 'BaseError' is declared but its value is never read.
+src/services/auth/auth-service.ts(18,21): error TS6133: 'ErrorCode' is declared but its value is never read.
+src/services/auth/auth-service.ts(18,47): error TS6133: 'ErrorSeverity' is declared but its value is never read.
+src/services/auth/auth-service.ts(28,3): error TS6133: 'AuthError' is declared but its value is never read.
+src/services/auth/auth-service.ts(29,3): error TS6133: 'TokenRevocationList' is declared but its value is never read.
+src/services/auth/auth-service.ts(130,48): error TS2554: Expected 0 arguments, but got 1.
+src/services/auth/auth-service.ts(146,13): error TS2561: Object literal may only specify known properties, but 'context' does not exist in type '{ maxAttempts?: number; baseDelay?: number; maxDelay?: number; retryableErrors?: ErrorCode[]; _context?: Record<string, any>; }'. Did you mean to write '_context'?
+src/services/auth/auth-service.ts(156,25): error TS2339: Property 'is_active' does not exist on type 'never'.
+src/services/auth/auth-service.ts(160,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/auth/auth-service.ts(165,80): error TS2339: Property 'password_hash' does not exist on type 'never'.
+src/services/auth/auth-service.ts(170,34): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/auth/auth-service.ts(177,44): error TS2554: Expected 0 arguments, but got 1.
+src/services/auth/auth-service.ts(178,39): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/auth/auth-service.ts(183,13): error TS2561: Object literal may only specify known properties, but 'context' does not exist in type '{ maxAttempts?: number; baseDelay?: number; maxDelay?: number; retryableErrors?: ErrorCode[]; _context?: Record<string, any>; }'. Did you mean to write '_context'?
+src/services/auth/auth-service.ts(183,73): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/auth/auth-service.ts(189,26): error TS2339: Property 'id' does not exist on type 'never'.
+src/services/auth/auth-service.ts(190,32): error TS2339: Property 'username' does not exist on type 'never'.
+src/services/auth/auth-service.ts(191,29): error TS2339: Property 'email' does not exist on type 'never'.
+src/services/auth/auth-service.ts(192,37): error TS2339: Property 'password_hash' does not exist on type 'never'.
+src/services/auth/auth-service.ts(193,28): error TS2339: Property 'role' does not exist on type 'never'.
+src/services/auth/auth-service.ts(194,33): error TS2339: Property 'is_active' does not exist on type 'never'.
+src/services/auth/auth-service.ts(195,34): error TS2339: Property 'created_at' does not exist on type 'never'.
+src/services/auth/auth-service.ts(196,34): error TS2339: Property 'updated_at' does not exist on type 'never'.
+src/services/auth/auth-service.ts(197,34): error TS2339: Property 'last_login' does not exist on type 'never'.
+src/services/auth/auth-service.ts(301,20): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(302,20): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(380,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Error'.
+src/services/auth/auth-service.ts(385,18): error TS18046: 'dbError' is of type 'unknown'.
+src/services/auth/auth-service.ts(414,53): error TS2339: Property 'tokenRevocationList' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(433,20): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(541,32): error TS2339: Property 'tokenRevocationList' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(560,20): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(572,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(625,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(683,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(697,32): error TS2339: Property 'securityEvent' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(712,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(727,11): error TS2783: 'timestamp' is specified more than once, so this usage will be overwritten.
+src/services/auth/auth-service.ts(845,51): error TS2339: Property 'tokenRevocationList' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(898,38): error TS2339: Property 'tokenRevocationList' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(908,24): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(964,31): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(1004,53): error TS2339: Property 'apiKey' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1055,32): error TS2339: Property 'apiKey' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1120,32): error TS2339: Property 'apiKey' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1151,47): error TS2339: Property 'apiKey' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1175,48): error TS2339: Property 'apiKey' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1194,27): error TS7006: Parameter 'key' implicitly has an 'any' type.
+src/services/auth/auth-service.ts(1277,5): error TS6133: 'ipAddress' is declared but its value is never read.
+src/services/auth/auth-service.ts(1278,5): error TS6133: 'userAgent' is declared but its value is never read.
+src/services/auth/auth-service.ts(1425,58): error TS2339: Property 'tokenRevocationList' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1476,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/auth-service.ts(1491,32): error TS2339: Property 'authInstance' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/auth/auth-service.ts(1510,18): error TS18046: 'error' is of type 'unknown'.
+src/services/auth/authorization-service.ts(55,11): error TS6133: 'userRole' is declared but its value is never read.
+src/services/auth/authorization-service.ts(279,11): error TS6133: 'userRole' is declared but its value is never read.
+src/services/auto-purge.ts(31,19): error TS2304: Cannot find name 'QdrantDatabaseConfig'.
+src/services/core-memory-find.ts(3,15): error TS6196: 'SearchQuery' is declared but never used.
+src/services/core-memory-find.ts(3,48): error TS2305: Module '"../types/core-interfaces.js"' has no exported member 'FindHit'.
+src/services/core-memory-find.ts(3,48): error TS6196: 'FindHit' is declared but never used.
+src/services/core-memory-find.ts(40,7): error TS2353: Object literal may only specify known properties, and 'query' does not exist in type 'unknown[]'.
+src/services/core-memory-find.ts(49,28): error TS2339: Property 'results' does not exist on type 'MemoryStoreResponse'.
+src/services/core-memory-find.ts(68,29): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/services/core-memory-find.ts(68,34): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/services/delete-operations.ts(139,37): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(156,29): error TS2339: Property 'section' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(157,29): error TS2339: Property 'runbook' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(158,28): error TS2339: Property 'changeLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(159,27): error TS2339: Property 'issueLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(161,16): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(162,26): error TS2339: Property 'todoLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(164,16): error TS2339: Property 'releaseNote' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(165,25): error TS2339: Property 'ddlHistory' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(167,16): error TS2339: Property 'prContext' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(169,16): error TS2339: Property 'incidentLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(171,16): error TS2339: Property 'releaseLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(172,26): error TS2339: Property 'riskLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(174,16): error TS2339: Property 'assumptionLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(179,29): error TS2339: Property 'section' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(180,29): error TS2339: Property 'runbook' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(181,28): error TS2339: Property 'changeLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(182,27): error TS2339: Property 'issueLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(183,30): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(184,26): error TS2339: Property 'todoLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(185,34): error TS2339: Property 'releaseNote' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(186,25): error TS2339: Property 'ddlHistory' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(187,32): error TS2339: Property 'prContext' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(188,30): error TS2339: Property 'incidentLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(189,29): error TS2339: Property 'releaseLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(190,26): error TS2339: Property 'riskLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(191,32): error TS2339: Property 'assumptionLog' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(272,33): error TS2339: Property 'knowledgeRelation' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(352,35): error TS2339: Property 'knowledgeEntity' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(365,35): error TS2339: Property 'knowledgeRelation' does not exist on type 'QdrantClient'.
+src/services/delete-operations.ts(378,35): error TS2339: Property 'knowledgeObservation' does not exist on type 'QdrantClient'.
+src/services/embeddings/embedding-service.ts(110,11): error TS6133: 'lastCleanup' is declared but its value is never read.
+src/services/embeddings/embedding-service.ts(114,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/services/embeddings/embedding-service.ts(161,11): error TS2375: Type '{ vector: number[]; model: string; usage: { prompt_tokens: number; total_tokens: number; }; cached: true; processingTime: number; metadata: Record<string, any> | undefined; }' is not assignable to type 'EmbeddingResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(182,33): error TS2379: Argument of type '{ vector: any; model: string; createdAt: number; accessCount: number; lastAccessed: number; metadata: Record<string, any> | undefined; }' is not assignable to parameter of type 'CacheEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(195,7): error TS2375: Type '{ vector: any; model: string; usage: any; cached: false; processingTime: number; metadata: Record<string, any> | undefined; }' is not assignable to type 'EmbeddingResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(222,51): error TS2345: Argument of type '{ text: string; metadata: Record<string, any> | undefined; priority: "high" | "low" | "normal" | undefined; }' is not assignable to parameter of type 'string | EmbeddingRequest'.
+  Type '{ text: string; metadata: Record<string, any> | undefined; priority: "high" | "low" | "normal" | undefined; }' is not assignable to type 'EmbeddingRequest' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'metadata' are incompatible.
+      Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+        Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(244,32): error TS2379: Argument of type '{ vector: number[]; model: string; usage: { prompt_tokens: number; total_tokens: number; }; cached: true; processingTime: number; metadata: Record<string, any> | undefined; }' is not assignable to parameter of type 'EmbeddingResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(269,39): error TS2379: Argument of type '{ vector: any; model: string; createdAt: number; accessCount: number; lastAccessed: number; metadata: Record<string, any> | undefined; }' is not assignable to parameter of type 'CacheEntry' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(280,52): error TS2379: Argument of type '{ vector: any; model: string; usage: any; cached: false; processingTime: number; metadata: Record<string, any> | undefined; }' is not assignable to parameter of type 'EmbeddingResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(299,9): error TS2322: Type '{ vector: any; model: string; usage: any; cached: false; processingTime: number; metadata: Record<string, any> | undefined; }[]' is not assignable to type 'EmbeddingResult[]'.
+  Type '{ vector: any; model: string; usage: any; cached: false; processingTime: number; metadata: Record<string, any> | undefined; }' is not assignable to type 'EmbeddingResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'metadata' are incompatible.
+      Type 'Record<string, any> | undefined' is not assignable to type 'Record<string, any>'.
+        Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/embeddings/embedding-service.ts(540,7): error TS2353: Object literal may only specify known properties, and 'cacheHitRate' does not exist in type 'EmbeddingStats'.
+src/services/graph-traversal.ts(67,45): error TS2339: Property '$queryRaw' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(129,20): error TS2379: Argument of type '{ from_entity_type: string; from_entity_id: string; to_entity_type: string; to_entity_id: string; relation_type: string; metadata: Record<string, unknown> | undefined; }' is not assignable to parameter of type 'GraphEdge' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'metadata' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, unknown>'.
+      Type 'undefined' is not assignable to type 'Record<string, unknown>'.
+src/services/graph-traversal.ts(197,47): error TS2339: Property 'section' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(202,47): error TS2339: Property 'adrDecision' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(207,47): error TS2339: Property 'issueLog' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(212,47): error TS2339: Property 'runbook' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(217,47): error TS2339: Property 'todoLog' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(222,47): error TS2339: Property 'knowledgeEntity' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/graph-traversal.ts(271,45): error TS2339: Property '$queryRaw' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/knowledge/assumption.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/assumption.ts(36,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/assumption.ts(64,27): error TS7006: Parameter 'assumption' implicitly has an 'any' type.
+src/services/knowledge/assumption.ts(89,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/change.ts(6,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/ddl.ts(7,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/ddl.ts(26,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/ddl.ts(32,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/ddl.ts(46,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/decision.ts(56,16): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/knowledge/entity.ts(81,16): error TS2339: Property 'update' does not exist on type 'UnifiedDatabaseLayer'.
+src/services/knowledge/entity.ts(120,29): error TS2339: Property 'update' does not exist on type 'UnifiedDatabaseLayer'.
+src/services/knowledge/entity.ts(172,7): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type '{ kind: "entity"; scope: { project: string; branch: string; service?: string | undefined; environment?: string | undefined; org?: string | undefined; sprint?: string | undefined; tenant?: string | undefined; }; ... 4 more ...; ttl_policy?: "default" | ... 3 more ... | undefined; }'.
+src/services/knowledge/entity.ts(243,7): error TS2322: Type '{ id: any; data: { entity_type: any; name: any; data: any; }; scope: any; created_at: any; updated_at: any; rank: any; score: any; highlight: any; }[]' is not assignable to type '{ kind: "entity"; scope: { project: string; branch: string; service?: string | undefined; environment?: string | undefined; org?: string | undefined; sprint?: string | undefined; tenant?: string | undefined; }; ... 4 more ...; ttl_policy?: "default" | ... 3 more ... | undefined; }[]'.
+  Property 'kind' is missing in type '{ id: any; data: { entity_type: any; name: any; data: any; }; scope: any; created_at: any; updated_at: any; rank: any; score: any; highlight: any; }' but required in type '{ kind: "entity"; scope: { project: string; branch: string; service?: string | undefined; environment?: string | undefined; org?: string | undefined; sprint?: string | undefined; tenant?: string | undefined; }; ... 4 more ...; ttl_policy?: "default" | ... 3 more ... | undefined; }'.
+src/services/knowledge/entity.ts(264,7): error TS2322: Type '{ id: any; data: { entity_type: any; name: any; data: any; }; scope: any; created_at: any; updated_at: any; }[]' is not assignable to type '{ kind: "entity"; scope: { project: string; branch: string; service?: string | undefined; environment?: string | undefined; org?: string | undefined; sprint?: string | undefined; tenant?: string | undefined; }; ... 4 more ...; ttl_policy?: "default" | ... 3 more ... | undefined; }[]'.
+  Property 'kind' is missing in type '{ id: any; data: { entity_type: any; name: any; data: any; }; scope: any; created_at: any; updated_at: any; }' but required in type '{ kind: "entity"; scope: { project: string; branch: string; service?: string | undefined; environment?: string | undefined; org?: string | undefined; sprint?: string | undefined; tenant?: string | undefined; }; ... 4 more ...; ttl_policy?: "default" | ... 3 more ... | undefined; }'.
+src/services/knowledge/incident.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/incident.ts(40,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/incident.ts(68,25): error TS7006: Parameter 'incident' implicitly has an 'any' type.
+src/services/knowledge/incident.ts(92,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/issue.ts(82,31): error TS2339: Property 'issueLog' does not exist on type 'QdrantClient'.
+src/services/knowledge/observation.ts(30,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(34,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(56,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(59,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(88,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(91,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(128,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(155,22): error TS7006: Parameter 'observation' implicitly has an 'any' type.
+src/services/knowledge/observation.ts(188,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(207,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(226,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(248,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(267,28): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(311,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(314,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(351,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/observation.ts(356,26): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/observation.ts(384,26): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/pr_context.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(30,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(44,7): error TS2552: Cannot find name 'results'. Did you mean 'result'?
+src/services/knowledge/relation.ts(44,34): error TS2552: Cannot find name 'results'. Did you mean 'result'?
+src/services/knowledge/relation.ts(50,13): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/relation.ts(62,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/relation.ts(84,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(87,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/relation.ts(122,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(149,22): error TS7006: Parameter 'relation' implicitly has an 'any' type.
+src/services/knowledge/relation.ts(182,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(209,22): error TS7006: Parameter 'relation' implicitly has an 'any' type.
+src/services/knowledge/relation.ts(274,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/relation.ts(288,7): error TS2304: Cannot find name 'results'.
+src/services/knowledge/relation.ts(288,34): error TS2304: Cannot find name 'results'.
+src/services/knowledge/release.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/release.ts(40,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/release.ts(67,24): error TS7006: Parameter 'release' implicitly has an 'any' type.
+src/services/knowledge/release.ts(92,3): error TS6133: 'scope' is declared but its value is never read.
+src/services/knowledge/release.ts(94,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/release_note.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/risk.ts(5,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/risk.ts(38,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/risk.ts(65,21): error TS7006: Parameter 'risk' implicitly has an 'any' type.
+src/services/knowledge/risk.ts(93,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/risk.ts(97,26): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/runbook.ts(6,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/runbook.ts(11,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/runbook.ts(28,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/runbook.ts(79,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/runbook.ts(100,22): error TS7006: Parameter 'runbook' implicitly has an 'any' type.
+src/services/knowledge/section.ts(10,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/section.ts(41,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/section.ts(109,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/section.ts(146,22): error TS7006: Parameter 'section' implicitly has an 'any' type.
+src/services/knowledge/session-logs.ts(37,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(41,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/session-logs.ts(65,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(139,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(168,22): error TS7006: Parameter 'incident' implicitly has an 'any' type.
+src/services/knowledge/session-logs.ts(203,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(207,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/session-logs.ts(233,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(305,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(338,22): error TS7006: Parameter 'release' implicitly has an 'any' type.
+src/services/knowledge/session-logs.ts(376,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(380,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/session-logs.ts(406,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(478,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(511,22): error TS7006: Parameter 'risk' implicitly has an 'any' type.
+src/services/knowledge/session-logs.ts(546,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(550,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/session-logs.ts(578,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(650,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(679,22): error TS7006: Parameter 'assumption' implicitly has an 'any' type.
+src/services/knowledge/session-logs.ts(711,49): error TS2307: Cannot find module '../../db/unified-database-layer' or its corresponding type declarations.
+src/services/knowledge/session-logs.ts(721,24): error TS2304: Cannot find name 'qdrant'.
+src/services/knowledge/session-logs.ts(746,22): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/services/knowledge/todo.ts(45,27): error TS2339: Property 'update' does not exist on type 'UnifiedDatabaseLayer'.
+src/services/knowledge/todo.ts(49,54): error TS2339: Property 'title' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(50,42): error TS2339: Property 'description' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(51,39): error TS2339: Property 'status' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(52,43): error TS2339: Property 'priority' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(53,68): error TS2339: Property 'due_date' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(54,45): error TS2339: Property 'todo_type' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(55,35): error TS2339: Property 'text' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(56,43): error TS2339: Property 'assignee' does not exist on type 'any[]'.
+src/services/knowledge/todo.ts(58,23): error TS2339: Property 'tags' does not exist on type 'any[]'.
+src/services/memory-find.ts(22,7): error TS2412: Type '"semantic" | "auto" | "fast" | "deep" | undefined' is not assignable to type '"auto" | "fast" | "deep" | undefined' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(209,7): error TS2322: Type '"semantic" | "auto" | "fast" | "deep"' is not assignable to type '"auto" | "fast" | "deep"'.
+  Type '"semantic"' is not assignable to type '"auto" | "fast" | "deep"'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(220,7): error TS2322: Type '{ id: string; kind: string; scope: Record<string, unknown> | undefined; data: Record<string, any>; created_at: string; confidence_score: number; match_type: "semantic" | "exact" | "fuzzy"; }[]' is not assignable to type 'SearchResult[]'.
+  Type '{ id: string; kind: string; scope: Record<string, unknown> | undefined; data: Record<string, any>; created_at: string; confidence_score: number; match_type: "semantic" | "exact" | "fuzzy"; }' is not assignable to type 'SearchResult'.
+    Types of property 'scope' are incompatible.
+      Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, any>'.
+        Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(233,9): error TS2322: Type 'string' is not assignable to type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(262,11): error TS2375: Type '{ original: string; cleaned: string; keywords: string[]; entities: { text: string; type: string; position: number; }[]; scope: Record<string, unknown> | undefined; filters: Record<string, any>; intent: "unknown" | ... 2 more ... | "browse"; }' is not assignable to type 'ParsedQuery' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, any>'.
+      Type 'undefined' is not assignable to type 'Record<string, any>'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(314,5): error TS2375: Type '{ primary: SearchStrategy; fallback: SearchStrategy | undefined; alternatives: SearchStrategy[]; }' is not assignable to type 'SearchStrategySet' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'fallback' are incompatible.
+    Type 'SearchStrategy | undefined' is not assignable to type 'SearchStrategy'.
+      Type 'undefined' is not assignable to type 'SearchStrategy'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(407,11): error TS2375: Type '{ query: string; scope: Record<string, unknown> | undefined; types: string[] | undefined; mode: "auto"; limit: number; }' is not assignable to type 'SearchQuery' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type '{ project?: string; branch?: string; org?: string; }'.
+      Type 'undefined' is not assignable to type '{ project?: string; branch?: string; org?: string; }'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(415,11): error TS2375: Type '{ includeMetadata: true; cache: true; timeout: number | undefined; }' is not assignable to type 'SearchOptions' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'timeout' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(564,5): error TS6133: 'query' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(565,5): error TS6133: 'parsed' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(600,11): error TS6133: 'autonomousMetadata' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(614,7): error TS18004: No value exists in scope for the shorthand property 'autonomous_metadata'. Either declare one or provide an initializer.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(673,44): error TS6133: 'query' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(787,38): error TS6133: 'index' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(898,9): error TS2322: Type '"validation_error"' is not assignable to type '"fast" | "deep" | "fast_then_deep_fallback"'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(923,9): error TS2322: Type '"error"' is not assignable to type '"fast" | "deep" | "fast_then_deep_fallback"'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(947,78): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/services/orchestrators/memory-find-orchestrator-qdrant.ts(965,17): error TS2304: Cannot find name 'ConnectionError'.
+src/services/orchestrators/memory-find-orchestrator.ts(123,5): error TS6133: 'kind' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator.ts(164,55): error TS6133: 'baseSelect' is declared but its value is never read.
+src/services/orchestrators/memory-find-orchestrator.ts(164,72): error TS6133: 'kind' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(54,26): error TS6196: 'StoreOptions' is declared but never used.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(225,9): error TS2561: Object literal may only specify known properties, but 'kinds' does not exist in type 'SearchQuery'. Did you mean to write 'kind'?
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(308,60): error TS6133: 'index' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(340,37): error TS2554: Expected 2 arguments, but got 1.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(341,13): error TS2554: Expected 2-3 arguments, but got 1.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(345,9): error TS2554: Expected 2 arguments, but got 1.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(346,13): error TS2554: Expected 2-3 arguments, but got 1.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(544,48): error TS2367: This comparison appears to be unintentional because the types '"inserted" | "updated" | "skipped_dedupe" | "deleted"' and '"error"' have no overlap.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(547,7): error TS2322: Type '"created" | "none"' is not assignable to type '"batch" | "updated" | "deleted" | "created" | "skipped"'.
+  Type '"none"' is not assignable to type '"batch" | "updated" | "deleted" | "created" | "skipped"'.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(667,9): error TS2322: Type '"none"' is not assignable to type '"batch" | "updated" | "deleted" | "created" | "skipped"'.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(689,17): error TS2304: Cannot find name 'ConnectionError'.
+src/services/orchestrators/memory-store-orchestrator.ts(6,3): error TS6133: 'logDatabaseOperation' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(7,3): error TS6133: 'logBusinessOperation' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(32,1): error TS6192: All imports in import declaration are unused.
+src/services/orchestrators/memory-store-orchestrator.ts(124,27): error TS2345: Argument of type 'MCPSafeLogger | Logger<string, boolean>' is not assignable to parameter of type 'MCPSafeLogger | Logger<never, boolean>'.
+  Type 'Logger<string, boolean>' is not assignable to type 'MCPSafeLogger | Logger<never, boolean>'.
+    Type 'Logger<string, boolean>' is not assignable to type 'Logger<never, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Type 'Logger<string, boolean>' is not assignable to type 'LoggerExtras<never, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Types of property 'onChild' are incompatible.
+          Type 'OnChildCallback<string>' is not assignable to type 'OnChildCallback<never>'.
+            Types of parameters 'child' and 'child' are incompatible.
+              Type 'Logger<never, boolean>' is not assignable to type 'Logger<string, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+                Type 'Logger<never, boolean>' is not assignable to type '{ [x: string]: LogFn; }'.
+                  Index signature for type 'string' is missing in type 'BaseLogger & LoggerExtras<never, boolean> & { customLevels: {}; useOnlyCustomLevels: boolean; } & { info: LogFn; error: LogFn; warn: LogFn; debug: LogFn; fatal: LogFn; trace: LogFn; } & {}'.
+src/services/orchestrators/memory-store-orchestrator.ts(127,25): error TS2345: Argument of type 'MCPSafeLogger | Logger<string, boolean>' is not assignable to parameter of type 'MCPSafeLogger | Logger<never, boolean>'.
+  Type 'Logger<string, boolean>' is not assignable to type 'MCPSafeLogger | Logger<never, boolean>'.
+    Type 'Logger<string, boolean>' is not assignable to type 'Logger<never, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Type 'Logger<string, boolean>' is not assignable to type 'LoggerExtras<never, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+        Types of property 'onChild' are incompatible.
+          Type 'OnChildCallback<string>' is not assignable to type 'OnChildCallback<never>'.
+            Types of parameters 'child' and 'child' are incompatible.
+              Type 'Logger<never, boolean>' is not assignable to type 'Logger<string, boolean>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+                Type 'Logger<never, boolean>' is not assignable to type '{ [x: string]: LogFn; }'.
+                  Index signature for type 'string' is missing in type 'BaseLogger & LoggerExtras<never, boolean> & { customLevels: {}; useOnlyCustomLevels: boolean; } & { info: LogFn; error: LogFn; warn: LogFn; debug: LogFn; fatal: LogFn; trace: LogFn; } & {}'.
+src/services/orchestrators/memory-store-orchestrator.ts(304,37): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(360,37): error TS2339: Property 'section' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(413,37): error TS2339: Property 'incidentLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(467,37): error TS2339: Property 'releaseLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(518,37): error TS2339: Property 'riskLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(533,13): error TS6133: 'currentStatus' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(572,37): error TS2339: Property 'assumptionLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(586,13): error TS6133: 'currentStatus' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(624,37): error TS2339: Property 'todoLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(671,37): error TS2339: Property 'issueLog' does not exist on type 'QdrantClient'.
+src/services/orchestrators/memory-store-orchestrator.ts(741,11): error TS6133: 'scope' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(967,5): error TS6133: 'operation' is declared but its value is never read.
+src/services/orchestrators/memory-store-orchestrator.ts(1005,13): error TS2554: Expected 3 arguments, but got 2.
+src/services/orchestrators/memory-store-orchestrator.ts(1017,13): error TS2554: Expected 3 arguments, but got 2.
+src/services/orchestrators/memory-store-orchestrator.ts(1029,13): error TS2554: Expected 3 arguments, but got 2.
+src/services/orchestrators/memory-store-orchestrator.ts(1041,13): error TS2554: Expected 3 arguments, but got 2.
+src/services/search/deep-search.ts(43,40): error TS2339: Property '$queryRaw' does not exist on type 'QdrantClient'.
+src/services/search/deep-search.ts(68,40): error TS2339: Property '$queryRaw' does not exist on type 'QdrantClient'.
+src/services/search/deep-search.ts(91,39): error TS2339: Property '$queryRaw' does not exist on type 'QdrantClient'.
+src/services/search/deep-search.ts(125,31): error TS2339: Property '$queryRaw' does not exist on type 'QdrantClient'.
+src/services/search/entity-matching-service.ts(9,1): error TS6133: 'searchEntities' is declared but its value is never read.
+src/services/search/entity-matching-service.ts(10,15): error TS6196: 'SearchResult' is declared but never used.
+src/services/search/entity-matching-service.ts(206,39): error TS2339: Property 'knowledgeEntity' does not exist on type 'QdrantClient'.
+src/services/search/entity-matching-service.ts(285,39): error TS2339: Property 'adrDecision' does not exist on type 'QdrantClient'.
+src/services/search/entity-matching-service.ts(355,39): error TS2339: Property 'issueLog' does not exist on type 'QdrantClient'.
+src/services/search/entity-matching-service.ts(677,5): error TS6133: 'searchTerms' is declared but its value is never read.
+src/services/search/search-service.ts(9,1): error TS6133: 'searchEntities' is declared but its value is never read.
+src/services/search/search-service.ts(12,1): error TS6133: 'calculateSimilarity' is declared but its value is never read.
+src/services/search/search-strategy.ts(61,59): error TS2345: Argument of type '"semantic" | "auto" | "fast" | "deep"' is not assignable to parameter of type 'SearchMode'.
+  Type '"semantic"' is not assignable to type 'SearchMode'.
+src/services/search/search-strategy.ts(91,5): error TS2375: Type '{ primary: StrategyConfig; fallback: StrategyConfig | undefined; reasoning: string[]; confidence: number; estimatedLatency: number; }' is not assignable to type 'StrategySelection' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'fallback' are incompatible.
+    Type 'StrategyConfig | undefined' is not assignable to type 'StrategyConfig'.
+      Type 'undefined' is not assignable to type 'StrategyConfig'.
+src/services/search/suggestions.ts(111,49): error TS2339: Property 'section' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/search/suggestions.ts(123,60): error TS7006: Parameter 'w' implicitly has an 'any' type.
+src/services/search/suggestions.ts(128,62): error TS7006: Parameter 'w' implicitly has an 'any' type.
+src/services/similarity.ts(71,7): error TS2559: Type 'string' has no properties in common with type '{ project?: string; branch?: string; org?: string; }'.
+src/services/similarity.ts(81,11): error TS2322: Type '{ id: string; kind: string; title: any; snippet: string; similarity_score: number; similarity_type: "exact_duplicate" | "high_similarity" | "medium_similarity"; content_hash: string | undefined; }[]' is not assignable to type 'SimilarItem[]'.
+  Type '{ id: string; kind: string; title: any; snippet: string; similarity_score: number; similarity_type: "exact_duplicate" | "high_similarity" | "medium_similarity"; content_hash: string | undefined; }' is not assignable to type 'SimilarItem' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'content_hash' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/services/similarity.ts(84,26): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/similarity-service.ts(186,51): error TS2339: Property 'knowledgeEntity' does not exist on type '{ user: { findUnique: () => Promise<null>; update: () => Promise<null>; create: () => Promise<null>; delete: () => Promise<null>; findMany: () => Promise<never[]>; }; }'.
+src/services/similarity/unified-similarity-service.ts(25,3): error TS6196: 'MemoryStoreResponse' is declared but never used.
+src/services/similarity/unified-similarity-service.ts(122,9): error TS2416: Property 'findSimilar' in type 'UnifiedSimilarityService' is not assignable to the same property in base type 'SimilarityService'.
+  Type '(query: KnowledgeItem, options?: { threshold?: number; maxResults?: number; includeContent?: boolean; includeMetadata?: boolean; scope?: string; }) => Promise<SimilarityResult[]>' is not assignable to type '(item: KnowledgeItem, threshold?: number | undefined) => Promise<KnowledgeItem[]>'.
+    Types of parameters 'options' and 'threshold' are incompatible.
+      Type 'number | undefined' is not assignable to type '{ threshold?: number; maxResults?: number; includeContent?: boolean; includeMetadata?: boolean; scope?: string; } | undefined'.
+        Type 'number' has no properties in common with type '{ threshold?: number; maxResults?: number; includeContent?: boolean; includeMetadata?: boolean; scope?: string; }'.
+src/services/similarity/unified-similarity-service.ts(156,71): error TS2379: Argument of type '{ maxResults: number; scope: string | undefined; }' is not assignable to parameter of type '{ maxResults: number; scope?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/similarity/unified-similarity-service.ts(176,73): error TS2345: Argument of type '{ combinedScore: number; }[]' is not assignable to parameter of type '{ item: KnowledgeItem; combinedScore: number; }[]'.
+  Property 'item' is missing in type '{ combinedScore: number; }' but required in type '{ item: KnowledgeItem; combinedScore: number; }'.
+src/services/similarity/unified-similarity-service.ts(218,57): error TS2379: Argument of type '{ threshold: number; maxResults: number; scope: string | undefined; }' is not assignable to parameter of type '{ threshold?: number; maxResults?: number; includeContent?: boolean; includeMetadata?: boolean; scope?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/services/similarity/unified-similarity-service.ts(260,41): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(270,55): error TS2345: Argument of type '{ text: string; kind: string; scope: string | { project?: string; branch?: string; org?: string; }; filters: { kind: string; excludeIds: string[] | undefined; }; }' is not assignable to parameter of type 'SearchQuery'.
+  Property 'query' is missing in type '{ text: string; kind: string; scope: string | { project?: string; branch?: string; org?: string; }; filters: { kind: string; excludeIds: string[] | undefined; }; }' but required in type 'SearchQuery'.
+src/services/similarity/unified-similarity-service.ts(276,19): error TS2339: Property 'item' does not exist on type 'SearchResult'.
+src/services/similarity/unified-similarity-service.ts(277,20): error TS2551: Property 'score' does not exist on type 'SearchResult'. Did you mean 'scope'?
+src/services/similarity/unified-similarity-service.ts(277,33): error TS2339: Property 'confidence' does not exist on type 'SearchResult'.
+src/services/similarity/unified-similarity-service.ts(319,15): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(319,30): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(320,42): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(320,55): error TS2339: Property 'title' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(332,52): error TS2345: Argument of type '{ project?: string; branch?: string; org?: string; }' is not assignable to parameter of type 'string'.
+src/services/similarity/unified-similarity-service.ts(431,37): error TS2345: Argument of type '{ project?: string; branch?: string; org?: string; }' is not assignable to parameter of type 'string'.
+src/services/similarity/unified-similarity-service.ts(435,15): error TS2339: Property 'timestamp' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(435,34): error TS2339: Property 'timestamp' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(437,24): error TS2339: Property 'timestamp' does not exist on type 'KnowledgeItem'.
+src/services/similarity/unified-similarity-service.ts(437,62): error TS2339: Property 'timestamp' does not exist on type 'KnowledgeItem'.
+src/services/smart-find.ts(163,41): error TS2379: Argument of type '{ query: string; scope: Record<string, unknown> | undefined; types: string[] | undefined; limit: number; mode: "auto" | "fast" | "deep"; }' is not assignable to parameter of type 'CoreFindParams' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, unknown>'.
+      Type 'undefined' is not assignable to type 'Record<string, unknown>'.
+src/services/smart-find.ts(175,11): error TS2375: Type '{ hits: { kind: any; id: any; title: any; snippet: any; score: any; scope: any; updated_at: any; route_used: string; confidence: any; }[]; suggestions: never[]; autonomous_metadata: { strategy_used: "fast" | "deep" | "fast_then_deep_fallback"; ... 7 more ...; user_message_suggestion: string; }; debug: { ...; }; corr...' is not assignable to type 'SmartFindResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'corrections' are incompatible.
+    Type 'CorrectionMetadata | undefined' is not assignable to type 'CorrectionMetadata'.
+      Type 'undefined' is not assignable to type 'CorrectionMetadata'.
+src/services/smart-find.ts(219,46): error TS2304: Cannot find name 'memoryFind'.
+src/services/smart-find.ts(230,24): error TS2379: Argument of type '{ query: string; scope: Record<string, unknown> | undefined; types: string[] | undefined; limit: number; mode: "auto" | "fast" | "deep"; }' is not assignable to parameter of type 'CoreFindParams' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, unknown>'.
+      Type 'undefined' is not assignable to type 'Record<string, unknown>'.
+src/services/smart-find.ts(312,59): error TS2379: Argument of type '{ query: string; scope: Record<string, unknown> | undefined; types: string[] | undefined; limit: number; mode: "deep"; }' is not assignable to parameter of type 'CoreFindParams' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'scope' are incompatible.
+    Type 'Record<string, unknown> | undefined' is not assignable to type 'Record<string, unknown>'.
+      Type 'undefined' is not assignable to type 'Record<string, unknown>'.
+src/services/smart-find.ts(321,19): error TS2375: Type '{ hits: { kind: any; id: any; title: any; snippet: any; score: any; scope: any; updated_at: any; route_used: string; confidence: any; }[]; suggestions: never[]; autonomous_metadata: { strategy_used: "fast" | "deep" | "fast_then_deep_fallback"; ... 7 more ...; user_message_suggestion: string; }; debug: { ...; }; corr...' is not assignable to type 'SmartFindResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'corrections' are incompatible.
+    Type 'CorrectionMetadata | undefined' is not assignable to type 'CorrectionMetadata'.
+      Type 'undefined' is not assignable to type 'CorrectionMetadata'.
+src/services/smart-find.ts(413,9): error TS2375: Type '{ hits: any; suggestions: never[]; autonomous_metadata: { strategy_used: "fast" | "deep" | "fast_then_deep_fallback"; mode_requested: "auto" | "fast" | "deep"; ... 6 more ...; user_message_suggestion: any; }; debug: { ...; }; corrections: CorrectionMetadata | undefined; }' is not assignable to type 'SmartFindResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'corrections' are incompatible.
+    Type 'CorrectionMetadata | undefined' is not assignable to type 'CorrectionMetadata'.
+      Type 'undefined' is not assignable to type 'CorrectionMetadata'.
+src/services/smart-find.ts(544,3): error TS2375: Type '{ hits: never[]; suggestions: string[]; autonomous_metadata: { strategy_used: "fast"; mode_requested: string; mode_executed: string; confidence: "low"; total_results: number; avg_score: number; fallback_attempted: true; recommendation: string; user_message_suggestion: string; }; corrections: { ...; } | undefined; de...' is not assignable to type 'SmartFindResult' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'corrections' are incompatible.
+    Type '{ recommendation: string; original_query: string; final_query: string; attempts: { attempt_number: number; query: string; mode: string; sanitization_level?: string; error?: string; success: boolean; timestamp: number; duration_ms: number; }[]; ... 4 more ...; final_sanitization_level: SanitizationLevel; } | undefined' is not assignable to type 'CorrectionMetadata'.
+      Type 'undefined' is not assignable to type 'CorrectionMetadata'.
+src/silent-mcp-entry.ts(38,54): error TS2345: Argument of type '[string | Uint8Array<ArrayBufferLike>, (BufferEncoding | ((err?: Error | null | undefined) => void) | undefined)?, unknown?]' is not assignable to parameter of type '[str: string | Uint8Array<ArrayBufferLike>, encoding?: BufferEncoding | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined]'.
+  Type at position 1 in source is not compatible with type at position 1 in target.
+    Type 'BufferEncoding | ((err?: Error | null | undefined) => void) | undefined' is not assignable to type 'BufferEncoding | undefined'.
+      Type '(err?: Error | null | undefined) => void' is not assignable to type 'BufferEncoding | undefined'.
+src/silent-mcp-entry.ts(42,52): error TS2345: Argument of type '[string | Uint8Array<ArrayBufferLike>, (BufferEncoding | ((err?: Error | null | undefined) => void) | undefined)?, unknown?]' is not assignable to parameter of type '[str: string | Uint8Array<ArrayBufferLike>, encoding?: BufferEncoding | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined]'.
+  Type at position 1 in source is not compatible with type at position 1 in target.
+    Type 'BufferEncoding | ((err?: Error | null | undefined) => void) | undefined' is not assignable to type 'BufferEncoding | undefined'.
+      Type '(err?: Error | null | undefined) => void' is not assignable to type 'BufferEncoding | undefined'.

@@ -1,8 +1,8 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { GenericContainer, StartedTestContainer } from 'testcontainers';
-import { qdrantConnectionManager } from '../../src/db/pool.js';
-import { qdrantSchemaManager } from '../../src/db/schema.js';
-import { qdrantMigrationManager } from '../../src/db/migrate.js';
+import { qdrantConnectionManager } from '../../src/db/pool';
+import { qdrantSchemaManager } from '../../src/db/schema';
+import { qdrantMigrationManager } from '../../src/db/migrate';
 
 export async function getTestContainer(): Promise<{
   client: QdrantClient;

@@ -36,12 +36,12 @@ export interface IDatabaseFactory {
   /**
    * Create database adapter(s) based on configuration
    */
-  create(config: DatabaseFactoryConfig): Promise<DatabaseAdapters>;
+  create(_config: DatabaseFactoryConfig): Promise<DatabaseAdapters>;
 
   /**
    * Create vector adapter only
    */
-  createVectorAdapter(config: VectorConfig): Promise<IVectorAdapter>;
+  createVectorAdapter(_config: VectorConfig): Promise<IVectorAdapter>;
 
   /**
    * Get supported database types
@@ -51,7 +51,7 @@ export interface IDatabaseFactory {
   /**
    * Validate factory configuration
    */
-  validateConfig(config: DatabaseFactoryConfig): Promise<{
+  validateConfig(_config: DatabaseFactoryConfig): Promise<{
     valid: boolean;
     errors: string[];
     warnings: string[];
@@ -60,12 +60,12 @@ export interface IDatabaseFactory {
   /**
    * Get capabilities for a database type
    */
-  getCapabilities(type: DatabaseType): AdapterCapabilities;
+  getCapabilities(_type: DatabaseType): AdapterCapabilities;
 
   /**
    * Test database connectivity
    */
-  testConnection(type: DatabaseType, config: DatabaseConfig): Promise<boolean>;
+  testConnection(_type: DatabaseType, _config: DatabaseConfig): Promise<boolean>;
 }
 
 /**
@@ -83,9 +83,9 @@ export interface DatabaseAdapters {
 export class DatabaseFactoryError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
-    public readonly type?: DatabaseType,
-    public readonly originalError?: Error
+    public readonly _code: string,
+    public readonly _type?: DatabaseType,
+    public readonly _originalError?: Error
   ) {
     super(message);
     this.name = 'DatabaseFactoryError';
@@ -95,7 +95,7 @@ export class DatabaseFactoryError extends Error {
 export class ConfigurationError extends DatabaseFactoryError {
   constructor(
     message: string,
-    public readonly field?: string
+    public readonly _field?: string
   ) {
     super(message, 'CONFIGURATION_ERROR');
     this.name = 'ConfigurationError';

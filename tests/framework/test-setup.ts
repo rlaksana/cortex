@@ -6,14 +6,14 @@
  */
 
 // PostgreSQL import removed - now using Qdrant;
-import { getQdrantClient } from '../../database/connection.js';
+import { getQdrantClient } from '../../src/db/pool';
 import {
   TestDataFactory,
   DatabaseTestHelper,
   PerformanceTestHelper,
   ValidationTestHelper,
   ErrorTestHelper,
-} from './helpers/index.js';
+} from './helpers/index';
 
 /**
  * Main test framework class

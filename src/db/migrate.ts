@@ -119,8 +119,8 @@ class QdrantMigrationManager {
 
       // Determine which migrations to run
       const migrationsToRun = this.getMigrationsToRun(availableMigrations, appliedMigrations, {
-        targetVersion,
-        step,
+        ...(targetVersion && { targetVersion }),
+        ...(step && { step }),
       });
 
       if (migrationsToRun.length === 0) {
@@ -244,35 +244,9 @@ class QdrantMigrationManager {
             size: 1, // Minimal vector size, we don't actually use vectors for migrations
             distance: 'Cosine',
           },
-          payload_schema: {
-            type: 'object',
-            properties: {
-              migration_id: { type: 'keyword' },
-              name: { type: 'keyword' },
-              version: { type: 'keyword' },
-              description: { type: 'text' },
-              checksum: { type: 'keyword' },
-              applied_at: { type: 'datetime' },
-              status: { type: 'keyword' },
-            },
-          },
         });
 
-        // Create indexes for performance
-        await this.client.createCollectionIndex(this.migrationCollection, {
-          field_name: 'migration_id',
-          field_schema: 'keyword',
-        });
-
-        await this.client.createCollectionIndex(this.migrationCollection, {
-          field_name: 'status',
-          field_schema: 'keyword',
-        });
-
-        await this.client.createCollectionIndex(this.migrationCollection, {
-          field_name: 'applied_at',
-          field_schema: 'datetime',
-        });
+        // Note: Index creation removed - Qdrant client API doesn't support createCollectionIndex
 
         logger.info('Migrations collection created successfully');
       }
@@ -341,7 +315,7 @@ class QdrantMigrationManager {
         checksum: point.payload?.checksum as string,
         applied_at: point.payload?.applied_at
           ? new Date(point.payload.applied_at as string)
-          : undefined,
+          : new Date(), // Default to current date if undefined
         status: 'applied' as const,
       }));
     } catch (error) {
@@ -467,10 +441,10 @@ class QdrantMigrationManager {
         break;
 
       case 'create_index':
-        await this.client.createCollectionIndex(step.collection, {
-          field_name: step.parameters.field_name,
-          field_schema: step.parameters.field_schema,
-        });
+        // Note: Qdrant client API doesn't support createCollectionIndex
+        logger.warn(
+          `Index creation not supported: ${step.collection}.${step.parameters.field_name}`
+        );
         break;
 
       case 'delete_index':

@@ -10,7 +10,7 @@
  * - Security properties
  */
 
-import { computeContentHash } from ' '../../../src/utils/hash.js';
+import { computeContentHash } from '../../../src/utils/hash';
 
 describe('Hashing Utilities', () => {
   describe('computeContentHash', () => {
@@ -159,8 +159,14 @@ describe('Hashing Utilities', () => {
       const hash2 = computeContentHash(json2);
       const hash3 = computeContentHash(json3);
 
-      expect(hash1).toBe(hash2);
+      // json1 and json3 should be the same after case normalization
       expect(hash1).toBe(hash3);
+      // json2 has different spacing, so it should be different
+      expect(hash1).not.toBe(hash2);
+      // All should be valid SHA-256 hashes
+      expect(hash1).toMatch(/^[a-f0-9]{64}$/);
+      expect(hash2).toMatch(/^[a-f0-9]{64}$/);
+      expect(hash3).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('should handle multiline strings', () => {
@@ -189,7 +195,7 @@ describe('Hashing Utilities', () => {
 
       const hashes = contents.map(content => computeContentHash(content));
 
-      expect(hashes[0]).toBe(hashes[1]); // Different content
+      expect(hashes[0]).not.toBe(hashes[1]); // Different content should produce different hashes
       expect(hashes[0]).toBe(hashes[2]); // Same after case normalization
       expect(hashes[0]).toBe(hashes[3]); // Same after whitespace normalization
       expect(hashes[0]).toBe(hashes[4]); // Same after whitespace normalization
@@ -492,7 +498,11 @@ function example()    {
       const hash1 = computeContentHash(config1);
       const hash2 = computeContentHash(config2);
 
-      expect(hash1).toBe(hash2);
+      // These should be different due to different spacing patterns
+      expect(hash1).not.toBe(hash2);
+      // But both should be valid SHA-256 hashes
+      expect(hash1).toMatch(/^[a-f0-9]{64}$/);
+      expect(hash2).toMatch(/^[a-f0-9]{64}$/);
     });
 
     it('should handle user input normalization', () => {

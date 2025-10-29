@@ -6,12 +6,14 @@
 export interface KnowledgeItem {
   id?: string;
   kind: string;
+  content?: string; // Add content property for compatibility
   scope: {
     project?: string;
     branch?: string;
     org?: string;
   };
   data: Record<string, any>;
+  metadata?: Record<string, any>; // Add metadata property for compatibility
   created_at?: string;
   updated_at?: string;
 }
@@ -61,7 +63,8 @@ export interface SearchQuery {
     org?: string;
   };
   types?: string[];
-  mode?: 'auto' | 'fast' | 'deep' | 'semantic';
+  kind?: string; // Add kind property for compatibility
+  mode?: 'auto' | 'fast' | 'deep';
   limit?: number;
   top_k?: number;
 }
@@ -74,7 +77,9 @@ export interface MemoryStoreResponse {
 
 export interface MemoryFindResponse {
   results: SearchResult[];
+  items: SearchResult[]; // Add items property for compatibility
   total_count: number;
+  total?: number; // Add total property for compatibility
   autonomous_context: {
     search_mode_used: string;
     results_found: number;
@@ -87,28 +92,28 @@ export interface MemoryFindResponse {
  * Repository interface for knowledge persistence operations
  */
 export interface KnowledgeRepository {
-  store(item: KnowledgeItem): Promise<StoreResult>;
-  update(id: string, item: Partial<KnowledgeItem>): Promise<StoreResult>;
-  delete(id: string): Promise<boolean>;
-  findById(id: string): Promise<KnowledgeItem | null>;
-  findSimilar(item: KnowledgeItem, threshold?: number): Promise<KnowledgeItem[]>;
+  store(_item: KnowledgeItem): Promise<StoreResult>;
+  update(_id: string, _item: Partial<KnowledgeItem>): Promise<StoreResult>;
+  delete(_id: string): Promise<boolean>;
+  findById(_id: string): Promise<KnowledgeItem | null>;
+  findSimilar(_item: KnowledgeItem, _threshold?: number): Promise<KnowledgeItem[]>;
 }
 
 /**
  * Service interface for search operations
  */
 export interface SearchService {
-  search(query: SearchQuery): Promise<MemoryFindResponse>;
-  validateQuery(query: SearchQuery): Promise<boolean>;
+  search(_query: SearchQuery): Promise<MemoryFindResponse>;
+  validateQuery(_query: SearchQuery): Promise<boolean>;
 }
 
 /**
  * Service interface for validation operations
  */
 export interface ValidationService {
-  validateStoreInput(items: unknown[]): Promise<{ valid: boolean; errors: StoreError[] }>;
-  validateFindInput(input: unknown): Promise<{ valid: boolean; errors: string[] }>;
-  validateKnowledgeItem(item: KnowledgeItem): Promise<{ valid: boolean; errors: string[] }>;
+  validateStoreInput(_items: unknown[]): Promise<{ valid: boolean; errors: StoreError[] }>;
+  validateFindInput(_input: unknown): Promise<{ valid: boolean; errors: string[] }>;
+  validateKnowledgeItem(_item: KnowledgeItem): Promise<{ valid: boolean; errors: string[] }>;
 }
 
 /**
@@ -116,26 +121,26 @@ export interface ValidationService {
  */
 export interface DeduplicationService {
   checkDuplicates(
-    items: KnowledgeItem[]
+    _items: KnowledgeItem[]
   ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }>;
-  removeDuplicates(items: KnowledgeItem[]): Promise<KnowledgeItem[]>;
+  removeDuplicates(_items: KnowledgeItem[]): Promise<KnowledgeItem[]>;
 }
 
 /**
  * Service interface for similarity detection
  */
 export interface SimilarityService {
-  findSimilar(item: KnowledgeItem, threshold?: number): Promise<KnowledgeItem[]>;
-  calculateSimilarity(item1: KnowledgeItem, item2: KnowledgeItem): Promise<number>;
+  findSimilar(_item: KnowledgeItem, _threshold?: number): Promise<KnowledgeItem[]>;
+  calculateSimilarity(_item1: KnowledgeItem, _item2: KnowledgeItem): Promise<number>;
 }
 
 /**
  * Service interface for audit logging
  */
 export interface AuditService {
-  logOperation(operation: string, data: Record<string, any>): Promise<void>;
-  logAccess(resource: string, userId?: string): Promise<void>;
-  logError(error: Error, context: Record<string, any>): Promise<void>;
+  logOperation(_operation: string, _data: Record<string, any>): Promise<void>;
+  logAccess(_resource: string, _userId?: string): Promise<void>;
+  logError(_error: Error, _context: Record<string, any>): Promise<void>;
 }
 
 /**

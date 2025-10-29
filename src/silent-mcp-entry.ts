@@ -30,16 +30,25 @@ function isJsonRpcMessage(data: string): boolean {
 }
 
 // Intercept stdout during server startup
-process.stdout.write = function (...args) {
+process.stdout.write = function (
+  str: string | Uint8Array,
+  encoding?: any,
+  cb?: (_err?: Error | null) => void
+): boolean {
+  const args = [str, encoding, cb].filter((arg) => arg !== undefined) as [
+    string | Uint8Array,
+    any,
+    ((_err?: Error | null) => void) | undefined,
+  ];
   const data = args[0];
 
   if (typeof data === 'string' && isJsonRpcMessage(data)) {
     // Allow MCP protocol messages to pass through stdout
-    return originalStdoutWrite.apply(process.stdout, args);
+    return originalStdoutWrite.apply(process.stdout, [str, encoding, cb] as const);
   }
 
   // Redirect all other output (logs, etc.) to stderr
-  return originalStderrWrite.apply(process.stderr, args);
+  return originalStderrWrite.apply(process.stderr, [str, encoding, cb] as const);
 };
 
 // Start the actual MCP server process

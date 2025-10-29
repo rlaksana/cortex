@@ -5,7 +5,7 @@
  * and comprehensive coverage of edge cases.
  */
 
-import { MockDataGenerator } from '../test-setup.js';
+import { MockDataGenerator } from '../test-setup';
 import type {
   EnhancedKnowledgeItem,
   SectionData,
@@ -24,7 +24,7 @@ import type {
   ReleaseData,
   RiskData,
   AssumptionData,
-} from '../../../src/types/index.js';
+} from '../../../src/types/index';
 
 /**
  * Test data factory for all knowledge types

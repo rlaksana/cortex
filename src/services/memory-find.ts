@@ -16,10 +16,10 @@ export async function memoryFind(query: SearchQuery) {
     // Delegate to core implementation to avoid circular dependencies
     const result = await coreMemoryFind({
       query: query.query,
-      scope: query.scope,
-      types: query.types,
-      limit: query.limit,
-      mode: query.mode
+      ...(query.scope && { scope: query.scope }),
+      ...(query.types && { types: query.types }),
+      ...(query.limit && { limit: query.limit }),
+      ...(query.mode && { mode: query.mode }),
     });
 
     logger.info(

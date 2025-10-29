@@ -97,6 +97,7 @@ export interface EmbeddingStats {
   errors: number;
   model: string;
   cacheSize: number;
+  cacheHitRate: number;
 }
 
 /**
@@ -107,11 +108,11 @@ export class EmbeddingService {
   private config: Required<EmbeddingConfig>;
   private cache: Map<string, CacheEntry> = new Map();
   private stats: EmbeddingStats;
-  private lastCleanup: number = 0;
+  // lastCleanup removed - was unused
 
   constructor(config: EmbeddingConfig = {}) {
     this.config = {
-      apiKey: config.apiKey || process.env.OPENAI_API_KEY,
+      apiKey: config.apiKey || process.env.OPENAI_API_KEY || '',
       model: config.model || 'text-embedding-ada-002',
       batchSize: config.batchSize || 100,
       maxRetries: config.maxRetries || 3,
@@ -135,6 +136,7 @@ export class EmbeddingService {
       errors: 0,
       model: this.config.model,
       cacheSize: 0,
+      cacheHitRate: 0,
     };
   }
 
@@ -164,7 +166,7 @@ export class EmbeddingService {
             usage: { prompt_tokens: 0, total_tokens: 0 },
             cached: true,
             processingTime: Date.now() - startTime,
-            metadata: cached.metadata,
+            ...(cached.metadata && { metadata: cached.metadata }),
           };
         }
         this.stats.cacheMisses++;
@@ -176,6 +178,11 @@ export class EmbeddingService {
       // Generate embedding
       const response = await this.generateEmbeddingWithRetry(request.text);
 
+      // Validate response has embedding
+      if (!response.embedding || !Array.isArray(response.embedding)) {
+        throw new DatabaseError('Invalid embedding response from API', 'INVALID_EMBEDDING_RESPONSE');
+      }
+
       // Cache result
       if (this.config.cacheEnabled) {
         const cacheKey = request.cacheKey || this.generateCacheKey(request.text);
@@ -185,7 +192,7 @@ export class EmbeddingService {
           createdAt: Date.now(),
           accessCount: 1,
           lastAccessed: Date.now(),
-          metadata: request.metadata,
+          ...(request.metadata && { metadata: request.metadata }),
         });
       }
 
@@ -198,7 +205,7 @@ export class EmbeddingService {
         usage: response.usage,
         cached: false,
         processingTime,
-        metadata: request.metadata,
+        ...(request.metadata && { metadata: request.metadata }),
       };
     } catch (error) {
       this.stats.errors++;
@@ -219,11 +226,13 @@ export class EmbeddingService {
 
     if (request.texts.length === 1) {
       // Single item - use regular method
-      const result = await this.generateEmbedding({
+      const metadata = request.metadata?.[0];
+      const embedRequest: EmbeddingRequest = {
         text: request.texts[0],
-        metadata: request.metadata?.[0],
-        priority: request.priority,
-      });
+        ...(metadata && { metadata }),
+        ...(request.priority && { priority: request.priority }),
+      };
+      const result = await this.generateEmbedding(embedRequest);
       return [result];
     }
 
@@ -241,13 +250,14 @@ export class EmbeddingService {
           const cached = this.getFromCache(cacheKey);
           if (cached) {
             this.stats.cacheHits++;
+            const metadata = request.metadata?.[index];
             cachedResults.push({
               vector: cached.vector,
               model: cached.model,
               usage: { prompt_tokens: 0, total_tokens: 0 },
               cached: true,
               processingTime: 0,
-              metadata: request.metadata?.[index],
+              ...(metadata && { metadata }),
             });
           } else {
             this.stats.cacheMisses++;
@@ -266,25 +276,33 @@ export class EmbeddingService {
             const cacheKey = this.generateCacheKey(uncachedTexts[index]);
 
             if (this.config.cacheEnabled) {
-              this.setCache(cacheKey, {
-                vector: result.vector,
+              const metadata = request.metadata?.[originalIndex];
+              const cacheEntry: CacheEntry = {
+                vector: result.embedding,
                 model: this.config.model,
                 createdAt: Date.now(),
                 accessCount: 1,
                 lastAccessed: Date.now(),
-                metadata: request.metadata?.[originalIndex],
-              });
+              };
+              if (metadata) {
+                cacheEntry.metadata = metadata;
+              }
+              this.setCache(cacheKey, cacheEntry);
             }
 
             // Insert into correct position
-            cachedResults.splice(originalIndex, 0, {
-              vector: result.vector,
+            const metadata = request.metadata?.[originalIndex];
+            const embedResult: EmbeddingResult = {
+              vector: result.embedding,
               model: this.config.model,
-              usage: result.usage,
+              usage: { prompt_tokens: 0, total_tokens: 0 }, // Batch doesn't provide per-item usage
               cached: false,
               processingTime: 0,
-              metadata: request.metadata?.[originalIndex],
-            });
+            };
+            if (metadata) {
+              embedResult.metadata = metadata;
+            }
+            cachedResults.splice(originalIndex, 0, embedResult);
           });
         }
 
@@ -296,14 +314,20 @@ export class EmbeddingService {
         // No cache - process all in batch
         const batchResults = await this.generateBatchEmbeddingsWithRetry(request.texts);
 
-        return batchResults.map((result, index) => ({
-          vector: result.vector,
-          model: this.config.model,
-          usage: result.usage,
-          cached: false,
-          processingTime: 0,
-          metadata: request.metadata?.[index],
-        }));
+        return batchResults.map((result, index) => {
+          const metadata = request.metadata?.[index];
+          const embedResult: EmbeddingResult = {
+            vector: result.embedding,
+            model: this.config.model,
+            usage: { prompt_tokens: 0, total_tokens: 0 }, // Batch doesn't provide per-item usage
+            cached: false,
+            processingTime: 0,
+          };
+          if (metadata) {
+            embedResult.metadata = metadata;
+          }
+          return embedResult;
+        });
       }
     } catch (error) {
       this.stats.errors++;
@@ -408,10 +432,7 @@ export class EmbeddingService {
       throw new ValidationError('Input must be a string');
     }
 
-    if (text.length === 0) {
-      throw new ValidationError('Input text cannot be empty');
-    }
-
+    // Allow empty strings - they will be processed as 'empty' in preprocessText
     if (text.length > 100000) {
       throw new ValidationError('Input text is too long (max 100,000 characters)');
     }
@@ -514,7 +535,7 @@ export class EmbeddingService {
     }
 
     this.stats.cacheSize = this.cache.size;
-    this.lastCleanup = now;
+    // lastCleanup assignment removed - variable was unused
   }
 
   /**

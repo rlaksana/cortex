@@ -10,9 +10,12 @@
 import {
   ErrorHandler,
   BaseError,
+  ValidationError,
+  DatabaseError,
+  SystemError,
+  NetworkError,
   ErrorCode,
   ErrorCategory,
-  ErrorSeverity,
 } from '../utils/error-handler';
 import { logger } from '../utils/logger';
 
@@ -51,31 +54,17 @@ export class ApiErrorHandler {
    */
   static validateArguments(args: any, schema: Record<string, any>): void {
     if (!args || typeof args !== 'object') {
-      throw new BaseError({
-        code: ErrorCode.INVALID_INPUT,
-        category: ErrorCategory.VALIDATION,
-        severity: ErrorSeverity.MEDIUM,
-        message: 'Arguments must be an object',
-        userMessage: 'Invalid arguments provided',
-        context: { received: typeof args },
-      });
+      throw new ValidationError('Arguments must be an object');
     }
 
     // Check required fields
     const required = Object.entries(schema)
-      .filter(([_, config]) => config.required)
+      .filter(([, config]) => config.required)
       .map(([field]) => field);
 
     const missing = required.filter((field) => !(field in args));
     if (missing.length > 0) {
-      throw new BaseError({
-        code: ErrorCode.MISSING_REQUIRED_FIELD,
-        category: ErrorCategory.VALIDATION,
-        severity: ErrorSeverity.MEDIUM,
-        message: `Missing required fields: ${missing.join(', ')}`,
-        userMessage: `Missing required fields: ${missing.join(', ')}`,
-        context: { missing, received: Object.keys(args) },
-      });
+      throw new ValidationError(`Missing required fields: ${missing.join(', ')}`);
     }
 
     // Validate field types
@@ -85,14 +74,9 @@ export class ApiErrorHandler {
         const expectedType = config.type;
 
         if (expectedType && typeof value !== expectedType) {
-          throw new BaseError({
-            code: ErrorCode.INVALID_FORMAT,
-            category: ErrorCategory.VALIDATION,
-            severity: ErrorSeverity.MEDIUM,
-            message: `Field '${field}' must be of type ${expectedType}, got ${typeof value}`,
-            userMessage: `Invalid format for field: ${field}`,
-            context: { field, expectedType, receivedType: typeof value, value },
-          });
+          throw new ValidationError(
+            `Field '${field}' must be of type ${expectedType}, got ${typeof value}`
+          );
         }
       }
     });
@@ -108,33 +92,40 @@ export class ServiceErrorHandler {
     methodName: string,
     operation: () => Promise<T>,
     options: {
-      fallback?: (_error: BaseError) => T;
+      fallback?: (_error: Error) => T;
       rethrow?: boolean;
       category?: ErrorCategory;
     } = {}
   ): Promise<T> {
-    return ErrorHandler.wrapAsync(operation, {
+    const wrapOptions: {
+      operationName: string;
+      category?: ErrorCategory;
+      fallback?: (_error: Error) => T;
+      rethrow?: boolean;
+    } = {
       operationName: `service.${methodName}`,
-      category: options.category,
-      fallback: options.fallback,
-      rethrow: options.rethrow,
-    });
+    };
+
+    if (options.category !== undefined) {
+      wrapOptions.category = options.category;
+    }
+    if (options.fallback !== undefined) {
+      wrapOptions.fallback = options.fallback;
+    }
+    if (options.rethrow !== undefined) {
+      wrapOptions.rethrow = options.rethrow;
+    }
+
+    return ErrorHandler.wrapAsync(operation, wrapOptions);
   }
 
   /**
    * Handle database operation errors
    */
-  static handleDatabaseError(error: any, operation: string, context?: Record<string, any>): never {
-    const standardError = ErrorHandler.standardize(
-      error,
-      `database.${operation}`,
-      ErrorCategory.DATABASE
-    );
+  static handleDatabaseError(error: any, operation: string): never {
+    const standardError = ErrorHandler.standardize(error, `database.${operation}`);
 
-    // Add database context
-    if (context) {
-      standardError.context = { ...standardError.context, ...context };
-    }
+    // Add database context (context is readonly, cannot modify)
 
     standardError.log({ layer: 'database', operation });
     throw standardError;
@@ -145,18 +136,11 @@ export class ServiceErrorHandler {
    */
   static handleAuthenticationError(
     error: any,
-    operation: string,
-    context?: Record<string, any>
+    operation: string
   ): never {
-    const standardError = ErrorHandler.standardize(
-      error,
-      `auth.${operation}`,
-      ErrorCategory.AUTHENTICATION
-    );
+    const standardError = ErrorHandler.standardize(error, `auth.${operation}`);
 
-    if (context) {
-      standardError.context = { ...standardError.context, ...context };
-    }
+    // Context is readonly, cannot modify
 
     standardError.log({ layer: 'authentication', operation });
     throw standardError;
@@ -167,18 +151,11 @@ export class ServiceErrorHandler {
    */
   static handleAuthorizationError(
     error: any,
-    operation: string,
-    context?: Record<string, any>
+    operation: string
   ): never {
-    const standardError = ErrorHandler.standardize(
-      error,
-      `authz.${operation}`,
-      ErrorCategory.AUTHORIZATION
-    );
+    const standardError = ErrorHandler.standardize(error, `authz.${operation}`);
 
-    if (context) {
-      standardError.context = { ...standardError.context, ...context };
-    }
+    // Context is readonly, cannot modify
 
     standardError.log({ layer: 'authorization', operation });
     throw standardError;
@@ -190,16 +167,10 @@ export class DatabaseErrorHandler {
   /**
    * Handle database connection errors
    */
-  static handleConnectionError(error: any, context?: Record<string, any>): never {
-    const standardError = new BaseError({
-      code: ErrorCode.DATABASE_CONNECTION_FAILED,
-      category: ErrorCategory.DATABASE,
-      severity: ErrorSeverity.CRITICAL,
-      message: `Database connection failed: ${error instanceof Error ? error.message : String(error)}`,
-      userMessage: 'Database connection failed',
-      context: { ...context, originalError: error instanceof Error ? error.name : 'Unknown' },
-      retryable: true,
-    });
+  static handleConnectionError(error: any): never {
+    const standardError = new DatabaseError(
+      `Database connection failed: ${error instanceof Error ? error.message : String(error)}`
+    );
 
     standardError.log({ layer: 'database', operation: 'connect' });
     throw standardError;
@@ -208,20 +179,10 @@ export class DatabaseErrorHandler {
   /**
    * Handle database query errors
    */
-  static handleQueryError(error: any, query: string, params?: any[]): never {
-    const standardError = new BaseError({
-      code: ErrorCode.DATABASE_QUERY_FAILED,
-      category: ErrorCategory.DATABASE,
-      severity: ErrorSeverity.HIGH,
-      message: `Database query failed: ${error instanceof Error ? error.message : String(error)}`,
-      userMessage: 'Database operation failed',
-      context: {
-        query: query.substring(0, 100),
-        params,
-        originalError: error instanceof Error ? error.name : 'Unknown',
-      },
-      retryable: true,
-    });
+  static handleQueryError(error: any): never {
+    const standardError = new DatabaseError(
+      `Database query failed: ${error instanceof Error ? error.message : String(error)}`
+    );
 
     standardError.log({ layer: 'database', operation: 'query' });
     throw standardError;
@@ -231,14 +192,9 @@ export class DatabaseErrorHandler {
    * Handle record not found errors
    */
   static handleNotFoundError(entityType: string, identifier: string | Record<string, any>): never {
-    const standardError = new BaseError({
-      code: ErrorCode.RECORD_NOT_FOUND,
-      category: ErrorCategory.DATABASE,
-      severity: ErrorSeverity.MEDIUM,
-      message: `${entityType} not found: ${JSON.stringify(identifier)}`,
-      userMessage: `${entityType} not found`,
-      context: { entityType, identifier },
-    });
+    const standardError = new DatabaseError(
+      `${entityType} not found: ${JSON.stringify(identifier)}`
+    );
 
     standardError.log({ layer: 'database', operation: 'find' });
     throw standardError;
@@ -248,14 +204,9 @@ export class DatabaseErrorHandler {
    * Handle duplicate record errors
    */
   static handleDuplicateError(entityType: string, identifier: string | Record<string, any>): never {
-    const standardError = new BaseError({
-      code: ErrorCode.DUPLICATE_RECORD,
-      category: ErrorCategory.DATABASE,
-      severity: ErrorSeverity.MEDIUM,
-      message: `Duplicate ${entityType}: ${JSON.stringify(identifier)}`,
-      userMessage: `${entityType} already exists`,
-      context: { entityType, identifier },
-    });
+    const standardError = new DatabaseError(
+      `Duplicate ${entityType}: ${JSON.stringify(identifier)}`
+    );
 
     standardError.log({ layer: 'database', operation: 'create' });
     throw standardError;
@@ -267,30 +218,25 @@ export class AsyncErrorHandler {
   /**
    * Create a safe async wrapper that never throws
    */
-  static safe<T>(
+  static async safe<T>(
     operation: () => Promise<T>,
     fallback?: T
   ): Promise<{ success: boolean; data?: T; error?: BaseError }> {
-    return ErrorHandler.wrapAsync(
-      async () => {
-        try {
-          const data = await operation();
-          return { success: true, data };
-        } catch (error) {
-          const standardError = ErrorHandler.standardize(error, 'safe_operation');
-          standardError.log();
-          return {
-            success: false,
-            error: standardError,
-            data: fallback,
-          };
-        }
-      },
-      {
-        operationName: 'safe_wrapper',
-        rethrow: false,
+    try {
+      const data = await operation();
+      return { success: true, data };
+    } catch (error) {
+      const standardError = ErrorHandler.standardize(error, 'safe_operation');
+      standardError.log();
+      const result: { success: boolean; data?: T; error?: BaseError } = {
+        success: false,
+        error: standardError,
+      };
+      if (fallback !== undefined) {
+        result.data = fallback;
       }
-    );
+      return result;
+    }
   }
 
   /**
@@ -303,7 +249,7 @@ export class AsyncErrorHandler {
       baseDelay?: number;
       maxDelay?: number;
       retryableErrors?: ErrorCode[];
-      context?: Record<string, any>;
+      _context?: Record<string, any>;
     } = {}
   ): Promise<T> {
     const {
@@ -311,7 +257,7 @@ export class AsyncErrorHandler {
       baseDelay = 1000,
       maxDelay = 10000,
       retryableErrors = [],
-      context = {},
+      _context = {},
     } = options;
 
     let lastError: BaseError | null = null;
@@ -338,7 +284,7 @@ export class AsyncErrorHandler {
             maxAttempts,
             error: lastError.code,
             message: lastError.message,
-            ...context,
+            ..._context,
           },
           'Retrying operation after error'
         );
@@ -353,18 +299,11 @@ export class AsyncErrorHandler {
 
     // All attempts failed, throw last error
     if (lastError) {
-      lastError.log({ ...context, finalAttempt: true });
+      lastError.log({ ..._context, finalAttempt: true });
       throw lastError;
     }
 
-    throw new BaseError({
-      code: ErrorCode.UNKNOWN_ERROR,
-      category: ErrorCategory.SYSTEM,
-      severity: ErrorSeverity.HIGH,
-      message: 'All retry attempts failed',
-      userMessage: 'Operation failed after multiple attempts',
-      context: { ...context, attempts: maxAttempts },
-    });
+    throw new SystemError('All retry attempts failed');
   }
 }
 
@@ -376,7 +315,7 @@ export class ErrorRecovery {
   static async gracefulDegradation<T>(
     primaryOperation: () => Promise<T>,
     fallbackOperations: Array<() => Promise<T>>,
-    context?: Record<string, any>
+    _context?: Record<string, any>
   ): Promise<T> {
     let lastError: BaseError | null = null;
 
@@ -386,7 +325,7 @@ export class ErrorRecovery {
     } catch (error) {
       lastError = ErrorHandler.standardize(error, 'graceful_degradation');
       logger.warn(
-        { ...context, operation: 'primary' },
+        { ..._context, operation: 'primary' },
         'Primary operation failed, trying fallbacks'
       );
     }
@@ -395,28 +334,21 @@ export class ErrorRecovery {
     for (let i = 0; i < fallbackOperations.length; i++) {
       try {
         const result = await fallbackOperations[i]();
-        logger.info({ ...context, fallbackIndex: i }, 'Fallback operation succeeded');
+        logger.info({ ..._context, fallbackIndex: i }, 'Fallback operation succeeded');
         return result;
       } catch (error) {
         lastError = ErrorHandler.standardize(error, 'graceful_degradation');
-        logger.warn({ ...context, fallbackIndex: i }, 'Fallback operation failed');
+        logger.warn({ ..._context, fallbackIndex: i }, 'Fallback operation failed');
       }
     }
 
     // All operations failed
     if (lastError) {
-      lastError.log({ ...context, allAttemptsFailed: true });
+      lastError.log({ ..._context, allAttemptsFailed: true });
       throw lastError;
     }
 
-    throw new BaseError({
-      code: ErrorCode.UNKNOWN_ERROR,
-      category: ErrorCategory.SYSTEM,
-      severity: ErrorSeverity.HIGH,
-      message: 'All operations failed including fallbacks',
-      userMessage: 'Service temporarily unavailable',
-      context,
-    });
+    throw new SystemError('All operations failed including fallbacks');
   }
 
   /**
@@ -433,8 +365,9 @@ export class ErrorRecovery {
     const {
       failureThreshold = 5,
       recoveryTimeout = 60000, // 1 minute
-      _monitoringPeriod = 10000, // 10 seconds
     } = options;
+
+    // const monitoringPeriod = 10000; // 10 seconds
 
     let state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
     let failureCount = 0;
@@ -447,15 +380,7 @@ export class ErrorRecovery {
 
         if (state === 'OPEN') {
           if (now < nextAttempt) {
-            throw new BaseError({
-              code: ErrorCode.SERVICE_UNAVAILABLE,
-              category: ErrorCategory.NETWORK,
-              severity: ErrorSeverity.HIGH,
-              message: 'Circuit breaker is OPEN',
-              userMessage: 'Service temporarily unavailable',
-              context: { state, nextAttempt: new Date(nextAttempt).toISOString() },
-              retryable: false,
-            });
+            throw new NetworkError('Circuit breaker is OPEN - Service temporarily unavailable');
           }
           state = 'HALF_OPEN';
         }

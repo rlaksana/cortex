@@ -9,7 +9,7 @@
 
 import { performance } from 'perf_hooks';
 // PrismaClient removed - system now uses Qdrant + PostgreSQL architecture';
-import { logger } from '../utils/logger.js';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // Test Configuration

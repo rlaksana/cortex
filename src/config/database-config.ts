@@ -171,10 +171,10 @@ export class DatabaseConfigManager {
    * Validate database type configuration
    */
   private validateDatabaseType(): void {
-    const { type } = this.config.selection;
+    const { type: _type } = this.config.selection;
 
-    if (type !== 'qdrant') {
-      throw new Error(`Unsupported database type: ${type}. Only 'qdrant' is supported.`);
+    if (_type !== 'qdrant') {
+      throw new Error(`Unsupported database type: ${_type}. Only 'qdrant' is supported.`);
     }
 
     if (!this.config.qdrant.url) {
@@ -188,8 +188,8 @@ export class DatabaseConfigManager {
   /**
    * Apply environment-specific optimizations
    */
-  private applyEnvironmentOptimizations(env: string): void {
-    switch (env) {
+  private applyEnvironmentOptimizations(_env: string): void {
+    switch (_env) {
       case 'development':
         // Optimize for development
         this.config.migration.batchSize = Math.min(this.config.migration.batchSize, 100);
@@ -416,10 +416,10 @@ export class DatabaseConfigManager {
    * Deep merge utility for configuration updates
    */
   private deepMerge(
-    target: Partial<CompleteDatabaseConfig>,
+    _target: Partial<CompleteDatabaseConfig>,
     source: Partial<CompleteDatabaseConfig>
   ): CompleteDatabaseConfig {
-    const result = { ...target };
+    const result = { ..._target };
 
     for (const key in source) {
       const sourceValue = source[key as keyof CompleteDatabaseConfig];

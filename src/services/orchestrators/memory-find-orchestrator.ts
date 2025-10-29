@@ -35,7 +35,7 @@ interface SearchExecutionResult {
  * Coordinates query parsing, strategy selection, search execution, and result ranking
  */
 export class MemoryFindOrchestrator {
-  constructor(private ranker: ResultRanker = resultRanker) {}
+  constructor(private _ranker: ResultRanker = resultRanker) {}
 
   /**
    * Map knowledge kinds to their corresponding Qdrant table names
@@ -120,7 +120,7 @@ export class MemoryFindOrchestrator {
   private buildTableSpecificWhereClause(
     tableName: string,
     baseWhereClause: any,
-    kind: string
+    _kind: string
   ): any {
     const whereClause = { ...baseWhereClause };
 
@@ -161,7 +161,7 @@ export class MemoryFindOrchestrator {
   /**
    * Build table-specific SELECT fields based on table structure
    */
-  private buildTableSpecificSelect(tableName: string, baseSelect: any, kind: string): any {
+  private buildTableSpecificSelect(tableName: string, _baseSelect: any, _kind: string): any {
     // For tables with knowledge structure, use tags and metadata
     if (
       [
@@ -300,7 +300,7 @@ export class MemoryFindOrchestrator {
       const searchResult = await this.executeSearch(context);
 
       // Step 3: Rank results
-      const rankedResults = this.ranker.rankResults(searchResult.results, query, parsed);
+      const rankedResults = this._ranker.rankResults(searchResult.results, query, parsed);
 
       // Step 4: Build response
       const response = this.buildResponse(rankedResults, searchResult);
@@ -874,6 +874,7 @@ export class MemoryFindOrchestrator {
 
     return {
       results,
+      items: results,
       total_count: searchResult.totalCount,
       autonomous_context: {
         search_mode_used: searchResult.strategy.primary.name,
@@ -934,6 +935,7 @@ export class MemoryFindOrchestrator {
   private createValidationErrorResponse(errors: string[]): MemoryFindResponse {
     return {
       results: [],
+      items: [],
       total_count: 0,
       autonomous_context: {
         search_mode_used: 'validation_failed',
@@ -950,6 +952,7 @@ export class MemoryFindOrchestrator {
   private createErrorResponse(_error: any): MemoryFindResponse {
     return {
       results: [],
+      items: [],
       total_count: 0,
       autonomous_context: {
         search_mode_used: 'error',

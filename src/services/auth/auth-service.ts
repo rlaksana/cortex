@@ -12,10 +12,9 @@ import {
   ConfigurationError,
   AuthenticationError,
   ValidationError,
-  ServiceErrorHandler,
-  AsyncErrorHandler,
-} from '../../middleware/error-middleware';
-import { BaseError, ErrorCode, ErrorCategory, ErrorSeverity } from '../../utils/error-handler';
+  ErrorCategory,
+} from '../../utils/error-handler';
+import { ServiceErrorHandler, AsyncErrorHandler } from '../../middleware/error-middleware';
 import {
   User,
   ApiKey,
@@ -25,8 +24,6 @@ import {
   UserRole,
   AuthScope,
   AuthContext,
-  AuthError,
-  TokenRevocationList,
   DEFAULT_ROLE_PERMISSIONS,
 } from '../../types/auth-types';
 
@@ -50,6 +47,18 @@ interface SecurityEvent {
   timestamp: Date;
   severity: 'low' | 'medium' | 'high' | 'critical';
   metadata?: Record<string, any>;
+}
+
+interface DatabaseUser {
+  id: string;
+  username: string;
+  email: string;
+  password_hash: string;
+  role: string;
+  is_active: boolean;
+  created_at: Date;
+  updated_at: Date;
+  last_login?: Date;
 }
 
 export class AuthService {
@@ -125,9 +134,9 @@ export class AuthService {
         }
 
         // Fetch user from database
-        const userRecord = await AsyncErrorHandler.retry(
+        const userRecord: DatabaseUser | null = await AsyncErrorHandler.retry(
           () =>
-            qdrant.getClient().user.findUnique({
+            (qdrant.getClient().user as any).findUnique({
               where: { username },
               select: {
                 id: true,
@@ -143,7 +152,7 @@ export class AuthService {
             }),
           {
             maxAttempts: 3,
-            context: { operation: 'findUser', username },
+            _context: { operation: 'findUser', username },
           }
         );
 
@@ -174,13 +183,13 @@ export class AuthService {
         // Update last login timestamp
         await AsyncErrorHandler.retry(
           () =>
-            qdrant.getClient().user.update({
+            (qdrant.getClient().user as any).update({
               where: { id: userRecord.id },
               data: { last_login: new Date() },
             }),
           {
             maxAttempts: 2,
-            context: { operation: 'updateLastLogin', userId: userRecord.id },
+            _context: { operation: 'updateLastLogin', userId: userRecord.id },
           }
         );
 
@@ -194,8 +203,12 @@ export class AuthService {
           is_active: userRecord.is_active,
           created_at: userRecord.created_at.toISOString(),
           updated_at: userRecord.updated_at.toISOString(),
-          last_login: userRecord.last_login?.toISOString(),
         };
+
+        // Only add last_login if it exists (exactOptionalPropertyTypes compatibility)
+        if (userRecord.last_login) {
+          user.last_login = userRecord.last_login.toISOString();
+        }
 
         logger.info(
           {
@@ -293,13 +306,13 @@ export class AuthService {
       } else if (error instanceof jwt.JsonWebTokenError) {
         throw new Error('INVALID_TOKEN');
       } else if (error instanceof Error && error.message === 'TOKEN_REVOKED') {
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       } else {
         // Log unexpected errors for security monitoring
         logger.error(
           {
-            error: error.message,
-            stack: error.stack,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
             context: 'token_verification',
           },
           'Unexpected error during token verification'
@@ -377,12 +390,12 @@ export class AuthService {
       return isRevoked;
     } catch (dbError) {
       // Handle database failure with fail-safe default
-      this.handleDatabaseFailure(dbError);
+      this.handleDatabaseFailure(dbError instanceof Error ? dbError : new Error(String(dbError)));
 
       logger.error(
         {
           jti,
-          error: dbError.message,
+          error: dbError instanceof Error ? dbError.message : String(dbError),
           circuitBreakerOpen: this.databaseCircuitBreaker.isOpen,
         },
         'Database token revocation check failed - applying fail-safe security'
@@ -430,7 +443,7 @@ export class AuthService {
             attempt,
             maxAttempts,
             delay,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           },
           'Database token revocation check failed, retrying...'
         );
@@ -439,7 +452,7 @@ export class AuthService {
         return this.checkDatabaseTokenRevocationWithRetry(jti, attempt + 1);
       }
 
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -456,7 +469,7 @@ export class AuthService {
       logger.error(
         {
           failureCount: this.databaseCircuitBreaker.failureCount,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         },
         'Database circuit breaker opened due to consecutive failures'
       );
@@ -475,7 +488,7 @@ export class AuthService {
       } else if (error instanceof jwt.JsonWebTokenError) {
         throw new Error('INVALID_REFRESH_TOKEN');
       } else {
-        throw error;
+        throw error instanceof Error ? error : new Error(String(error));
       }
     }
   }
@@ -557,7 +570,7 @@ export class AuthService {
             attempt,
             maxAttempts,
             delay,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           },
           'Database token revocation persistence failed, retrying...'
         );
@@ -569,13 +582,13 @@ export class AuthService {
       logger.error(
         {
           jti,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           finalAttempt: attempt,
         },
         'Failed to persist token revocation to database after all retries'
       );
 
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -604,7 +617,7 @@ export class AuthService {
       try {
         const data = await fs.readFile(backupFile, 'utf-8');
         backup = JSON.parse(data);
-      } catch (error) {
+      } catch {
         // File doesn't exist or is invalid, start fresh
         backup = {};
       }
@@ -622,7 +635,7 @@ export class AuthService {
       logger.error(
         {
           jti,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           backupPath: this.config.token_blacklist_backup_path,
         },
         'Failed to persist token revocation to backup storage'
@@ -680,7 +693,7 @@ export class AuthService {
     } catch (error) {
       logger.info(
         {
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           backupPath: this.config.token_blacklist_backup_path,
         },
         'No backup token blacklist found or failed to load, starting fresh'
@@ -709,7 +722,7 @@ export class AuthService {
       logger.warn(
         {
           event,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         },
         'Failed to store security event in database, logging to file'
       );
@@ -724,8 +737,8 @@ export class AuthService {
         );
 
         const logEntry = {
-          timestamp: event.timestamp.toISOString(),
           ...event,
+          timestamp: event.timestamp.toISOString(),
         };
 
         await fs.appendFile(logFile, `${JSON.stringify(logEntry)}\n`);
@@ -905,7 +918,7 @@ export class AuthService {
           } catch (error) {
             this.databaseCircuitBreaker.lastFailureTime = now;
             logger.debug(
-              { error: error.message },
+              { error: error instanceof Error ? error.message : String(error) },
               'Database circuit breaker test failed, keeping open'
             );
           }
@@ -961,7 +974,10 @@ export class AuthService {
         }
       } catch (error) {
         // Backup file doesn't exist or is invalid
-        logger.debug({ error: error.message }, 'Backup file cleanup skipped - file not accessible');
+        logger.debug(
+          { error: error instanceof Error ? error.message : String(error) },
+          'Backup file cleanup skipped - file not accessible'
+        );
       }
     } catch (error) {
       logger.error({ error }, 'Failed to cleanup backup storage');
@@ -1134,7 +1150,7 @@ export class AuthService {
       return { keyId, key };
     } catch (error) {
       logger.error({ error, userId, name }, 'Failed to create API key in database');
-      throw error;
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -1191,7 +1207,7 @@ export class AuthService {
         orderBy: { created_at: 'desc' },
       });
 
-      return apiKeys.map((key) => ({
+      return apiKeys.map((key: any) => ({
         id: key.id,
         key_id: key.key_id,
         key_hash: key.key_hash,
@@ -1274,8 +1290,8 @@ export class AuthService {
   // Authentication context creation
   async createAuthContext(
     token: string,
-    ipAddress: string,
-    userAgent: string
+    _ipAddress: string,
+    _userAgent: string
   ): Promise<AuthContext> {
     const payload = await this.verifyAccessToken(token);
     const session = payload.session_id ? this.getSession(payload.session_id) : null;
@@ -1473,7 +1489,7 @@ export class AuthService {
       logger.error(
         {
           instanceId: this.distributedSync.instanceId,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         },
         'Distributed sync failed'
       );
@@ -1507,7 +1523,7 @@ export class AuthService {
       logger.debug(
         {
           instanceId: this.distributedSync.instanceId,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         },
         'Failed to update instance heartbeat'
       );

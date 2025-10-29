@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { VectorDatabase } from '../../../src/index.js';
+import { VectorDatabase } from '../../../src/index';
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({
@@ -13,7 +13,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
       this.search = vi.fn().mockImplementation((collectionName, params) => {
         // Mock search results based on query
         if (params.vector) {
-          return [
+          const allResults = [
             {
               id: 'test-id-1',
               score: 0.9,
@@ -33,6 +33,9 @@ vi.mock('@qdrant/js-client-rest', () => ({
               }
             }
           ];
+          // Respect the limit parameter
+          const limit = params.limit || 10;
+          return allResults.slice(0, limit);
         }
         return [];
       });

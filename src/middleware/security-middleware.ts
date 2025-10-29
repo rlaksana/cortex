@@ -57,7 +57,8 @@ export class SecurityMiddleware {
       // Check if IP is blocked
       if (this.isIPBlocked(req.ip || '')) {
         logger.warn({ ip: req.ip, path: req.path }, 'Blocked IP attempted access');
-        return res.status(403).json({ error: 'Access denied' });
+        res.status(403).json({ error: 'Access denied' });
+        return;
       }
 
       // Apply security headers
@@ -72,11 +73,13 @@ export class SecurityMiddleware {
 
       // Validate request size
       if (!this.validateRequestSize(req)) {
-        return res.status(413).json({ error: 'Request too large' });
+        res.status(413).json({ error: 'Request too large' });
+        return;
       }
 
       // Apply rate limiting
       if (this.config.enableRateLimit && !this.checkRateLimit(req, res)) {
+        next();
         return;
       }
 
@@ -122,7 +125,8 @@ export class SecurityMiddleware {
   validateInput(schema: ZodSchema, target: 'body' | 'query' | 'params' = 'body') {
     return (req: Request, res: Response, next: NextFunction) => {
       if (!this.config.enableInputValidation) {
-        return next();
+        next();
+        return;
       }
 
       try {
@@ -133,7 +137,7 @@ export class SecurityMiddleware {
           const errors: ValidationError[] = result.error.issues.map((issue) => ({
             field: issue.path.join('.'),
             message: issue.message,
-            value: issue.received,
+            value: (issue as any).received,
           }));
 
           logger.warn(
@@ -146,10 +150,11 @@ export class SecurityMiddleware {
             'Input validation failed'
           );
 
-          return res.status(400).json({
+          res.status(400).json({
             error: 'Validation failed',
             errors,
           });
+          return;
         }
 
         // Replace the original data with validated data
@@ -158,6 +163,7 @@ export class SecurityMiddleware {
       } catch (error) {
         logger.error({ error, path: req.path }, 'Validation middleware error');
         res.status(500).json({ error: 'Validation error' });
+        return;
       }
     };
   }
@@ -210,7 +216,7 @@ export class SecurityMiddleware {
         return res.status(400).json({ error: 'Invalid request data' });
       }
 
-      next();
+      return next();
     };
   }
 
@@ -218,7 +224,7 @@ export class SecurityMiddleware {
    * XSS prevention
    */
   preventXSS() {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (req: Request, _res: Response, next: NextFunction) => {
       const xssPatterns = [
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
         /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
@@ -265,35 +271,10 @@ export class SecurityMiddleware {
   /**
    * File upload security
    */
-  secureFileUpload(
-    options: {
-      maxFileSize?: number;
-      allowedMimeTypes?: string[];
-      allowedExtensions?: string[];
-    } = {}
-  ) {
-    const opts = {
-      maxFileSize: options.maxFileSize || 5 * 1024 * 1024, // 5MB
-      allowedMimeTypes: options.allowedMimeTypes || [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'text/plain',
-        'application/json',
-        'application/pdf',
-      ],
-      allowedExtensions: options.allowedExtensions || [
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.txt',
-        '.json',
-        '.pdf',
-      ],
-    };
+  secureFileUpload() {
+    // File upload security configuration available for future implementation
 
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (_req: Request, _res: Response, next: NextFunction) => {
       // This would integrate with multer or similar file upload middleware
       // For now, it's a placeholder for the security checks
       logger.info('File upload security check (placeholder)');
@@ -326,8 +307,8 @@ export class SecurityMiddleware {
       }
 
       // Add API key to request for downstream processing
-      req.apiKey = apiKey;
-      next();
+      (req as any).apiKey = apiKey;
+      return next();
     };
   }
 

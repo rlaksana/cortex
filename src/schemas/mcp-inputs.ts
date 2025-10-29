@@ -104,7 +104,9 @@ export const MemoryFindInputSchema = z
 export class ValidationError extends Error {
   constructor(
     message: string,
+    // eslint-disable-next-line no-unused-vars
     public field?: string,
+    // eslint-disable-next-line no-unused-vars
     public code?: string
   ) {
     super(message);

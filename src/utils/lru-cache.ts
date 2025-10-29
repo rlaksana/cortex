@@ -21,7 +21,7 @@ export interface CacheOptions {
   maxMemoryBytes: number; // Maximum memory usage in bytes
   ttlMs?: number; // Default TTL for items
   cleanupIntervalMs?: number; // Cleanup interval for expired items
-  sizeEstimator?: (value: any) => number; // Function to estimate item size
+  sizeEstimator?: (_value: any) => number; // Function to estimate item size
 }
 
 export interface CacheStats {
@@ -51,7 +51,7 @@ export class LRUCache<K, V> {
   };
   private cleanupTimer: NodeJS.Timeout | null = null;
 
-  constructor(private options: CacheOptions) {
+  constructor(private _options: CacheOptions) {
     this.startCleanupTimer();
   }
 
@@ -364,9 +364,9 @@ export class CacheFactory {
   /**
    * Create a cache optimized for search results
    */
-  static createSearchCache(maxItems: number = 1000): LRUCache<string, any> {
+  static createSearchCache(_maxItems: number = 1000): LRUCache<string, any> {
     return new LRUCache<string, any>({
-      maxSize: maxItems,
+      maxSize: _maxItems,
       maxMemoryBytes: 50 * 1024 * 1024, // 50MB
       ttlMs: 5 * 60 * 1000, // 5 minutes
       cleanupIntervalMs: 60 * 1000, // 1 minute
@@ -376,9 +376,9 @@ export class CacheFactory {
   /**
    * Create a cache optimized for embeddings
    */
-  static createEmbeddingCache(maxItems: number = 500): LRUCache<string, number[]> {
+  static createEmbeddingCache(_maxItems: number = 500): LRUCache<string, number[]> {
     return new LRUCache<string, number[]>({
-      maxSize: maxItems,
+      maxSize: _maxItems,
       maxMemoryBytes: 100 * 1024 * 1024, // 100MB
       ttlMs: 60 * 60 * 1000, // 1 hour
       cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
@@ -389,9 +389,9 @@ export class CacheFactory {
   /**
    * Create a cache optimized for user sessions
    */
-  static createSessionCache(maxItems: number = 10000): LRUCache<string, any> {
+  static createSessionCache(_maxItems: number = 10000): LRUCache<string, any> {
     return new LRUCache<string, any>({
-      maxSize: maxItems,
+      maxSize: _maxItems,
       maxMemoryBytes: 20 * 1024 * 1024, // 20MB
       ttlMs: 30 * 60 * 1000, // 30 minutes
       cleanupIntervalMs: 10 * 60 * 1000, // 10 minutes

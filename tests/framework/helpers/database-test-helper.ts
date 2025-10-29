@@ -6,8 +6,8 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { qdrantConnectionManager } from '../../../src/db/pool.js';
-import { qdrantSchemaManager } from '../../../src/db/schema.js';
+import { qdrantConnectionManager } from '../../../src/db/pool';
+import { qdrantSchemaManager } from '../../../src/db/schema';
 
 /**
  * Qdrant test helper for managing test collections and data

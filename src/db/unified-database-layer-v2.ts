@@ -30,7 +30,7 @@ import type {
   KnowledgeItem,
   StoreResult,
   StoreError,
-  MemoryStoreResponse,
+  // MemoryStoreResponse,
   MemoryFindResponse,
   SearchQuery,
 } from '../types/core-interfaces';
@@ -57,20 +57,26 @@ export interface QdrantDatabaseConfig {
  * PostgreSQL dependencies. Optimized for semantic search and vector operations.
  */
 export class QdrantOnlyDatabaseLayer {
-  private adapter: IVectorAdapter;
-  private config: QdrantDatabaseConfig;
-  private isHealthy: boolean = false;
+  public adapter: IVectorAdapter;
+  public config: QdrantDatabaseConfig;
+  public isHealthy: boolean = false;
 
   constructor(config: QdrantDatabaseConfig) {
     this.config = config;
-    this.adapter = new QdrantAdapter({
+    const qdrantConfig: any = {
+      type: 'qdrant',
       url: config.qdrant.url,
-      apiKey: config.qdrant.apiKey,
       collectionName: config.qdrant.collectionName,
-      timeout: config.qdrant.timeout,
-      batchSize: config.qdrant.batchSize || 100,
+      // timeout: config.qdrant.timeout, // Removed - not in VectorConfig
+      // batchSize: config.qdrant.batchSize || 100, // Removed - not in VectorConfig
       maxRetries: config.qdrant.maxRetries || 3,
-    });
+    };
+
+    if (config.qdrant.apiKey) {
+      qdrantConfig.apiKey = config.qdrant.apiKey;
+    }
+
+    this.adapter = new QdrantAdapter(qdrantConfig);
 
     logger.info(`Qdrant-Only Database Layer initialized: ${config.qdrant.collectionName}`);
   }
@@ -99,9 +105,18 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      const result = await this.adapter.store(items, options);
+      await this.adapter.store(items, options);
       logger.debug(`Stored ${items.length} items in Qdrant`);
-      return result;
+
+      // Convert MemoryStoreResponse to StoreResult
+      return {
+        id: `batch_${Date.now()}`,
+        status: 'inserted',
+        kind: 'batch_store',
+        created_at: new Date().toISOString(),
+        // count: items.length, // Removed - not in StoreResult
+        // items: items.map(item => item.id) // Removed - not in StoreResult
+      };
     } catch (error) {
       logger.error('Failed to store items in Qdrant', error);
       throw error;
@@ -117,7 +132,31 @@ export class QdrantOnlyDatabaseLayer {
     }
 
     try {
-      return await this.adapter.findById(ids);
+      const items = await this.adapter.findById(ids);
+
+      // Convert KnowledgeItem[] to MemoryFindResponse with proper SearchResult structure
+      const searchResults = items.map((item) => ({
+        id: item.id || `unknown_${Date.now()}`,
+        kind: item.kind,
+        scope: item.scope,
+        data: item.data,
+        created_at: item.created_at || new Date().toISOString(),
+        confidence_score: 1.0,
+        match_type: 'exact' as const,
+      }));
+
+      return {
+        results: searchResults,
+        items: searchResults, // Add items property for compatibility
+        total_count: items.length,
+        total: items.length, // Add total property for compatibility
+        autonomous_context: {
+          search_mode_used: 'by_ids',
+          results_found: items.length,
+          confidence_average: 1.0,
+          user_message_suggestion: `Found ${items.length} items`,
+        },
+      };
     } catch (error) {
       logger.error('Failed to find items by ID', error);
       throw error;
@@ -268,6 +307,7 @@ export class QdrantOnlyDatabaseLayer {
         id: data.id || (await this.generateUUID()),
         kind: collection === 'event_audit' ? 'observation' : 'entity',
         content: JSON.stringify(data),
+        data, // Add required data property
         metadata: {
           collection,
           ...data,
@@ -279,7 +319,7 @@ export class QdrantOnlyDatabaseLayer {
         },
       };
 
-      const result = await this.store([knowledgeItem]);
+      await this.store([knowledgeItem]);
       return { id: knowledgeItem.id, ...data };
     } catch (error) {
       logger.error(`Failed to create record in ${collection}`, error);
@@ -337,7 +377,7 @@ export class QdrantOnlyDatabaseLayer {
   /**
    * Execute raw query (compatibility method for audit system)
    */
-  async query(sql: string, params?: any[]): Promise<{ rows: any[] }> {
+  async query(sql: string, _params?: any[]): Promise<{ rows: any[] }> {
     if (!this.isHealthy) {
       await this.initialize();
     }
@@ -399,21 +439,24 @@ export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
           timeout: 30000,
           batchSize: 100,
           maxRetries: 3,
-        }
+        },
       };
     }
     super(config);
   }
 
   // Add fullTextSearch method for compatibility with entity service
-  async fullTextSearch(collection: string, options: {
-    query: string;
-    config?: string;
-    weighting?: Record<string, number>;
-    highlight?: boolean;
-    snippet_size?: number;
-    max_results?: number;
-  }): Promise<any[]> {
+  async fullTextSearch(
+    _collection: string,
+    _options: {
+      query: string;
+      config?: string;
+      weighting?: Record<string, number>;
+      highlight?: boolean;
+      snippet_size?: number;
+      max_results?: number;
+    }
+  ): Promise<any[]> {
     // For now, return empty results - this would need proper implementation
     return [];
   }

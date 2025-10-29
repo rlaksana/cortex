@@ -68,15 +68,15 @@ class QdrantConnectionManager {
 
     this.config = {
       url: qdrantConfig.url,
-      apiKey: qdrantConfig.apiKey,
-      timeout: qdrantConfig.timeout,
-      maxRetries: qdrantConfig.maxRetries || 3,
-      retryDelay: qdrantConfig.retryDelay || 1000,
+      ...(qdrantConfig.apiKey && { apiKey: qdrantConfig.apiKey }),
+      timeout: qdrantConfig.connectionTimeout || 30000,
+      maxRetries: 3,
+      retryDelay: 1000,
     };
 
     this.client = new QdrantClient({
       url: this.config.url,
-      apiKey: this.config.apiKey,
+      ...(this.config.apiKey && { apiKey: this.config.apiKey }),
       timeout: this.config.timeout,
     });
 
@@ -245,15 +245,8 @@ class QdrantConnectionManager {
       const collectionsResult = await this.client.getCollections();
       const collections = collectionsResult.collections.map((c) => c.name);
 
-      // Get Qdrant version info (if available)
-      let version: string | undefined;
-      try {
-        // Some Qdrant instances might not have this endpoint
-        const health = await this.client.health();
-        version = health.version;
-      } catch {
-        // Version check is optional, continue without it
-      }
+      // Get Qdrant version info - health() method not available in current client
+      const version: string | undefined = undefined;
 
       const responseTime = Date.now() - startTime;
       this.stats.lastHealthCheck = new Date();
@@ -262,7 +255,7 @@ class QdrantConnectionManager {
         isHealthy: true,
         message: 'Qdrant connection is healthy',
         collections,
-        version,
+        version: version || 'unknown',
         responseTime,
       };
     } catch (error) {

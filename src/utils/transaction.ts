@@ -39,7 +39,7 @@ export interface VectorTransactionContext {
  * @returns Result of the operation
  */
 export async function executeTransaction<T>(
-  callback: (ctx: VectorTransactionContext) => Promise<T>,
+  callback: (_ctx: VectorTransactionContext) => Promise<T>,
   options: TransactionOptions = {}
 ): Promise<DbOperationResult<T>> {
   const { timeout = 30000, maxRetries = 3 } = options;
@@ -135,7 +135,7 @@ export async function executeTransaction<T>(
  * @returns Result of the operation
  */
 export async function transaction<T>(
-  callback: (ctx: VectorTransactionContext) => Promise<T>,
+  callback: (_ctx: VectorTransactionContext) => Promise<T>,
   options: TransactionOptions = {}
 ): Promise<T> {
   const result = await executeTransaction(callback, options);
@@ -206,7 +206,7 @@ export async function executeParallelTransactions<T>(
 export async function batchOperation<T, R>(
   items: T[],
   batchSize: number,
-  processor: (batch: T[], ctx?: VectorTransactionContext) => Promise<R[]>
+  processor: (_batch: T[], _ctx?: VectorTransactionContext) => Promise<R[]>
 ): Promise<R[]> {
   const results: R[] = [];
 
@@ -277,7 +277,7 @@ export async function batchOperation<T, R>(
  * @returns Update result
  */
 export async function optimisticUpdate<T>(
-  updateFunction: (ctx: VectorTransactionContext) => Promise<T>,
+  updateFunction: (_ctx: VectorTransactionContext) => Promise<T>,
   maxRetries: number = 3
 ): Promise<DbOperationResult<T>> {
   let lastError: unknown;
@@ -376,10 +376,10 @@ export async function transactionHealthCheck(): Promise<{
       message: 'Vector operation system is healthy',
       latency,
     };
-  } catch (error) {
+  } catch {
     return {
       healthy: false,
-      message: `Vector operation health check failed: ${error instanceof Error ? error.message : String(error)}`,
+      message: 'Vector operation health check failed',
     };
   }
 }

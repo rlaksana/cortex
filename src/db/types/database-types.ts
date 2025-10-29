@@ -9,28 +9,8 @@
  * @since 2025
  */
 
-import type {
-  KnowledgeItem,
-  StoreResult,
-  StoreError,
-  SearchResult as CoreSearchResult,
-  SearchQuery,
-  MemoryStoreResponse,
-  MemoryFindResponse,
-  AutonomousContext,
-} from '../../types/core-interfaces';
-import type {
-  IVectorAdapter,
-  VectorConfig,
-  SearchOptions as VectorSearchOptions,
-} from '../interfaces/vector-adapter.interface';
-import type {
-  IDatabaseFactory,
-  DatabaseFactoryConfig,
-  DatabaseType,
-  DatabaseAdapters,
-  AdapterCapabilities,
-} from '../interfaces/database-factory.interface';
+// Core types imported as needed for database operations
+import type { SearchResult as CoreSearchResult } from '../../types/core-interfaces';
 
 // Re-export core interfaces
 export type {
@@ -59,15 +39,15 @@ export type {
 } from '../interfaces/database-factory.interface';
 
 // Use alias to avoid conflicts
-export type SearchResult = CoreSearchResult;
+// export type SearchResult = CoreSearchResult;
 
 // Error types
 export class DatabaseError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
-    public readonly originalError?: Error,
-    public readonly context?: Record<string, unknown>
+    public readonly _code: string,
+    public readonly _originalError?: Error,
+    public readonly _context?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'DatabaseError';
@@ -124,12 +104,12 @@ export interface BatchOperationResult<T = unknown> {
 
 // Query types
 export interface QueryBuilder {
-  select(columns?: string[]): QueryBuilder;
-  from(table: string): QueryBuilder;
-  where(condition: string, params?: unknown[]): QueryBuilder;
-  orderBy(column: string, direction?: 'ASC' | 'DESC'): QueryBuilder;
-  limit(count: number): QueryBuilder;
-  offset(count: number): QueryBuilder;
+  select(_columns?: string[]): QueryBuilder;
+  from(_table: string): QueryBuilder;
+  where(_condition: string, _params?: unknown[]): QueryBuilder;
+  orderBy(_column: string, _direction?: 'ASC' | 'DESC'): QueryBuilder;
+  limit(_count: number): QueryBuilder;
+  offset(_count: number): QueryBuilder;
   build(): { sql: string; params: unknown[] };
 }
 
@@ -141,7 +121,7 @@ export interface TransactionOptions {
 }
 
 export interface Transaction {
-  query<T = unknown>(sql: string, params?: unknown[]): Promise<T[]>;
+  query<T = unknown>(_sql: string, _params?: unknown[]): Promise<T[]>;
   commit(): Promise<void>;
   rollback(): Promise<void>;
 }
@@ -156,7 +136,7 @@ export interface PoolStats {
 
 export interface ConnectionPool {
   getConnection(): Promise<any>;
-  releaseConnection(connection: any): Promise<void>;
+  releaseConnection(_connection: any): Promise<void>;
   close(): Promise<void>;
   getStats(): PoolStats;
 }
@@ -165,8 +145,8 @@ export interface ConnectionPool {
 export interface Migration {
   id: string;
   name: string;
-  up: (client: any) => Promise<void>;
-  down: (client: any) => Promise<void>;
+  up: (_client: any) => Promise<void>;
+  down: (_client: any) => Promise<void>;
 }
 
 export interface MigrationOptions {
@@ -214,8 +194,8 @@ export interface HealthCheckResult {
 // Generic database operation types
 export interface DatabaseOperation<TParams = unknown, TResult = unknown> {
   name: string;
-  execute: (params: TParams) => Promise<TResult>;
-  validate?: (params: TParams) => boolean;
+  execute: (_params: TParams) => Promise<TResult>;
+  validate?: (_params: TParams) => boolean;
   timeout?: number;
 }
 
@@ -281,7 +261,7 @@ export interface TransactionEvent extends DatabaseEvent {
   transactionId?: string;
 }
 
-export type DatabaseEventHandler = (event: DatabaseEvent) => void;
+export type DatabaseEventHandler = (_event: DatabaseEvent) => void;
 
 // Configuration validation types
 export interface ValidationResult {
@@ -291,8 +271,8 @@ export interface ValidationResult {
 }
 
 export interface ConfigValidator<T> {
-  validate: (config: T) => ValidationResult;
-  sanitize?: (config: T) => T;
+  validate: (_config: T) => ValidationResult;
+  sanitize?: (_config: T) => T;
 }
 
 // Index types for better search performance
@@ -329,7 +309,7 @@ export interface TableDefinition {
 }
 
 // Search result enhancement types
-export interface EnhancedSearchResult extends SearchResult {
+export interface EnhancedSearchResult extends CoreSearchResult {
   excerpt?: string;
   breadcrumbs?: Array<{ title: string; id: string }>;
   related?: Array<{ id: string; score: number; kind: string }>;

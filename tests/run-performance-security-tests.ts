@@ -9,8 +9,8 @@
  * @version 1.0.0
  */
 
-import { PerformanceSecurityTester } from './performance-security-test-suite.js';
-import { logger } from '../utils/logger.js';
+import { PerformanceSecurityTester } from './performance-security-test-suite';
+import { logger } from '../utils/logger';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 

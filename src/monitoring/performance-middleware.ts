@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { performanceCollector, PerformanceMetric } from './performance-collector.js';
+import { performanceCollector } from './performance-collector.js';
 import { logger } from '../utils/logger.js';
 
 export interface PerformanceMiddlewareOptions {
@@ -16,7 +16,7 @@ export interface PerformanceMiddlewareOptions {
 }
 
 export class PerformanceMiddleware {
-  constructor(private options: PerformanceMiddlewareOptions = {}) {}
+  constructor(private _options: PerformanceMiddlewareOptions = {}) {}
 
   /**
    * Express middleware for tracking HTTP request performance
@@ -24,8 +24,9 @@ export class PerformanceMiddleware {
   httpPerformance() {
     return (req: Request, res: Response, next: NextFunction) => {
       // Skip excluded paths
-      if (this.options.excludePaths?.some((path) => req.path.startsWith(path))) {
-        return next();
+      if (this._options.excludePaths?.some((path) => req.path.startsWith(path))) {
+        next();
+        return;
       }
 
       const startTime = Date.now();
@@ -37,10 +38,13 @@ export class PerformanceMiddleware {
         ip: req.ip || req.connection.remoteAddress,
       };
 
+      // Store options reference for use in res.end callback
+      const slowQueryThreshold = this._options.slowQueryThreshold || 1000;
+
       // Include selected headers
-      if (this.options.includeHeaders) {
+      if (this._options.includeHeaders) {
         metadata.headers = {};
-        for (const header of this.options.includeHeaders) {
+        for (const header of this._options.includeHeaders) {
           if (req.headers[header]) {
             metadata.headers[header] = req.headers[header];
           }
@@ -48,7 +52,7 @@ export class PerformanceMiddleware {
       }
 
       // Track request body if enabled (be careful with sensitive data)
-      if (this.options.trackRequestBody && req.body) {
+      if (this._options.trackRequestBody && req.body) {
         metadata.requestSize = JSON.stringify(req.body).length;
       }
 
@@ -62,7 +66,7 @@ export class PerformanceMiddleware {
         metadata.statusCode = res.statusCode;
         metadata.responseSize = chunk ? chunk.length : 0;
 
-        if (duration > (options.slowQueryThreshold || 1000)) {
+        if (duration > slowQueryThreshold) {
           logger.warn(
             {
               operation,

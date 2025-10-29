@@ -1,10 +1,9 @@
-// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'crypto';
 import type { DDLData } from '../../types/knowledge-data';
 import { logger } from '../../utils/logger';
 
 export async function storeDDL(data: DDLData): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const checksum = createHash('sha256').update(data.ddl_text).digest('hex');
@@ -23,34 +22,47 @@ export async function storeDDL(data: DDLData): Promise<string> {
 
   // Check if this is an update operation (has ID)
   if (data.id) {
-    const existing = await qdrant.ddlHistory.findUnique({
-      where: { id: data.id },
-    });
+    const existing = await db.findById([data.id]);
 
-    if (existing) {
+    if (existing.results.length > 0) {
       // Update existing DDL (though DDL changes are typically immutable, we allow metadata updates)
-      const result = await qdrant.ddlHistory.update({
-        where: { id: data.id },
-        data: {
-          migration_id: data.migration_id ?? existing.migration_id,
-          ddl_text: data.ddl_text ?? existing.ddl_text,
-          checksum: data.ddl_text ? checksum : existing.checksum,
-          description: data.description ?? existing.description,
+      // Delete old and create new one
+      await db.delete([data.id]);
+      const existingItem = existing.results[0];
+      const result = await db.store([
+        {
+          kind: 'ddl',
+          content: `DDL: ${data.migration_id ?? existingItem.data.migration_id}`,
+          data: {
+            id: data.id,
+            migration_id: data.migration_id ?? existingItem.data.migration_id,
+            ddl_text: data.ddl_text ?? existingItem.data.ddl_text,
+            checksum: data.ddl_text ? checksum : existingItem.data.checksum,
+            description: data.description ?? existingItem.data.description,
+          },
+          scope: existingItem.scope,
         },
-      });
+      ]);
       return result.id;
     }
   }
 
   // Create new DDL
-  const result = await qdrant.ddlHistory.create({
-    data: {
-      migration_id: data.migration_id,
-      ddl_text: data.ddl_text,
-      checksum,
-      description: data.description,
+  const newId = data.id || (await db.generateUUID({ prefix: 'ddl' }));
+  const result = await db.store([
+    {
+      kind: 'ddl',
+      content: `DDL: ${data.migration_id}`,
+      data: {
+        id: newId,
+        migration_id: data.migration_id,
+        ddl_text: data.ddl_text,
+        checksum,
+        description: data.description,
+      },
+      scope: {},
     },
-  });
+  ]);
 
   return result.id;
 }

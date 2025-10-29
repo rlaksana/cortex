@@ -7,7 +7,6 @@
  * @module services/knowledge/relation
  */
 
-// Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { RelationItem } from '../../schemas/knowledge-types';
 
 /**
@@ -27,7 +26,7 @@ export async function storeRelation(
   data: RelationItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Check for existing relation with same (from, to, relation_type) - unique constraint
@@ -41,36 +40,50 @@ export async function storeRelation(
       deleted_at: null,
     },
   });
-  if (results.length > 0) return results[0];
+  if (existing.length > 0) return existing[0];
 
-  if (existing) {
+  if (existing && existing.length > 0) {
     // Relation already exists, return existing ID (idempotent)
+    const existingRelation = existing[0];
     // Optionally update metadata if provided
     if (data.metadata) {
-      await qdrant.knowledgeRelation.update({
-        where: { id: existing.id },
-        data: {
-          metadata: data.metadata as any,
-          tags: scope as any,
-        },
-      });
+      // Update using UnifiedDatabaseLayer store method
+      const updatedRelation = {
+        ...existingRelation,
+        metadata: data.metadata as any,
+        tags: scope as any,
+        updated_at: new Date().toISOString(),
+      };
+
+      const knowledgeItem = {
+        id: existingRelation.id,
+        kind: 'relation',
+        content: JSON.stringify(updatedRelation),
+        data: updatedRelation,
+        scope,
+        created_at: existingRelation.created_at,
+        updated_at: new Date().toISOString(),
+      };
+
+      await db.store([knowledgeItem]);
     }
-    return existing.id;
+    return existingRelation.id;
   }
 
-  // Insert new relation
-  const result = await qdrant.knowledgeRelation.create({
-    data: {
-      from_entity_type: data.from_entity_type,
-      from_entity_id: data.from_entity_id,
-      to_entity_type: data.to_entity_type,
-      to_entity_id: data.to_entity_id,
-      relation_type: data.relation_type,
-      metadata: data.metadata as any,
-      tags: scope as any,
-    },
-  });
+  // Insert new relation using UnifiedDatabaseLayer
+  const relationData = {
+    from_entity_type: data.from_entity_type,
+    from_entity_id: data.from_entity_id,
+    to_entity_type: data.to_entity_type,
+    to_entity_id: data.to_entity_id,
+    relation_type: data.relation_type,
+    metadata: data.metadata as any,
+    tags: scope as any,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
+  const result = await db.create('knowledge_relation', relationData);
   return result.id;
 }
 
@@ -81,20 +94,36 @@ export async function storeRelation(
  * @returns true if deleted, false if not found
  */
 export async function softDeleteRelation(relationId: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
-  const result = await qdrant.knowledgeRelation.updateMany({
-    where: {
-      id: relationId,
-      deleted_at: null,
-    },
-    data: {
-      deleted_at: new Date(),
-    },
-  });
+  // Find existing relation first
+  const existingArray = await db.find('knowledge_relation', { id: relationId, deleted_at: null });
+  if (existingArray.length === 0) {
+    return false;
+  }
 
-  return result.count > 0;
+  const existing = existingArray[0];
+
+  // Update using store method
+  const updatedRelation = {
+    ...existing,
+    deleted_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const knowledgeItem = {
+    id: existing.id,
+    kind: 'relation',
+    content: JSON.stringify(updatedRelation),
+    data: updatedRelation,
+    scope: {},
+    created_at: existing.created_at,
+    updated_at: new Date().toISOString(),
+  };
+
+  await db.store([knowledgeItem]);
+  return true;
 }
 
 /**
@@ -119,7 +148,7 @@ export async function getOutgoingRelations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -179,7 +208,7 @@ export async function getIncomingRelations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -271,7 +300,7 @@ export async function relationExists(
   toId: string,
   relation_type: string
 ): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await db.find('knowledgeRelation', {
@@ -285,7 +314,7 @@ export async function relationExists(
     },
     select: { id: true },
   });
-  if (results.length > 0) return results[0];
+  if (result.length > 0) return result[0];
 
   return result !== null;
 }

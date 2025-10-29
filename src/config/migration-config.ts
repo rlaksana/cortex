@@ -463,15 +463,15 @@ export class MigrationConfigManager {
   /**
    * Set source database configuration
    */
-  setSourceConfig(type: 'qdrant' | 'qdrant', config: any): void {
-    this.config.source = { type, config };
+  setSourceConfig(_type: 'qdrant' | 'qdrant', config: any): void {
+    this.config.source = { type: _type, config };
   }
 
   /**
    * Set target database configuration
    */
-  setTargetConfig(type: 'qdrant' | 'qdrant', config: any): void {
-    this.config.target = { type, config };
+  setTargetConfig(_type: 'qdrant' | 'qdrant', config: any): void {
+    this.config.target = { type: _type, config };
   }
 
   /**
@@ -573,14 +573,14 @@ export class MigrationConfigManager {
   /**
    * Create migration checkpoint configuration
    */
-  createCheckpointConfig(checkpointId: string): {
+  createCheckpointConfig(_checkpointId: string): {
     id: string;
     timestamp: Date;
     config: Partial<MigrationEnvironmentConfig>;
     metadata: Record<string, any>;
   } {
     return {
-      id: checkpointId,
+      id: _checkpointId,
       timestamp: new Date(),
       config: {
         mode: this.config.mode,
@@ -611,23 +611,23 @@ export class MigrationConfigManager {
   /**
    * Import configuration from persistence
    */
-  static importFromPersistence(data: Record<string, any>): MigrationConfigManager {
-    if (data.version !== '2.0.0') {
-      throw new Error(`Unsupported migration configuration version: ${data.version}`);
+  static importFromPersistence(_data: Record<string, any>): MigrationConfigManager {
+    if (_data.version !== '2.0.0') {
+      throw new Error(`Unsupported migration configuration version: ${_data.version}`);
     }
 
     const baseConfig: MigrationConfig = {
-      mode: data.config.mode,
-      batchSize: data.config.dataTransformation.batchSize,
-      concurrency: data.config.performance.maxConcurrency,
-      dryRun: data.config.safety.dryRun,
-      preservePg: data.config.safety.preserveSource,
-      validationEnabled: data.config.validation.enabled,
-      skipValidation: !data.config.validation.enabled,
-      progressFile: data.config.progressTracking.filePath,
+      mode: _data.config.mode,
+      batchSize: _data.config.dataTransformation.batchSize,
+      concurrency: _data.config.performance.maxConcurrency,
+      dryRun: _data.config.safety.dryRun,
+      preservePg: _data.config.safety.preserveSource,
+      validationEnabled: _data.config.validation.enabled,
+      skipValidation: !_data.config.validation.enabled,
+      progressFile: _data.config.progressTracking.filePath,
     };
 
-    return new MigrationConfigManager(baseConfig, data.environment);
+    return new MigrationConfigManager(baseConfig, _data.environment);
   }
 }
 

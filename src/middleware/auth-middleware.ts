@@ -34,8 +34,8 @@ export interface AuthenticatedRequest extends Request {
 
 export class AuthMiddleware {
   constructor(
-    private authService: AuthService,
-    private auditService: AuditService
+    private _authService: AuthService,
+    private _auditService: AuditService
   ) {}
 
   /**
@@ -93,7 +93,7 @@ export class AuthMiddleware {
               ? authContext.user.id
               : authContext.user.id || `api-key-${apiKeyHeader?.substring(0, 10)}`;
 
-          const isAllowed = this.authService.checkRateLimit(
+          const isAllowed = this._authService.checkRateLimit(
             identifier,
             config.rate_limit.requests,
             config.rate_limit.window_ms
@@ -118,7 +118,7 @@ export class AuthMiddleware {
             });
 
             // Additional audit logging for rate limiting
-            await this.auditService.logRateLimitExceeded(
+            await this._auditService.logRateLimitExceeded(
               identifier,
               req.path,
               config.rate_limit.requests,
@@ -263,7 +263,7 @@ export class AuthMiddleware {
    * Optional authentication middleware - attaches auth context if available but doesn't require it
    */
   optionalAuth(config: AuthMiddlewareConfig = {}) {
-    return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    return async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
       const authHeader = req.headers.authorization;
       const apiKeyHeader = req.headers['x-api-key'] as string;
       const clientInfo = this.extractClientInfo(req);
@@ -304,7 +304,7 @@ export class AuthMiddleware {
     config?: AuthMiddlewareConfig
   ): Promise<AuthContext> {
     try {
-      const authContext = await this.authService.createAuthContext(
+      const authContext = await this._authService.createAuthContext(
         token,
         clientInfo.ipAddress,
         clientInfo.userAgent
@@ -390,7 +390,7 @@ export class AuthMiddleware {
       }
 
       // Use the auth service to validate against database
-      const validationResult = await this.authService.validateApiKeyWithDatabase(apiKey);
+      const validationResult = await this._authService.validateApiKeyWithDatabase(apiKey);
 
       if (!validationResult) {
         throw this.createAuthError('INVALID_API_KEY', 'API key validation failed');
@@ -673,9 +673,9 @@ export class AuthMiddleware {
   private async validateIPAddress(
     sessionIP: string,
     currentIP: string,
-    userId: string,
-    sessionId: string,
-    userAgent: string,
+    _userId: string,
+    _sessionId: string,
+    _userAgent: string,
     config?: IPValidationConfig
   ): Promise<{
     isValid: boolean;
@@ -779,7 +779,7 @@ export class AuthMiddleware {
   } {
     try {
       // Check if IPs are in same subnet
-      const sameSubnet = this.areIPsInSameSubnet(sessionIP, currentIP, config.subnet_mask);
+      const sameSubnet = this.areIPsInSameSubnet(sessionIP, currentIP, config.subnet_mask || 24);
 
       if (sameSubnet) {
         return {
@@ -919,7 +919,7 @@ export class AuthMiddleware {
       const mask = parseInt(maskStr, 10);
 
       return this.areIPsInSameSubnet(ip, subnetIP, mask);
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -935,7 +935,7 @@ export class AuthMiddleware {
       }
 
       return (parts[0] << 24) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -960,7 +960,7 @@ export class AuthMiddleware {
       }
 
       return bytes;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -971,7 +971,7 @@ export class AuthMiddleware {
   private isSuspiciousChange(oldIP: string, newIP: string): boolean {
     // Same IP family changes are less suspicious
     const bothIPv4 = !oldIP.includes(':') && !newIP.includes(':');
-    const bothIPv6 = oldIP.includes(':') && newIP.includes(':');
+    // const bothIPv6 = oldIP.includes(':') && newIP.includes(':');
 
     if (bothIPv4) {
       // Check for geographical consistency (simplified)
@@ -1084,7 +1084,7 @@ export class AuthMiddleware {
    */
   private async logAuthEvent(event: Omit<SecurityAuditLog, 'id' | 'created_at'>): Promise<void> {
     try {
-      await this.auditService.logSecurityAuditEvent(event as SecurityAuditLog);
+      await this._auditService.logSecurityAuditEvent(event as SecurityAuditLog);
     } catch (error) {
       logger.error({ error, event }, 'Failed to log authentication event');
     }

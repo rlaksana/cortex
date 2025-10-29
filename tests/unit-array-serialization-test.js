@@ -6,7 +6,7 @@
  * Tests the core array serialization functionality without database dependencies.
  */
 
-import { serializeArray, deserializeArray, serializeForDatabase, deserializeFromDatabase } from '../src/utils/array-serializer.js';
+import { serializeArray, deserializeArray, serializeForDatabase } from '../src/utils/array-serializer.js';
 
 // Test results tracking
 const testResults = {
@@ -379,7 +379,7 @@ async function testErrorConditions() {
       if (result[2] !== 'true') {
         throw new Error('Booleans should be converted to strings');
       }
-    } catch (error) {
+    } catch {
       // If it throws, that's also acceptable behavior
       logInfo('Mixed type arrays throw error (acceptable behavior)');
     }

@@ -1,0 +1,186 @@
+/**
+ * Enhanced Global Test Setup
+ *
+ * This file provides standardized test environment configuration and utilities.
+ * It uses the new standardized test setup patterns for consistency across all tests.
+ */
+
+import { config } from 'dotenv';
+import { vi, beforeAll, afterAll } from 'vitest';
+import { StandardTestUtils, MockFactory, TestUtils } from './framework/standard-test-setup.js';
+
+// Load test environment variables
+config({ path: '.env.test' });
+
+// Set test environment variables
+process.env.NODE_ENV = 'test';
+process.env.LOG_LEVEL = 'error'; // Minimize logs during testing
+process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
+process.env.QDRANT_HOST = 'localhost';
+process.env.QDRANT_PORT = '6333';
+
+// Enhanced global test utilities with backward compatibility
+global.testUtils = {
+  // Legacy methods for backward compatibility
+  generateTestItem: (overrides: any = {}) => ({
+    kind: 'entity',
+    content: 'Test content',
+    metadata: TestUtils.generateTestMetadata({ test: true }),
+    scope: TestUtils.generateTestScope({ project: 'test-project' }),
+    ...overrides,
+  }),
+
+  generateBatchItems: (count: number, overrides: any = {}) =>
+    Array.from({ length: count }, (_, i) => ({
+      kind: 'entity',
+      content: `Test item ${i}`,
+      metadata: TestUtils.generateTestMetadata({ batch: true, index: i }),
+      scope: TestUtils.generateTestScope(),
+      ...overrides,
+    })),
+
+  // New standardized methods
+  generateTestData: TestUtils.generateTestData.bind(TestUtils),
+  generateTestScope: TestUtils.generateTestScope.bind(TestUtils),
+  generateTestMetadata: TestUtils.generateTestMetadata.bind(TestUtils),
+  createTestContext: TestUtils.createTestContext.bind(TestUtils),
+  measurePerformance: TestUtils.measurePerformance.bind(TestUtils),
+  withTimeout: TestUtils.withTimeout.bind(TestUtils),
+  createMock: TestUtils.createMock.bind(TestUtils),
+
+  // Mock factory shortcuts
+  mocks: {
+    qdrant: MockFactory.createQdrantClient.bind(MockFactory),
+    auth: MockFactory.createAuthService.bind(MockFactory),
+    audit: MockFactory.createAuditService.bind(MockFactory),
+    embedding: MockFactory.createEmbeddingService.bind(MockFactory),
+  },
+
+  // Knowledge type generators
+  generateKnowledgeItem: (kind: string, overrides: any = {}) => ({
+    kind,
+    content: `Test ${kind} content`,
+    metadata: TestUtils.generateTestMetadata({ kind }),
+    scope: TestUtils.generateTestScope(),
+    ...overrides,
+  }),
+
+  generateEntity: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('entity', overrides),
+
+  generateObservation: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('observation', overrides),
+
+  generateDecision: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('decision', overrides),
+
+  generateTodo: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('todo', overrides),
+
+  generateIssue: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('issue', overrides),
+
+  generateIncident: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('incident', overrides),
+
+  generateRunbook: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('runbook', overrides),
+
+  generateRisk: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('risk', overrides),
+
+  generateAssumption: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('assumption', overrides),
+
+  generateSection: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('section', overrides),
+
+  generateRelation: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('relation', overrides),
+
+  generateChange: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('change', overrides),
+
+  generateRelease: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('release', overrides),
+
+  generateReleaseNote: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('release_note', overrides),
+
+  generateDdl: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('ddl', overrides),
+
+  generatePrContext: (overrides: any = {}) =>
+    global.testUtils.generateKnowledgeItem('pr_context', overrides),
+};
+
+// Global setup with enhanced capabilities
+beforeAll(() => {
+  // Setup standard test environment
+  StandardTestUtils.setupTestEnvironment();
+
+  // Additional global setup if needed
+  console.log('🧪 Test environment initialized with standardized setup');
+});
+
+// Global cleanup with enhanced capabilities
+afterAll(() => {
+  // Cleanup standard test environment
+  StandardTestUtils.cleanupTestEnvironment();
+
+  // Additional global cleanup if needed
+  console.log('🧹 Test environment cleaned up');
+});
+
+// Export for use in test files that import setup
+export {
+  StandardTestUtils,
+  MockFactory,
+  TestUtils,
+  TestPatterns
+} from './framework/standard-test-setup.js';
+
+// Type declarations for global test utils
+declare global {
+  var testUtils: {
+    // Legacy methods
+    generateTestItem: (overrides?: any) => any;
+    generateBatchItems: (count: number, overrides?: any) => any[];
+
+    // New standardized methods
+    generateTestData: (overrides?: Record<string, unknown>) => any;
+    generateTestScope: (overrides?: Record<string, unknown>) => any;
+    generateTestMetadata: (overrides?: Record<string, unknown>) => any;
+    createTestContext: (overrides?: Record<string, unknown>) => any;
+    measurePerformance: <T>(operation: () => Promise<T>, maxDuration?: number) => Promise<{ result: T; duration: number }>;
+    withTimeout: <T>(promise: Promise<T>, timeoutMs?: number) => Promise<T>;
+    createMock: <T>(implementation?: Partial<T>) => any;
+
+    // Mock factory
+    mocks: {
+      qdrant: () => any;
+      auth: () => any;
+      audit: () => any;
+      embedding: () => any;
+    };
+
+    // Knowledge type generators
+    generateKnowledgeItem: (kind: string, overrides?: any) => any;
+    generateEntity: (overrides?: any) => any;
+    generateObservation: (overrides?: any) => any;
+    generateDecision: (overrides?: any) => any;
+    generateTodo: (overrides?: any) => any;
+    generateIssue: (overrides?: any) => any;
+    generateIncident: (overrides?: any) => any;
+    generateRunbook: (overrides?: any) => any;
+    generateRisk: (overrides?: any) => any;
+    generateAssumption: (overrides?: any) => any;
+    generateSection: (overrides?: any) => any;
+    generateRelation: (overrides?: any) => any;
+    generateChange: (overrides?: any) => any;
+    generateRelease: (overrides?: any) => any;
+    generateReleaseNote: (overrides?: any) => any;
+    generateDdl: (overrides?: any) => any;
+    generatePrContext: (overrides?: any) => any;
+  };
+}

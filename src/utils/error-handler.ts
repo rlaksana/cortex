@@ -8,6 +8,7 @@
 import { logger } from './logger.js';
 
 // Error severity levels
+/* eslint-disable no-unused-vars */
 export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -95,6 +96,7 @@ export enum ErrorCode {
   PROCESSING_ERROR = 'E9002',
   BATCH_ERROR = 'E9003',
 }
+/* eslint-enable no-unused-vars */
 
 // Base error class
 export abstract class BaseError extends Error {
@@ -398,7 +400,7 @@ export class ErrorHandler {
     context: {
       operationName: string;
       category?: ErrorCategory;
-      fallback?: (error: Error) => T;
+      fallback?: (_error: Error) => T;
       rethrow?: boolean;
     }
   ): Promise<T> {

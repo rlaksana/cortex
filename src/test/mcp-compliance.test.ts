@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 /**
  * MCP 2025 Compliance Test Suite
  *
@@ -8,11 +9,10 @@ import {
   MCPErrorCode,
   validateToolInput,
   createToolResponse,
-  errorToMCPResponse
+  errorToMCPResponse,
 } from '../utils/mcp-compliance';
 
 describe('MCP 2025 Compliance Tests', () => {
-
   describe('Error Codes', () => {
     test('Should use correct JSON-RPC error codes', () => {
       expect(MCPErrorCode.PARSE_ERROR).toBe(-32700);
@@ -35,8 +35,8 @@ describe('MCP 2025 Compliance Tests', () => {
         required: ['query'],
         properties: {
           query: { type: 'string' },
-          limit: { type: 'integer' }
-        }
+          limit: { type: 'integer' },
+        },
       };
 
       const validInput = { query: 'test', limit: 10 };
@@ -49,8 +49,8 @@ describe('MCP 2025 Compliance Tests', () => {
         type: 'object',
         required: ['query'],
         properties: {
-          query: { type: 'string' }
-        }
+          query: { type: 'string' },
+        },
       };
 
       const invalidInput = { limit: 10 }; // missing required 'query'
@@ -63,8 +63,8 @@ describe('MCP 2025 Compliance Tests', () => {
       const schema = {
         type: 'object',
         properties: {
-          mode: { type: 'string', enum: ['auto', 'fast', 'deep'] }
-        }
+          mode: { type: 'string', enum: ['auto', 'fast', 'deep'] },
+        },
       };
 
       const validInput = { mode: 'auto' };
@@ -74,7 +74,9 @@ describe('MCP 2025 Compliance Tests', () => {
       const invalidInput = { mode: 'invalid' };
       const result2 = validateToolInput(invalidInput, schema);
       expect(result2.isValid).toBe(false);
-      expect(result2.errors).toContain('Field \'mode\' must be one of: auto, fast, deep, got invalid');
+      expect(result2.errors).toContain(
+        "Field 'mode' must be one of: auto, fast, deep, got invalid"
+      );
     });
   });
 

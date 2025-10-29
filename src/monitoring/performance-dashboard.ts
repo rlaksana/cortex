@@ -39,7 +39,8 @@ export class PerformanceDashboard {
    */
   getMetrics(req: Request, res: Response): void {
     if (!this.config.enableMetricsEndpoint) {
-      return res.status(404).json({ error: 'Metrics endpoint disabled' });
+      res.status(404).json({ error: 'Metrics endpoint disabled' });
+      return;
     }
 
     try {
@@ -52,7 +53,8 @@ export class PerformanceDashboard {
         // Get specific operation metrics
         data = performanceCollector.getSummary(operation as string);
         if (!data) {
-          return res.status(404).json({ error: 'Operation not found' });
+          res.status(404).json({ error: 'Operation not found' });
+          return;
         }
         data.recentMetrics = performanceCollector.getRecentMetrics(operation as string, 100);
       } else {
@@ -68,12 +70,14 @@ export class PerformanceDashboard {
       // Export in different formats
       if (format === 'prometheus') {
         res.setHeader('Content-Type', 'text/plain');
-        return res.send(performanceCollector.exportMetrics('prometheus'));
+        res.send(performanceCollector.exportMetrics('prometheus'));
+        return;
       }
 
       if (format === 'csv') {
         res.setHeader('Content-Type', 'text/csv');
-        return res.send(this.exportToCSV(data));
+        res.send(this.exportToCSV(data));
+        return;
       }
 
       res.json(data);
@@ -88,7 +92,8 @@ export class PerformanceDashboard {
    */
   getAlerts(req: Request, res: Response): void {
     if (!this.config.enableAlertsEndpoint) {
-      return res.status(404).json({ error: 'Alerts endpoint disabled' });
+      res.status(404).json({ error: 'Alerts endpoint disabled' });
+      return;
     }
 
     try {
@@ -125,7 +130,8 @@ export class PerformanceDashboard {
    */
   getTrends(req: Request, res: Response): void {
     if (!this.config.enableTrendsEndpoint) {
-      return res.status(404).json({ error: 'Trends endpoint disabled' });
+      res.status(404).json({ error: 'Trends endpoint disabled' });
+      return;
     }
 
     try {
@@ -137,7 +143,8 @@ export class PerformanceDashboard {
 
       // Return cached data if still valid
       if (cached && Date.now() - cached.timestamp < this.config.cacheTimeout!) {
-        return res.json(cached.data);
+        res.json(cached.data);
+        return;
       }
 
       let trends: any;
@@ -147,7 +154,8 @@ export class PerformanceDashboard {
         const allTrends = performanceCollector.getPerformanceTrends(timeWindowMinutes);
         trends = allTrends[operation as string];
         if (!trends) {
-          return res.status(404).json({ error: 'Operation not found' });
+          res.status(404).json({ error: 'Operation not found' });
+          return;
         }
       } else {
         // Get all trends
@@ -173,7 +181,7 @@ export class PerformanceDashboard {
   /**
    * Health check endpoint with performance metrics
    */
-  getHealth(req: Request, res: Response): void {
+  getHealth(_req: Request, res: Response): void {
     try {
       const summaries = performanceCollector.getAllSummaries();
       const memory = performanceCollector.getMemoryUsage();
@@ -229,7 +237,7 @@ export class PerformanceDashboard {
   /**
    * Clear metrics endpoint (for testing/maintenance)
    */
-  clearMetrics(req: Request, res: Response): void {
+  clearMetrics(_req: Request, res: Response): void {
     try {
       performanceCollector.clearMetrics();
       this.alerts = [];
@@ -246,7 +254,7 @@ export class PerformanceDashboard {
   /**
    * Get system info endpoint
    */
-  getSystemInfo(req: Request, res: Response): void {
+  getSystemInfo(_req: Request, res: Response): void {
     try {
       const memoryUsage = performanceCollector.getMemoryUsage();
       const cpuUsage = process.cpuUsage();
@@ -294,7 +302,7 @@ export class PerformanceDashboard {
 
     // Apply authentication if required
     if (this.config.requireAuthentication) {
-      router.use((req: Request, res: Response, next: NextFunction) => {
+      router.use((_req: Request, _res: Response, next: NextFunction) => {
         // Add authentication middleware here
         // For now, just pass through
         next();

@@ -2,7 +2,7 @@
 import type { IncidentData, ScopeFilter } from '../../types/knowledge-data';
 
 export async function storeIncident(data: IncidentData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -37,7 +37,7 @@ export async function findIncidents(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<IncidentData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -89,41 +89,51 @@ export async function updateIncident(
   data: Partial<IncidentData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
-  const existing = await db.find('incidentLog', {
-    where: { id },
-  });
+  const existingArray = await db.find('incidentLog', { id });
 
-  if (!existing) {
+  if (!existingArray || existingArray.length === 0) {
     throw new Error(`Incident with id ${id} not found`);
   }
 
-  const result = await db.update(
-    'incidentLog',
-    { id },
-    {
-      title: data.title ?? existing.title,
-      severity: data.severity ?? existing.severity,
-      impact: data.impact_level ?? existing.impact,
-      resolution_status: data.status ?? existing.resolution_status,
-      affected_services: (data as any).affected_services ?? existing.affected_services,
-      business_impact: data.description ?? existing.business_impact,
-      recovery_actions: (data as any).recovery_actions ?? existing.recovery_actions,
-      follow_up_required: (data as any).follow_up_required ?? existing.follow_up_required,
-      incident_commander: (data as any).incident_commander ?? existing.incident_commander,
-      timeline: (data as any).timeline ?? existing.timeline,
-      root_cause_analysis: data.root_cause_analysis ?? existing.root_cause_analysis,
-      resolution: data.resolution ?? existing.resolution,
-      tags: {
-        ...((existing.tags as any) || {}),
-        ...scope,
-        lessons_learned: data.lessons_learned ?? (existing.tags as any)?.lessons_learned,
-      },
-    }
-  );
+  const existing = existingArray[0];
 
-  return result.id;
+  // Update using store method
+  const updatedIncident = {
+    ...existing,
+    title: data.title ?? existing.title,
+    severity: data.severity ?? existing.severity,
+    impact: data.impact_level ?? existing.impact,
+    resolution_status: data.status ?? existing.resolution_status,
+    affected_services: (data as any).affected_services ?? existing.affected_services,
+    business_impact: data.description ?? existing.business_impact,
+    recovery_actions: (data as any).recovery_actions ?? existing.recovery_actions,
+    follow_up_required: (data as any).follow_up_required ?? existing.follow_up_required,
+    incident_commander: (data as any).incident_commander ?? existing.incident_commander,
+    timeline: (data as any).timeline ?? existing.timeline,
+    root_cause_analysis: data.root_cause_analysis ?? existing.root_cause_analysis,
+    resolution: data.resolution ?? existing.resolution,
+    tags: {
+      ...((existing.tags as any) || {}),
+      ...scope,
+      lessons_learned: data.lessons_learned ?? (existing.tags as any)?.lessons_learned,
+    },
+    updated_at: new Date().toISOString(),
+  };
+
+  const knowledgeItem = {
+    id: existing.id,
+    kind: 'incident',
+    content: JSON.stringify(updatedIncident),
+    data: updatedIncident,
+    scope,
+    created_at: existing.created_at,
+    updated_at: new Date().toISOString(),
+  };
+
+  await db.store([knowledgeItem]);
+  return existing.id;
 }

@@ -29,7 +29,7 @@ import type {
   SmartFindRequest,
   SmartFindResult,
 } from '../../types/core-interfaces';
-import type { IDatabase, SearchOptions } from '../../db/database-interface';
+import { ConnectionError, type IDatabase, type SearchOptions } from '../../db/database-interface';
 
 /**
  * Search strategy configuration
@@ -203,8 +203,8 @@ export class MemoryFindOrchestratorQdrant {
     // Convert legacy query to smart find format
     const smartQuery: SmartFindRequest = {
       query: query.query,
-      scope: query.scope,
-      types: query.types,
+      ...(query.scope && { scope: query.scope }),
+      ...(query.types && { types: query.types }),
       top_k: query.limit || 50,
       mode: query.mode || 'auto',
       enable_auto_fix: true,
@@ -216,21 +216,27 @@ export class MemoryFindOrchestratorQdrant {
     const result = await this.findItems(smartQuery);
 
     // Convert back to legacy format
+    const searchResults = result.hits.map((hit) => ({
+      id: hit.id,
+      kind: hit.kind,
+      scope: hit.scope || {},
+      data: this.extractDataFromHit(hit),
+      created_at: hit.updated_at || new Date().toISOString(),
+      confidence_score: hit.confidence,
+      match_type: (hit.confidence > 0.8 ? 'exact' : hit.confidence > 0.6 ? 'fuzzy' : 'semantic') as
+        | 'exact'
+        | 'fuzzy'
+        | 'semantic',
+    }));
+
     return {
-      results: result.hits.map((hit) => ({
-        id: hit.id,
-        kind: hit.kind,
-        scope: hit.scope,
-        data: this.extractDataFromHit(hit),
-        created_at: hit.updated_at || new Date().toISOString(),
-        confidence_score: hit.confidence,
-        match_type: hit.confidence > 0.8 ? 'exact' : hit.confidence > 0.6 ? 'fuzzy' : 'semantic',
-      })),
+      results: searchResults,
+      items: searchResults, // Add items property for compatibility
       total_count: result.hits.length,
       autonomous_context: {
         search_mode_used: result.autonomous_metadata.strategy_used,
         results_found: result.hits.length,
-        confidence_average: result.autonomous_metadata.confidence,
+        confidence_average: Number(result.autonomous_metadata.confidence) || 0,
         user_message_suggestion: result.autonomous_metadata.recommendation,
       },
     };
@@ -264,7 +270,7 @@ export class MemoryFindOrchestratorQdrant {
       cleaned,
       keywords,
       entities,
-      scope: query.scope,
+      ...(query.scope && { scope: query.scope }),
       filters: this.extractFilters(query),
       intent,
     };
@@ -313,7 +319,7 @@ export class MemoryFindOrchestratorQdrant {
 
     return {
       primary: primaryStrategy,
-      fallback: fallbackStrategy,
+      ...(fallbackStrategy && { fallback: fallbackStrategy }),
       alternatives: this.SEARCH_STRATEGIES.filter((s) => s !== primaryStrategy),
     };
   }
@@ -406,8 +412,8 @@ export class MemoryFindOrchestratorQdrant {
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
     const searchQuery: SearchQuery = {
       query: parsed.cleaned,
-      scope: query.scope,
-      types: query.types,
+      ...(query.scope && { scope: query.scope }),
+      ...(query.types && { types: query.types }),
       mode: 'auto',
       limit: strategy.limit || query.top_k || 50,
     };
@@ -415,7 +421,7 @@ export class MemoryFindOrchestratorQdrant {
     const options: SearchOptions = {
       includeMetadata: true,
       cache: true,
-      timeout: query.timeout_per_attempt_ms,
+      ...(query.timeout_per_attempt_ms && { timeout: query.timeout_per_attempt_ms }),
     };
 
     switch (strategy.type) {
@@ -561,8 +567,8 @@ export class MemoryFindOrchestratorQdrant {
    */
   private adjustConfidence(
     result: SearchResult,
-    query: SmartFindRequest,
-    parsed: ParsedQuery,
+    _query: SmartFindRequest,
+    _parsed: ParsedQuery,
     index: number
   ): number {
     let adjustedScore = result.confidence_score;
@@ -597,8 +603,9 @@ export class MemoryFindOrchestratorQdrant {
   ): SmartFindResult {
     const hits = results.map((result) => this.searchResultToHit(result));
 
-    const autonomousMetadata = {
+    const _autonomousMetadata = {
       strategy_used: searchResult.metadata.strategyUsed,
+      mode_requested: query.mode || 'auto',
       mode_executed: query.mode || 'auto',
       confidence: this.calculateOverallConfidence(hits),
       total_results: hits.length,
@@ -611,7 +618,7 @@ export class MemoryFindOrchestratorQdrant {
     return {
       hits,
       suggestions: this.generateSuggestions(hits, query),
-      autonomous_metadata,
+      autonomous_metadata: _autonomousMetadata,
       debug: {
         executionTime: searchResult.executionTime,
         strategyDetails: searchResult.strategy,
@@ -670,7 +677,7 @@ export class MemoryFindOrchestratorQdrant {
   /**
    * Generate search suggestions
    */
-  private generateSuggestions(hits: any[], query: SmartFindRequest): string[] {
+  private generateSuggestions(hits: any[], _query: SmartFindRequest): string[] {
     const suggestions: string[] = [];
 
     if (hits.length === 0) {
@@ -784,7 +791,7 @@ export class MemoryFindOrchestratorQdrant {
     // Look for quoted phrases
     const quotedPhrases = query.match(/"([^"]+)"/g);
     if (quotedPhrases) {
-      quotedPhrases.forEach((phrase, index) => {
+      quotedPhrases.forEach((phrase, _index) => {
         const cleanPhrase = phrase.replace(/"/g, '');
         const position = query.indexOf(phrase);
         entities.push({
@@ -895,7 +902,8 @@ export class MemoryFindOrchestratorQdrant {
       hits: [],
       suggestions: ['Check query format and try again'],
       autonomous_metadata: {
-        strategy_used: 'validation_error',
+        strategy_used: 'fast',
+        mode_requested: 'none',
         mode_executed: 'none',
         confidence: 'low',
         total_results: 0,
@@ -920,7 +928,8 @@ export class MemoryFindOrchestratorQdrant {
       hits: [],
       suggestions: ['Try again with different query'],
       autonomous_metadata: {
-        strategy_used: 'error',
+        strategy_used: 'deep',
+        mode_requested: 'none',
         mode_executed: 'none',
         confidence: 'low',
         total_results: 0,
@@ -942,13 +951,18 @@ export class MemoryFindOrchestratorQdrant {
   private async logSearchOperation(
     query: SmartFindRequest,
     response: SmartFindResult,
-    executionTime: number
+    _executionTime: number
   ): Promise<void> {
-    await auditService.logSearchOperation(query.query, response.hits.length, executionTime, {
-      strategy: response.autonomous_metadata.strategy_used,
-      confidence: response.autonomous_metadata.confidence,
-      fallback: response.autonomous_metadata.fallback_attempted,
-    });
+    await auditService.logSearchOperation(
+      query.query,
+      response.hits.length,
+      response.autonomous_metadata.strategy_used,
+      {
+        strategy: response.autonomous_metadata.strategy_used,
+        confidence: response.autonomous_metadata.confidence,
+        fallback: response.autonomous_metadata.fallback_attempted,
+      }
+    );
   }
 
   /**

@@ -5,11 +5,11 @@
  * error handling, and recovery scenarios.
  */
 
-import { memoryStore } from '../../../src/services/memory-store.js';
-import { memoryFind } from '../../../src/services/memory-find.js';
-import { softDelete } from '../../../src/services/delete-operations.js';
-import type { TestContext } from '../test-setup.js';
-import type { EnhancedKnowledgeItem } from '../../../src/types/index.js';
+import { memoryStore } from '../../../src/services/memory-store';
+import { memoryFind } from '../../../src/services/memory-find';
+import { softDelete } from '../../../src/services/delete-operations';
+import type { TestContext } from '../test-setup';
+import type { EnhancedKnowledgeItem } from '../../../src/types/index';
 
 /**
  * Error test result

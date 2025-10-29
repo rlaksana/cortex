@@ -4,8 +4,8 @@
  * Exports all test helper classes for easy importing
  */
 
-export { TestDataFactory } from './test-data-factory.js';
-export { DatabaseTestHelper } from './database-test-helper.js';
-export { PerformanceTestHelper } from './performance-test-helper.js';
-export { ValidationTestHelper } from './validation-test-helper.js';
-export { ErrorTestHelper } from './error-test-helper.js';
+export { TestDataFactory } from './test-data-factory';
+export { DatabaseTestHelper } from './database-test-helper';
+export { PerformanceTestHelper } from './performance-test-helper';
+export { ValidationTestHelper } from './validation-test-helper';
+export { ErrorTestHelper } from './error-test-helper';

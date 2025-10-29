@@ -91,7 +91,7 @@ class DependencyAuditor {
             }
             console.log(`✅ Found ${this.results.outdated.length} outdated packages`);
           }
-        } catch (parseError) {
+        } catch {
           console.log('ℹ️  No outdated packages found');
         }
       } else {
@@ -179,7 +179,7 @@ class DependencyAuditor {
               issue: !packageInfo.license ? 'Missing license' : 'Problematic license'
             });
           }
-        } catch (error) {
+        } catch {
           // Skip if we can't get package info
         }
       }
@@ -239,7 +239,7 @@ class DependencyAuditor {
             });
           }
         }
-      } catch (error) {
+      } catch {
         // Skip if we can't get package info
       }
     }
@@ -409,7 +409,7 @@ class DependencyAuditor {
     return imports;
   }
 
-  isModuleUsed(moduleName, importedModules, sourceFiles) {
+  isModuleUsed(moduleName, importedModules, _sourceFiles) {
     // Direct import check
     if (importedModules.has(moduleName)) {
       return true;
@@ -448,7 +448,7 @@ class DependencyAuditor {
           lastUpdate: packageInfo._lastModified || new Date().toISOString()
         };
       }
-    } catch (error) {
+    } catch {
       // Fall back to npm registry if local package info not available
     }
 

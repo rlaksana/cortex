@@ -18,7 +18,9 @@ export function serializeArray(arr: string[] | null | undefined): string[] | nul
 
   // Escape any single quotes and backslashes in array elements
   const escapedElements = arr.map((item) => {
-    return item.replace(/'/g, "''").replace(/\\/g, '\\\\');
+    // Convert non-string items to strings first
+    const stringItem = String(item);
+    return stringItem.replace(/'/g, "''").replace(/\\/g, '\\\\');
   });
 
   return escapedElements;
@@ -35,7 +37,7 @@ export function deserializeArray(pgArray: string[] | null): string[] {
   }
 
   return pgArray.map((item) => {
-    // Unescape qdrant array elements
+    // Unescape qdrant array elements - handle complex escape sequences properly
     return item.replace(/''/g, "'").replace(/\\\\/g, '\\');
   });
 }
@@ -46,18 +48,28 @@ export function deserializeArray(pgArray: string[] | null): string[] {
  * @param value - Value to serialize
  * @returns Serialized value ready for qdrant
  */
-export function serializeForDatabase(value: any): any {
+export function serializeForDatabase(value: any, visited = new WeakSet()): any {
   if (Array.isArray(value)) {
     return serializeArray(value);
   }
 
   if (value && typeof value === 'object') {
-    // Handle objects with array properties
-    const result: any = {};
-    for (const [key, val] of Object.entries(value)) {
-      result[key] = serializeForDatabase(val);
+    // Handle circular references
+    if (visited.has(value)) {
+      return '[Circular]';
     }
-    return result;
+    visited.add(value);
+
+    try {
+      // Handle objects with array properties
+      const result: any = {};
+      for (const [key, val] of Object.entries(value)) {
+        result[key] = serializeForDatabase(val, visited);
+      }
+      return result;
+    } finally {
+      visited.delete(value);
+    }
   }
 
   return value;
