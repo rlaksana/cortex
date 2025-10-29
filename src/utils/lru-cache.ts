@@ -95,9 +95,9 @@ export class LRUCache<K, V> {
     const size = this.estimateSize(value);
 
     // Check if single item exceeds memory limit
-    if (size > this.options.maxMemoryBytes) {
+    if (size > this._options.maxMemoryBytes) {
       throw new Error(
-        `Item size (${size} bytes) exceeds cache memory limit (${this.options.maxMemoryBytes} bytes)`
+        `Item size (${size} bytes) exceeds cache memory limit (${this._options.maxMemoryBytes} bytes)`
       );
     }
 
@@ -110,8 +110,8 @@ export class LRUCache<K, V> {
       next: null,
       ...(ttlMs !== undefined
         ? { ttl: ttlMs }
-        : this.options.ttlMs !== undefined
-          ? { ttl: this.options.ttlMs }
+        : this._options.ttlMs !== undefined
+          ? { ttl: this._options.ttlMs }
           : {}),
       createdAt: Date.now(),
       lastAccessed: Date.now(),
@@ -174,7 +174,7 @@ export class LRUCache<K, V> {
     return {
       itemCount: this.cache.size,
       memoryUsageBytes: this.currentMemoryUsage,
-      maxMemoryBytes: this.options.maxMemoryBytes,
+      maxMemoryBytes: this._options.maxMemoryBytes,
       hitRate: totalRequests > 0 ? (this.stats.hits / totalRequests) * 100 : 0,
       totalHits: this.stats.hits,
       totalMisses: this.stats.misses,
@@ -292,8 +292,8 @@ export class LRUCache<K, V> {
    * Estimate size of a value
    */
   private estimateSize(value: V): number {
-    if (this.options.sizeEstimator) {
-      return this.options.sizeEstimator(value);
+    if (this._options.sizeEstimator) {
+      return this._options.sizeEstimator(value);
     }
 
     // Default estimation based on type
@@ -329,13 +329,13 @@ export class LRUCache<K, V> {
    */
   private evictIfNecessary(): void {
     // Evict by size limit
-    while (this.cache.size >= this.options.maxSize) {
+    while (this.cache.size >= this._options.maxSize) {
       const evicted = this.removeLRU();
       if (!evicted) break;
     }
 
     // Evict by memory limit
-    while (this.currentMemoryUsage > this.options.maxMemoryBytes) {
+    while (this.currentMemoryUsage > this._options.maxMemoryBytes) {
       const evicted = this.removeLRU();
       if (!evicted) break;
     }
@@ -345,7 +345,7 @@ export class LRUCache<K, V> {
    * Start cleanup timer for expired items
    */
   private startCleanupTimer(): void {
-    if (!this.options.cleanupIntervalMs) return;
+    if (!this._options.cleanupIntervalMs) return;
 
     this.cleanupTimer = setInterval(() => {
       const cleaned = this.cleanupExpired();
@@ -353,7 +353,7 @@ export class LRUCache<K, V> {
         // Optional: Log cleanup activity
         console.debug(`LRU Cache: Cleaned up ${cleaned} expired items`);
       }
-    }, this.options.cleanupIntervalMs);
+    }, this._options.cleanupIntervalMs);
   }
 }
 

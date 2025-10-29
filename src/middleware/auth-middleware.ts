@@ -455,28 +455,28 @@ export class AuthMiddleware {
   private getResourceScopes(resource: string, action: string): AuthScope[] {
     const resourceScopeMap: Record<string, Record<string, AuthScope[]>> = {
       memory_store: {
-        POST: [AuthScope.MEMORY_WRITE],
-        GET: [AuthScope.MEMORY_READ],
-        DELETE: [AuthScope.MEMORY_DELETE],
+        POST: [AuthScope._MEMORY_WRITE],
+        GET: [AuthScope._MEMORY_READ],
+        DELETE: [AuthScope._MEMORY_DELETE],
       },
       memory_find: {
-        POST: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
-        GET: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
+        POST: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
+        GET: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
       },
       knowledge: {
-        POST: [AuthScope.KNOWLEDGE_WRITE],
-        GET: [AuthScope.KNOWLEDGE_READ],
-        DELETE: [AuthScope.KNOWLEDGE_DELETE],
+        POST: [AuthScope._KNOWLEDGE_WRITE],
+        GET: [AuthScope._KNOWLEDGE_READ],
+        DELETE: [AuthScope._KNOWLEDGE_DELETE],
       },
       audit: {
-        GET: [AuthScope.AUDIT_READ],
-        POST: [AuthScope.AUDIT_WRITE],
+        GET: [AuthScope._AUDIT_READ],
+        POST: [AuthScope._AUDIT_WRITE],
       },
       system: {
-        GET: [AuthScope.SYSTEM_READ],
-        POST: [AuthScope.SYSTEM_MANAGE],
-        PUT: [AuthScope.SYSTEM_MANAGE],
-        DELETE: [AuthScope.SYSTEM_MANAGE],
+        GET: [AuthScope._SYSTEM_READ],
+        POST: [AuthScope._SYSTEM_MANAGE],
+        PUT: [AuthScope._SYSTEM_MANAGE],
+        DELETE: [AuthScope._SYSTEM_MANAGE],
       },
     };
 

@@ -156,7 +156,7 @@ export class DatabaseErrorHandler {
       return {
         success: false,
         error: {
-          type: DbErrorType.UNKNOWN_ERROR,
+          type: DbErrorType._UNKNOWN_ERROR,
           message: `Both primary and fallback failed for ${operationName}`,
           originalError: { primary: primaryResult.error, fallback: fallbackError },
         },
@@ -191,16 +191,16 @@ export class DatabaseErrorHandler {
         // Qdrant error codes
         switch (qdrantErrorCode) {
           case 'P2002':
-            return DbErrorType.CONSTRAINT_VIOLATION; // Unique constraint
+            return DbErrorType._CONSTRAINT_VIOLATION; // Unique constraint
           case 'P2003':
-            return DbErrorType.CONSTRAINT_VIOLATION; // Foreign key constraint
+            return DbErrorType._CONSTRAINT_VIOLATION; // Foreign key constraint
           case 'P2025':
-            return DbErrorType.RECORD_NOT_FOUND; // Record not found
+            return DbErrorType._RECORD_NOT_FOUND; // Record not found
           case 'P2014':
-            return DbErrorType.CONSTRAINT_VIOLATION; // Relation violation
+            return DbErrorType._CONSTRAINT_VIOLATION; // Relation violation
           case 'P2021':
           case 'P2022':
-            return DbErrorType.SCHEMA_ERROR; // Table/column not found
+            return DbErrorType._SCHEMA_ERROR; // Table/column not found
         }
       }
 
@@ -211,12 +211,12 @@ export class DatabaseErrorHandler {
         message.includes('econnrefused') ||
         message.includes('connection timeout')
       ) {
-        return DbErrorType.CONNECTION_ERROR;
+        return DbErrorType._CONNECTION_ERROR;
       }
 
       // Check for timeout errors
       if (message.includes('timeout') || message.includes('timed out')) {
-        return DbErrorType.TIMEOUT_ERROR;
+        return DbErrorType._TIMEOUT_ERROR;
       }
 
       // Check for constraint violations
@@ -226,7 +226,7 @@ export class DatabaseErrorHandler {
         message.includes('foreign key') ||
         message.includes('duplicate key')
       ) {
-        return DbErrorType.CONSTRAINT_VIOLATION;
+        return DbErrorType._CONSTRAINT_VIOLATION;
       }
 
       // Check for record not found
@@ -235,7 +235,7 @@ export class DatabaseErrorHandler {
         message.includes('record not found') ||
         message.includes('no rows returned')
       ) {
-        return DbErrorType.RECORD_NOT_FOUND;
+        return DbErrorType._RECORD_NOT_FOUND;
       }
 
       // Check for permission errors
@@ -245,7 +245,7 @@ export class DatabaseErrorHandler {
         message.includes('unauthorized') ||
         message.includes('insufficient privileges')
       ) {
-        return DbErrorType.PERMISSION_ERROR;
+        return DbErrorType._PERMISSION_ERROR;
       }
 
       // Check for schema errors
@@ -256,20 +256,20 @@ export class DatabaseErrorHandler {
         message.includes('does not exist') ||
         message.includes('unknown column')
       ) {
-        return DbErrorType.SCHEMA_ERROR;
+        return DbErrorType._SCHEMA_ERROR;
       }
     }
 
-    return DbErrorType.UNKNOWN_ERROR;
+    return DbErrorType._UNKNOWN_ERROR;
   }
 
   private shouldNotRetry(errorType: DbErrorType): boolean {
     // Don't retry these error types as they will likely fail again
     return [
-      DbErrorType.CONSTRAINT_VIOLATION,
-      DbErrorType.PERMISSION_ERROR,
-      DbErrorType.SCHEMA_ERROR,
-      DbErrorType.RECORD_NOT_FOUND,
+      DbErrorType._CONSTRAINT_VIOLATION,
+      DbErrorType._PERMISSION_ERROR,
+      DbErrorType._SCHEMA_ERROR,
+      DbErrorType._RECORD_NOT_FOUND,
     ].includes(errorType);
   }
 

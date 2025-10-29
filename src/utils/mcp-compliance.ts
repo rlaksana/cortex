@@ -128,18 +128,18 @@ export function errorToMCPResponse(
 ): MCPErrorResponse {
   if (error instanceof Error) {
     // Determine error code based on error type
-    let code = MCPErrorCode.INTERNAL_ERROR;
+    let code = MCPErrorCode._INTERNAL_ERROR;
 
     if (error.message.includes('validation')) {
-      code = MCPErrorCode.VALIDATION_ERROR;
+      code = MCPErrorCode._VALIDATION_ERROR;
     } else if (error.message.includes('database') || error.message.includes('connection')) {
-      code = MCPErrorCode.DATABASE_ERROR;
+      code = MCPErrorCode._DATABASE_ERROR;
     } else if (error.message.includes('timeout')) {
-      code = MCPErrorCode.TIMEOUT_ERROR;
+      code = MCPErrorCode._TIMEOUT_ERROR;
     } else if (error.message.includes('not found')) {
-      code = MCPErrorCode.RESOURCE_NOT_FOUND;
+      code = MCPErrorCode._RESOURCE_NOT_FOUND;
     } else if (error.message.includes('unauthorized') || error.message.includes('forbidden')) {
-      code = MCPErrorCode.AUTHORIZATION_ERROR;
+      code = MCPErrorCode._AUTHORIZATION_ERROR;
     }
 
     return createMCPError(
@@ -156,7 +156,7 @@ export function errorToMCPResponse(
 
   // Unknown error
   return createMCPError(
-    MCPErrorCode.INTERNAL_ERROR,
+    MCPErrorCode._INTERNAL_ERROR,
     'Unknown internal error',
     { originalError: error },
     id

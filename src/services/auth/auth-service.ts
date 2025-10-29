@@ -1260,27 +1260,27 @@ export class AuthService {
   private getResourceScopes(resource: string, action: string): AuthScope[] {
     const resourceMap: Record<string, Record<string, AuthScope[]>> = {
       memory_store: {
-        read: [AuthScope.MEMORY_READ],
-        write: [AuthScope.MEMORY_WRITE],
-        delete: [AuthScope.MEMORY_DELETE],
+        read: [AuthScope._MEMORY_READ],
+        write: [AuthScope._MEMORY_WRITE],
+        delete: [AuthScope._MEMORY_DELETE],
       },
       memory_find: {
-        read: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
-        deep: [AuthScope.SEARCH_DEEP],
-        advanced: [AuthScope.SEARCH_ADVANCED],
+        read: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
+        deep: [AuthScope._SEARCH_DEEP],
+        advanced: [AuthScope._SEARCH_ADVANCED],
       },
       knowledge: {
-        read: [AuthScope.KNOWLEDGE_READ],
-        write: [AuthScope.KNOWLEDGE_WRITE],
-        delete: [AuthScope.KNOWLEDGE_DELETE],
+        read: [AuthScope._KNOWLEDGE_READ],
+        write: [AuthScope._KNOWLEDGE_WRITE],
+        delete: [AuthScope._KNOWLEDGE_DELETE],
       },
       audit: {
-        read: [AuthScope.AUDIT_READ],
-        write: [AuthScope.AUDIT_WRITE],
+        read: [AuthScope._AUDIT_READ],
+        write: [AuthScope._AUDIT_WRITE],
       },
       system: {
-        read: [AuthScope.SYSTEM_READ],
-        manage: [AuthScope.SYSTEM_MANAGE],
+        read: [AuthScope._SYSTEM_READ],
+        manage: [AuthScope._SYSTEM_MANAGE],
       },
     };
 
@@ -1341,7 +1341,7 @@ export class AuthService {
       username: '', // Will be populated from database
       email: '',
       password_hash: '',
-      role: UserRole.USER,
+      role: UserRole._USER,
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

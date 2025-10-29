@@ -371,19 +371,19 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'memory_store',
       action: 'write',
-      required_scopes: [AuthScope.MEMORY_WRITE],
+      required_scopes: [AuthScope._MEMORY_WRITE],
     });
 
     this.addResourceRule({
       resource: 'memory_store',
       action: 'read',
-      required_scopes: [AuthScope.MEMORY_READ],
+      required_scopes: [AuthScope._MEMORY_READ],
     });
 
     this.addResourceRule({
       resource: 'memory_store',
       action: 'delete',
-      required_scopes: [AuthScope.MEMORY_DELETE],
+      required_scopes: [AuthScope._MEMORY_DELETE],
       conditions: {
         scope_isolation: true, // Users can only delete their own memories
       },
@@ -393,40 +393,40 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'memory_find',
       action: 'read',
-      required_scopes: [AuthScope.MEMORY_READ, AuthScope.SEARCH_BASIC],
+      required_scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
     });
 
     this.addResourceRule({
       resource: 'memory_find',
       action: 'deep',
-      required_scopes: [AuthScope.SEARCH_DEEP],
+      required_scopes: [AuthScope._SEARCH_DEEP],
     });
 
     this.addResourceRule({
       resource: 'memory_find',
       action: 'advanced',
-      required_scopes: [AuthScope.SEARCH_ADVANCED],
+      required_scopes: [AuthScope._SEARCH_ADVANCED],
     });
 
     // Knowledge operations
     this.addResourceRule({
       resource: 'knowledge',
       action: 'read',
-      required_scopes: [AuthScope.KNOWLEDGE_READ],
+      required_scopes: [AuthScope._KNOWLEDGE_READ],
     });
 
     this.addResourceRule({
       resource: 'knowledge',
       action: 'write',
-      required_scopes: [AuthScope.KNOWLEDGE_WRITE],
+      required_scopes: [AuthScope._KNOWLEDGE_WRITE],
     });
 
     this.addResourceRule({
       resource: 'knowledge',
       action: 'delete',
-      required_scopes: [AuthScope.KNOWLEDGE_DELETE],
+      required_scopes: [AuthScope._KNOWLEDGE_DELETE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER], // Only admins and users can delete knowledge
+        user_roles: [UserRole._ADMIN, UserRole._USER], // Only admins and users can delete knowledge
       },
     });
 
@@ -434,18 +434,18 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'system',
       action: 'read',
-      required_scopes: [AuthScope.SYSTEM_READ],
+      required_scopes: [AuthScope._SYSTEM_READ],
       conditions: {
-        user_roles: [UserRole.ADMIN],
+        user_roles: [UserRole._ADMIN],
       },
     });
 
     this.addResourceRule({
       resource: 'system',
       action: 'manage',
-      required_scopes: [AuthScope.SYSTEM_MANAGE],
+      required_scopes: [AuthScope._SYSTEM_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN],
+        user_roles: [UserRole._ADMIN],
       },
     });
 
@@ -453,9 +453,9 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'user',
       action: 'manage',
-      required_scopes: [AuthScope.USER_MANAGE],
+      required_scopes: [AuthScope._USER_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN],
+        user_roles: [UserRole._ADMIN],
       },
     });
 
@@ -463,9 +463,9 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'api_key',
       action: 'manage',
-      required_scopes: [AuthScope.API_KEY_MANAGE],
+      required_scopes: [AuthScope._API_KEY_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER],
+        user_roles: [UserRole._ADMIN, UserRole._USER],
       },
     });
 
@@ -473,18 +473,18 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'audit',
       action: 'read',
-      required_scopes: [AuthScope.AUDIT_READ],
+      required_scopes: [AuthScope._AUDIT_READ],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.USER],
+        user_roles: [UserRole._ADMIN, UserRole._USER],
       },
     });
 
     this.addResourceRule({
       resource: 'audit',
       action: 'write',
-      required_scopes: [AuthScope.AUDIT_WRITE],
+      required_scopes: [AuthScope._AUDIT_WRITE],
       conditions: {
-        user_roles: [UserRole.ADMIN],
+        user_roles: [UserRole._ADMIN],
       },
     });
 
@@ -492,18 +492,18 @@ export class AuthorizationService {
     this.addResourceRule({
       resource: 'scope',
       action: 'manage',
-      required_scopes: [AuthScope.SCOPE_MANAGE],
+      required_scopes: [AuthScope._SCOPE_MANAGE],
       conditions: {
-        user_roles: [UserRole.ADMIN],
+        user_roles: [UserRole._ADMIN],
       },
     });
 
     this.addResourceRule({
       resource: 'scope',
       action: 'isolate',
-      required_scopes: [AuthScope.SCOPE_ISOLATE],
+      required_scopes: [AuthScope._SCOPE_ISOLATE],
       conditions: {
-        user_roles: [UserRole.ADMIN, UserRole.SERVICE],
+        user_roles: [UserRole._ADMIN, UserRole._SERVICE],
       },
     });
 
