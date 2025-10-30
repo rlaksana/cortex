@@ -94,7 +94,7 @@ export class WorkflowService {
         reason: 'Feature update',
         migrationRequired: false,
         rollbackAvailable: true,
-        },
+      },
       createdAt: new Date().toISOString(),
     };
   }

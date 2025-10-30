@@ -15,8 +15,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
-import { QdrantAdapter } from '../../src/db/adapters/qdrant-adapter';
-import { StandardTestUtils, MockFactory, TestPatterns } from '../../tests/framework/standard-test-setup';
+import { QdrantAdapter } from '../../../src/db/adapters/qdrant-adapter';
+import { StandardTestUtils, MockFactory, TestPatterns } from '../../../tests/framework/standard-test-setup';
 import type {
   KnowledgeItem,
   SearchQuery,

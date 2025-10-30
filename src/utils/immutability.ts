@@ -4,11 +4,7 @@ export class ImmutabilityViolationError extends Error {
   public readonly errorCode: string;
   public readonly field?: string;
 
-  constructor(
-    message: string,
-    errorCode: string,
-    field?: string
-  ) {
+  constructor(message: string, errorCode: string, field?: string) {
     super(message);
     this.name = 'ImmutabilityViolationError';
     this.errorCode = errorCode;

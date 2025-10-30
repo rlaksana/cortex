@@ -30,6 +30,7 @@ import type {
   SmartFindResult,
 } from '../../types/core-interfaces';
 import { ConnectionError, type IDatabase, type SearchOptions } from '../../db/database-interface';
+import { ResultGroupingService } from '../search/result-grouping-service';
 
 /**
  * Search strategy configuration
@@ -92,6 +93,7 @@ interface SearchResultData {
  */
 export class MemoryFindOrchestratorQdrant {
   private database: IDatabase;
+  private resultGroupingService: ResultGroupingService;
 
   // Search strategies ordered by effectiveness
   private readonly SEARCH_STRATEGIES: SearchStrategy[] = [
@@ -126,6 +128,7 @@ export class MemoryFindOrchestratorQdrant {
 
   constructor(database: IDatabase) {
     this.database = database;
+    this.resultGroupingService = new ResultGroupingService();
   }
 
   /**
@@ -552,14 +555,64 @@ export class MemoryFindOrchestratorQdrant {
     query: SmartFindRequest,
     parsed: ParsedQuery
   ): SearchResult[] {
-    // Sort by confidence score
-    const ranked = results.sort((a, b) => b.confidence_score - a.confidence_score);
+    // Step 1: Group chunked results by parent_id
+    const groupedResults = this.resultGroupingService.groupAndSortResults(results);
 
-    // Apply additional ranking factors
-    return ranked.map((result, index) => ({
-      ...result,
-      confidence_score: this.adjustConfidence(result, query, parsed, index),
-    }));
+    // Step 2: Process groups to create flattened results
+    const processedResults: SearchResult[] = [];
+
+    for (const group of groupedResults) {
+      if (group.is_single_item) {
+        // Single item - add as-is
+        const originalResult = results.find((r) => r.id === group.parent_id);
+        if (originalResult) {
+          processedResults.push({
+            ...originalResult,
+            confidence_score: this.adjustConfidence(
+              originalResult,
+              query,
+              parsed,
+              processedResults.length
+            ),
+          });
+        }
+      } else {
+        // Grouped chunks - create representative result
+        const reconstructed = this.resultGroupingService.reconstructGroupedContent(group);
+
+        // Use the highest scoring chunk as the representative, or create a synthetic result
+        const representativeChunk = group.chunks.reduce((best, chunk) =>
+          chunk.confidence_score > best.confidence_score ? chunk : best
+        );
+
+        // Create a reconstructed result
+        const reconstructedResult: SearchResult = {
+          ...representativeChunk,
+          id: group.parent_id,
+          data: {
+            ...representativeChunk.data,
+            content: reconstructed.content,
+            is_reconstructed: true,
+            original_chunks: group.chunks.length,
+            completeness_ratio: reconstructed.completeness_ratio,
+            parent_score: reconstructed.parent_score,
+          },
+          confidence_score: reconstructed.confidence_score,
+        };
+
+        processedResults.push({
+          ...reconstructedResult,
+          confidence_score: this.adjustConfidence(
+            reconstructedResult,
+            query,
+            parsed,
+            processedResults.length
+          ),
+        });
+      }
+    }
+
+    return processedResults;
   }
 
   /**
@@ -1001,8 +1054,16 @@ export class MemoryFindOrchestratorQdrant {
         'autonomous_context_generation',
         'query_parsing',
         'scope_isolation',
+        'result_grouping',
       ],
       averageResponseTime: 0, // Would need to track actual response times
     };
+  }
+
+  /**
+   * Get access to the result grouping service (useful for testing and analysis)
+   */
+  getResultGroupingService(): ResultGroupingService {
+    return this.resultGroupingService;
   }
 }

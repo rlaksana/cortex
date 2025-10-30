@@ -45,7 +45,7 @@ export class StoreTelemetryService {
   } = {
     total: 0,
     truncated: 0,
-    totalTruncatedLength: 0
+    totalTruncatedLength: 0,
   };
 
   private perKindData: { [kind: string]: { stored: number; skipped_dedupe: number } } = {};
@@ -57,7 +57,7 @@ export class StoreTelemetryService {
   } = {
     hits: 0,
     totalSimilarity: 0,
-    offenders: {}
+    offenders: {},
   };
 
   private embeddingData: {
@@ -67,7 +67,7 @@ export class StoreTelemetryService {
   } = {
     calls: 0,
     failures: 0,
-    storedWithoutVector: 0
+    storedWithoutVector: 0,
   };
 
   private languageData: {
@@ -75,10 +75,14 @@ export class StoreTelemetryService {
     distribution: { en: number; id: number; mixed: number; unknown: number };
   } = {
     total: 0,
-    distribution: { en: 0, id: 0, mixed: 0, unknown: 0 }
+    distribution: { en: 0, id: 0, mixed: 0, unknown: 0 },
   };
 
-  async recordStoreAttempt(_item: KnowledgeItem, originalLength: number, finalLength: number): Promise<void> {
+  async recordStoreAttempt(
+    _item: KnowledgeItem,
+    originalLength: number,
+    finalLength: number
+  ): Promise<void> {
     this.truncationData.total++;
 
     if (originalLength > finalLength) {
@@ -128,19 +132,19 @@ export class StoreTelemetryService {
   }
 
   getTruncationMetrics(): TruncationMetrics {
-    const truncated_ratio = this.truncationData.total > 0
-      ? this.truncationData.truncated / this.truncationData.total
-      : 0;
+    const truncated_ratio =
+      this.truncationData.total > 0 ? this.truncationData.truncated / this.truncationData.total : 0;
 
-    const avg_truncated_len = this.truncationData.truncated > 0
-      ? this.truncationData.totalTruncatedLength / this.truncationData.truncated
-      : 0;
+    const avg_truncated_len =
+      this.truncationData.truncated > 0
+        ? this.truncationData.totalTruncatedLength / this.truncationData.truncated
+        : 0;
 
     return {
       total_stores: this.truncationData.total,
       truncated_stores: this.truncationData.truncated,
       truncated_ratio,
-      avg_truncated_len
+      avg_truncated_len,
     };
   }
 
@@ -149,34 +153,36 @@ export class StoreTelemetryService {
   }
 
   getDeduplicationMetrics(): DeduplicationMetrics {
-    const avg_similarity_of_hits = this.deduplicationData.hits > 0
-      ? this.deduplicationData.totalSimilarity / this.deduplicationData.hits
-      : 0;
+    const avg_similarity_of_hits =
+      this.deduplicationData.hits > 0
+        ? this.deduplicationData.totalSimilarity / this.deduplicationData.hits
+        : 0;
 
     return {
       dedupe_hits: this.deduplicationData.hits,
       avg_similarity_of_hits,
-      top_offenders: { ...this.deduplicationData.offenders }
+      top_offenders: { ...this.deduplicationData.offenders },
     };
   }
 
   getEmbeddingMetrics(): EmbeddingMetrics {
-    const embedding_success_rate = this.embeddingData.calls > 0
-      ? (this.embeddingData.calls - this.embeddingData.failures) / this.embeddingData.calls
-      : 0;
+    const embedding_success_rate =
+      this.embeddingData.calls > 0
+        ? (this.embeddingData.calls - this.embeddingData.failures) / this.embeddingData.calls
+        : 0;
 
     return {
       embedding_calls: this.embeddingData.calls,
       embedding_failures: this.embeddingData.failures,
       stored_without_vector: this.embeddingData.storedWithoutVector,
-      embedding_success_rate
+      embedding_success_rate,
     };
   }
 
   getLanguageMetrics(): LanguageMetrics {
     return {
       total_stores: this.languageData.total,
-      lang_distribution: { ...this.languageData.distribution }
+      lang_distribution: { ...this.languageData.distribution },
     };
   }
 

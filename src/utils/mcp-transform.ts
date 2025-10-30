@@ -5,31 +5,54 @@
  * Handles the conversion between {content, metadata} and {data} fields
  */
 
-import type { KnowledgeItem } from '../types/core-interfaces';
+import { randomUUID } from 'node:crypto';
+
+// Define KnowledgeItem interface to match index.ts requirements
+interface KnowledgeItem {
+  kind: string;
+  id: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+  scope?: {
+    project?: string;
+    branch?: string;
+    org?: string;
+  };
+  created_at?: Date;
+  updated_at?: Date;
+  [key: string]: unknown;
+}
+
+// Core-interfaces KnowledgeItem for compatibility
+export interface CoreKnowledgeItem {
+  id?: string;
+  kind: string;
+  content?: string;
+  scope: {
+    project?: string;
+    branch?: string;
+    org?: string;
+  };
+  data: Record<string, any>;
+  metadata?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
 
 /**
  * Transform MCP input items to internal knowledge item format
  * Converts {content, metadata} → {data} structure expected by internal schemas
  */
 export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[] {
-  return items.map(item => {
+  return items.map((item) => {
     const { kind, content, metadata, scope } = item;
 
-    // Transform content/metadata to data field
-    const data: Record<string, any> = {
-      content,
-    };
-
-    // Add metadata to data if present
-    if (metadata) {
-      Object.assign(data, metadata);
-    }
-
-    // Return knowledge item in internal format
+    // Return knowledge item in index.ts format
     const knowledgeItem: KnowledgeItem = {
+      id: randomUUID(),
       kind,
-      content,
-      data,
+      content: content || '',
+      metadata: metadata || {},
       scope: scope || {},
     };
 
@@ -38,26 +61,41 @@ export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[]
 }
 
 /**
+ * Convert index.ts KnowledgeItem to core-interfaces KnowledgeItem
+ */
+export function transformToCoreKnowledgeItem(item: KnowledgeItem): CoreKnowledgeItem {
+  return {
+    id: item.id,
+    kind: item.kind,
+    content: item.content,
+    scope: item.scope || { project: '', branch: '', org: '' },
+    data: {
+      content: item.content,
+      ...item.metadata,
+    },
+    metadata: item.metadata || {},
+    created_at: item.created_at?.toISOString() || new Date().toISOString(),
+    updated_at: item.updated_at?.toISOString() || new Date().toISOString(),
+  };
+}
+
+/**
  * Transform knowledge item back to MCP output format
  * Converts {data} → {content, metadata} structure for MCP responses
  */
 export function transformKnowledgeItemToMcpOutput(item: KnowledgeItem): any {
-  const { kind, data, scope, id, created_at, updated_at } = item;
+  const { kind, content, metadata, scope, id, created_at, updated_at } = item;
 
-  // Extract content from data
-  const content = data?.content || '';
+  // Extract content from content field
+  const itemContent = content || '';
 
-  // Extract metadata (everything except content)
-  const metadata = { ...data };
-  if (metadata.content) {
-    delete metadata.content;
-  }
+  // Use metadata field directly
 
   return {
     id,
     kind,
-    content,
-    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    content: itemContent,
+    metadata: metadata && Object.keys(metadata).length > 0 ? metadata : undefined,
     scope,
     created_at,
     updated_at,
@@ -80,9 +118,22 @@ export function validateMcpInputFormat(items: any[]): { valid: boolean; errors: 
   }
 
   const validKinds = [
-    'entity', 'relation', 'observation', 'section', 'runbook',
-    'change', 'issue', 'decision', 'todo', 'release_note',
-    'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+    'entity',
+    'relation',
+    'observation',
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
   ];
 
   items.forEach((item, index) => {

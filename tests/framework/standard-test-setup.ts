@@ -383,7 +383,7 @@ afterAll(() => {
 
 // Export commonly used patterns
 export { beforeEach, afterEach, beforeAll, afterAll, describe, it, expect, vi } from 'vitest';
-export { StandardTestUtils as TestUtils, MockFactory, TestPatterns };
+export { StandardTestUtils as TestUtils };
 
 // Type definitions for better test development
 export interface TestContext {

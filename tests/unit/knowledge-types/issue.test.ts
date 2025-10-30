@@ -57,17 +57,14 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           branch: 'main'
         },
         data: {
+          tracker: 'github',
+          external_id: 'GH-123',
           title: 'User authentication fails with OAuth 2.0',
           description: 'Users are unable to authenticate using OAuth 2.0 tokens. The system returns 401 errors even with valid tokens.',
-          severity: 'high' as const,
           status: 'open' as const,
-          issue_type: 'bug' as const,
-          affected_components: ['auth-service', 'api-gateway'],
-          reporter: 'user@example.com',
           assignee: 'developer@example.com',
-          created_at: '2025-01-01T00:00:00Z',
-          updated_at: '2025-01-01T01:00:00Z',
-          resolution: 'Investigating token validation logic'
+          labels: ['security', 'authentication'],
+          url: 'https://github.com/test-project/issues/123'
         },
         tags: { security: true, authentication: true },
         source: {
@@ -82,10 +79,11 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
       if (result.success) {
         expect(result.data.kind).toBe('issue');
         expect(result.data.data.title).toBe('User authentication fails with OAuth 2.0');
-        expect(result.data.data.severity).toBe('high');
+        expect(result.data.data.tracker).toBe('github');
+        expect(result.data.data.external_id).toBe('GH-123');
         expect(result.data.data.status).toBe('open');
-        expect(result.data.data.issue_type).toBe('bug');
-        expect(result.data.data.affected_components).toEqual(['auth-service', 'api-gateway']);
+        expect(result.data.data.assignee).toBe('developer@example.com');
+        expect(result.data.data.labels).toEqual(['security', 'authentication']);
       }
     });
 
@@ -97,9 +95,9 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           branch: 'main'
         },
         data: {
+          tracker: 'jira',
+          external_id: 'PROJ-456',
           title: 'Simple issue',
-          description: 'Basic issue description',
-          severity: 'medium' as const,
           status: 'open' as const
         }
       };
@@ -108,8 +106,10 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.data.title).toBe('Simple issue');
-        expect(result.data.data.issue_type).toBeUndefined();
-        expect(result.data.data.affected_components).toBeUndefined();
+        expect(result.data.data.tracker).toBe('jira');
+        expect(result.data.data.external_id).toBe('PROJ-456');
+        expect(result.data.data.description).toBeUndefined();
+        expect(result.data.data.assignee).toBeUndefined();
       }
     });
 
@@ -119,40 +119,29 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            // Missing tracker
+            external_id: 'GH-123',
+            title: 'Issue title',
+            status: 'open'
+          }
+        },
+        {
+          kind: 'issue' as const,
+          scope: { project: 'test-project', branch: 'main' },
+          data: {
+            tracker: 'github',
+            // Missing external_id
+            title: 'Issue title',
+            status: 'open'
+          }
+        },
+        {
+          kind: 'issue' as const,
+          scope: { project: 'test-project', branch: 'main' },
+          data: {
+            tracker: 'github',
+            external_id: 'GH-123'
             // Missing title
-            description: 'Issue description',
-            severity: 'medium',
-            status: 'open'
-          }
-        },
-        {
-          kind: 'issue' as const,
-          scope: { project: 'test-project', branch: 'main' },
-          data: {
-            title: 'Issue title',
-            // Missing description
-            severity: 'medium',
-            status: 'open'
-          }
-        },
-        {
-          kind: 'issue' as const,
-          scope: { project: 'test-project', branch: 'main' },
-          data: {
-            title: 'Issue title',
-            description: 'Issue description',
-            // Missing severity
-            status: 'open'
-          }
-        },
-        {
-          kind: 'issue' as const,
-          scope: { project: 'test-project', branch: 'main' },
-          data: {
-            title: 'Issue title',
-            description: 'Issue description',
-            severity: 'medium'
-            // Missing status
           }
         }
       ];
@@ -176,6 +165,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            tracker: 'github',
+            external_id: 'GH-123',
             title: 'Issue with severity',
             description: 'Description',
             severity,
@@ -196,6 +187,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         kind: 'issue' as const,
         scope: { project: 'test-project', branch: 'main' },
         data: {
+          tracker: 'github',
+          external_id: 'GH-123',
           title: 'Issue title',
           description: 'Issue description',
           severity: 'urgent' as any, // Invalid severity
@@ -211,8 +204,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
     });
 
     it('should enforce valid status values', () => {
-      const statuses: Array<'open' | 'in_progress' | 'resolved' | 'closed' | 'won't_fix' | 'duplicate'> = [
-        'open', 'in_progress', 'resolved', 'closed', 'won\'t_fix', 'duplicate'
+      const statuses: Array<'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix' | 'duplicate'> = [
+        'open', 'in_progress', 'resolved', 'closed', 'wont_fix', 'duplicate'
       ];
 
       statuses.forEach(status => {
@@ -220,6 +213,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            tracker: 'github',
+            external_id: 'GH-123',
             title: 'Issue with status',
             description: 'Description',
             severity: 'medium' as const,
@@ -245,6 +240,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            tracker: 'github',
+            external_id: 'GH-123',
             title: 'Issue with type',
             description: 'Description',
             severity: 'medium' as const,
@@ -266,6 +263,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         kind: 'issue' as const,
         scope: { project: 'test-project', branch: 'main' },
         data: {
+          tracker: 'github',
+          external_id: 'GH-123',
           title: 'x'.repeat(501), // Exceeds 500 character limit
           description: 'Issue description',
           severity: 'medium' as const,
@@ -285,6 +284,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         kind: 'issue' as const,
         scope: { project: 'test-project', branch: 'main' },
         data: {
+          tracker: 'github',
+          external_id: 'GH-123',
           title: 'Issue title',
           description: 'x'.repeat(5001), // Exceeds 5000 character limit
           severity: 'medium' as const,
@@ -362,6 +363,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            tracker: 'github',
+            external_id: 'GH-123',
             title: 'Valid issue',
             description: 'Valid description',
             severity: 'medium' as const,
@@ -373,10 +376,11 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
-            // Missing title
-            description: 'Invalid issue missing title',
-            severity: 'medium' as const,
-            status: 'open' as const
+            tracker: 'github',
+            external_id: 'GH-124',
+            // Missing title and status - this should make it invalid
+            description: 'Invalid issue missing required fields',
+            severity: 'medium' as const
           },
           content: 'Invalid issue missing required field'
         },
@@ -384,6 +388,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           kind: 'issue' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
+            tracker: 'github',
+            external_id: 'GH-125',
             title: 'Another valid issue',
             description: 'Another valid description',
             severity: 'high' as const,
@@ -553,6 +559,7 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
               assignee: 'developer@example.com'
             },
             scope: { project: 'test-project', branch: 'main' }
+          }
         }
       ]);
 
@@ -651,8 +658,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
 
   describe('Issue Status Lifecycle Management', () => {
     it('should handle all valid issue statuses', async () => {
-      const statuses: Array<'open' | 'in_progress' | 'resolved' | 'closed' | 'won\'t_fix' | 'duplicate'> = [
-        'open', 'in_progress', 'resolved', 'closed', 'won\'t_fix', 'duplicate'
+      const statuses: Array<'open' | 'in_progress' | 'resolved' | 'closed' | 'wont_fix' | 'duplicate'> = [
+        'open', 'in_progress', 'resolved', 'closed', 'wont_fix', 'duplicate'
       ];
 
       const issues = statuses.map((status, index) => ({
@@ -813,6 +820,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         kind: 'issue' as const,
         scope: { project: 'test-project', branch: 'main' },
         data: {
+          tracker: 'github',
+          external_id: 'GH-123',
           title: 'Issue with no affected components',
           description: 'General issue not tied to specific components',
           severity: 'low' as const,
@@ -860,6 +869,8 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
           branch: 'main'
         },
         data: {
+          tracker: 'github',
+          external_id: 'GH-456',
           title: 'Memory leak in background processing',
           description: 'Background processing service shows memory usage growth over time, requiring daily restarts.',
           severity: 'high' as const,

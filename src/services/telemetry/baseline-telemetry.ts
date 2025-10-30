@@ -38,7 +38,7 @@ export class BaselineTelemetry {
       original_length: originalLength,
       final_length: finalLength,
       kind,
-      scope
+      scope,
     });
   }
 
@@ -55,7 +55,7 @@ export class BaselineTelemetry {
       scope,
       returned_count: returnedCount,
       top_score: topScore,
-      strategy
+      strategy,
     });
   }
 
@@ -66,19 +66,21 @@ export class BaselineTelemetry {
     avg_truncated_loss: number;
   } {
     const total = this.storeLogs.length;
-    const truncated = this.storeLogs.filter(log => log.truncated).length;
+    const truncated = this.storeLogs.filter((log) => log.truncated).length;
     const truncation_ratio = total > 0 ? truncated / total : 0;
 
-    const truncatedLogs = this.storeLogs.filter(log => log.truncated);
-    const avg_truncated_loss = truncatedLogs.length > 0
-      ? truncatedLogs.reduce((sum, log) => sum + (log.original_length - log.final_length), 0) / truncatedLogs.length
-      : 0;
+    const truncatedLogs = this.storeLogs.filter((log) => log.truncated);
+    const avg_truncated_loss =
+      truncatedLogs.length > 0
+        ? truncatedLogs.reduce((sum, log) => sum + (log.original_length - log.final_length), 0) /
+          truncatedLogs.length
+        : 0;
 
     return {
       total_stores: total,
       truncated_stores: truncated,
       truncation_ratio,
-      avg_truncated_loss
+      avg_truncated_loss,
     };
   }
 
@@ -90,23 +92,21 @@ export class BaselineTelemetry {
     avg_top_score: number;
   } {
     const total = this.findLogs.length;
-    const zeroResults = this.findLogs.filter(log => log.returned_count === 0).length;
+    const zeroResults = this.findLogs.filter((log) => log.returned_count === 0).length;
     const zero_result_ratio = total > 0 ? zeroResults / total : 0;
 
-    const avg_returned_count = total > 0
-      ? this.findLogs.reduce((sum, log) => sum + log.returned_count, 0) / total
-      : 0;
+    const avg_returned_count =
+      total > 0 ? this.findLogs.reduce((sum, log) => sum + log.returned_count, 0) / total : 0;
 
-    const avg_top_score = total > 0
-      ? this.findLogs.reduce((sum, log) => sum + log.top_score, 0) / total
-      : 0;
+    const avg_top_score =
+      total > 0 ? this.findLogs.reduce((sum, log) => sum + log.top_score, 0) / total : 0;
 
     return {
       total_queries: total,
       zero_result_queries: zeroResults,
       zero_result_ratio,
       avg_returned_count,
-      avg_top_score
+      avg_top_score,
     };
   }
 
@@ -118,12 +118,15 @@ export class BaselineTelemetry {
       avg_score: number;
     };
   } {
-    const scopeStats: Record<string, {
-      stores: number;
-      queries: number;
-      zero_results: number;
-      total_score: number;
-    }> = {};
+    const scopeStats: Record<
+      string,
+      {
+        stores: number;
+        queries: number;
+        zero_results: number;
+        total_score: number;
+      }
+    > = {};
 
     // Store stats by scope
     for (const log of this.storeLogs) {
@@ -152,7 +155,7 @@ export class BaselineTelemetry {
         stores: stats.stores,
         queries: stats.queries,
         zero_results: stats.zero_results,
-        avg_score: stats.queries > 0 ? stats.total_score / stats.queries : 0
+        avg_score: stats.queries > 0 ? stats.total_score / stats.queries : 0,
       };
     }
 
@@ -175,8 +178,8 @@ export class BaselineTelemetry {
       summary: {
         store: this.getStoreMetrics(),
         find: this.getFindMetrics(),
-        scope_analysis: this.getScopeAnalysis()
-      }
+        scope_analysis: this.getScopeAnalysis(),
+      },
     };
   }
 

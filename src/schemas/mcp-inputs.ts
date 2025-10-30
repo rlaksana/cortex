@@ -49,9 +49,11 @@ export const MemoryStoreInputSchema = z
           content: z.string({
             description: 'Content of the knowledge item',
           }),
-          metadata: z.record(z.any(), {
-            description: 'Additional metadata',
-          }).optional(),
+          metadata: z
+            .record(z.any(), {
+              description: 'Additional metadata',
+            })
+            .optional(),
           scope: z
             .object({
               project: z.string().optional(),

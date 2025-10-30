@@ -7,20 +7,112 @@ export type DetectedLanguage = 'en' | 'id' | 'mixed' | 'unknown';
 
 export class LanguageDetector {
   private readonly indonesianKeywords = [
-    'yang', 'dan', 'untuk', 'dengan', 'dari', 'pada', 'ke', 'dalam', 'adalah', 'ini',
-    'itu', 'akan', 'bisa', 'juga', 'sudah', 'belum', 'atau', 'karena', 'jika', 'sehingga',
-    'tetapi', 'namun', 'oleh', 'tersebut', 'sebagai', 'telah', 'merupakan', 'dapat',
-    'akan', 'pada', 'dalam', 'tahun', 'bulan', 'hari', 'waktu', 'orang', 'kerja',
-    'data', 'sistem', 'aplikasi', 'pengguna', 'proses', 'hasil', 'menggunakan', 'membuat'
+    'yang',
+    'dan',
+    'untuk',
+    'dengan',
+    'dari',
+    'pada',
+    'ke',
+    'dalam',
+    'adalah',
+    'ini',
+    'itu',
+    'akan',
+    'bisa',
+    'juga',
+    'sudah',
+    'belum',
+    'atau',
+    'karena',
+    'jika',
+    'sehingga',
+    'tetapi',
+    'namun',
+    'oleh',
+    'tersebut',
+    'sebagai',
+    'telah',
+    'merupakan',
+    'dapat',
+    'akan',
+    'pada',
+    'dalam',
+    'tahun',
+    'bulan',
+    'hari',
+    'waktu',
+    'orang',
+    'kerja',
+    'data',
+    'sistem',
+    'aplikasi',
+    'pengguna',
+    'proses',
+    'hasil',
+    'menggunakan',
+    'membuat',
   ];
 
   private readonly englishKeywords = [
-    'the', 'and', 'for', 'with', 'from', 'at', 'to', 'in', 'is', 'this', 'that',
-    'will', 'can', 'also', 'have', 'not', 'but', 'if', 'so', 'be', 'are', 'was',
-    'were', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
-    'would', 'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'cannot',
-    'data', 'system', 'application', 'user', 'process', 'result', 'using', 'make',
-    'time', 'year', 'month', 'day', 'people', 'work', 'use', 'create', 'build'
+    'the',
+    'and',
+    'for',
+    'with',
+    'from',
+    'at',
+    'to',
+    'in',
+    'is',
+    'this',
+    'that',
+    'will',
+    'can',
+    'also',
+    'have',
+    'not',
+    'but',
+    'if',
+    'so',
+    'be',
+    'are',
+    'was',
+    'were',
+    'been',
+    'being',
+    'have',
+    'has',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'would',
+    'could',
+    'should',
+    'may',
+    'might',
+    'must',
+    'shall',
+    'can',
+    'cannot',
+    'data',
+    'system',
+    'application',
+    'user',
+    'process',
+    'result',
+    'using',
+    'make',
+    'time',
+    'year',
+    'month',
+    'day',
+    'people',
+    'work',
+    'use',
+    'create',
+    'build',
   ];
 
   detectLanguage(text: string): DetectedLanguage {
@@ -29,7 +121,7 @@ export class LanguageDetector {
     }
 
     const normalizedText = text.toLowerCase().replace(/[^\w\s]/g, ' ');
-    const words = normalizedText.split(/\s+/).filter(word => word.length > 2);
+    const words = normalizedText.split(/\s+/).filter((word) => word.length > 2);
 
     if (words.length === 0) {
       return 'unknown';
@@ -96,7 +188,7 @@ export class LanguageDetector {
     }
 
     const normalizedText = text.toLowerCase().replace(/[^\w\s]/g, ' ');
-    const words = normalizedText.split(/\s+/).filter(word => word.length > 2);
+    const words = normalizedText.split(/\s+/).filter((word) => word.length > 2);
 
     if (words.length === 0) {
       return { language: 'unknown', confidence: 0, indonesianRatio: 0, englishRatio: 0 };
@@ -139,7 +231,7 @@ export class LanguageDetector {
       language,
       confidence,
       indonesianRatio,
-      englishRatio
+      englishRatio,
     };
   }
 }

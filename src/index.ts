@@ -44,6 +44,7 @@ import { config } from 'dotenv';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { BaselineTelemetry } from './services/telemetry/baseline-telemetry.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { createHash } from 'node:crypto';
 
@@ -176,6 +177,7 @@ class VectorDatabase {
   private client: QdrantClient;
   private collectionName: string;
   private initialized: boolean = false;
+  private telemetry: BaselineTelemetry;
 
   constructor() {
     const clientConfig: any = {
@@ -186,6 +188,7 @@ class VectorDatabase {
     }
     this.client = new QdrantClient(clientConfig);
     this.collectionName = env.QDRANT_COLLECTION_NAME;
+    this.telemetry = new BaselineTelemetry();
   }
 
   async initialize(): Promise<void> {
@@ -226,8 +229,8 @@ class VectorDatabase {
         contradictions_detected: false,
         recommendation: 'Items stored successfully',
         reasoning: 'Items processed successfully',
-        user_message_suggestion: 'Storage completed successfully'
-      }
+        user_message_suggestion: 'Storage completed successfully',
+      },
     };
 
     for (const item of items) {
@@ -241,6 +244,7 @@ class VectorDatabase {
 
         // Generate embedding (simplified - in production would use OpenAI)
         const content = (item.data as any)?.content || '';
+        const originalLength = content.length;
         const embedding = await this.generateEmbedding(content);
 
         await this.client.upsert(this.collectionName, {
@@ -252,6 +256,13 @@ class VectorDatabase {
             },
           ],
         });
+
+        // Log telemetry data
+        const scope = `${item.scope?.project || 'default'}:${item.scope?.branch || 'main'}`;
+        const truncated = originalLength > 8000;
+        const finalLength = truncated ? 8000 : originalLength;
+
+        this.telemetry.logStoreAttempt(truncated, originalLength, finalLength, item.kind, scope);
 
         // Return item with generated ID for client reference
         response.stored.push(itemWithId);
@@ -284,12 +295,18 @@ class VectorDatabase {
       score: result.score,
     }));
 
+    // Log telemetry data
+    const topScore = items.length > 0 ? Math.max(...items.map((item) => item.score || 0)) : 0;
+    const scope = 'default:main'; // In a real implementation, this would be derived from context
+
+    this.telemetry.logFindAttempt(query, scope, items.length, topScore, 'semantic');
+
     return {
       items,
       total: items.length,
       query,
       strategy: 'semantic',
-      confidence: items.length > 0 ? Math.max(...items.map((item) => item.score || 0)) : 0,
+      confidence: topScore,
     };
   }
 
@@ -351,6 +368,10 @@ class VectorDatabase {
         collectionInfo: null,
       };
     }
+  }
+
+  getBaselineTelemetry(): BaselineTelemetry {
+    return this.telemetry;
   }
 }
 
@@ -482,6 +503,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: [],
         },
       },
+      {
+        name: 'telemetry_report',
+        description:
+          'Get baseline telemetry report showing store/find metrics and system performance',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
     ],
   };
 });
@@ -510,6 +541,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case 'database_stats':
         result = await handleDatabaseStats(args as { scope?: any });
+        break;
+      case 'telemetry_report':
+        result = await handleTelemetryReport();
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -543,7 +577,9 @@ async function handleMemoryStore(args: { items: any[] }) {
   }
 
   // Import transformation utilities
-  const { validateMcpInputFormat, transformMcpInputToKnowledgeItems } = await import('./utils/mcp-transform.js');
+  const { validateMcpInputFormat, transformMcpInputToKnowledgeItems } = await import(
+    './utils/mcp-transform.js'
+  );
 
   // Step 1: Validate MCP input format
   const mcpValidation = validateMcpInputFormat(args.items);
@@ -684,6 +720,56 @@ async function handleDatabaseStats(_args: { scope?: any }) {
               nodeEnv: env.NODE_ENV,
               collectionName: env.QDRANT_COLLECTION_NAME,
               qdrantUrl: env.QDRANT_URL.replace(/\/\/.*@/, '//***:***@'), // Hide credentials
+            },
+          },
+          null,
+          2
+        ),
+      },
+    ],
+  };
+}
+
+async function handleTelemetryReport() {
+  // Ensure database is initialized before processing
+  await ensureDatabaseInitialized();
+
+  // Get baseline telemetry from the store orchestrator
+  const telemetry = vectorDB.getBaselineTelemetry();
+  const telemetryData = telemetry.exportLogs();
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(
+          {
+            report_generated_at: new Date().toISOString(),
+            data_collection_period: 'current_session',
+            summary: {
+              store_operations: telemetryData.summary.store,
+              find_operations: telemetryData.summary.find,
+              scope_analysis: telemetryData.summary.scope_analysis,
+            },
+            insights: {
+              truncation_issues:
+                telemetryData.summary.store.truncation_ratio > 0.1
+                  ? 'High truncation rate detected - content may be losing quality'
+                  : 'Truncation rate within acceptable limits',
+              search_quality:
+                telemetryData.summary.find.zero_result_ratio > 0.3
+                  ? 'High zero-result rate - queries may need refinement'
+                  : 'Search quality appears acceptable',
+              scope_utilization:
+                Object.keys(telemetryData.summary.scope_analysis).length > 1
+                  ? 'Multi-scope usage detected'
+                  : 'Single-scope usage',
+            },
+            detailed_logs: {
+              store_operations_count: telemetryData.store_logs.length,
+              find_operations_count: telemetryData.find_logs.length,
+              recent_store_logs: telemetryData.store_logs.slice(-5), // Last 5 store operations
+              recent_find_logs: telemetryData.find_logs.slice(-5), // Last 5 find operations
             },
           },
           null,

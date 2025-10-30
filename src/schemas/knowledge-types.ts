@@ -167,11 +167,18 @@ export const IssueDataSchema = z
       .min(1, 'external_id is required (e.g., GH-123, PROJ-456)')
       .max(100, 'external_id must be 100 characters or less'),
     title: z.string().min(1, 'title is required').max(500, 'title must be 500 characters or less'),
-    status: z.enum(['open', 'in_progress', 'resolved', 'closed', 'wont_fix']),
-    description: z.string().optional(),
+    status: z.enum(['open', 'in_progress', 'resolved', 'closed', 'wont_fix', 'duplicate']),
+    description: z.string().max(5000, 'description must be 5000 characters or less').optional(),
+    severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    issue_type: z.enum(['bug', 'feature_request', 'improvement', 'task', 'question']).optional(),
     assignee: z.string().optional(),
+    reporter: z.string().optional(),
     labels: z.array(z.string()).optional(),
     url: z.string().url().optional(),
+    affected_components: z.array(z.string()).optional(),
+    created_at: z.string().datetime().optional(),
+    updated_at: z.string().datetime().optional(),
+    resolution: z.string().optional(),
   })
   .strict();
 

@@ -18,7 +18,18 @@
  */
 
 import { promises as fs, constants } from 'node:fs';
-type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' | 'base64' | 'base64url' | 'latin1' | 'binary' | 'hex';
+type BufferEncoding =
+  | 'ascii'
+  | 'utf8'
+  | 'utf-8'
+  | 'utf16le'
+  | 'ucs2'
+  | 'ucs-2'
+  | 'base64'
+  | 'base64url'
+  | 'latin1'
+  | 'binary'
+  | 'hex';
 import { resolve } from 'node:path';
 import { EventEmitter } from 'node:events';
 import { setImmediate } from 'node:timers';
@@ -273,7 +284,10 @@ export class FileHandleManager {
           this.log('error', 'Graceful degradation failed for read operation', {
             operationId,
             filePath,
-            error: degradationError instanceof Error ? degradationError.message : String(degradationError),
+            error:
+              degradationError instanceof Error
+                ? degradationError.message
+                : String(degradationError),
           });
         }
       }
@@ -384,7 +398,10 @@ export class FileHandleManager {
           this.log('error', 'Graceful degradation failed for write operation', {
             operationId,
             filePath,
-            error: degradationError instanceof Error ? degradationError.message : String(degradationError),
+            error:
+              degradationError instanceof Error
+                ? degradationError.message
+                : String(degradationError),
           });
         }
       }
@@ -457,10 +474,7 @@ export class FileHandleManager {
    */
   setMaxHandles(maxHandles: number): void {
     if (maxHandles <= 0) {
-      throw new FileHandleManagerError(
-        'Maximum handles must be greater than 0',
-        'INVALID_CONFIG'
-      );
+      throw new FileHandleManagerError('Maximum handles must be greater than 0', 'INVALID_CONFIG');
     }
 
     const oldMaxHandles = this.config.maxHandles;
@@ -574,7 +588,7 @@ export class FileHandleManager {
         maxHandles: this.config.maxHandles,
       });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 
@@ -608,7 +622,7 @@ export class FileHandleManager {
     await this.ensureDirectoryExists(filePath);
     await fs.writeFile(filePath, data, {
       encoding: options.encoding,
-      flag: options.flag
+      flag: options.flag,
     });
   }
 
@@ -619,30 +633,24 @@ export class FileHandleManager {
     this.stats.successfulOperations++;
 
     const duration = Date.now() - startTime;
-    const totalDuration = this.stats.averageOperationDuration * (this.stats.successfulOperations - 1);
-    this.stats.averageOperationDuration = (totalDuration + duration) / this.stats.successfulOperations;
+    const totalDuration =
+      this.stats.averageOperationDuration * (this.stats.successfulOperations - 1);
+    this.stats.averageOperationDuration =
+      (totalDuration + duration) / this.stats.successfulOperations;
   }
 
   /**
    * Wrap error in FileHandleManagerError
    */
-  private wrapError(
-    error: unknown,
-    operation: string,
-    filePath: string
-  ): FileHandleManagerError {
+  private wrapError(error: unknown, operation: string, filePath: string): FileHandleManagerError {
     const message = error instanceof Error ? error.message : String(error);
     const code = error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN';
 
-    return new FileHandleManagerError(
-      `File ${operation} operation failed: ${message}`,
-      code,
-      {
-        path: filePath,
-        operation,
-        cause: error instanceof Error ? error : new Error(String(error)),
-      }
-    );
+    return new FileHandleManagerError(`File ${operation} operation failed: ${message}`, code, {
+      path: filePath,
+      operation,
+      cause: error instanceof Error ? error : new Error(String(error)),
+    });
   }
 
   /**
@@ -655,10 +663,7 @@ export class FileHandleManager {
   ): Promise<T> {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new FileHandleManagerError(
-          `Operation timeout: ${operation}`,
-          'TIMEOUT'
-        ));
+        reject(new FileHandleManagerError(`Operation timeout: ${operation}`, 'TIMEOUT'));
       }, timeoutMs);
     });
 
@@ -677,17 +682,24 @@ export class FileHandleManager {
   /**
    * Log message with configured level
    */
-  private log(level: 'debug' | 'info' | 'warn' | 'error', message: string, meta?: Record<string, unknown>): void {
+  private log(
+    level: 'debug' | 'info' | 'warn' | 'error',
+    message: string,
+    meta?: Record<string, unknown>
+  ): void {
     // Only log if the level is at or above the configured level
     const levels = { debug: 0, info: 1, warn: 2, error: 3 };
     const configLevel = levels[this.config.logLevel];
     const messageLevel = levels[level];
 
     if (messageLevel >= configLevel) {
-      logger[level]({
-        component: 'FileHandleManager',
-        ...meta,
-      }, message);
+      logger[level](
+        {
+          component: 'FileHandleManager',
+          ...meta,
+        },
+        message
+      );
     }
   }
 
@@ -696,14 +708,17 @@ export class FileHandleManager {
    */
   private setupPeriodicCleanup(): void {
     // Run cleanup every 5 minutes
-    setInterval(() => {
-      if (this.stats.currentHandles > 0) {
-        this.log('debug', 'Running periodic cleanup', {
-          activeHandles: this.stats.currentHandles,
-        });
-        this.cleanup();
-      }
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        if (this.stats.currentHandles > 0) {
+          this.log('debug', 'Running periodic cleanup', {
+            activeHandles: this.stats.currentHandles,
+          });
+          this.cleanup();
+        }
+      },
+      5 * 60 * 1000
+    );
   }
 
   /**

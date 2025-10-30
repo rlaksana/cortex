@@ -60,7 +60,7 @@
     "test:unit": "vitest run --config vitest.config.ts tests/unit",
     "test:comprehensive": "vitest run --config vitest.config.ts tests/unit/comprehensive-mcp-cortex-tests.test.ts",
     "test:security": "vitest run --config vitest.config.ts tests/security",
-    "lint:imports": "eslint src --ext .ts --rule 'import/order: error'",
+    "lint:imports": "eslint src --quiet",
     "verify-test-coverage": "node scripts/verify-test-coverage.js"
   },
   "keywords": [

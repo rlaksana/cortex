@@ -53,6 +53,8 @@ import type {
 } from '../../types/core-interfaces';
 import { ConnectionError, type IDatabase } from '../../db/database-interface';
 import { BaselineTelemetry } from '../telemetry/baseline-telemetry';
+// import { ChunkingService } from '../chunking/chunking-service'; // Will be used when store orchestrator is integrated
+import { LanguageEnhancementService } from '../language/language-enhancement-service';
 
 /**
  * Enhanced duplicate detection result
@@ -82,10 +84,16 @@ export class MemoryStoreOrchestratorQdrant {
   private database: IDatabase;
   private readonly SIMILARITY_THRESHOLD = 0.85; // High threshold for duplicate detection
   private baselineTelemetry: BaselineTelemetry;
+  // chunkingService integrated via result grouping
+  // private _chunkingService: ChunkingService;
+  private languageEnhancementService: LanguageEnhancementService;
 
   constructor(database: IDatabase) {
     this.database = database;
     this.baselineTelemetry = new BaselineTelemetry();
+    // chunkingService will be used when store orchestrator is integrated
+    // this._chunkingService = new ChunkingService();
+    this.languageEnhancementService = new LanguageEnhancementService();
   }
 
   /**
@@ -755,5 +763,12 @@ export class MemoryStoreOrchestratorQdrant {
    */
   getBaselineTelemetry(): BaselineTelemetry {
     return this.baselineTelemetry;
+  }
+
+  /**
+   * Get language enhancement service for language analysis
+   */
+  getLanguageEnhancementService(): LanguageEnhancementService {
+    return this.languageEnhancementService;
   }
 }

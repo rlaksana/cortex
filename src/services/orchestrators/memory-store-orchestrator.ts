@@ -25,7 +25,11 @@ import { storeDecision, updateDecision } from '../knowledge/decision';
 import { storeSection } from '../knowledge/section';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
 import { ImmutabilityViolationError } from '../../utils/immutability';
-import { transformMcpInputToKnowledgeItems, validateMcpInputFormat } from '../../utils/mcp-transform';
+import {
+  transformMcpInputToKnowledgeItems,
+  validateMcpInputFormat,
+  transformToCoreKnowledgeItem,
+} from '../../utils/mcp-transform';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -79,7 +83,8 @@ export class MemoryStoreOrchestrator {
           const item = validItems[index];
 
           try {
-            const result = await this.processItem(item, index);
+            const coreItem = transformToCoreKnowledgeItem(item);
+            const result = await this.processItem(coreItem, index);
             stored.push(result);
 
             // Log successful operation
