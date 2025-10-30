@@ -18,10 +18,10 @@
  */
 
 import { promises as fs, constants } from 'node:fs';
+type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' | 'base64' | 'base64url' | 'latin1' | 'binary' | 'hex';
 import { resolve } from 'node:path';
 import { EventEmitter } from 'node:events';
 import { setImmediate } from 'node:timers';
-import type { BufferEncoding } from 'node:buffer';
 import { logger } from './logger.js';
 import { generateCorrelationId } from './correlation-id.js';
 
@@ -238,7 +238,7 @@ export class FileHandleManager {
         this.log('debug', 'Managed file read completed successfully', {
           operationId,
           filePath,
-          size: typeof result === 'string' ? result.length : result.byteLength,
+          size: result ? (typeof result === 'string' ? result.length : 0) : 0,
         });
 
         this.recordSuccess(startTime);

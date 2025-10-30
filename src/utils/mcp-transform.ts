@@ -28,6 +28,7 @@ export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[]
     // Return knowledge item in internal format
     const knowledgeItem: KnowledgeItem = {
       kind,
+      content,
       data,
       scope: scope || {},
     };

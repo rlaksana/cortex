@@ -18,6 +18,18 @@ export interface KnowledgeItem {
   updated_at?: string;
 }
 
+export interface KnowledgeItemForStorage {
+  kind: string;
+  content?: string;
+  scope: {
+    project?: string;
+    branch?: string;
+    org?: string;
+  };
+  data: Record<string, any>;
+  metadata?: Record<string, any>;
+}
+
 export interface StoreResult {
   id: string;
   status: 'inserted' | 'updated' | 'skipped_dedupe' | 'deleted';
