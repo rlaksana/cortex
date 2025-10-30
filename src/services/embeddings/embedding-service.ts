@@ -180,7 +180,10 @@ export class EmbeddingService {
 
       // Validate response has embedding
       if (!response.embedding || !Array.isArray(response.embedding)) {
-        throw new DatabaseError('Invalid embedding response from API', 'INVALID_EMBEDDING_RESPONSE');
+        throw new DatabaseError(
+          'Invalid embedding response from API',
+          'INVALID_EMBEDDING_RESPONSE'
+        );
       }
 
       // Cache result

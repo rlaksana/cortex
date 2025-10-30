@@ -438,7 +438,10 @@ export class NotFoundError extends DatabaseError {
 
 export class DuplicateError extends DatabaseError {
   constructor(_id: string, _type: string = 'item') {
-    super(`${_type} with id '${_id}' already exists`, 'DUPLICATE_ERROR', undefined, { id: _id, type: _type });
+    super(`${_type} with id '${_id}' already exists`, 'DUPLICATE_ERROR', undefined, {
+      id: _id,
+      type: _type,
+    });
     this.name = 'DuplicateError';
   }
 }
@@ -459,7 +462,10 @@ export class CollectionError extends DatabaseError {
 
 export class VectorError extends DatabaseError {
   constructor(_message: string, _vectorSize?: number, _expectedSize?: number) {
-    super(_message, 'VECTOR_ERROR', undefined, { vectorSize: _vectorSize, expectedSize: _expectedSize });
+    super(_message, 'VECTOR_ERROR', undefined, {
+      vectorSize: _vectorSize,
+      expectedSize: _expectedSize,
+    });
     this.name = 'VectorError';
   }
 }

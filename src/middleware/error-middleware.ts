@@ -134,10 +134,7 @@ export class ServiceErrorHandler {
   /**
    * Handle authentication errors
    */
-  static handleAuthenticationError(
-    error: any,
-    operation: string
-  ): never {
+  static handleAuthenticationError(error: any, operation: string): never {
     const standardError = ErrorHandler.standardize(error, `auth.${operation}`);
 
     // Context is readonly, cannot modify
@@ -149,10 +146,7 @@ export class ServiceErrorHandler {
   /**
    * Handle authorization errors
    */
-  static handleAuthorizationError(
-    error: any,
-    operation: string
-  ): never {
+  static handleAuthorizationError(error: any, operation: string): never {
     const standardError = ErrorHandler.standardize(error, `authz.${operation}`);
 
     // Context is readonly, cannot modify
