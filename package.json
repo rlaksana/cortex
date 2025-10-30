@@ -56,7 +56,11 @@
     "test:performance:latency": "vitest run --config vitest.config.ts tests/performance/latency-testing.test.ts",
     "test:performance:database": "vitest run --config vitest.config.ts tests/performance/database-performance.test.ts",
     "test:performance:search": "vitest run --config vitest.config.ts tests/performance/search-performance.test.ts",
-    "test:performance:all": "npm run test:performance && npm run test:performance:load && npm run test:performance:memory && npm run test:performance:concurrent && npm run test:performance:stress && npm run test:performance:latency && npm run test:performance:database && npm run test:performance:search"
+    "test:performance:all": "npm run test:performance && npm run test:performance:load && npm run test:performance:memory && npm run test:performance:concurrent && npm run test:performance:stress && npm run test:performance:latency && npm run test:performance:database && npm run test:performance:search",
+    "test:unit": "vitest run --config vitest.config.ts tests/unit",
+    "test:comprehensive": "vitest run --config vitest.config.ts tests/unit/comprehensive-mcp-cortex-tests.test.ts",
+    "test:security": "vitest run --config vitest.config.ts tests/security",
+    "lint:imports": "eslint src --ext .ts --rule 'import/order: error'"
   },
   "keywords": [
     "mcp",
