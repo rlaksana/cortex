@@ -784,10 +784,10 @@ docker push your-registry/cortex-memory-mcp:v1.0.0
 
 ### Documentation
 
-- [API Documentation](./API.md)
-- [Architecture Overview](./ARCHITECTURE.md)
-- [Configuration Guide](./CONFIGURATION.md)
-- [Deployment Guide](./DEPLOYMENT.md)
+- [API Documentation](./API-REFERENCE.md)
+- [Architecture Overview](./ARCH-SYSTEM.md)
+- [Configuration Guide](./SETUP-CONFIGURATION.md)
+- [Deployment Guide](./CONFIG-DEPLOYMENT.md)
 
 ### Tools and Libraries
 

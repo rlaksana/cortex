@@ -19,7 +19,7 @@ QDRANT_URL=http://localhost:6333
 
 ## 1. Claude Code Configuration
 
-### File: `claude_desktop_config.json`
+### File: `claude_code_config.json`
 
 ```json
 {

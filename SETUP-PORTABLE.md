@@ -35,12 +35,12 @@ export OPENAI_API_KEY=your-openai-api-key
 docker run -p 6333:6333 -d --name cortex-qdrant qdrant/qdrant:latest
 ```
 
-### **6. Add to Claude Desktop**
-Copy `claude-desktop-config.json` to your Claude Desktop config location:
+### **6. Add to Claude Code**
+Copy `claude-code-config.json` to your Claude Code config location:
 
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-**Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Linux:** `~/.config/claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_code_config.json`
+**Mac:** `~/Library/Application Support/Claude/claude_code_config.json`
+**Linux:** `~/.config/claude/claude_code_config.json`
 
 Then merge with your existing config:
 ```json
@@ -58,7 +58,7 @@ Then merge with your existing config:
 }
 ```
 
-### **7. Restart Claude Desktop**
+### **7. Restart Claude Code**
 Done! Cortex MCP will automatically connect.
 
 ## ✅ Why This Works Portably
