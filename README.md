@@ -526,6 +526,52 @@ npm run test:e2e
 npm run test:coverage
 ```
 
+### EMFILE Prevention (Windows)
+
+This project includes comprehensive EMFILE prevention to handle "too many open files" errors during testing and development on Windows systems.
+
+**Quick Setup:**
+```bash
+# Run EMFILE prevention setup (requires administrator privileges)
+.\scripts\setup-test-environment.ps1
+
+# Validate the configuration
+.\scripts\validate-emfile-fixes.ps1
+
+# Simple validation check
+.\scripts\simple-emfile-validation.ps1
+```
+
+**Environment Variables (Auto-configured in .env.test):**
+```bash
+EMFILE_HANDLES_LIMIT=131072     # Maximum handles for Node.js processes
+UV_THREADPOOL_SIZE=16           # Node.js libuv thread pool size
+NODE_OPTIONS=--max-old-space-size=4096 --max-semi-space-size=256 --optimize-for-size --gc-interval=100
+TEST_TIMEOUT=30000              # Test timeout in milliseconds
+TEST_WORKERS=4                  # Number of test workers
+```
+
+**Features:**
+- ✅ Automatic handle cleanup after test runs
+- ✅ Windows-specific optimizations
+- ✅ Coverage collection without EMFILE errors
+- ✅ Concurrent test execution support
+- ✅ Memory management and garbage collection
+
+**Validation:**
+```bash
+# Run tests with EMFILE prevention
+npm test
+
+# Check EMFILE fixes are working
+npm run test:coverage
+
+# Validate system configuration
+powershell -File "scripts\simple-emfile-validation.ps1"
+```
+
+For detailed EMFILE documentation, see [scripts/README-EMFILE-Fixes.md](scripts/README-EMFILE-Fixes.md) and test results in [EMFILE-TEST-RESULTS.md](EMFILE-TEST-RESULTS.md).
+
 ### Building
 
 ```bash

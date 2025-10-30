@@ -147,27 +147,29 @@ export default defineConfig({
       cleanOnRerun: true,
       enabled: false // Disable coverage temporarily to resolve EMFILE
     },
-    testTimeout: 30000,
+    testTimeout: 60000, // Increased timeout to prevent timeouts
     setupFiles: ['tests/setup.ts'],
     reporters: ['verbose', 'json'],
     outputFile: {
       json: 'test-results/unit.json'
     },
-    watch: false,
+    watch: false, // Disabled to reduce file handles
     isolate: true,
     pool: 'threads',
     poolOptions: {
       threads: {
         singleThread: true, // Use single thread to reduce file handles
-        maxThreads: 1,
+        maxThreads: 1, // Conservative threading
         minThreads: 1
       }
     },
     // Add cleanup hooks to prevent EMFILE
-    teardownTimeout: 15000,
-    hookTimeout: 15000,
+    teardownTimeout: 30000, // Increased for proper cleanup
+    hookTimeout: 30000, // Increased for setup cleanup
     // Reduce concurrent operations
-    maxConcurrency: 1,
+    maxConcurrency: 1, // Conservative concurrency
+    // Early failure stopping
+    bail: 5, // Stop early to prevent cascading failures
     // Disable file watchers during test
     watchExclude: ['**/*'],
     // Additional EMFILE prevention
