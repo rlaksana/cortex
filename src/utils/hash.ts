@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 export function computeContentHash(text: string): string {
   // Handle null, undefined, and non-string inputs gracefully

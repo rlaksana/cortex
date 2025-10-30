@@ -10,10 +10,10 @@
  * - Dry-run mode for testing
  */
 
-import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
+import { promises as fs } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'url';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { qdrantConnectionManager } from './pool.js';
 import { logger } from '../utils/logger.js';
 

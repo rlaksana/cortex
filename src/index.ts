@@ -45,7 +45,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 // === IMPORTANT: Disable dotenv stdout output for MCP compatibility ===
 // dotenv writes injection messages to stdout which corrupts MCP stdio transport

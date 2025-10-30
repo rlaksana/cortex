@@ -3,7 +3,7 @@
  * Provides password hashing, token validation, session management, and security helpers
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { logger } from './logger.js';
 import { AuthScope, UserRole } from '../types/auth-types.js';

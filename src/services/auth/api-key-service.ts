@@ -3,7 +3,7 @@
  * Handles creation, validation, and management of API keys for MCP clients
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { AuthService } from './auth-service.js';
 import { AuditService } from '../audit/audit-service.js';

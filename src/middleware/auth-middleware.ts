@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { logger } from '../utils/logger';
 import { AuthService } from '../services/auth/auth-service';
 import { AuditService } from '../services/audit/audit-service';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { logger } from '../utils/logger';
 
 // Load environment variables

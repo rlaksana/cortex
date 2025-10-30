@@ -19,7 +19,7 @@
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { logger } from '../../utils/logger';
 import type {
   KnowledgeItem,

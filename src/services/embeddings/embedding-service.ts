@@ -19,7 +19,7 @@
  * @since 2025
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { OpenAI } from 'openai';
 import { logger } from '../../utils/logger';
 import { DatabaseError, ValidationError } from '../../db/database-interface';

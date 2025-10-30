@@ -55,6 +55,8 @@ export class PerformanceCollector extends EventEmitter {
 
   constructor() {
     super();
+    // Set max listeners to prevent memory leak warnings
+    this.setMaxListeners(50);
     this.setupDefaultThresholds();
   }
 
@@ -113,7 +115,9 @@ export class PerformanceCollector extends EventEmitter {
     }
 
     // Emit metric for real-time monitoring (but skip batch processing for real-time needs)
-    this.emit('metric', metric);
+    if (this.listenerCount('metric') > 0) {
+      this.emit('metric', metric);
+    }
   }
 
   /**
@@ -233,6 +237,16 @@ export class PerformanceCollector extends EventEmitter {
   }
 
   /**
+   * Force process any pending batch metrics (for testing scenarios)
+   */
+  processPendingBatch(): void {
+    if (this.batchMetrics.length > 0) {
+      this.processBatch();
+      this.lastBatchProcess = Date.now();
+    }
+  }
+
+  /**
    * Get performance trends for dashboard
    */
   getPerformanceTrends(timeWindowMinutes: number = 60): Record<string, any> {
@@ -314,7 +328,9 @@ export class PerformanceCollector extends EventEmitter {
     this.metrics.clear();
     this.summaries.clear();
     this.batchMetrics = [];
-    this.emit('cleared');
+    if (this.listenerCount('cleared') > 0) {
+      this.emit('cleared');
+    }
   }
 
   /**
@@ -395,7 +411,9 @@ export class PerformanceCollector extends EventEmitter {
         timestamp: Date.now(),
       };
 
-      this.emit('alert', alert);
+      if (this.listenerCount('alert') > 0) {
+        this.emit('alert', alert);
+      }
       logger.warn(alert, 'Performance alert triggered');
     }
 
@@ -412,7 +430,9 @@ export class PerformanceCollector extends EventEmitter {
         timestamp: Date.now(),
       };
 
-      this.emit('alert', alert);
+      if (this.listenerCount('alert') > 0) {
+        this.emit('alert', alert);
+      }
       logger.warn(alert, 'Error rate alert triggered');
     }
   }
@@ -451,11 +471,15 @@ export class PerformanceCollector extends EventEmitter {
         timestamp: Date.now(),
       };
 
-      this.emit('alert', alert);
+      if (this.listenerCount('alert') > 0) {
+        this.emit('alert', alert);
+      }
       logger.error(alert, 'Critical memory usage alert');
     }
 
-    this.emit('system_metrics', memoryUsage);
+    if (this.listenerCount('system_metrics') > 0) {
+      this.emit('system_metrics', memoryUsage);
+    }
   }
 
   private cleanupOldMetrics(): void {
@@ -516,6 +540,24 @@ export class PerformanceCollector extends EventEmitter {
     output += `nodejs_memory_usage_bytes{type="heap_total"} ${memory.heapTotal}\n`;
 
     return output;
+  }
+
+  /**
+   * Cleanup method to properly dispose of resources
+   */
+  public cleanup(): void {
+    if (this.collectionInterval) {
+      clearInterval(this.collectionInterval);
+      this.collectionInterval = null;
+    }
+
+    this.metrics.clear();
+    this.summaries.clear();
+    this.alertThresholds.clear();
+    this.batchMetrics = [];
+
+    // Remove all event listeners to prevent memory leaks
+    this.removeAllListeners();
   }
 }
 

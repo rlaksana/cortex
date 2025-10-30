@@ -38,7 +38,7 @@
  * @since 2025
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { logger } from '../../utils/logger';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
 // import { ImmutabilityViolationError } from '../../utils/immutability';

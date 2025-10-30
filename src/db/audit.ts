@@ -1,7 +1,7 @@
 // Using UnifiedDatabaseLayer for Qdrant operations
 import { QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer } from './unified-database-layer-v2.js';
 import { logger } from '../utils/logger.js';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 /**
  * Audit Logging System

@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import type { DDLData } from '../../types/knowledge-data';
 import { logger } from '../../utils/logger';
 

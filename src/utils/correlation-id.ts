@@ -5,8 +5,8 @@
  * and enables better debugging and monitoring capabilities.
  */
 
-import { randomUUID } from 'crypto';
-import { AsyncLocalStorage } from 'async_hooks';
+import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**
  * Async storage context for correlation IDs

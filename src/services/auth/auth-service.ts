@@ -5,7 +5,7 @@
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { logger } from '../../utils/logger';
 import { qdrant } from '../../db/qdrant-client';
 import {
