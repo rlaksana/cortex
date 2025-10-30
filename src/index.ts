@@ -219,7 +219,7 @@ class VectorDatabase {
         };
 
         // Generate embedding (simplified - in production would use OpenAI)
-        const embedding = await this.generateEmbedding(item.content);
+        const embedding = await this.generateEmbedding(item.data?.content || '');
 
         await this.client.upsert(this.collectionName, {
           points: [
@@ -231,8 +231,13 @@ class VectorDatabase {
           ],
         });
 
-        // Return item with generated ID for client reference
-        response.stored.push(itemWithId);
+        // Return proper StoreResult object
+        response.stored.push({
+          id: itemWithId.id,
+          status: 'inserted',
+          kind: item.kind,
+          created_at: new Date().toISOString(),
+        });
       } catch (error) {
         response.errors.push({
           item,
@@ -476,7 +481,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     let result;
     switch (name) {
       case 'memory_store':
-        result = await handleMemoryStore(args as { items: KnowledgeItem[] });
+        result = await handleMemoryStore(args as { items: any[] });
         break;
       case 'memory_find':
         result = await handleMemoryFind(
@@ -515,15 +520,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-async function handleMemoryStore(args: { items: KnowledgeItem[] }) {
+async function handleMemoryStore(args: { items: any[] }) {
   if (!args.items || !Array.isArray(args.items)) {
     throw new Error('items must be an array');
   }
 
+  // Import transformation utilities
+  const { validateMcpInputFormat, transformMcpInputToKnowledgeItems } = await import('./utils/mcp-transform.js');
+
+  // Step 1: Validate MCP input format
+  const mcpValidation = validateMcpInputFormat(args.items);
+  if (!mcpValidation.valid) {
+    throw new Error(`Invalid MCP input format: ${mcpValidation.errors.join(', ')}`);
+  }
+
+  // Step 2: Transform MCP input to internal format
+  const transformedItems = transformMcpInputToKnowledgeItems(args.items);
+
   // Ensure database is initialized before processing
   await ensureDatabaseInitialized();
 
-  const response = await vectorDB.storeItems(args.items);
+  const response = await vectorDB.storeItems(transformedItems);
 
   return {
     content: [

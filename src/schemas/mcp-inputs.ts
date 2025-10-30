@@ -23,18 +23,18 @@ export const MemoryStoreInputSchema = z
         z.object({
           kind: z.enum(
             [
-              'section',
-              'decision',
-              'issue',
-              'todo',
-              'runbook',
-              'change',
-              'release_note',
-              'ddl',
-              'pr_context',
               'entity',
               'relation',
               'observation',
+              'section',
+              'runbook',
+              'change',
+              'issue',
+              'decision',
+              'todo',
+              'release_note',
+              'ddl',
+              'pr_context',
               'incident',
               'release',
               'risk',
@@ -42,20 +42,23 @@ export const MemoryStoreInputSchema = z
             ],
             {
               errorMap: () => ({
-                message: `Invalid knowledge type. Must be one of: section, decision, issue, todo, runbook, change, release_note, ddl, pr_context, entity, relation, observation, incident, release, risk, assumption`,
+                message: `Invalid knowledge type. Must be one of: entity, relation, observation, section, runbook, change, issue, decision, todo, release_note, ddl, pr_context, incident, release, risk, assumption`,
               }),
             }
           ),
+          content: z.string({
+            description: 'Content of the knowledge item',
+          }),
+          metadata: z.record(z.any(), {
+            description: 'Additional metadata',
+          }).optional(),
           scope: z
             .object({
-              project: z.string().min(1, 'Project name is required'),
+              project: z.string().optional(),
               branch: z.string().optional(),
               org: z.string().optional(),
             })
-            .strict(),
-          data: z.record(z.any(), {
-            description: 'Knowledge data object',
-          }),
+            .optional(),
         })
       )
       .min(1, 'At least one item is required'),

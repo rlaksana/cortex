@@ -25,6 +25,7 @@ import { storeDecision, updateDecision } from '../knowledge/decision';
 import { storeSection } from '../knowledge/section';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
 import { ImmutabilityViolationError } from '../../utils/immutability';
+import { transformMcpInputToKnowledgeItems, validateMcpInputFormat } from '../../utils/mcp-transform';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -51,15 +52,29 @@ export class MemoryStoreOrchestrator {
       const errors: StoreError[] = [];
 
       try {
-        // Step 1: Validate input
-        const validation = await validationService.validateStoreInput(items);
+        // Step 1: Validate MCP input format
+        const mcpValidation = validateMcpInputFormat(items as any[]);
+        if (!mcpValidation.valid) {
+          const mcpErrors: StoreError[] = mcpValidation.errors.map((message, index) => ({
+            index: 0,
+            error_code: 'INVALID_MCP_INPUT',
+            message,
+          }));
+          return this.createErrorResponse(mcpErrors);
+        }
+
+        // Step 2: Transform MCP input to internal format
+        const transformedItems = transformMcpInputToKnowledgeItems(items as any[]);
+
+        // Step 3: Validate transformed input with enhanced schema
+        const validation = await validationService.validateStoreInput(transformedItems);
         if (!validation.valid) {
           return this.createErrorResponse(validation.errors);
         }
 
-        const validItems = items as KnowledgeItem[];
+        const validItems = transformedItems;
 
-        // Step 2: Process each item
+        // Step 4: Process each item
         for (let index = 0; index < validItems.length; index++) {
           const item = validItems[index];
 
