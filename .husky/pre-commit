@@ -1,1 +1,23 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Run quality checks (linting and type checking)
+echo "📋 Running code quality checks..."
 npm run quality-check
+if [ $? -ne 0 ]; then
+    echo "❌ Code quality checks failed"
+    exit 1
+fi
+
+# Run test coverage verification
+echo "🧪 Verifying test coverage..."
+npm run verify-test-coverage
+if [ $? -ne 0 ]; then
+    echo "❌ Test coverage verification failed"
+    echo "💡 Please ensure code changes are accompanied by appropriate test updates"
+    exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
+echo "🎉 Ready to commit!"

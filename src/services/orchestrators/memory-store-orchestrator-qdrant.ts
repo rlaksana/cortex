@@ -52,6 +52,7 @@ import type {
   MemoryStoreResponse,
 } from '../../types/core-interfaces';
 import { ConnectionError, type IDatabase } from '../../db/database-interface';
+import { BaselineTelemetry } from '../telemetry/baseline-telemetry';
 
 /**
  * Enhanced duplicate detection result
@@ -80,9 +81,11 @@ interface SearchQuery {
 export class MemoryStoreOrchestratorQdrant {
   private database: IDatabase;
   private readonly SIMILARITY_THRESHOLD = 0.85; // High threshold for duplicate detection
+  private baselineTelemetry: BaselineTelemetry;
 
   constructor(database: IDatabase) {
     this.database = database;
+    this.baselineTelemetry = new BaselineTelemetry();
   }
 
   /**
@@ -281,6 +284,20 @@ export class MemoryStoreOrchestratorQdrant {
    */
   private async storeItemToDatabase(item: KnowledgeItem): Promise<StoreResult> {
     try {
+      // Baseline telemetry: Track truncation
+      const content = this.extractCanonicalContent(item);
+      const originalLength = content.length;
+      const truncated = originalLength > 8000;
+      const finalLength = truncated ? 8000 : originalLength;
+
+      this.baselineTelemetry.logStoreAttempt(
+        truncated,
+        originalLength,
+        finalLength,
+        item.kind,
+        `${item.scope.project || ''}-${item.scope.branch || 'main'}`
+      );
+
       const response = await this.database.store([item], {
         upsert: true,
         skipDuplicates: false,
@@ -731,5 +748,12 @@ export class MemoryStoreOrchestratorQdrant {
         'autonomous_context_generation',
       ],
     };
+  }
+
+  /**
+   * Get baseline telemetry data for analysis
+   */
+  getBaselineTelemetry(): BaselineTelemetry {
+    return this.baselineTelemetry;
   }
 }

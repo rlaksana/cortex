@@ -68,13 +68,13 @@ describe('BaselineTelemetry', () => {
       telemetry.logStoreAttempt(true, 10000, 8000, 'observation', 'test-project');
       telemetry.logFindAttempt('test query', 'test-project', 3, 0.8, 'auto');
 
-      const export = telemetry.exportLogs();
+      const exportData = telemetry.exportLogs();
 
-      expect(export.store_logs).toHaveLength(1);
-      expect(export.find_logs).toHaveLength(1);
-      expect(export.summary.store.total_stores).toBe(1);
-      expect(export.summary.find.total_queries).toBe(1);
-      expect(export.summary.scope_analysis['test-project']).toBeDefined();
+      expect(exportData.store_logs).toHaveLength(1);
+      expect(exportData.find_logs).toHaveLength(1);
+      expect(exportData.summary.store.total_stores).toBe(1);
+      expect(exportData.summary.find.total_queries).toBe(1);
+      expect(exportData.summary.scope_analysis['test-project']).toBeDefined();
     });
   });
 
