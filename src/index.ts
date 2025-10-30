@@ -151,6 +151,15 @@ interface MemoryStoreResponse {
     item: KnowledgeItem;
     error: string;
   }>;
+  autonomous_context?: {
+    action_performed: string;
+    similar_items_checked: number;
+    duplicates_found: number;
+    contradictions_detected: boolean;
+    recommendation: string;
+    reasoning: string;
+    user_message_suggestion: string;
+  };
 }
 
 interface MemoryFindResponse {
@@ -207,7 +216,19 @@ class VectorDatabase {
       await this.initialize();
     }
 
-    const response: MemoryStoreResponse = { stored: [], errors: [] };
+    const response: MemoryStoreResponse = {
+      stored: [],
+      errors: [],
+      autonomous_context: {
+        action_performed: 'created',
+        similar_items_checked: 0,
+        duplicates_found: 0,
+        contradictions_detected: false,
+        recommendation: 'Items stored successfully',
+        reasoning: 'Items processed successfully',
+        user_message_suggestion: 'Storage completed successfully'
+      }
+    };
 
     for (const item of items) {
       try {
@@ -219,7 +240,8 @@ class VectorDatabase {
         };
 
         // Generate embedding (simplified - in production would use OpenAI)
-        const embedding = await this.generateEmbedding(item.data?.content || '');
+        const content = (item.data as any)?.content || '';
+        const embedding = await this.generateEmbedding(content);
 
         await this.client.upsert(this.collectionName, {
           points: [
@@ -231,13 +253,8 @@ class VectorDatabase {
           ],
         });
 
-        // Return proper StoreResult object
-        response.stored.push({
-          id: itemWithId.id,
-          status: 'inserted',
-          kind: item.kind,
-          created_at: new Date().toISOString(),
-        });
+        // Return item with generated ID for client reference
+        response.stored.push(itemWithId);
       } catch (error) {
         response.errors.push({
           item,

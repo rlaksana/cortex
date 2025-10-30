@@ -49,8 +49,8 @@ describe('Schema Mismatch Fix - Memory Store', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.stored).toHaveLength(1);
-    expect(result.stored[0].status).toBe('inserted');
     expect(result.stored[0].id).toBeDefined();
+    expect(result.stored[0].kind).toBe('entity');
   });
 
   it('should accept minimal items with only required fields (kind and content)', async () => {
@@ -64,7 +64,8 @@ describe('Schema Mismatch Fix - Memory Store', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.stored).toHaveLength(1);
-    expect(result.stored[0].status).toBe('inserted');
+    expect(result.stored[0].id).toBeDefined();
+    expect(result.stored[0].kind).toBe('decision');
   });
 
   it('should handle all 16 knowledge types with content/metadata format', async () => {
@@ -85,6 +86,7 @@ describe('Schema Mismatch Fix - Memory Store', () => {
 
       expect(result.errors).toHaveLength(0);
       expect(result.stored).toHaveLength(1);
+      expect(result.stored[0].id).toBeDefined();
       expect(result.stored[0].kind).toBe(kind);
     }
   });

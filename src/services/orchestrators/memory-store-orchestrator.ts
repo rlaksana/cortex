@@ -55,7 +55,7 @@ export class MemoryStoreOrchestrator {
         // Step 1: Validate MCP input format
         const mcpValidation = validateMcpInputFormat(items as any[]);
         if (!mcpValidation.valid) {
-          const mcpErrors: StoreError[] = mcpValidation.errors.map((message, index) => ({
+          const mcpErrors: StoreError[] = mcpValidation.errors.map((message, _index) => ({
             index: 0,
             error_code: 'INVALID_MCP_INPUT',
             message,
