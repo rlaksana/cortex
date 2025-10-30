@@ -99,6 +99,63 @@ export enum AuthScope {
   _SCOPE_ISOLATE = 'scope:isolate',
 }
 
+// Backward compatibility exports (without underscores)
+export const UserRoleValues = {
+  ADMIN: UserRole._ADMIN,
+  USER: UserRole._USER,
+  READ_ONLY: UserRole._READ_ONLY,
+  SERVICE: UserRole._SERVICE,
+} as const;
+
+export const AuthScopeValues = {
+  MEMORY_READ: AuthScope._MEMORY_READ,
+  MEMORY_WRITE: AuthScope._MEMORY_WRITE,
+  MEMORY_DELETE: AuthScope._MEMORY_DELETE,
+  KNOWLEDGE_READ: AuthScope._KNOWLEDGE_READ,
+  KNOWLEDGE_WRITE: AuthScope._KNOWLEDGE_WRITE,
+  KNOWLEDGE_DELETE: AuthScope._KNOWLEDGE_DELETE,
+  USER_MANAGE: AuthScope._USER_MANAGE,
+  API_KEY_MANAGE: AuthScope._API_KEY_MANAGE,
+  SYSTEM_READ: AuthScope._SYSTEM_READ,
+  SYSTEM_MANAGE: AuthScope._SYSTEM_MANAGE,
+  AUDIT_READ: AuthScope._AUDIT_READ,
+  AUDIT_WRITE: AuthScope._AUDIT_WRITE,
+  SEARCH_BASIC: AuthScope._SEARCH_BASIC,
+  SEARCH_ADVANCED: AuthScope._SEARCH_ADVANCED,
+  SEARCH_DEEP: AuthScope._SEARCH_DEEP,
+  SCOPE_MANAGE: AuthScope._SCOPE_MANAGE,
+  SCOPE_ISOLATE: AuthScope._SCOPE_ISOLATE,
+} as const;
+
+// Type aliases for common usage
+export type UserRoleType = keyof typeof UserRoleValues;
+export type AuthScopeType = keyof typeof AuthScopeValues;
+
+// Security event types
+export enum SecurityEventType {
+  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
+  LOGIN_FAILURE = 'LOGIN_FAILURE',
+  LOGOUT = 'LOGOUT',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  SECURITY_VIOLATION = 'SECURITY_VIOLATION',
+  TOKEN_REVOKED = 'TOKEN_REVOKED',
+  API_KEY_CREATED = 'API_KEY_CREATED',
+  API_KEY_UPDATED = 'API_KEY_UPDATED',
+  API_KEY_REVOKED = 'API_KEY_REVOKED',
+  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY',
+}
+
+// Encryption algorithms
+export enum EncryptionAlgorithm {
+  AES_256_GCM = 'aes-256-gcm',
+  AES_192_GCM = 'aes-192-gcm',
+  AES_128_GCM = 'aes-128-gcm',
+  AES_256_CBC = 'aes-256-cbc',
+  AES_192_CBC = 'aes-192-cbc',
+  AES_128_CBC = 'aes-128-cbc',
+  CHACHA20_POLY1305 = 'chacha20-poly1305',
+}
+
 export interface Permission {
   id: string;
   name: string;

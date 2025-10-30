@@ -49,63 +49,65 @@ import {
 } from '../../../src/utils/validation/validation-reporter';
 
 // Mock implementations
-const mockValidationService: jest.Mocked<ValidationService> = {
-  validateSchema: jest.fn(),
-  validateInput: jest.fn(),
-  validateBusinessRules: jest.fn(),
-  batchValidate: jest.fn(),
-  createValidator: jest.fn(),
-  registerValidator: jest.fn(),
-  clearCache: jest.fn(),
-  getValidationStats: jest.fn()
+import { vi } from 'vitest';
+
+const mockValidationService = {
+  validateSchema: vi.fn(),
+  validateInput: vi.fn(),
+  validateBusinessRules: vi.fn(),
+  batchValidate: vi.fn(),
+  createValidator: vi.fn(),
+  registerValidator: vi.fn(),
+  clearCache: vi.fn(),
+  getValidationStats: vi.fn()
 } as any;
 
-const mockSchemaValidator: jest.Mocked<SchemaValidator> = {
-  validate: jest.fn(),
-  compile: jest.fn(),
-  addFormat: jest.fn(),
-  removeFormat: jest.fn(),
-  getFormats: jest.fn()
+const mockSchemaValidator: any = {
+  validate: vi.fn(),
+  compile: vi.fn(),
+  addFormat: vi.fn(),
+  removeFormat: vi.fn(),
+  getFormats: vi.fn()
 } as any;
 
-const mockInputSanitizer: jest.Mocked<InputSanitizer> = {
-  sanitize: jest.fn(),
-  sanitizeBatch: jest.fn(),
-  validateSanitized: jest.fn(),
-  addSanitizationRule: jest.fn(),
-  removeSanitizationRule: jest.fn()
+const mockInputSanitizer: anyInputSanitizer> = {
+  sanitize: vi.fn(),
+  sanitizeBatch: vi.fn(),
+  validateSanitized: vi.fn(),
+  addSanitizationRule: vi.fn(),
+  removeSanitizationRule: vi.fn()
 } as any;
 
-const mockBusinessRuleValidator: jest.Mocked<BusinessRuleValidator> = {
-  validate: jest.fn(),
-  addRule: jest.fn(),
-  removeRule: jest.fn(),
-  getRules: jest.fn(),
-  validateWithContext: jest.fn()
+const mockBusinessRuleValidator: anyBusinessRuleValidator> = {
+  validate: vi.fn(),
+  addRule: vi.fn(),
+  removeRule: vi.fn(),
+  getRules: vi.fn(),
+  validateWithContext: vi.fn()
 } as any;
 
-const mockValidationCache: jest.Mocked<ValidationCache> = {
-  get: jest.fn(),
-  set: jest.fn(),
-  delete: jest.fn(),
-  clear: jest.fn(),
-  has: jest.fn(),
-  getStats: jest.fn(),
-  cleanup: jest.fn()
+const mockValidationCache: anyValidationCache> = {
+  get: vi.fn(),
+  set: vi.fn(),
+  delete: vi.fn(),
+  clear: vi.fn(),
+  has: vi.fn(),
+  getStats: vi.fn(),
+  cleanup: vi.fn()
 } as any;
 
-const mockValidationReporter: jest.Mocked<ValidationReporter> = {
-  reportErrors: jest.fn(),
-  formatErrors: jest.fn(),
-  aggregateErrors: jest.fn(),
-  createReport: jest.fn(),
-  exportReport: jest.fn(),
-  clearErrors: jest.fn()
+const mockValidationReporter: anyValidationReporter> = {
+  reportErrors: vi.fn(),
+  formatErrors: vi.fn(),
+  aggregateErrors: vi.fn(),
+  createReport: vi.fn(),
+  exportReport: vi.fn(),
+  clearErrors: vi.fn()
 } as any;
 
 describe('Schema Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('JSON Schema Validation', () => {
@@ -474,7 +476,7 @@ describe('Schema Validation', () => {
 
 describe('Input Sanitization', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Data Sanitization Utilities', () => {
@@ -729,7 +731,7 @@ describe('Input Sanitization', () => {
 
 describe('Business Rule Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Knowledge Type Validation Rules', () => {
@@ -1041,7 +1043,7 @@ describe('Business Rule Validation', () => {
 
 describe('Performance Validation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('High-performance Validation', () => {
@@ -1189,7 +1191,7 @@ describe('Performance Validation', () => {
         required: ['id', 'name']
       };
 
-      const progressCallback = jest.fn();
+      const progressCallback = vi.fn();
 
       mockValidationService.batchValidate.mockImplementation(async (items, schema, options) => {
         const results = [];
@@ -1309,7 +1311,7 @@ describe('Performance Validation', () => {
       };
 
       mockSchemaValidator.compile.mockReturnValue({
-        validate: jest.fn().mockReturnValue({
+        validate: vi.fn().mockReturnValue({
           valid: true,
           errors: []
         })
@@ -1359,7 +1361,7 @@ describe('Performance Validation', () => {
 
 describe('Error Reporting', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Validation Error Aggregation', () => {
@@ -1637,7 +1639,7 @@ describe('Error Reporting', () => {
 
 describe('Integration and Extensibility', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Service Integration Validation', () => {
@@ -1782,7 +1784,7 @@ describe('Integration and Extensibility', () => {
         return true;
       });
 
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation();
 
       const registered = mockValidationService.registerValidator('oldZipCode', deprecatedValidator);
 
@@ -1891,11 +1893,11 @@ describe('Integration and Extensibility', () => {
       };
 
       const mockResponse = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn()
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn()
       };
 
-      const mockNext = jest.fn();
+      const mockNext = vi.fn();
 
       const schema: ValidationSchema = {
         type: 'object',
