@@ -103,25 +103,81 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type checking
+      - name: Gate 1: Type checking
         run: |
-          echo "🔍 Running TypeScript type checking..."
-          npm run type-check || echo "⚠️ Type checking completed with warnings"
+          echo "📝 Gate 1: Type checking..."
+          if ! npm run type-check; then
+            echo "❌ Type checking failed - Fix Plan:"
+            echo "   1. Check TypeScript errors in output above"
+            echo "   2. Fix type annotations, missing imports, or interface mismatches"
+            echo "   3. Run 'npm run type-check' to verify fixes"
+            echo "   ❌ STOPPED: Type checking must pass before proceeding"
+            exit 1
+          fi
+          echo "✅ Type checking passed"
 
-      - name: Linting
+      - name: Gate 2: Linting
         run: |
-          echo "🧹 Running ESLint..."
-          npm run lint || echo "⚠️ Linting completed with warnings"
+          echo "🧹 Gate 2: Linting..."
+          if ! npm run lint; then
+            echo "❌ Linting failed - Fix Plan:"
+            echo "   1. Check ESLint errors in output above"
+            echo "   2. Fix unused variables, missing semicolons, quote styles"
+            echo "   3. Run 'npm run lint:fix' for auto-fixable issues"
+            echo "   4. Run 'npm run lint' to verify fixes"
+            echo "   ❌ STOPPED: Linting must pass before proceeding"
+            exit 1
+          fi
+          echo "✅ Linting passed"
 
-      - name: Code formatting check
+      - name: Gate 3: Format/Imports checking
         run: |
-          echo "✨ Checking code formatting..."
-          npm run format:check || echo "⚠️ Formatting issues detected"
+          echo "✨ Gate 3: Format and Imports checking..."
+          if ! npm run format:check; then
+            echo "❌ Format checking failed - Fix Plan:"
+            echo "   1. Run 'npm run format' to auto-fix formatting issues"
+            echo "   2. Check import ordering and consistency"
+            echo "   3. Run 'npm run lint:imports' to check import order"
+            echo "   4. Run 'npm run format:check' to verify fixes"
+            echo "   ❌ STOPPED: Formatting must pass before proceeding"
+            exit 1
+          fi
 
-      - name: Import optimization check
+          if ! npm run lint:imports; then
+            echo "❌ Import checking failed - Fix Plan:"
+            echo "   1. Check import order violations in output above"
+            echo "   2. Reorder imports according to ESLint rules"
+            echo "   3. Run 'npm run lint:imports' to verify fixes"
+            echo "   ❌ STOPPED: Import order must pass before proceeding"
+            exit 1
+          fi
+          echo "✅ Format and Imports checking passed"
+
+      - name: Gate 4: Dead code detection
         run: |
-          echo "📦 Checking import optimization..."
-          npm run lint:imports || echo "⚠️ Import issues detected"
+          echo "🧼 Gate 4: Dead code detection..."
+          if ! npm run dead-code; then
+            echo "⚠️  Dead code detected - Fix Plan:"
+            echo "   1. Review unused exports in output above"
+            echo "   2. Remove unused exports or add '_' prefix to unused parameters"
+            echo "   3. Consider if code is needed for external API"
+            echo "   4. Re-run 'npm run dead-code' to verify cleanup"
+            echo "   ⚠️  WARNING: Dead code should be cleaned up but not blocking"
+          fi
+          echo "✅ Dead code detection completed"
+
+      - name: Gate 5: Complexity analysis
+        run: |
+          echo "📊 Gate 5: Complexity analysis..."
+          if ! npm run complexity; then
+            echo "⚠️  Complexity issues detected - Fix Plan:"
+            echo "   1. Review complexity-report.json for high-complexity functions"
+            echo "   2. Consider refactoring complex functions (>10 complexity)"
+            echo "   3. Break down large functions into smaller, focused ones"
+            echo "   4. Re-run 'npm run complexity' to verify improvements"
+            echo "   ⚠️  WARNING: High complexity should be refactored but not blocking"
+          fi
+          echo "✅ Complexity analysis completed"
 
   # ============================================================================
   # Qdrant Service Setup
