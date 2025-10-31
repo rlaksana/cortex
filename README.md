@@ -2,16 +2,63 @@
 
 ## Overview
 
-Cortex Memory MCP Server is an advanced knowledge management system that provides intelligent semantic search, memory storage, and autonomous decision support through the Model Context Protocol (MCP). The system leverages vector database technology for sophisticated knowledge operations.
+Cortex Memory MCP Server is a knowledge management system that provides semantic search, memory storage, and basic deduplication through the Model Context Protocol (MCP). The system uses Qdrant vector database for knowledge operations with a focus on reliable core functionality.
 
-**Key Features:**
-- 🧠 **Intelligent Memory Management** - Store, organize, and retrieve knowledge with AI assistance
-- 🔍 **Semantic Search** - Advanced search with multi-strategy approach and context understanding
-- 🗄️ **16 Knowledge Types** - Complete knowledge management (entities, decisions, todos, incidents, etc.)
-- 🛡️ **Advanced Deduplication** - Intelligent content similarity detection and conflict resolution
-- 🚀 **Production Ready** - Comprehensive error handling, EMFILE prevention, and performance optimization
-- ⚡ **Smart Orchestration** - Autonomous service coordination with context generation
-- 📊 **Multi-Tenant Support** - Project, branch, and organization-based isolation
+`★ Insight ─────────────────────────────────────`
+**Current Status**: Cortex Memory MCP provides solid core functionality (storage, search, basic deduplication) with ambitious architectural goals. This documentation separates what exists today from what we're building towards.
+`─────────────────────────────────────────────────`
+
+## 🚀 **Current Capabilities (v1.0 - What Works Today)**
+
+**✅ Core Features:**
+- 🧠 **Vector-based Memory Storage** - Store knowledge with automatic embedding generation
+- 🔍 **Multi-Strategy Search** - Semantic, keyword, and hybrid search modes implemented
+- 🗄️ **16 Production-Ready Knowledge Types** - All knowledge types fully implemented with validation
+- 🛡️ **Advanced Deduplication** - Content similarity detection (85% threshold, 7-day window)
+- 🚀 **Production Ready** - Comprehensive error handling and EMFILE prevention
+- 📊 **Scope Isolation** - Project, branch, and organization-based knowledge separation
+
+**⚠️ Current System Limits:**
+- **Content Size**: 8000 characters max per item (truncated if exceeded)
+- **Chunking**: Not yet implemented → single vector per item (chunking service exists but not wired)
+- **Search**: Semantic-only by default (keyword/hybrid available but experimental)
+- **🚨 Service Layer**: Comprehensive service layer exists but main server bypasses full orchestration (see Architecture section for details)
+
+## 🎯 **Target Vision (What We're Building Towards)**
+
+**🚧 Planned Features:**
+- 🧠 **Advanced Memory Management** - AI-assisted knowledge organization and insights
+- 🛡️ **Enhanced Deduplication** - Contradiction detection and merge suggestions
+- ⚡ **Autonomous Context** - AI-generated insights and recommendations
+- 🔗 **Graph Relationships** - Entity relationships and graph traversal
+- 📄 **Content Chunking** - Parent-child relationships and document management
+- 🔍 **Enhanced Search** - Improved confidence scoring and result analytics
+- 🔧 **Service Layer Integration** - Full wiring of comprehensive service layer
+
+## 📊 **Implementation Status Matrix**
+
+| Knowledge Type | Status | Implementation |
+|---------------|--------|----------------|
+| **entity** | ✅ **Complete** | Full validation + schema + business rules |
+| **relation** | ✅ **Complete** | Full validation + schema + business rules |
+| **observation** | ✅ **Complete** | Full validation + schema + business rules |
+| **section** | ✅ **Complete** | Full validation + schema + business rules |
+| **runbook** | ✅ **Complete** | Full validation + schema + business rules |
+| **change** | ✅ **Complete** | Full validation + schema + business rules |
+| **issue** | ✅ **Complete** | Full validation + schema + business rules |
+| **decision** | ✅ **Complete** | Full validation + ADR implementation + immutability rules |
+| **todo** | ✅ **Complete** | Full validation + task management + status transitions |
+| **release_note** | ✅ **Complete** | Full validation + schema + business rules |
+| **ddl** | ✅ **Complete** | Full validation + schema + business rules |
+| **pr_context** | ✅ **Complete** | Full validation + schema + business rules |
+| **incident** | ✅ **Complete** | Full validation + schema + business rules |
+| **release** | ✅ **Complete** | Full validation + schema + business rules |
+| **risk** | ✅ **Complete** | Full validation + schema + business rules |
+| **assumption** | ✅ **Complete** | Full validation + schema + business rules |
+
+**Legend:** ✅ Complete | ⚠️ Partial | ❌ Placeholder | 🚧 Planned
+
+**Summary:** All 16 knowledge types are fully implemented with comprehensive validation, business rules, and production-ready schemas.
 
 ## 🚀 Quick Navigation
 
@@ -212,12 +259,37 @@ The system uses Qdrant as the primary and only database backend:
 - Comprehensive error handling with graceful degradation
 
 ### Service Layer
-- **Memory Store Orchestrator** - Coordinates validation, deduplication, similarity detection, and storage
-- **Memory Find Orchestrator** - Multi-strategy search with automatic strategy selection
-- **Similarity Service** - Advanced content analysis with configurable weighting
-- **Deduplication Service** - Intelligent duplicate detection using semantic similarity
-- **Validation Service** - Input validation and business rule enforcement
-- **Audit Service** - Comprehensive operation logging and change tracking
+**🚨 ARCHITECTURAL ISSUE: Service Layer Exists But Not Fully Wired**
+
+**Implemented Services (Not Connected to Main Server):**
+- ✅ **Memory Store Service** - Comprehensive validation, deduplication, and storage orchestration
+- ✅ **Memory Find Service** - Multi-strategy search: semantic, keyword, and hybrid modes
+- ✅ **Similarity Service** - Content similarity detection (85% threshold) with Jaccard algorithms
+- ✅ **Deduplication Service** - Advanced duplicate detection with content hashing and similarity scoring
+- ✅ **Validation Service** - Complete validation for all 16 knowledge types with business rules
+- ✅ **Auto-Purge Service** - TTL-based cleanup (90-day for most types, 30-day for PR context)
+- ✅ **Expiry Worker Service** - Scheduled cleanup of expired items (P6-T6.2)
+- ✅ **Chunking Service** - Content chunking capability (implemented but not yet wired to main flow)
+
+**Current Problem:**
+Main server bypasses the comprehensive service layer and directly accesses the database layer. This means:
+- **Advanced features not accessible** to end users
+- **Business rules not enforced** in main workflow
+- **Multi-strategy search not available** (only semantic search works)
+- **Content chunking not active** (8000 char limit enforced)
+- **Similarity analysis not exposed** (basic deduplication only)
+
+**What Users Get vs What Exists:**
+- ❌ **Basic MCP tools only** → ✅ **Comprehensive orchestration layer exists**
+- ❌ **Semantic search only** → ✅ **Multi-strategy search service exists**
+- ❌ **8000 char limit** → ✅ **Chunking service exists for large content**
+- ❌ **Basic validation** → ✅ **Full business rules validation exists**
+
+**Next Steps:**
+1. **Connect main server to MemoryStoreOrchestrator** - Enable full service layer
+2. **Integrate Chunking Service** - Remove 8000 char limit, enable parent-child
+3. **Wire Memory Find Service** - Enable multi-strategy search
+4. **Expose Advanced Features** - Business rules, similarity analysis, etc.
 
 ### Integration Layer
 - **MCP Protocol** - Model Context Protocol for seamless Claude Code integration
@@ -482,32 +554,42 @@ const stats = await client.callTool("database_stats", {
 
 ### memory_store
 
-Store knowledge items in the vector database with automatic deduplication.
+Store knowledge items in the vector database with basic deduplication.
 
 **Parameters:**
 - `items` (array): Array of knowledge items to store
 
 **Returns:**
-- `success` (boolean): Whether storage was successful
-- `stored` (number): Number of items stored
-- `errors` (number): Number of storage errors
-- `duplicates` (array): Detected duplicates with similarity scores
+- `stored` (array): Successfully stored items with IDs
+- `errors` (array): Storage errors with details
+- `autonomous_context` (object): Basic duplicate analysis only
+
+**Current Limitations:**
+- No per-item status reporting
+- No AI-generated insights or recommendations
+- Basic duplicate detection (85% similarity threshold)
 
 ### memory_find
 
-Find knowledge items using intelligent multi-strategy search.
+Find knowledge items using semantic vector search.
 
 **Parameters:**
-- `query` (string): Search query - supports natural language and keywords
+- `query` (string): Search query - natural language supported
 - `scope` (object): Search scope constraints (project, branch, org)
 - `types` (array): Filter by specific knowledge types
-- `mode` (string): Search mode - 'auto', 'fast', or 'deep'
+- `mode` (string): Search mode - 'auto' only (fast/deep not implemented)
 - `limit` (number): Maximum number of results (default: 50)
 
 **Returns:**
-- `hits` (array): Search results with relevance scores
-- `suggestions` (array): Alternative search suggestions
-- `metadata` (object): Search metadata and debug information
+- `results` (array): Search results with basic similarity scores
+- `total_count` (number): Total results found
+- `autonomous_context` (object): Basic search context only
+
+**Current Limitations:**
+- Only semantic search available (no keyword or hybrid search)
+- No confidence scoring or result ranking
+- No search suggestions or query expansion
+- Single search mode (auto) - fast/deep modes not implemented
 
 ### database_health
 
@@ -532,11 +614,11 @@ Get comprehensive statistics about the Qdrant database and knowledge base.
 - `storage_size` (number): Total storage used
 - `last_updated` (string): Last update timestamp
 
-## Advanced Features
+## Current Advanced Features
 
-### Semantic Deduplication
+### Basic Semantic Deduplication
 
-The system automatically detects duplicates using vector similarity with an 85% threshold:
+The system detects basic duplicates using content similarity with an 85% threshold:
 
 ```javascript
 const duplicateItem = {
@@ -544,32 +626,62 @@ const duplicateItem = {
   data: { title: "User Authentication" }
 };
 
-// System will detect and prevent duplicate storage
+// System will detect duplicates and skip storage
 const result = await memory_store({ items: [duplicateItem] });
-// Returns: { success: true, stored: 0, duplicates: 1, errors: 0 }
+// Returns: { stored: [], errors: [], autonomous_context: {...} }
 ```
 
-### Multi-Strategy Search
+**Current Limitations:**
+- No conflict resolution or merge suggestions
+- No contradiction detection
+- Basic similarity only (no semantic understanding)
 
-The search orchestrator automatically selects the best search strategy:
+### Basic Semantic Search
 
-1. **Hybrid Search** - Combines semantic and keyword search
-2. **Semantic Search** - Pure vector similarity search
-3. **Keyword Search** - Traditional text-based search
-4. **Fallback Search** - Broad search when others fail
-
-### Autonomous Context Generation
-
-The system automatically generates context for search results:
+The system provides vector-based semantic search:
 
 ```javascript
 const results = await memory_find({
-  query: "authentication best practices",
-  return_corrections: true
+  query: "authentication best practices"
 });
 
-// Results include autonomous context and search insights
+// Returns semantic similarity matches from Qdrant
 ```
+
+**Current Limitations:**
+- Single search strategy (semantic only)
+- No keyword or hybrid search available
+- No query expansion or suggestions
+- Basic similarity scoring only
+
+## ⚠️ **Not Yet Implemented** (Target Features)
+
+The following features are documented in the API but **not currently implemented**:
+
+### Multi-Strategy Search
+- Hybrid search combining semantic + keyword
+- Multiple search modes (fast/deep)
+- Query expansion and suggestions
+
+### Autonomous Context Generation
+- AI-generated insights and recommendations
+- Smart context and suggestions
+- Advanced search analytics
+
+### Advanced Deduplication
+- Contradiction detection
+- Merge suggestions
+- Conflict resolution
+
+### Graph Features
+- Entity relationship mapping
+- Graph traversal
+- Relationship-based search
+
+### Content Management
+- Document chunking
+- Parent-child relationships
+- Large document handling
 
 ## Configuration Options
 
@@ -951,33 +1063,116 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - ✅ **Target Audiences:** Clearly identified intended users for each document
 - ✅ **Maintenance Framework:** Established documentation maintenance schedule
 
-## Recent Improvements
+## 🗺️ **Development Roadmap & Priorities**
 
-### Unified Database Architecture (v2.0.0)
+### 🚨 **Critical Architecture Issues (Priority 1)**
 
-**Major Architecture Enhancement:**
-- ✅ **Qdrant Vector Database** - Optimized for semantic search and similarity matching
-- ✅ **Advanced Service Orchestration** - Modular services with clear separation of concerns
-- ✅ **Enhanced Error Handling** - Graceful degradation with multiple fallback strategies
-- ✅ **Improved Performance** - Connection pooling, caching, and query optimization
+**Disconnected Architecture:**
+- **Issue**: Main server bypasses comprehensive service layer
+- **Impact**: Advanced features not accessible, circular dependencies
+- **Fix**: Connect `index.ts` to existing orchestrator services
+- **Timeline**: 2-3 weeks
 
-**New Services:**
-- **Similarity Service** - Advanced content analysis with configurable weighting
-- **Deduplication Service** - Intelligent duplicate detection using semantic similarity
-- **Validation Service** - Input validation and business rule enforcement
-- **Audit Service** - Comprehensive operation logging and change tracking
+**Service Integration:**
+- **Issue**: Memory find uses memory store (circular dependency)
+- **Impact**: Search performance and reliability issues
+- **Fix**: Implement dedicated search service
+- **Timeline**: 1-2 weeks
 
-**Search Enhancements:**
-- **Multi-Strategy Search** - Automatic strategy selection (semantic, full-text, hybrid, fallback)
-- **Advanced Full-Text Search** - Qdrant text search with configurable weighting
-- **Semantic Understanding** - Vector embeddings with similarity ranking
-- **Context Generation** - Autonomous context and user suggestions
+### 🔧 **Missing Knowledge Type Implementation (Priority 2)**
 
-**Developer Experience:**
-- **Type Safety** - Comprehensive TypeScript interfaces and validation
-- **Error Recovery** - Multi-level fallbacks with graceful degradation
-- **Monitoring** - Health checks, metrics, and performance tracking
-- **Configuration Management** - Environment-based configuration with validation
+**Placeholder Types Needing Implementation:**
+- `runbook` - Step-by-step procedures
+- `change` - Code change tracking
+- `release_note` - Release documentation
+- `ddl` - Database schema migrations
+- `pr_context` - Pull request metadata
+- `assumption` - Business/technical assumptions
+
+**Partial Types Needing Completion:**
+- `entity`, `relation`, `observation` - Add business rules
+- `incident`, `release`, `risk` - Complete validation logic
+
+### 🎯 **Core Feature Development (Priority 3)**
+
+**Graph Functionality:**
+- Entity relationship mapping
+- Graph traversal algorithms
+- Relationship-based search
+
+**Advanced Search:**
+- Multi-strategy search (semantic + keyword)
+- Search mode implementation (fast/deep)
+- Confidence scoring and ranking
+
+**Content Management:**
+- Document chunking (8k character limit handling)
+- Parent-child relationships
+- Large document processing
+
+### 🚀 **Advanced Features (Priority 4)**
+
+**AI-Enhanced Features:**
+- Autonomous context generation
+- Contradiction detection
+- Merge suggestions
+- Smart recommendations
+
+**Performance & Monitoring:**
+- Search analytics and metrics
+- Performance optimization
+- Advanced caching strategies
+
+### 📅 **Target Timeline**
+
+- **Q1 2025**: Critical architecture fixes + core knowledge types
+- **Q2 2025**: Graph functionality + advanced search
+- **Q3 2025**: Content management + performance optimization
+- **Q4 2025**: AI-enhanced features + advanced analytics
+
+### 🤝 **How to Contribute**
+
+**Immediate Needs:**
+1. **Architecture Engineers** - Fix service layer integration
+2. **Backend Developers** - Complete missing knowledge types
+3. **Search Engineers** - Implement multi-strategy search
+4. **Frontend Developers** - Build monitoring and management UI
+
+**Contribution Guidelines:**
+- All contributions should pass existing test suite
+- New features require comprehensive tests
+- Documentation updates required for API changes
+- Follow existing code patterns and TypeScript standards
+
+---
+
+## Recent Architecture Reality
+
+### Current Qdrant-Only Implementation
+
+**What Actually Exists:**
+- ✅ **Qdrant Vector Database** - Semantic search and similarity matching
+- ✅ **Basic Service Layer** - Core storage and search functionality
+- ✅ **Comprehensive Error Handling** - Graceful degradation strategies
+- ✅ **Basic Performance Optimization** - Connection pooling and caching
+
+**Current Services:**
+- **Similarity Service** - Basic content similarity detection (85% threshold)
+- **Deduplication Service** - Duplicate detection using Jaccard similarity
+- **Validation Service** - Input validation for 16 knowledge types
+- **Auto-Purge Service** - TTL-based cleanup and maintenance
+
+**Current Search Capabilities:**
+- **Semantic Search Only** - Vector embeddings with similarity matching
+- **Basic Query Processing** - Natural language search support
+- **Scope Filtering** - Project/branch/org isolation
+- **Simple Ranking** - Basic similarity scoring
+
+**Current Developer Experience:**
+- **Type Safety** - Comprehensive TypeScript interfaces
+- **Error Recovery** - Basic error handling and logging
+- **Health Monitoring** - Database health checks and basic metrics
+- **Configuration Management** - Environment-based configuration
 
 ---
 

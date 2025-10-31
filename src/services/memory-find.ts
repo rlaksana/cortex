@@ -13,10 +13,13 @@ export async function memoryFind(query: SearchQuery) {
   try {
     logger.info({ query: query.query, mode: query.mode }, 'Memory find operation started');
 
+    // P6-T6.3: Apply default org scope when no scope is provided
+    const scope = query.scope || { org: 'default' };
+
     // Delegate to core implementation to avoid circular dependencies
     const result = await coreMemoryFind({
       query: query.query,
-      ...(query.scope && { scope: query.scope }),
+      scope,
       ...(query.types && { types: query.types }),
       ...(query.limit && { limit: query.limit }),
       ...(query.mode && { mode: query.mode }),
