@@ -29,9 +29,9 @@ describe('ChunkingService', () => {
   });
 
   describe('chunkContent', () => {
-    it('should chunk long content with overlap', () => {
+    it('should chunk long content with overlap', async () => {
       const longContent = 'a'.repeat(12000);
-      const chunks = service.chunkContent(longContent);
+      const chunks = await service.chunkContent(longContent);
 
       expect(chunks.length).toBeGreaterThan(1);
       expect(chunks.length).toBeLessThan(15); // Should be reasonable number with smaller chunks
@@ -45,26 +45,26 @@ describe('ChunkingService', () => {
       }
     });
 
-    it('should return single chunk for short content', () => {
+    it('should return single chunk for short content', async () => {
       const shortContent = 'Short content';
-      const chunks = service.chunkContent(shortContent);
+      const chunks = await service.chunkContent(shortContent);
 
       expect(chunks).toHaveLength(1);
       expect(chunks[0]).toBe(shortContent);
     });
 
-    it('should preserve paragraph boundaries when possible', () => {
+    it('should preserve paragraph boundaries when possible', async () => {
       const content = 'Paragraph 1. '.repeat(1000) + '\n\n' + 'Paragraph 2. '.repeat(1000);
-      const chunks = service.chunkContent(content);
+      const chunks = await service.chunkContent(content);
 
       expect(chunks.length).toBeGreaterThan(1);
       // Chunks should ideally break at paragraph boundaries
     });
 
-    it('should handle code blocks properly', () => {
+    it('should handle code blocks properly', async () => {
       const codeBlock = 'function test() { return "hello"; } '.repeat(500);
       const content = `Some text\n\n\`\`\`javascript\n${codeBlock}\`\`\`\n\nMore text`;
-      const chunks = service.chunkContent(content);
+      const chunks = await service.chunkContent(content);
 
       expect(chunks.length).toBeGreaterThan(1);
       // Should keep code blocks intact as much as possible
@@ -72,7 +72,7 @@ describe('ChunkingService', () => {
   });
 
   describe('createChunkedItems', () => {
-    it('should create parent and child items from large content', () => {
+    it('should create parent and child items from large content', async () => {
       const baseItem: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test', branch: 'main' },
@@ -82,7 +82,7 @@ describe('ChunkingService', () => {
         }
       };
 
-      const chunkedItems = service.createChunkedItems(baseItem);
+      const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Should have parent item
       const parentItem = chunkedItems.find(item => !item.data.is_chunk);
@@ -103,7 +103,7 @@ describe('ChunkingService', () => {
       });
     });
 
-    it('should return single item for short content', () => {
+    it('should return single item for short content', async () => {
       const baseItem: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test', branch: 'main' },
@@ -113,14 +113,14 @@ describe('ChunkingService', () => {
         }
       };
 
-      const chunkedItems = service.createChunkedItems(baseItem);
+      const chunkedItems = await service.createChunkedItems(baseItem);
 
       expect(chunkedItems).toHaveLength(1);
       expect(chunkedItems[0].data.is_chunk).toBe(false);
       expect(chunkedItems[0].data.total_chunks).toBe(1);
     });
 
-    it('should preserve all original fields', () => {
+    it('should preserve all original fields', async () => {
       const baseItem: KnowledgeItem = {
         id: 'test-id',
         kind: 'decision',
@@ -135,7 +135,7 @@ describe('ChunkingService', () => {
         created_at: '2025-01-01T00:00:00Z'
       };
 
-      const chunkedItems = service.createChunkedItems(baseItem);
+      const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item preserves all fields
       const parentItem = chunkedItems.find(item => !item.data.is_chunk);
@@ -159,7 +159,7 @@ describe('ChunkingService', () => {
       });
     });
 
-    it('should correctly set chunk metadata linking fields', () => {
+    it('should correctly set chunk metadata linking fields', async () => {
       const baseItem: KnowledgeItem = {
         id: 'test-parent-id',
         kind: 'section',
@@ -170,7 +170,7 @@ describe('ChunkingService', () => {
         }
       };
 
-      const chunkedItems = service.createChunkedItems(baseItem);
+      const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item metadata
       const parentItem = chunkedItems.find(item => !item.data.is_chunk);
@@ -208,7 +208,7 @@ describe('ChunkingService', () => {
       expect(parentItem?.metadata.chunking_info.overlap_size).toBe(200);
     });
 
-    it('should ensure chunk_index is sequential starting from 0', () => {
+    it('should ensure chunk_index is sequential starting from 0', async () => {
       const baseItem: KnowledgeItem = {
         id: 'sequential-test',
         kind: 'runbook',
@@ -219,7 +219,7 @@ describe('ChunkingService', () => {
         }
       };
 
-      const chunkedItems = service.createChunkedItems(baseItem);
+      const chunkedItems = await service.createChunkedItems(baseItem);
       const childItems = chunkedItems.filter(item => item.data.is_chunk);
 
       // Extract chunk_index values and sort them
@@ -371,7 +371,7 @@ describe('ChunkingService', () => {
   });
 
   describe('processItemsForStorage (Selective Type Processing)', () => {
-    it('should only chunk chunkable types and leave others unchanged', () => {
+    it('should only chunk chunkable types and leave others unchanged', async () => {
       const largeContent = 'a'.repeat(12000);
       const smallContent = 'a'.repeat(1000);
 
@@ -416,7 +416,7 @@ describe('ChunkingService', () => {
         }
       ];
 
-      const processedItems = service.processItemsForStorage(items);
+      const processedItems = await service.processItemsForStorage(items);
 
       // Should have more items due to chunking of the 3 large chunkable items
       expect(processedItems.length).toBeGreaterThan(items.length);

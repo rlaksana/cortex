@@ -21,6 +21,8 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
 import crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
+import { calculateItemExpiry } from '../../utils/expiry-utils.js';
+import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -140,6 +142,63 @@ export class QdrantAdapter implements IVectorAdapter {
         'deduplication',
       ],
     };
+  }
+
+  // === TTL Helper Methods ===
+
+  /**
+   * Get TTL policy for a knowledge kind
+   */
+  private getTTLPolicyForKind(kind?: string): ExpiryTimeLabel {
+    if (!kind) return 'default';
+
+    // Special cases for specific knowledge types
+    switch (kind) {
+      case 'pr_context':
+        return 'short'; // 24 hours
+      case 'entity':
+      case 'relation':
+      case 'observation':
+      case 'decision':
+      case 'section':
+        return 'long'; // 90 days
+      case 'ddl':
+        return 'permanent'; // Never expires
+      default:
+        return 'default'; // 30 days
+    }
+  }
+
+  /**
+   * Calculate expiry with policy for an item
+   */
+  private calculateItemExpiryWithPolicy(item: KnowledgeItem): string {
+    // Priority order: explicit expiry_at → scope-level TTL → kind-based TTL → default
+    if (item.data.expiry_at) {
+      return item.data.expiry_at;
+    }
+
+    // Use TTL policy based on knowledge kind
+    const policy = this.getTTLPolicyForKind(item.kind);
+    return calculateItemExpiry(item, policy);
+  }
+
+  /**
+   * Convert expiry timestamp to TTL epoch for Qdrant
+   */
+  private calculateTTLEpoch(expiryAt: string): number | null {
+    if (expiryAt === '9999-12-31T23:59:59.999Z') {
+      return null; // Permanent item
+    }
+
+    try {
+      const expiryDate = new Date(expiryAt);
+      return Math.floor(expiryDate.getTime() / 1000);
+    } catch (error) {
+      logger.warn({ expiryAt, error }, 'Failed to parse expiry date, using default TTL');
+      // Fall back to 30 days from now
+      return Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000);
+    }
   }
 
   // === Lifecycle Management ===
@@ -273,6 +332,10 @@ export class QdrantAdapter implements IVectorAdapter {
             // Generate sparse vector for keyword search
             const sparseVector = this.generateSparseVector(content);
 
+            // Calculate TTL and expiry for this item
+            const expiryAt = this.calculateItemExpiryWithPolicy(item);
+            const ttlEpoch = this.calculateTTLEpoch(expiryAt);
+
             // Create point for Qdrant
             const point = {
               id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -288,8 +351,15 @@ export class QdrantAdapter implements IVectorAdapter {
                 created_at: item.created_at || new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 content,
+                expiry_at: expiryAt,
+                ttl_policy: this.getTTLPolicyForKind(item.kind),
               },
             };
+
+            // Add TTL epoch for Qdrant's native TTL if not permanent
+            if (ttlEpoch !== null) {
+              (point as any).ttl_epoch = ttlEpoch;
+            }
 
             // Store in Qdrant
             await this.client.upsert(this.COLLECTION_NAME, {

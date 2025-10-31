@@ -1,6 +1,9 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { KnowledgeItem } from '../../types/core-interfaces.js';
 import { inheritTTLFromParent } from '../../utils/tl-utils.js';
+import { SemanticAnalyzer, type SemanticAnalysisResult } from './semantic-analyzer.js';
+import { EmbeddingService } from '../embeddings/embedding-service.js';
+import { logger } from '../../utils/logger.js';
 
 export interface ChunkingStats {
   original_length: number;
@@ -8,6 +11,8 @@ export interface ChunkingStats {
   recommended_chunk_size: number;
   overlap_size: number;
   estimated_chunks: number;
+  semantic_analysis_enabled: boolean;
+  semantic_boundaries_found: number;
 }
 
 export class ChunkingService {
@@ -18,13 +23,31 @@ export class ChunkingService {
   // Types that should be chunked
   private readonly CHUNKABLE_TYPES = ['section', 'runbook', 'incident'];
 
-  constructor(chunkSize?: number, overlapSize?: number) {
+  // Semantic analysis components
+  private semanticAnalyzer?: SemanticAnalyzer;
+  private readonly SEMANTIC_ANALYSIS_THRESHOLD = 3600; // Enable semantic analysis for longer content
+
+  constructor(chunkSize?: number, overlapSize?: number, embeddingService?: EmbeddingService) {
     // Allow configuration for testing
     if (chunkSize) {
       (this as any).CHUNK_SIZE = chunkSize;
     }
     if (overlapSize) {
       (this as any).OVERLAP_SIZE = overlapSize;
+    }
+
+    // Initialize semantic analyzer if embedding service is available
+    if (embeddingService) {
+      this.semanticAnalyzer = new SemanticAnalyzer(embeddingService, {
+        strong_boundary_threshold: 0.3,
+        medium_boundary_threshold: 0.5,
+        weak_boundary_threshold: 0.7,
+        window_size: 3,
+        min_chunk_sentences: 2,
+        max_chunk_sentences: 15,
+        enable_caching: true,
+        cache_ttl: 3600000,
+      });
     }
   }
 
@@ -48,6 +71,7 @@ export class ChunkingService {
   getChunkingStats(item: KnowledgeItem): ChunkingStats {
     const content = this.extractContent(item);
     const shouldChunk = this.shouldChunk(content);
+    const semanticEnabled = this.shouldUseSemanticAnalysis(content);
 
     let estimatedChunks = 1;
     if (shouldChunk) {
@@ -62,17 +86,153 @@ export class ChunkingService {
       recommended_chunk_size: this.CHUNK_SIZE,
       overlap_size: this.OVERLAP_SIZE,
       estimated_chunks: estimatedChunks,
+      semantic_analysis_enabled: semanticEnabled,
+      semantic_boundaries_found: 0, // Will be updated after analysis
     };
   }
 
   /**
-   * Split content into chunks with overlap
+   * Split content into chunks with overlap (enhanced with semantic analysis)
    */
-  chunkContent(content: string): string[] {
+  async chunkContent(content: string): Promise<string[]> {
     if (!this.shouldChunk(content)) {
       return [content];
     }
 
+    // Use semantic chunking if available and content is long enough
+    if (this.shouldUseSemanticAnalysis(content) && this.semanticAnalyzer) {
+      try {
+        return await this.chunkContentSemantically(content);
+      } catch (error) {
+        // Fallback to traditional chunking if semantic analysis fails
+        logger.warn(
+          { error, contentLength: content.length },
+          'Semantic chunking failed, falling back to traditional method'
+        );
+      }
+    }
+
+    // Traditional chunking as fallback
+    return this.chunkContentTraditionally(content);
+  }
+
+  /**
+   * Determine if semantic analysis should be used
+   */
+  private shouldUseSemanticAnalysis(content: string): boolean {
+    return (
+      this.semanticAnalyzer !== undefined && content.length >= this.SEMANTIC_ANALYSIS_THRESHOLD
+    );
+  }
+
+  /**
+   * Chunk content using semantic boundary detection
+   */
+  private async chunkContentSemantically(content: string): Promise<string[]> {
+    if (!this.semanticAnalyzer) {
+      throw new Error('Semantic analyzer not available');
+    }
+
+    // Perform semantic analysis
+    const analysis = await this.semanticAnalyzer.analyzeSemanticBoundaries(content);
+
+    if (analysis.boundaries.length === 0) {
+      // No semantic boundaries found, use traditional chunking
+      logger.info(
+        { contentLength: content.length },
+        'No semantic boundaries found, using traditional chunking'
+      );
+      return this.chunkContentTraditionally(content);
+    }
+
+    // Create chunks based on semantic boundaries
+    return this.createChunksFromBoundaries(analysis);
+  }
+
+  /**
+   * Create chunks from semantic boundaries with size constraints
+   */
+  private createChunksFromBoundaries(analysis: SemanticAnalysisResult): string[] {
+    const chunks: string[] = [];
+    const boundaries = analysis.boundaries.sort((a, b) => a.index - b.index);
+
+    let startIndex = 0;
+    let currentChunkSize = 0;
+
+    for (let i = 0; i < analysis.sentences.length; i++) {
+      const sentence = analysis.sentences[i];
+      const sentenceLength = sentence.length;
+
+      // Check if adding this sentence would exceed chunk size
+      if (
+        currentChunkSize + sentenceLength > this.CHUNK_SIZE &&
+        currentChunkSize > this.CHUNK_SIZE * 0.6
+      ) {
+        // Create chunk from current range
+        const chunkContent = analysis.sentences.slice(startIndex, i).join(' ');
+        chunks.push(chunkContent);
+        startIndex = i;
+        currentChunkSize = 0;
+      }
+
+      currentChunkSize += sentenceLength;
+
+      // Check if there's a strong semantic boundary at this position
+      const boundary = boundaries.find((b) => b.index === i);
+      if (boundary && (boundary.type === 'strong' || boundary.type === 'medium')) {
+        // Check if we have enough content for a meaningful chunk
+        if (i - startIndex >= 2) {
+          // At least 2 sentences
+          const chunkContent = analysis.sentences.slice(startIndex, i + 1).join(' ');
+          chunks.push(chunkContent);
+          startIndex = i + 1;
+          currentChunkSize = 0;
+        }
+      }
+    }
+
+    // Add remaining content as final chunk
+    if (startIndex < analysis.sentences.length) {
+      const finalChunk = analysis.sentences.slice(startIndex).join(' ');
+      if (finalChunk.trim().length > 0) {
+        chunks.push(finalChunk);
+      }
+    }
+
+    // Post-process chunks to ensure they meet size requirements
+    return this.postProcessChunks(chunks);
+  }
+
+  /**
+   * Post-process chunks to ensure quality and size constraints
+   */
+  private postProcessChunks(chunks: string[]): string[] {
+    const processedChunks: string[] = [];
+
+    for (const chunk of chunks) {
+      const trimmed = chunk.trim();
+
+      // Skip very short chunks
+      if (trimmed.length < 50) {
+        continue;
+      }
+
+      // Split overly long chunks
+      if (trimmed.length > this.CHUNK_SIZE * 1.5) {
+        const subChunks = this.chunkContentTraditionally(trimmed);
+        processedChunks.push(...subChunks);
+      } else {
+        processedChunks.push(trimmed);
+      }
+    }
+
+    return processedChunks.length > 0 ? processedChunks : [chunks.join(' ')];
+  }
+
+  /**
+   * Traditional chunking method (original implementation)
+   */
+  private chunkContentTraditionally(content: string): string[] {
     const chunks: string[] = [];
     let start = 0;
 
@@ -98,12 +258,12 @@ export class ChunkingService {
    * Process knowledge items and apply chunking where appropriate
    * Returns array of items (may be larger than input due to chunking)
    */
-  processItemsForStorage(items: KnowledgeItem[]): KnowledgeItem[] {
+  async processItemsForStorage(items: KnowledgeItem[]): Promise<KnowledgeItem[]> {
     const processedItems: KnowledgeItem[] = [];
 
     for (const item of items) {
       if (this.shouldChunkItem(item)) {
-        const chunkedItems = this.createChunkedItems(item);
+        const chunkedItems = await this.createChunkedItems(item);
         processedItems.push(...chunkedItems);
       } else {
         // Item doesn't need chunking, but add chunking metadata for consistency
@@ -141,7 +301,7 @@ export class ChunkingService {
   /**
    * Create chunked knowledge items from a base item
    */
-  createChunkedItems(item: KnowledgeItem): KnowledgeItem[] {
+  async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
     const content = this.extractContent(item);
 
     if (!this.shouldChunk(content)) {
@@ -174,8 +334,9 @@ export class ChunkingService {
       ];
     }
 
-    const chunks = this.chunkContent(content);
+    const chunks = await this.chunkContent(content);
     const ttlInfo = inheritTTLFromParent(item);
+    const semanticAnalysisEnabled = this.shouldUseSemanticAnalysis(content);
 
     // Calculate original content hash for deduplication purposes
     const originalContentHash = createHash('sha256').update(content).digest('hex');
@@ -208,6 +369,7 @@ export class ChunkingService {
           overlap_size: this.OVERLAP_SIZE,
           processing_timestamp: new Date().toISOString(),
           original_content_hash: originalContentHash,
+          semantic_analysis_enabled: semanticAnalysisEnabled,
         },
       },
     };
@@ -241,6 +403,7 @@ export class ChunkingService {
           chunk_size: this.CHUNK_SIZE,
           overlap_size: this.OVERLAP_SIZE,
           processing_timestamp: new Date().toISOString(),
+          semantic_analysis_enabled: semanticAnalysisEnabled,
         },
       },
       created_at: new Date().toISOString(),

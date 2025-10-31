@@ -58,6 +58,7 @@ import { ConnectionError, type IDatabase } from '../../db/database-interface.js'
 import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 // import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
 import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
+import { EmbeddingService } from '../embeddings/embedding-service.js';
 
 /**
  * Enhanced duplicate detection result
@@ -98,7 +99,11 @@ export class MemoryStoreOrchestratorQdrant {
   constructor(database: IDatabase) {
     this.database = database;
     this.baselineTelemetry = new BaselineTelemetry();
-    this.chunkingService = new ChunkingService();
+
+    // Initialize embedding service for semantic chunking
+    const embeddingService = new EmbeddingService();
+    this.chunkingService = new ChunkingService(undefined, undefined, embeddingService);
+
     this.languageEnhancementService = new LanguageEnhancementService();
     this.duplicateDetectionStats = {
       contentHashMatches: 0,
@@ -136,7 +141,7 @@ export class MemoryStoreOrchestratorQdrant {
       const validItems = items as KnowledgeItem[];
 
       // Step 2: Apply chunking to all items (this replaces 8k truncation)
-      const chunkedItems = this.chunkingService.processItemsForStorage(validItems);
+      const chunkedItems = await this.chunkingService.processItemsForStorage(validItems);
       logger.info(
         {
           original_count: validItems.length,
