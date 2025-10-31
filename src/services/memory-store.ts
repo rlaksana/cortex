@@ -41,6 +41,17 @@ export async function memoryStore(items: unknown[]): Promise<MemoryStoreResponse
 
     // Return a formatted error response
     return {
+      // Enhanced response format
+      items: [],
+      summary: {
+        stored: 0,
+        skipped_dedupe: 0,
+        business_rule_blocked: 0,
+        validation_error: 1,
+        total: 1,
+      },
+
+      // Legacy fields for backward compatibility
       stored: [],
       errors: [
         {

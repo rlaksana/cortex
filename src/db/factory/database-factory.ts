@@ -17,9 +17,9 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger';
-import { Environment } from '../../config/environment';
-import { QdrantAdapter } from '../adapters/qdrant-adapter';
+import { logger } from '../../utils/logger.js';
+import { Environment } from '../../config/environment.js';
+import { QdrantAdapter } from '../adapters/qdrant-adapter.js';
 import {
   IDatabaseFactory,
   DatabaseFactoryConfig,
@@ -30,8 +30,8 @@ import {
   ConfigurationError,
   AdapterCreationError,
   UnsupportedDatabaseError,
-} from '../interfaces/database-factory.interface';
-import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface';
+} from '../interfaces/database-factory.interface.js';
+import type { IVectorAdapter, VectorConfig } from '../interfaces/vector-adapter.interface.js';
 
 /**
  * Database factory implementation

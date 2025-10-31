@@ -71,42 +71,42 @@ export class RateLimitService {
     totalRequests: 0,
     blockedRequests: 0,
     activeWindows: 0,
-    memoryUsage: 0
+    memoryUsage: 0,
   };
 
   // Default configurations
   private readonly DEFAULT_CONFIGS: Record<string, RateLimitConfig> = {
     // Memory operations - higher limits for essential functions
-    'memory_store': {
+    memory_store: {
       limit: 100, // 100 requests per minute
       windowMs: 60 * 1000, // 1 minute
       skipSuccessfulRequests: false,
-      skipFailedRequests: false
+      skipFailedRequests: false,
     },
-    'memory_find': {
+    memory_find: {
       limit: 200, // 200 requests per minute
       windowMs: 60 * 1000, // 1 minute
       skipSuccessfulRequests: false,
-      skipFailedRequests: false
+      skipFailedRequests: false,
     },
-    'database_health': {
+    database_health: {
       limit: 30, // 30 requests per minute
       windowMs: 60 * 1000, // 1 minute
       skipSuccessfulRequests: false,
-      skipFailedRequests: false
+      skipFailedRequests: false,
     },
-    'database_stats': {
+    database_stats: {
       limit: 30, // 30 requests per minute
       windowMs: 60 * 1000, // 1 minute
       skipSuccessfulRequests: false,
-      skipFailedRequests: false
+      skipFailedRequests: false,
     },
-    'telemetry_report': {
+    telemetry_report: {
       limit: 10, // 10 requests per minute
       windowMs: 60 * 1000, // 1 minute
       skipSuccessfulRequests: false,
-      skipFailedRequests: false
-    }
+      skipFailedRequests: false,
+    },
   };
 
   // Actor-based limits (per user/session)
@@ -114,16 +114,19 @@ export class RateLimitService {
     limit: 500, // 500 requests per minute per actor
     windowMs: 60 * 1000, // 1 minute
     skipSuccessfulRequests: false,
-    skipFailedRequests: false
+    skipFailedRequests: false,
   };
 
   private cleanupInterval: NodeJS.Timeout;
 
   constructor() {
     // Cleanup expired entries every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000
+    );
 
     logger.info('RateLimitService initialized with per-actor and per-tool limits');
   }
@@ -141,10 +144,14 @@ export class RateLimitService {
 
     // Check tool-specific limit
     const toolKey = `tool:${toolName}`;
-    const toolResult = this.checkWindow(toolKey, this.DEFAULT_CONFIGS[toolName] || {
-      limit: 100,
-      windowMs: 60 * 1000
-    }, now);
+    const toolResult = this.checkWindow(
+      toolKey,
+      this.DEFAULT_CONFIGS[toolName] || {
+        limit: 100,
+        windowMs: 60 * 1000,
+      },
+      now
+    );
 
     // Check actor-specific limit
     const actorKey = `actor:${actorId}`;
@@ -161,7 +168,7 @@ export class RateLimitService {
         actor: actorId,
         toolRemaining: toolResult.remaining,
         actorRemaining: actorResult.remaining,
-        identifier: `${toolKey}:${actorKey}`
+        identifier: `${toolKey}:${actorKey}`,
       });
     }
 
@@ -170,7 +177,7 @@ export class RateLimitService {
       remaining,
       resetTime: Math.max(toolResult.resetTime, actorResult.resetTime),
       total: toolResult.total + actorResult.total,
-      identifier: `${toolKey}:${actorKey}`
+      identifier: `${toolKey}:${actorKey}`,
     };
   }
 
@@ -183,7 +190,7 @@ export class RateLimitService {
     if (!entry) {
       entry = {
         timestamps: [],
-        lastAccess: now
+        lastAccess: now,
       };
       this.windows.set(key, entry);
     }
@@ -192,7 +199,7 @@ export class RateLimitService {
 
     // Remove timestamps outside the current window
     const windowStart = now - config.windowMs;
-    entry.timestamps = entry.timestamps.filter(timestamp => timestamp > windowStart);
+    entry.timestamps = entry.timestamps.filter((timestamp) => timestamp > windowStart);
 
     // Check if adding this request would exceed the limit
     const allowed = entry.timestamps.length < config.limit;
@@ -204,16 +211,17 @@ export class RateLimitService {
 
     // Calculate remaining requests and reset time
     const remaining = Math.max(0, config.limit - entry.timestamps.length);
-    const resetTime = entry.timestamps.length > 0
-      ? Math.min(...entry.timestamps) + config.windowMs
-      : now + config.windowMs;
+    const resetTime =
+      entry.timestamps.length > 0
+        ? Math.min(...entry.timestamps) + config.windowMs
+        : now + config.windowMs;
 
     return {
       allowed,
       remaining,
       resetTime,
       total: entry.timestamps.length,
-      identifier: key
+      identifier: key,
     };
   }
 
@@ -232,7 +240,7 @@ export class RateLimitService {
         // Also clean up old timestamps
         const oldestTimestamp = Math.min(...entry.timestamps);
         if (now - oldestTimestamp > 60 * 60 * 1000) {
-          entry.timestamps = entry.timestamps.filter(ts => ts > now - 60 * 60 * 1000);
+          entry.timestamps = entry.timestamps.filter((ts) => ts > now - 60 * 60 * 1000);
         }
       }
     }
@@ -245,7 +253,7 @@ export class RateLimitService {
     if (keysToDelete.length > 0) {
       logger.debug('Rate limit cleanup completed', {
         entriesDeleted: keysToDelete.length,
-        remainingEntries: this.windows.size
+        remainingEntries: this.windows.size,
       });
     }
 
@@ -264,7 +272,7 @@ export class RateLimitService {
     }
 
     // Rough estimation: each entry ~100 bytes + each timestamp ~8 bytes
-    return (this.windows.size * 100) + (totalTimestamps * 8);
+    return this.windows.size * 100 + totalTimestamps * 8;
   }
 
   /**
@@ -287,7 +295,7 @@ export class RateLimitService {
       configs: this.DEFAULT_CONFIGS,
       metrics: this.metrics,
       activeWindows: this.windows.size,
-      memoryUsage: `${(this.metrics.memoryUsage / 1024).toFixed(2)} KB`
+      memoryUsage: `${(this.metrics.memoryUsage / 1024).toFixed(2)} KB`,
     };
   }
 

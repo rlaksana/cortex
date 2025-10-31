@@ -45,14 +45,32 @@ export interface CoreKnowledgeItem {
  */
 export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[] {
   return items.map((item) => {
-    const { kind, content, metadata, scope } = item;
+    const { kind, content, data, metadata, scope } = item;
+
+    // Handle both content-based and data-based items
+    let finalContent = '';
+    let finalMetadata = metadata || {};
+
+    if (content !== undefined) {
+      // Content-based item (text types like section, decision, etc.)
+      finalContent = content;
+    } else if (data !== undefined) {
+      // Data-based item (entity, relation, observation, etc.)
+      // Store data as JSON string in content for compatibility
+      finalContent = JSON.stringify(data);
+      // Move structured data to metadata for proper handling
+      finalMetadata = {
+        ...metadata,
+        structured_data: data,
+      };
+    }
 
     // Return knowledge item in index.ts format
     const knowledgeItem: KnowledgeItem = {
       id: randomUUID(),
       kind,
-      content: content || '',
-      metadata: metadata || {},
+      content: finalContent,
+      metadata: finalMetadata,
       scope: scope || {},
     };
 
@@ -64,19 +82,37 @@ export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[]
  * Convert index.ts KnowledgeItem to core-interfaces KnowledgeItem
  */
 export function transformToCoreKnowledgeItem(item: KnowledgeItem): CoreKnowledgeItem {
-  return {
-    id: item.id,
-    kind: item.kind,
-    content: item.content,
-    scope: item.scope || { project: '', branch: '', org: '' },
-    data: {
+  // Check if this item has structured data in metadata
+  const hasStructuredData = item.metadata?.structured_data;
+
+  if (hasStructuredData) {
+    // Data-based item (entity, relation, observation, etc.)
+    return {
+      id: item.id,
+      kind: item.kind,
+      content: item.content, // JSON string of the data
+      scope: item.scope || { project: '', branch: '', org: '' },
+      data: (item.metadata?.structured_data as Record<string, any>) || {}, // The actual structured data
+      metadata: { ...item.metadata },
+      created_at: item.created_at?.toISOString() || new Date().toISOString(),
+      updated_at: item.updated_at?.toISOString() || new Date().toISOString(),
+    };
+  } else {
+    // Content-based item (text types like section, decision, etc.)
+    return {
+      id: item.id,
+      kind: item.kind,
       content: item.content,
-      ...item.metadata,
-    },
-    metadata: item.metadata || {},
-    created_at: item.created_at?.toISOString() || new Date().toISOString(),
-    updated_at: item.updated_at?.toISOString() || new Date().toISOString(),
-  };
+      scope: item.scope || { project: '', branch: '', org: '' },
+      data: {
+        content: item.content,
+        ...item.metadata,
+      },
+      metadata: item.metadata || {},
+      created_at: item.created_at?.toISOString() || new Date().toISOString(),
+      updated_at: item.updated_at?.toISOString() || new Date().toISOString(),
+    };
+  }
 }
 
 /**
@@ -148,8 +184,13 @@ export function validateMcpInputFormat(items: any[]): { valid: boolean; errors: 
       errors.push(`Item ${index}: invalid kind "${item.kind}"`);
     }
 
-    if (!item.content || typeof item.content !== 'string') {
-      errors.push(`Item ${index}: content is required and must be a string`);
+    // Support both content and data fields
+    if (!item.content && !item.data) {
+      errors.push(`Item ${index}: either content or data must be provided`);
+    } else if (item.content && typeof item.content !== 'string') {
+      errors.push(`Item ${index}: content must be a string if provided`);
+    } else if (item.data && typeof item.data !== 'object') {
+      errors.push(`Item ${index}: data must be an object if provided`);
     }
 
     if (item.scope && typeof item.scope !== 'object') {

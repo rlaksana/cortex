@@ -1,6 +1,6 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import { computeContentHash } from '../../utils/hash';
-import type { ChangeData, ScopeFilter } from '../../types/knowledge-data';
+import { computeContentHash } from '../../utils/hash.js';
+import type { ChangeData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeChange(data: ChangeData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');

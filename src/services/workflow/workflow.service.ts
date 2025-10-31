@@ -12,7 +12,7 @@
  * The actual implementation would include full workflow execution logic.
  */
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import type {
   WorkflowExecution,
   WorkflowExecutionRequest,
@@ -28,7 +28,7 @@ import type {
   WorkflowReport,
   WorkflowPerformanceData,
   WorkflowBottleneck,
-} from '../../types/workflow-interfaces';
+} from '../../types/workflow-interfaces.js';
 
 /**
  * Workflow Service class for managing workflow lifecycle and execution

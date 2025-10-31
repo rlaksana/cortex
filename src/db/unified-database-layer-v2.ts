@@ -33,7 +33,7 @@ import type {
   // MemoryStoreResponse,
   MemoryFindResponse,
   SearchQuery,
-} from '../types/core-interfaces';
+} from '../types/core-interfaces.js';
 
 /**
  * Configuration for the Qdrant-only database layer

@@ -1,4 +1,4 @@
-import type { RiskData, ScopeFilter } from '../../types/knowledge-data';
+import type { RiskData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRisk(data: RiskData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');

@@ -16,6 +16,7 @@ export interface KnowledgeItem {
   metadata?: Record<string, any>; // Add metadata property for compatibility
   created_at?: string;
   updated_at?: string;
+  expiry_at?: string; // P6-T6.1: Add expiry timestamp
 }
 
 export interface KnowledgeItemForStorage {
@@ -54,6 +55,9 @@ export interface AutonomousContext {
   recommendation: string;
   reasoning: string;
   user_message_suggestion: string;
+  dedupe_threshold_used?: number;
+  dedupe_method?: 'content_hash' | 'semantic_similarity' | 'combined' | 'none';
+  dedupe_enabled?: boolean;
 }
 
 export interface SearchResult {
@@ -63,7 +67,7 @@ export interface SearchResult {
   data: Record<string, any>;
   created_at: string;
   confidence_score: number;
-  match_type: 'exact' | 'fuzzy' | 'semantic';
+  match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid' | 'expanded' | 'graph';
   highlight?: string[];
 }
 
@@ -79,9 +83,36 @@ export interface SearchQuery {
   mode?: 'auto' | 'fast' | 'deep';
   limit?: number;
   top_k?: number;
+  expand?: 'relations' | 'parents' | 'children' | 'none'; // P4-T4.2: Graph expansion options
+}
+
+export interface ItemResult {
+  input_index: number;
+  status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
+  kind: string;
+  content?: string;
+  id?: string;
+  reason?: string;
+  existing_id?: string;
+  error_code?: string;
+  created_at?: string;
+  expiry_at?: string; // P6-T6.1: Add expiry timestamp for item tracking
+}
+
+export interface BatchSummary {
+  stored: number;
+  skipped_dedupe: number;
+  business_rule_blocked: number;
+  validation_error?: number;
+  total: number;
 }
 
 export interface MemoryStoreResponse {
+  // Enhanced response format
+  items: ItemResult[];
+  summary: BatchSummary;
+
+  // Legacy fields for backward compatibility
   stored: StoreResult[];
   errors: StoreError[];
   autonomous_context: AutonomousContext;
@@ -112,16 +143,59 @@ export interface KnowledgeRepository {
 }
 
 /**
+ * Search result wrapper for individual search methods
+ */
+export interface SearchMethodResult {
+  results: SearchResult[];
+  totalCount: number;
+  strategy?: string;
+  executionTime?: number;
+}
+
+/**
  * Service interface for search operations
  */
 export interface SearchService {
   search(_query: SearchQuery): Promise<MemoryFindResponse>;
   validateQuery(_query: SearchQuery): Promise<boolean>;
+  // P3-T3.1: New search methods
+  semantic(query: SearchQuery): Promise<SearchMethodResult>;
+  keyword(query: SearchQuery): Promise<SearchMethodResult>;
+  hybrid(query: SearchQuery): Promise<SearchMethodResult>;
+  // P3-T3.2: Mode-based search method
+  searchByMode(query: SearchQuery): Promise<SearchMethodResult>;
 }
 
 /**
  * Service interface for validation operations
  */
+/**
+ * Result of business rule validation
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Business validator interface for knowledge type-specific validation
+ */
+export interface BusinessValidator {
+  getType(): string;
+  validate(item: KnowledgeItem): Promise<ValidationResult>;
+}
+
+/**
+ * Registry for managing business validators
+ */
+export interface ValidatorRegistry {
+  registerValidator(type: string, validator: BusinessValidator): void;
+  getValidator(type: string): BusinessValidator | null;
+  getSupportedTypes(): string[];
+  validateBatch(items: KnowledgeItem[]): Promise<ValidationResult[]>;
+}
+
 export interface ValidationService {
   validateStoreInput(_items: unknown[]): Promise<{ valid: boolean; errors: StoreError[] }>;
   validateFindInput(_input: unknown): Promise<{ valid: boolean; errors: string[] }>;
@@ -175,6 +249,7 @@ export interface MemoryFindRequest {
   types?: string[];
   mode?: 'auto' | 'fast' | 'deep';
   limit?: number;
+  expand?: 'relations' | 'parents' | 'children' | 'none'; // P4-T4.2: Graph expansion options
 }
 
 /**

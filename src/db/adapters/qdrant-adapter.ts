@@ -20,7 +20,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
 import crypto from 'node:crypto';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -30,7 +30,9 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   AutonomousContext,
-} from '../../types/core-interfaces';
+  ItemResult,
+  BatchSummary,
+} from '../../types/core-interfaces.js';
 import type {
   IVectorAdapter,
   VectorConfig,
@@ -38,8 +40,8 @@ import type {
   StoreOptions,
   DeleteOptions,
   DatabaseMetrics,
-} from '../interfaces/vector-adapter.interface';
-import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface';
+} from '../interfaces/vector-adapter.interface.js';
+import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface.js';
 
 /**
  * Qdrant collection information interface
@@ -221,6 +223,7 @@ export class QdrantAdapter implements IVectorAdapter {
 
       const stored: StoreResult[] = [];
       const errors: StoreError[] = [];
+      const itemResults: ItemResult[] = [];
 
       // Process items in batches
       for (let i = 0; i < items.length; i += batchSize) {
@@ -238,12 +241,27 @@ export class QdrantAdapter implements IVectorAdapter {
             if (skipDuplicates) {
               const existing = await this.findByHash(contentHash);
               if (existing.length > 0) {
+                const existingId = existing[0].id;
                 stored.push({
-                  id: existing[0].id,
+                  id: existingId,
                   status: 'skipped_dedupe',
                   kind: item.kind,
                   created_at: existing[0].created_at || new Date().toISOString(),
                 });
+
+                // Add to item results
+                const skippedResult: ItemResult = {
+                  input_index: index,
+                  status: 'skipped_dedupe',
+                  kind: item.kind,
+                  reason: 'Duplicate content',
+                  existing_id: existingId,
+                  created_at: existing[0].created_at || new Date().toISOString(),
+                };
+                if (item.content !== undefined) {
+                  skippedResult.content = item.content;
+                }
+                itemResults.push(skippedResult);
                 continue;
               }
             }
@@ -285,6 +303,19 @@ export class QdrantAdapter implements IVectorAdapter {
               kind: item.kind,
               created_at: new Date().toISOString(),
             });
+
+            // Add to item results
+            const storedResult: ItemResult = {
+              input_index: index,
+              status: 'stored',
+              kind: item.kind,
+              id: point.id,
+              created_at: new Date().toISOString(),
+            };
+            if (item.content !== undefined) {
+              storedResult.content = item.content;
+            }
+            itemResults.push(storedResult);
           } catch (error) {
             const storeError: StoreError = {
               index,
@@ -292,6 +323,19 @@ export class QdrantAdapter implements IVectorAdapter {
               message: error instanceof Error ? error.message : 'Unknown error',
             };
             errors.push(storeError);
+
+            // Add to item results
+            const errorResult: ItemResult = {
+              input_index: index,
+              status: 'validation_error',
+              kind: item.kind,
+              reason: error instanceof Error ? error.message : 'Unknown error',
+              error_code: 'STORE_ERROR',
+            };
+            if (item.content !== undefined) {
+              errorResult.content = item.content;
+            }
+            itemResults.push(errorResult);
           }
         }
       }
@@ -299,15 +343,31 @@ export class QdrantAdapter implements IVectorAdapter {
       // Generate autonomous context
       const autonomousContext = this.generateAutonomousContext(stored, errors);
 
+      // Generate summary from item results
+      const summary: BatchSummary = {
+        stored: itemResults.filter((item) => item.status === 'stored').length,
+        skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+        business_rule_blocked: itemResults.filter((item) => item.status === 'business_rule_blocked')
+          .length,
+        validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
+        total: itemResults.length,
+      };
+
       logger.debug(
         {
           stored: stored.length,
           errors: errors.length,
+          items: itemResults.length,
         },
         'Qdrant store operation completed'
       );
 
       return {
+        // Enhanced response format
+        items: itemResults,
+        summary,
+
+        // Legacy fields for backward compatibility
         stored,
         errors,
         autonomous_context: autonomousContext,
@@ -844,6 +904,7 @@ export class QdrantAdapter implements IVectorAdapter {
 
     const stored: StoreResult[] = [];
     const errors: StoreError[] = [];
+    const itemResults: ItemResult[] = [];
 
     try {
       const points = items.map((item) => ({
@@ -866,19 +927,48 @@ export class QdrantAdapter implements IVectorAdapter {
         points,
       });
 
-      points.forEach((point) => {
+      points.forEach((point, index) => {
         stored.push({
           id: point.id,
           status: 'inserted',
           kind: point.payload.kind,
           created_at: point.payload.created_at,
         });
+
+        // Add to item results
+        const storedResult: ItemResult = {
+          input_index: index,
+          status: 'stored',
+          kind: point.payload.kind,
+          id: point.id,
+          created_at: point.payload.created_at,
+        };
+        const originalItem = items[index];
+        if (originalItem.content !== undefined) {
+          storedResult.content = originalItem.content;
+        }
+        itemResults.push(storedResult);
       });
 
       // Generate autonomous context
       const autonomousContext = this.generateAutonomousContext(stored, errors);
 
+      // Generate summary from item results
+      const summary: BatchSummary = {
+        stored: itemResults.filter((item) => item.status === 'stored').length,
+        skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+        business_rule_blocked: itemResults.filter((item) => item.status === 'business_rule_blocked')
+          .length,
+        validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
+        total: itemResults.length,
+      };
+
       return {
+        // Enhanced response format
+        items: itemResults,
+        summary,
+
+        // Legacy fields for backward compatibility
         stored,
         errors,
         autonomous_context: autonomousContext,

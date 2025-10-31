@@ -12,7 +12,7 @@ import {
   RiskDataSchema,
   AssumptionDataSchema,
   ScopeSchema,
-} from './knowledge-types';
+} from './knowledge-types.js';
 
 /**
  * Enhanced Zod schemas with comprehensive validation to prevent database constraint violations
@@ -60,29 +60,30 @@ export const SectionDataSchema = z
   });
 
 // Decision data schema with ADR-specific validation
+// P5-T5.3: Made title, component, and rationale optional to allow business rule validation
 export const DecisionDataSchema = z
   .object({
     id: z.string().uuid().optional(),
-    component: z.string().min(1, 'Component is required').max(200, 'Component name too long'),
-    status: z.enum(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded'], {
-      errorMap: () => ({
-        message: 'Status must be one of: proposed, accepted, rejected, deprecated, superseded',
-      }),
-    }),
-    title: z
-      .string()
-      .min(1, 'Decision title is required')
-      .max(500, 'Title cannot exceed 500 characters')
-      .trim(),
-    rationale: z
-      .string()
-      .min(10, 'Rationale must be at least 10 characters')
-      .max(50000, 'Rationale too long'),
+    component: z.string().max(200, 'Component name too long').optional(),
+    status: z
+      .enum(['proposed', 'accepted', 'rejected', 'deprecated', 'superseded'], {
+        errorMap: () => ({
+          message: 'Status must be one of: proposed, accepted, rejected, deprecated, superseded',
+        }),
+      })
+      .optional(),
+    title: z.string().max(500, 'Title cannot exceed 500 characters').trim().optional(),
+    rationale: z.string().max(50000, 'Rationale too long').optional(),
     alternatives_considered: z.array(z.string().min(1)).max(20, 'Too many alternatives').optional(),
     consequences: z.string().max(10000, 'Consequences description too long').optional(),
     supersedes: z.string().uuid().optional(),
+    acceptance_date: z.string().datetime().optional(),
   })
-  .refine((data) => data.status !== 'accepted' || data.rationale.length >= 50, {
+  .refine((data) => !data.rationale || data.rationale.length >= 10, {
+    message: 'Rationale must be at least 10 characters if provided',
+    path: ['rationale'],
+  })
+  .refine((data) => data.status !== 'accepted' || !data.rationale || data.rationale.length >= 50, {
     message: 'Accepted decisions must have detailed rationale (at least 50 characters)',
     path: ['rationale'],
   });

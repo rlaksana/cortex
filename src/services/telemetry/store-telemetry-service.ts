@@ -1,4 +1,4 @@
-import { KnowledgeItem } from '../../types/core-interfaces';
+import { KnowledgeItem } from '../../types/core-interfaces.js';
 
 export interface TruncationMetrics {
   total_stores: number;

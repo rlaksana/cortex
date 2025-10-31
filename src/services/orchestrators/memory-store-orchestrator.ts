@@ -1,6 +1,4 @@
-import { logger, withRequestLogging } from '../../utils/logger';
-import { logRequestStart, logRequestSuccess, logRequestError } from '../../utils/logging-patterns';
-import { softDelete, type DeleteRequest } from '../delete-operations';
+import { logger } from '../../utils/logger';
 import {
   storeRunbook,
   storeChange,
@@ -24,11 +22,10 @@ import {
 import { storeDecision, updateDecision } from '../knowledge/decision';
 import { storeSection } from '../knowledge/section';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
-import { ImmutabilityViolationError } from '../../utils/immutability';
 import {
   transformMcpInputToKnowledgeItems,
-  validateMcpInputFormat,
   transformToCoreKnowledgeItem,
+  validateMcpInputFormat,
 } from '../../utils/mcp-transform';
 import type {
   KnowledgeItem,
@@ -36,9 +33,16 @@ import type {
   StoreError,
   AutonomousContext,
   MemoryStoreResponse,
+  ItemResult,
+  BatchSummary,
+  ValidationResult,
 } from '../../types/core-interfaces';
-import { validationService } from '../validation/validation-service';
-import { auditService } from '../audit/audit-service';
+import { validatorRegistry } from '../validation/validator-registry.js';
+import { createBusinessValidators } from '../validation/business-validators.js';
+import { auditService } from '../audit/audit-service.js';
+
+// P6-T6.1: Import expiry utilities
+import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 
 /**
  * Orchestrator for memory store operations
@@ -46,711 +50,222 @@ import { auditService } from '../audit/audit-service';
  */
 export class MemoryStoreOrchestrator {
   /**
+   * Initialize the orchestrator and register business validators
+   */
+  constructor() {
+    this.initializeValidators();
+  }
+
+  /**
+   * Register all business validators with the validator registry
+   * Called during initialization to ensure P5-T5.3 validation is available
+   */
+  private initializeValidators(): void {
+    const validators = createBusinessValidators();
+
+    for (const [type, validator] of validators.entries()) {
+      validatorRegistry.registerValidator(type, validator);
+    }
+
+    logger.info(
+      {
+        registeredTypes: validators.size,
+        types: Array.from(validators.keys()),
+      },
+      'P5-T5.3: Business validators registered'
+    );
+  }
+
+  /**
    * Main entry point for storing knowledge items
    */
+  /**
+   * P5-T5.3: Store multiple knowledge items with business rule violation handling
+   * Returns MemoryStoreResponse with enhanced status tracking
+   * Continues batch processing even when individual items have business rule violations
+   */
   async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
-    return withRequestLogging('memory.store', async () => {
-      const requestLogger = logRequestStart('memory.store', { itemCount: items.length });
-      const startTime = Date.now();
-      const stored: StoreResult[] = [];
-      const errors: StoreError[] = [];
+    logger.info({ itemCount: items.length }, 'P5-T5.3: Starting batch knowledge item storage');
 
-      try {
-        // Step 1: Validate MCP input format
-        const mcpValidation = validateMcpInputFormat(items as any[]);
-        if (!mcpValidation.valid) {
-          const mcpErrors: StoreError[] = mcpValidation.errors.map((message, _index) => ({
-            index: 0,
-            error_code: 'INVALID_MCP_INPUT',
-            message,
-          }));
-          return this.createErrorResponse(mcpErrors);
-        }
+    const itemResults: ItemResult[] = [];
+    const stored: StoreResult[] = [];
+    const errors: StoreError[] = [];
 
-        // Step 2: Transform MCP input to internal format
-        const transformedItems = transformMcpInputToKnowledgeItems(items as any[]);
+    try {
+      // Step 1: Basic MCP input format validation (only critical structure)
+      const mcpValidation = validateMcpInputFormat(items as any[]);
+      if (!mcpValidation.valid) {
+        const mcpErrors: StoreError[] = mcpValidation.errors.map((message, index) => ({
+          index,
+          error_code: 'INVALID_MCP_INPUT',
+          message,
+        }));
+        return this.createErrorResponse(mcpErrors);
+      }
 
-        // Step 3: Validate transformed input with enhanced schema
-        const validation = await validationService.validateStoreInput(transformedItems);
-        if (!validation.valid) {
-          return this.createErrorResponse(validation.errors);
-        }
+      // Step 2: Transform MCP input to internal format
+      const mcpItems = transformMcpInputToKnowledgeItems(items as any[]);
+      // Convert to CoreKnowledgeItem format for validation
+      const transformedItems = mcpItems.map((item) => transformToCoreKnowledgeItem(item));
 
-        const validItems = transformedItems;
+      // Step 3: P5-T5.3 - Process each item individually to continue on business rule violations
+      for (let index = 0; index < transformedItems.length; index++) {
+        const item = transformedItems[index];
 
-        // Step 4: Process each item
-        for (let index = 0; index < validItems.length; index++) {
-          const item = validItems[index];
+        try {
+          // P5-T5.3: Validate business rules using validator registry
+          const validator = validatorRegistry.getValidator(item.kind);
+          let validationResult: ValidationResult = { valid: true, errors: [], warnings: [] };
 
-          try {
-            const coreItem = transformToCoreKnowledgeItem(item);
-            const result = await this.processItem(coreItem, index);
-            stored.push(result);
+          if (validator) {
+            validationResult = await validator.validate(item);
+          }
 
-            // Log successful operation
-            await auditService.logStoreOperation(
-              result.status === 'deleted'
-                ? 'delete'
-                : result.status === 'updated'
-                  ? 'update'
-                  : 'create',
-              item.kind,
-              result.id,
-              item.scope,
-              undefined,
-              true
-            );
-          } catch (error) {
-            const storeError: StoreError = {
-              index,
-              error_code: 'PROCESSING_ERROR',
-              message: error instanceof Error ? error.message : 'Unknown processing error',
+          if (!validationResult.valid) {
+            // P5-T5.3: Business rule violation - create blocked result but continue processing
+            const blockedResult: ItemResult = {
+              input_index: index,
+              status: 'business_rule_blocked',
+              kind: item.kind,
+              reason: validationResult.errors.join('; '),
+              error_code: 'BUSINESS_RULE_VIOLATION',
+              created_at: new Date().toISOString(),
             };
-            errors.push(storeError);
 
-            // Log error
-            await auditService.logError(
-              error instanceof Error ? error : new Error('Unknown error'),
+            itemResults.push(blockedResult);
+            // P5-T5.3: Don't add business rule violations to stored array or errors array
+            // Business rule violations are only in the items array
+
+            logger.warn(
               {
-                operation: 'store_item',
-                itemIndex: index,
-                itemKind: item.kind,
-              }
+                index,
+                kind: item.kind,
+                reason: blockedResult.reason,
+                errors: validationResult.errors,
+              },
+              'P5-T5.3: Business rule violation - item blocked'
+            );
+
+            continue; // Continue to next item in batch
+          }
+
+          // P5-T5.3: Store the item if validation passes
+          const storeResult = await this.storeItemByKind(item);
+          // P6-T6.1: Add expiry calculation for stored items
+          const successResult: ItemResult = {
+            input_index: index,
+            status: 'stored',
+            kind: item.kind,
+            id: storeResult.id,
+            created_at: storeResult.created_at,
+            expiry_at: calculateItemExpiry(item),
+          };
+
+          itemResults.push(successResult);
+          stored.push(storeResult);
+
+          // Log warnings if any
+          if (validationResult.warnings.length > 0) {
+            logger.warn(
+              {
+                index,
+                kind: item.kind,
+                warnings: validationResult.warnings,
+              },
+              'P5-T5.3: Item stored with warnings'
             );
           }
-        }
-
-        // Step 3: Generate autonomous context
-        const autonomousContext = await this.generateAutonomousContext(stored, errors);
-
-        // Step 4: Log batch operation
-        await auditService.logBatchOperation(
-          'store',
-          validItems.length,
-          stored.length,
-          errors.length,
-          undefined,
-          undefined,
-          Date.now() - startTime
-        );
-
-        const response = { stored, errors, autonomous_context: autonomousContext };
-        logRequestSuccess(requestLogger as any, 'memory.store', response);
-        return response;
-      } catch (error) {
-        logRequestError(requestLogger as any, 'memory.store', error, { itemCount: items.length });
-
-        // Log critical error
-        await auditService.logError(error instanceof Error ? error : new Error('Critical error'), {
-          operation: 'memory_store_batch',
-          itemCount: items.length,
-        });
-
-        return this.createErrorResponse([
-          {
-            index: 0,
-            error_code: 'BATCH_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown batch error',
-          },
-        ]);
-      }
-    });
-  }
-
-  /**
-   * Process a single knowledge item
-   */
-  private async processItem(item: KnowledgeItem, index: number): Promise<StoreResult> {
-    const _operation = this.extractOperation(item);
-
-    // Handle delete operations
-    if (_operation === 'delete') {
-      return await this.handleDeleteOperation(item, index);
-    }
-
-    // Check for business rule violations
-    await this.validateBusinessRules(item);
-
-    // Store the item using appropriate service
-    const result = await this.storeItemByKind(item);
-
-    // Check for similar items and log findings
-    await this.checkForSimilarItems(item);
-
-    return result;
-  }
-
-  /**
-   * Extract operation type from item
-   */
-  private extractOperation(item: KnowledgeItem): 'create' | 'update' | 'delete' | null {
-    const data = item.data || {};
-
-    if (data.operation === 'delete' || data.action === 'delete') {
-      return 'delete';
-    }
-
-    if (item.id || data.id) {
-      return 'update';
-    }
-
-    return 'create';
-  }
-
-  /**
-   * Handle delete operations
-   */
-  private async handleDeleteOperation(item: KnowledgeItem, _index: number): Promise<StoreResult> {
-    const deleteRequest: DeleteRequest = {
-      entity_type: item.kind,
-      entity_id: item.id || item.data?.id || '',
-      cascade_relations: item.data?.cascade_relations || false,
-    };
-
-    if (!deleteRequest.entity_id) {
-      throw new Error('Delete operation requires an ID');
-    }
-
-    const deleted = await softDelete(deleteRequest);
-
-    if (!deleted) {
-      throw new Error(`Failed to delete item: ${deleteRequest.entity_id}`);
-    }
-
-    return {
-      id: deleteRequest.entity_id,
-      status: 'deleted',
-      kind: item.kind,
-      created_at: new Date().toISOString(),
-    };
-  }
-
-  /**
-   * Validate business rules for all 16 knowledge types
-   */
-  private async validateBusinessRules(item: KnowledgeItem): Promise<void> {
-    const _operation = this.extractOperation(item);
-
-    // Skip validation for delete operations (handled elsewhere)
-    if (_operation === 'delete') {
-      return;
-    }
-
-    // Skip validation for create operations (no existing entity to check)
-    if (_operation === 'create') {
-      return;
-    }
-
-    // Only perform business rule validation for update operations
-    if (_operation === 'update' && item.id) {
-      switch (item.kind) {
-        case 'decision':
-          await this.validateDecisionImmutability(item.id, item);
-          break;
-
-        case 'section':
-          await this.validateSectionWriteLock(item.id, item);
-          break;
-
-        case 'incident':
-          await this.validateIncidentUpdateRules(item.id, item);
-          break;
-
-        case 'release':
-          await this.validateReleaseUpdateRules(item.id, item);
-          break;
-
-        case 'risk':
-          await this.validateRiskUpdateRules(item.id, item);
-          break;
-
-        case 'assumption':
-          await this.validateAssumptionUpdateRules(item.id, item);
-          break;
-
-        case 'todo':
-          await this.validateTodoUpdateRules(item.id, item);
-          break;
-
-        case 'issue':
-          await this.validateIssueUpdateRules(item.id, item);
-          break;
-
-        case 'runbook':
-          await this.validateRunbookUpdateRules(item.id, item);
-          break;
-
-        case 'entity':
-        case 'relation':
-        case 'observation':
-        case 'change':
-        case 'release_note':
-        case 'ddl':
-        case 'pr_context':
-          // These types typically don't have strict business rule constraints
-          logger.debug(
-            { kind: item.kind, id: item.id },
-            'No specific business rules for this knowledge type'
-          );
-          break;
-
-        default:
-          logger.warn(
-            { kind: item.kind, id: item.id },
-            'Unknown knowledge type for business rule validation'
-          );
-      }
-    }
-  }
-
-  /**
-   * Validate decision ADR immutability rules
-   */
-  private async validateDecisionImmutability(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      // Import and use the validation function from knowledge types
-      const { violatesADRImmutability } = await import('../../schemas/knowledge-types');
-
-      // Get existing decision from database
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.adrDecision.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          component: true,
-          title: true,
-          rationale: true,
-          alternativesConsidered: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Decision doesn't exist, skip validation
-      }
-
-      // Create existing decision item format for validation
-      const existingDecision: any = {
-        kind: 'decision',
-        data: {
-          component: existing.component,
-          status: existing.status,
-          title: existing.title,
-          rationale: existing.rationale,
-          alternatives_considered: existing.alternativesConsidered || [],
-        },
-      };
-
-      // Check immutability violation
-      if (violatesADRImmutability(existingDecision, item as any)) {
-        throw new ImmutabilityViolationError(
-          `Cannot modify accepted ADR "${existing.title}". Create a new ADR with supersedes reference instead.`,
-          'IMMUTABILITY_VIOLATION',
-          'decision_content'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'decision' }, 'Failed to validate decision immutability');
-    }
-  }
-
-  /**
-   * Validate section write-lock rules for approved specifications
-   */
-  private async validateSectionWriteLock(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      const { violatesSpecWriteLock } = await import('../../schemas/knowledge-types');
-
-      // Get existing section from database
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.section.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          title: true,
-          body_md: true,
-          body_text: true,
-          heading: true,
-          tags: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Section doesn't exist, skip validation
-      }
-
-      // Create existing section item format for validation
-      const existingSection: any = {
-        kind: 'section',
-        data: {
-          title: existing.title,
-          body_md: existing.body_md,
-          body_text: existing.body_text,
-          heading: existing.heading,
-        },
-        tags: (existing.tags as any) || {},
-      };
-
-      // Check write-lock violation
-      if (violatesSpecWriteLock(existingSection, item as any)) {
-        throw new ImmutabilityViolationError(
-          `Cannot modify approved specification section "${existing.title}". Content is write-locked.`,
-          'SPEC_WRITE_LOCK_VIOLATION',
-          'section_content'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'section' }, 'Failed to validate section write-lock');
-    }
-  }
-
-  /**
-   * Validate incident update rules (business logic for incident state transitions)
-   */
-  private async validateIncidentUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.incidentLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          resolution_status: true,
-          severity: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Incident doesn't exist, skip validation
-      }
-
-      const newStatus = item.data.resolution_status;
-      const currentStatus = existing.resolution_status;
-
-      // Business rule: Cannot reopen closed incidents without special authorization
-      if (currentStatus === 'closed' && newStatus !== 'closed' && !item.data.reopen_authorized) {
-        throw new ImmutabilityViolationError(
-          `Cannot reopen closed incident without explicit authorization. Create new incident instead.`,
-          'INCIDENT_REOPEN_VIOLATION',
-          'resolution_status'
-        );
-      }
-
-      // Business rule: Critical incidents require commander assignment
-      if (
-        existing.severity === 'critical' &&
-        newStatus === 'investigating' &&
-        !item.data.incident_commander
-      ) {
-        throw new ImmutabilityViolationError(
-          `Critical incidents require assignment of incident commander before investigation.`,
-          'INCIDENT_COMMANDER_REQUIRED',
-          'incident_commander'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'incident' }, 'Failed to validate incident update rules');
-    }
-  }
-
-  /**
-   * Validate release update rules (business logic for release state transitions)
-   */
-  private async validateReleaseUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.releaseLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          version: true,
-          created_at: true,
-          tags: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Release doesn't exist, skip validation
-      }
-
-      const newStatus = item.data.status;
-      // const _currentStatus = existing.status; // Simplified - business rule disabled
-
-      // Business rule: Cannot modify completed releases (currently disabled)
-      // TODO: Re-enable when business logic is ready
-      const disableReleaseModification = false;
-      if (disableReleaseModification) {
-        throw new ImmutabilityViolationError(
-          `Cannot modify completed release "${existing.version}". Create new release instead.`,
-          'RELEASE_MODIFICATION_VIOLATION',
-          'status'
-        );
-      }
-
-      // Business rule: Cannot rollback without rollback plan
-      if (newStatus === 'rolled_back' && !item.data.rollback_plan) {
-        throw new ImmutabilityViolationError(
-          `Rollback requires explicit rollback plan to be specified.`,
-          'ROLLBACK_PLAN_REQUIRED',
-          'rollback_plan'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'release' }, 'Failed to validate release update rules');
-    }
-  }
-
-  /**
-   * Validate risk update rules (business logic for risk management)
-   */
-  private async validateRiskUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.riskLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          risk_level: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Risk doesn't exist, skip validation
-      }
-
-      const newStatus = item.data.status;
-      // const _currentStatus = existing.status; // Simplified - business rule disabled
-
-      // Business rule: Cannot close critical risks without mitigation
-      if (
-        existing.risk_level === 'critical' &&
-        newStatus === 'closed' &&
-        (!item.data.mitigation_strategies || item.data.mitigation_strategies.length === 0)
-      ) {
-        throw new ImmutabilityViolationError(
-          `Cannot close critical risks without documented mitigation strategies.`,
-          'RISK_CLOSURE_VIOLATION',
-          'mitigation_strategies'
-        );
-      }
-
-      // Business rule: Accepted risks require owner assignment
-      if (newStatus === 'accepted' && !item.data.owner) {
-        throw new ImmutabilityViolationError(
-          `Accepted risks must have an assigned owner.`,
-          'RISK_OWNER_REQUIRED',
-          'owner'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'risk' }, 'Failed to validate risk update rules');
-    }
-  }
-
-  /**
-   * Validate assumption update rules (business logic for assumption management)
-   */
-  private async validateAssumptionUpdateRules(id: string, _item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.assumptionLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          validation_status: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Assumption doesn't exist, skip validation
-      }
-
-      // const newStatus = item.data.validation_status; // Simplified - business rule disabled
-      // const _currentStatus = existing.validation_status;
-
-      // Business rule: Cannot validate assumptions without validation criteria (currently disabled)
-      // TODO: Re-enable when business logic is ready
-      const disableAssumptionValidation = false;
-      if (disableAssumptionValidation) {
-        throw new ImmutabilityViolationError(
-          `Cannot validate assumptions without explicit validation criteria.`,
-          'ASSUMPTION_VALIDATION_VIOLATION',
-          'validation_criteria'
-        );
-      }
-
-      // Business rule: Invalidated assumptions require impact analysis (currently disabled)
-      // TODO: Re-enable when business logic is ready
-      const disableAssumptionImpactAnalysis = false;
-      if (disableAssumptionImpactAnalysis) {
-        throw new ImmutabilityViolationError(
-          `Invalidated assumptions must include impact analysis.`,
-          'ASSUMPTION_IMPACT_REQUIRED',
-          'impact_if_invalid'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'assumption' }, 'Failed to validate assumption update rules');
-    }
-  }
-
-  /**
-   * Validate todo update rules (business logic for task management)
-   */
-  private async validateTodoUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.todoLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Todo doesn't exist, skip validation
-      }
-
-      const newStatus = item.data.status;
-      // const _currentStatus = existing.status; // Simplified - business rule disabled
-
-      // Business rule: Cannot reopen archived todos (currently disabled)
-      // TODO: Re-enable when business logic is ready
-      const disableTodoReopen = false;
-      if (disableTodoReopen) {
-        throw new ImmutabilityViolationError(
-          `Cannot reopen archived todos. Create new todo instead.`,
-          'TODO_REOPEN_VIOLATION',
-          'status'
-        );
-      }
-
-      // Business rule: Completed todos require closure timestamp
-      if (newStatus === 'done' && !item.data.closed_at) {
-        logger.warn({ id, kind: 'todo' }, 'Todo marked as done without closure timestamp');
-        // Not throwing error, just warning - auto-set closed_at if not provided
-        item.data.closed_at = new Date().toISOString();
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'todo' }, 'Failed to validate todo update rules');
-    }
-  }
-
-  /**
-   * Validate issue update rules (business logic for issue management)
-   */
-  private async validateIssueUpdateRules(id: string, _item: KnowledgeItem): Promise<void> {
-    try {
-      const { getQdrantClient } = await import('../../db/qdrant');
-      const qdrant = getQdrantClient();
-
-      const existing = await qdrant.issueLog.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          status: true,
-          created_at: true,
-        },
-      });
-
-      if (!existing) {
-        return; // Issue doesn't exist, skip validation
-      }
-
-      // const newStatus = item.data.status; // Simplified - business rule disabled
-      // const _currentStatus = existing.status; // Simplified - business rule disabled
-
-      // Business rule: Cannot reopen wont_fix issues (currently disabled)
-      // TODO: Re-enable when business logic is ready
-      const disableIssueReopen = false;
-      if (disableIssueReopen) {
-        throw new ImmutabilityViolationError(
-          `Cannot reopen issues marked as wont_fix. Create new issue instead.`,
-          'ISSUE_REOPEN_VIOLATION',
-          'status'
-        );
-      }
-    } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'issue' }, 'Failed to validate issue update rules');
-    }
-  }
-
-  /**
-   * Validate runbook update rules (business logic for runbook management)
-   */
-  private async validateRunbookUpdateRules(id: string, item: KnowledgeItem): Promise<void> {
-    try {
-      // Runbooks are generally flexible with minimal business rules
-      // Just ensure basic data integrity
-      if (!item.data.steps || !Array.isArray(item.data.steps) || item.data.steps.length === 0) {
-        throw new ImmutabilityViolationError(
-          `Runbooks must have at least one step defined.`,
-          'RUNBOOK_STEPS_REQUIRED',
-          'steps'
-        );
-      }
-
-      // Validate step structure
-      for (const step of item.data.steps) {
-        if (!step.step_number || !step.description) {
-          throw new ImmutabilityViolationError(
-            `Each runbook step must have step_number and description.`,
-            'RUNBOOK_STEP_INVALID',
-            'steps'
+        } catch (error) {
+          // Handle unexpected errors for individual items
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const errorResult: ItemResult = {
+            input_index: index,
+            status: 'validation_error',
+            kind: item.kind,
+            reason: errorMessage,
+            error_code: 'UNEXPECTED_ERROR',
+            created_at: new Date().toISOString(),
+          };
+
+          itemResults.push(errorResult);
+          errors.push({
+            index,
+            message: errorMessage,
+            error_code: 'UNEXPECTED_ERROR',
+          });
+
+          logger.error(
+            {
+              index,
+              kind: item.kind,
+              error: errorMessage,
+            },
+            'P5-T5.3: Unexpected error during item processing'
           );
         }
       }
+
+      // Step 4: Create summary statistics
+      const summary: BatchSummary = {
+        total: transformedItems.length,
+        stored: itemResults.filter((r) => r.status === 'stored').length,
+        skipped_dedupe: itemResults.filter((r) => r.status === 'skipped_dedupe').length,
+        business_rule_blocked: itemResults.filter((r) => r.status === 'business_rule_blocked')
+          .length,
+        validation_error: itemResults.filter((r) => r.status === 'validation_error').length,
+      };
+
+      // Step 5: Create autonomous context
+      const autonomousContext: AutonomousContext = {
+        action_performed: 'batch',
+        similar_items_checked: 0,
+        duplicates_found: 0,
+        contradictions_detected: false,
+        recommendation: `Batch processed: ${summary.stored} stored, ${summary.business_rule_blocked} blocked by business rules`,
+        reasoning:
+          'P5-T5.3: Business rule violations are handled by blocking items but continuing batch processing',
+        user_message_suggestion: this.generateUserMessage('batch', stored, errors),
+      };
+
+      // Step 6: Log batch operation completion
+      await auditService.logBatchOperation(
+        'store',
+        transformedItems.length,
+        summary.stored,
+        errors.length,
+        undefined,
+        undefined,
+        Date.now() - Date.now()
+      );
+
+      logger.info(
+        {
+          total: summary.total,
+          stored: summary.stored,
+          business_rule_blocked: summary.business_rule_blocked,
+          validation_errors: summary.validation_error,
+        },
+        'P5-T5.3: Batch storage completed'
+      );
+
+      return {
+        items: itemResults,
+        summary,
+        stored,
+        errors,
+        autonomous_context: autonomousContext,
+      };
     } catch (error) {
-      if (error instanceof ImmutabilityViolationError) {
-        throw error;
-      }
-      logger.warn({ error, id, kind: 'runbook' }, 'Failed to validate runbook update rules');
+      logger.error({ error, items }, 'P5-T5.3: Critical batch processing error');
+
+      // Return error response for critical batch failures
+      const criticalError: StoreError = {
+        index: 0,
+        error_code: 'BATCH_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown batch error',
+      };
+
+      return this.createErrorResponse([criticalError]);
     }
   }
 
@@ -758,15 +273,9 @@ export class MemoryStoreOrchestrator {
    * Store item using appropriate kind-specific service
    */
   private async storeItemByKind(item: KnowledgeItem): Promise<StoreResult> {
-    const _operation = this.extractOperation(item);
     // const _scope = item.scope || {}; // Unused - business rule incomplete
 
-    // Delete operations are handled elsewhere
-    if (_operation === 'delete') {
-      throw new Error('Delete operations should be handled by handleDeleteOperation');
-    }
-
-    const createOrUpdateOperation: 'create' | 'update' = _operation as 'create' | 'update';
+    const createOrUpdateOperation: 'create' | 'update' = item.id ? 'update' : 'create';
 
     try {
       let storedId: string;
@@ -821,36 +330,64 @@ export class MemoryStoreOrchestrator {
         case 'entity':
           storedId = await this.storeEntityItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for entity items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'relation':
           storedId = await this.storeRelationItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for relation items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'observation':
           storedId = await this.storeObservationItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for observation items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'incident':
           storedId = await this.storeIncidentItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for incident items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'release':
           storedId = await this.storeReleaseItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for release items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'risk':
           storedId = await this.storeRiskItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for risk items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         case 'assumption':
           storedId = await this.storeAssumptionItem(item, createOrUpdateOperation);
           if (createOrUpdateOperation === 'update') status = 'updated';
+
+          // P6-T6.1: Add expiry calculation for assumption items
+          // Note: expiry calculation is handled in the success result, not here
+          if (item.id) storedId = item.id;
           break;
 
         default:
@@ -1067,98 +604,6 @@ export class MemoryStoreOrchestrator {
   }
 
   /**
-   * Check for similar items and log findings
-   */
-  private async checkForSimilarItems(item: KnowledgeItem): Promise<void> {
-    // For now, skip similarity checking since the service was removed
-    // TODO: Re-implement similarity checking with proper service integration
-    logger.info({ kind: item.kind }, 'Skipping similarity check (service not implemented)');
-  }
-
-  /**
-   * Generate autonomous context with insights and recommendations
-   */
-  private async generateAutonomousContext(
-    stored: StoreResult[],
-    errors: StoreError[]
-  ): Promise<AutonomousContext> {
-    const duplicatesCount = stored.filter((s) => s.status === 'skipped_dedupe').length;
-    const updatesCount = stored.filter((s) => s.status === 'updated').length;
-    const createsCount = stored.filter((s) => s.status === 'inserted').length;
-    const deletesCount = stored.filter((s) => s.status === 'deleted').length;
-
-    // Determine action performed
-    let actionPerformed: AutonomousContext['action_performed'] = 'batch';
-    if (stored.length === 1) {
-      if (createsCount === 1) actionPerformed = 'created';
-      else if (updatesCount === 1) actionPerformed = 'updated';
-      else if (deletesCount === 1) actionPerformed = 'deleted';
-      else if (duplicatesCount === 1) actionPerformed = 'skipped';
-    }
-
-    // Generate reasoning and recommendations
-    const reasoning = this.generateReasoning(stored, errors);
-    const recommendation = this.generateRecommendation(stored, errors);
-    const userMessage = this.generateUserMessage(actionPerformed, stored, errors);
-
-    // Check for contradictions (simplified logic)
-    const contradictionsDetected = await this.detectContradictions(stored);
-
-    return {
-      action_performed: actionPerformed,
-      similar_items_checked: stored.length, // This would be enhanced with actual similarity checking
-      duplicates_found: duplicatesCount,
-      contradictions_detected: contradictionsDetected,
-      recommendation,
-      reasoning,
-      user_message_suggestion: userMessage,
-    };
-  }
-
-  /**
-   * Generate reasoning for the operations performed
-   */
-  private generateReasoning(stored: StoreResult[], errors: StoreError[]): string {
-    const parts: string[] = [];
-
-    if (stored.length > 0) {
-      const successful = stored.filter((s) => s.status !== 'skipped_dedupe').length;
-      parts.push(`${successful} items successfully processed`);
-    }
-
-    if (errors.length > 0) {
-      parts.push(`${errors.length} items failed to process`);
-    }
-
-    const duplicates = stored.filter((s) => s.status === 'skipped_dedupe').length;
-    if (duplicates > 0) {
-      parts.push(`${duplicates} duplicates detected and skipped`);
-    }
-
-    return parts.join('; ');
-  }
-
-  /**
-   * Generate recommendations based on results
-   */
-  private generateRecommendation(stored: StoreResult[], errors: StoreError[]): string {
-    if (errors.length > 0) {
-      return 'Review and fix validation errors before retrying';
-    }
-
-    const duplicates = stored.filter((s) => s.status === 'skipped_dedupe').length;
-    if (duplicates > 0) {
-      return 'Consider updating existing items instead of creating duplicates';
-    }
-
-    if (stored.length === 0) {
-      return 'No items were processed';
-    }
-
-    return 'Operation completed successfully';
-  }
-
-  /**
    * Generate user-friendly message
    */
   private generateUserMessage(
@@ -1199,35 +644,24 @@ export class MemoryStoreOrchestrator {
   }
 
   /**
-   * Detect contradictions in stored items (simplified)
-   */
-  private async detectContradictions(stored: StoreResult[]): Promise<boolean> {
-    // This is a simplified implementation
-    // In a full system, you would check for:
-    // - Contradictory decisions
-    // - Conflicting observations
-    // - Inconsistent data
-
-    try {
-      // Check for multiple decisions on same topic
-      const decisions = stored.filter((s) => s.kind === 'decision');
-      if (decisions.length > 1) {
-        // Would implement actual contradiction detection logic here
-        return false; // Placeholder
-      }
-
-      return false;
-    } catch (error) {
-      logger.warn({ error }, 'Error detecting contradictions');
-      return false;
-    }
-  }
-
-  /**
    * Create error response
    */
   private createErrorResponse(errors: StoreError[]): MemoryStoreResponse {
+    // Create empty itemResults array for error response
+    const itemResults: ItemResult[] = [];
+
+    // Create error summary
+    const summary: BatchSummary = {
+      total: 0,
+      stored: 0,
+      skipped_dedupe: 0,
+      business_rule_blocked: 0,
+      validation_error: errors.length,
+    };
+
     return {
+      items: itemResults,
+      summary,
       stored: [],
       errors,
       autonomous_context: {

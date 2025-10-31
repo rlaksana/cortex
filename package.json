@@ -2,10 +2,10 @@
   "name": "cortex-memory-mcp",
   "version": "2.0.0",
   "description": "Cortex Memory MCP Server - Advanced knowledge management with Qdrant vector database support",
-  "main": "dist/index.js",
+  "main": "dist/silent-mcp-entry.js",
   "type": "module",
   "bin": {
-    "cortex": "dist/index.js"
+    "cortex": "dist/silent-mcp-entry.js"
   },
   "scripts": {
     "start": "node dist/index.js",
@@ -112,6 +112,7 @@
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "ts-prune": "^0.10.3",
+    "tsc-esm-fix": "^3.1.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",

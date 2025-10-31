@@ -72,16 +72,20 @@ Memory Store Service
 ```
 
 #### Memory Find Service
-Implements intelligent search with multiple strategies:
+Implements basic semantic search:
 
 ```
 Memory Find Service
-├── Query Parser (Natural language processing)
-├── Strategy Selector (Automatic strategy selection)
-├── Search Service (Multi-strategy execution)
-├── Result Ranker (Relevance scoring)
-└── Context Generator (Autonomous context creation)
+├── Query Parser (Basic query processing)
+├── Search Service (Semantic vector search only)
+└── Context Generator (Basic search context)
 ```
+
+**⚠️ Current Limitations:**
+- No strategy selector (only semantic search available)
+- No result ranker (basic similarity scoring only)
+- No autonomous context creation (basic metadata only)
+- No natural language processing capabilities
 
 ### 3. Knowledge Type System
 
@@ -113,7 +117,7 @@ The system supports 16 comprehensive knowledge types, each with specific handlin
 
 ## Data Flow Architecture
 
-### Storage Flow
+### Storage Flow (Current Implementation)
 
 ```
 User Request
@@ -125,22 +129,15 @@ Memory Store Service
 ┌─────────────────────────────────────────────┐
 │ Validation Service                         │
 │ - Input validation                         │
-│ - Business rule enforcement                │
-│ - Type checking                            │
+│ - Basic type checking                      │
+│ - Schema validation                        │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
 │ Deduplication Service                      │
-│ - Semantic similarity detection            │
-│ - Duplicate identification                 │
-│ - Conflict resolution                      │
-└─────────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────────┐
-│ Similarity Service                         │
-│ - Content analysis                         │
-│ - Similarity scoring                       │
-│ - Relationship detection                   │
+│ - Content similarity detection (85%)       │
+│ - Basic duplicate identification            │
+│ - Skip storage if duplicate                 │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
@@ -152,16 +149,22 @@ Memory Store Service
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
-│ Audit Service                              │
-│ - Operation logging                        │
-│ - Change tracking                          │
-│ - Compliance reporting                     │
+│ Auto-Purge Service                         │
+│ - TTL-based cleanup                        │
+│ - 90-day purge for most types              │
+│ - 30-day purge for PR context              │
 └─────────────────────────────────────────────┘
     ↓
-Response with Autonomous Context
+Response with Basic Context
 ```
 
-### Search Flow
+**⚠️ Missing Components:**
+- No conflict resolution in deduplication
+- No relationship detection in similarity service
+- No comprehensive audit service
+- No autonomous context generation
+
+### Search Flow (Current Implementation)
 
 ```
 Search Query
@@ -170,42 +173,38 @@ Memory Find Service
     ↓
 ┌─────────────────────────────────────────────┐
 │ Query Parser                               │
-│ - Natural language processing               │
-│ - Intent analysis                          │
-│ - Query decomposition                      │
-└─────────────────────────────────────────────┘
-    ↓
-┌─────────────────────────────────────────────┐
-│ Strategy Selector                          │
-│ - Query complexity analysis                 │
-│ - Performance requirements                  │
-│ - Available data types                     │
+│ - Basic query processing                    │
+│ - Text normalization                       │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
 │ Search Execution                           │
-│ - Semantic search (Qdrant)                 │
-│ - Full-text search (Qdrant)               │
-│ - Hybrid search (semantic + text)          │
-│ - Fallback search                           │
+│ - Semantic search (Qdrant vectors only)   │
+│ - Vector similarity matching               │
+│ - Metadata filtering                       │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
 │ Result Processing                          │
-│ - Relevance scoring                        │
+│ - Basic similarity scoring                 │
 │ - Result ranking                           │
 │ - Deduplication                            │
 └─────────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────────┐
 │ Context Generation                         │
-│ - Search strategy used                     │
-│ - Result statistics                        │
-│ - User suggestions                         │
+│ - Search mode used                        │
+│ - Result count                            │
+│ - Basic metadata                          │
 └─────────────────────────────────────────────┘
     ↓
-Ranked Results with Autonomous Context
+Results with Basic Context
 ```
+
+**⚠️ Missing Components:**
+- No user suggestions or recommendations
+- No advanced search analytics
+- No autonomous context generation
 
 ## Search Strategies
 
@@ -605,5 +604,77 @@ interface CompatibilityLayer {
   migrationPaths: Record<string, MigrationPath>;
 }
 ```
+
+## Current Implementation vs Target Architecture
+
+### ✅ **What Exists Today (Current v1.0)**
+
+**Core Functionality:**
+- Qdrant vector database with semantic search
+- Basic MCP protocol implementation
+- 4 fully implemented knowledge types (section, decision, todo, issue)
+- Basic deduplication (85% similarity threshold)
+- TTL-based auto-purge system
+- Comprehensive schema validation for 16 types
+
+**Service Layer:**
+- Memory Store Service with validation and deduplication
+- Memory Find Service with basic semantic search
+- Auto-Purge Service for maintenance operations
+- Basic error handling and logging
+
+### 🚧 **What's Missing (Target Features)**
+
+**Advanced Search:**
+- Multi-strategy search (semantic + keyword + hybrid)
+- Search mode selection (auto/fast/deep)
+- Confidence scoring and result ranking
+- Query expansion and suggestions
+
+**AI-Enhanced Features:**
+- Autonomous context generation
+- Natural language processing and intent analysis
+- Contradiction detection and merge suggestions
+- Smart recommendations and user insights
+
+**Graph Functionality:**
+- Entity relationship mapping
+- Graph traversal algorithms
+- Relationship-based search and discovery
+
+**Content Management:**
+- Document chunking and parent-child relationships
+- Large document handling (8k+ character content)
+- Content organization and hierarchical structures
+
+### 🚨 **Critical Architecture Issues**
+
+**Disconnected Implementation:**
+- Main server bypasses comprehensive service layer
+- Memory find has circular dependency on memory store
+- Advanced features exist in services but aren't accessible
+- Architecture documentation doesn't match actual implementation
+
+**Missing Knowledge Type Logic:**
+- 6 knowledge types are placeholders only (runbook, change, etc.)
+- 6 types have only basic storage without business rules
+- Only 4 types have complete validation and business logic
+
+### 📋 **Implementation Priority**
+
+1. **Critical (P1)**: Fix service layer integration and circular dependencies
+2. **High (P2)**: Complete missing knowledge type implementations
+3. **Medium (P3)**: Add graph functionality and advanced search
+4. **Low (P4)**: Implement AI-enhanced features and content management
+
+## Summary
+
+The Cortex Memory MCP system has a solid foundation with Qdrant-based vector storage and basic semantic search. However, there are significant gaps between the documented architecture and actual implementation. The primary issues are:
+
+1. **Service Layer Disconnect**: Comprehensive services exist but main server bypasses them
+2. **Missing Feature Logic**: Many knowledge types are placeholders without implementation
+3. **Aspirational Documentation**: Advanced features described but not built
+
+This architecture documentation has been updated to reflect the current reality while preserving the target vision for future development.
 
 This architecture provides a robust, scalable foundation for knowledge management that can handle both structured data and semantic search requirements effectively.

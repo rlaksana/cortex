@@ -39,22 +39,25 @@
  */
 
 import { createHash } from 'node:crypto';
-import { logger } from '../../utils/logger';
-// import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
-// import { ImmutabilityViolationError } from '../../utils/immutability';
-import { validationService } from '../validation/validation-service';
-import { auditService } from '../audit/audit-service';
+import { logger } from '../../utils/logger.js';
+// import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types.js';
+// import { ImmutabilityViolationError } from '../../utils/immutability.js';
+import { validationService } from '../validation/validation-service.js';
+import { auditService } from '../audit/audit-service.js';
+import { ChunkingService } from '../chunking/chunking-service.js';
 import type {
   KnowledgeItem,
   StoreResult,
   StoreError,
   AutonomousContext,
   MemoryStoreResponse,
-} from '../../types/core-interfaces';
-import { ConnectionError, type IDatabase } from '../../db/database-interface';
-import { BaselineTelemetry } from '../telemetry/baseline-telemetry';
-// import { ChunkingService } from '../chunking/chunking-service'; // Will be used when store orchestrator is integrated
-import { LanguageEnhancementService } from '../language/language-enhancement-service';
+  ItemResult,
+  BatchSummary,
+} from '../../types/core-interfaces.js';
+import { ConnectionError, type IDatabase } from '../../db/database-interface.js';
+import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
+// import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
+import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
 
 /**
  * Enhanced duplicate detection result
@@ -84,16 +87,24 @@ export class MemoryStoreOrchestratorQdrant {
   private database: IDatabase;
   private readonly SIMILARITY_THRESHOLD = 0.85; // High threshold for duplicate detection
   private baselineTelemetry: BaselineTelemetry;
-  // chunkingService integrated via result grouping
-  // private _chunkingService: ChunkingService;
+  private chunkingService: ChunkingService;
   private languageEnhancementService: LanguageEnhancementService;
+  private duplicateDetectionStats: {
+    contentHashMatches: number;
+    semanticSimilarityMatches: number;
+    totalChecks: number;
+  };
 
   constructor(database: IDatabase) {
     this.database = database;
     this.baselineTelemetry = new BaselineTelemetry();
-    // chunkingService will be used when store orchestrator is integrated
-    // this._chunkingService = new ChunkingService();
+    this.chunkingService = new ChunkingService();
     this.languageEnhancementService = new LanguageEnhancementService();
+    this.duplicateDetectionStats = {
+      contentHashMatches: 0,
+      semanticSimilarityMatches: 0,
+      totalChecks: 0,
+    };
   }
 
   /**
@@ -103,10 +114,18 @@ export class MemoryStoreOrchestratorQdrant {
     const startTime = Date.now();
     const stored: StoreResult[] = [];
     const errors: StoreError[] = [];
+    const duplicateResults: (DuplicateDetectionResult | null)[] = [];
 
     try {
       // Initialize database if needed
       await this.ensureDatabaseInitialized();
+
+      // Reset duplicate detection stats for this batch
+      this.duplicateDetectionStats = {
+        contentHashMatches: 0,
+        semanticSimilarityMatches: 0,
+        totalChecks: 0,
+      };
 
       // Step 1: Validate input
       const validation = await validationService.validateStoreInput(items);
@@ -116,12 +135,27 @@ export class MemoryStoreOrchestratorQdrant {
 
       const validItems = items as KnowledgeItem[];
 
-      // Step 2: Process each item
-      for (let index = 0; index < validItems.length; index++) {
-        const item = validItems[index];
+      // Step 2: Apply chunking to all items (this replaces 8k truncation)
+      const chunkedItems = this.chunkingService.processItemsForStorage(validItems);
+      logger.info(
+        {
+          original_count: validItems.length,
+          chunked_count: chunkedItems.length,
+          expansion_ratio: chunkedItems.length / validItems.length,
+        },
+        'Applied chunking to replace truncation'
+      );
+
+      // Step 3: Process each chunked item
+      for (let index = 0; index < chunkedItems.length; index++) {
+        const item = chunkedItems[index];
 
         try {
-          const result = await this.processItem(item, index);
+          // Run duplicate detection to get detailed information
+          const duplicateResult = await this.detectDuplicates(item);
+          duplicateResults.push(duplicateResult);
+
+          const result = await this.processItem(item, index, duplicateResult);
           stored.push(result);
 
           // Log successful operation
@@ -138,6 +172,9 @@ export class MemoryStoreOrchestratorQdrant {
             true
           );
         } catch (error) {
+          // Push null to duplicateResults for error cases
+          duplicateResults.push(null);
+
           const storeError: StoreError = {
             index,
             error_code: 'PROCESSING_ERROR',
@@ -154,13 +191,13 @@ export class MemoryStoreOrchestratorQdrant {
         }
       }
 
-      // Step 3: Generate autonomous context
+      // Step 4: Generate autonomous context
       const autonomousContext = await this.generateAutonomousContext(stored, errors);
 
-      // Step 4: Log batch operation
+      // Step 5: Log batch operation
       await auditService.logBatchOperation(
         'store',
-        validItems.length,
+        chunkedItems.length, // Use chunked items count
         stored.length,
         errors.length,
         undefined,
@@ -168,7 +205,58 @@ export class MemoryStoreOrchestratorQdrant {
         Date.now() - startTime
       );
 
+      // Create enhanced response format
+      const itemResults: ItemResult[] = stored.map((result, index) => {
+        const duplicateResult = duplicateResults[index];
+
+        // Determine status based on result and duplicate detection
+        let status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
+        let reason: string | undefined;
+        let existingId: string | undefined;
+
+        if (result.status === 'skipped_dedupe' && duplicateResult) {
+          status = 'skipped_dedupe';
+          reason = duplicateResult.reason;
+          existingId = duplicateResult.existingItem?.id;
+        } else {
+          status = 'stored';
+        }
+
+        const itemResult: ItemResult = {
+          input_index: index,
+          status,
+          kind: result.kind,
+          id: result.id,
+          created_at: result.created_at,
+        };
+
+        // Only add optional properties if they have values
+        if (reason !== undefined) itemResult.reason = reason;
+        if (existingId !== undefined) itemResult.existing_id = existingId;
+
+        return itemResult;
+      });
+
+      // Calculate summary counts based on actual item status
+      const storedCount = itemResults.filter((item) => item.status === 'stored').length;
+      const skippedDedupeCount = itemResults.filter(
+        (item) => item.status === 'skipped_dedupe'
+      ).length;
+
+      const summary: BatchSummary = {
+        stored: storedCount,
+        skipped_dedupe: skippedDedupeCount,
+        business_rule_blocked: 0,
+        validation_error: errors.length,
+        total: itemResults.length + errors.length,
+      };
+
       return {
+        // Enhanced response format
+        items: itemResults,
+        summary,
+
+        // Legacy fields for backward compatibility
         stored,
         errors,
         autonomous_context: autonomousContext,
@@ -195,7 +283,11 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Process a single knowledge item with enhanced duplicate detection
    */
-  private async processItem(item: KnowledgeItem, index: number): Promise<StoreResult> {
+  private async processItem(
+    item: KnowledgeItem,
+    index: number,
+    duplicateResult?: DuplicateDetectionResult
+  ): Promise<StoreResult> {
     const operation = this.extractOperation(item);
 
     // Handle delete operations
@@ -210,10 +302,10 @@ export class MemoryStoreOrchestratorQdrant {
     const contentHash = this.generateContentHash(item);
     (item as any).content_hash = contentHash;
 
-    // Enhanced duplicate detection using vector similarity
-    const duplicateResult = await this.detectDuplicates(item);
-    if (duplicateResult.isDuplicate) {
-      return this.createDuplicateResult(item, duplicateResult);
+    // Check for duplicates using provided result or run detection if not provided
+    const dupResult = duplicateResult || (await this.detectDuplicates(item));
+    if (dupResult.isDuplicate) {
+      return this.createDuplicateResult(item, dupResult);
     }
 
     // Store the item using database abstraction layer
@@ -227,6 +319,9 @@ export class MemoryStoreOrchestratorQdrant {
    */
   private async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
     try {
+      // Increment total checks
+      this.duplicateDetectionStats.totalChecks++;
+
       // Create search query from item content
       const searchQuery = this.extractSearchQuery(item);
 
@@ -250,6 +345,7 @@ export class MemoryStoreOrchestratorQdrant {
       // Check for exact content hash matches first
       for (const result of searchResults.results) {
         if ((result.data as any).content_hash === (item as any).content_hash) {
+          this.duplicateDetectionStats.contentHashMatches++;
           return {
             isDuplicate: true,
             similarityScore: 1.0,
@@ -263,6 +359,7 @@ export class MemoryStoreOrchestratorQdrant {
       // Check for semantic similarity
       const topResult = searchResults.results[0];
       if (topResult.confidence_score >= this.SIMILARITY_THRESHOLD) {
+        this.duplicateDetectionStats.semanticSimilarityMatches++;
         return {
           isDuplicate: true,
           similarityScore: topResult.confidence_score,
@@ -292,19 +389,38 @@ export class MemoryStoreOrchestratorQdrant {
    */
   private async storeItemToDatabase(item: KnowledgeItem): Promise<StoreResult> {
     try {
-      // Baseline telemetry: Track truncation
+      // Enhanced telemetry: Track chunking instead of truncation
       const content = this.extractCanonicalContent(item);
       const originalLength = content.length;
-      const truncated = originalLength > 8000;
-      const finalLength = truncated ? 8000 : originalLength;
+      const isChunked = item.data.is_chunk || false;
+      const totalChunks = item.data.total_chunks || 1;
+
+      // Calculate effective storage size (chunking prevents data loss)
+      const finalLength = isChunked ? content.length : Math.min(originalLength, 8000);
+      const wasProcessedByChunking =
+        isChunked || (originalLength > 2400 && this.chunkingService.shouldChunkItem(item));
 
       this.baselineTelemetry.logStoreAttempt(
-        truncated,
+        false, // No truncation with chunking
         originalLength,
         finalLength,
         item.kind,
         `${item.scope.project || ''}-${item.scope.branch || 'main'}`
       );
+
+      // Log chunking metrics
+      if (wasProcessedByChunking) {
+        logger.debug(
+          {
+            item_kind: item.kind,
+            original_length: originalLength,
+            is_chunked: isChunked,
+            total_chunks: totalChunks,
+            chunking_applied: true,
+          },
+          'Item processed by chunking service'
+        );
+      }
 
       const response = await this.database.store([item], {
         upsert: true,
@@ -571,7 +687,28 @@ export class MemoryStoreOrchestratorQdrant {
           stored.length
         : 0;
 
-    return {
+    // Determine dedupe method and threshold information using actual stats
+    const dedupeEnabled = this.duplicateDetectionStats.totalChecks > 0;
+    const dedupeThresholdUsed = dedupeEnabled ? this.SIMILARITY_THRESHOLD : undefined;
+
+    // Determine dedupe method based on actual duplicate detection results
+    let dedupeMethod: AutonomousContext['dedupe_method'] = 'none';
+    if (dedupeEnabled) {
+      const hasContentHashMatches = this.duplicateDetectionStats.contentHashMatches > 0;
+      const hasSemanticMatches = this.duplicateDetectionStats.semanticSimilarityMatches > 0;
+
+      if (hasContentHashMatches && hasSemanticMatches) {
+        dedupeMethod = 'combined';
+      } else if (hasContentHashMatches) {
+        dedupeMethod = 'content_hash';
+      } else if (hasSemanticMatches) {
+        dedupeMethod = 'semantic_similarity';
+      } else {
+        dedupeMethod = 'semantic_similarity'; // Semantic similarity was checked even if no duplicates found
+      }
+    }
+
+    const context: AutonomousContext = {
       action_performed: stored.length > 0 ? ('created' as const) : ('skipped' as const),
       similar_items_checked: similarItemsChecked,
       duplicates_found: duplicatesFound,
@@ -580,6 +717,14 @@ export class MemoryStoreOrchestratorQdrant {
       reasoning: this.generateReasoning(stored, errors, duplicatesFound, successRate),
       user_message_suggestion: this.generateUserMessage(stored, errors, duplicatesFound),
     };
+
+    if (dedupeEnabled) {
+      context.dedupe_threshold_used = dedupeThresholdUsed!;
+      context.dedupe_method = dedupeMethod!;
+      context.dedupe_enabled = dedupeEnabled;
+    }
+
+    return context;
   }
 
   /**
@@ -689,6 +834,17 @@ export class MemoryStoreOrchestratorQdrant {
    */
   private createErrorResponse(errors: StoreError[]): MemoryStoreResponse {
     return {
+      // Enhanced response format
+      items: [],
+      summary: {
+        stored: 0,
+        skipped_dedupe: 0,
+        business_rule_blocked: 0,
+        validation_error: errors.length,
+        total: errors.length,
+      },
+
+      // Legacy fields for backward compatibility
       stored: [],
       errors,
       autonomous_context: {
@@ -699,6 +855,9 @@ export class MemoryStoreOrchestratorQdrant {
         recommendation: 'Review input format and try again',
         reasoning: `Validation failed with ${errors.length} errors`,
         user_message_suggestion: `${errors.length} validation errors detected - check item format`,
+        dedupe_threshold_used: this.SIMILARITY_THRESHOLD,
+        dedupe_method: 'none',
+        dedupe_enabled: false,
       },
     };
   }

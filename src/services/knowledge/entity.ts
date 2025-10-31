@@ -9,7 +9,7 @@
 
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { createHash } from 'node:crypto';
-import type { EntityItem } from '../../schemas/knowledge-types';
+import type { EntityItem } from '../../schemas/knowledge-types.js';
 
 /**
  * Store a flexible entity in knowledge_entity table

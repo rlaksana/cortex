@@ -7,7 +7,7 @@
  * @module services/knowledge/relation
  */
 
-import type { RelationItem } from '../../schemas/knowledge-types';
+import type { RelationItem } from '../../schemas/knowledge-types.js';
 
 /**
  * Store a relation in knowledge_relation table

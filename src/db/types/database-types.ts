@@ -10,7 +10,7 @@
  */
 
 // Core types imported as needed for database operations
-import type { SearchResult as CoreSearchResult } from '../../types/core-interfaces';
+import type { SearchResult as CoreSearchResult } from '../../types/core-interfaces.js';
 
 // Re-export core interfaces
 export type {
@@ -22,13 +22,13 @@ export type {
   MemoryStoreResponse,
   MemoryFindResponse,
   AutonomousContext,
-} from '../../types/core-interfaces';
+} from '../../types/core-interfaces.js';
 
 export type {
   IVectorAdapter,
   VectorConfig,
   SearchOptions as VectorSearchOptions,
-} from '../interfaces/vector-adapter.interface';
+} from '../interfaces/vector-adapter.interface.js';
 
 export type {
   IDatabaseFactory,
@@ -36,7 +36,7 @@ export type {
   DatabaseType,
   DatabaseAdapters,
   AdapterCapabilities,
-} from '../interfaces/database-factory.interface';
+} from '../interfaces/database-factory.interface.js';
 
 // Use alias to avoid conflicts
 // export type SearchResult = CoreSearchResult;

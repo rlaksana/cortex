@@ -28,7 +28,7 @@ import {
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
-} from '../types/core-interfaces';
+} from '../types/core-interfaces.js';
 
 export interface DatabaseConfig {
   type: 'qdrant' | 'hybrid';

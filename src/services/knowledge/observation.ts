@@ -7,7 +7,7 @@
  * @module services/knowledge/observation
  */
 
-import type { ObservationItem } from '../../schemas/knowledge-types';
+import type { ObservationItem } from '../../schemas/knowledge-types.js';
 
 // Temporary stub to avoid qdrant import issues
 const qdrant = {

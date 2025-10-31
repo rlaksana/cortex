@@ -14,13 +14,7 @@ export class ValidatorRegistry implements IValidatorRegistry {
   private validators: Map<string, BusinessValidator> = new Map();
 
   // Supported knowledge types for Phase 5 business rules
-  private readonly supportedTypes = [
-    'decision',
-    'incident',
-    'risk',
-    'todo',
-    'ddl',
-  ];
+  private readonly supportedTypes = ['decision', 'incident', 'risk', 'todo', 'ddl'];
 
   /**
    * Register a validator for a specific knowledge type
@@ -30,7 +24,9 @@ export class ValidatorRegistry implements IValidatorRegistry {
    */
   registerValidator(type: string, validator: BusinessValidator): void {
     if (!this.supportedTypes.includes(type)) {
-      throw new Error(`Invalid knowledge type: ${type}. Supported types: ${this.supportedTypes.join(', ')}`);
+      throw new Error(
+        `Invalid knowledge type: ${type}. Supported types: ${this.supportedTypes.join(', ')}`
+      );
     }
 
     logger.info({ type, validatorType: validator.getType() }, 'Registering business validator');
@@ -80,7 +76,10 @@ export class ValidatorRegistry implements IValidatorRegistry {
 
     // If no validator is registered for this type, skip validation
     if (!validator) {
-      logger.debug({ kind: item.kind }, 'No validator registered, skipping business rule validation');
+      logger.debug(
+        { kind: item.kind },
+        'No validator registered, skipping business rule validation'
+      );
       return {
         valid: true,
         errors: [],
@@ -93,29 +92,38 @@ export class ValidatorRegistry implements IValidatorRegistry {
       const result = await validator.validate(item);
 
       if (!result.valid) {
-        logger.warn({
-          kind: item.kind,
-          id: item.id,
-          errors: result.errors,
-          warnings: result.warnings
-        }, 'Business rule validation failed');
+        logger.warn(
+          {
+            kind: item.kind,
+            id: item.id,
+            errors: result.errors,
+            warnings: result.warnings,
+          },
+          'Business rule validation failed'
+        );
       } else if (result.warnings.length > 0) {
-        logger.info({
-          kind: item.kind,
-          id: item.id,
-          warnings: result.warnings
-        }, 'Business rule validation passed with warnings');
+        logger.info(
+          {
+            kind: item.kind,
+            id: item.id,
+            warnings: result.warnings,
+          },
+          'Business rule validation passed with warnings'
+        );
       } else {
         logger.debug({ kind: item.kind, id: item.id }, 'Business rule validation passed');
       }
 
       return result;
     } catch (error) {
-      logger.error({
-        error,
-        kind: item.kind,
-        id: item.id
-      }, 'Business rule validation error');
+      logger.error(
+        {
+          error,
+          kind: item.kind,
+          id: item.id,
+        },
+        'Business rule validation error'
+      );
 
       return {
         valid: false,

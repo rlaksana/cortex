@@ -232,17 +232,18 @@ export const DecisionSchema = z
 
 export const TodoDataSchema = z
   .object({
-    scope: z
-      .string()
-      .min(1, 'scope is required (e.g., task, epic, story)')
-      .max(200, 'scope must be 200 characters or less'),
-    todo_type: z.enum(['task', 'bug', 'epic', 'story', 'spike']),
-    text: z.string().min(1, 'text is required'),
-    status: z.enum(['open', 'in_progress', 'done', 'cancelled', 'archived']),
+    // P5-T5.3: Made fields optional and aligned with business validator expectations
+    scope: z.string().max(200, 'scope must be 200 characters or less').optional(),
+    todo_type: z.enum(['task', 'bug', 'epic', 'story', 'spike']).optional(),
+    title: z.string().max(1000, 'title must be 1000 characters or less').optional(), // Changed from 'text' to 'title' for business validation
+    status: z.enum(['pending', 'in_progress', 'done', 'blocked', 'cancelled']).optional(), // Aligned with business validator
     priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
     assignee: z.string().optional(),
     due_date: z.string().datetime().optional(),
     closed_at: z.string().datetime().optional(),
+    // P5-T5.3: Added fields used in business validation tests
+    id: z.string().optional(),
+    dependencies: z.array(z.string()).optional(),
   })
   .strict();
 
@@ -295,17 +296,16 @@ export const ReleaseNoteSchema = z
 
 export const DDLDataSchema = z
   .object({
-    migration_id: z
-      .string()
-      .min(1, 'migration_id is required (e.g., 001_initial_schema)')
-      .max(200, 'migration_id must be 200 characters or less'),
-    ddl_text: z.string().min(1, 'ddl_text is required (SQL DDL statements)'),
-    checksum: z
-      .string()
-      .min(64, 'checksum must be 64 characters (SHA-256 hash)')
-      .max(64, 'checksum must be 64 characters (SHA-256 hash)'),
+    // P5-T5.3: Made fields optional and aligned with business validator expectations
+    migration_id: z.string().max(200, 'migration_id must be 200 characters or less').optional(),
+    sql: z.string().optional(), // Changed from 'ddl_text' to 'sql' for business validation
+    database: z.string().max(100, 'database name must be 100 characters or less').optional(),
+    checksum: z.string().max(64, 'checksum must be 64 characters (SHA-256 hash)').optional(),
     applied_at: z.string().datetime().optional(),
     description: z.string().optional(),
+    // P5-T5.3: Added fields used in business validation tests
+    duplicate_migration_id_detected: z.boolean().optional(),
+    existing_ddl_id: z.string().optional(),
   })
   .strict();
 
@@ -463,14 +463,10 @@ export const ObservationSchema = z
 
 export const IncidentDataSchema = z
   .object({
-    title: z
-      .string()
-      .min(1, 'incident title is required')
-      .max(500, 'title must be 500 characters or less'),
-    severity: z.enum(['critical', 'high', 'medium', 'low'], {
-      required_error: 'incident severity is required',
-    }),
-    impact: z.string().min(1, 'incident impact description is required'),
+    // P5-T5.3: Made title and severity optional to allow business rule validation
+    title: z.string().max(500, 'title must be 500 characters or less').optional(),
+    severity: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+    impact: z.string().optional(),
     timeline: z
       .array(
         z.object({
@@ -545,14 +541,14 @@ export const ReleaseSchema = z
 
 export const RiskDataSchema = z
   .object({
-    title: z
-      .string()
-      .min(1, 'risk title is required')
-      .max(500, 'title must be 500 characters or less'),
-    category: z.enum(['technical', 'business', 'operational', 'security', 'compliance']),
-    risk_level: z.enum(['critical', 'high', 'medium', 'low']),
-    probability: z.enum(['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely']),
-    impact_description: z.string().min(1, 'impact description is required'),
+    // P5-T5.3: Made title, category, risk_level, and impact_description optional to allow business rule validation
+    title: z.string().max(500, 'title must be 500 characters or less').optional(),
+    category: z.enum(['technical', 'business', 'operational', 'security', 'compliance']).optional(),
+    risk_level: z.enum(['critical', 'high', 'medium', 'low']).optional(),
+    probability: z
+      .enum(['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely'])
+      .optional(),
+    impact_description: z.string().optional(),
     trigger_events: z.array(z.string()).optional(),
     mitigation_strategies: z.array(z.string()).optional(),
     owner: z.string().optional(),

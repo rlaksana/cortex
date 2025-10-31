@@ -6,7 +6,7 @@
  * to resolve the complex interface compatibility issues.
  */
 
-import type { KnowledgeItem } from '../../types/core-interfaces';
+import type { KnowledgeItem } from '../../types/core-interfaces.js';
 
 /**
  * Simplified similarity result for compatibility

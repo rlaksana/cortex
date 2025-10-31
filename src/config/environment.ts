@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
 import crypto from 'node:crypto';
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 // Load environment variables
 void dotenv.config();

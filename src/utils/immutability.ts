@@ -15,6 +15,20 @@ export class ImmutabilityViolationError extends Error {
 }
 
 /**
+ * Error thrown when business rules are violated during item processing
+ * Used for P5-T5.3 to translate business rule violations to proper status codes
+ */
+export class BusinessRuleValidationError extends Error {
+  public readonly errors: string[];
+
+  constructor(message: string, errors: string[]) {
+    super(message);
+    this.name = 'BusinessRuleValidationError';
+    this.errors = errors;
+  }
+}
+
+/**
  * Check if ADR update violates immutability rules
  *
  * Rule: Once ADR status = 'accepted', content becomes immutable

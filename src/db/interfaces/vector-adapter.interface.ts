@@ -6,7 +6,7 @@
  * vector similarity operations.
  */
 
-import { DatabaseConfig, DatabaseMetrics } from '../database-interface';
+import { DatabaseConfig, DatabaseMetrics } from '../database-interface.js';
 import {
   KnowledgeItem,
   StoreError,
@@ -14,7 +14,7 @@ import {
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
-} from '../../types/core-interfaces';
+} from '../../types/core-interfaces.js';
 
 // Re-export DatabaseMetrics for use in other modules
 export type { DatabaseMetrics };

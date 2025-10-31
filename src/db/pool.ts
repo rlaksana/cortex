@@ -11,8 +11,8 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '../utils/logger';
-import { Environment } from '../config/environment';
+import { logger } from '../utils/logger.js';
+import { Environment } from '../config/environment.js';
 
 /**
  * Qdrant connection configuration

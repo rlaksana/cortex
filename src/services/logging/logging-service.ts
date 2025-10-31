@@ -9,7 +9,7 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { createGzip } from 'zlib';
 import { performance } from 'perf_hooks';
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import type {
   LogEntry,
   LogLevel,
@@ -36,7 +36,7 @@ import type {
   LogWriteResult,
   LogMetrics,
   LogConfiguration,
-} from '../../types/logging-interfaces';
+} from '../../types/logging-interfaces.js';
 
 export class LoggingService {
   private config: LogConfiguration;

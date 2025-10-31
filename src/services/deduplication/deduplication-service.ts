@@ -1,9 +1,9 @@
-import { logger } from '../../utils/logger';
-import { qdrant } from '../../db/qdrant-client';
+import { logger } from '../../utils/logger.js';
+import { qdrant } from '../../db/qdrant-client.js';
 import type {
   DeduplicationService as IDeduplicationService,
   KnowledgeItem,
-} from '../../types/core-interfaces';
+} from '../../types/core-interfaces.js';
 
 /**
  * Configuration for deduplication behavior

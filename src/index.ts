@@ -48,6 +48,7 @@ import { BaselineTelemetry } from './services/telemetry/baseline-telemetry.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { createHash } from 'node:crypto';
 import { searchService } from './services/search/search-service.js';
+import { runExpiryWorker } from './services/expiry-worker.js';
 
 // === IMPORTANT: Disable dotenv stdout output for MCP compatibility ===
 // dotenv writes injection messages to stdout which corrupts MCP stdio transport
@@ -696,13 +697,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'string',
               enum: ['fast', 'auto', 'deep'],
               default: 'auto',
-              description: 'Search mode: fast (keyword-only, ≤20 results), auto (hybrid, ≤50 results), deep (semantic+expansion, ≤100 results)',
+              description:
+                'Search mode: fast (keyword-only, ≤20 results), auto (hybrid, ≤50 results), deep (semantic+expansion, ≤100 results)',
             },
             expand: {
               type: 'string',
               enum: ['relations', 'parents', 'children', 'none'],
               default: 'none',
-              description: 'P4-T4.2: Graph expansion options - relations (both parents+children), parents (incoming only), children (outgoing only), none (no expansion)',
+              description:
+                'P4-T4.2: Graph expansion options - relations (both parents+children), parents (incoming only), children (outgoing only), none (no expansion)',
             },
           },
           required: ['query'],
@@ -747,15 +750,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'system_metrics',
-        description: 'P8-T8.3: Get comprehensive system metrics including store_count, find_count, dedupe_rate, validator_fail_rate, purge_count',
+        description:
+          'P8-T8.3: Get comprehensive system metrics including store_count, find_count, dedupe_rate, validator_fail_rate, purge_count',
         inputSchema: {
           type: 'object',
           properties: {
             summary: {
               type: 'boolean',
               default: false,
-              description: 'Return simplified metrics summary instead of full detailed metrics'
-            }
+              description: 'Return simplified metrics summary instead of full detailed metrics',
+            },
           },
           required: [],
         },
@@ -772,9 +776,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // T8.2: Extract actor identifier for rate limiting
   // Use session ID, API key, or fallback to request timestamp
-  const actorId = (request.params as any)?.__session_id ||
-                  (request.params as any)?.__api_key ||
-                  `anonymous_${Date.now()}`;
+  const actorId =
+    (request.params as any)?.__session_id ||
+    (request.params as any)?.__api_key ||
+    `anonymous_${Date.now()}`;
 
   logger.info(`Executing tool: ${name}`, { tool: name, arguments: args, actor: actorId });
 
@@ -790,7 +795,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         actor: actorId,
         remaining: rateLimitResult.remaining,
         resetTime: new Date(rateLimitResult.resetTime).toISOString(),
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
       });
 
       return {
@@ -834,7 +839,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       tool: name,
       actor: actorId,
       rateLimitRemaining: rateLimitResult.remaining,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
     });
 
     // T8.2: Add rate limit metadata to response for transparency
@@ -845,7 +850,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           allowed: true,
           remaining: rateLimitResult.remaining,
           reset_time: new Date(rateLimitResult.resetTime).toISOString(),
-          identifier: rateLimitResult.identifier
+          identifier: rateLimitResult.identifier,
         };
         result.content[0].text = JSON.stringify(responseData, null, 2);
       } catch {
@@ -856,15 +861,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    logger.error(
-      `Tool execution failed: ${name} (${duration}ms)`,
-      {
-        tool: name,
-        actor: actorId,
-        error: error instanceof Error ? error.message : String(error),
-        duration: `${duration}ms`
-      }
-    );
+    logger.error(`Tool execution failed: ${name} (${duration}ms)`, {
+      tool: name,
+      actor: actorId,
+      error: error instanceof Error ? error.message : String(error),
+      duration: `${duration}ms`,
+    });
 
     return {
       content: [
@@ -893,7 +895,9 @@ async function handleMemoryStore(args: { items: any[] }) {
     const { validateMcpInputFormat, transformMcpInputToKnowledgeItems } = await import(
       './utils/mcp-transform.js'
     );
-    const { memoryStoreOrchestrator } = await import('./services/orchestrators/memory-store-orchestrator.js');
+    const { memoryStoreOrchestrator } = await import(
+      './services/orchestrators/memory-store-orchestrator.js'
+    );
 
     // T8.1: Log operation start
     await auditService.logOperation('memory_store_start', {
@@ -901,9 +905,9 @@ async function handleMemoryStore(args: { items: any[] }) {
       scope: { batchId },
       metadata: {
         item_count: args.items.length,
-        item_types: args.items.map(item => item?.kind).filter(Boolean),
-        source: 'mcp_tool'
-      }
+        item_types: args.items.map((item) => item?.kind).filter(Boolean),
+        source: 'mcp_tool',
+      },
     });
 
     // Step 1: Validate MCP input format
@@ -917,8 +921,8 @@ async function handleMemoryStore(args: { items: any[] }) {
         severity: 'warn',
         metadata: {
           validation_errors: mcpValidation.errors,
-          item_count: args.items.length
-        }
+          item_count: args.items.length,
+        },
       });
       throw new Error(`Invalid MCP input format: ${mcpValidation.errors.join(', ')}`);
     }
@@ -943,13 +947,16 @@ async function handleMemoryStore(args: { items: any[] }) {
       metadata: {
         total_processed: response.summary?.total || args.items.length,
         successful_stores: response.stored.length,
-        validation_errors: response.errors.filter(e => e.error_code === 'validation_error').length,
-        business_rule_blocks: response.errors.filter(e => e.error_code === 'business_rule_blocked').length,
+        validation_errors: response.errors.filter((e) => e.error_code === 'validation_error')
+          .length,
+        business_rule_blocks: response.errors.filter(
+          (e) => e.error_code === 'business_rule_blocked'
+        ).length,
         dedupe_skips: response.summary?.skipped_dedupe || 0,
-        item_types: response.stored.map(item => item.kind),
-        scope_isolation: [...new Set(transformedItems.map(item => JSON.stringify(item.scope)))],
-        mcp_tool: true
-      }
+        item_types: response.stored.map((item) => item.kind),
+        scope_isolation: [...new Set(transformedItems.map((item) => JSON.stringify(item.scope)))],
+        mcp_tool: true,
+      },
     });
 
     // P8-T8.3: Update system metrics
@@ -959,9 +966,9 @@ async function handleMemoryStore(args: { items: any[] }) {
       data: {
         success,
         kind: transformedItems[0]?.kind || 'unknown',
-        item_count: args.items.length
+        item_count: args.items.length,
       },
-      duration_ms: duration
+      duration_ms: duration,
     });
 
     // Update dedupe and validation metrics
@@ -969,17 +976,20 @@ async function handleMemoryStore(args: { items: any[] }) {
       operation: 'dedupe',
       data: {
         items_processed: response.summary?.total || args.items.length,
-        items_skipped: response.summary?.skipped_dedupe || 0
-      }
+        items_skipped: response.summary?.skipped_dedupe || 0,
+      },
     });
 
     systemMetricsService.updateMetrics({
       operation: 'validate',
       data: {
         items_validated: response.summary?.total || args.items.length,
-        validation_failures: response.errors.filter(e => e.error_code === 'validation_error').length,
-        business_rule_blocks: response.errors.filter(e => e.error_code === 'business_rule_blocked').length
-      }
+        validation_failures: response.errors.filter((e) => e.error_code === 'validation_error')
+          .length,
+        business_rule_blocks: response.errors.filter(
+          (e) => e.error_code === 'business_rule_blocked'
+        ).length,
+      },
     });
 
     return {
@@ -998,8 +1008,8 @@ async function handleMemoryStore(args: { items: any[] }) {
               audit_metadata: {
                 batch_id: batchId,
                 duration_ms: duration,
-                audit_logged: true
-              }
+                audit_logged: true,
+              },
             },
             null,
             2
@@ -1020,12 +1030,12 @@ async function handleMemoryStore(args: { items: any[] }) {
       error: {
         message: error instanceof Error ? error.message : 'Unknown error',
         code: 'STORE_OPERATION_FAILED',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       },
       metadata: {
         item_count: args.items.length,
-        mcp_tool: true
-      }
+        mcp_tool: true,
+      },
     });
 
     throw error;
@@ -1054,6 +1064,13 @@ async function handleMemoryFind(args: {
     // Ensure database is initialized before processing
     await ensureDatabaseInitialized();
 
+    // P6-T6.3: Apply default org scope when memory_find called without scope
+    let effectiveScope = args.scope;
+    if (!effectiveScope && env.CORTEX_ORG) {
+      effectiveScope = { org: env.CORTEX_ORG };
+      logger.info('P6-T6.3: Applied default org scope', { default_org: env.CORTEX_ORG });
+    }
+
     // T8.1: Log search start
     await auditService.logOperation('memory_find_start', {
       resource: 'knowledge_search',
@@ -1065,116 +1082,119 @@ async function handleMemoryFind(args: {
         mode: args.mode || 'auto',
         expand: args.expand || 'none',
         types: args.types || [],
-        scope: args.scope || {},
-        source: 'mcp_tool'
-      }
-    });
-
-  // P3-T3.1: Use SearchService instead of direct vectorDB.searchItems call
-  // P4-T4.2: Include expand parameter for graph expansion
-  const searchQuery: {
-    query: string;
-    limit: number;
-    types?: string[];
-    scope?: any;
-    mode: 'fast' | 'auto' | 'deep';
-    expand?: 'relations' | 'parents' | 'children' | 'none';
-  } = {
-    query: args.query,
-    limit: args.limit || 10,
-    scope: args.scope,
-    mode: args.mode || 'auto',
-    expand: args.expand || 'none'
-  };
-
-  // Only add types if they exist
-  if (args.types && args.types.length > 0) {
-    searchQuery.types = args.types;
-  }
-
-  // P3-T3.2: Use searchByMode for mode-specific search behavior
-  const searchResult = await searchService.searchByMode(searchQuery);
-
-  // Additional filtering (in case SearchService doesn't fully respect filters)
-  let items = searchResult.results;
-  if (args.types && args.types.length > 0) {
-    items = items.filter((item) => args.types!.includes(item.kind));
-  }
-
-  // Filter by scope if specified
-  if (args.scope) {
-    items = items.filter((item) => {
-      if (!item.scope) return false;
-      if (args.scope.project && item.scope.project !== args.scope.project) return false;
-      if (args.scope.branch && item.scope.branch !== args.scope.branch) return false;
-      if (args.scope.org && item.scope.org !== args.scope.org) return false;
-      return true;
-    });
-  }
-
-  // Calculate average confidence
-  const averageConfidence = items.length > 0
-    ? items.reduce((sum, item) => sum + item.confidence_score, 0) / items.length
-    : 0;
-
-  const duration = Date.now() - startTime;
-
-  // T8.1: Log search completion with detailed metrics
-  await auditService.logOperation('memory_find_complete', {
-    resource: 'knowledge_search',
-    scope: { searchId },
-    success: true,
-    duration,
-    severity: 'info',
-    metadata: {
-      query: args.query,
-      strategy: searchResult.strategy || 'hybrid',
-      results_found: items.length,
-      average_confidence: averageConfidence,
-      execution_time: searchResult.executionTime,
-      item_types_found: [...new Set(items.map(item => item.kind))],
-      scope_filtering: !!args.scope,
-      type_filtering: !!(args.types && args.types.length > 0),
-      mcp_tool: true
-    }
-  });
-
-  // P8-T8.3: Update system metrics for find operation
-  const { systemMetricsService } = await import('./services/metrics/system-metrics.js');
-  systemMetricsService.updateMetrics({
-    operation: 'find',
-    data: {
-      success: true,
-      mode: args.mode || 'auto',
-      results_count: items.length
-    },
-    duration_ms: duration
-  });
-
-  return {
-    content: [
-      {
-        type: 'text',
-        text: JSON.stringify(
-          {
-            query: args.query,
-            strategy: searchResult.strategy || 'hybrid',
-            confidence: averageConfidence,
-            total: items.length,
-            executionTime: searchResult.executionTime,
-            items,
-            audit_metadata: {
-              search_id: searchId,
-              duration_ms: duration,
-              audit_logged: true
-            }
-          },
-          null,
-          2
-        ),
+        original_scope: args.scope || {},
+        effective_scope: effectiveScope || {},
+        default_scope_applied: !args.scope && !!env.CORTEX_ORG,
+        source: 'mcp_tool',
       },
-    ],
-  };
+    });
+
+    // P3-T3.1: Use SearchService instead of direct vectorDB.searchItems call
+    // P4-T4.2: Include expand parameter for graph expansion
+    const searchQuery: {
+      query: string;
+      limit: number;
+      types?: string[];
+      scope?: any;
+      mode: 'fast' | 'auto' | 'deep';
+      expand?: 'relations' | 'parents' | 'children' | 'none';
+    } = {
+      query: args.query,
+      limit: args.limit || 10,
+      scope: effectiveScope,
+      mode: args.mode || 'auto',
+      expand: args.expand || 'none',
+    };
+
+    // Only add types if they exist
+    if (args.types && args.types.length > 0) {
+      searchQuery.types = args.types;
+    }
+
+    // P3-T3.2: Use searchByMode for mode-specific search behavior
+    const searchResult = await searchService.searchByMode(searchQuery);
+
+    // Additional filtering (in case SearchService doesn't fully respect filters)
+    let items = searchResult.results;
+    if (args.types && args.types.length > 0) {
+      items = items.filter((item) => args.types!.includes(item.kind));
+    }
+
+    // Filter by scope if specified
+    if (args.scope) {
+      items = items.filter((item) => {
+        if (!item.scope) return false;
+        if (args.scope.project && item.scope.project !== args.scope.project) return false;
+        if (args.scope.branch && item.scope.branch !== args.scope.branch) return false;
+        if (args.scope.org && item.scope.org !== args.scope.org) return false;
+        return true;
+      });
+    }
+
+    // Calculate average confidence
+    const averageConfidence =
+      items.length > 0
+        ? items.reduce((sum, item) => sum + item.confidence_score, 0) / items.length
+        : 0;
+
+    const duration = Date.now() - startTime;
+
+    // T8.1: Log search completion with detailed metrics
+    await auditService.logOperation('memory_find_complete', {
+      resource: 'knowledge_search',
+      scope: { searchId },
+      success: true,
+      duration,
+      severity: 'info',
+      metadata: {
+        query: args.query,
+        strategy: searchResult.strategy || 'hybrid',
+        results_found: items.length,
+        average_confidence: averageConfidence,
+        execution_time: searchResult.executionTime,
+        item_types_found: [...new Set(items.map((item) => item.kind))],
+        scope_filtering: !!args.scope,
+        type_filtering: !!(args.types && args.types.length > 0),
+        mcp_tool: true,
+      },
+    });
+
+    // P8-T8.3: Update system metrics for find operation
+    const { systemMetricsService } = await import('./services/metrics/system-metrics.js');
+    systemMetricsService.updateMetrics({
+      operation: 'find',
+      data: {
+        success: true,
+        mode: args.mode || 'auto',
+        results_count: items.length,
+      },
+      duration_ms: duration,
+    });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              query: args.query,
+              strategy: searchResult.strategy || 'hybrid',
+              confidence: averageConfidence,
+              total: items.length,
+              executionTime: searchResult.executionTime,
+              items,
+              audit_metadata: {
+                search_id: searchId,
+                duration_ms: duration,
+                audit_logged: true,
+              },
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
   } catch (error) {
     const duration = Date.now() - startTime;
 
@@ -1188,12 +1208,12 @@ async function handleMemoryFind(args: {
       error: {
         message: error instanceof Error ? error.message : 'Unknown error',
         code: 'SEARCH_OPERATION_FAILED',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       },
       metadata: {
         query: args.query,
-        mcp_tool: true
-      }
+        mcp_tool: true,
+      },
     });
 
     throw error;
@@ -1326,26 +1346,33 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              type: 'system_metrics_summary',
-              timestamp: new Date().toISOString(),
-              operations: {
-                total_stores: summary.operations.stores,
-                total_finds: summary.operations.finds,
-                total_purges: summary.operations.purges,
-                total_operations: summary.operations.stores + summary.operations.finds + summary.operations.purges
+            text: JSON.stringify(
+              {
+                type: 'system_metrics_summary',
+                timestamp: new Date().toISOString(),
+                operations: {
+                  total_stores: summary.operations.stores,
+                  total_finds: summary.operations.finds,
+                  total_purges: summary.operations.purges,
+                  total_operations:
+                    summary.operations.stores +
+                    summary.operations.finds +
+                    summary.operations.purges,
+                },
+                performance: {
+                  deduplication_rate_percent: summary.performance.dedupe_rate,
+                  validator_failure_rate_percent: summary.performance.validator_fail_rate,
+                  average_response_time_ms: summary.performance.avg_response_time,
+                },
+                health: {
+                  error_rate_percent: summary.health.error_rate,
+                  rate_limit_block_rate_percent: summary.health.block_rate,
+                  uptime_hours: summary.health.uptime_hours,
+                },
               },
-              performance: {
-                deduplication_rate_percent: summary.performance.dedupe_rate,
-                validator_failure_rate_percent: summary.performance.validator_fail_rate,
-                average_response_time_ms: summary.performance.avg_response_time
-              },
-              health: {
-                error_rate_percent: summary.health.error_rate,
-                rate_limit_block_rate_percent: summary.health.block_rate,
-                uptime_hours: summary.health.uptime_hours
-              }
-            }, null, 2),
+              null,
+              2
+            ),
           },
         ],
       };
@@ -1357,19 +1384,23 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              type: 'system_metrics_detailed',
-              timestamp: new Date().toISOString(),
-              store_count: metrics.store_count,
-              find_count: metrics.find_count,
-              purge_count: metrics.purge_count,
-              dedupe_rate: metrics.dedupe_rate,
-              validator_fail_rate: metrics.validator_fail_rate,
-              performance: metrics.performance,
-              errors: metrics.errors,
-              rate_limiting: metrics.rate_limiting,
-              memory: metrics.memory
-            }, null, 2),
+            text: JSON.stringify(
+              {
+                type: 'system_metrics_detailed',
+                timestamp: new Date().toISOString(),
+                store_count: metrics.store_count,
+                find_count: metrics.find_count,
+                purge_count: metrics.purge_count,
+                dedupe_rate: metrics.dedupe_rate,
+                validator_fail_rate: metrics.validator_fail_rate,
+                performance: metrics.performance,
+                errors: metrics.errors,
+                rate_limiting: metrics.rate_limiting,
+                memory: metrics.memory,
+              },
+              null,
+              2
+            ),
           },
         ],
       };
@@ -1385,6 +1416,72 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
         },
       ],
     };
+  }
+}
+
+// === Expiry Worker Scheduler ===
+
+let expiryWorkerInterval: NodeJS.Timeout | null = null;
+
+/**
+ * Start the expiry worker scheduler (runs daily at 2 AM by default)
+ * P6-T6.2: Initialize cron-like scheduling for expired item cleanup
+ */
+function startExpiryWorkerScheduler(): void {
+  // Schedule to run daily at 2 AM (like cron: 0 2 * * *)
+  const scheduleNextRun = (): void => {
+    const now = new Date();
+    const nextRun = new Date(now);
+
+    // Set to 2:00 AM of next day
+    nextRun.setDate(now.getDate() + 1);
+    nextRun.setHours(2, 0, 0, 0);
+
+    const timeUntilNextRun = nextRun.getTime() - now.getTime();
+
+    logger.info('P6-T6.2: Scheduled next expiry worker run', {
+      next_run: nextRun.toISOString(),
+      hours_until_next: Math.round(timeUntilNextRun / (1000 * 60 * 60)),
+    });
+
+    // Clear existing interval if any
+    if (expiryWorkerInterval) {
+      clearInterval(expiryWorkerInterval);
+    }
+
+    // Set timeout for next run
+    setTimeout(async () => {
+      try {
+        logger.info('P6-T6.2: Running scheduled expiry worker');
+        const result = await runExpiryWorker();
+        logger.info('P6-T6.2: Scheduled expiry worker completed', {
+          deleted_counts: result.deleted_counts,
+          total_deleted: result.total_deleted,
+          duration_ms: result.duration_ms,
+        });
+      } catch (error) {
+        logger.error('P6-T6.2: Scheduled expiry worker failed', { error });
+      } finally {
+        // Schedule the next run
+        scheduleNextRun();
+      }
+    }, timeUntilNextRun);
+  };
+
+  // Start the scheduling loop
+  scheduleNextRun();
+
+  logger.info('P6-T6.2: Expiry worker scheduler started (runs daily at 2 AM)');
+}
+
+/**
+ * Stop the expiry worker scheduler (for graceful shutdown)
+ */
+function stopExpiryWorkerScheduler(): void {
+  if (expiryWorkerInterval) {
+    clearInterval(expiryWorkerInterval);
+    expiryWorkerInterval = null;
+    logger.info('P6-T6.2: Expiry worker scheduler stopped');
   }
 }
 
@@ -1468,9 +1565,15 @@ async function startServer(): Promise<void> {
 
     // Initialize database in background after transport is ready
     logger.info('Starting background database initialization...');
-    ensureDatabaseInitialized().catch((error) => {
-      logger.error('Background database initialization failed:', error);
-    });
+    ensureDatabaseInitialized()
+      .then(() => {
+        // Start expiry worker after database is ready
+        logger.info('Starting expiry worker scheduler...');
+        startExpiryWorkerScheduler();
+      })
+      .catch((error) => {
+        logger.error('Background database initialization failed:', error);
+      });
 
     logger.info('Cortex Memory MCP Server is ready and accepting requests!');
   } catch (error) {
@@ -1484,11 +1587,13 @@ async function startServer(): Promise<void> {
 // Handle process termination
 process.on('SIGINT', () => {
   logger.info('Received SIGINT, shutting down gracefully...');
+  stopExpiryWorkerScheduler();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   logger.info('Received SIGTERM, shutting down gracefully...');
+  stopExpiryWorkerScheduler();
   process.exit(0);
 });
 

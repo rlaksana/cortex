@@ -2,13 +2,14 @@
 
 ## Overview
 
-The Cortex Memory MCP Server provides a comprehensive API for knowledge storage, retrieval, and management through the Model Context Protocol (MCP). This document covers all available API endpoints, their parameters, responses, and usage examples.
+The Cortex Memory MCP Server provides a basic API for knowledge storage, retrieval, and management through the Model Context Protocol (MCP). This document covers currently implemented API endpoints, their parameters, responses, and usage examples.
 
 ## Base Architecture
 
-The system uses a unified database layer combining:
-- **PostgreSQL**: Relational data, full-text search, and structured queries
-- **Qdrant**: Vector similarity search and semantic understanding
+The system uses a Qdrant-only database layer:
+- **Qdrant**: Vector similarity search, semantic understanding, and all data storage
+
+⚠️ **Important**: This system uses Qdrant exclusively. PostgreSQL is not used or configured.
 
 ## Core API Methods
 
@@ -46,10 +47,7 @@ interface MemoryStoreResponse {
     action_performed: string;
     similar_items_checked: number;
     duplicates_found: number;
-    contradictions_detected: boolean;
-    recommendation: string;
     reasoning: string;
-    user_message_suggestion: string;
   };
 }
 
@@ -66,6 +64,13 @@ interface StorageError {
   message: string;
 }
 ```
+
+**Current Limitations:**
+- No `contradictions_detected` field - not implemented
+- No `recommendation` field - not implemented
+- No `user_message_suggestion` field - not implemented
+- Basic duplicate detection only (85% similarity threshold)
+- No per-item status reporting
 
 **Usage Examples**:
 
@@ -136,7 +141,7 @@ if (result.errors.length > 0) {
 
 ### 2. memory_find
 
-Find knowledge items using intelligent multi-strategy search with semantic understanding.
+Find knowledge items using basic semantic vector search.
 
 **Endpoint**: `memory_find`
 
@@ -150,7 +155,7 @@ interface MemoryFindRequest {
     org?: string;
   };
   types?: string[];
-  mode?: "auto" | "fast" | "deep";
+  mode?: "auto"; // Only "auto" mode is currently implemented
   limit?: number;
 }
 ```
@@ -163,8 +168,6 @@ interface MemoryFindResponse {
   autonomous_context: {
     search_mode_used: string;
     results_found: number;
-    confidence_average: number;
-    user_message_suggestion: string;
   };
 }
 
@@ -177,10 +180,17 @@ interface SearchResult {
     snippet: string;
   };
   created_at: string;
-  confidence_score: number;
-  match_type: "exact" | "semantic" | "keyword" | "fuzzy";
+  confidence_score: number; // Basic similarity score only
+  match_type: "semantic"; // Only semantic matching implemented
 }
 ```
+
+**Current Limitations:**
+- Only "auto" search mode available (fast/deep not implemented)
+- No `confidence_average` calculation - basic similarity only
+- No `user_message_suggestion` field - not implemented
+- Only semantic matching (no exact, keyword, or fuzzy matching)
+- No multi-strategy search capabilities
 
 **Usage Examples**:
 
@@ -218,9 +228,9 @@ const result = await client.callTool("memory_find", {
 
 **Search Modes**:
 
-- **auto** (default): Automatically selects the best search strategy based on query complexity
-- **fast**: Prioritizes speed with keyword-based search
-- **deep**: Comprehensive analysis with semantic understanding and context expansion
+- **auto** (default): Basic semantic search using Qdrant vectors
+- ~~fast~~: **Not implemented** - keyword-based search not available
+- ~~deep~~: **Not implemented** - comprehensive analysis not available
 
 **Result Processing**:
 ```javascript
@@ -228,9 +238,9 @@ const result = await client.callTool("memory_find", {
   query: "API rate limiting implementation"
 });
 
-// Process results by confidence
-const highConfidence = result.results.filter(r => r.confidence_score > 0.8);
-const mediumConfidence = result.results.filter(r => r.confidence_score > 0.5 && r.confidence_score <= 0.8);
+// Process results by basic similarity score
+const highScore = result.results.filter(r => r.confidence_score > 0.8);
+const mediumScore = result.results.filter(r => r.confidence_score > 0.5 && r.confidence_score <= 0.8);
 
 // Group by type
 const byType = result.results.reduce((acc, item) => {
@@ -239,7 +249,7 @@ const byType = result.results.reduce((acc, item) => {
 }, {});
 
 console.log(`Found ${result.total_count} results using ${result.autonomous_context.search_mode_used} mode`);
-console.log(`Average confidence: ${result.autonomous_context.confidence_average}`);
+// Note: confidence_average is not available - only individual similarity scores
 ```
 
 ## Knowledge Types Reference
@@ -368,29 +378,29 @@ Step-by-step operational procedures and troubleshooting guides.
 }
 ```
 
-## Advanced Features
+## Currently Implemented Features
 
-### Autonomous Context Generation
+### Basic Context Generation
 
-Both `memory_store` and `memory_find` provide autonomous context that helps users understand what happened:
+Both `memory_store` and `memory_find` provide basic context:
 
 ```javascript
 // Storage context
 const storageResult = await client.callTool("memory_store", { items });
 console.log(`Action: ${storageResult.autonomous_context.action_performed}`);
 console.log(`Duplicates found: ${storageResult.autonomous_context.duplicates_found}`);
-console.log(`Recommendation: ${storageResult.autonomous_context.recommendation}`);
+console.log(`Reasoning: ${storageResult.autonomous_context.reasoning}`);
 
 // Search context
 const searchResult = await client.callTool("memory_find", { query: "..." });
 console.log(`Search mode: ${searchResult.autonomous_context.search_mode_used}`);
 console.log(`Results found: ${searchResult.autonomous_context.results_found}`);
-console.log(`Avg confidence: ${searchResult.autonomous_context.confidence_average}`);
+// Note: No confidence average or recommendations available
 ```
 
-### Duplicate Detection
+### Basic Duplicate Detection
 
-The system automatically detects duplicates using semantic similarity:
+The system detects basic duplicates using content similarity:
 
 ```javascript
 const result = await client.callTool("memory_store", {
@@ -402,9 +412,29 @@ const result = await client.callTool("memory_store", {
 
 if (result.autonomous_context.duplicates_found > 0) {
   console.log("Duplicate detected - existing similar item found");
-  console.log(`Recommendation: ${result.autonomous_context.recommendation}`);
+  console.log(`Reasoning: ${result.autonomous_context.reasoning}`);
+  // Note: No recommendations or merge suggestions available
 }
 ```
+
+## ⚠️ Not Yet Implemented
+
+The following advanced features are planned but **not currently available**:
+
+### Autonomous Context Generation
+- AI-generated recommendations and insights
+- User message suggestions
+- Advanced analysis and reasoning
+
+### Advanced Duplicate Detection
+- Contradiction detection
+- Merge suggestions
+- Conflict resolution
+
+### Enhanced Search Features
+- Multi-strategy search (keyword, hybrid, fuzzy)
+- Search result ranking and optimization
+- Query expansion and suggestions
 
 ### Scope-Based Isolation
 

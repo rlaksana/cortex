@@ -3,9 +3,11 @@
     "type": "stdio",
     "command": "node",
     "args": [
-      "D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"
+      // Use the silent entry to guarantee no non‑protocol stdout
+      "D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\silent-mcp-entry.js"
     ],
     "env": {
+      "MCP_TRANSPORT": "stdio",
       "OPENAI_API_KEY": "your-openai-api-key-here"
     }
   }

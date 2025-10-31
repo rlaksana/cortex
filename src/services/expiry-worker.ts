@@ -150,7 +150,7 @@ export async function runExpiryWorker(
     logger.info(
       {
         expired_count: expiredItems.length,
-        dry_run: finalConfig.dry_run
+        dry_run: finalConfig.dry_run,
       },
       'P6-T6.2: Processing expired items'
     );
@@ -194,7 +194,6 @@ export async function runExpiryWorker(
     );
 
     return result;
-
   } catch (error) {
     result.duration_ms = Date.now() - startTime;
     result.error = error instanceof Error ? error.message : 'Unknown error';
@@ -216,7 +215,10 @@ export async function runExpiryWorker(
  * Find items that have expired using search functionality
  * Uses a filter query to find items where expiry_at exists and is in the past
  */
-async function findExpiredItems(db: QdrantOnlyDatabaseLayer, filter: { expiry_before: string }): Promise<KnowledgeItem[]> {
+async function findExpiredItems(
+  db: QdrantOnlyDatabaseLayer,
+  filter: { expiry_before: string }
+): Promise<KnowledgeItem[]> {
   try {
     // Search for items with expiry_at timestamps in the past
     // Note: This requires the database layer to support expiry_at filtering
@@ -236,7 +238,7 @@ async function findExpiredItems(db: QdrantOnlyDatabaseLayer, filter: { expiry_be
 
     // Manual filtering for expired items (temporary solution)
     // In a proper implementation, this filtering would happen in the database
-    const expiredItems = response.items.filter(item => {
+    const expiredItems = response.items.filter((item) => {
       const expiryTime = item.data?.expiry_at;
       if (!expiryTime) return false;
 
@@ -253,15 +255,17 @@ async function findExpiredItems(db: QdrantOnlyDatabaseLayer, filter: { expiry_be
       {
         total_items: response.items.length,
         expired_items: expiredItems.length,
-        expiry_before: filter.expiry_before
+        expiry_before: filter.expiry_before,
       },
       'P6-T6.2: Found expired items'
     );
 
     return expiredItems;
-
   } catch (error) {
-    logger.error({ error, expiry_before: filter.expiry_before }, 'P6-T6.2: Error finding expired items');
+    logger.error(
+      { error, expiry_before: filter.expiry_before },
+      'P6-T6.2: Error finding expired items'
+    );
     throw error;
   }
 }
@@ -304,7 +308,7 @@ async function processBatch(
       {
         batch_size: batch.length,
         would_delete: totalDeleted,
-        by_kind: deletedCounts
+        by_kind: deletedCounts,
       },
       'P6-T6.2: Dry run batch - items would be deleted'
     );
@@ -315,7 +319,7 @@ async function processBatch(
   // Actual deletion
   try {
     // Extract IDs for batch deletion (filter out undefined)
-    const ids = batch.map(item => item.id).filter((id): id is string => id !== undefined);
+    const ids = batch.map((item) => item.id).filter((id): id is string => id !== undefined);
 
     // Use the existing delete method from the database layer
     const deleteResult = await db.delete(ids, { cascade: true, soft: false });
@@ -331,7 +335,7 @@ async function processBatch(
         batch_size: batch.length,
         deleted: totalDeleted,
         errors: deleteResult.errors.length,
-        by_kind: deletedCounts
+        by_kind: deletedCounts,
       },
       'P6-T6.2: Batch deleted successfully'
     );
@@ -341,18 +345,17 @@ async function processBatch(
         {
           errors: deleteResult.errors,
           batch_size: batch.length,
-          successful_deletions: totalDeleted
+          successful_deletions: totalDeleted,
         },
         'P6-T6.2: Some items in batch failed to delete'
       );
     }
-
   } catch (error) {
     logger.error(
       {
         error,
         batch_size: batch.length,
-        processed_so_far: totalDeleted
+        processed_so_far: totalDeleted,
       },
       'P6-T6.2: Error processing batch'
     );
@@ -412,7 +415,7 @@ export async function validateExpirySystem(): Promise<{
       kind: 'entity' as const,
       scope: { project: 'test' },
       data: {},
-      expiry_at: new Date(Date.now() - 1000).toISOString() // 1 second ago
+      expiry_at: new Date(Date.now() - 1000).toISOString(), // 1 second ago
     };
 
     const isTestItemExpired = isExpired(testItem);
@@ -427,7 +430,6 @@ export async function validateExpirySystem(): Promise<{
       issues,
       recommendations,
     };
-
   } catch (error) {
     issues.push(`Failed to validate expiry system: ${error}`);
     return {

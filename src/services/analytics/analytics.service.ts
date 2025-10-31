@@ -10,7 +10,7 @@
  * - Report generation and export
  */
 
-import { logger } from '../../utils/logger';
+import { logger } from '../../utils/logger.js';
 import {
   KnowledgeAnalytics,
   RelationshipAnalytics,
@@ -20,7 +20,7 @@ import {
   AnalyticsReport,
   AnalyticsQuery,
   AnalyticsFilter,
-} from '../../types/core-interfaces';
+} from '../../types/core-interfaces.js';
 
 /**
  * Analytics service configuration

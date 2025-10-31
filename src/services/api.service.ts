@@ -14,7 +14,7 @@ import type {
   GraphQLSchema,
   ApiMetrics,
   ApiMiddleware,
-} from '../types/api-interfaces';
+} from '../types/api-interfaces.js';
 
 export class ApiService {
   private endpoints: Map<string, ApiEndpoint> = new Map();

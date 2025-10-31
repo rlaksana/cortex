@@ -21,8 +21,8 @@
 
 import { createHash } from 'node:crypto';
 import { OpenAI } from 'openai';
-import { logger } from '../../utils/logger';
-import { DatabaseError, ValidationError } from '../../db/database-interface';
+import { logger } from '../../utils/logger.js';
+import { DatabaseError, ValidationError } from '../../db/database-interface.js';
 
 /**
  * Embedding configuration options

@@ -1,6 +1,6 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { DecisionData, ScopeFilter } from '../../types/knowledge-data';
-import { validateADRImmutability } from '../../utils/immutability';
+import type { DecisionData, ScopeFilter } from '../../types/knowledge-data.js';
+import { validateADRImmutability } from '../../utils/immutability.js';
 
 export async function storeDecision(data: DecisionData, scope: ScopeFilter): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');

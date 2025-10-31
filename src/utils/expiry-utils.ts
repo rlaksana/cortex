@@ -9,10 +9,7 @@ import type { KnowledgeItem } from '../types/core-interfaces.js';
 /**
  * Calculate expiry timestamp for an item based on its scope and preferred time period
  */
-export function calculateItemExpiry(
-  item: KnowledgeItem,
-  defaultTTL?: ExpiryTimeLabel
-): string {
+export function calculateItemExpiry(item: KnowledgeItem, defaultTTL?: ExpiryTimeLabel): string {
   // Priority order: explicit expiry_at → scope-level TTL → default
   if (item.data.expiry_at) {
     return item.data.expiry_at;

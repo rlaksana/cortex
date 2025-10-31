@@ -97,53 +97,53 @@ export class SystemMetricsService {
       total: 0,
       successful: 0,
       failed: 0,
-      by_kind: {}
+      by_kind: {},
     },
     find_count: {
       total: 0,
       successful: 0,
       failed: 0,
-      by_mode: {}
+      by_mode: {},
     },
     purge_count: {
       total: 0,
       successful: 0,
       failed: 0,
-      by_kind: {}
+      by_kind: {},
     },
     dedupe_rate: {
       items_processed: 0,
       items_skipped: 0,
-      rate: 0
+      rate: 0,
     },
     validator_fail_rate: {
       items_validated: 0,
       validation_failures: 0,
       business_rule_blocks: 0,
-      fail_rate: 0
+      fail_rate: 0,
     },
     performance: {
       avg_store_duration_ms: 0,
       avg_find_duration_ms: 0,
       avg_validation_duration_ms: 0,
-      uptime_ms: 0
+      uptime_ms: 0,
     },
     errors: {
       total_errors: 0,
       by_error_type: {},
-      by_tool: {}
+      by_tool: {},
     },
     rate_limiting: {
       total_requests: 0,
       blocked_requests: 0,
       block_rate: 0,
-      active_actors: 0
+      active_actors: 0,
     },
     memory: {
       active_knowledge_items: 0,
       expired_items_cleaned: 0,
-      memory_usage_kb: 0
-    }
+      memory_usage_kb: 0,
+    },
   };
 
   private startTime: number = Date.now();
@@ -186,7 +186,6 @@ export class SystemMetricsService {
 
       // Update uptime
       this.metrics.performance.uptime_ms = Date.now() - this.startTime;
-
     } catch (error) {
       logger.error('Failed to update metrics', { error, update });
     }
@@ -281,11 +280,13 @@ export class SystemMetricsService {
     }
 
     // Calculate fail rate
-    const totalFailures = this.metrics.validator_fail_rate.validation_failures +
-                         this.metrics.validator_fail_rate.business_rule_blocks;
-    this.metrics.validator_fail_rate.fail_rate = this.metrics.validator_fail_rate.items_validated > 0
-      ? (totalFailures / this.metrics.validator_fail_rate.items_validated) * 100
-      : 0;
+    const totalFailures =
+      this.metrics.validator_fail_rate.validation_failures +
+      this.metrics.validator_fail_rate.business_rule_blocks;
+    this.metrics.validator_fail_rate.fail_rate =
+      this.metrics.validator_fail_rate.items_validated > 0
+        ? (totalFailures / this.metrics.validator_fail_rate.items_validated) * 100
+        : 0;
   }
 
   /**
@@ -296,9 +297,10 @@ export class SystemMetricsService {
     this.metrics.dedupe_rate.items_skipped += Number(data.items_skipped || 0);
 
     // Calculate dedupe rate
-    this.metrics.dedupe_rate.rate = this.metrics.dedupe_rate.items_processed > 0
-      ? (this.metrics.dedupe_rate.items_skipped / this.metrics.dedupe_rate.items_processed) * 100
-      : 0;
+    this.metrics.dedupe_rate.rate =
+      this.metrics.dedupe_rate.items_processed > 0
+        ? (this.metrics.dedupe_rate.items_skipped / this.metrics.dedupe_rate.items_processed) * 100
+        : 0;
   }
 
   /**
@@ -313,8 +315,7 @@ export class SystemMetricsService {
     }
 
     if (data.tool) {
-      this.metrics.errors.by_tool[data.tool] =
-        (this.metrics.errors.by_tool[data.tool] || 0) + 1;
+      this.metrics.errors.by_tool[data.tool] = (this.metrics.errors.by_tool[data.tool] || 0) + 1;
     }
   }
 
@@ -327,9 +328,12 @@ export class SystemMetricsService {
     this.metrics.rate_limiting.active_actors = Number(data.active_actors || 0);
 
     // Calculate block rate
-    this.metrics.rate_limiting.block_rate = this.metrics.rate_limiting.total_requests > 0
-      ? (this.metrics.rate_limiting.blocked_requests / this.metrics.rate_limiting.total_requests) * 100
-      : 0;
+    this.metrics.rate_limiting.block_rate =
+      this.metrics.rate_limiting.total_requests > 0
+        ? (this.metrics.rate_limiting.blocked_requests /
+            this.metrics.rate_limiting.total_requests) *
+          100
+        : 0;
   }
 
   /**
@@ -343,7 +347,8 @@ export class SystemMetricsService {
     }
 
     // Calculate running average
-    const avg = this.performanceBuffer.reduce((sum, val) => sum + val, 0) / this.performanceBuffer.length;
+    const avg =
+      this.performanceBuffer.reduce((sum, val) => sum + val, 0) / this.performanceBuffer.length;
     (this.metrics.performance as any)[metric] = Math.round(avg * 100) / 100; // Round to 2 decimal places
   }
 
@@ -364,27 +369,33 @@ export class SystemMetricsService {
     performance: { dedupe_rate: number; validator_fail_rate: number; avg_response_time: number };
     health: { error_rate: number; block_rate: number; uptime_hours: number };
   } {
-    const totalOps = this.metrics.store_count.total + this.metrics.find_count.total + this.metrics.purge_count.total;
+    const totalOps =
+      this.metrics.store_count.total +
+      this.metrics.find_count.total +
+      this.metrics.purge_count.total;
     const errorRate = totalOps > 0 ? (this.metrics.errors.total_errors / totalOps) * 100 : 0;
-    const avgResponseTime = (this.metrics.performance.avg_store_duration_ms +
-                            this.metrics.performance.avg_find_duration_ms) / 2;
+    const avgResponseTime =
+      (this.metrics.performance.avg_store_duration_ms +
+        this.metrics.performance.avg_find_duration_ms) /
+      2;
 
     return {
       operations: {
         stores: this.metrics.store_count.total,
         finds: this.metrics.find_count.total,
-        purges: this.metrics.purge_count.total
+        purges: this.metrics.purge_count.total,
       },
       performance: {
         dedupe_rate: Math.round(this.metrics.dedupe_rate.rate * 100) / 100,
         validator_fail_rate: Math.round(this.metrics.validator_fail_rate.fail_rate * 100) / 100,
-        avg_response_time: Math.round(avgResponseTime * 100) / 100
+        avg_response_time: Math.round(avgResponseTime * 100) / 100,
       },
       health: {
         error_rate: Math.round(errorRate * 100) / 100,
         block_rate: Math.round(this.metrics.rate_limiting.block_rate * 100) / 100,
-        uptime_hours: Math.round((this.metrics.performance.uptime_ms / (1000 * 60 * 60)) * 100) / 100
-      }
+        uptime_hours:
+          Math.round((this.metrics.performance.uptime_ms / (1000 * 60 * 60)) * 100) / 100,
+      },
     };
   }
 
@@ -399,16 +410,21 @@ export class SystemMetricsService {
       find_count: { total: 0, successful: 0, failed: 0, by_mode: {} },
       purge_count: { total: 0, successful: 0, failed: 0, by_kind: {} },
       dedupe_rate: { items_processed: 0, items_skipped: 0, rate: 0 },
-      validator_fail_rate: { items_validated: 0, validation_failures: 0, business_rule_blocks: 0, fail_rate: 0 },
+      validator_fail_rate: {
+        items_validated: 0,
+        validation_failures: 0,
+        business_rule_blocks: 0,
+        fail_rate: 0,
+      },
       performance: {
         avg_store_duration_ms: 0,
         avg_find_duration_ms: 0,
         avg_validation_duration_ms: 0,
-        uptime_ms: 0
+        uptime_ms: 0,
       },
       errors: { total_errors: 0, by_error_type: {}, by_tool: {} },
       rate_limiting: { total_requests: 0, blocked_requests: 0, block_rate: 0, active_actors: 0 },
-      memory: { active_knowledge_items: 0, expired_items_cleaned: 0, memory_usage_kb: 0 }
+      memory: { active_knowledge_items: 0, expired_items_cleaned: 0, memory_usage_kb: 0 },
     };
 
     this.startTime = Date.now();

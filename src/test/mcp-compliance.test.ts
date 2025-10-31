@@ -10,7 +10,7 @@ import {
   validateToolInput,
   createToolResponse,
   errorToMCPResponse,
-} from '../utils/mcp-compliance';
+} from '../utils/mcp-compliance.js';
 
 describe('MCP 2025 Compliance Tests', () => {
   describe('Error Codes', () => {

@@ -1,5 +1,9 @@
 import { logger } from '../../utils/logger.js';
-import type { BusinessValidator, ValidationResult, KnowledgeItem } from '../../types/core-interfaces.js';
+import type {
+  BusinessValidator,
+  ValidationResult,
+  KnowledgeItem,
+} from '../../types/core-interfaces.js';
 
 /**
  * Base class for business validators with common functionality
@@ -68,25 +72,32 @@ export class DecisionValidator extends BaseBusinessValidator {
     // Accepted decisions are immutable and must be superseded to modify
     const isAccepted = this.isAcceptedDecision(item);
     const isModified = this.isBeingModified(item);
-    logger.debug({
-      isAccepted,
-      isModified,
-      status: item.data.status,
-      acceptanceDate: item.data.acceptance_date,
-      createdAt: item.created_at || item.data.created_at,
-      updatedAt: item.updated_at || item.data.updated_at
-    }, 'Decision immutability check');
+    logger.debug(
+      {
+        isAccepted,
+        isModified,
+        status: item.data.status,
+        acceptanceDate: item.data.acceptance_date,
+        createdAt: item.created_at || item.data.created_at,
+        updatedAt: item.updated_at || item.data.updated_at,
+      },
+      'Decision immutability check'
+    );
 
     if (isAccepted && isModified) {
       if (!this.hasProperSupersedeRelationship(item)) {
-        errors.push('Cannot modify accepted decision - must create a new decision that supersedes this one');
+        errors.push(
+          'Cannot modify accepted decision - must create a new decision that supersedes this one'
+        );
       }
     }
 
     // P5-T5.1 Business Rule: Prevent status reversion
     // Cannot revert an accepted decision back to draft/proposed
     if (this.isRevertingAcceptedDecision(item)) {
-      errors.push('Cannot revert accepted decision back to draft status - must create new decision');
+      errors.push(
+        'Cannot revert accepted decision back to draft status - must create new decision'
+      );
     }
 
     if (errors.length > 0) {
@@ -143,10 +154,7 @@ export class DecisionValidator extends BaseBusinessValidator {
    * Check if attempting to revert an accepted decision back to draft/proposed
    */
   private isRevertingAcceptedDecision(item: KnowledgeItem): boolean {
-    return (
-      item.data.status === 'draft' &&
-      item.data.original_status === 'accepted'
-    );
+    return item.data.status === 'draft' && item.data.original_status === 'accepted';
   }
 }
 
@@ -179,7 +187,9 @@ export class IncidentValidator extends BaseBusinessValidator {
       if (!item.data.incident_commander) {
         errors.push('Critical incidents require assignment of incident commander');
       } else if (!this.hasCompleteCommanderInfo(item.data.incident_commander)) {
-        errors.push('Critical incident commander must have complete contact information (name, role, contact)');
+        errors.push(
+          'Critical incident commander must have complete contact information (name, role, contact)'
+        );
       }
     }
 
@@ -199,12 +209,7 @@ export class IncidentValidator extends BaseBusinessValidator {
    * Check if incident commander has complete required information
    */
   private hasCompleteCommanderInfo(commander: any): boolean {
-    return (
-      commander &&
-      commander.name &&
-      commander.role &&
-      commander.contact
-    );
+    return commander && commander.name && commander.role && commander.contact;
   }
 }
 
@@ -243,7 +248,9 @@ export class RiskValidator extends BaseBusinessValidator {
         );
 
         if (incompleteStrategies.length > 0) {
-          errors.push('Critical risk mitigation strategies must have complete information (strategy, owner, due_date, status, effectiveness)');
+          errors.push(
+            'Critical risk mitigation strategies must have complete information (strategy, owner, due_date, status, effectiveness)'
+          );
         }
       }
     }
@@ -251,7 +258,9 @@ export class RiskValidator extends BaseBusinessValidator {
     // P5-T5.1 Business Rule: Critical risk closure validation
     if (item.data.risk_level === 'critical' && item.data.status === 'closed') {
       if (!this.canCloseCriticalRisk(item)) {
-        errors.push('Cannot close critical risk until all mitigation strategies are implemented and verified');
+        errors.push(
+          'Cannot close critical risk until all mitigation strategies are implemented and verified'
+        );
       }
     }
 
@@ -296,9 +305,8 @@ export class RiskValidator extends BaseBusinessValidator {
     );
 
     // Must have closure reason and verification
-    const hasClosureInfo = item.data.closure_reason &&
-                          item.data.closure_verified_by &&
-                          item.data.closure_date;
+    const hasClosureInfo =
+      item.data.closure_reason && item.data.closure_verified_by && item.data.closure_date;
 
     return allCompleted && hasClosureInfo;
   }
@@ -335,7 +343,9 @@ export class TodoValidator extends BaseBusinessValidator {
       if (!item.data.completed_at) {
         // Auto-set completed_at timestamp
         item.data.completed_at = new Date().toISOString();
-        warnings.push('Todo marked as done without completed_at timestamp - auto-setting current time');
+        warnings.push(
+          'Todo marked as done without completed_at timestamp - auto-setting current time'
+        );
       } else if (!this.isValidTimestamp(item.data.completed_at)) {
         errors.push('Completed timestamp must be a valid ISO 8601 date string');
       }

@@ -16,53 +16,69 @@ import { z } from 'zod';
 /**
  * Schema for memory_store tool input validation
  */
+// Define base item schema with kind
+const BaseItemSchema = z.object({
+  kind: z.enum(
+    [
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
+    ],
+    {
+      errorMap: () => ({
+        message: `Invalid knowledge type. Must be one of: entity, relation, observation, section, runbook, change, issue, decision, todo, release_note, ddl, pr_context, incident, release, risk, assumption`,
+      }),
+    }
+  ),
+  metadata: z
+    .record(z.any(), {
+      description: 'Additional metadata',
+    })
+    .optional(),
+  scope: z
+    .object({
+      project: z.string().optional(),
+      branch: z.string().optional(),
+      org: z.string().optional(),
+    })
+    .optional(),
+});
+
+// Content-based item schema (for text types)
+const ContentItemSchema = BaseItemSchema.and(
+  z.object({
+    content: z.string({
+      description: 'Content of the knowledge item',
+    }),
+  })
+);
+
+// Data-based item schema (for structured types like entity, relation, observation)
+const DataItemSchema = BaseItemSchema.and(
+  z.object({
+    data: z.record(z.any(), {
+      description: 'Structured data for the knowledge item',
+    }),
+  })
+);
+
 export const MemoryStoreInputSchema = z
   .object({
     items: z
-      .array(
-        z.object({
-          kind: z.enum(
-            [
-              'entity',
-              'relation',
-              'observation',
-              'section',
-              'runbook',
-              'change',
-              'issue',
-              'decision',
-              'todo',
-              'release_note',
-              'ddl',
-              'pr_context',
-              'incident',
-              'release',
-              'risk',
-              'assumption',
-            ],
-            {
-              errorMap: () => ({
-                message: `Invalid knowledge type. Must be one of: entity, relation, observation, section, runbook, change, issue, decision, todo, release_note, ddl, pr_context, incident, release, risk, assumption`,
-              }),
-            }
-          ),
-          content: z.string({
-            description: 'Content of the knowledge item',
-          }),
-          metadata: z
-            .record(z.any(), {
-              description: 'Additional metadata',
-            })
-            .optional(),
-          scope: z
-            .object({
-              project: z.string().optional(),
-              branch: z.string().optional(),
-              org: z.string().optional(),
-            })
-            .optional(),
-        })
-      )
+      .array(z.union([ContentItemSchema, DataItemSchema]))
       .min(1, 'At least one item is required'),
   })
   .strict();

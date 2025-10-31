@@ -1,5 +1,5 @@
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
-import type { IssueData, ScopeFilter } from '../../types/knowledge-data';
+import type { IssueData, ScopeFilter } from '../../types/knowledge-data.js';
 
 /**
  * qdrant SCHEMA COMPLIANT ISSUELOG SERVICE

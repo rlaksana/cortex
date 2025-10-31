@@ -20,17 +20,21 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger';
-import { auditService } from '../audit/audit-service';
+import { logger } from '../../utils/logger.js';
+import { auditService } from '../audit/audit-service.js';
 import type {
   SearchResult,
   SearchQuery,
   MemoryFindResponse,
   SmartFindRequest,
   SmartFindResult,
-} from '../../types/core-interfaces';
-import { ConnectionError, type IDatabase, type SearchOptions } from '../../db/database-interface';
-import { ResultGroupingService } from '../search/result-grouping-service';
+} from '../../types/core-interfaces.js';
+import {
+  ConnectionError,
+  type IDatabase,
+  type SearchOptions,
+} from '../../db/database-interface.js';
+import { ResultGroupingService } from '../search/result-grouping-service.js';
 
 /**
  * Search strategy configuration

@@ -7,7 +7,7 @@
  * @module services/graph-traversal
  */
 
-import { qdrant } from '../db/qdrant-client';
+import { qdrant } from '../db/qdrant-client.js';
 
 export interface TraversalOptions {
   depth?: number; // Max depth (default: 2)

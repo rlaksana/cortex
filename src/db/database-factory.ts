@@ -30,7 +30,7 @@ import type {
   SearchQuery,
   MemoryStoreResponse,
   MemoryFindResponse,
-} from '../types/core-interfaces';
+} from '../types/core-interfaces.js';
 
 /**
  * Adapter wrapper that converts IVectorAdapter to IDatabase interface
