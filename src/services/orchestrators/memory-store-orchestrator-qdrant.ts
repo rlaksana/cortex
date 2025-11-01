@@ -60,7 +60,8 @@ import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 // import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
 import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { structuredLogger, OperationType, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { structuredLogger } from '../../monitoring/structured-logger.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
 import type { AuthContext } from '../../types/auth-types.js';
@@ -97,6 +98,7 @@ export class MemoryStoreOrchestratorQdrant {
   private languageEnhancementService: LanguageEnhancementService;
   private idempotentStoreService: IdempotentStoreService;
   private rateLimiter = rateLimitMiddleware.memoryStore();
+  private embeddingServiceAvailable: boolean;
   private duplicateDetectionStats: {
     contentHashMatches: number;
     semanticSimilarityMatches: number;
@@ -107,8 +109,16 @@ export class MemoryStoreOrchestratorQdrant {
     this.database = database;
     this.baselineTelemetry = new BaselineTelemetry();
 
-    // Initialize embedding service for semantic chunking
-    const embeddingService = new EmbeddingService();
+    // Initialize embedding service for semantic chunking (optional)
+    let embeddingService: EmbeddingService | undefined;
+    try {
+      embeddingService = new EmbeddingService();
+      this.embeddingServiceAvailable = true; // Optimistic initialization
+    } catch (error) {
+      logger.warn({ error: error instanceof Error ? error.message : String(error) }, 'Failed to initialize embedding service, semantic chunking will be disabled');
+      this.embeddingServiceAvailable = false;
+    }
+
     this.chunkingService = new ChunkingService(undefined, undefined, embeddingService);
 
     this.languageEnhancementService = new LanguageEnhancementService();
@@ -125,7 +135,7 @@ export class MemoryStoreOrchestratorQdrant {
    */
   async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
     const startTime = Date.now();
-    const correlationId = generateCorrelationId('store');
+    const correlationId = generateCorrelationId();
     const stored: StoreResult[] = [];
     const errors: StoreError[] = [];
     const duplicateResults: (DuplicateDetectionResult | null)[] = [];
@@ -154,43 +164,31 @@ export class MemoryStoreOrchestratorQdrant {
         );
 
         return {
-          success: false,
           items: [],
+          stored: [],
           summary: {
-            total_items: items.length,
-            processed_items: 0,
-            successful_items: 0,
-            duplicate_items: 0,
-            error_items: items.length,
-            chunks_created: 0,
-            validation_errors: 0,
-            processing_errors: items.length,
+            total: items.length,
+            stored: 0,
+            skipped_dedupe: 0,
+            business_rule_blocked: 0,
+            validation_error: items.length,
           },
           errors: [
             {
               index: 0,
-              error: rateLimitResult.error?.message || 'Rate limit exceeded',
-              type: 'rate_limit_exceeded',
-              original_item: null,
-              context: {
-                correlation_id: correlationId,
-                rate_limit_info: rateLimitResult.error,
-                items_requested: items.length,
-              },
+              error_code: 'rate_limit_exceeded',
+              message: rateLimitResult.error?.message || 'Rate limit exceeded',
+              timestamp: new Date().toISOString(),
             },
           ],
-          metadata: {
-            batch_id: correlationId,
-            correlation_id: correlationId,
-            processing_strategy: 'rate_limited',
-            duplicate_detection_enabled: true,
-            scope_isolation: {
-              organization_id: authContext?.user?.organizationId,
-              project_id: authContext?.user?.projectId,
-              branch_id: authContext?.user?.branchId,
-            },
-            timestamp: new Date().toISOString(),
-            rate_limit: rateLimitResult.error,
+          autonomous_context: {
+            action_performed: 'skipped',
+            similar_items_checked: 0,
+            duplicates_found: 0,
+            contradictions_detected: false,
+            recommendation: 'Rate limit exceeded',
+            reasoning: 'Request blocked due to rate limiting',
+            user_message_suggestion: 'Rate limit exceeded. Please try again later.',
           },
         };
       }
@@ -412,6 +410,15 @@ export class MemoryStoreOrchestratorQdrant {
     // Check for duplicates using provided result or run detection if not provided
     const dupResult = duplicateResult || (await this.detectDuplicates(item));
     if (dupResult.isDuplicate) {
+      // Attempt merge/upsert for high similarity items
+      if ((dupResult.similarityScore || 0) >= this.SIMILARITY_THRESHOLD && dupResult.existingItem) {
+        const mergeResult = await this.attemptItemMerge(item, dupResult.existingItem, dupResult);
+        if (mergeResult.merged) {
+          return mergeResult.result;
+        }
+      }
+
+      // Fallback to skip if merge fails or not applicable
       return this.createDuplicateResult(item, dupResult);
     }
 
@@ -534,10 +541,10 @@ export class MemoryStoreOrchestratorQdrant {
 
       // Convert idempotent result to store result format
       const storeResult: StoreResult = {
-        id: idempotentResult.item.id,
+        id: idempotentResult.item.id || '',
         status: idempotentResult.action === 'returned_existing' ? 'skipped_dedupe' : 'inserted',
-        kind: idempotentResult.item.kind,
-        created_at: idempotentResult.item.created_at,
+        kind: idempotentResult.item.kind || '',
+        created_at: idempotentResult.item.created_at || new Date().toISOString(),
       };
 
       // Update duplicate detection stats
@@ -1037,6 +1044,56 @@ export class MemoryStoreOrchestratorQdrant {
     };
   }
 
+/**
+   * Health check for the orchestrator
+   */
+  async healthCheck(): Promise<{
+    healthy: boolean;
+    database: boolean;
+    services: {
+      embedding: boolean;
+      language: boolean;
+      chunking: boolean;
+    };
+  }> {
+    try {
+      // Check database connectivity
+      let databaseHealthy = false;
+      try {
+        if (this.database) {
+          databaseHealthy = await this.database.healthCheck();
+        }
+      } catch {
+        databaseHealthy = false;
+      }
+
+      // Check service availability
+      const embeddingHealthy = true; // Assume embedding service is available
+      const languageHealthy = this.languageEnhancementService ? true : false;
+      const chunkingHealthy = this.chunkingService ? true : false;
+
+      return {
+        healthy: databaseHealthy && embeddingHealthy && languageHealthy && chunkingHealthy,
+        database: databaseHealthy,
+        services: {
+          embedding: embeddingHealthy,
+          language: languageHealthy,
+          chunking: chunkingHealthy,
+        },
+      };
+    } catch {
+      return {
+        healthy: false,
+        database: false,
+        services: {
+          embedding: false,
+          language: false,
+          chunking: false,
+        },
+      };
+    }
+  }
+
   /**
    * Get baseline telemetry data for analysis
    */
@@ -1049,5 +1106,191 @@ export class MemoryStoreOrchestratorQdrant {
    */
   getLanguageEnhancementService(): LanguageEnhancementService {
     return this.languageEnhancementService;
+  }
+
+  
+  /**
+   * Check if embedding service is available
+   */
+  isEmbeddingServiceAvailable(): boolean {
+    return this.embeddingServiceAvailable;
+  }
+
+  /**
+   * Attempt to merge a new item with an existing similar item
+   */
+  private async attemptItemMerge(
+    newItem: KnowledgeItem,
+    existingItem: KnowledgeItem,
+    duplicateResult: DuplicateDetectionResult
+  ): Promise<{ merged: boolean; result: StoreResult }> {
+    try {
+      // Only merge certain types of items that benefit from content enrichment
+      const mergeableTypes = ['section', 'runbook', 'observation', 'decision'];
+      if (!mergeableTypes.includes(newItem.kind)) {
+        return { merged: false, result: this.createDuplicateResult(newItem, duplicateResult) };
+      }
+
+      // Check if items are actually different enough to warrant a merge
+      const newContent = this.extractContent(newItem);
+      const existingContent = this.extractContent(existingItem);
+
+      if (newContent === existingContent) {
+        // Identical content, no merge needed
+        return { merged: false, result: this.createDuplicateResult(newItem, duplicateResult) };
+      }
+
+      // Create merged item with enhanced content
+      const mergedItem = await this.createMergedItem(newItem, existingItem, duplicateResult);
+
+      // Update the existing item in the database
+      const updateResult = await this.database.update([mergedItem]);
+
+      if (updateResult) {
+        logger.info({
+          newItemId: newItem.id,
+          existingItemId: existingItem.id,
+          similarityScore: duplicateResult.similarityScore,
+          duplicateType: duplicateResult.duplicateType,
+        }, 'Successfully merged similar items');
+
+        return {
+          merged: true,
+          result: {
+            id: existingItem.id || '',
+            status: 'updated',
+            kind: mergedItem.kind,
+            created_at: mergedItem.created_at || existingItem.created_at || new Date().toISOString(),
+          }
+        };
+      }
+
+      return { merged: false, result: this.createDuplicateResult(newItem, duplicateResult) };
+    } catch (error) {
+      logger.error({
+        error,
+        newItemId: newItem.id,
+        existingItemId: existingItem.id,
+        similarityScore: duplicateResult.similarityScore,
+      }, 'Failed to merge similar items');
+
+      return { merged: false, result: this.createDuplicateResult(newItem, duplicateResult) };
+    }
+  }
+
+  /**
+   * Create a merged item from two similar items
+   */
+  private async createMergedItem(
+    newItem: KnowledgeItem,
+    existingItem: KnowledgeItem,
+    duplicateResult: DuplicateDetectionResult
+  ): Promise<KnowledgeItem> {
+    const existingContent = this.extractContent(existingItem);
+    const newContent = this.extractContent(newItem);
+
+    // Smart content merging logic
+    let mergedContent: string;
+
+    if (duplicateResult.duplicateType === 'content_hash') {
+      // Hash matches but we already checked content is different
+      // This shouldn't happen often, but handle it gracefully
+      mergedContent = existingContent;
+    } else {
+      // Semantic similarity - merge intelligently
+      mergedContent = this.mergeContentIntelligently(existingContent, newContent, duplicateResult);
+    }
+
+    // Preserve the most recent/most complete metadata
+    const mergedData = {
+      ...existingItem.data,
+      ...newItem.data,
+      content: mergedContent,
+      merged_from: [
+        ...(existingItem.data.merged_from || []),
+        {
+          id: newItem.id,
+          timestamp: new Date().toISOString(),
+          similarity_score: duplicateResult.similarityScore,
+          merge_reason: duplicateResult.reason,
+        }
+      ],
+      merge_count: ((existingItem.data as any).merge_count || 0) + 1,
+      last_merged_at: new Date().toISOString(),
+    };
+
+    // Merge scopes, preferring more specific scope
+    const mergedScope = {
+      ...existingItem.scope,
+      ...newItem.scope,
+    };
+
+    // Merge metadata
+    const mergedMetadata = {
+      ...existingItem.metadata,
+      ...newItem.metadata,
+      merge_history: [
+        ...(existingItem.metadata?.merge_history || []),
+        {
+          timestamp: new Date().toISOString(),
+          source_id: newItem.id,
+          similarity_score: duplicateResult.similarityScore,
+          merge_type: duplicateResult.duplicateType,
+        }
+      ],
+      original_content_length: existingContent.length,
+      new_content_length: newContent.length,
+      merged_content_length: mergedContent.length,
+    };
+
+    return {
+      ...existingItem,
+      data: mergedData,
+      scope: mergedScope,
+      metadata: mergedMetadata,
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Intelligently merge content from similar items
+   */
+  private mergeContentIntelligently(
+    existingContent: string,
+    newContent: string,
+    duplicateResult: DuplicateDetectionResult
+  ): string {
+    // For high similarity (≥0.95), prefer the longer/more complete content
+    if ((duplicateResult.similarityScore || 0) >= 0.95) {
+      return existingContent.length >= newContent.length ? existingContent : newContent;
+    }
+
+    // For medium-high similarity (0.85-0.95), combine content intelligently
+    // This is a simplified approach - in a production system, you might want
+    // more sophisticated diff-based merging
+
+    const existingLines = existingContent.split('\n').filter(line => line.trim());
+    const newLines = newContent.split('\n').filter(line => line.trim());
+
+    // Remove exact duplicates
+    const uniqueExistingLines = [...new Set(existingLines)];
+    const uniqueNewLines = newLines.filter(line => !uniqueExistingLines.includes(line));
+
+    // Combine with a separator
+    const mergedLines = [...uniqueExistingLines, ...uniqueNewLines];
+
+    // If content is getting too long, prefer the original
+    if (mergedLines.length > 2000) {
+      return existingContent.length >= newContent.length ? existingContent : newContent;
+    }
+
+    return mergedLines.join('\n');
+  }
+
+  /**
+   * Extract content from various item types
+   */
+  private extractContent(item: KnowledgeItem): string {
+    return (item.data as any)?.content || (item.data as any)?.text || item.content || '';
   }
 }

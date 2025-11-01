@@ -13,7 +13,6 @@ let qdrantClient: QdrantClient | null = null;
 
 // Extend the QdrantClient interface to include custom methods
 declare module '@qdrant/js-client-rest' {
-  // eslint-disable-next-line no-unused-vars
   interface QdrantClient {
     // Audit-related methods
     eventAudit: any;

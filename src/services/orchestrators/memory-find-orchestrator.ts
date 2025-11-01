@@ -8,7 +8,8 @@ import { searchService } from '../search/search-service.js';
 import { entityMatchingService } from '../search/entity-matching-service.js';
 import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
 import { auditService } from '../audit/audit-service.js';
-import { structuredLogger, OperationType, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { structuredLogger, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
 import type { AuthContext } from '../../types/auth-types.js';
@@ -285,7 +286,7 @@ export class MemoryFindOrchestrator {
    */
   async findItems(query: SearchQuery, authContext?: AuthContext): Promise<MemoryFindResponse> {
     const startTime = Date.now();
-    const correlationId = generateCorrelationId('find');
+    const correlationId = generateCorrelationId();
 
     try {
       // Check rate limits
@@ -311,25 +312,14 @@ export class MemoryFindOrchestrator {
         );
 
         return {
-          success: false,
           results: [],
           total_count: 0,
-          query: query.query || '',
-          strategy: 'rate_limited',
-          metadata: {
-            correlation_id: correlationId,
-            execution_time_ms: latency,
-            strategy_used: 'rate_limited',
-            fallback_used: false,
-            total_results: 0,
-            quality_score: 0,
-            processed_kinds: [],
-            scope_info: {
-              organization_id: authContext?.user?.organizationId,
-              project_id: authContext?.user?.projectId,
-              branch_id: authContext?.user?.branchId,
-            },
-            rate_limit: rateLimitResult.error,
+          items: [],
+          autonomous_context: {
+            search_mode_used: 'rate_limited',
+            results_found: 0,
+            confidence_average: 0,
+            user_message_suggestion: 'Rate limit exceeded',
           },
         };
       }

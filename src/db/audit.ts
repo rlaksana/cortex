@@ -1,6 +1,7 @@
 // Using UnifiedDatabaseLayer for Qdrant operations
 import { QdrantOnlyDatabaseLayer as UnifiedDatabaseLayer } from './unified-database-layer-v2.js';
 import { logger } from '../utils/logger.js';
+import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import * as crypto from 'node:crypto';
 
 /**
@@ -79,6 +80,48 @@ class AuditLogger {
   }
 
   /**
+   * Get Qdrant configuration from key vault with environment fallback
+   */
+  private async getQdrantConfig(): Promise<any> {
+    const keyVault = getKeyVaultService();
+
+    try {
+      const qdrantKey = await keyVault.get_key_by_name('qdrant_api_key');
+
+      const config: any = {
+        url: process.env.QDRANT_URL || 'http://localhost:6333',
+        collectionName: 'cortex-audit',
+        timeout: 30000,
+        batchSize: 100,
+        maxRetries: 3,
+      };
+
+      if (qdrantKey?.value || process.env.QDRANT_API_KEY) {
+        config.apiKey = qdrantKey?.value || process.env.QDRANT_API_KEY;
+      }
+
+      return config;
+    } catch (error) {
+      logger.warn({ error }, 'Failed to get Qdrant config from key vault, using environment fallback');
+
+      // Fallback to environment variables
+      const config: any = {
+        url: process.env.QDRANT_URL || 'http://localhost:6333',
+        collectionName: 'cortex-audit',
+        timeout: 30000,
+        batchSize: 100,
+        maxRetries: 3,
+      };
+
+      if (process.env.QDRANT_API_KEY) {
+        config.apiKey = process.env.QDRANT_API_KEY;
+      }
+
+      return config;
+    }
+  }
+
+  /**
    * Log a single audit event
    */
   async logEvent(event: AuditEvent): Promise<void> {
@@ -88,17 +131,8 @@ class AuditLogger {
 
     const processedEvent = await this.processEvent(event);
 
-    const qdrantConfig: any = {
-      url: process.env.QDRANT_URL || 'http://localhost:6333',
-      collectionName: 'cortex-audit',
-      timeout: 30000,
-      batchSize: 100,
-      maxRetries: 3,
-    };
-
-    if (process.env.QDRANT_API_KEY) {
-      qdrantConfig.apiKey = process.env.QDRANT_API_KEY;
-    }
+    // Get database configuration from key vault
+    const qdrantConfig = await this.getQdrantConfig();
 
     const db = new UnifiedDatabaseLayer({
       type: 'qdrant',
@@ -155,20 +189,11 @@ class AuditLogger {
     }
 
     try {
+      const qdrantConfig = await this.getQdrantConfig();
       const config: any = {
         type: 'qdrant',
-        qdrant: {
-          url: process.env.QDRANT_URL || 'http://localhost:6333',
-          collectionName: 'cortex-audit',
-          timeout: 30000,
-          batchSize: 100,
-          maxRetries: 3,
-        },
+        qdrant: qdrantConfig,
       };
-
-      if (process.env.QDRANT_API_KEY) {
-        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
-      }
 
       const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
@@ -227,20 +252,11 @@ class AuditLogger {
     total: number;
   }> {
     try {
+      const qdrantConfig = await this.getQdrantConfig();
       const config: any = {
         type: 'qdrant',
-        qdrant: {
-          url: process.env.QDRANT_URL || 'http://localhost:6333',
-          collectionName: 'cortex-audit',
-          timeout: 30000,
-          batchSize: 100,
-          maxRetries: 3,
-        },
+        qdrant: qdrantConfig,
       };
-
-      if (process.env.QDRANT_API_KEY) {
-        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
-      }
 
       const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
@@ -498,20 +514,11 @@ class AuditLogger {
     this.batchQueue = [];
 
     try {
+      const qdrantConfig = await this.getQdrantConfig();
       const config: any = {
         type: 'qdrant',
-        qdrant: {
-          url: process.env.QDRANT_URL || 'http://localhost:6333',
-          collectionName: 'cortex-audit',
-          timeout: 30000,
-          batchSize: 100,
-          maxRetries: 3,
-        },
+        qdrant: qdrantConfig,
       };
-
-      if (process.env.QDRANT_API_KEY) {
-        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
-      }
 
       const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
@@ -557,20 +564,11 @@ class AuditLogger {
     };
   }> {
     try {
+      const qdrantConfig = await this.getQdrantConfig();
       const config: any = {
         type: 'qdrant',
-        qdrant: {
-          url: process.env.QDRANT_URL || 'http://localhost:6333',
-          collectionName: 'cortex-audit',
-          timeout: 30000,
-          batchSize: 100,
-          maxRetries: 3,
-        },
+        qdrant: qdrantConfig,
       };
-
-      if (process.env.QDRANT_API_KEY) {
-        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
-      }
 
       const db = new UnifiedDatabaseLayer(config);
       await db.initialize();
@@ -677,20 +675,11 @@ class AuditLogger {
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
     try {
+      const qdrantConfig = await this.getQdrantConfig();
       const config: any = {
         type: 'qdrant',
-        qdrant: {
-          url: process.env.QDRANT_URL || 'http://localhost:6333',
-          collectionName: 'cortex-audit',
-          timeout: 30000,
-          batchSize: 100,
-          maxRetries: 3,
-        },
+        qdrant: qdrantConfig,
       };
-
-      if (process.env.QDRANT_API_KEY) {
-        config.qdrant.apiKey = process.env.QDRANT_API_KEY;
-      }
 
       const db = new UnifiedDatabaseLayer(config);
       await db.initialize();

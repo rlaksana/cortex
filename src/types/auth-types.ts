@@ -177,6 +177,7 @@ export interface AuthContext {
     id: string;
     username: string;
     role: UserRole;
+    organizationId?: string;
   };
   session: {
     id: string;
@@ -185,6 +186,7 @@ export interface AuthContext {
   };
   scopes: AuthScope[];
   token_jti: string;
+  apiKeyId?: string;
 }
 
 export interface AuthenticatedRequest {

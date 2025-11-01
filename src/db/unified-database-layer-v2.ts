@@ -8,6 +8,7 @@
  * Features:
  * - Pure Qdrant vector database operations
  * - High-performance semantic search
+ * - Key vault integration for secure API key management
  * - Automatic schema management
  * - Type-safe operations with proper error handling
  * - Connection health monitoring and recovery
@@ -434,7 +435,7 @@ export class UnifiedDatabaseLayer extends QdrantOnlyDatabaseLayer {
         type: 'qdrant' as const,
         qdrant: {
           url: process.env.QDRANT_URL || 'http://localhost:6333',
-          apiKey: process.env.QDRANT_API_KEY,
+          apiKey: undefined, // Will be resolved by the adapter from key vault
           collectionName: 'knowledge',
           timeout: 30000,
           batchSize: 100,

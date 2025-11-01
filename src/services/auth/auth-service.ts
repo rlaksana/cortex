@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
+import { getKeyVaultService } from '../security/key-vault-service.js';
 import {
   ConfigurationError,
   AuthenticationError,
@@ -1573,3 +1574,81 @@ export class AuthService {
     };
   }
 }
+
+/**
+ * Get authentication configuration from key vault with environment fallback
+ */
+async function getAuthConfig(): Promise<AuthServiceConfig> {
+  const keyVault = getKeyVaultService();
+
+  try {
+    // Try to get secrets from key vault
+    const [jwtSecret, jwtRefreshSecret] = await Promise.all([
+      keyVault.get_key_by_name('jwt_secret'),
+      keyVault.get_key_by_name('jwt_refresh_secret'),
+    ]);
+
+    return {
+      jwt_secret: jwtSecret?.value || process.env.JWT_SECRET || 'default-secret-key-change-in-production',
+      jwt_refresh_secret: jwtRefreshSecret?.value || process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+      jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
+      jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
+      api_key_length: parseInt(process.env.API_KEY_LENGTH || '32'),
+      session_timeout_hours: parseInt(process.env.SESSION_TIMEOUT_HOURS || '24'),
+      max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
+      rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
+      ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
+        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+      }),
+    };
+  } catch (error) {
+    logger.warn({ error }, 'Failed to get auth config from key vault, using environment fallback');
+
+    // Fallback to environment variables
+    return {
+      jwt_secret: process.env.JWT_SECRET || 'default-secret-key-change-in-production',
+      jwt_refresh_secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+      jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
+      jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+      bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
+      api_key_length: parseInt(process.env.API_KEY_LENGTH || '32'),
+      session_timeout_hours: parseInt(process.env.SESSION_TIMEOUT_HOURS || '24'),
+      max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
+      rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
+      ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
+        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+      }),
+    };
+  }
+}
+
+// Export singleton instance with configuration from key vault
+let authServiceInstance: AuthService | null = null;
+
+export async function getAuthService(): Promise<AuthService> {
+  if (!authServiceInstance) {
+    const config = await getAuthConfig();
+    authServiceInstance = new AuthService(config);
+  }
+  return authServiceInstance;
+}
+
+// For backward compatibility, export a synchronous version
+// Note: This will use environment fallback until the async version is called
+const defaultConfig: AuthServiceConfig = {
+  jwt_secret: process.env.JWT_SECRET || 'default-secret-key-change-in-production',
+  jwt_refresh_secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+  jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
+  jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
+  api_key_length: parseInt(process.env.API_KEY_LENGTH || '32'),
+  session_timeout_hours: parseInt(process.env.SESSION_TIMEOUT_HOURS || '24'),
+  max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
+  rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
+  ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
+    token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+  }),
+};
+
+export const authService = new AuthService(defaultConfig);

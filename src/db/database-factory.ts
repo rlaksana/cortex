@@ -18,11 +18,25 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { getKeyVaultService } from '../services/security/key-vault-service.js';
 import { createHash } from 'node:crypto';
 import type { IDatabase, IDatabaseFactory, DatabaseConfig } from './database-interface.js';
 import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
 import { ValidationError } from '../utils/error-handler.js';
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
+
+/**
+ * Check if a key exists in the key vault
+ */
+async function checkKeyVaultForKey(keyName: string): Promise<boolean> {
+  try {
+    const keyVault = getKeyVaultService();
+    const key = await keyVault.get_key_by_name(keyName);
+    return !!key?.value;
+  } catch {
+    return false;
+  }
+}
 import type {
   KnowledgeItem,
   StoreError,
@@ -400,9 +414,11 @@ export class DatabaseFactory implements IDatabaseFactory {
     }
 
     // Validate OpenAI configuration (required for embeddings)
-    if (!process.env.OPENAI_API_KEY) {
+    // Check if OpenAI API key is available in environment or key vault
+    const hasOpenAIKey = process.env.OPENAI_API_KEY || await checkKeyVaultForKey('openai_api_key');
+    if (!hasOpenAIKey) {
       errors.push(
-        'OpenAI API key is required for Qdrant vector operations (OPENAI_API_KEY environment variable)'
+        'OpenAI API key is required for Qdrant vector operations (set OPENAI_API_KEY or configure in key vault)'
       );
     }
 
@@ -562,7 +578,7 @@ export class DatabaseFactory implements IDatabaseFactory {
     const baseConfig: DatabaseConfig = {
       type: 'qdrant',
       url: process.env.QDRANT_URL || 'http://localhost:6333',
-      ...(process.env.QDRANT_API_KEY && { apiKey: process.env.QDRANT_API_KEY }),
+      // API key will be resolved by the adapter from key vault or environment
       logQueries: process.env.NODE_ENV === 'development',
       connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),
@@ -626,7 +642,7 @@ export class DatabaseFactory implements IDatabaseFactory {
     return {
       type: 'qdrant',
       url: process.env.QDRANT_URL || 'http://localhost:6333',
-      ...(process.env.QDRANT_API_KEY && { apiKey: process.env.QDRANT_API_KEY }),
+      // API key will be resolved by the adapter from key vault or environment
       logQueries: process.env.NODE_ENV === 'development',
       connectionTimeout: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
       maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10'),

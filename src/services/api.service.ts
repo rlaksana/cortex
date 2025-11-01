@@ -127,7 +127,7 @@ export class ApiService {
           throw _error;
         }
       }
-    } catch (_error) {
+    } catch {
       response = {
         status: 500,
         headers: {},

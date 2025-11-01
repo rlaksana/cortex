@@ -61,6 +61,10 @@ export class SemanticAnalyzer {
   private embeddingService: EmbeddingService;
   private config: SemanticChunkingConfig;
   private embeddingCache: Map<string, { embedding: number[]; timestamp: number }> = new Map();
+  private consecutiveFailures = 0;
+  private lastFailureTime = 0;
+  private readonly CIRCUIT_BREAKER_THRESHOLD = 5; // Fail 5 times before opening circuit
+  private readonly CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute timeout
 
   constructor(embeddingService: EmbeddingService, config?: Partial<SemanticChunkingConfig>) {
     this.embeddingService = embeddingService;
@@ -194,20 +198,34 @@ export class SemanticAnalyzer {
         }
       }
 
+      // Check circuit breaker
+      if (this.isCircuitBreakerOpen()) {
+        logger.warn('Circuit breaker is open, using fallback embeddings');
+        embeddings.push(new Array(1536).fill(0)); // Default embedding size
+        continue;
+      }
+
       // Generate embedding
       try {
         const result = await this.embeddingService.generateEmbedding(sentence);
         embeddings.push(result.vector);
+
+        // Reset failure count on success
+        this.consecutiveFailures = 0;
 
         // Cache the result
         if (this.config.enable_caching) {
           this.setCachedEmbedding(sentence, result.vector);
         }
       } catch (error) {
+        this.consecutiveFailures++;
+        this.lastFailureTime = Date.now();
+
         logger.warn(
-          { error, sentence: sentence.substring(0, 50) },
+          { error, sentence: sentence.substring(0, 50), consecutiveFailures: this.consecutiveFailures },
           'Failed to generate embedding for sentence'
         );
+
         // Use a zero vector as fallback
         embeddings.push(new Array(1536).fill(0)); // Default embedding size
       }
@@ -406,6 +424,25 @@ export class SemanticAnalyzer {
       embedding,
       timestamp: Date.now(),
     });
+  }
+
+  /**
+   * Check if circuit breaker is open
+   */
+  private isCircuitBreakerOpen(): boolean {
+    if (this.consecutiveFailures < this.CIRCUIT_BREAKER_THRESHOLD) {
+      return false;
+    }
+
+    const now = Date.now();
+    if (now - this.lastFailureTime > this.CIRCUIT_BREAKER_TIMEOUT) {
+      // Reset circuit breaker after timeout
+      this.consecutiveFailures = 0;
+      this.lastFailureTime = 0;
+      return false;
+    }
+
+    return true;
   }
 
   /**

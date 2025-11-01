@@ -22,6 +22,7 @@ import { OpenAI } from 'openai';
 import crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
+import { getKeyVaultService } from '../../services/security/key-vault-service.js';
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import type {
   KnowledgeItem,
@@ -77,11 +78,11 @@ export interface QdrantCollectionStats {
  * Qdrant adapter implementing vector database operations
  */
 export class QdrantAdapter implements IVectorAdapter {
-  private client: QdrantClient;
-  private openai: OpenAI;
+  private client!: QdrantClient;
+  private openai!: OpenAI;
   private config: VectorConfig;
   private initialized: boolean = false;
-  private capabilities: {
+  private capabilities!: {
     supportsVectors: boolean;
     supportsFullTextSearch: boolean;
     supportsPayloadFiltering: boolean;
@@ -92,12 +93,11 @@ export class QdrantAdapter implements IVectorAdapter {
   private readonly COLLECTION_NAME = 'knowledge_items';
 
   constructor(config: VectorConfig) {
-    const apiKey = config.apiKey || process.env.QDRANT_API_KEY;
-
+    // Store config for later async initialization
     this.config = {
       type: 'qdrant',
       url: config.url || process.env.QDRANT_URL || 'http://localhost:6333',
-      ...(apiKey && { apiKey }),
+      ...(config.apiKey !== undefined && { apiKey: config.apiKey }),
       vectorSize: config.vectorSize || 1536, // OpenAI ada-002
       distance: config.distance || 'Cosine',
       logQueries: config.logQueries || false,
@@ -106,22 +106,84 @@ export class QdrantAdapter implements IVectorAdapter {
       collectionName: config.collectionName || 'knowledge_items',
     };
 
-    // Initialize Qdrant client
-    const clientConfig: any = {
-      url: this.config.url,
-      timeout: this.config.connectionTimeout,
-    };
+    // Initialize clients - will be enhanced asynchronously
+    this.initializeClients();
+  }
 
-    if (this.config.apiKey) {
-      clientConfig.apiKey = this.config.apiKey;
+  /**
+   * Initialize database and OpenAI clients with key vault integration
+   */
+  private async initializeClients(): Promise<void> {
+    const keyVault = getKeyVaultService();
+
+    try {
+      // Get API keys from key vault
+      const [qdrantKey, openaiKey] = await Promise.all([
+        keyVault.get_key_by_name('qdrant_api_key'),
+        keyVault.get_key_by_name('openai_api_key'),
+      ]);
+
+      // Update config with resolved keys
+      const resolvedApiKey = this.config.apiKey || qdrantKey?.value || process.env.QDRANT_API_KEY;
+      const resolvedOpenAIKey = openaiKey?.value || process.env.OPENAI_API_KEY;
+
+      // Initialize Qdrant client
+      const clientConfig: any = {
+        url: this.config.url,
+        timeout: this.config.connectionTimeout,
+      };
+
+      if (resolvedApiKey) {
+        clientConfig.apiKey = resolvedApiKey;
+        this.config.apiKey = resolvedApiKey;
+      }
+
+      this.client = new QdrantClient(clientConfig);
+
+      // Initialize OpenAI client for embeddings
+      if (resolvedOpenAIKey) {
+        this.openai = new OpenAI({
+          apiKey: resolvedOpenAIKey,
+        });
+      } else {
+        logger.warn('OpenAI API key not found, embedding functionality will be limited');
+      }
+
+      logger.info('Database clients initialized with key vault integration');
+    } catch (error) {
+      logger.warn({ error }, 'Failed to initialize clients from key vault, using environment fallback');
+
+      // Fallback to environment variables
+      const fallbackApiKey = this.config.apiKey || process.env.QDRANT_API_KEY;
+      const fallbackOpenAIKey = process.env.OPENAI_API_KEY;
+
+      const clientConfig: any = {
+        url: this.config.url,
+        timeout: this.config.connectionTimeout,
+      };
+
+      if (fallbackApiKey) {
+        clientConfig.apiKey = fallbackApiKey;
+        this.config.apiKey = fallbackApiKey;
+      }
+
+      this.client = new QdrantClient(clientConfig);
+
+      if (fallbackOpenAIKey) {
+        this.openai = new OpenAI({
+          apiKey: fallbackOpenAIKey,
+        });
+      }
     }
+  }
 
-    this.client = new QdrantClient(clientConfig);
-
-    // Initialize OpenAI client for embeddings
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+  /**
+   * Ensure clients are initialized before use
+   */
+  private async ensureClientsInitialized(): Promise<void> {
+    if (!this.client || !this.openai) {
+      await this.initializeClients();
+    }
 
     this.capabilities = {
       supportsVectors: true,
@@ -210,6 +272,9 @@ export class QdrantAdapter implements IVectorAdapter {
 
     try {
       logger.info('Initializing Qdrant adapter...');
+
+      // Ensure clients are initialized with key vault
+      await this.ensureClientsInitialized();
 
       // Test connection by getting collections
       await this.client.getCollections();

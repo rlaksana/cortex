@@ -1059,7 +1059,7 @@ export class LoggingService {
     this.subscriptions.forEach((callback, id) => {
       try {
         callback(entry);
-      } catch (error) {
+      } catch {
         // Remove problematic subscriber
         this.subscriptions.delete(id);
       }

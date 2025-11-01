@@ -135,7 +135,7 @@ export class DecisionValidator extends BaseBusinessValidator {
       }
 
       return updatedDate > createdDate;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
