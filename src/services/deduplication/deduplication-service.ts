@@ -492,8 +492,231 @@ export class DeduplicationService implements IDeduplicationService {
   }
 
   /**
-   * Get deduplication statistics
+   * Upsert items with merge-if-similar functionality
+   * Items with similarity ≥ 0.85 will be merged with existing records
+   * Items with similarity < 0.85 will be created as new items
    */
+  async upsertWithMerge(items: KnowledgeItem[]): Promise<{
+    upserted: KnowledgeItem[];
+    merged: Array<{ newItem: KnowledgeItem; existingItem: KnowledgeItem; similarity: number }>;
+    created: KnowledgeItem[];
+  }> {
+    if (!this.config.enabled) {
+      return {
+        upserted: [],
+        merged: [],
+        created: items,
+      };
+    }
+
+    const upserted: KnowledgeItem[] = [];
+    const merged: Array<{ newItem: KnowledgeItem; existingItem: KnowledgeItem; similarity: number }> = [];
+    const created: KnowledgeItem[] = [];
+
+    logger.info(
+      { totalItems: items.length, threshold: this.config.contentSimilarityThreshold },
+      'Starting upsert with merge operation'
+    );
+
+    for (const item of items) {
+      try {
+        const analysis = await this.isDuplicate(item);
+
+        if (!analysis.isDuplicate || analysis.similarityScore < this.config.contentSimilarityThreshold) {
+          // Create new item if not a duplicate or below threshold
+          created.push(item);
+          continue;
+        }
+
+        if (!analysis.existingId) {
+          // This shouldn't happen, but handle gracefully
+          created.push(item);
+          continue;
+        }
+
+        // Get the existing item
+        const existingItem = await this.getExistingItem(analysis.existingId, item.kind);
+        if (!existingItem) {
+          // If we can't find the existing item, create new one
+          created.push(item);
+          continue;
+        }
+
+        // Merge the items
+        const mergedItem = await this.mergeItems(existingItem, item, analysis.similarityScore);
+
+        upserted.push(mergedItem);
+        merged.push({
+          newItem: item,
+          existingItem,
+          similarity: analysis.similarityScore,
+        });
+
+        logger.debug(
+          {
+            itemId: item.id,
+            existingId: analysis.existingId,
+            similarity: analysis.similarityScore,
+            matchType: analysis.matchType,
+          },
+          'Item merged with existing record'
+        );
+
+      } catch (error) {
+        logger.error(
+          { error, itemId: item.id, kind: item.kind },
+          'Failed to process item during upsert, creating as new item'
+        );
+        created.push(item);
+      }
+    }
+
+    logger.info(
+      {
+        totalItems: items.length,
+        upsertedCount: upserted.length,
+        mergedCount: merged.length,
+        createdCount: created.length,
+      },
+      'Upsert with merge operation completed'
+    );
+
+    return { upserted, merged, created };
+  }
+
+  /**
+   * Get an existing item by ID and kind
+   */
+  private async getExistingItem(id: string, kind: string): Promise<KnowledgeItem | null> {
+    try {
+      const tableName = this.getTableNameForKind(kind);
+      if (!tableName) {
+        return null;
+      }
+
+      // Query the database for the existing item
+      const result = await qdrant.client.retrieve(tableName, {
+        ids: [id],
+        with_payload: true,
+        with_vector: false
+      });
+
+      if (result.length === 0) {
+        return null;
+      }
+
+      const point = result[0];
+      return {
+        id: typeof point.id === 'string' ? point.id : String(point.id),
+        kind,
+        scope: point.payload?.scope || {},
+        data: point.payload?.data || {},
+        metadata: point.payload?.metadata || {},
+        created_at: point.payload?.created_at as string,
+        updated_at: point.payload?.updated_at as string,
+      };
+    } catch (error) {
+      logger.error({ error, id, kind }, 'Failed to retrieve existing item');
+      return null;
+    }
+  }
+
+  /**
+   * Merge two items with intelligent field combination
+   */
+  private async mergeItems(
+    existing: KnowledgeItem,
+    newItem: KnowledgeItem,
+    similarity: number
+  ): Promise<KnowledgeItem> {
+    const merged: KnowledgeItem = {
+      ...existing,
+      updated_at: new Date().toISOString(),
+      data: { ...existing.data },
+      metadata: { ...existing.metadata },
+    };
+
+    // Merge data fields with preference for newer content when similarity is not perfect
+    if (similarity < 1.0) {
+      // Merge content fields
+      const contentFields = ['content', 'body_text', 'body_md', 'description', 'rationale'];
+      for (const field of contentFields) {
+        if (newItem.data?.[field] && typeof newItem.data[field] === 'string') {
+          const existingContent = existing.data?.[field] || '';
+          const newContent = newItem.data[field];
+
+          // If new content is substantially different and longer, use it
+          if (newContent.length > existingContent.length * 1.1) {
+            merged.data[field] = newContent;
+          } else if (newContent !== existingContent) {
+            // Combine content if they're different but similar length
+            merged.data[field] = this.combineContent(existingContent, newContent);
+          }
+        }
+      }
+
+      // Merge metadata fields
+      if (newItem.metadata) {
+        merged.metadata = {
+          ...merged.metadata,
+          ...newItem.metadata,
+          // Preserve merge history
+          merge_history: [
+            ...(merged.metadata?.merge_history || []),
+            {
+              timestamp: new Date().toISOString(),
+              similarity,
+              merged_from: newItem.id,
+            },
+          ],
+        };
+      }
+
+      // Merge other data fields
+      for (const [key, value] of Object.entries(newItem.data || {})) {
+        if (!contentFields.includes(key) && value !== undefined) {
+          // For non-content fields, prefer newer values
+          merged.data[key] = value;
+        }
+      }
+    } else {
+      // Perfect match - just update timestamps and metadata
+      merged.updated_at = new Date().toISOString();
+      if (newItem.metadata) {
+        merged.metadata = {
+          ...merged.metadata,
+          ...newItem.metadata,
+          last_updated_from: newItem.id,
+        };
+      }
+    }
+
+    // Update scope if the new item has more specific scope
+    if (newItem.scope) {
+      merged.scope = {
+        ...merged.scope,
+        ...newItem.scope,
+      };
+    }
+
+    return merged;
+  }
+
+  /**
+   * Combine two content pieces intelligently
+   */
+  private combineContent(existing: string, newContent: string): string {
+    // Simple combination strategy - can be enhanced
+    if (existing.includes(newContent) || newContent.includes(existing)) {
+      // One contains the other, use the longer one
+      return existing.length > newContent.length ? existing : newContent;
+    }
+
+    // Combine with a separator
+    const separator = existing.endsWith('\n') || newContent.startsWith('\n') ? '' : '\n';
+    return `${existing}${separator}${newContent}`;
+  }
+
   async getDedupeStats(): Promise<{
     totalChecks: number;
     duplicatesFound: number;

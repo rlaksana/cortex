@@ -105,6 +105,13 @@ export interface BatchSummary {
   business_rule_blocked: number;
   validation_error?: number;
   total: number;
+  merges_performed?: number;
+  merge_details?: Array<{
+    existing_id: string;
+    new_id: string;
+    similarity: number;
+    action: 'merged';
+  }>;
 }
 
 export interface MemoryStoreResponse {

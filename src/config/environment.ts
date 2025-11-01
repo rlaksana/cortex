@@ -171,6 +171,8 @@ const AppConfigSchema = z.object({
   ENABLE_CACHING: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
   ENABLE_METRICS: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
   ENABLE_LOGGING: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  SEMANTIC_CHUNKING_OPTIONAL: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
+  DEDUP_ACTION: z.enum(['skip', 'merge']).default('skip'),
 });
 
 /**
@@ -344,13 +346,22 @@ export class Environment {
       case 'caching':
         return this.config.ENABLE_CACHING;
       case 'metrics':
-        return this.config.ENABLE_METRICS;
+        return this.config.METRICS_ENABLED;
       case 'logging':
         return this.config.ENABLE_LOGGING;
+      case 'semantic-chunking-optional':
+        return this.config.SEMANTIC_CHUNKING_OPTIONAL;
       default:
         logger.warn({ flag }, 'Unknown feature flag requested');
         return false;
     }
+  }
+
+  /**
+   * Get deduplication action setting
+   */
+  getDedupAction(): 'skip' | 'merge' {
+    return this.config.DEDUP_ACTION;
   }
 
   /**
@@ -464,6 +475,15 @@ export class Environment {
       codecovToken: this.config.CODECOV_TOKEN,
       githubSha: this.config.GITHUB_SHA,
       githubRefName: this.config.GITHUB_REF_NAME,
+    };
+  }
+
+  /**
+   * Get chunking configuration
+   */
+  getChunkingConfig() {
+    return {
+      semanticChunkingOptional: this.config.SEMANTIC_CHUNKING_OPTIONAL,
     };
   }
 

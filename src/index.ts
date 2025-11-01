@@ -49,6 +49,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { createHash } from 'node:crypto';
 import { searchService } from './services/search/search-service.js';
 import { runExpiryWorker } from './services/expiry-worker.js';
+import { getKeyVaultService } from './services/security/key-vault-service.js';
 
 // === IMPORTANT: Disable dotenv stdout output for MCP compatibility ===
 // dotenv writes injection messages to stdout which corrupts MCP stdio transport
@@ -204,25 +205,51 @@ interface MemoryFindResponse {
 // === Vector Database Implementation ===
 
 class VectorDatabase {
-  private client: QdrantClient;
+  private client!: QdrantClient; // definite assignment assertion
   private collectionName: string;
   private initialized: boolean = false;
+  private clientInitialized: boolean = false;
   private telemetry: BaselineTelemetry;
 
   constructor() {
-    const clientConfig: any = {
-      url: env.QDRANT_URL,
-    };
-    if (env.QDRANT_API_KEY) {
-      clientConfig.apiKey = env.QDRANT_API_KEY;
-    }
-    this.client = new QdrantClient(clientConfig);
     this.collectionName = env.QDRANT_COLLECTION_NAME;
     this.telemetry = new BaselineTelemetry();
   }
 
+  private async initializeClient(): Promise<void> {
+    const clientConfig: any = {
+      url: env.QDRANT_URL,
+    };
+
+    // Try to get Qdrant API key from key vault first
+    try {
+      const keyVault = getKeyVaultService();
+      const qdrantKey = await keyVault.get_key_by_name('qdrant_api_key');
+      if (qdrantKey?.value) {
+        clientConfig.apiKey = qdrantKey.value;
+        logger.info('Using Qdrant API key from key vault');
+      } else if (env.QDRANT_API_KEY) {
+        clientConfig.apiKey = env.QDRANT_API_KEY;
+        logger.info('Using Qdrant API key from environment variable');
+      }
+    } catch (error) {
+      logger.warn('Failed to get Qdrant API key from key vault, falling back to environment', { error });
+      if (env.QDRANT_API_KEY) {
+        clientConfig.apiKey = env.QDRANT_API_KEY;
+      }
+    }
+
+    this.client = new QdrantClient(clientConfig);
+  }
+
   async initialize(): Promise<void> {
     try {
+      // Initialize client if not already done
+      if (!this.clientInitialized) {
+        await this.initializeClient();
+        this.clientInitialized = true;
+      }
+
       const collections = await this.client.getCollections();
       const exists = collections.collections.some((c) => c.name === this.collectionName);
 
@@ -712,6 +739,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: 'memory_get_document',
+        description: 'Retrieve a complete document including all chunks using chunk_info metadata',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Document ID (parent ID of chunked document)',
+            },
+            scope: {
+              type: 'object',
+              properties: {
+                project: { type: 'string' },
+                branch: { type: 'string' },
+                org: { type: 'string' },
+              },
+              description: 'Scope filter (optional)',
+            },
+          },
+          required: ['id'],
+        },
+      },
+      {
         name: 'database_health',
         description: 'Check the health and status of the Qdrant database connection',
         inputSchema: {
@@ -759,6 +809,246 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'boolean',
               default: false,
               description: 'Return simplified metrics summary instead of full detailed metrics',
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'reassemble_document',
+        description: 'Reassemble a full document from its chunks using parent_id and chunk ordering',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            parent_id: {
+              type: 'string',
+              description: 'The ID of the parent document to reassemble from chunks',
+            },
+            scope: {
+              type: 'object',
+              properties: {
+                project: { type: 'string' },
+                branch: { type: 'string' },
+                org: { type: 'string' },
+              },
+              description: 'Scope filter for chunk search',
+            },
+            min_completeness: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              default: 0.5,
+              description: 'Minimum completeness ratio (0.0-1.0) required for reassembly',
+            },
+          },
+          required: ['parent_id'],
+        },
+      },
+      {
+        name: 'get_document_with_chunks',
+        description: 'Get a document with all its chunks reassembled in order, with detailed metadata and parent information',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            doc_id: {
+              type: 'string',
+              description: 'The ID of the document to retrieve (can be parent ID or chunk parent ID)',
+            },
+            options: {
+              type: 'object',
+              properties: {
+                include_metadata: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Include detailed metadata in response',
+                },
+                preserve_chunk_markers: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Keep CHUNK X of Y markers in reassembled content',
+                },
+                filter_by_scope: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Filter chunks by parent document scope',
+                },
+                sort_by_position: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Sort chunks by their position index',
+                },
+              },
+              description: 'Reassembly options',
+            },
+          },
+          required: ['doc_id'],
+        },
+      },
+      {
+        name: 'memory_get_document',
+        description: 'Get a document with parent and all its chunks reassembled in proper order (alias for get_document_with_chunks)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            parent_id: {
+              type: 'string',
+              description: 'The ID of the parent document or chunk to retrieve and reassemble',
+            },
+            item_id: {
+              type: 'string',
+              description: 'Alternative to parent_id - the ID of any chunk or parent item to retrieve and reassemble',
+            },
+            scope: {
+              type: 'object',
+              properties: {
+                project: { type: 'string' },
+                branch: { type: 'string' },
+                org: { type: 'string' },
+              },
+              description: 'Scope filter for chunk search',
+            },
+            include_metadata: {
+              type: 'boolean',
+              default: true,
+              description: 'Include detailed metadata in response',
+            },
+          },
+          required: [],
+          oneOf: [
+            { required: ['parent_id'] },
+            { required: ['item_id'] }
+          ]
+        },
+      },
+      {
+        name: 'memory_upsert_with_merge',
+        description: 'Store knowledge items with intelligent merge-if-similar functionality (≥0.85 similarity)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  kind: {
+                    type: 'string',
+                    enum: [
+                      'entity',
+                      'relation',
+                      'observation',
+                      'section',
+                      'runbook',
+                      'change',
+                      'issue',
+                      'decision',
+                      'todo',
+                      'release_note',
+                      'ddl',
+                      'pr_context',
+                      'incident',
+                      'release',
+                      'risk',
+                      'assumption',
+                    ],
+                    description: 'Knowledge type (16 supported types)',
+                  },
+                  content: { type: 'string', description: 'Content of the knowledge item' },
+                  metadata: { type: 'object', description: 'Additional metadata' },
+                  scope: {
+                    type: 'object',
+                    properties: {
+                      project: { type: 'string' },
+                      branch: { type: 'string' },
+                      org: { type: 'string' },
+                    },
+                    description: 'Scope context',
+                  },
+                },
+                required: ['kind', 'content'],
+              },
+            },
+            similarity_threshold: {
+              type: 'number',
+              minimum: 0.5,
+              maximum: 1.0,
+              default: 0.85,
+              description: 'Similarity threshold for merging (0.85 = merge items with 85%+ similarity)',
+            },
+            merge_strategy: {
+              type: 'string',
+              enum: ['intelligent', 'prefer_newer', 'prefer_existing', 'combine'],
+              default: 'intelligent',
+              description: 'Strategy for merging similar items',
+            },
+          },
+          required: ['items'],
+        },
+      },
+      {
+        name: 'ttl_worker_run_with_report',
+        description: 'Run the TTL worker with comprehensive purge reporting and logging',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            options: {
+              type: 'object',
+              properties: {
+                dry_run: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Run in dry-run mode to see what would be deleted without actually deleting',
+                },
+                batch_size: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 100,
+                  description: 'Number of items to process in each batch',
+                },
+                max_batches: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 100,
+                  default: 50,
+                  description: 'Maximum number of batches to process in one run',
+                },
+              },
+              description: 'TTL worker configuration options',
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'get_purge_reports',
+        description: 'Get recent TTL worker purge reports with detailed statistics',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 10,
+              description: 'Maximum number of recent reports to retrieve',
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'get_purge_statistics',
+        description: 'Get TTL worker purge statistics for a specified time period',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            days: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 365,
+              default: 30,
+              description: 'Number of days to calculate statistics for',
             },
           },
           required: [],
@@ -830,6 +1120,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'system_metrics':
         result = await handleSystemMetrics(args as { summary?: boolean });
         break;
+      case 'reassemble_document':
+        result = await handleReassembleDocument(
+          args as { parent_id: string; scope?: any; min_completeness?: number }
+        );
+        break;
+      case 'get_document_with_chunks':
+        result = await handleGetDocumentWithChunks(
+          args as { doc_id: string; options?: any }
+        );
+        break;
+      case 'memory_get_document':
+        result = await handleMemoryGetDocument(
+          args as { parent_id?: string; item_id?: string; scope?: any; include_metadata?: boolean }
+        );
+        break;
+      case 'memory_upsert_with_merge':
+        result = await handleMemoryUpsertWithMerge(
+          args as {
+            items: any[];
+            similarity_threshold?: number;
+            merge_strategy?: string;
+          }
+        );
+        break;
+      case 'ttl_worker_run_with_report':
+        result = await handleTTLWorkerRunWithReport(
+          args as { options?: any }
+        );
+        break;
+      case 'get_purge_reports':
+        result = await handleGetPurgeReports(
+          args as { limit?: number }
+        );
+        break;
+      case 'get_purge_statistics':
+        result = await handleGetPurgeStatistics(
+          args as { days?: number }
+        );
+        break;
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -845,7 +1174,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // T8.2: Add rate limit metadata to response for transparency
     if (result.content && result.content[0]?.type === 'text') {
       try {
-        const responseData = JSON.parse(result.content[0].text);
+        const responseData = JSON.parse(result.content[0].text || '{}');
         responseData.rate_limit = {
           allowed: true,
           remaining: rateLimitResult.remaining,
@@ -930,9 +1259,45 @@ async function handleMemoryStore(args: { items: any[] }) {
     // Step 2: Transform MCP input to internal format
     const transformedItems = transformMcpInputToKnowledgeItems(args.items);
 
-    // Step 3: Process through MemoryStoreOrchestrator for full service layer features
-    // This includes: validation, deduplication, business rules, audit logging, expiry calculation
-    const response = await memoryStoreOrchestrator.storeItems(transformedItems);
+    // Step 3: Check DEDUP_ACTION environment variable for merge functionality
+    const { environment } = await import('./config/environment.js');
+    const dedupAction = environment.getDedupAction();
+
+    let response;
+    let mergeLog = [];
+
+    if (dedupAction === 'merge') {
+      // Use upsert with merge functionality
+      logger.info(`Using DEDUP_ACTION=merge, performing upsert with merge for ${transformedItems.length} items`);
+
+      const { deduplicationService } = await import('./services/deduplication/deduplication-service.js');
+
+      // Perform upsert with merge
+      const mergeResult = await deduplicationService.upsertWithMerge(transformedItems as any);
+
+      // Log merge details
+      mergeLog = mergeResult.merged.map(merge => ({
+        existing_id: merge.existingItem.id || 'unknown',
+        new_id: merge.newItem.id || 'unknown',
+        similarity: merge.similarity,
+        action: 'merged' as const
+      }));
+
+      logger.info(`Merge operation completed: ${mergeResult.merged.length} merged, ${mergeResult.created.length} created, ${mergeResult.upserted.length} upserted`);
+
+      // Store upserted items (merged items) and new items through orchestrator for business rules and audit
+      const itemsToStore = [...mergeResult.upserted, ...mergeResult.created];
+      response = await memoryStoreOrchestrator.storeItems(itemsToStore);
+
+      // Add merge information to response summary
+      if (response.summary) {
+        response.summary.merges_performed = mergeResult.merged.length;
+        response.summary.merge_details = mergeLog;
+      }
+    } else {
+      // Use standard orchestrator flow
+      response = await memoryStoreOrchestrator.storeItems(transformedItems);
+    }
 
     const duration = Date.now() - startTime;
     const success = response.errors.length === 0;
@@ -953,6 +1318,9 @@ async function handleMemoryStore(args: { items: any[] }) {
           (e) => e.error_code === 'business_rule_blocked'
         ).length,
         dedupe_skips: response.summary?.skipped_dedupe || 0,
+        dedup_action: dedupAction,
+        merges_performed: response.summary?.merges_performed || 0,
+        merge_details: response.summary?.merge_details || [],
         item_types: response.stored.map((item) => item.kind),
         scope_isolation: [...new Set(transformedItems.map((item) => JSON.stringify(item.scope)))],
         mcp_tool: true,
@@ -977,6 +1345,8 @@ async function handleMemoryStore(args: { items: any[] }) {
       data: {
         items_processed: response.summary?.total || args.items.length,
         items_skipped: response.summary?.skipped_dedupe || 0,
+        merges_performed: response.summary?.merges_performed || 0,
+        dedup_action: dedupAction,
       },
     });
 
@@ -1419,6 +1789,503 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
   }
 }
 
+async function handleReassembleDocument(args: {
+  parent_id: string;
+  scope?: any;
+  min_completeness?: number;
+}) {
+  try {
+    // Import required services
+    const { ResultGroupingService } = await import('./services/search/result-grouping-service.js');
+    const groupingService = new ResultGroupingService();
+
+    const { parent_id: parentId, scope, min_completeness: minCompleteness = 0.5 } = args;
+
+    // Search for chunks belonging to the parent document
+    const chunkSearchQuery = `parent_id:${parentId} is_chunk:true`;
+
+    const searchMethodResult = await searchService.searchByMode({
+      query: chunkSearchQuery,
+      limit: 100, // Reasonable limit for chunks
+      types: ['section', 'runbook', 'incident'], // Chunkable types
+      scope: scope || {},
+      mode: 'auto',
+      expand: 'none',
+    });
+
+    const searchResults = searchMethodResult.results;
+
+    if (!searchResults.length) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `No chunks found for parent document with ID: ${parentId}`,
+          },
+        ],
+      };
+    }
+
+    // Group results by parent
+    const groupedResults = groupingService.groupResultsByParent(searchResults);
+    const parentGroup = groupedResults.find(g => g.parent_id === parentId);
+
+    if (!parentGroup || parentGroup.chunks.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `No valid chunk groups found for parent document with ID: ${parentId}`,
+          },
+        ],
+      };
+    }
+
+    // Check completeness requirement
+    const foundChunks = parentGroup.chunks.length;
+    const totalChunks = parentGroup.chunks[0]?.total_chunks || foundChunks;
+    const completeness = foundChunks / totalChunks;
+
+    if (completeness < minCompleteness) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Insufficient chunks for reassembly. Found ${foundChunks}/${totalChunks} chunks (${(completeness * 100).toFixed(1)}% completeness). Required: ${(minCompleteness * 100).toFixed(1)}%`,
+          },
+        ],
+      };
+    }
+
+    // Reconstruct content
+    const reconstructed = groupingService.reconstructGroupedContent(parentGroup);
+
+    return {
+      content: [
+        {
+          type: 'reassembled_document',
+          parent_id: reconstructed.parent_id,
+          content: reconstructed.content,
+          metadata: {
+            total_chunks: reconstructed.total_chunks,
+            found_chunks: reconstructed.found_chunks,
+            completeness_ratio: reconstructed.completeness_ratio,
+            confidence_score: reconstructed.confidence_score,
+            parent_score: reconstructed.parent_score,
+          },
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Successfully reassembled document from ${reconstructed.found_chunks}/${reconstructed.total_chunks} chunks (${(reconstructed.completeness_ratio * 100).toFixed(1)}% complete)`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to reassemble document', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error reassembling document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleGetDocumentWithChunks(args: {
+  doc_id: string;
+  options?: any;
+}) {
+  try {
+    // Import the document reassembly service
+    const { getDocumentWithChunks } = await import('./services/document-reassembly.js');
+
+    const { doc_id, options = {} } = args;
+
+    // Attempt to get the document with chunks
+    const result = await getDocumentWithChunks(doc_id, options);
+
+    if (!result) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Document not found with ID: ${doc_id}. This could mean:\n1. The document doesn't exist\n2. The document has no chunks\n3. The ID is not a valid parent document ID`,
+          },
+        ],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: 'document_with_chunks',
+          parent: result.parent,
+          chunks: result.chunks,
+          reassembled_content: result.reassembled_content,
+          chunking_metadata: result.chunking_metadata,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Successfully retrieved document with ${result.chunks.length} chunks. Content length: ${result.reassembled_content.length} characters. Original document length: ${result.chunking_metadata.original_length} characters.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to get document with chunks', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error getting document with chunks: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleMemoryGetDocument(args: {
+  parent_id?: string;
+  item_id?: string;
+  scope?: any;
+  include_metadata?: boolean;
+}) {
+  try {
+    // Import the document reassembly service
+    const { getDocumentWithChunks } = await import('./services/document-reassembly.js');
+
+    const { parent_id, item_id, scope, include_metadata = true } = args;
+
+    // Determine which ID to use
+    let docId: string;
+    if (parent_id) {
+      docId = parent_id;
+    } else if (item_id) {
+      docId = item_id;
+    } else {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'Either parent_id or item_id must be provided to retrieve a document',
+          },
+        ],
+      };
+    }
+
+    // Prepare options for the reassembly service
+    const options = {
+      include_metadata,
+      preserve_chunk_markers: false,
+      filter_by_scope: !!scope,
+      sort_by_position: true,
+      scope,
+    };
+
+    // Attempt to get the document with chunks
+    const result = await getDocumentWithChunks(docId, options);
+
+    if (!result) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Document not found with ID: ${docId}. This could mean:\n1. The document doesn't exist\n2. The document has no chunks\n3. The ID is not a valid parent document ID`,
+          },
+        ],
+      };
+    }
+
+    // Return the reassembled document with comprehensive metadata
+    return {
+      content: [
+        {
+          type: 'reassembled_document',
+          parent: result.parent,
+          chunks: result.chunks,
+          total_chunks: result.chunks.length,
+          reassembled_content: result.reassembled_content,
+          is_complete: result.chunking_metadata &&
+                       result.chunks.length === result.chunking_metadata.total_chunks,
+          completeness_ratio: result.chunking_metadata ?
+                             result.chunks.length / result.chunking_metadata.total_chunks : 1.0,
+          chunking_metadata: include_metadata ? result.chunking_metadata : undefined,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Successfully retrieved document "${result.parent?.data?.title || 'Untitled'}" with ${result.chunks.length} chunks (${result.chunks.length === result.chunking_metadata?.total_chunks ? 'complete' : `${Math.round((result.chunks.length / (result.chunking_metadata?.total_chunks || 1)) * 100)}% complete`}). Content length: ${result.reassembled_content.length} characters.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to get document with chunks', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error getting document: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleMemoryUpsertWithMerge(args: {
+  items: any[];
+  similarity_threshold?: number;
+  merge_strategy?: string;
+}) {
+  try {
+    // Import required services
+    const { deduplicationService } = await import('./services/deduplication/deduplication-service.js');
+    const { memoryStore } = await import('./services/memory-store.js');
+
+    const { items, similarity_threshold = 0.85, merge_strategy = 'intelligent' } = args;
+
+    // Temporarily update deduplication threshold if custom threshold provided
+    const originalThreshold = (deduplicationService as any).config.contentSimilarityThreshold;
+    if (similarity_threshold !== 0.85) {
+      (deduplicationService as any).config.contentSimilarityThreshold = similarity_threshold;
+    }
+
+    logger.info(
+      `Starting memory upsert with merge operation: ${items.length} items, threshold: ${similarity_threshold}, strategy: ${merge_strategy}`
+    );
+
+    // Perform upsert with merge
+    const result = await deduplicationService.upsertWithMerge(items);
+
+    // Store upserted items (merged items) and new items
+    const itemsToStore = [...result.upserted, ...result.created];
+    const storeResult = await memoryStore(itemsToStore);
+
+    // Restore original threshold
+    if (similarity_threshold !== 0.85) {
+      (deduplicationService as any).config.contentSimilarityThreshold = originalThreshold;
+    }
+
+    // Create detailed response
+    const mergeDetails = result.merged.map(merge => ({
+      existing_id: merge.existingItem.id,
+      new_id: merge.newItem.id,
+      similarity: merge.similarity,
+      match_type: 'merged',
+    }));
+
+    return {
+      content: [
+        {
+          type: 'upsert_result',
+          operation_summary: {
+            total_input: items.length,
+            upserted_count: result.upserted.length,
+            merged_count: result.merged.length,
+            created_count: result.created.length,
+            similarity_threshold_used: similarity_threshold,
+            merge_strategy,
+          },
+          merge_details: mergeDetails,
+          store_results: storeResult.stored || [],
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Upsert with merge completed: ${result.upserted.length} items upserted, ${result.merged.length} items merged (≥${(similarity_threshold * 100).toFixed(0)}% similarity), ${result.created.length} new items created. Similarity threshold: ${(similarity_threshold * 100).toFixed(0)}%`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to perform memory upsert with merge', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error during upsert with merge: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleTTLWorkerRunWithReport(args: { options?: any }) {
+  try {
+    // Import the enhanced expiry worker
+    const { runExpiryWorkerWithReport } = await import('./services/expiry-worker.js');
+
+    const { options = {} } = args;
+
+    // Run the enhanced TTL worker with reporting
+    const report = await runExpiryWorkerWithReport(options);
+
+    return {
+      content: [
+        {
+          type: 'purge_report',
+          report: {
+            timestamp: report.timestamp,
+            summary: report.summary,
+            performance_metrics: report.performance_metrics,
+            deleted_items_count: report.deleted_items.length,
+            errors_count: report.errors.length,
+          },
+          deleted_items: report.deleted_items.slice(0, 50), // Limit to first 50 items for response size
+          errors: report.errors,
+          expiry_statistics: calculateExpiryStatistics(report.deleted_items),
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `TTL worker completed: ${report.summary.total_items_deleted}/${report.summary.total_items_processed} items deleted in ${report.duration_ms}ms. Performance: ${report.performance_metrics.items_per_second.toFixed(1)} items/sec. Dry run: ${report.summary.dry_run}`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to run TTL worker with report', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error running TTL worker: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleGetPurgeReports(args: { limit?: number }) {
+  try {
+    // Import the expiry worker
+    const { getRecentPurgeReports } = await import('./services/expiry-worker.js');
+
+    const { limit = 10 } = args;
+
+    // Get recent purge reports
+    const reports = await getRecentPurgeReports(limit);
+
+    return {
+      content: [
+        {
+          type: 'purge_reports',
+          reports,
+          count: reports.length,
+          requested_limit: limit,
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Retrieved ${reports.length} recent purge report${reports.length !== 1 ? 's' : ''} (requested limit: ${limit})`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to get purge reports', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error retrieving purge reports: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+async function handleGetPurgeStatistics(args: { days?: number }) {
+  try {
+    // Import the expiry worker
+    const { getPurgeStatistics } = await import('./services/expiry-worker.js');
+
+    const { days = 30 } = args;
+
+    // Get purge statistics
+    const stats = await getPurgeStatistics(days);
+
+    return {
+      content: [
+        {
+          type: 'purge_statistics',
+          statistics: {
+            ...stats,
+            period_days: days,
+            calculated_at: new Date().toISOString(),
+          },
+          timestamp: new Date().toISOString(),
+        },
+        {
+          type: 'text',
+          text: `Purge statistics for the last ${days} days: ${stats.total_reports} report(s), ${stats.total_items_deleted} items deleted. Average performance: ${stats.average_performance.items_per_second.toFixed(1)} items/sec, ${stats.average_performance.average_duration_ms}ms duration.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error('Failed to get purge statistics', { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Error retrieving purge statistics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
+
+/**
+ * Calculate expiry statistics for display (simplified version)
+ */
+function calculateExpiryStatistics(deletedItems: any[]): {
+  average_days_expired: number;
+  oldest_expiry_days: number;
+  newest_expiry_days: number;
+  expiry_distribution: Record<string, number>;
+} {
+  if (deletedItems.length === 0) {
+    return {
+      average_days_expired: 0,
+      oldest_expiry_days: 0,
+      newest_expiry_days: 0,
+      expiry_distribution: {},
+    };
+  }
+
+  const daysExpired = deletedItems.map(item => item.days_expired || 0);
+  const averageDays = daysExpired.length > 0 ? Math.round(daysExpired.reduce((a, b) => a + b, 0) / daysExpired.length) : 0;
+  const oldestDays = daysExpired.length > 0 ? Math.max(...daysExpired) : 0;
+  const newestDays = daysExpired.length > 0 ? Math.min(...daysExpired) : 0;
+
+  const distribution = {
+    '1-7 days': 0,
+    '8-30 days': 0,
+    '31-90 days': 0,
+    '90+ days': 0,
+  };
+
+  daysExpired.forEach(days => {
+    if (days <= 7) distribution['1-7 days']++;
+    else if (days <= 30) distribution['8-30 days']++;
+    else if (days <= 90) distribution['31-90 days']++;
+    else distribution['90+ days']++;
+  });
+
+  return {
+    average_days_expired: averageDays,
+    oldest_expiry_days: oldestDays,
+    newest_expiry_days: newestDays,
+    expiry_distribution: distribution,
+  };
+}
+
 // === Expiry Worker Scheduler ===
 
 let expiryWorkerInterval: NodeJS.Timeout | null = null;
@@ -1597,8 +2464,8 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-// Export VectorDatabase for testing
-export { VectorDatabase };
+// Export VectorDatabase and KeyVaultService for testing
+export { VectorDatabase, getKeyVaultService };
 
 // Start the server only when not in test mode
 if (process.env.NODE_ENV !== 'test') {

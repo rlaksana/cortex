@@ -4,6 +4,7 @@ import { inheritTTLFromParent } from '../../utils/tl-utils.js';
 import { SemanticAnalyzer, type SemanticAnalysisResult } from './semantic-analyzer.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
 import { logger } from '../../utils/logger.js';
+import { environment } from '../../config/environment.js';
 
 export interface ChunkingStats {
   original_length: number;
@@ -13,6 +14,7 @@ export interface ChunkingStats {
   estimated_chunks: number;
   semantic_analysis_enabled: boolean;
   semantic_boundaries_found: number;
+  chunk_fallback_used: boolean;
 }
 
 export class ChunkingService {
@@ -27,6 +29,15 @@ export class ChunkingService {
   private semanticAnalyzer?: SemanticAnalyzer;
   private readonly SEMANTIC_ANALYSIS_THRESHOLD = 3600; // Enable semantic analysis for longer content
 
+  // Circuit breaker for semantic analysis
+  private circuitBreaker = {
+    failures: 0,
+    lastFailureTime: 0,
+    state: 'CLOSED' as 'CLOSED' | 'OPEN' | 'HALF_OPEN',
+    threshold: 3, // Max failures before opening
+    timeout: 60000, // 1 minute timeout before trying again
+  };
+
   constructor(chunkSize?: number, overlapSize?: number, embeddingService?: EmbeddingService) {
     // Allow configuration for testing
     if (chunkSize) {
@@ -37,17 +48,101 @@ export class ChunkingService {
     }
 
     // Initialize semantic analyzer if embedding service is available
+    // This is completely optional - the service works fine without it
     if (embeddingService) {
-      this.semanticAnalyzer = new SemanticAnalyzer(embeddingService, {
-        strong_boundary_threshold: 0.3,
-        medium_boundary_threshold: 0.5,
-        weak_boundary_threshold: 0.7,
-        window_size: 3,
-        min_chunk_sentences: 2,
-        max_chunk_sentences: 15,
-        enable_caching: true,
-        cache_ttl: 3600000,
-      });
+      try {
+        this.semanticAnalyzer = new SemanticAnalyzer(embeddingService, {
+          strong_boundary_threshold: 0.3,
+          medium_boundary_threshold: 0.5,
+          weak_boundary_threshold: 0.7,
+          window_size: 3,
+          min_chunk_sentences: 2,
+          max_chunk_sentences: 15,
+          enable_caching: true,
+          cache_ttl: 3600000,
+        });
+        logger.info('Semantic analyzer initialized successfully');
+      } catch (error) {
+        logger.warn({ error }, 'Failed to initialize semantic analyzer, using traditional chunking only');
+        // Continue without semantic analyzer - service still works perfectly
+      }
+    } else {
+      logger.info('No embedding service provided, using traditional chunking only');
+    }
+  }
+
+  /**
+   * Check if semantic analysis is available through circuit breaker
+   */
+  private isSemanticAnalysisAvailable(): boolean {
+    const now = Date.now();
+
+    switch (this.circuitBreaker.state) {
+      case 'CLOSED':
+        return true;
+      case 'OPEN':
+        if (now - this.circuitBreaker.lastFailureTime > this.circuitBreaker.timeout) {
+          this.circuitBreaker.state = 'HALF_OPEN';
+          logger.info('Circuit breaker moving to HALF_OPEN state');
+          return true;
+        }
+        return false;
+      case 'HALF_OPEN':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Record semantic analysis failure
+   */
+  private recordSemanticAnalysisFailure(error: Error): void {
+    this.circuitBreaker.failures++;
+    this.circuitBreaker.lastFailureTime = Date.now();
+
+    if (this.circuitBreaker.failures >= this.circuitBreaker.threshold) {
+      this.circuitBreaker.state = 'OPEN';
+      logger.warn({
+        failures: this.circuitBreaker.failures,
+        error: error.message,
+      }, 'Circuit breaker opened due to repeated semantic analysis failures');
+    }
+  }
+
+  /**
+   * Record semantic analysis success
+   */
+  private recordSemanticAnalysisSuccess(): void {
+    if (this.circuitBreaker.state === 'HALF_OPEN') {
+      this.circuitBreaker.state = 'CLOSED';
+      this.circuitBreaker.failures = 0;
+      logger.info('Circuit breaker closed after successful semantic analysis');
+    }
+  }
+
+  /**
+   * Perform semantic analysis with circuit breaker protection
+   */
+  private async performSemanticAnalysis(
+    content: string,
+    _existingChunks?: string[]
+  ): Promise<SemanticAnalysisResult | null> {
+    if (!this.semanticAnalyzer || !this.isSemanticAnalysisAvailable()) {
+      return null;
+    }
+
+    try {
+      const result = await this.semanticAnalyzer.analyzeSemanticBoundaries(content);
+      this.recordSemanticAnalysisSuccess();
+      return result;
+    } catch (error) {
+      this.recordSemanticAnalysisFailure(error instanceof Error ? error : new Error('Unknown error'));
+      logger.warn({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        circuitState: this.circuitBreaker.state,
+      }, 'Semantic analysis failed, falling back to traditional chunking');
+      return null;
     }
   }
 
@@ -80,6 +175,9 @@ export class ChunkingService {
       );
     }
 
+    // Determine if fallback would be used based on circuit breaker state and semantic analyzer availability
+    const chunk_fallback_used = semanticEnabled && !this.isSemanticAnalysisAvailable();
+
     return {
       original_length: content.length,
       should_chunk: shouldChunk,
@@ -88,40 +186,71 @@ export class ChunkingService {
       estimated_chunks: estimatedChunks,
       semantic_analysis_enabled: semanticEnabled,
       semantic_boundaries_found: 0, // Will be updated after analysis
+      chunk_fallback_used,
     };
   }
 
   /**
    * Split content into chunks with overlap (enhanced with semantic analysis)
    */
-  async chunkContent(content: string): Promise<string[]> {
+  async chunkContent(content: string): Promise<{ chunks: string[], fallback_used: boolean }> {
     if (!this.shouldChunk(content)) {
-      return [content];
+      return { chunks: [content], fallback_used: false };
     }
 
+    let fallback_used = false;
+
     // Use semantic chunking if available and content is long enough
-    if (this.shouldUseSemanticAnalysis(content) && this.semanticAnalyzer) {
+    if (this.shouldUseSemanticAnalysis(content) && this.semanticAnalyzer && this.isSemanticAnalysisAvailable()) {
       try {
-        return await this.chunkContentSemantically(content);
+        const chunks = await this.chunkContentSemantically(content);
+
+        // Validate semantic chunks before returning
+        if (this.validateChunks(chunks, content)) {
+          return { chunks, fallback_used: false };
+        } else {
+          logger.warn(
+            { chunkCount: chunks.length, contentLength: content.length },
+            'Semantic chunks validation failed, falling back to traditional method'
+          );
+          fallback_used = true;
+        }
       } catch (error) {
         // Fallback to traditional chunking if semantic analysis fails
         logger.warn(
           { error, contentLength: content.length },
           'Semantic chunking failed, falling back to traditional method'
         );
+        this.recordSemanticAnalysisFailure(error as Error);
+        fallback_used = true;
       }
+    } else if (this.shouldUseSemanticAnalysis(content) && !this.isSemanticAnalysisAvailable()) {
+      // Circuit breaker is open, fallback to traditional
+      logger.info(
+        { contentLength: content.length, circuitBreakerState: this.circuitBreaker.state },
+        'Semantic analysis unavailable (circuit breaker open), using traditional chunking'
+      );
+      fallback_used = true;
     }
 
-    // Traditional chunking as fallback
-    return this.chunkContentTraditionally(content);
+    // Traditional chunking as guaranteed fallback
+    const chunks = this.chunkContentTraditionally(content);
+    return { chunks, fallback_used };
   }
 
   /**
    * Determine if semantic analysis should be used
    */
   private shouldUseSemanticAnalysis(content: string): boolean {
+    // Check if semantic chunking is disabled by environment variable
+    if (environment.getFeatureFlag('semantic-chunking-optional')) {
+      logger.debug('Semantic chunking disabled by SEMANTIC_CHUNKING_OPTIONAL=true');
+      return false;
+    }
+
     return (
-      this.semanticAnalyzer !== undefined && content.length >= this.SEMANTIC_ANALYSIS_THRESHOLD
+      this.semanticAnalyzer !== undefined &&
+      content.length >= this.SEMANTIC_ANALYSIS_THRESHOLD
     );
   }
 
@@ -130,17 +259,18 @@ export class ChunkingService {
    */
   private async chunkContentSemantically(content: string): Promise<string[]> {
     if (!this.semanticAnalyzer) {
-      throw new Error('Semantic analyzer not available');
+      logger.debug('Semantic analyzer not available, using traditional chunking');
+      return this.chunkContentTraditionally(content);
     }
 
-    // Perform semantic analysis
-    const analysis = await this.semanticAnalyzer.analyzeSemanticBoundaries(content);
+    // Perform semantic analysis with circuit breaker protection
+    const analysis = await this.performSemanticAnalysis(content);
 
-    if (analysis.boundaries.length === 0) {
-      // No semantic boundaries found, use traditional chunking
+    if (!analysis || analysis.boundaries.length === 0) {
+      // No semantic boundaries found or analysis failed, use traditional chunking
       logger.info(
-        { contentLength: content.length },
-        'No semantic boundaries found, using traditional chunking'
+        { contentLength: content.length, hasAnalysis: !!analysis },
+        'No semantic boundaries found or analysis failed, using traditional chunking'
       );
       return this.chunkContentTraditionally(content);
     }
@@ -337,7 +467,9 @@ export class ChunkingService {
       ];
     }
 
-    const chunks = await this.chunkContent(content);
+    const chunkResult = await this.chunkContent(content);
+    const chunks = chunkResult.chunks;
+    const fallback_used = chunkResult.fallback_used;
     const ttlInfo = inheritTTLFromParent(item);
     const semanticAnalysisEnabled = this.shouldUseSemanticAnalysis(content);
 
@@ -374,6 +506,7 @@ export class ChunkingService {
           processing_timestamp: new Date().toISOString(),
           original_content_hash: originalContentHash,
           semantic_analysis_enabled: semanticAnalysisEnabled,
+          chunk_fallback_used: fallback_used,
           title_carried: extractedTitle !== '',
           average_chunk_size: Math.round(chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length),
         },
@@ -418,6 +551,7 @@ export class ChunkingService {
             overlap_size: this.OVERLAP_SIZE,
             processing_timestamp: new Date().toISOString(),
             semantic_analysis_enabled: semanticAnalysisEnabled,
+            chunk_fallback_used: fallback_used,
             title_carried: extractedTitle !== '',
             has_context: chunkWithContext !== chunk,
             size_ratio: chunkLength / content.length,
@@ -557,5 +691,82 @@ export class ChunkingService {
     }
 
     return contextualizedChunk;
+  }
+
+  /**
+   * Validate chunks to ensure they meet quality standards
+   */
+  private validateChunks(chunks: string[], originalContent: string): boolean {
+    // Basic validation checks
+    if (!chunks || chunks.length === 0) {
+      logger.warn('Chunk validation failed: No chunks generated');
+      return false;
+    }
+
+    // Check if we have reasonable number of chunks
+    const expectedMaxChunks = Math.ceil(originalContent.length / (this.CHUNK_SIZE * 0.5));
+    if (chunks.length > expectedMaxChunks * 2) {
+      logger.warn(
+        { chunkCount: chunks.length, expectedMax: expectedMaxChunks * 2 },
+        'Chunk validation failed: Too many chunks generated'
+      );
+      return false;
+    }
+
+    // Check if chunks preserve content integrity
+    const combinedContent = chunks.join(' ').replace(/\s+/g, ' ').trim();
+    const normalizedOriginal = originalContent.replace(/\s+/g, ' ').trim();
+
+    // Allow for some differences due to preprocessing, but content should be substantially similar
+    const similarityRatio = Math.min(combinedContent.length, normalizedOriginal.length) /
+                           Math.max(combinedContent.length, normalizedOriginal.length);
+
+    if (similarityRatio < 0.8) {
+      logger.warn(
+        { similarityRatio, originalLength: normalizedOriginal.length, combinedLength: combinedContent.length },
+        'Chunk validation failed: Content integrity compromised'
+      );
+      return false;
+    }
+
+    // Check chunk size distribution
+    const chunkSizes = chunks.map(chunk => chunk.length);
+    const avgChunkSize = chunkSizes.reduce((sum, size) => sum + size, 0) / chunkSizes.length;
+
+    // Average chunk size should be reasonable
+    if (avgChunkSize < this.CHUNK_SIZE * 0.3 || avgChunkSize > this.CHUNK_SIZE * 2.0) {
+      logger.warn(
+        { avgChunkSize, targetSize: this.CHUNK_SIZE },
+        'Chunk validation failed: Average chunk size outside acceptable range'
+      );
+      return false;
+    }
+
+    // Check for extremely small or large chunks
+    const extremelySmallChunks = chunkSizes.filter(size => size < 50).length;
+    const extremelyLargeChunks = chunkSizes.filter(size => size > this.CHUNK_SIZE * 2.5).length;
+
+    if (extremelySmallChunks > chunks.length * 0.2) {
+      logger.warn(
+        { extremelySmallChunks, totalChunks: chunks.length },
+        'Chunk validation failed: Too many extremely small chunks'
+      );
+      return false;
+    }
+
+    if (extremelyLargeChunks > chunks.length * 0.1) {
+      logger.warn(
+        { extremelyLargeChunks, totalChunks: chunks.length },
+        'Chunk validation failed: Too many extremely large chunks'
+      );
+      return false;
+    }
+
+    logger.info(
+      { chunkCount: chunks.length, avgChunkSize, similarityRatio },
+      'Chunk validation passed'
+    );
+
+    return true;
   }
 }
