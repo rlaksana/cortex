@@ -8,6 +8,10 @@ import { searchService } from '../search/search-service.js';
 import { entityMatchingService } from '../search/entity-matching-service.js';
 import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
 import { auditService } from '../audit/audit-service.js';
+import { structuredLogger, OperationType, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { generateCorrelationId } from '../../utils/correlation-id.js';
+import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import type { AuthContext } from '../../types/auth-types.js';
 
 /**
  * Search execution context
@@ -35,6 +39,8 @@ interface SearchExecutionResult {
  * Coordinates query parsing, strategy selection, search execution, and result ranking
  */
 export class MemoryFindOrchestrator {
+  private rateLimiter = rateLimitMiddleware.memoryFind();
+
   constructor(private _ranker: ResultRanker = resultRanker) {}
 
   /**
@@ -277,10 +283,57 @@ export class MemoryFindOrchestrator {
   /**
    * Main entry point for memory find operations
    */
-  async findItems(query: SearchQuery): Promise<MemoryFindResponse> {
+  async findItems(query: SearchQuery, authContext?: AuthContext): Promise<MemoryFindResponse> {
     const startTime = Date.now();
+    const correlationId = generateCorrelationId('find');
 
     try {
+      // Check rate limits
+      const rateLimitResult = await this.rateLimiter.checkOrchestratorRateLimit(
+        authContext,
+        OperationType.MEMORY_FIND,
+        1 // Each search counts as one token
+      );
+
+      if (!rateLimitResult.allowed) {
+        const latency = Date.now() - startTime;
+
+        // Log rate limit violation
+        structuredLogger.logRateLimit(
+          correlationId,
+          latency,
+          false,
+          authContext?.apiKeyId || 'anonymous',
+          'api_key',
+          OperationType.MEMORY_FIND,
+          1,
+          rateLimitResult.error?.error || 'rate_limit_exceeded'
+        );
+
+        return {
+          success: false,
+          results: [],
+          total_count: 0,
+          query: query.query || '',
+          strategy: 'rate_limited',
+          metadata: {
+            correlation_id: correlationId,
+            execution_time_ms: latency,
+            strategy_used: 'rate_limited',
+            fallback_used: false,
+            total_results: 0,
+            quality_score: 0,
+            processed_kinds: [],
+            scope_info: {
+              organization_id: authContext?.user?.organizationId,
+              project_id: authContext?.user?.projectId,
+              branch_id: authContext?.user?.branchId,
+            },
+            rate_limit: rateLimitResult.error,
+          },
+        };
+      }
+
       logger.info({ query: query.query, mode: query.mode }, 'Memory find operation started');
 
       // Step 1: Parse and validate query
@@ -308,10 +361,32 @@ export class MemoryFindOrchestrator {
       // Step 5: Log operation
       await this.logSearchOperation(query, response, Date.now() - startTime);
 
+      // Log successful operation with structured logger
+      const latencyMs = Date.now() - startTime;
+      const strategyName = searchResult.strategy.primary.name as SearchStrategy;
+
+      structuredLogger.logMemoryFind(
+        correlationId,
+        latencyMs,
+        true,
+        strategyName,
+        response.results.length,
+        response.total_count,
+        undefined,
+        {
+          query: query.query,
+          mode: query.mode,
+          limit: query.limit,
+          types: query.types,
+          scope: query.scope,
+          expand: query.expand,
+        }
+      );
+
       logger.info(
         {
           resultCount: response.results.length,
-          executionTime: Date.now() - startTime,
+          executionTime: latencyMs,
           strategy: searchResult.strategy.primary.name,
         },
         'Memory find operation completed'
@@ -319,6 +394,28 @@ export class MemoryFindOrchestrator {
 
       return response;
     } catch (error) {
+      const latencyMs = Date.now() - startTime;
+
+      // Log operation failure
+      structuredLogger.logMemoryFind(
+        correlationId,
+        latencyMs,
+        false,
+        SearchStrategy.ERROR,
+        0,
+        0,
+        undefined,
+        {
+          query: query.query,
+          mode: query.mode,
+          limit: query.limit,
+          types: query.types,
+          scope: query.scope,
+          expand: query.expand,
+        },
+        error instanceof Error ? error : new Error('Unknown search error')
+      );
+
       logger.error({ error, query }, 'Memory find operation failed');
 
       // Log error

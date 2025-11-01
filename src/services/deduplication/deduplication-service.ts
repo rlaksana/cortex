@@ -13,6 +13,9 @@ interface DeduplicationConfig {
   contentSimilarityThreshold: number;
   checkWithinScopeOnly: boolean;
   maxHistoryHours: number;
+  dedupeWindowDays: number;
+  allowNewerVersions: boolean;
+  enableAuditLogging: boolean;
 }
 
 /**
@@ -24,6 +27,13 @@ interface DuplicateAnalysis {
   similarityScore: number;
   matchType: 'exact' | 'content' | 'semantic' | 'none';
   reason: string;
+  isNewerVersion?: boolean;
+  existingCreatedAt?: string;
+  scopeMatch?: {
+    org: boolean;
+    project: boolean;
+    branch: boolean;
+  };
 }
 
 /**
@@ -35,6 +45,9 @@ export class DeduplicationService implements IDeduplicationService {
     contentSimilarityThreshold: 0.85,
     checkWithinScopeOnly: true,
     maxHistoryHours: 24 * 7, // 1 week
+    dedupeWindowDays: 7,
+    allowNewerVersions: true,
+    enableAuditLogging: true,
   };
 
   /**
@@ -140,36 +153,93 @@ export class DeduplicationService implements IDeduplicationService {
     }
 
     try {
+      // Enhanced scope matching
+      const scopeAnalysis = this.analyzeScopeMatch(item);
+
       // Check for exact matches first
       const exactMatch = await this.findExactMatch(item);
       if (exactMatch) {
-        return {
-          isDuplicate: true,
+        let isNewerVersion = false;
+        let reason = 'Exact match found in database';
+        let isDuplicate = true;
+
+        // Check if this is a newer version
+        if (this.config.allowNewerVersions && exactMatch.createdAt) {
+          isNewerVersion = this.isNewerVersion(item, exactMatch.createdAt);
+          if (isNewerVersion) {
+            isDuplicate = false;
+            reason = 'Newer version of existing content - not deduped';
+          }
+        }
+
+        const analysis: DuplicateAnalysis = {
+          isDuplicate,
           existingId: exactMatch.id,
           similarityScore: 1.0,
-          matchType: 'exact',
-          reason: 'Exact match found in database',
+          matchType: 'exact' as const,
+          reason,
+          isNewerVersion,
+          existingCreatedAt: exactMatch.createdAt,
+          scopeMatch: scopeAnalysis,
         };
+
+        // Log audit information
+        if (this.config.enableAuditLogging) {
+          await this.logDedupeDecision(item, analysis);
+        }
+
+        return analysis;
       }
 
       // Check for content similarity
       const contentMatch = await this.findContentMatch(item);
       if (contentMatch) {
-        return {
-          isDuplicate: true,
+        let isNewerVersion = false;
+        let reason = `Content similarity ${contentMatch.similarity.toFixed(2)} exceeds threshold`;
+        let isDuplicate = true;
+
+        // Check if this is a newer version
+        if (this.config.allowNewerVersions && contentMatch.createdAt) {
+          isNewerVersion = this.isNewerVersion(item, contentMatch.createdAt);
+          if (isNewerVersion) {
+            isDuplicate = false;
+            reason = 'Newer version of existing content - not deduped';
+          }
+        }
+
+        const analysis: DuplicateAnalysis = {
+          isDuplicate,
           existingId: contentMatch.id,
           similarityScore: contentMatch.similarity,
-          matchType: 'content',
-          reason: `Content similarity ${contentMatch.similarity.toFixed(2)} exceeds threshold`,
+          matchType: 'content' as const,
+          reason,
+          isNewerVersion,
+          existingCreatedAt: contentMatch.createdAt,
+          scopeMatch: scopeAnalysis,
         };
+
+        // Log audit information
+        if (this.config.enableAuditLogging) {
+          await this.logDedupeDecision(item, analysis);
+        }
+
+        return analysis;
       }
 
-      return {
+      const analysis = {
         isDuplicate: false,
         similarityScore: 0,
-        matchType: 'none',
+        matchType: 'none' as const,
         reason: 'No significant matches found',
+        scopeMatch: scopeAnalysis,
       };
+
+      // Log audit information
+      if (this.config.enableAuditLogging) {
+        await this.logDedupeDecision(item, analysis);
+      }
+
+      return analysis;
     } catch (error) {
       logger.error({ error, item }, 'Error checking for duplicates');
       return {
@@ -231,7 +301,7 @@ export class DeduplicationService implements IDeduplicationService {
    */
   private async findExactMatch(
     item: KnowledgeItem
-  ): Promise<{ id: string; similarity: number } | null> {
+  ): Promise<{ id: string; similarity: number; createdAt: string } | null> {
     const whereClause: any = {
       kind: item.kind,
     };
@@ -264,10 +334,10 @@ export class DeduplicationService implements IDeduplicationService {
 
     const existing = await (qdrant as any)[tableName].findFirst({
       where: whereClause,
-      select: { id: true },
+      select: { id: true, created_at: true },
     });
 
-    return existing ? { id: existing.id, similarity: 1.0 } : null;
+    return existing ? { id: existing.id, similarity: 1.0, createdAt: existing.created_at } : null;
   }
 
   /**
@@ -275,7 +345,7 @@ export class DeduplicationService implements IDeduplicationService {
    */
   private async findContentMatch(
     item: KnowledgeItem
-  ): Promise<{ id: string; similarity: number } | null> {
+  ): Promise<{ id: string; similarity: number; createdAt: string } | null> {
     // This is a simplified implementation
     // In a real system, you would use more sophisticated similarity algorithms
     // such as vector embeddings, text similarity, etc.
@@ -306,7 +376,7 @@ export class DeduplicationService implements IDeduplicationService {
 
       const recentItems = await (qdrant as any)[tableName].findMany({
         where: whereClause,
-        select: { id: true, data: true },
+        select: { id: true, data: true, created_at: true },
         orderBy: { created_at: 'desc' },
         take: 10, // Limit to recent items for performance
       });
@@ -316,7 +386,7 @@ export class DeduplicationService implements IDeduplicationService {
         const similarity = this.calculateTextSimilarity(contentText, existingText);
 
         if (similarity >= this.config.contentSimilarityThreshold) {
-          return { id: existingItem.id, similarity };
+          return { id: existingItem.id, similarity, createdAt: existingItem.created_at };
         }
       }
 
@@ -356,6 +426,96 @@ export class DeduplicationService implements IDeduplicationService {
    */
   getConfig(): DeduplicationConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Analyze scope matching for enhanced deduplication
+   */
+  private analyzeScopeMatch(item: KnowledgeItem): {
+    org: boolean;
+    project: boolean;
+    branch: boolean;
+  } {
+    const itemScope = item.scope || {};
+
+    return {
+      org: !!itemScope.org,
+      project: !!itemScope.project,
+      branch: !!itemScope.branch,
+    };
+  }
+
+  /**
+   * Check if an item is a newer version than existing content
+   */
+  private isNewerVersion(item: KnowledgeItem, existingCreatedAt: string): boolean {
+    const existingTime = new Date(existingCreatedAt).getTime();
+    const itemTime = item.created_at ? new Date(item.created_at).getTime() : Date.now();
+
+    // Consider it newer if it was created after the existing item
+    // and within the dedupe window
+    const daysDiff = (itemTime - existingTime) / (1000 * 60 * 60 * 24);
+
+    return daysDiff > 0 && daysDiff <= this.config.dedupeWindowDays;
+  }
+
+  /**
+   * Log deduplication decision for audit purposes
+   */
+  private async logDedupeDecision(item: KnowledgeItem, analysis: DuplicateAnalysis): Promise<void> {
+    try {
+      const auditData = {
+        itemId: item.id,
+        itemKind: item.kind,
+        itemScope: item.scope,
+        isDuplicate: analysis.isDuplicate,
+        similarityScore: analysis.similarityScore,
+        matchType: analysis.matchType,
+        reason: analysis.reason,
+        existingId: analysis.existingId,
+        isNewerVersion: analysis.isNewerVersion,
+        scopeMatch: analysis.scopeMatch,
+        timestamp: new Date().toISOString(),
+        config: {
+          contentSimilarityThreshold: this.config.contentSimilarityThreshold,
+          checkWithinScopeOnly: this.config.checkWithinScopeOnly,
+          dedupeWindowDays: this.config.dedupeWindowDays,
+          allowNewerVersions: this.config.allowNewerVersions,
+        },
+      };
+
+      // Store audit log - this would typically go to an audit collection
+      logger.info(auditData, 'Deduplication decision logged');
+    } catch (error) {
+      logger.warn({ error }, 'Failed to log deduplication decision');
+    }
+  }
+
+  /**
+   * Get deduplication statistics
+   */
+  async getDedupeStats(): Promise<{
+    totalChecks: number;
+    duplicatesFound: number;
+    newerVersionsAllowed: number;
+    scopeMatches: {
+      org: number;
+      project: number;
+      branch: number;
+    };
+  }> {
+    // This would typically query an audit collection for statistics
+    // For now, return placeholder data
+    return {
+      totalChecks: 0,
+      duplicatesFound: 0,
+      newerVersionsAllowed: 0,
+      scopeMatches: {
+        org: 0,
+        project: 0,
+        branch: 0,
+      },
+    };
   }
 }
 

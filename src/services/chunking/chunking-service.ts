@@ -303,6 +303,7 @@ export class ChunkingService {
    */
   async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
     const content = this.extractContent(item);
+    const extractedTitle = this.extractTitle(item);
 
     if (!this.shouldChunk(content)) {
       // Return single item with chunking metadata and TTL inheritance
@@ -319,6 +320,7 @@ export class ChunkingService {
             chunk_index: 0,
             original_length: content.length,
             chunk_overlap: 0,
+            extracted_title: extractedTitle,
             // Inherit TTL policy
             ...ttlInfo,
           },
@@ -328,6 +330,7 @@ export class ChunkingService {
               was_chunked: false,
               total_chunks: 1,
               processing_timestamp: new Date().toISOString(),
+              title_carried: extractedTitle !== '',
             },
           },
         },
@@ -356,6 +359,7 @@ export class ChunkingService {
         original_length: content.length,
         chunk_overlap: this.OVERLAP_SIZE,
         content: `PARENT: ${chunks.length} chunks created from ${content.length} characters`,
+        extracted_title: extractedTitle,
         // Inherit TTL policy
         ...ttlInfo,
       },
@@ -370,45 +374,59 @@ export class ChunkingService {
           processing_timestamp: new Date().toISOString(),
           original_content_hash: originalContentHash,
           semantic_analysis_enabled: semanticAnalysisEnabled,
+          title_carried: extractedTitle !== '',
+          average_chunk_size: Math.round(chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length),
         },
       },
     };
 
     // Create child items with enhanced metadata and proper inheritance
-    const childItems: KnowledgeItem[] = chunks.map((chunk, index) => ({
-      id: randomUUID(),
-      kind: item.kind,
-      // Ensure scope inheritance from parent
-      scope: item.scope || {},
-      data: {
-        ...item.data,
-        is_chunk: true,
-        parent_id: parentItem.id,
-        chunk_index: index,
-        total_chunks: chunks.length,
-        original_length: content.length,
-        chunk_overlap: this.OVERLAP_SIZE,
-        content: chunk,
-        // Inherit TTL policy from parent
-        ...ttlInfo,
-      },
-      metadata: {
-        ...item.metadata,
-        chunking_info: {
-          was_chunked: true,
-          is_child: true,
+    const childItems: KnowledgeItem[] = chunks.map((chunk, index) => {
+      const chunkWithContext = this.addContextToChunk(chunk, extractedTitle, index, chunks.length);
+      const chunkLength = chunk.length;
+      const positionRatio = index / (chunks.length - 1); // 0.0 to 1.0
+
+      return {
+        id: randomUUID(),
+        kind: item.kind,
+        // Ensure scope inheritance from parent
+        scope: item.scope || {},
+        data: {
+          ...item.data,
+          is_chunk: true,
           parent_id: parentItem.id,
           chunk_index: index,
           total_chunks: chunks.length,
-          chunk_size: this.CHUNK_SIZE,
-          overlap_size: this.OVERLAP_SIZE,
-          processing_timestamp: new Date().toISOString(),
-          semantic_analysis_enabled: semanticAnalysisEnabled,
+          original_length: content.length,
+          chunk_overlap: this.OVERLAP_SIZE,
+          content: chunkWithContext,
+          extracted_title: extractedTitle,
+          chunk_length: chunkLength,
+          position_ratio: positionRatio,
+          // Inherit TTL policy from parent
+          ...ttlInfo,
         },
-      },
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }));
+        metadata: {
+          ...item.metadata,
+          chunking_info: {
+            was_chunked: true,
+            is_child: true,
+            parent_id: parentItem.id,
+            chunk_index: index,
+            total_chunks: chunks.length,
+            chunk_size: this.CHUNK_SIZE,
+            overlap_size: this.OVERLAP_SIZE,
+            processing_timestamp: new Date().toISOString(),
+            semantic_analysis_enabled: semanticAnalysisEnabled,
+            title_carried: extractedTitle !== '',
+            has_context: chunkWithContext !== chunk,
+            size_ratio: chunkLength / content.length,
+          },
+        },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    });
 
     return [parentItem, ...childItems];
   }
@@ -489,5 +507,55 @@ export class ChunkingService {
 
     // No good break point found, return the original end
     return maxEnd;
+  }
+
+  /**
+   * Extract title from knowledge item for context carrying
+   */
+  private extractTitle(item: KnowledgeItem): string {
+    // Try different title fields
+    const titleFields = ['title', 'name', 'subject', 'headline', 'label'];
+    for (const field of titleFields) {
+      if (item.data[field] && typeof item.data[field] === 'string') {
+        return item.data[field].trim();
+      }
+    }
+
+    // Try metadata fields
+    if (item.metadata?.title && typeof item.metadata.title === 'string') {
+      return item.metadata.title.trim();
+    }
+
+    // Generate title from first line of content if available
+    const content = this.extractContent(item);
+    const firstLine = content.split('\n')[0].trim();
+    if (firstLine.length > 0 && firstLine.length < 200) {
+      return firstLine;
+    }
+
+    return '';
+  }
+
+  /**
+   * Add context to chunk (title carry and position info)
+   */
+  private addContextToChunk(chunk: string, title: string, index: number, totalChunks: number): string {
+    let contextualizedChunk = chunk;
+
+    // Add title prefix if available
+    if (title && title.trim()) {
+      const titlePrefix = `TITLE: ${title}\n\n`;
+      if (!contextualizedChunk.includes(titlePrefix)) {
+        contextualizedChunk = titlePrefix + contextualizedChunk;
+      }
+    }
+
+    // Add position context for better reconstruction
+    const positionInfo = `CHUNK ${index + 1} of ${totalChunks}\n\n`;
+    if (!contextualizedChunk.includes('CHUNK')) {
+      contextualizedChunk = positionInfo + contextualizedChunk;
+    }
+
+    return contextualizedChunk;
   }
 }

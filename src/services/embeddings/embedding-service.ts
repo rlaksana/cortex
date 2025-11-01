@@ -23,6 +23,7 @@ import { createHash } from 'node:crypto';
 import { OpenAI } from 'openai';
 import { logger } from '../../utils/logger.js';
 import { DatabaseError, ValidationError } from '../../db/database-interface.js';
+import { getKeyVaultService } from '../security/key-vault-service.js';
 
 /**
  * Embedding configuration options
@@ -123,6 +124,7 @@ export class EmbeddingService {
       timeout: config.timeout || 30000,
     };
 
+    // Initialize OpenAI with available API key (will use key vault later if needed)
     this.openai = new OpenAI({
       apiKey: this.config.apiKey,
     });
@@ -141,6 +143,35 @@ export class EmbeddingService {
   }
 
   /**
+   * Ensure OpenAI client is initialized with valid API key
+   */
+  private async ensureOpenAIInitialized(): Promise<void> {
+    // If we already have an API key, we're good
+    if (this.config.apiKey) {
+      return;
+    }
+
+    // Try to get API key from key vault
+    try {
+      const keyVault = getKeyVaultService();
+      const openaiKey = await keyVault.get_key_by_name('openai_api_key');
+      if (openaiKey) {
+        this.config.apiKey = openaiKey.value;
+        this.openai = new OpenAI({
+          apiKey: this.config.apiKey,
+        });
+        logger.info('OpenAI API key retrieved from key vault');
+        return;
+      }
+    } catch (error) {
+      logger.warn({ error }, 'Failed to retrieve OpenAI API key from key vault');
+    }
+
+    // If still no API key, we can't proceed
+    throw new Error('OpenAI API key is required but not found in config, key vault, or environment');
+  }
+
+  /**
    * Generate embedding for a single text
    */
   async generateEmbedding(request: EmbeddingRequest | string): Promise<EmbeddingResult> {
@@ -150,6 +181,9 @@ export class EmbeddingService {
     if (typeof request === 'string') {
       request = { text: request };
     }
+
+    // Ensure OpenAI is initialized
+    await this.ensureOpenAIInitialized();
 
     this.stats.totalRequests++;
 
@@ -238,6 +272,9 @@ export class EmbeddingService {
       const result = await this.generateEmbedding(embedRequest);
       return [result];
     }
+
+    // Ensure OpenAI is initialized
+    await this.ensureOpenAIInitialized();
 
     this.stats.totalRequests++;
 

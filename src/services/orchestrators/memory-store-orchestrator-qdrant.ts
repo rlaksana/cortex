@@ -45,6 +45,7 @@ import { logger } from '../../utils/logger.js';
 import { validationService } from '../validation/validation-service.js';
 import { auditService } from '../audit/audit-service.js';
 import { ChunkingService } from '../chunking/chunking-service.js';
+import { IdempotentStoreService } from './idempotent-store-service.js';
 import type {
   KnowledgeItem,
   StoreResult,
@@ -59,6 +60,10 @@ import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 // import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
 import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
+import { structuredLogger, OperationType, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { generateCorrelationId } from '../../utils/correlation-id.js';
+import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
+import type { AuthContext } from '../../types/auth-types.js';
 
 /**
  * Enhanced duplicate detection result
@@ -90,6 +95,8 @@ export class MemoryStoreOrchestratorQdrant {
   private baselineTelemetry: BaselineTelemetry;
   private chunkingService: ChunkingService;
   private languageEnhancementService: LanguageEnhancementService;
+  private idempotentStoreService: IdempotentStoreService;
+  private rateLimiter = rateLimitMiddleware.memoryStore();
   private duplicateDetectionStats: {
     contentHashMatches: number;
     semanticSimilarityMatches: number;
@@ -105,6 +112,7 @@ export class MemoryStoreOrchestratorQdrant {
     this.chunkingService = new ChunkingService(undefined, undefined, embeddingService);
 
     this.languageEnhancementService = new LanguageEnhancementService();
+    this.idempotentStoreService = new IdempotentStoreService(database);
     this.duplicateDetectionStats = {
       contentHashMatches: 0,
       semanticSimilarityMatches: 0,
@@ -115,13 +123,78 @@ export class MemoryStoreOrchestratorQdrant {
   /**
    * Main entry point for storing knowledge items
    */
-  async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
+  async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
     const startTime = Date.now();
+    const correlationId = generateCorrelationId('store');
     const stored: StoreResult[] = [];
     const errors: StoreError[] = [];
     const duplicateResults: (DuplicateDetectionResult | null)[] = [];
 
     try {
+      // Check rate limits
+      const rateLimitResult = await this.rateLimiter.checkOrchestratorRateLimit(
+        authContext,
+        OperationType.MEMORY_STORE,
+        items.length // Each item counts as one token
+      );
+
+      if (!rateLimitResult.allowed) {
+        const latency = Date.now() - startTime;
+
+        // Log rate limit violation
+        structuredLogger.logRateLimit(
+          correlationId,
+          latency,
+          false,
+          authContext?.apiKeyId || 'anonymous',
+          'api_key',
+          OperationType.MEMORY_STORE,
+          items.length,
+          rateLimitResult.error?.error || 'rate_limit_exceeded'
+        );
+
+        return {
+          success: false,
+          items: [],
+          summary: {
+            total_items: items.length,
+            processed_items: 0,
+            successful_items: 0,
+            duplicate_items: 0,
+            error_items: items.length,
+            chunks_created: 0,
+            validation_errors: 0,
+            processing_errors: items.length,
+          },
+          errors: [
+            {
+              index: 0,
+              error: rateLimitResult.error?.message || 'Rate limit exceeded',
+              type: 'rate_limit_exceeded',
+              original_item: null,
+              context: {
+                correlation_id: correlationId,
+                rate_limit_info: rateLimitResult.error,
+                items_requested: items.length,
+              },
+            },
+          ],
+          metadata: {
+            batch_id: correlationId,
+            correlation_id: correlationId,
+            processing_strategy: 'rate_limited',
+            duplicate_detection_enabled: true,
+            scope_isolation: {
+              organization_id: authContext?.user?.organizationId,
+              project_id: authContext?.user?.projectId,
+              branch_id: authContext?.user?.branchId,
+            },
+            timestamp: new Date().toISOString(),
+            rate_limit: rateLimitResult.error,
+          },
+        };
+      }
+
       // Initialize database if needed
       await this.ensureDatabaseInitialized();
 
@@ -256,6 +329,21 @@ export class MemoryStoreOrchestratorQdrant {
         total: itemResults.length + errors.length,
       };
 
+      // Log successful operation
+      const latencyMs = Date.now() - startTime;
+      structuredLogger.logMemoryStore(
+        correlationId,
+        latencyMs,
+        true,
+        items.length,
+        {
+          stored: storedCount,
+          duplicates: skippedDedupeCount,
+          chunkingEnabled: true,
+          deduplicationEnabled: true,
+        }
+      );
+
       return {
         // Enhanced response format
         items: itemResults,
@@ -267,6 +355,20 @@ export class MemoryStoreOrchestratorQdrant {
         autonomous_context: autonomousContext,
       };
     } catch (error) {
+      const latencyMs = Date.now() - startTime;
+
+      // Log operation failure
+      structuredLogger.logMemoryStore(
+        correlationId,
+        latencyMs,
+        false,
+        items.length,
+        undefined,
+        undefined,
+        undefined,
+        error instanceof Error ? error : new Error('Unknown batch error')
+      );
+
       logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
 
       // Log critical error
@@ -390,7 +492,7 @@ export class MemoryStoreOrchestratorQdrant {
   }
 
   /**
-   * Store item to database using unified interface
+   * Store item to database using idempotent store service
    */
   private async storeItemToDatabase(item: KnowledgeItem): Promise<StoreResult> {
     try {
@@ -427,21 +529,34 @@ export class MemoryStoreOrchestratorQdrant {
         );
       }
 
-      const response = await this.database.store([item], {
-        upsert: true,
-        skipDuplicates: false,
-      });
+      // Use idempotent store service for true idempotency
+      const idempotentResult = await this.idempotentStoreService.storeIdempotent(item);
 
-      if (response.errors.length > 0) {
-        throw new Error(`Database store failed: ${response.errors[0].message}`);
+      // Convert idempotent result to store result format
+      const storeResult: StoreResult = {
+        id: idempotentResult.item.id,
+        status: idempotentResult.action === 'returned_existing' ? 'skipped_dedupe' : 'inserted',
+        kind: idempotentResult.item.kind,
+        created_at: idempotentResult.item.created_at,
+      };
+
+      // Update duplicate detection stats
+      if (idempotentResult.action === 'returned_existing') {
+        this.duplicateDetectionStats.contentHashMatches++;
       }
 
-      const result = response.stored[0];
-      if (!result) {
-        throw new Error('No store result returned from database');
-      }
+      logger.debug(
+        {
+          action: idempotentResult.action,
+          itemId: storeResult.id,
+          itemKind: item.kind,
+          contentHash: idempotentResult.contentHash,
+          processingTime: idempotentResult.processingTime,
+        },
+        'Idempotent store operation completed'
+      );
 
-      return result;
+      return storeResult;
     } catch (error) {
       logger.error({ error, itemKind: item.kind }, 'Failed to store item to database');
       throw error;

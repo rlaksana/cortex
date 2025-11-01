@@ -58,6 +58,8 @@ global.testUtils = {
       createMockTestEnvironment({ database: overrides }).databaseAdapter,
     createMockMemoryStore: (overrides = {}) =>
       createMockTestEnvironment({ memoryStore: overrides }).memoryStore,
+    createMockEmbeddingService: (overrides = {}) =>
+      createMockTestEnvironment({ embedding: overrides }).embeddingService,
   },
 
   // Test helpers for common scenarios

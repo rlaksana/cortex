@@ -10,6 +10,7 @@ import { vi } from 'vitest';
 import type { QdrantClient } from '@qdrant/js-client-rest';
 import type { Logger } from 'pino';
 import type { Environment } from '../src/config/environment';
+import { MockEmbeddingService, type MockEmbeddingConfig } from './mock-embedding-service.js';
 
 /**
  * Environment Mock Template
@@ -656,6 +657,15 @@ export const createMockMemoryStore = (config: MockMemoryStoreConfig = {}) => {
 };
 
 /**
+ * Embedding Service Mock Template
+ *
+ * Mocks the embedding service with deterministic vectors
+ */
+export const createMockEmbeddingService = (config: MockEmbeddingConfig = {}) => {
+  return new MockEmbeddingService(config);
+};
+
+/**
  * Utility function to create a complete mock environment
  *
  * Creates mocks for all commonly used dependencies in one call
@@ -666,12 +676,14 @@ export const createMockTestEnvironment = (overrides: {
   database?: MockDatabaseConfig;
   auth?: MockAuthServiceConfig;
   memoryStore?: MockMemoryStoreConfig;
+  embedding?: MockEmbeddingConfig;
 } = {}) => {
   const mockEnvironment = createMockEnvironment(overrides.environment);
   const mockQdrantClient = createMockQdrantClient(overrides.qdrant);
   const mockDatabaseAdapter = createMockDatabaseAdapter(overrides.database);
   const mockAuthService = createMockAuthService(overrides.auth);
   const mockMemoryStore = createMockMemoryStore(overrides.memoryStore);
+  const mockEmbeddingService = createMockEmbeddingService(overrides.embedding);
   const mockLogger = createMockLogger();
 
   return {
@@ -680,6 +692,7 @@ export const createMockTestEnvironment = (overrides: {
     databaseAdapter: mockDatabaseAdapter,
     authService: mockAuthService,
     memoryStore: mockMemoryStore,
+    embeddingService: mockEmbeddingService,
     logger: mockLogger,
 
     // Helper methods for common test patterns

@@ -4,25 +4,39 @@
  * Focused test to verify the core chunking and reassembly functionality
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
-import { EmbeddingService } from '../../src/services/embeddings/embedding-service.js';
 import { ResultGroupingService } from '../../src/services/search/result-grouping-service.js';
+import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
+import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';
 import type { KnowledgeItem } from '../../src/types/core-interfaces.js';
 
 describe('Chunk Reassembly Simple Test', () => {
   let chunkingService: ChunkingService;
-  let embeddingService: EmbeddingService;
+  let embeddingService: MockEmbeddingService;
   let groupingService: ResultGroupingService;
 
   beforeEach(() => {
-    embeddingService = new EmbeddingService();
-    chunkingService = new ChunkingService(undefined, undefined, embeddingService);
+    // Create mock embedding service with explicit configuration to prevent failures
+    embeddingService = new MockEmbeddingService({
+      shouldFail: false,
+      failMethod: 'both',
+      latency: 0
+    });
+
+    chunkingService = new ChunkingService(undefined, undefined, embeddingService as any);
+
+    // Replace the semantic analyzer with our mock - ensure it's properly set
+    const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
+      shouldFail: false
+    });
+    (chunkingService as any).semanticAnalyzer = mockSemanticAnalyzer;
+
     groupingService = new ResultGroupingService();
   });
 
   it('should chunk and reassemble basic content', async () => {
-    // Create content that should be chunked (over 2400 chars)
+    // Create content that should be chunked (over 2400 chars, will trigger semantic analysis)
     const content = `
 # Large Technical Document
 
@@ -69,17 +83,31 @@ This document provides a comprehensive overview of our technical architecture.
     expect(childChunks.length).toBeGreaterThan(0);
     expect(parentItem?.data.total_chunks).toBe(childChunks.length);
 
-    // Simulate search results from chunks
-    const searchResults = childChunks.map(chunk => ({
-      id: chunk.id,
-      kind: chunk.kind,
-      content: chunk.data.content,
-      data: chunk.data,
-      scope: chunk.scope,
-      confidence_score: 0.8,
-      created_at: chunk.created_at!,
-      match_type: 'semantic' as const
-    }));
+    // Simulate search results from both parent and chunks
+    const searchResults = [
+      // Add parent result
+      {
+        id: parentItem!.id,
+        kind: parentItem!.kind,
+        content: parentItem!.data.content,
+        data: parentItem!.data,
+        scope: parentItem!.scope,
+        confidence_score: 0.9,
+        created_at: parentItem!.created_at!,
+        match_type: 'semantic' as const
+      },
+      // Add chunk results
+      ...childChunks.map(chunk => ({
+        id: chunk.id,
+        kind: chunk.kind,
+        content: chunk.data.content,
+        data: chunk.data,
+        scope: chunk.scope,
+        confidence_score: 0.8,
+        created_at: chunk.created_at!,
+        match_type: 'semantic' as const
+      }))
+    ];
 
     // Group results
     const groupedResults = groupingService.groupResultsByParent(searchResults);
