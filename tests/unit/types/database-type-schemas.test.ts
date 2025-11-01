@@ -1896,7 +1896,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         { limit: 1, offset: 0 },
         { limit: 1000, offset: 0 },
         { limit: 100, offset: 1000000 },
-        { limit: 1, offset: 0, cursor: 'very_long_cursor_string_' + 'a'.repeat(1000) }
+        { limit: 1, offset: 0, cursor: `very_long_cursor_string_${  'a'.repeat(1000)}` }
       ];
 
       const paginationSchema = z.object({

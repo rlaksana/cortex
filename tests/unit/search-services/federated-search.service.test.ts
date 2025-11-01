@@ -862,7 +862,7 @@ class MockFederatedSearchService implements FederatedSearchService {
   }
 
   private applyOptimizations(query: SearchQuery, strategies: OptimizationStrategy[]): SearchQuery {
-    let optimizedQuery = { ...query };
+    const optimizedQuery = { ...query };
 
     for (const strategy of strategies) {
       switch (strategy.type) {

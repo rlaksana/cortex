@@ -1,0 +1,1130 @@
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type MockedFunction
+} from 'vitest';
+import { SecurityService } from '../../../src/services/security.service.js';
+import { SecurityEventType, UserRole, EncryptionAlgorithm } from '../../../src/types/security.types.js';
+import { Logger } from '../../../src/utils/logger.js';
+
+// Mock dependencies
+vi.mock('../../../src/utils/logger.js');
+const MockLogger = vi.mocked(Logger);
+
+// Mock JWT
+vi.mock('jsonwebtoken', () => ({
+  sign: vi.fn(),
+  verify: vi.fn(),
+  decode: vi.fn(),
+}));
+
+// Mock bcrypt
+vi.mock('bcrypt', () => ({
+  hash: vi.fn(),
+  compare: vi.fn(),
+  genSalt: vi.fn(),
+}));
+
+// Mock crypto
+const mockCrypto = {
+  createCipheriv: vi.fn(() => ({
+    update: vi.fn(() => Buffer.from('encrypted')),
+    final: vi.fn(() => Buffer.from('final')),
+  })),
+  createDecipheriv: vi.fn(() => ({
+    update: vi.fn(() => Buffer.from('decrypted')),
+    final: vi.fn(() => Buffer.from('final')),
+  })),
+  randomBytes: vi.fn(() => Buffer.from('randomkey1234567890123456')),
+  createHash: vi.fn(() => ({
+    update: vi.fn().mockReturnThis(),
+    digest: vi.fn(() => 'hashedpassword'),
+  })),
+  timingSafeEqual: vi.fn(() => true),
+  scrypt: vi.fn((password, salt, keylen, callback) => {
+    callback(null, Buffer.from('derivedkey1234567890123456'));
+  }),
+};
+vi.mock('crypto', () => mockCrypto);
+
+// Mock rate limiting
+vi.mock('express-rate-limit', () => ({
+  rateLimit: vi.fn(() => vi.fn()),
+}));
+
+// Mock helmet
+vi.mock('helmet', () => ({
+  default: vi.fn(() => vi.fn()),
+}));
+
+describe('SecurityService', () => {
+  let securityService: SecurityService;
+  let mockLogger: any;
+  let mockJwt: any;
+  let mockBcrypt: any;
+
+  beforeEach(async () => {
+    // Clear all mocks
+    vi.clearAllMocks();
+
+    // Setup mock logger
+    mockLogger = {
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      debug: vi.fn(),
+    };
+    MockLogger.mockImplementation(() => mockLogger);
+
+    // Import mocked modules
+    mockJwt = await import('jsonwebtoken');
+    mockBcrypt = await import('bcrypt');
+
+    // Create service instance
+    securityService = new SecurityService();
+
+    // Initialize service
+    securityService.initialize({
+      jwtSecret: 'test-secret-key-12345678901234567890',
+      jwtExpiration: '1h',
+      bcryptRounds: 10,
+      encryptionAlgorithm: 'aes-256-gcm',
+      sessionTimeout: 3600,
+      maxLoginAttempts: 5,
+      lockoutDuration: 900,
+      rateLimitWindow: 900,
+      rateLimitMax: 100,
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Authentication Management', () => {
+    test('should authenticate user with valid credentials', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: true,
+        isLocked: false,
+        loginAttempts: 0,
+        lastLogin: null,
+      };
+
+      mockBcrypt.compare.mockResolvedValue(true);
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authenticate(credentials);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.token).toBeDefined();
+      expect(result.user).toEqual({
+        id: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('User authenticated successfully', { userId: 'user-123' });
+    });
+
+    test('should reject authentication for inactive user', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: false,
+        isLocked: false,
+        loginAttempts: 0,
+        lastLogin: null,
+      };
+
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authenticate(credentials);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Account is inactive');
+      expect(mockLogger.warn).toHaveBeenCalledWith('Authentication attempt on inactive account', {
+        userId: 'user-123'
+      });
+    });
+
+    test('should reject authentication for locked user', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: true,
+        isLocked: true,
+        lockUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes from now
+        loginAttempts: 5,
+        lastLogin: null,
+      };
+
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authenticate(credentials);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Account is locked');
+      expect(mockLogger.warn).toHaveBeenCalledWith('Authentication attempt on locked account', {
+        userId: 'user-123',
+        lockUntil: mockUser.lockUntil,
+      });
+    });
+
+    test('should increment login attempts on failed authentication', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'wrongpassword',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: true,
+        isLocked: false,
+        loginAttempts: 2,
+        lastLogin: null,
+      };
+
+      mockBcrypt.compare.mockResolvedValue(false);
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+      vi.spyOn(securityService as any, 'updateUser').mockResolvedValue(undefined);
+
+      // Act
+      const result = await securityService.authenticate(credentials);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid credentials');
+      expect(mockLogger.warn).toHaveBeenCalledWith('Failed authentication attempt', {
+        userId: 'user-123',
+        attempts: 3,
+      });
+    });
+
+    test('should lock user after maximum login attempts', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'wrongpassword',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: true,
+        isLocked: false,
+        loginAttempts: 4, // One attempt away from lockout
+        lastLogin: null,
+      };
+
+      mockBcrypt.compare.mockResolvedValue(false);
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+      vi.spyOn(securityService as any, 'updateUser').mockResolvedValue(undefined);
+
+      // Act
+      const result = await securityService.authenticate(credentials);
+
+      // Assert
+      expect(result.success).toBe(false);
+      expect(mockLogger.error).toHaveBeenCalledWith('Account locked due to failed attempts', {
+        userId: 'user-123',
+        finalAttempts: 5,
+      });
+    });
+  });
+
+  describe('Authorization and Role-Based Access Control', () => {
+    test('should authorize user with correct permissions', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const resource = 'user:456';
+      const action = 'read';
+      const context = { userId: 'user-123' };
+
+      const mockUser = {
+        id: 'user-123',
+        role: UserRole.USER,
+        permissions: ['user:read:own'],
+      };
+
+      vi.spyOn(securityService as any, 'getUserById').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authorize(userId, resource, action, context);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockLogger.debug).toHaveBeenCalledWith('Authorization granted', {
+        userId,
+        resource,
+        action,
+      });
+    });
+
+    test('should deny authorization for insufficient permissions', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const resource = 'user:456';
+      const action = 'delete';
+      const context = { userId: 'user-123' };
+
+      const mockUser = {
+        id: 'user-123',
+        role: UserRole.USER,
+        permissions: ['user:read:own'],
+      };
+
+      vi.spyOn(securityService as any, 'getUserById').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authorize(userId, resource, action, context);
+
+      // Assert
+      expect(result).toBe(false);
+      expect(mockLogger.warn).toHaveBeenCalledWith('Authorization denied', {
+        userId,
+        resource,
+        action,
+        reason: 'Insufficient permissions',
+      });
+    });
+
+    test('should grant admin access to all resources', async () => {
+      // Arrange
+      const userId = 'admin-123';
+      const resource = 'system:config';
+      const action = 'write';
+      const context = {};
+
+      const mockUser = {
+        id: 'admin-123',
+        role: UserRole.ADMIN,
+        permissions: ['*'],
+      };
+
+      vi.spyOn(securityService as any, 'getUserById').mockResolvedValue(mockUser);
+
+      // Act
+      const result = await securityService.authorize(userId, resource, action, context);
+
+      // Assert
+      expect(result).toBe(true);
+    });
+
+    test('should handle role-based permissions correctly', async () => {
+      // Arrange
+      const testCases = [
+        {
+          role: UserRole.USER,
+          resource: 'user:123',
+          action: 'read',
+          context: { userId: '123' },
+          expected: true,
+        },
+        {
+          role: UserRole.MODERATOR,
+          resource: 'user:123',
+          action: 'moderate',
+          context: {},
+          expected: true,
+        },
+        {
+          role: UserRole.ADMIN,
+          resource: 'system:settings',
+          action: 'write',
+          context: {},
+          expected: true,
+        },
+      ];
+
+      for (const testCase of testCases) {
+        const mockUser = {
+          id: 'user-123',
+          role: testCase.role,
+          permissions: [],
+        };
+
+        vi.spyOn(securityService as any, 'getUserById').mockResolvedValue(mockUser);
+
+        // Act
+        const result = await securityService.authorize(
+          'user-123',
+          testCase.resource,
+          testCase.action,
+          testCase.context
+        );
+
+        // Assert
+        expect(result).toBe(testCase.expected);
+      }
+    });
+  });
+
+  describe('Session Management', () => {
+    test('should create session with valid token', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const mockUser = {
+        id: userId,
+        email: 'user@example.com',
+        role: UserRole.USER,
+      };
+
+      mockJwt.sign.mockReturnValue('mock-jwt-token');
+      vi.spyOn(securityService as any, 'getUserById').mockResolvedValue(mockUser);
+
+      // Act
+      const session = await securityService.createSession(userId);
+
+      // Assert
+      expect(session).toBeDefined();
+      expect(session.token).toBe('mock-jwt-token');
+      expect(session.userId).toBe(userId);
+      expect(session.expiresAt).toBeInstanceOf(Date);
+      expect(mockLogger.info).toHaveBeenCalledWith('Session created', { userId });
+    });
+
+    test('should validate active session', async () => {
+      // Arrange
+      const token = 'valid-jwt-token';
+      const mockPayload = {
+        userId: 'user-123',
+        email: 'user@example.com',
+        role: UserRole.USER,
+        iat: Date.now() / 1000,
+        exp: Date.now() / 1000 + 3600,
+      };
+
+      mockJwt.verify.mockReturnValue(mockPayload);
+      vi.spyOn(securityService as any, 'getSession').mockResolvedValue({
+        token,
+        userId: 'user-123',
+        isActive: true,
+        expiresAt: new Date(Date.now() + 3600 * 1000),
+      });
+
+      // Act
+      const result = await securityService.validateSession(token);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.userId).toBe('user-123');
+      expect(result.isValid).toBe(true);
+    });
+
+    test('should reject expired session', async () => {
+      // Arrange
+      const token = 'expired-jwt-token';
+      const error = new Error('Token expired');
+      error.name = 'TokenExpiredError';
+
+      mockJwt.verify.mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      const result = await securityService.validateSession(token);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('Token expired');
+      expect(mockLogger.warn).toHaveBeenCalledWith('Session validation failed', {
+        reason: 'Token expired',
+      });
+    });
+
+    test('should refresh session token', async () => {
+      // Arrange
+      const oldToken = 'old-jwt-token';
+      const newToken = 'new-jwt-token';
+      const mockPayload = {
+        userId: 'user-123',
+        email: 'user@example.com',
+        role: UserRole.USER,
+      };
+
+      mockJwt.verify.mockReturnValue(mockPayload);
+      mockJwt.sign.mockReturnValue(newToken);
+      vi.spyOn(securityService as any, 'updateSession').mockResolvedValue(undefined);
+
+      // Act
+      const result = await securityService.refreshSession(oldToken);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.token).toBe(newToken);
+      expect(result.expiresAt).toBeInstanceOf(Date);
+    });
+
+    test('should invalidate session on logout', async () => {
+      // Arrange
+      const token = 'valid-jwt-token';
+      const mockPayload = {
+        userId: 'user-123',
+      };
+
+      mockJwt.verify.mockReturnValue(mockPayload);
+      vi.spyOn(securityService as any, 'invalidateSession').mockResolvedValue(true);
+
+      // Act
+      const result = await securityService.logout(token);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockLogger.info).toHaveBeenCalledWith('User logged out', { userId: 'user-123' });
+    });
+  });
+
+  describe('Encryption and Decryption', () => {
+    test('should encrypt sensitive data', async () => {
+      // Arrange
+      const data = 'sensitive-information';
+      const key = 'encryption-key-1234567890123456';
+      const iv = Buffer.from('initializationvector');
+
+      mockCrypto.randomBytes.mockReturnValue(iv);
+
+      // Act
+      const encrypted = await securityService.encrypt(data, key);
+
+      // Assert
+      expect(encrypted).toBeDefined();
+      expect(encrypted.data).toBeDefined();
+      expect(encrypted.iv).toBe(iv.toString('hex'));
+      expect(encrypted.algorithm).toBe('aes-256-gcm');
+      expect(mockLogger.debug).toHaveBeenCalledWith('Data encrypted successfully', {
+        dataLength: data.length,
+      });
+    });
+
+    test('should decrypt encrypted data', async () => {
+      // Arrange
+      const encryptedData = {
+        data: 'encrypted-data-hex',
+        iv: 'initializationvector',
+        algorithm: 'aes-256-gcm',
+        tag: 'authentication-tag',
+      };
+      const key = 'encryption-key-1234567890123456';
+      const decryptedData = 'original-sensitive-data';
+
+      // Mock decryption
+      const mockDecipher = {
+        update: vi.fn().mockReturnValue(Buffer.from('part1')),
+        final: vi.fn().mockReturnValue(Buffer.from('part2')),
+        setAuthTag: vi.fn(),
+      };
+      mockCrypto.createDecipheriv.mockReturnValue(mockDecipher);
+
+      // Act
+      const decrypted = await securityService.decrypt(encryptedData, key);
+
+      // Assert
+      expect(decrypted).toBe(decryptedData);
+      expect(mockDecipher.setAuthTag).toHaveBeenCalled();
+    });
+
+    test('should handle encryption key rotation', async () => {
+      // Arrange
+      const oldKeyId = 'key-1';
+      const newKeyId = 'key-2';
+
+      vi.spyOn(securityService as any, 'generateEncryptionKey').mockResolvedValue({
+        id: newKeyId,
+        key: 'new-encryption-key',
+        algorithm: EncryptionAlgorithm.AES_256_GCM,
+        createdAt: new Date(),
+      });
+
+      // Act
+      const result = await securityService.rotateEncryptionKey(oldKeyId);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.newKeyId).toBe(newKeyId);
+      expect(mockLogger.info).toHaveBeenCalledWith('Encryption key rotated', {
+        oldKeyId,
+        newKeyId,
+      });
+    });
+
+    test('should hash passwords securely', async () => {
+      // Arrange
+      const password = 'user-password-123';
+      const salt = 'random-salt';
+      const hashedPassword = 'hashed-password-result';
+
+      mockBcrypt.genSalt.mockResolvedValue(salt);
+      mockBcrypt.hash.mockResolvedValue(hashedPassword);
+
+      // Act
+      const result = await securityService.hashPassword(password);
+
+      // Assert
+      expect(result).toBe(hashedPassword);
+      expect(mockBcrypt.genSalt).toHaveBeenCalledWith(10);
+      expect(mockBcrypt.hash).toHaveBeenCalledWith(password, salt);
+    });
+
+    test('should verify password against hash', async () => {
+      // Arrange
+      const password = 'user-password-123';
+      const hashedPassword = 'hashed-password';
+
+      mockBcrypt.compare.mockResolvedValue(true);
+
+      // Act
+      const result = await securityService.verifyPassword(password, hashedPassword);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockBcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
+    });
+  });
+
+  describe('Data Masking and Tokenization', () => {
+    test('should mask sensitive credit card numbers', () => {
+      // Arrange
+      const creditCard = '4532123456789012';
+      const expectedMasked = '4532XXXXXXXX9012';
+
+      // Act
+      const masked = securityService.maskCreditCard(creditCard);
+
+      // Assert
+      expect(masked).toBe(expectedMasked);
+    });
+
+    test('should mask email addresses', () => {
+      // Arrange
+      const email = 'user@example.com';
+      const expectedMasked = 'u***@example.com';
+
+      // Act
+      const masked = securityService.maskEmail(email);
+
+      // Assert
+      expect(masked).toBe(expectedMasked);
+    });
+
+    test('should tokenize sensitive data', async () => {
+      // Arrange
+      const sensitiveData = 'social-security-number-123-45-6789';
+      const expectedToken = 'tok_1a2b3c4d5e6f7g8h9i0j';
+
+      vi.spyOn(securityService as any, 'generateToken').mockReturnValue(expectedToken);
+      vi.spyOn(securityService as any, 'storeTokenMapping').mockResolvedValue(undefined);
+
+      // Act
+      const token = await securityService.tokenize(sensitiveData);
+
+      // Assert
+      expect(token).toBe(expectedToken);
+      expect(mockLogger.debug).toHaveBeenCalledWith('Data tokenized', {
+        dataType: 'sensitive',
+        tokenLength: expectedToken.length,
+      });
+    });
+
+    test('should detokenize data with valid token', async () => {
+      // Arrange
+      const token = 'tok_1a2b3c4d5e6f7g8h9i0j';
+      const originalData = 'social-security-number-123-45-6789';
+
+      vi.spyOn(securityService as any, 'getTokenMapping').mockResolvedValue(originalData);
+
+      // Act
+      const data = await securityService.detokenize(token);
+
+      // Assert
+      expect(data).toBe(originalData);
+    });
+
+    test('should generate secure random tokens', () => {
+      // Act
+      const token1 = securityService.generateSecureToken(32);
+      const token2 = securityService.generateSecureToken(32);
+
+      // Assert
+      expect(token1).toHaveLength(64); // 32 bytes = 64 hex chars
+      expect(token2).toHaveLength(64);
+      expect(token1).not.toBe(token2);
+      expect(/^[a-f0-9]+$/i.test(token1)).toBe(true);
+    });
+  });
+
+  describe('Security Event Monitoring', () => {
+    test('should log security events', async () => {
+      // Arrange
+      const event = {
+        type: SecurityEventType.LOGIN_SUCCESS,
+        userId: 'user-123',
+        ip: '192.168.1.100',
+        userAgent: 'Mozilla/5.0...',
+        timestamp: new Date(),
+      };
+
+      vi.spyOn(securityService as any, 'storeSecurityEvent').mockResolvedValue(undefined);
+
+      // Act
+      await securityService.logSecurityEvent(event);
+
+      // Assert
+      expect(mockLogger.info).toHaveBeenCalledWith('Security event logged', {
+        type: SecurityEventType.LOGIN_SUCCESS,
+        userId: 'user-123',
+      });
+    });
+
+    test('should detect suspicious login patterns', async () => {
+      // Arrange
+      const userId = 'user-123';
+      const recentEvents = [
+        { type: SecurityEventType.LOGIN_SUCCESS, timestamp: new Date(Date.now() - 5 * 60 * 1000), ip: '192.168.1.100' },
+        { type: SecurityEventType.LOGIN_SUCCESS, timestamp: new Date(Date.now() - 2 * 60 * 1000), ip: '203.0.113.1' },
+        { type: SecurityEventType.LOGIN_SUCCESS, timestamp: new Date(Date.now() - 1 * 60 * 1000), ip: '198.51.100.1' },
+      ];
+
+      vi.spyOn(securityService as any, 'getRecentSecurityEvents').mockResolvedValue(recentEvents);
+      vi.spyOn(securityService as any, 'triggerSecurityAlert').mockResolvedValue(undefined);
+
+      // Act
+      const suspicious = await securityService.detectSuspiciousActivity(userId);
+
+      // Assert
+      expect(suspicious).toBe(true);
+      expect(mockLogger.warn).toHaveBeenCalledWith('Suspicious activity detected', {
+        userId,
+        reason: 'Multiple login locations detected',
+      });
+    });
+
+    test('should detect brute force attempts', async () => {
+      // Arrange
+      const ip = '192.168.1.100';
+      const recentEvents = Array.from({ length: 10 }, (_, i) => ({
+        type: SecurityEventType.LOGIN_FAILED,
+        timestamp: new Date(Date.now() - i * 30 * 1000),
+        ip,
+      }));
+
+      vi.spyOn(securityService as any, 'getRecentSecurityEventsByIp').mockResolvedValue(recentEvents);
+      vi.spyOn(securityService as any, 'blockIpAddress').mockResolvedValue(true);
+
+      // Act
+      const isBruteForce = await securityService.detectBruteForce(ip);
+
+      // Assert
+      expect(isBruteForce).toBe(true);
+      expect(mockLogger.error).toHaveBeenCalledWith('Brute force attack detected', {
+        ip,
+        attempts: 10,
+      });
+    });
+
+    test('should track security metrics', async () => {
+      // Arrange
+      const timeRange = { start: new Date(Date.now() - 24 * 60 * 60 * 1000), end: new Date() };
+      const expectedMetrics = {
+        totalLogins: 1250,
+        successfulLogins: 1180,
+        failedLogins: 70,
+        uniqueUsers: 245,
+        suspiciousActivities: 3,
+        blockedIps: 5,
+      };
+
+      vi.spyOn(securityService as any, 'calculateSecurityMetrics').mockResolvedValue(expectedMetrics);
+
+      // Act
+      const metrics = await securityService.getSecurityMetrics(timeRange);
+
+      // Assert
+      expect(metrics).toEqual(expectedMetrics);
+      expect(mockLogger.info).toHaveBeenCalledWith('Security metrics retrieved', {
+        timeRange,
+        totalLogins: 1250,
+      });
+    });
+  });
+
+  describe('API Security and Rate Limiting', () => {
+    test('should validate API key', async () => {
+      // Arrange
+      const apiKey = 'api-key-12345678901234567890';
+      const mockApiCredentials = {
+        id: 'api-cred-123',
+        keyHash: 'hashed-api-key',
+        userId: 'user-123',
+        permissions: ['read', 'write'],
+        rateLimit: 1000,
+        isActive: true,
+      };
+
+      vi.spyOn(securityService as any, 'findApiCredentials').mockResolvedValue(mockApiCredentials);
+      mockCrypto.timingSafeEqual.mockReturnValue(true);
+
+      // Act
+      const result = await securityService.validateApiKey(apiKey);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.isValid).toBe(true);
+      expect(result.userId).toBe('user-123');
+      expect(result.permissions).toEqual(['read', 'write']);
+    });
+
+    test('should enforce rate limits', async () => {
+      // Arrange
+      const clientId = 'client-123';
+      const limit = 100;
+      const window = 3600; // 1 hour
+
+      // Mock existing requests count
+      vi.spyOn(securityService as any, 'getRequestCount').mockResolvedValue(99);
+
+      // Act
+      const allowed = await securityService.checkRateLimit(clientId, limit, window);
+
+      // Assert
+      expect(allowed).toBe(true);
+    });
+
+    test('should block requests exceeding rate limit', async () => {
+      // Arrange
+      const clientId = 'client-123';
+      const limit = 100;
+      const window = 3600; // 1 hour
+
+      // Mock existing requests count at limit
+      vi.spyOn(securityService as any, 'getRequestCount').mockResolvedValue(100);
+
+      // Act
+      const allowed = await securityService.checkRateLimit(clientId, limit, window);
+
+      // Assert
+      expect(allowed).toBe(false);
+      expect(mockLogger.warn).toHaveBeenCalledWith('Rate limit exceeded', {
+        clientId,
+        limit,
+        window,
+      });
+    });
+
+    test('should validate CORS requests', () => {
+      // Arrange
+      const origin = 'https://trusted-domain.com';
+      const allowedOrigins = ['https://trusted-domain.com', 'https://api.trusted-domain.com'];
+
+      // Act
+      const isAllowed = securityService.validateCorsOrigin(origin, allowedOrigins);
+
+      // Assert
+      expect(isAllowed).toBe(true);
+    });
+
+    test('should reject unauthorized CORS origins', () => {
+      // Arrange
+      const origin = 'https://malicious-site.com';
+      const allowedOrigins = ['https://trusted-domain.com'];
+
+      // Act
+      const isAllowed = securityService.validateCorsOrigin(origin, allowedOrigins);
+
+      // Assert
+      expect(isAllowed).toBe(false);
+    });
+  });
+
+  describe('Compliance and Audit', () => {
+    test('should maintain audit trail for security actions', async () => {
+      // Arrange
+      const auditEvent = {
+        action: 'USER_LOGIN',
+        userId: 'user-123',
+        resource: 'authentication',
+        timestamp: new Date(),
+        ip: '192.168.1.100',
+        userAgent: 'Mozilla/5.0...',
+        success: true,
+        metadata: { method: 'password' },
+      };
+
+      vi.spyOn(securityService as any, 'storeAuditEvent').mockResolvedValue(undefined);
+
+      // Act
+      await securityService.auditAction(auditEvent);
+
+      // Assert
+      expect(mockLogger.info).toHaveBeenCalledWith('Audit event recorded', {
+        action: 'USER_LOGIN',
+        userId: 'user-123',
+      });
+    });
+
+    test('should generate compliance reports', async () => {
+      // Arrange
+      const reportType = 'GDPR';
+      const dateRange = {
+        start: new Date('2024-01-01'),
+        end: new Date('2024-01-31'),
+      };
+
+      const expectedReport = {
+        type: reportType,
+        period: dateRange,
+        dataAccessRequests: 15,
+        dataDeletions: 8,
+        securityIncidents: 2,
+        complianceScore: 98.5,
+        generatedAt: new Date(),
+      };
+
+      vi.spyOn(securityService as any, 'generateComplianceData').mockResolvedValue(expectedReport);
+
+      // Act
+      const report = await securityService.generateComplianceReport(reportType, dateRange);
+
+      // Assert
+      expect(report).toEqual(expectedReport);
+      expect(mockLogger.info).toHaveBeenCalledWith('Compliance report generated', {
+        type: reportType,
+        period: dateRange,
+      });
+    });
+
+    test('should validate data retention policies', async () => {
+      // Arrange
+      const dataType = 'user_data';
+      const maxRetentionDays = 365;
+
+      vi.spyOn(securityService as any, 'getDataRetentionInfo').mockResolvedValue({
+        dataType,
+        oldestRecord: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000), // 400 days old
+        recordCount: 1500,
+      });
+
+      // Act
+      const violations = await securityService.validateDataRetention(dataType, maxRetentionDays);
+
+      // Assert
+      expect(violations.length).toBeGreaterThan(0);
+      expect(violations[0].type).toBe('RETENTION_VIOLATION');
+      expect(mockLogger.warn).toHaveBeenCalledWith('Data retention violations detected', {
+        dataType,
+        violationsCount: violations.length,
+      });
+    });
+
+    test('should handle data subject requests', async () => {
+      // Arrange
+      const request = {
+        type: 'DATA_EXPORT',
+        userId: 'user-123',
+        email: 'user@example.com',
+        requestedAt: new Date(),
+        status: 'PENDING',
+      };
+
+      const mockExportData = {
+        personalInfo: { name: 'John Doe', email: 'user@example.com' },
+        activityLog: [],
+        preferences: {},
+        exportedAt: new Date(),
+      };
+
+      vi.spyOn(securityService as any, 'getUserData').mockResolvedValue(mockExportData);
+      vi.spyOn(securityService as any, 'updateDataSubjectRequest').mockResolvedValue(undefined);
+
+      // Act
+      const result = await securityService.processDataSubjectRequest(request);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.status).toBe('COMPLETED');
+      expect(result.data).toEqual(mockExportData);
+      expect(mockLogger.info).toHaveBeenCalledWith('Data subject request processed', {
+        requestId: request.id,
+        type: request.type,
+        userId: request.userId,
+      });
+    });
+  });
+
+  describe('Error Handling and Edge Cases', () => {
+    test('should handle invalid JWT tokens gracefully', async () => {
+      // Arrange
+      const invalidToken = 'invalid.jwt.token';
+      const error = new Error('Invalid token');
+      error.name = 'JsonWebTokenError';
+
+      mockJwt.verify.mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      const result = await securityService.validateSession(invalidToken);
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('Invalid token');
+    });
+
+    test('should handle database connection failures', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'password123',
+      };
+
+      const dbError = new Error('Database connection failed');
+      vi.spyOn(securityService as any, 'findUserByEmail').mockRejectedValue(dbError);
+
+      // Act & Assert
+      await expect(securityService.authenticate(credentials)).rejects.toThrow('Authentication service unavailable');
+      expect(mockLogger.error).toHaveBeenCalledWith('Authentication service error', {
+        error: dbError.message,
+      });
+    });
+
+    test('should handle encryption failures gracefully', async () => {
+      // Arrange
+      const data = 'sensitive-data';
+      const key = 'encryption-key';
+      const encryptionError = new Error('Encryption failed');
+
+      mockCrypto.createCipheriv.mockImplementation(() => {
+        throw encryptionError;
+      });
+
+      // Act & Assert
+      await expect(securityService.encrypt(data, key)).rejects.toThrow('Encryption failed');
+      expect(mockLogger.error).toHaveBeenCalledWith('Encryption error', {
+        error: encryptionError.message,
+      });
+    });
+
+    test('should validate security configuration', () => {
+      // Arrange
+      const invalidConfig = {
+        jwtSecret: 'short', // Too short
+        jwtExpiration: 'invalid',
+        bcryptRounds: -1, // Invalid
+      };
+
+      // Act & Assert
+      expect(() => {
+        securityService.initialize(invalidConfig);
+      }).toThrow('Invalid security configuration');
+    });
+  });
+
+  describe('Performance and Scalability', () => {
+    test('should handle concurrent authentication requests', async () => {
+      // Arrange
+      const credentials = {
+        email: 'user@example.com',
+        password: 'password123',
+      };
+
+      const mockUser = {
+        id: 'user-123',
+        email: 'user@example.com',
+        password: 'hashedpassword',
+        role: UserRole.USER,
+        isActive: true,
+        isLocked: false,
+      };
+
+      mockBcrypt.compare.mockResolvedValue(true);
+      vi.spyOn(securityService as any, 'findUserByEmail').mockResolvedValue(mockUser);
+      mockJwt.sign.mockReturnValue('mock-jwt-token');
+
+      // Act
+      const concurrentRequests = Array.from({ length: 10 }, () =>
+        securityService.authenticate(credentials)
+      );
+      const results = await Promise.all(concurrentRequests);
+
+      // Assert
+      expect(results).toHaveLength(10);
+      results.forEach(result => {
+        expect(result.success).toBe(true);
+        expect(result.token).toBeDefined();
+      });
+    });
+
+    test('should implement efficient session caching', async () => {
+      // Arrange
+      const token = 'valid-jwt-token';
+      const mockPayload = {
+        userId: 'user-123',
+        email: 'user@example.com',
+        role: UserRole.USER,
+      };
+
+      mockJwt.verify.mockReturnValue(mockPayload);
+      vi.spyOn(securityService as any, 'getSession').mockResolvedValue({
+        token,
+        userId: 'user-123',
+        isActive: true,
+        expiresAt: new Date(Date.now() + 3600 * 1000),
+      });
+
+      // Act
+      const startTime = Date.now();
+      const result1 = await securityService.validateSession(token);
+      const result2 = await securityService.validateSession(token); // Should use cache
+      const endTime = Date.now();
+
+      // Assert
+      expect(result1).toBeDefined();
+      expect(result2).toBeDefined();
+      expect(result1).toEqual(result2);
+      expect(endTime - startTime).toBeLessThan(100); // Should be fast with caching
+    });
+  });
+});

@@ -1,0 +1,127 @@
+/**
+ * Simple Rate Limiter Tests
+ *
+ * Tests for rate limiting without circular dependencies
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+// Simple token bucket implementation for testing
+class SimpleTokenBucket {
+  private tokens: number;
+  private lastRefill: number;
+  private capacity: number;
+  private refillRate: number;
+
+  constructor(capacity: number, refillRate: number) {
+    this.tokens = capacity;
+    this.capacity = capacity;
+    this.refillRate = refillRate;
+    this.lastRefill = Date.now();
+  }
+
+  consume(tokens: number): boolean {
+    this.refill();
+    if (this.tokens >= tokens) {
+      this.tokens -= tokens;
+      return true;
+    }
+    return false;
+  }
+
+  private refill(): void {
+    const now = Date.now();
+    const timePassed = (now - this.lastRefill) / 1000;
+    const tokensToAdd = Math.floor(timePassed * this.refillRate);
+    this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd);
+    this.lastRefill = now;
+  }
+
+  getTokensAvailable(): number {
+    this.refill();
+    return this.tokens;
+  }
+}
+
+// Simple rate limiter for testing
+class SimpleRateLimiter {
+  private buckets = new Map<string, SimpleTokenBucket>();
+
+  constructor() {}
+
+  checkLimit(entityId: string, tokens: number = 1): boolean {
+    const bucket = this.buckets.get(entityId);
+    if (!bucket) {
+      // Create new bucket with free tier limits
+      const newBucket = new SimpleTokenBucket(100, 10); // 100 capacity, 10 refill/sec
+      this.buckets.set(entityId, newBucket);
+      return newBucket.consume(tokens);
+    }
+    return bucket.consume(tokens);
+  }
+
+  getAvailableTokens(entityId: string): number {
+    const bucket = this.buckets.get(entityId);
+    return bucket ? bucket.getTokensAvailable() : 0;
+  }
+
+  reset(entityId: string): void {
+    this.buckets.delete(entityId);
+  }
+}
+
+describe('SimpleRateLimiter', () => {
+  let rateLimiter: SimpleRateLimiter;
+
+  beforeEach(() => {
+    rateLimiter = new SimpleRateLimiter();
+  });
+
+  it('should allow requests within token capacity', () => {
+    expect(rateLimiter.checkLimit('test-entity')).toBe(true);
+    expect(rateLimiter.checkLimit('test-entity')).toBe(true);
+    expect(rateLimiter.getAvailableTokens('test-entity')).toBeLessThan(100);
+  });
+
+  it('should block requests that exceed token capacity', () => {
+    // Exhaust the capacity
+    for (let i = 0; i < 100; i++) {
+      expect(rateLimiter.checkLimit('test-entity')).toBe(true);
+    }
+
+    // Next request should be blocked
+    expect(rateLimiter.checkLimit('test-entity')).toBe(false);
+    expect(rateLimiter.getAvailableTokens('test-entity')).toBe(0);
+  });
+
+  it('should isolate limits between different entities', () => {
+    // Exhaust capacity for entity-1
+    for (let i = 0; i < 100; i++) {
+      rateLimiter.checkLimit('entity-1');
+    }
+
+    // entity-1 should be blocked
+    expect(rateLimiter.checkLimit('entity-1')).toBe(false);
+
+    // entity-2 should still be allowed
+    expect(rateLimiter.checkLimit('entity-2')).toBe(true);
+  });
+
+  it('should handle multiple token consumption', () => {
+    expect(rateLimiter.checkLimit('test-entity', 50)).toBe(true);
+    expect(rateLimiter.checkLimit('test-entity', 30)).toBe(true);
+    expect(rateLimiter.checkLimit('test-entity', 25)).toBe(false); // 105 total, exceeds 100 capacity
+  });
+
+  it('should reset entity limits', () => {
+    // Use some tokens
+    rateLimiter.checkLimit('test-entity', 50);
+    expect(rateLimiter.getAvailableTokens('test-entity')).toBe(50);
+
+    // Reset
+    rateLimiter.reset('test-entity');
+
+    // Should have full capacity again
+    expect(rateLimiter.checkLimit('test-entity', 100)).toBe(true);
+  });
+});

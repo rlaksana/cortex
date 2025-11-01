@@ -4,8 +4,8 @@
  * Provides deterministic embeddings for testing without requiring real OpenAI API calls
  */
 
-import { vi } from 'vitest';
-import type { EmbeddingConfig, EmbeddingRequest, EmbeddingResult, BatchEmbeddingRequest, EmbeddingStats } from '../../src/services/embeddings/embedding-service.js';
+// import { vi } from 'vitest';
+// import type { EmbeddingConfig, EmbeddingRequest, EmbeddingResult, BatchEmbeddingRequest, EmbeddingStats } from '../../src/services/embeddings/embedding-service.js';
 import { DatabaseError } from '../../src/db/database-interface.js';
 
 export interface MockEmbeddingConfig {
@@ -123,7 +123,7 @@ export class MockEmbeddingService {
         processingTime,
         ...(request.metadata && { metadata: request.metadata }),
       };
-    } catch (error) {
+    } catch (_error) {
       this.stats.errors++;
       throw error;
     }
@@ -183,7 +183,7 @@ export class MockEmbeddingService {
       this.updateAverageProcessingTime(processingTime);
 
       return results;
-    } catch (error) {
+    } catch (_error) {
       this.stats.errors++;
       throw error;
     }
@@ -228,7 +228,7 @@ export class MockEmbeddingService {
     try {
       await this.generateEmbedding('health check test');
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -236,7 +236,7 @@ export class MockEmbeddingService {
   /**
    * Warm up cache (no-op for mock)
    */
-  async warmupCache(commonTexts: string[]): Promise<void> {
+  async warmupCache(_commonTexts: string[]): Promise<void> {
     // Mock service doesn't actually cache, but keep interface consistent
   }
 

@@ -22,13 +22,15 @@ import { tmpdir } from 'node:os';
 import { FileHandleManager, FileHandleManagerError, readFileManaged, writeFileManaged } from '../../../src/utils/file-handle-manager.js';
 
 // Mock logger to avoid test output pollution
+const mockLogger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+};
+
 vi.mock('../../../src/utils/logger.js', () => ({
-  logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
+  logger: mockLogger,
 }));
 
 // Test file paths

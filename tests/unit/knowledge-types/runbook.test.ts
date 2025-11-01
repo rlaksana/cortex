@@ -781,7 +781,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
               step_number: 1,
               description: longDescription,
               command: longCommand,
-              expected_outcome: longDescription + ' Expected outcome should match description.'
+              expected_outcome: `${longDescription  } Expected outcome should match description.`
             }
           ]
         }

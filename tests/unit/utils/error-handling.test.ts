@@ -627,6 +627,11 @@ describe('Error Handling Utilities - Comprehensive Error Management', () => {
             metadata: { report_type: 'error_analysis', format: 'csv', generated_at: new Date().toISOString() },
             data: 'type,count,severity\ndatabase_error,35,error\napi_error,15,warning'
           };
+        } else {
+          return {
+            metadata: { report_type: 'error_analysis', format: 'unknown', generated_at: new Date().toISOString() },
+            ...data
+          };
         }
       });
 
@@ -921,16 +926,16 @@ describe('Error Handling Utilities - Comprehensive Error Management', () => {
 
       const errorTracker = {
         errors: [] as Array<{ timestamp: number; type: string }>,
-        addError: function(type: string) {
+        addError(type: string) {
           this.errors.push({ timestamp: Date.now(), type });
           this.cleanupOldErrors();
         },
-        cleanupOldErrors: function() {
+        cleanupOldErrors() {
           const oneMinuteAgo = Date.now() - 60000;
           this.errors = this.errors.filter(e => e.timestamp > oneMinuteAgo);
         },
-        getErrorCount: function() { return this.errors.length; },
-        getErrorRate: function(totalOperations: number) { return this.errors.length / totalOperations; }
+        getErrorCount() { return this.errors.length; },
+        getErrorRate(totalOperations: number) { return this.errors.length / totalOperations; }
       };
 
       errorPrevention.enforceErrorBoundaries.mockImplementation((config, tracker) => {

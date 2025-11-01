@@ -41,7 +41,7 @@ describe('ChunkingService', () => {
         const prevChunkEnd = chunks[i - 1].slice(-200);
         const currChunkStart = chunks[i].slice(0, 200);
         // Should have some overlap
-        expect(prevChunkEnd + currChunkStart).toContain('a'.repeat(100));
+        expect(`${prevChunkEnd}${currChunkStart}`).toContain('a'.repeat(100));
       }
     });
 
@@ -54,7 +54,7 @@ describe('ChunkingService', () => {
     });
 
     it('should preserve paragraph boundaries when possible', async () => {
-      const content = 'Paragraph 1. '.repeat(1000) + '\n\n' + 'Paragraph 2. '.repeat(1000);
+      const content = `${`Paragraph 1. `.repeat(1000)  }\n\n${  `Paragraph 2. `.repeat(1000)}`;
       const chunks = await service.chunkContent(content);
 
       expect(chunks.length).toBeGreaterThan(1);
@@ -448,6 +448,111 @@ describe('ChunkingService', () => {
         expect(item.data.total_chunks).toBe(1);
         expect(item.data.original_length).toBeDefined();
       });
+    });
+  });
+
+  describe('Semantic Chunking Fallback', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.resetModules();
+      process.env = { ...originalEnv };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    it('should use traditional chunking when SEMANTIC_CHUNKING_OPTIONAL=true', async () => {
+      // Set environment variable to disable semantic chunking
+      process.env.SEMANTIC_CHUNKING_OPTIONAL = 'true';
+
+      // Create a new service instance to pick up the env variable
+      const testService = new ChunkingService();
+
+      const longContent = 'a'.repeat(5000); // Long enough for semantic analysis
+      const chunks = await testService.chunkContent(longContent);
+
+      // Should still chunk, but using traditional method
+      expect(chunks.length).toBeGreaterThan(1);
+      expect(chunks.length).toBeLessThan(10);
+
+      // Verify chunks are reasonable size (traditional chunking)
+      chunks.forEach(chunk => {
+        expect(chunk.length).toBeLessThanOrEqual(1400); // CHUNK_SIZE + some tolerance
+        expect(chunk.length).toBeGreaterThanOrEqual(800); // Minimum reasonable size
+      });
+    });
+
+    it('should fallback to traditional chunking when semantic analysis fails', async () => {
+      // Create a service with a mocked semantic analyzer that fails
+      const mockFailingAnalyzer = {
+        analyzeSemanticBoundaries: jest.fn().mockRejectedValue(new Error('Embedding service unavailable')),
+        isAnalysisAvailable: jest.fn().mockReturnValue(false)
+      };
+
+      const serviceWithFailingAnalyzer = new ChunkingService();
+      // Replace the analyzer with the failing one (access through private property for testing)
+      (serviceWithFailingAnalyzer as any).semanticAnalyzer = mockFailingAnalyzer;
+
+      const longContent = 'a'.repeat(5000);
+      const chunks = await serviceWithFailingAnalyzer.chunkContent(longContent);
+
+      // Should still chunk using traditional method as fallback
+      expect(chunks.length).toBeGreaterThan(1);
+      expect(chunks.length).toBeLessThan(10);
+
+      // Verify chunks are from traditional chunking
+      chunks.forEach(chunk => {
+        expect(chunk.length).toBeLessThanOrEqual(1400);
+        expect(chunk.length).toBeGreaterThanOrEqual(800);
+      });
+    });
+
+    it('should attempt semantic chunking when SEMANTIC_CHUNKING_OPTIONAL=false', async () => {
+      // Ensure semantic chunking is enabled
+      process.env.SEMANTIC_CHUNKING_OPTIONAL = 'false';
+
+      const testService = new ChunkingService();
+
+      // Mock the semantic analyzer to return boundaries
+      const mockAnalyzer = {
+        analyzeSemanticBoundaries: jest.fn().mockResolvedValue([
+          { position: 1000, strength: 0.8, type: 'semantic' },
+          { position: 2000, strength: 0.9, type: 'semantic' },
+          { position: 3000, strength: 0.7, type: 'semantic' }
+        ]),
+        isAnalysisAvailable: jest.fn().mockReturnValue(true)
+      };
+
+      (testService as any).semanticAnalyzer = mockAnalyzer;
+
+      const longContent = 'a'.repeat(4000);
+      const chunks = await testService.chunkContent(longContent);
+
+      // Should chunk based on semantic boundaries
+      expect(chunks.length).toBeGreaterThan(1);
+      expect(mockAnalyzer.analyzeSemanticBoundaries).toHaveBeenCalledWith(longContent);
+    });
+
+    it('should always produce at least one chunk even when both methods fail', async () => {
+      // Create a service where both semantic and traditional chunking might fail
+      const testService = new ChunkingService();
+
+      // Mock semantic analyzer to fail
+      const mockFailingAnalyzer = {
+        analyzeSemanticBoundaries: jest.fn().mockRejectedValue(new Error('Complete failure')),
+        isAnalysisAvailable: jest.fn().mockReturnValue(false)
+      };
+
+      (testService as any).semanticAnalyzer = mockFailingAnalyzer;
+
+      const content = 'Some content that should still be chunked';
+      const chunks = await testService.chunkContent(content);
+
+      // Should always return at least the original content
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]).toBe(content);
     });
   });
 });

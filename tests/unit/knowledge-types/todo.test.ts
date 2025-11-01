@@ -415,7 +415,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             text: `Todo with status ${status}`,
-            status: status
+            status
           }
         };
 
@@ -441,7 +441,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'task',
             text: `Todo with priority ${priority}`,
             status: 'open',
-            priority: priority
+            priority
           }
         };
 

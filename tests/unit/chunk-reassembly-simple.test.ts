@@ -64,7 +64,7 @@ This document provides a comprehensive overview of our technical architecture.
       kind: 'section', // This should be chunked
       scope: { project: 'test-project' },
       data: {
-        content: content,
+        content,
         title: 'Technical Documentation'
       }
     };

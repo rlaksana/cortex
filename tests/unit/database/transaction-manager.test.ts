@@ -218,7 +218,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
   });
 
   it('should handle transaction context cleanup on failure', async () => {
-    let contexts: VectorTransactionContext[] = [];
+    const contexts: VectorTransactionContext[] = [];
 
     const failingOperation = async (ctx: VectorTransactionContext) => {
       contexts.push(ctx);
@@ -577,7 +577,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       }
     ];
 
-    let storedItems: KnowledgeItem[] = [];
+    const storedItems: KnowledgeItem[] = [];
 
     const failingStoreOperation = async (ctx: VectorTransactionContext) => {
       // Store first item successfully
@@ -708,7 +708,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
 
   it('should handle knowledge item deletion within transactions', async () => {
     const itemsToDelete = ['delete_item1', 'delete_item2', 'delete_item3'];
-    let deletedItems: string[] = [];
+    const deletedItems: string[] = [];
 
     const deleteOperation = async (ctx: VectorTransactionContext) => {
       const deletionResults: { id: string; deleted: boolean }[] = [];

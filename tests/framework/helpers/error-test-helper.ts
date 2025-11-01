@@ -116,52 +116,36 @@ export class ErrorTestHelper {
 
     // Test invalid search parameters
     await this.runErrorTest('invalid_top_k_negative', 'INVALID_INPUT', async () => {
-      try {
-        await memoryFind({
-          query: 'test',
-          top_k: -1,
-        });
-        // If it doesn't throw, check if it handles gracefully
-      } catch (error) {
-        throw error;
-      }
+      await memoryFind({
+        query: 'test',
+        top_k: -1,
+      });
+      // If it doesn't throw, check if it handles gracefully
     });
 
     await this.runErrorTest('invalid_top_k_too_large', 'INVALID_INPUT', async () => {
-      try {
-        await memoryFind({
-          query: 'test',
-          top_k: 100000, // Too large
-        });
-      } catch (error) {
-        throw error;
-      }
+      await memoryFind({
+        query: 'test',
+        top_k: 100000, // Too large
+      });
     });
 
     // Test invalid mode
     await this.runErrorTest('invalid_search_mode', 'INVALID_INPUT', async () => {
-      try {
-        await memoryFind({
-          query: 'test',
-          mode: 'invalid_mode' as any,
-        });
-      } catch (error) {
-        throw error;
-      }
+      await memoryFind({
+        query: 'test',
+        mode: 'invalid_mode' as any,
+      });
     });
 
     // Test invalid scope
     await this.runErrorTest('invalid_scope', 'INVALID_SCOPE', async () => {
-      try {
-        await memoryFind({
-          query: 'test',
-          scope: {
-            project: '', // Empty project might be invalid
-          },
-        });
-      } catch (error) {
-        throw error;
-      }
+      await memoryFind({
+        query: 'test',
+        scope: {
+          project: '', // Empty project might be invalid
+        },
+      });
     });
 
     // Test SQL injection attempts

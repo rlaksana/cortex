@@ -4,6 +4,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
+
+// Setup global performance mock
+(global as any).performance = {
+  now: () => Date.now()
+};
 import {
   SUPPORTED_KINDS,
   KNOWLEDGE_TYPE_METADATA,
@@ -20,7 +25,7 @@ import {
   DEVELOPMENT_LIFECYCLE_TYPES,
   EIGHT_LOG_SYSTEM_TYPES,
   IMMUTABLE_TYPES,
-  type KnowledgeCategory,
+  // type KnowledgeCategory,
 } from '../../../src/constants/supported-kinds';
 
 describe('SUPPORTED_KINDS', () => {
@@ -499,12 +504,8 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
     });
 
     it('should provide clear error messages for validation failures', () => {
-      try {
-        getKnowledgeTypeMetadata('nonexistent' as any);
-        fail('Expected error to be thrown');
-      } catch (error) {
-        expect(error.message).toContain('Unknown knowledge type: nonexistent');
-      }
+      expect(() => getKnowledgeTypeMetadata('nonexistent' as any))
+        .toThrow('Unknown knowledge type: nonexistent');
     });
   });
 

@@ -13,7 +13,7 @@ import { ChunkingService } from '../../src/services/chunking/chunking-service.js
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
 import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';
 import { ResultGroupingService } from '../../src/services/search/result-grouping-service.js';
-import { logger } from '../../src/utils/logger.js';
+// import { logger } from '../../src/utils/logger.js';
 
 describe('Chunk Reassembly Integration', () => {
   let chunkingService: ChunkingService;
@@ -121,7 +121,7 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
       expect(parentItem?.data.total_chunks).toBe(childChunks.length);
 
       // Step 4: Simulate search results (as would come from database)
-      const searchResults = childChunks.map((chunk, index) => ({
+      const searchResults = childChunks.map((chunk, _index) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.data.content,
@@ -481,13 +481,13 @@ ${'Additional quarterly report content and detailed analysis to ensure proper ch
       const childChunks = chunkedItems.filter(item => item.data.is_chunk);
 
       // Simulate realistic search with varying confidence scores
-      const searchResults = childChunks.map((chunk, index) => ({
+      const searchResults = childChunks.map((chunk, _index) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.data.content,
         data: chunk.data,
         scope: chunk.scope,
-        confidence_score: 0.9 - (index * 0.05), // Decreasing scores
+        confidence_score: 0.9 - (_index * 0.05), // Decreasing scores
         created_at: chunk.created_at!,
         match_type: 'semantic' as const
       }));

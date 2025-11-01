@@ -17,6 +17,11 @@ import {
   deserializeFromDatabase,
 } from '../../../src/utils/array-serializer';
 
+// Setup global performance mock
+(global as any).performance = {
+  now: () => Date.now()
+};
+
 describe('Array Serialization Utilities', () => {
   describe('serializeArray', () => {
     it('should serialize simple string arrays', () => {

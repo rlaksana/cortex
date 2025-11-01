@@ -1,0 +1,341 @@
+/**
+ * Tests for Scope Middleware
+ * Tests API key scope enforcement functionality
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ScopeMiddleware, ScopeError, validateToolScope } from '../../src/middleware/scope-middleware.js';
+import { AuthScope } from '../../src/types/auth-types.js';
+import type { AuthContext } from '../../src/types/auth-types.js';
+
+// Mock the auth service
+const mockAuthContext: AuthContext = {
+  user: {
+    id: 'user-123',
+    username: 'testuser',
+    role: 'user' as any
+  },
+  session: {
+    id: 'session-123',
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 3600000).toISOString(),
+    ip_address: '127.0.0.1',
+    user_agent: 'test-agent'
+  },
+  scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE, AuthScope._SEARCH_BASIC],
+  token_jti: 'token-123'
+};
+
+vi.mock('../../src/services/auth/auth-service.js', () => ({
+  authService: {
+    validateToken: vi.fn()
+  }
+}));
+
+describe('ScopeMiddleware', () => {
+  let scopeMiddleware: ScopeMiddleware;
+  let mockAuthService: any;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    scopeMiddleware = ScopeMiddleware.getInstance();
+
+    // Get mock instance
+    mockAuthService = (await import('../../src/services/auth/auth-service.js')).authService;
+  });
+
+  describe('Basic Scope Validation', () => {
+    it('should allow access with correct scopes', async () => {
+      mockAuthService.validateToken.mockResolvedValue(mockAuthContext);
+
+      const result = await scopeMiddleware.validateScope(
+        'valid-token',
+        'memory_store',
+        'write'
+      );
+
+      expect(result.user.id).toBe('user-123');
+      expect(result.scopes).toContain(AuthScope._MEMORY_WRITE);
+    });
+
+    it('should deny access without required scopes', async () => {
+      const readOnlyContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ] // No write scope
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(readOnlyContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'memory_store', 'write')
+      ).rejects.toThrow(ScopeError);
+    });
+
+    it('should handle authentication failure', async () => {
+      mockAuthService.validateToken.mockRejectedValue(new Error('Invalid token'));
+
+      await expect(
+        scopeMiddleware.validateScope('invalid-token', 'memory_store', 'read')
+      ).rejects.toThrow('Authentication failed');
+    });
+  });
+
+  describe('Memory Find Scope Requirements', () => {
+    it('should allow basic search with SEARCH_BASIC scope', async () => {
+      const basicSearchContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(basicSearchContext);
+
+      const result = await scopeMiddleware.validateScope(
+        'valid-token',
+        'memory_find',
+        'read',
+        { mode: 'fast', expand: 'none' }  // Use fast mode which doesn't require advanced search
+      );
+
+      expect(result.scopes).toContain(AuthScope._SEARCH_BASIC);
+    });
+
+    it('should require SEARCH_ADVANCED for auto mode', async () => {
+      const basicContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(basicContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'memory_find', 'read', { mode: 'auto' })
+      ).rejects.toThrow(ScopeError);
+    });
+
+    it('should require SEARCH_DEEP for deep mode', async () => {
+      const advancedContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(advancedContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'memory_find', 'read', { mode: 'deep' })
+      ).rejects.toThrow(ScopeError);
+    });
+
+    it('should require SEARCH_ADVANCED for expansion', async () => {
+      const basicContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(basicContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'memory_find', 'read', {
+          mode: 'auto',
+          expand: 'parents'
+        })
+      ).rejects.toThrow(ScopeError);
+    });
+
+    it('should allow advanced search with proper scopes', async () => {
+      const advancedContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(advancedContext);
+
+      const result = await scopeMiddleware.validateScope(
+        'valid-token',
+        'memory_find',
+        'read',
+        { mode: 'auto', expand: 'parents' }
+      );
+
+      expect(result.scopes).toContain(AuthScope._SEARCH_ADVANCED);
+    });
+  });
+
+  describe('Tool Scope Validation Helper', () => {
+    it('should validate memory_store tool with write scope', async () => {
+      mockAuthService.validateToken.mockResolvedValue(mockAuthContext);
+
+      const result = await validateToolScope('valid-token', 'memory_store', {});
+
+      expect(result.user.id).toBe('user-123');
+      expect(mockAuthService.validateToken).toHaveBeenCalledWith('valid-token');
+    });
+
+    it('should validate memory_find tool with read scope', async () => {
+      const advancedContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(advancedContext);
+
+      const result = await validateToolScope('valid-token', 'memory_find', {
+        mode: 'auto',
+        expand: 'none'
+      });
+
+      expect(result.user.id).toBe('user-123');
+    });
+
+    it('should reject unknown tool names', async () => {
+      await expect(
+        validateToolScope('valid-token', 'unknown_tool', {})
+      ).rejects.toThrow('Unknown tool: unknown_tool');
+    });
+  });
+
+  describe('Scope Type Helpers', () => {
+    it('should correctly identify write scopes', () => {
+      expect(scopeMiddleware.isWriteScope(AuthScope._MEMORY_WRITE)).toBe(true);
+      expect(scopeMiddleware.isWriteScope(AuthScope._MEMORY_READ)).toBe(false);
+      expect(scopeMiddleware.isWriteScope(AuthScope._SYSTEM_MANAGE)).toBe(true);
+    });
+
+    it('should correctly identify read scopes', () => {
+      expect(scopeMiddleware.isReadScope(AuthScope._MEMORY_READ)).toBe(true);
+      expect(scopeMiddleware.isReadScope(AuthScope._MEMORY_WRITE)).toBe(false);
+      expect(scopeMiddleware.isReadScope(AuthScope._SEARCH_BASIC)).toBe(true);
+    });
+
+    it('should correctly identify admin scopes', () => {
+      expect(scopeMiddleware.isAdminScope(AuthScope._SYSTEM_MANAGE)).toBe(true);
+      expect(scopeMiddleware.isAdminScope(AuthScope._MEMORY_READ)).toBe(false);
+      expect(scopeMiddleware.isAdminScope(AuthScope._USER_MANAGE)).toBe(true);
+    });
+  });
+
+  describe('Authenticated Request Creation', () => {
+    it('should create authenticated request with proper context', async () => {
+      const advancedContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(advancedContext);
+
+      const data = { query: 'test', limit: 10, mode: 'auto' };
+      const result = await scopeMiddleware.createAuthenticatedRequest(
+        'valid-token',
+        data,
+        'memory_find',
+        'read'
+      );
+
+      expect(result.auth.user.id).toBe('user-123');
+      expect(result.data).toEqual(data);
+      expect(result.timestamp).toBeGreaterThan(0);
+      expect(result.idempotency_key).toBeDefined();
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should create ScopeError with proper details', async () => {
+      const readOnlyContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._MEMORY_READ]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(readOnlyContext);
+
+      try {
+        await scopeMiddleware.validateScope('valid-token', 'memory_store', 'write');
+        fail('Expected ScopeError to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ScopeError);
+        if (error instanceof ScopeError) {
+          expect(error.requiredScopes).toContain(AuthScope._MEMORY_WRITE);
+          expect(error.userScopes).toEqual([AuthScope._MEMORY_READ]);
+          expect(error.resource).toBe('memory_store');
+          expect(error.action).toBe('write');
+        }
+      }
+    });
+
+    it('should handle malformed tokens gracefully', async () => {
+      mockAuthService.validateToken.mockRejectedValue(new Error('Token malformed'));
+
+      await expect(
+        scopeMiddleware.validateScope('bad-token', 'memory_store', 'read')
+      ).rejects.toThrow('Authentication failed');
+    });
+  });
+
+  describe('Scope Combinations', () => {
+    it('should allow access with multiple required scopes when user has all', async () => {
+      const adminContext = {
+        ...mockAuthContext,
+        scopes: [
+          AuthScope._MEMORY_READ,
+          AuthScope._MEMORY_WRITE,
+          AuthScope._MEMORY_DELETE,
+          AuthScope._SYSTEM_READ
+        ]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(adminContext);
+
+      const result = await scopeMiddleware.validateScope(
+        'valid-token',
+        'memory_store',
+        'manage'
+      );
+
+      expect(result.scopes).toContain(AuthScope._MEMORY_WRITE);
+      expect(result.scopes).toContain(AuthScope._MEMORY_DELETE);
+    });
+
+    it('should deny access when user has none of the required scopes', async () => {
+      const unrelatedContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._SYSTEM_READ] // No memory management scopes
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(unrelatedContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'memory_store', 'manage')
+      ).rejects.toThrow(ScopeError);
+    });
+  });
+
+  describe('System Tools Access', () => {
+    it('should allow system tools with SYSTEM_READ scope', async () => {
+      const systemContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._SYSTEM_READ]
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(systemContext);
+
+      const result = await scopeMiddleware.validateScope(
+        'valid-token',
+        'database_health',
+        'read'
+      );
+
+      expect(result.scopes).toContain(AuthScope._SYSTEM_READ);
+    });
+
+    it('should require SYSTEM_MANAGE for system management', async () => {
+      const readOnlyContext = {
+        ...mockAuthContext,
+        scopes: [AuthScope._SYSTEM_READ] // Only read, not manage
+      };
+
+      mockAuthService.validateToken.mockResolvedValue(readOnlyContext);
+
+      await expect(
+        scopeMiddleware.validateScope('valid-token', 'database_health', 'manage')
+      ).rejects.toThrow(ScopeError);
+    });
+  });
+});

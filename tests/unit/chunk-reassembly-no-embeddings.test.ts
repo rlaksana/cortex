@@ -48,7 +48,7 @@ This architecture provides a solid foundation for our scalable system.
       kind: 'section', // This should be chunked
       scope: { project: 'test-project' },
       data: {
-        content: content,
+        content,
         title: 'Architecture Documentation'
       }
     };
@@ -332,7 +332,7 @@ This architecture provides a solid foundation for our scalable system.
   });
 
   it('should verify content integrity in reassembly', () => {
-    const originalContent = `
+    const _originalContent = `
 # Document Title
 
 ## Section 1

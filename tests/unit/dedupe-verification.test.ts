@@ -50,7 +50,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     // Mock create method
     async create(collection, data) {
       return {
-        id: 'new-entity-id-' + Math.random().toString(36).substr(2, 9),
+        id: `new-entity-id-${  Math.random().toString(36).substr(2, 9)}`,
         ...data,
         created_at: new Date().toISOString()
       };

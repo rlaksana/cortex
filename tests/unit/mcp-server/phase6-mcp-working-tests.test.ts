@@ -753,7 +753,7 @@ describe('Phase 6 MCP - Integration Scenarios', () => {
         kind: 'section',
         data: {
           title: 'API Documentation',
-          content: 'A'.repeat(3000) + ' This is comprehensive API documentation that would benefit from chunking.'
+          content: `${'A'.repeat(3000)  } This is comprehensive API documentation that would benefit from chunking.`
         }
       });
 

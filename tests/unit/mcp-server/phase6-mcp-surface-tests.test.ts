@@ -1434,7 +1434,7 @@ describe('Dedupe Behavior Through MCP', () => {
             similarity: 0.99,
             duplicateType: 'exact_match',
             reason: 'Content identical to existing item',
-            duplicateItem: duplicateItem
+            duplicateItem
           }
         ],
         errors: [],
@@ -1650,7 +1650,7 @@ describe('Dedupe Behavior Through MCP', () => {
             similarity: 0.95,
             duplicateType: 'exact_match',
             reason: 'Content identical to existing item',
-            duplicateItem: duplicateItem,
+            duplicateItem,
             linkCreated: true,
             linkType: 'duplicates'
           }
@@ -1967,7 +1967,7 @@ describe('Scope Behavior Through MCP', () => {
           scopeOperation: {
             scopeOverridden: true,
             originalScope: { project: 'original-project' },
-            overrideScope: overrideScope
+            overrideScope
           }
         }
       };

@@ -579,7 +579,7 @@ describe('SecurityMiddleware', () => {
     test('should accept valid API key format', () => {
       // Arrange
       const secureAPIKey = securityMiddleware.secureAPIKey();
-      const validAPIKey = 'ck_' + 'a'.repeat(29); // 32 chars total with ck_ prefix
+      const validAPIKey = `ck_${  'a'.repeat(29)}`; // 32 chars total with ck_ prefix
       mockRequest.headers = { 'x-api-key': validAPIKey };
 
       // Act

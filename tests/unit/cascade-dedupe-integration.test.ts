@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MemoryStoreOrchestrator } from '../../src/services/orchestrators/memory-store-orchestrator';
-import { KnowledgeItem } from '../../src/types/core-interfaces';
+// import { KnowledgeItem } from '../../src/types/core-interfaces';
 
 // Mock Qdrant client for cascade deduplication testing
 vi.mock('../../src/db/qdrant', () => ({

@@ -141,7 +141,7 @@ class LoggingTestUtils {
 
   static async createTestLogFile(filePath: string, entries: LogEntry[]): Promise<void> {
     await fs.mkdir(dirname(filePath), { recursive: true });
-    const content = entries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
+    const content = `${entries.map(entry => JSON.stringify(entry)).join('\n')  }\n`;
     await fs.writeFile(filePath, content, 'utf8');
   }
 
@@ -203,7 +203,7 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        renderTemplate: function(templateStr: string, vars: Record<string, any>): string {
+        renderTemplate(templateStr: string, vars: Record<string, any>): string {
           let rendered = templateStr;
           for (const [key, value] of Object.entries(vars)) {
             const regex = new RegExp(`\\{${key}\\}`, 'g');
@@ -223,7 +223,7 @@ describe('Logging Utilities', () => {
       const variables = { userId: 'user-123' }; // Missing action and resource
 
       const mockLoggingService = {
-        renderTemplate: function(templateStr: string, vars: Record<string, any>): string {
+        renderTemplate(templateStr: string, vars: Record<string, any>): string {
           let rendered = templateStr;
           for (const [key, value] of Object.entries(vars)) {
             const regex = new RegExp(`\\{${key}\\}`, 'g');
@@ -301,7 +301,7 @@ describe('Logging Utilities', () => {
       const invalidLevels = ['trace', 'critical', 'verbose', 'unknown'];
 
       const mockLoggingService = {
-        validateLogEntry: function(entry: LogEntry): void {
+        validateLogEntry(entry: LogEntry): void {
           if (!entry.level) {
             throw new Error('Invalid log entry: level is required');
           }
@@ -337,7 +337,7 @@ describe('Logging Utilities', () => {
       ]);
 
       const mockLoggingService = {
-        filterLogsByLevel: function(logs: LogEntry[], levels: LogLevel[]): LogEntry[] {
+        filterLogsByLevel(logs: LogEntry[], levels: LogLevel[]): LogEntry[] {
           return logs.filter(log => levels.includes(log.level));
         }
       };
@@ -362,10 +362,10 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        getLevelPriority: function(level: LogLevel): number {
+        getLevelPriority(level: LogLevel): number {
           return levelPriorities[level];
         },
-        compareLevels: function(level1: LogLevel, level2: LogLevel): number {
+        compareLevels(level1: LogLevel, level2: LogLevel): number {
           return this.getLevelPriority(level1) - this.getLevelPriority(level2);
         }
       };
@@ -384,10 +384,10 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        getLevelsForEnvironment: function(env: keyof typeof environments): LogLevel[] {
+        getLevelsForEnvironment(env: keyof typeof environments): LogLevel[] {
           return environments[env];
         },
-        shouldLog: function(level: LogLevel, env: keyof typeof environments): boolean {
+        shouldLog(level: LogLevel, env: keyof typeof environments): boolean {
           return this.getLevelsForEnvironment(env).includes(level);
         }
       };
@@ -414,10 +414,10 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        setCorrelationContext: function(context: LogCorrelationContext): void {
+        setCorrelationContext(context: LogCorrelationContext): void {
           this.correlationContext = context;
         },
-        enrichLogEntry: function(entry: LogEntry): LogEntry {
+        enrichLogEntry(entry: LogEntry): LogEntry {
           const enriched = { ...entry };
           if (this.correlationContext) {
             enriched.correlationId = this.correlationContext.correlationId;
@@ -457,7 +457,7 @@ describe('Logging Utilities', () => {
       });
 
       const mockLoggingService = {
-        extractContext: function(entry: LogEntry, keys: string[]): Record<string, any> {
+        extractContext(entry: LogEntry, keys: string[]): Record<string, any> {
           const extracted: Record<string, any> = {};
           if (entry.context) {
             for (const key of keys) {
@@ -484,11 +484,11 @@ describe('Logging Utilities', () => {
         correlationContext: null as LogCorrelationContext | null,
         asyncOperationQueue: [] as Array<() => Promise<any>>,
 
-        setCorrelationContext: function(context: LogCorrelationContext): void {
+        setCorrelationContext(context: LogCorrelationContext): void {
           this.correlationContext = context;
         },
 
-        runWithContext: function<T>(operation: () => Promise<T>): Promise<T> {
+        runWithContext<T>(operation: () => Promise<T>): Promise<T> {
           const context = this.correlationContext;
           this.asyncOperationQueue.push(async () => {
             const originalContext = this.correlationContext;
@@ -532,7 +532,7 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        mergeContexts: function(parent: LogCorrelationContext, child: Partial<LogCorrelationContext>): LogCorrelationContext {
+        mergeContexts(parent: LogCorrelationContext, child: Partial<LogCorrelationContext>): LogCorrelationContext {
           return {
             ...parent,
             ...child,
@@ -562,7 +562,7 @@ describe('Logging Utilities', () => {
       const logs = LoggingTestUtils.generateLogEntries(logCount);
 
       const mockLoggingService = {
-        writeBatchLogs: async function(logs: LogEntry[]): Promise<{ successful: number; duration: number }> {
+        async writeBatchLogs(logs: LogEntry[]): Promise<{ successful: number; duration: number }> {
           const batchStart = performance.now();
           // Simulate batch processing
           await new Promise(resolve => setTimeout(resolve, 10));
@@ -589,14 +589,14 @@ describe('Logging Utilities', () => {
         bufferSize: 100,
         flushInterval: 50,
 
-        writeLogAsync: async function(entry: LogEntry): Promise<void> {
+        async writeLogAsync(entry: LogEntry): Promise<void> {
           logBuffer.push(entry);
           if (logBuffer.length >= this.bufferSize) {
             await this.flushBuffer();
           }
         },
 
-        flushBuffer: async function(): Promise<void> {
+        async flushBuffer(): Promise<void> {
           const logsToProcess = [...logBuffer];
           logBuffer.length = 0;
           // Simulate async processing
@@ -604,7 +604,7 @@ describe('Logging Utilities', () => {
           processedLogs.push(...logsToProcess);
         },
 
-        forceFlush: async function(): Promise<void> {
+        async forceFlush(): Promise<void> {
           if (logBuffer.length > 0) {
             await this.flushBuffer();
           }
@@ -630,7 +630,7 @@ describe('Logging Utilities', () => {
         maxBatchSize: 50,
         maxMemoryUsage: 1024 * 1024, // 1MB
 
-        createOptimalBatches: function(logs: LogEntry[]): LogEntry[][] {
+        createOptimalBatches(logs: LogEntry[]): LogEntry[][] {
           const result: LogEntry[][] = [];
           let currentBatch: LogEntry[] = [];
           let currentMemoryUsage = 0;
@@ -682,7 +682,7 @@ describe('Logging Utilities', () => {
       const mockLoggingService = {
         performanceData: [] as Array<{ timestamp: number; duration: number; success: boolean }>,
 
-        writeLogWithMetrics: async function(entry: LogEntry): Promise<void> {
+        async writeLogWithMetrics(entry: LogEntry): Promise<void> {
           const startTime = performance.now();
           let success = true;
 
@@ -701,7 +701,7 @@ describe('Logging Utilities', () => {
           });
         },
 
-        calculateMetrics: function() {
+        calculateMetrics() {
           const data = this.performanceData;
           performanceMetrics.totalLogs = data.length;
           performanceMetrics.totalDuration = data.reduce((sum, d) => sum + d.duration, 0);
@@ -740,7 +740,7 @@ describe('Logging Utilities', () => {
       await fs.writeFile(logFile, largeContent, 'utf8');
 
       const mockLoggingService = {
-        parseSize: function(sizeStr: string): number {
+        parseSize(sizeStr: string): number {
           const units: Record<string, number> = {
             'B': 1, 'KB': 1024, 'MB': 1024 * 1024, 'GB': 1024 * 1024 * 1024
           };
@@ -751,7 +751,7 @@ describe('Logging Utilities', () => {
           return value * (units[unit] || 1);
         },
 
-        rotateLog: async function(fileName: string, maxSizeBytes: number): Promise<string> {
+        async rotateLog(fileName: string, maxSizeBytes: number): Promise<string> {
           const stats = await fs.stat(fileName).catch(() => null);
           if (!stats || stats.size < maxSizeBytes) {
             return fileName; // No rotation needed
@@ -780,7 +780,7 @@ describe('Logging Utilities', () => {
       await LoggingTestUtils.createTestLogFile(logFile, logEntries);
 
       const mockLoggingService = {
-        compressLogFile: async function(filePath: string): Promise<{ originalSize: number; compressedSize: number; compressionRatio: number }> {
+        async compressLogFile(filePath: string): Promise<{ originalSize: number; compressedSize: number; compressionRatio: number }> {
           const input = await fs.readFile(filePath);
           const compressed = await this.compressBuffer(input);
           const compressedPath = `${filePath}.gz`;
@@ -793,7 +793,7 @@ describe('Logging Utilities', () => {
           };
         },
 
-        compressBuffer: async function(buffer: Buffer): Promise<Buffer> {
+        async compressBuffer(buffer: Buffer): Promise<Buffer> {
           return new Promise((resolve, reject) => {
             const chunks: Buffer[] = [];
             const gzip = createGzip();
@@ -846,7 +846,7 @@ describe('Logging Utilities', () => {
       }
 
       const mockLoggingService = {
-        cleanupOldLogs: async function(directory: string, maxAgeDays: number): Promise<{ deletedFiles: number; freedSpace: number }> {
+        async cleanupOldLogs(directory: string, maxAgeDays: number): Promise<{ deletedFiles: number; freedSpace: number }> {
           const files = await fs.readdir(directory);
           const cutoffTime = now - (maxAgeDays * dayMs);
           let deletedFiles = 0;
@@ -893,7 +893,7 @@ describe('Logging Utilities', () => {
       ];
 
       const mockLoggingService = {
-        filterAndRoute: function(logs: LogEntry[], routingRules: Array<{ condition: (log: LogEntry) => boolean; destination: string }>): Record<string, LogEntry[]> {
+        filterAndRoute(logs: LogEntry[], routingRules: Array<{ condition: (log: LogEntry) => boolean; destination: string }>): Record<string, LogEntry[]> {
           const routed: Record<string, LogEntry[]> = {};
 
           for (const log of logs) {
@@ -964,7 +964,7 @@ describe('Logging Utilities', () => {
           }
         },
 
-        maskObject: function(obj: any): any {
+        maskObject(obj: any): any {
           if (typeof obj !== 'object' || obj === null) {
             return obj;
           }
@@ -982,7 +982,7 @@ describe('Logging Utilities', () => {
           return masked;
         },
 
-        shouldMaskKey: function(key: string): boolean {
+        shouldMaskKey(key: string): boolean {
           const lowerKey = key.toLowerCase();
           return this.config.security.masking.patterns.some(pattern =>
             lowerKey.includes(pattern.toLowerCase())
@@ -1010,7 +1010,7 @@ describe('Logging Utilities', () => {
       ];
 
       const mockLoggingService = {
-        classifySecurityEvent: function(event: any): { severity: string; category: string; requiresInvestigation: boolean } {
+        classifySecurityEvent(event: any): { severity: string; category: string; requiresInvestigation: boolean } {
           const { type } = event;
 
           if (type === 'login_failure' || type === 'suspicious_activity') {
@@ -1024,7 +1024,7 @@ describe('Logging Utilities', () => {
           }
         },
 
-        createSecurityLogEntry: function(event: any): LogEntry {
+        createSecurityLogEntry(event: any): LogEntry {
           const classification = this.classifySecurityEvent(event);
           return LoggingTestUtils.generateLogEntry({
             level: classification.severity === 'high' ? 'error' :
@@ -1065,11 +1065,11 @@ describe('Logging Utilities', () => {
       const mockLoggingService = {
         auditTrail: [] as any[],
 
-        addAuditEvent: function(event: any): void {
+        addAuditEvent(event: any): void {
           const auditEntry = {
             id: `audit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             timestamp: event.timestamp || Date.now(),
-            event: event,
+            event,
             checksum: this.calculateChecksum(event),
             sequence: this.auditTrail.length + 1
           };
@@ -1077,7 +1077,7 @@ describe('Logging Utilities', () => {
           this.auditTrail.push(auditEntry);
         },
 
-        calculateChecksum: function(data: any): string {
+        calculateChecksum(data: any): string {
           // Simple checksum implementation for testing
           const str = JSON.stringify(data);
           let hash = 0;
@@ -1089,7 +1089,7 @@ describe('Logging Utilities', () => {
           return hash.toString(16);
         },
 
-        verifyAuditTrail: function(): boolean {
+        verifyAuditTrail(): boolean {
           for (const entry of this.auditTrail) {
             const expectedChecksum = this.calculateChecksum(entry.event);
             if (entry.checksum !== expectedChecksum) {
@@ -1132,7 +1132,7 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        generateComplianceReport: async function(regulation: string, data: any, dateRange: { start: Date; end: Date }) {
+        async generateComplianceReport(regulation: string, data: any, dateRange: { start: Date; end: Date }) {
           const report = {
             regulation,
             period: {
@@ -1212,7 +1212,7 @@ describe('Logging Utilities', () => {
       ];
 
       const mockLoggingService = {
-        analyzePatterns: function(logs: LogEntry[]): { patterns: Array<{ message: string; count: number; frequency: number }>; anomalies: Array<{ type: string; description: string; severity: string }> } {
+        analyzePatterns(logs: LogEntry[]): { patterns: Array<{ message: string; count: number; frequency: number }>; anomalies: Array<{ type: string; description: string; severity: string }> } {
           const messageCounts: Record<string, number> = {};
 
           // Count message patterns
@@ -1301,7 +1301,7 @@ describe('Logging Utilities', () => {
       ];
 
       const mockLoggingService = {
-        extractPerformanceMetrics: function(logs: LogEntry[]): {
+        extractPerformanceMetrics(logs: LogEntry[]): {
           endpoints: Array<{ endpoint: string; avgDuration: number; maxDuration: number; requestCount: number }>;
           overall: { avgDuration: number; maxDuration: number; memoryUsage: number; slowRequests: number };
         } {
@@ -1369,7 +1369,7 @@ describe('Logging Utilities', () => {
       ];
 
       const mockLoggingService = {
-        analyzeUserBehavior: function(logs: Array<{ userId: string; action: string; timestamp: number; resource: string }>): {
+        analyzeUserBehavior(logs: Array<{ userId: string; action: string; timestamp: number; resource: string }>): {
           users: Record<string, { sessionDuration: number; actions: Array<{ action: string; resource: string; timestamp: number }>; mostActiveResource: string }>;
           insights: Array<{ type: string; description: string; users: string[] }>;
         } {
@@ -1452,17 +1452,17 @@ describe('Logging Utilities', () => {
         prometheus: {
           metrics: new Map(),
 
-          incrementCounter: function(name: string, labels: Record<string, string> = {}): void {
+          incrementCounter(name: string, labels: Record<string, string> = {}): void {
             const key = `${name}:${JSON.stringify(labels)}`;
             this.metrics.set(key, (this.metrics.get(key) || 0) + 1);
           },
 
-          setGauge: function(name: string, value: number, labels: Record<string, string> = {}): void {
+          setGauge(name: string, value: number, labels: Record<string, string> = {}): void {
             const key = `${name}:${JSON.stringify(labels)}`;
             this.metrics.set(key, value);
           },
 
-          observeHistogram: function(name: string, value: number, labels: Record<string, string> = {}): void {
+          observeHistogram(name: string, value: number, labels: Record<string, string> = {}): void {
             const key = `${name}:${JSON.stringify(labels)}`;
             const values = this.metrics.get(key) || [];
             values.push(value);
@@ -1472,7 +1472,7 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        sendMetricsToPrometheus: function(logs: LogEntry[]): void {
+        sendMetricsToPrometheus(logs: LogEntry[]): void {
           logs.forEach(log => {
             // Increment log counter
             mockMonitoringService.prometheus.incrementCounter('logs_total', {
@@ -1519,7 +1519,7 @@ describe('Logging Utilities', () => {
       let subscriptionIdCounter = 0;
 
       const mockLoggingService = {
-        createLogStream: function() {
+        createLogStream() {
           let isActive = true;
           let subscriptionId: string | null = null;
 
@@ -1548,7 +1548,7 @@ describe('Logging Utilities', () => {
           };
         },
 
-        broadcastLog: function(log: LogEntry): void {
+        broadcastLog(log: LogEntry): void {
           for (const [id, callback] of subscribers) {
             try {
               callback(log);
@@ -1597,7 +1597,7 @@ describe('Logging Utilities', () => {
       const aggregatedLogs: Array<{ index: string; log: LogEntry; timestamp: number }> = [];
 
       const mockElasticsearchService = {
-        indexLog: async function(index: string, log: LogEntry): Promise<void> {
+        async indexLog(index: string, log: LogEntry): Promise<void> {
           aggregatedLogs.push({
             index,
             log,
@@ -1605,7 +1605,7 @@ describe('Logging Utilities', () => {
           });
         },
 
-        searchLogs: async function(query: any): Promise<LogEntry[]> {
+        async searchLogs(query: any): Promise<LogEntry[]> {
           return aggregatedLogs
             .filter(entry => entry.index === query.index)
             .map(entry => entry.log);
@@ -1613,7 +1613,7 @@ describe('Logging Utilities', () => {
       };
 
       const mockLoggingService = {
-        sendToElasticsearch: async function(logs: LogEntry[], indexPrefix: string = 'logs'): Promise<void> {
+        async sendToElasticsearch(logs: LogEntry[], indexPrefix: string = 'logs'): Promise<void> {
           for (const log of logs) {
             const date = new Date(log.timestamp).toISOString().split('T')[0];
             const index = `${indexPrefix}-${date}`;
@@ -1621,7 +1621,7 @@ describe('Logging Utilities', () => {
           }
         },
 
-        queryFromElasticsearch: async function(index: string, query: LogQueryOptions): Promise<LogEntry[]> {
+        async queryFromElasticsearch(index: string, query: LogQueryOptions): Promise<LogEntry[]> {
           const logs = await mockElasticsearchService.searchLogs({ index });
 
           return logs.filter(log => {
@@ -1668,7 +1668,7 @@ describe('Logging Utilities', () => {
       const dashboardWidgets = new Map();
 
       const mockDashboardService = {
-        createWidget: function(id: string, config: any): void {
+        createWidget(id: string, config: any): void {
           dashboardWidgets.set(id, {
             ...config,
             lastUpdated: new Date().toISOString(),
@@ -1676,7 +1676,7 @@ describe('Logging Utilities', () => {
           });
         },
 
-        updateWidgetData: function(id: string, data: any): void {
+        updateWidgetData(id: string, data: any): void {
           const widget = dashboardWidgets.get(id);
           if (widget) {
             widget.data = data;
@@ -1684,13 +1684,13 @@ describe('Logging Utilities', () => {
           }
         },
 
-        getWidget: function(id: string): any {
+        getWidget(id: string): any {
           return dashboardWidgets.get(id);
         }
       };
 
       const mockLoggingService = {
-        createDashboardWidgets: function(): void {
+        createDashboardWidgets(): void {
           // Error rate widget
           mockDashboardService.createWidget('error-rate', {
             type: 'gauge',
@@ -1716,7 +1716,7 @@ describe('Logging Utilities', () => {
           });
         },
 
-        updateDashboardData: async function(logs: LogEntry[]): Promise<void> {
+        async updateDashboardData(logs: LogEntry[]): Promise<void> {
           const totalLogs = logs.length;
           const errorLogs = logs.filter(log => ['error', 'fatal'].includes(log.level));
           const errorRate = totalLogs > 0 ? (errorLogs.length / totalLogs) * 100 : 0;

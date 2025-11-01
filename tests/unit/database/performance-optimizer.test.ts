@@ -440,8 +440,8 @@ class DatabasePerformanceOptimizer {
 
     return {
       queryLatency: Math.random() * 1000, // ms
-      indexHitRate: indexHitRate,
-      cacheHitRate: cacheHitRate,
+      indexHitRate,
+      cacheHitRate,
       memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
       throughput: Math.random() * 1000, // operations per second
       connectionUtilization: Math.random(), // 0-1

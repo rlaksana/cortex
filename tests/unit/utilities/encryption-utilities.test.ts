@@ -7,21 +7,22 @@
  * standards, and integration and security.
  */
 
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import crypto from 'crypto';
 import { SecurityUtils, type SecurityConfig } from '../../../src/utils/security';
 
 // Mock dependencies
-jest.mock('bcryptjs', () => ({
-  hash: jest.fn(),
-  compare: jest.fn()
+vi.mock('bcryptjs', () => ({
+  hash: vi.fn(),
+  compare: vi.fn()
 }));
 
-jest.mock('../../../src/utils/logger', () => ({
+vi.mock('../../../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    warn: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn()
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
   }
 }));
 
@@ -194,11 +195,11 @@ class MockEncryptionUtils {
 }
 
 describe('Encryption Operations', () => {
-  let mockSecurityUtils: jest.Mocked<SecurityUtils>;
+  let mockSecurityUtils: any;
   let mockConfig: SecurityConfig;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     mockConfig = {
       password_min_length: 8,
@@ -216,38 +217,38 @@ describe('Encryption Operations', () => {
     };
 
     mockSecurityUtils = {
-      encryptSensitiveData: jest.fn(),
-      decryptSensitiveData: jest.fn(),
-      generateSecureToken: jest.fn(),
-      hashToken: jest.fn(),
-      verifyTokenHash: jest.fn(),
-      generateApiKey: jest.fn(),
-      generateSessionToken: jest.fn(),
-      timingSafeEqual: jest.fn(),
-      hashPassword: jest.fn(),
-      verifyPassword: jest.fn(),
-      validatePassword: jest.fn(),
-      generateSecurePassword: jest.fn(),
-      sanitizeInput: jest.fn(),
-      sanitizeEmail: jest.fn(),
-      sanitizeUsername: jest.fn(),
-      recordLoginAttempt: jest.fn(),
-      isAccountLocked: jest.fn(),
-      lockAccount: jest.fn(),
-      unlockAccount: jest.fn(),
-      checkRateLimit: jest.fn(),
-      getRateLimitStatus: jest.fn(),
-      getSecurityHeaders: jest.fn(),
-      isValidScope: jest.fn(),
-      isValidRole: jest.fn(),
-      validateScopes: jest.fn(),
-      validateId: jest.fn(),
-      generateSecureId: jest.fn(),
-      auditLog: jest.fn(),
-      isValidIP: jest.fn(),
-      isPrivateIP: jest.fn(),
-      extractIPFromRequest: jest.fn(),
-      getSecurityMetrics: jest.fn()
+      encryptSensitiveData: vi.fn(),
+      decryptSensitiveData: vi.fn(),
+      generateSecureToken: vi.fn(),
+      hashToken: vi.fn(),
+      verifyTokenHash: vi.fn(),
+      generateApiKey: vi.fn(),
+      generateSessionToken: vi.fn(),
+      timingSafeEqual: vi.fn(),
+      hashPassword: vi.fn(),
+      verifyPassword: vi.fn(),
+      validatePassword: vi.fn(),
+      generateSecurePassword: vi.fn(),
+      sanitizeInput: vi.fn(),
+      sanitizeEmail: vi.fn(),
+      sanitizeUsername: vi.fn(),
+      recordLoginAttempt: vi.fn(),
+      isAccountLocked: vi.fn(),
+      lockAccount: vi.fn(),
+      unlockAccount: vi.fn(),
+      checkRateLimit: vi.fn(),
+      getRateLimitStatus: vi.fn(),
+      getSecurityHeaders: vi.fn(),
+      isValidScope: vi.fn(),
+      isValidRole: vi.fn(),
+      validateScopes: vi.fn(),
+      validateId: vi.fn(),
+      generateSecureId: vi.fn(),
+      auditLog: vi.fn(),
+      isValidIP: vi.fn(),
+      isPrivateIP: vi.fn(),
+      extractIPFromRequest: vi.fn(),
+      getSecurityMetrics: vi.fn()
     } as any;
   });
 
@@ -691,12 +692,12 @@ describe('Encryption Operations', () => {
       const maskPII = (data: string, type: string): string => {
         switch (type) {
           case 'ssn':
-            return '***-**-' + data.slice(-4);
+            return `***-**-${  data.slice(-4)}`;
           case 'creditcard':
-            return '****-****-****-' + data.slice(-4);
+            return `****-****-****-${  data.slice(-4)}`;
           case 'email':
             const [username, domain] = data.split('@');
-            return username.slice(0, 2) + '***@' + domain;
+            return `${username.slice(0, 2)  }***@${  domain}`;
           default:
             return data;
         }
@@ -874,8 +875,8 @@ describe('Encryption Operations', () => {
       const password = 'SecurePassword123!';
       const hashedPassword = 'hashed_password_value';
 
-      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as any).mockResolvedValue(hashedPassword);
+      (bcrypt.compare as any).mockResolvedValue(true);
 
       mockSecurityUtils.hashPassword(password).then(result => {
         expect(result).toBe(hashedPassword);

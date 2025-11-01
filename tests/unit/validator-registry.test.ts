@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { KnowledgeItem } from '../../../types/core-interfaces';
-import { ValidatorRegistry } from '../../services/validation/validator-registry';
-import type { BusinessValidator, ValidationResult } from '../../services/validation/validator-registry';
+import { ValidatorRegistry, type BusinessValidator } from '../../src/services/validation/validator-registry';
 
 describe('ValidatorRegistry', () => {
   let validatorRegistry: ValidatorRegistry;
@@ -11,7 +10,7 @@ describe('ValidatorRegistry', () => {
     validatorRegistry = new ValidatorRegistry();
     mockValidator = {
       getType: () => 'decision',
-      validate: async (item: KnowledgeItem) => ({
+      validate: async (_item: KnowledgeItem) => ({
         valid: true,
         errors: [],
         warnings: [],
@@ -35,7 +34,7 @@ describe('ValidatorRegistry', () => {
     it('should allow overriding existing validators', () => {
       const mockValidator2: BusinessValidator = {
         getType: () => 'decision',
-        validate: async (item: KnowledgeItem) => ({
+        validate: async (_item: KnowledgeItem) => ({
           valid: false,
           errors: ['New validator error'],
           warnings: [],

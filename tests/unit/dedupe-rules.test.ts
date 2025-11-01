@@ -354,7 +354,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'test-project' },
         data: { content: `Test content ${index}` },
-        created_at: new Date.now(Date.now() + Math.random() * 1000).toISOString()
+        created_at: new Date(Date.now() + Math.random() * 1000).toISOString()
       }));
 
       // Mock response for large batch
@@ -385,7 +385,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: index % 2 === 0 ? 'entity' : 'decision',
         scope: { project: 'test-project', branch: index % 3 === 0 ? 'main' : 'dev' },
         data: { content: `Test content ${index}` },
-        created_at: new Date.now(Date.now() + Math.random() * 1000).toISOString()
+        created_at: new Date(Date.now() + Math.random() * 1000).toISOString()
       }));
 
       // Mock response for statistics tracking

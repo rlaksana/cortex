@@ -6,10 +6,10 @@
  * and reducing boilerplate across test files.
  */
 
-import { vi } from 'vitest';
-import type { QdrantClient } from '@qdrant/js-client-rest';
-import type { Logger } from 'pino';
-import type { Environment } from '../src/config/environment';
+// import { vi } from 'vitest';
+// import type { QdrantClient } from '@qdrant/js-client-rest';
+// import type { Logger } from 'pino';
+// import type { Environment } from '../src/config/environment';
 import { MockEmbeddingService, type MockEmbeddingConfig } from './mock-embedding-service.js';
 
 /**
@@ -133,7 +133,7 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
       })),
       getSecurityConfig: vi.fn(() => ({
         jwtSecret: config.JWT_SECRET,
-        jwtRefreshSecret: config.JWT_SECRET + '-refresh',
+        jwtRefreshSecret: `${config.JWT_SECRET}-refresh`,
         encryptionKey: config.ENCRYPTION_KEY,
       })),
       getRawConfig: vi.fn(() => config),
@@ -180,7 +180,7 @@ export interface MockQdrantConfig {
   collections?: any[];
   points?: any[];
   searchResults?: any[];
-  healthStatus?: boolean;
+  _healthStatus?: boolean;
 }
 
 export const createMockQdrantClient = (config: MockQdrantConfig = {}) => {
@@ -190,13 +190,12 @@ export const createMockQdrantClient = (config: MockQdrantConfig = {}) => {
     collections = [{ name: 'test-collection', points_count: 0 }],
     points = [],
     searchResults = [],
-    healthStatus = true,
   } = config;
 
   const createAsyncMethod = <T extends any[], R>(
     returnValue: R,
     shouldFailThis: boolean = false
-  ) => vi.fn(async (...args: T) => {
+  ) => vi.fn(async (..._args: T) => {
     if (shouldFail || shouldFailThis) {
       throw new Error(`Mock Qdrant method failed`);
     }
@@ -415,7 +414,7 @@ export const createMockDatabaseAdapter = (config: MockDatabaseConfig = {}) => {
   } = config;
 
   const createAsyncOperation = <T>(returnValue: T, operationName: string) =>
-    vi.fn(async (...args: any[]) => {
+    vi.fn(async (..._args: any[]) => {
       if (latency > 0) {
         await new Promise(resolve => setTimeout(resolve, latency));
       }
@@ -464,7 +463,7 @@ export interface MockAuthServiceConfig {
   failOperations?: string[];
   validUsers?: any[];
   validApiKeys?: any[];
-  tokens?: Record<string, any>;
+  _tokens?: Record<string, any>;
 }
 
 export const createMockAuthService = (config: MockAuthServiceConfig = {}) => {
@@ -494,11 +493,11 @@ export const createMockAuthService = (config: MockAuthServiceConfig = {}) => {
         created_at: new Date().toISOString(),
       },
     ],
-    tokens = {},
+    _tokens = {},
   } = config;
 
   const createAsyncOperation = <T>(returnValue: T, operationName: string) =>
-    vi.fn(async (...args: any[]) => {
+    vi.fn(async (..._args: any[]) => {
       if (shouldFail || failOperations.includes(operationName)) {
         throw new Error(`Auth operation ${operationName} failed`);
       }
@@ -550,7 +549,7 @@ export const createMockAuthService = (config: MockAuthServiceConfig = {}) => {
       ip_address: '127.0.0.1',
       user_agent: 'test-agent',
       created_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + 3600000).toISOString(),
+      expires_at: new Date(Date.now() + 3600_000).toISOString(),
       is_active: true,
     })),
     getSession: vi.fn(() => ({
@@ -598,7 +597,7 @@ export const createMockMemoryStore = (config: MockMemoryStoreConfig = {}) => {
   } = config;
 
   const createAsyncOperation = <T>(returnValue: T, operationName: string) =>
-    vi.fn(async (...args: any[]) => {
+    vi.fn(async (..._args: any[]) => {
       if (shouldFail || failOperations.includes(operationName)) {
         throw new Error(`Memory store operation ${operationName} failed`);
       }

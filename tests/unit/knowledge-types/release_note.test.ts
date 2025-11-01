@@ -306,7 +306,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note' as const,
         scope: { project: 'test', branch: 'main' },
         data: {
-          version: 'v' + '1.0.0'.repeat(25), // Exceeds 100 chars
+          version: `v${  '1.0.0'.repeat(25)}`, // Exceeds 100 chars
           release_date: '2025-01-15T10:00:00Z',
           summary: 'Test release'
         }

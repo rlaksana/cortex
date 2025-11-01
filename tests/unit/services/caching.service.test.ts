@@ -2518,7 +2518,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Generate performance report
       const performanceReport = {
         timeRange: { start: startTime, end: endTime, duration: endTime - startTime },
-        operations: operations,
+        operations,
         statistics: {
           itemCount: stats.itemCount,
           memoryUsage: stats.memoryUsageBytes,

@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { SearchQuery, SearchResult } from '../../../src/types/core-interfaces';
-import { searchService } from '../../../src/services/search/search-service';
+import { searchService } from '../../src/services/search/search-service';
 
 describe('P4-T4.3: Entity-First Search (Simple)', () => {
   beforeEach(() => {

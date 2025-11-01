@@ -113,7 +113,7 @@ describe('Import Service - Core Import Operations', () => {
   let mockMemoryStore: any;
   let mockValidation: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockMemoryStore = await import('../../../src/services/memory-store.js');
     mockValidation = await import('../../../src/services/validation/validation-service.js');

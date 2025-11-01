@@ -12,6 +12,11 @@
 
 import { computeContentHash } from '../../../src/utils/hash';
 
+// Setup global performance mock
+(global as any).performance = {
+  now: () => Date.now()
+};
+
 describe('Hashing Utilities', () => {
   describe('computeContentHash', () => {
     it('should generate consistent hash for same content', () => {
@@ -574,8 +579,8 @@ function example()    {
         'aaaaaaaaaa',
         'aaaaaaaaab',
         'baaaaaaaaa',
-        'a'.repeat(50) + 'b',
-        'a'.repeat(49) + 'ba',
+        `${'a'.repeat(50)  }b`,
+        `${'a'.repeat(49)  }ba`,
       ];
 
       const hashes = testCases.map(content => computeContentHash(content));

@@ -2898,7 +2898,7 @@ describe('Performance and Monitoring - Optimization Analytics', () => {
 
     resources.forEach(resource => {
       const current = params.currentCapacity[resource as keyof typeof params.currentCapacity] as number;
-      const growthRate = params.growthProjections[resource.replace('max', '').toLowerCase() + 'Rate'] || 0.15;
+      const growthRate = params.growthProjections[`${resource.replace('max', '').toLowerCase()  }Rate`] || 0.15;
       const predicted = current * (1 + growthRate);
       const shortageDate = new Date(Date.now() + (90 * 24 * 60 * 60 * 1000)); // 90 days from now
 

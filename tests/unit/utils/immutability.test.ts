@@ -18,6 +18,15 @@ import {
   ImmutabilityViolationError,
 } from '../../../src/utils/immutability';
 
+import { vi } from 'vitest';
+
+// Setup global performance mock if not available
+if (typeof global.performance === 'undefined') {
+  (global as any).performance = {
+    now: () => Date.now()
+  };
+}
+
 // Mock the dependencies
 vi.mock('../../../src/db/pool.js', () => ({
   dbQdrantClient: {
@@ -27,7 +36,7 @@ vi.mock('../../../src/db/pool.js', () => ({
 }));
 
 // Mock database pool (currently not used by placeholder implementation)
-const mockDbQdrantClient = {
+const _mockDbQdrantClient = {
   query: vi.fn(),
   initialize: vi.fn(),
   close: vi.fn(),

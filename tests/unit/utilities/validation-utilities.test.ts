@@ -70,7 +70,7 @@ const mockSchemaValidator: any = {
   getFormats: vi.fn()
 } as any;
 
-const mockInputSanitizer: anyInputSanitizer> = {
+const mockInputSanitizer: any = {
   sanitize: vi.fn(),
   sanitizeBatch: vi.fn(),
   validateSanitized: vi.fn(),
@@ -78,7 +78,7 @@ const mockInputSanitizer: anyInputSanitizer> = {
   removeSanitizationRule: vi.fn()
 } as any;
 
-const mockBusinessRuleValidator: anyBusinessRuleValidator> = {
+const mockBusinessRuleValidator: any = {
   validate: vi.fn(),
   addRule: vi.fn(),
   removeRule: vi.fn(),
@@ -86,7 +86,7 @@ const mockBusinessRuleValidator: anyBusinessRuleValidator> = {
   validateWithContext: vi.fn()
 } as any;
 
-const mockValidationCache: anyValidationCache> = {
+const mockValidationCache: any = {
   get: vi.fn(),
   set: vi.fn(),
   delete: vi.fn(),
@@ -96,7 +96,7 @@ const mockValidationCache: anyValidationCache> = {
   cleanup: vi.fn()
 } as any;
 
-const mockValidationReporter: anyValidationReporter> = {
+const mockValidationReporter: any = {
   reportErrors: vi.fn(),
   formatErrors: vi.fn(),
   aggregateErrors: vi.fn(),

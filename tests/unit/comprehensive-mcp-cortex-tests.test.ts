@@ -51,8 +51,8 @@ import {
   generateCompleteItem,
   generateCompleteItems,
   generateScopedItems,
-  generateEdgeCaseItems,
-  generateStressTestItems,
+  _generateEdgeCaseItems,
+  _generateStressTestItems,
   generateSearchTestData,
   validateTestItem
 } from '../fixtures/test-data-factory.js';
@@ -63,8 +63,8 @@ import {
   DATABASE_HEALTH_SCENARIOS,
   DATABASE_STATS_SCENARIOS,
   PERFORMANCE_SCENARIOS,
-  executeAllParameterizedTests,
-  executePerformanceTests
+  _executeAllParameterizedTests,
+  _executePerformanceTests
 } from '../utils/parameterized-test-framework.js';
 
 // ============================================================================

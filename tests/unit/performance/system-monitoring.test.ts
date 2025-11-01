@@ -580,7 +580,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         'critical': { delay: 0, actions: ['immediate_call', 'create_incident', 'send_sms'] } // Immediate
       };
 
-      let escalatedAlerts: any[] = [];
+      const escalatedAlerts: any[] = [];
 
       // Mock escalation handler
       performanceCollector.on('alert', (alert: PerformanceAlert) => {
@@ -739,7 +739,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           event: event.action,
           entity: event.entity,
           details: { ...event },
-          sessionId: 'test_session_' + Math.random().toString(36).substr(2, 9)
+          sessionId: `test_session_${  Math.random().toString(36).substr(2, 9)}`
         };
         auditLog.push(auditEntry);
 

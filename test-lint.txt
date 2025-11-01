@@ -1,0 +1,12 @@
+
+Oops! Something went wrong! :(
+
+ESLint: 9.38.0
+
+A configuration object specifies rule "@typescript-eslint/no-unused-vars", but could not find plugin "@typescript-eslint".
+
+Common causes of this problem include:
+
+1. The "@typescript-eslint" plugin is not defined in your configuration file.
+2. The "@typescript-eslint" plugin is not defined within the same configuration object in which the "@typescript-eslint/no-unused-vars" rule is applied.
+
