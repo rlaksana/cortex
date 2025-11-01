@@ -1,0 +1,76 @@
+{
+  "testProfile": {
+    "name": "mcp-cortex-test-profile-with-mocks",
+    "description": "Mandatory test profile with mocked embedding service for CI/CD",
+    "version": "1.0.0"
+  },
+  "environment": {
+    "NODE_ENV": "test",
+    "LOG_LEVEL": "error",
+    "MOCK_EXTERNAL_SERVICES": true,
+    "SEMANTIC_CHUNKING_OPTIONAL": true,
+    "ENABLE_CACHING": false,
+    "ENABLE_METRICS": false,
+    "ENABLE_AUTH": false,
+    "ENABLE_LOGGING": true
+  },
+  "database": {
+    "QDRANT_URL": "http://localhost:6333",
+    "QDRANT_COLLECTION_NAME": "cortex-test",
+    "VECTOR_SIZE": 1536,
+    "EMBEDDING_MODEL": "text-embedding-ada-002",
+    "EMBEDDING_BATCH_SIZE": 10
+  },
+  "mockServices": {
+    "embedding": {
+      "enabled": true,
+      "deterministic": true,
+      "dimension": 1536,
+      "latency": 0,
+      "shouldFail": false,
+      "cacheEnabled": false
+    },
+    "semanticAnalyzer": {
+      "enabled": true,
+      "deterministicBoundaries": true,
+      "mockBoundaries": [
+        { "position": 1000, "strength": 0.8, "type": "semantic" },
+        { "position": 2000, "strength": 0.9, "type": "semantic" },
+        { "position": 3000, "strength": 0.7, "type": "semantic" }
+      ]
+    },
+    "qdrant": {
+      "enabled": true,
+      "inMemory": false,
+      "allowExternal": true
+    }
+  },
+  "testing": {
+    "timeout": 30000,
+    "retries": 3,
+    "parallel": true,
+    "isolation": true,
+    "coverage": true,
+    "dryRun": false
+  },
+  "validation": {
+    "strictMode": true,
+    "failOnWarnings": false,
+    "validateSchemas": true,
+    "validateTypes": true
+  },
+  "reporting": {
+    "junit": true,
+    "json": true,
+    "coverage": true,
+    "performance": false,
+    "detailed": false
+  },
+  "ci": {
+    "headless": true,
+    "noInteraction": true,
+    "failFast": true,
+    "maxWorkers": 4,
+    "reportTo": ["junit", "json"]
+  }
+}
