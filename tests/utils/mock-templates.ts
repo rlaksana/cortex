@@ -6,8 +6,8 @@
  * and reducing boilerplate across test files.
  */
 
-// import { vi } from 'vitest';
-// import type { QdrantClient } from '@qdrant/js-client-rest';
+import { vi } from 'vitest';
+import type { QdrantClient } from '@qdrant/js-client-rest';
 // import type { Logger } from 'pino';
 // import type { Environment } from '../src/config/environment';
 import { MockEmbeddingService, type MockEmbeddingConfig } from './mock-embedding-service.js';
@@ -112,11 +112,16 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
       isTestMode: vi.fn(() => config.NODE_ENV === 'test'),
       getFeatureFlag: vi.fn((flag: string) => {
         switch (flag) {
-          case 'auth': return config.ENABLE_AUTH;
-          case 'caching': return config.ENABLE_CACHING;
-          case 'metrics': return config.ENABLE_METRICS;
-          case 'logging': return true;
-          default: return false;
+          case 'auth':
+            return config.ENABLE_AUTH;
+          case 'caching':
+            return config.ENABLE_CACHING;
+          case 'metrics':
+            return config.ENABLE_METRICS;
+          case 'logging':
+            return true;
+          default:
+            return false;
         }
       }),
       validateRequiredConfig: vi.fn(() => ({ valid: true, errors: [] })),
@@ -192,15 +197,13 @@ export const createMockQdrantClient = (config: MockQdrantConfig = {}) => {
     searchResults = [],
   } = config;
 
-  const createAsyncMethod = <T extends any[], R>(
-    returnValue: R,
-    shouldFailThis: boolean = false
-  ) => vi.fn(async (..._args: T) => {
-    if (shouldFail || shouldFailThis) {
-      throw new Error(`Mock Qdrant method failed`);
-    }
-    return returnValue;
-  });
+  const createAsyncMethod = <T extends any[], R>(returnValue: R, shouldFailThis: boolean = false) =>
+    vi.fn(async (..._args: T) => {
+      if (shouldFail || shouldFailThis) {
+        throw new Error(`Mock Qdrant method failed`);
+      }
+      return returnValue;
+    });
 
   const client = {
     // Core Qdrant methods
@@ -376,7 +379,7 @@ export const createMockQdrantClient = (config: MockQdrantConfig = {}) => {
   };
 
   // Apply failures to specified methods
-  failMethods.forEach(methodName => {
+  failMethods.forEach((methodName) => {
     const path = methodName.split('.');
     let target = client;
     for (let i = 0; i < path.length - 1; i++) {
@@ -416,7 +419,7 @@ export const createMockDatabaseAdapter = (config: MockDatabaseConfig = {}) => {
   const createAsyncOperation = <T>(returnValue: T, operationName: string) =>
     vi.fn(async (..._args: any[]) => {
       if (latency > 0) {
-        await new Promise(resolve => setTimeout(resolve, latency));
+        await new Promise((resolve) => setTimeout(resolve, latency));
       }
       if (shouldFail || failOperations.includes(operationName)) {
         throw new Error(`Database operation ${operationName} failed`);
@@ -513,14 +516,17 @@ export const createMockAuthService = (config: MockAuthServiceConfig = {}) => {
     // Token operations
     generateAccessToken: vi.fn(() => 'test-access-token'),
     generateRefreshToken: vi.fn(() => 'test-refresh-token'),
-    verifyAccessToken: createAsyncOperation({
-      sub: 'test-user-1',
-      username: 'testuser',
-      role: 'user',
-      scopes: ['memory:read', 'memory:write'],
-      jti: 'test-token-id',
-      session_id: 'test-session-id',
-    }, 'verifyAccessToken'),
+    verifyAccessToken: createAsyncOperation(
+      {
+        sub: 'test-user-1',
+        username: 'testuser',
+        role: 'user',
+        scopes: ['memory:read', 'memory:write'],
+        jti: 'test-token-id',
+        session_id: 'test-session-id',
+      },
+      'verifyAccessToken'
+    ),
     verifyRefreshToken: vi.fn(() => ({
       sub: 'test-user-1',
       session_id: 'test-session-id',
@@ -535,11 +541,14 @@ export const createMockAuthService = (config: MockAuthServiceConfig = {}) => {
     })),
     hashApiKey: createAsyncOperation('hashed-api-key', 'hashApiKey'),
     verifyApiKey: createAsyncOperation(true, 'verifyApiKey'),
-    validateApiKeyWithDatabase: createAsyncOperation({
-      user: validUsers[0],
-      scopes: ['memory:read', 'memory:write'],
-      apiKeyInfo: validApiKeys[0],
-    }, 'validateApiKeyWithDatabase'),
+    validateApiKeyWithDatabase: createAsyncOperation(
+      {
+        user: validUsers[0],
+        scopes: ['memory:read', 'memory:write'],
+        apiKeyInfo: validApiKeys[0],
+      },
+      'validateApiKeyWithDatabase'
+    ),
 
     // Session operations
     createSession: vi.fn(() => ({
@@ -589,12 +598,7 @@ export interface MockMemoryStoreConfig {
 }
 
 export const createMockMemoryStore = (config: MockMemoryStoreConfig = {}) => {
-  const {
-    shouldFail = false,
-    failOperations = [],
-    storedItems = [],
-    searchResults = [],
-  } = config;
+  const { shouldFail = false, failOperations = [], storedItems = [], searchResults = [] } = config;
 
   const createAsyncOperation = <T>(returnValue: T, operationName: string) =>
     vi.fn(async (..._args: any[]) => {
@@ -605,40 +609,58 @@ export const createMockMemoryStore = (config: MockMemoryStoreConfig = {}) => {
     });
 
   return {
-    store: createAsyncOperation({
-      id: 'test-memory-id',
-      status: 'stored',
-      created_at: new Date().toISOString(),
-    }, 'store'),
+    store: createAsyncOperation(
+      {
+        id: 'test-memory-id',
+        status: 'stored',
+        created_at: new Date().toISOString(),
+      },
+      'store'
+    ),
 
-    find: createAsyncOperation({
-      results: searchResults,
-      total: searchResults.length,
-      query: 'test',
-      strategy: 'semantic',
-    }, 'find'),
+    find: createAsyncOperation(
+      {
+        results: searchResults,
+        total: searchResults.length,
+        query: 'test',
+        strategy: 'semantic',
+      },
+      'find'
+    ),
 
-    update: createAsyncOperation({
-      id: 'test-memory-id',
-      status: 'updated',
-      updated_at: new Date().toISOString(),
-    }, 'update'),
+    update: createAsyncOperation(
+      {
+        id: 'test-memory-id',
+        status: 'updated',
+        updated_at: new Date().toISOString(),
+      },
+      'update'
+    ),
 
-    delete: createAsyncOperation({
-      deleted: true,
-      id: 'test-memory-id',
-    }, 'delete'),
+    delete: createAsyncOperation(
+      {
+        deleted: true,
+        id: 'test-memory-id',
+      },
+      'delete'
+    ),
 
-    batchStore: createAsyncOperation({
-      stored: storedItems.length,
-      skipped: 0,
-      errors: [],
-    }, 'batchStore'),
+    batchStore: createAsyncOperation(
+      {
+        stored: storedItems.length,
+        skipped: 0,
+        errors: [],
+      },
+      'batchStore'
+    ),
 
-    batchDelete: createAsyncOperation({
-      deleted: 1,
-      errors: [],
-    }, 'batchDelete'),
+    batchDelete: createAsyncOperation(
+      {
+        deleted: 1,
+        errors: [],
+      },
+      'batchDelete'
+    ),
 
     // Deduplication
     checkDuplicates: createAsyncOperation([], 'checkDuplicates'),
@@ -647,11 +669,14 @@ export const createMockMemoryStore = (config: MockMemoryStoreConfig = {}) => {
     findSimilar: createAsyncOperation([], 'findSimilar'),
 
     // Analytics
-    getStats: createAsyncOperation({
-      totalItems: storedItems.length,
-      itemsByType: {},
-      recentActivity: [],
-    }, 'getStats'),
+    getStats: createAsyncOperation(
+      {
+        totalItems: storedItems.length,
+        itemsByType: {},
+        recentActivity: [],
+      },
+      'getStats'
+    ),
   };
 };
 
@@ -669,14 +694,16 @@ export const createMockEmbeddingService = (config: MockEmbeddingConfig = {}) => 
  *
  * Creates mocks for all commonly used dependencies in one call
  */
-export const createMockTestEnvironment = (overrides: {
-  environment?: MockEnvironmentConfig;
-  qdrant?: MockQdrantConfig;
-  database?: MockDatabaseConfig;
-  auth?: MockAuthServiceConfig;
-  memoryStore?: MockMemoryStoreConfig;
-  embedding?: MockEmbeddingConfig;
-} = {}) => {
+export const createMockTestEnvironment = (
+  overrides: {
+    environment?: MockEnvironmentConfig;
+    qdrant?: MockQdrantConfig;
+    database?: MockDatabaseConfig;
+    auth?: MockAuthServiceConfig;
+    memoryStore?: MockMemoryStoreConfig;
+    embedding?: MockEmbeddingConfig;
+  } = {}
+) => {
   const mockEnvironment = createMockEnvironment(overrides.environment);
   const mockQdrantClient = createMockQdrantClient(overrides.qdrant);
   const mockDatabaseAdapter = createMockDatabaseAdapter(overrides.database);
@@ -697,27 +724,27 @@ export const createMockTestEnvironment = (overrides: {
     // Helper methods for common test patterns
     resetAllMocks: () => {
       mockEnvironment.getInstance.mockClear();
-      Object.values(mockQdrantClient).forEach(method => {
+      Object.values(mockQdrantClient).forEach((method) => {
         if (method && typeof method.mockClear === 'function') {
           method.mockClear();
         }
       });
-      Object.values(mockDatabaseAdapter).forEach(method => {
+      Object.values(mockDatabaseAdapter).forEach((method) => {
         if (method && typeof method.mockClear === 'function') {
           method.mockClear();
         }
       });
-      Object.values(mockAuthService).forEach(method => {
+      Object.values(mockAuthService).forEach((method) => {
         if (method && typeof method.mockClear === 'function') {
           method.mockClear();
         }
       });
-      Object.values(mockMemoryStore).forEach(method => {
+      Object.values(mockMemoryStore).forEach((method) => {
         if (method && typeof method.mockClear === 'function') {
           method.mockClear();
         }
       });
-      Object.values(mockLogger).forEach(method => {
+      Object.values(mockLogger).forEach((method) => {
         if (method && typeof method.mockClear === 'function') {
           method.mockClear();
         }

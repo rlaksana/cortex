@@ -15,7 +15,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type {
   SearchQuery,
   SearchResult,
-  MemoryFindResponse
+  MemoryFindResponse,
 } from '../../../src/types/core-interfaces';
 
 // Mock federated search service interfaces
@@ -173,7 +173,7 @@ enum AggregationStrategy {
   DEDUPLICATE_AND_BOOST = 'deduplicate_and_boost',
   WEIGHTED_AVERAGE = 'weighted_average',
   SOURCE_SPECIFIC = 'source_specific',
-  CONSENSUS_BASED = 'consensus_based'
+  CONSENSUS_BASED = 'consensus_based',
 }
 
 enum DistributionMode {
@@ -181,7 +181,7 @@ enum DistributionMode {
   SEQUENTIAL = 'sequential',
   ADAPTIVE = 'adaptive',
   PRIORITY_BASED = 'priority_based',
-  LOAD_BALANCED = 'load_balanced'
+  LOAD_BALANCED = 'load_balanced',
 }
 
 enum FailoverStrategy {
@@ -189,7 +189,7 @@ enum FailoverStrategy {
   GRACEFUL = 'graceful',
   DEGRADED = 'degraded',
   CIRCUIT_BREAKER = 'circuit_breaker',
-  CUSTOM = 'custom'
+  CUSTOM = 'custom',
 }
 
 enum PerformanceProfile {
@@ -197,7 +197,7 @@ enum PerformanceProfile {
   BALANCED = 'balanced',
   COMPREHENSIVE = 'comprehensive',
   REAL_TIME = 'real_time',
-  BATCH = 'batch'
+  BATCH = 'batch',
 }
 
 enum SourceType {
@@ -207,7 +207,7 @@ enum SourceType {
   SEARCH_ENGINE = 'search_engine',
   API_ENDPOINT = 'api_endpoint',
   FILE_SYSTEM = 'file_system',
-  EXTERNAL_SERVICE = 'external_service'
+  EXTERNAL_SERVICE = 'external_service',
 }
 
 enum HealthStatus {
@@ -215,7 +215,7 @@ enum HealthStatus {
   DEGRADED = 'degraded',
   UNHEALTHY = 'unhealthy',
   MAINTENANCE = 'maintenance',
-  UNKNOWN = 'unknown'
+  UNKNOWN = 'unknown',
 }
 
 // Mock implementation of FederatedSearchService
@@ -252,7 +252,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       aggregationMetadata,
       performanceMetrics,
       sourceHealth,
-      transactionId
+      transactionId,
     };
 
     // Cache result
@@ -269,14 +269,14 @@ class MockFederatedSearchService implements FederatedSearchService {
       registrationTime: new Date().toISOString(),
       status: 'active',
       capabilities: source.capabilities,
-      healthCheck: await this.performHealthCheck(source.id)
+      healthCheck: await this.performHealthCheck(source.id),
     };
 
     return registration;
   }
 
   async aggregateResults(sourceResults: SourceSearchResult[]): Promise<AggregatedResult> {
-    const allResults = sourceResults.flatMap(sr => sr.results);
+    const allResults = sourceResults.flatMap((sr) => sr.results);
 
     // Deduplicate results based on content similarity
     const deduplicatedResults = this.deduplicateResults(allResults);
@@ -295,7 +295,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       deduplicationStats: this.calculateDeduplicationStats(allResults, rankedResults),
       rankingMetadata: this.generateRankingMetadata(rankedResults),
       sourceContribution,
-      qualityMetrics
+      qualityMetrics,
     };
   }
 
@@ -310,7 +310,7 @@ class MockFederatedSearchService implements FederatedSearchService {
         adaptedQuery,
         estimatedTime: source.performanceProfile.averageResponseTime,
         priority: source.priority,
-        dependencies: []
+        dependencies: [],
       });
     }
 
@@ -328,7 +328,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       parallelizationStrategy,
       loadBalancing,
       optimizationHints,
-      estimatedTotalTime: this.calculateEstimatedTotalTime(distributedQueries)
+      estimatedTotalTime: this.calculateEstimatedTotalTime(distributedQueries),
     };
   }
 
@@ -345,12 +345,15 @@ class MockFederatedSearchService implements FederatedSearchService {
         performanceMetrics[sourceId] = healthStatus.metrics;
       }
 
-      if (healthStatus.status === HealthStatus.UNHEALTHY || healthStatus.status === HealthStatus.DEGRADED) {
+      if (
+        healthStatus.status === HealthStatus.UNHEALTHY ||
+        healthStatus.status === HealthStatus.DEGRADED
+      ) {
         recommendations.push({
           sourceId,
           type: healthStatus.status === HealthStatus.UNHEALTHY ? 'failover' : 'optimize',
           message: healthStatus.message || 'Source health check failed',
-          priority: healthStatus.status === HealthStatus.UNHEALTHY ? 'high' : 'medium'
+          priority: healthStatus.status === HealthStatus.UNHEALTHY ? 'high' : 'medium',
         });
       }
     }
@@ -361,7 +364,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       overallHealth,
       sourceStatuses,
       performanceMetrics,
-      recommendations
+      recommendations,
     };
   }
 
@@ -388,8 +391,8 @@ class MockFederatedSearchService implements FederatedSearchService {
       recoveryStatus: {
         status: 'in_progress',
         estimatedRecoveryTime: performanceImpact.estimatedRecoveryTime,
-        actions: ['Source re-routing completed', 'Priority adjustments applied']
-      }
+        actions: ['Source re-routing completed', 'Priority adjustments applied'],
+      },
     };
   }
 
@@ -404,7 +407,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       cacheHits.push({
         key: cacheKey,
         hitTime: Date.now() - startTime,
-        resultCount: this.queryCache.get(cacheKey)!.results.length
+        resultCount: this.queryCache.get(cacheKey)!.results.length,
       });
     }
 
@@ -413,7 +416,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       optimizationStrategies.push({
         type: 'query_simplification',
         description: 'Simplify complex query for better performance',
-        expectedGain: 0.3
+        expectedGain: 0.3,
       });
     }
 
@@ -421,7 +424,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       optimizationStrategies.push({
         type: 'type_filtering',
         description: 'Add knowledge type filters for better results',
-        expectedGain: 0.2
+        expectedGain: 0.2,
       });
     }
 
@@ -439,11 +442,13 @@ class MockFederatedSearchService implements FederatedSearchService {
       optimizationStrategies,
       performanceGains,
       cacheHits,
-      parallelizationPlan
+      parallelizationPlan,
     };
   }
 
-  async coordinateDistributedTransaction(operations: DistributedOperation[]): Promise<TransactionResult> {
+  async coordinateDistributedTransaction(
+    operations: DistributedOperation[]
+  ): Promise<TransactionResult> {
     const transactionId = this.generateTransactionId();
     const results: OperationResult[] = [];
     const rollbackLog: RollbackLog = { operations: [] };
@@ -461,7 +466,7 @@ class MockFederatedSearchService implements FederatedSearchService {
           operationId: operation.operationId,
           sourceId: operation.sourceId,
           rollbackOperation: operation.rollbackOperation,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
 
@@ -473,7 +478,7 @@ class MockFederatedSearchService implements FederatedSearchService {
         status: TransactionStatus.COMMITTED,
         results,
         rollbackLog,
-        consistencyCheck
+        consistencyCheck,
       };
     } catch (error) {
       // Rollback operations
@@ -484,7 +489,7 @@ class MockFederatedSearchService implements FederatedSearchService {
         status: TransactionStatus.ABORTED,
         results,
         rollbackLog,
-        consistencyCheck: { status: 'failed', errors: [error.message] }
+        consistencyCheck: { status: 'failed', errors: [error.message] },
       };
     }
   }
@@ -525,7 +530,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       negotiatedCapabilities,
       compatibilityMatrix,
       optimizedQueries,
-      fallbackOptions
+      fallbackOptions,
     };
   }
 
@@ -540,19 +545,19 @@ class MockFederatedSearchService implements FederatedSearchService {
 
   private selectSources(sourceIds?: string[]): DataSource[] {
     if (sourceIds && sourceIds.length > 0) {
-      return sourceIds.map(id => this.registeredSources.get(id)!).filter(Boolean);
+      return sourceIds.map((id) => this.registeredSources.get(id)!).filter(Boolean);
     }
     return Array.from(this.registeredSources.values());
   }
 
-  private async executeQueryDistribution(distribution: QueryDistribution): Promise<SourceSearchResult[]> {
+  private async executeQueryDistribution(
+    distribution: QueryDistribution
+  ): Promise<SourceSearchResult[]> {
     const results: SourceSearchResult[] = [];
 
     if (distribution.parallelizationStrategy.mode === 'parallel') {
       // Execute all queries in parallel
-      const promises = distribution.distributedQueries.map(dq =>
-        this.executeQueryForSource(dq)
-      );
+      const promises = distribution.distributedQueries.map((dq) => this.executeQueryForSource(dq));
       const sourceResults = await Promise.all(promises);
       results.push(...sourceResults);
     } else {
@@ -566,7 +571,9 @@ class MockFederatedSearchService implements FederatedSearchService {
     return results;
   }
 
-  private async executeQueryForSource(distributedQuery: DistributedQuery): Promise<SourceSearchResult> {
+  private async executeQueryForSource(
+    distributedQuery: DistributedQuery
+  ): Promise<SourceSearchResult> {
     const startTime = Date.now();
 
     // Mock execution - in reality this would call the actual source
@@ -581,9 +588,9 @@ class MockFederatedSearchService implements FederatedSearchService {
       metadata: {
         queryComplexity: this.calculateQueryComplexity(distributedQuery.adaptedQuery),
         resultQuality: Math.random(),
-        optimizationApplied: false
+        optimizationApplied: false,
       },
-      confidence: 0.8 + Math.random() * 0.2
+      confidence: 0.8 + Math.random() * 0.2,
     };
   }
 
@@ -594,18 +601,18 @@ class MockFederatedSearchService implements FederatedSearchService {
       scope: query.scope || { project: 'test' },
       data: {
         title: `Result ${i} for "${query.query}"`,
-        content: `Content for result ${i} based on the search query`
+        content: `Content for result ${i} based on the search query`,
       },
       created_at: new Date().toISOString(),
       confidence_score: Math.random(),
-      match_type: 'federated'
+      match_type: 'federated',
     }));
   }
 
   private deduplicateResults(results: SearchResult[]): SearchResult[] {
     // Simple deduplication based on title
     const seen = new Set<string>();
-    return results.filter(result => {
+    return results.filter((result) => {
       const key = result.data?.title?.toLowerCase();
       if (!key || seen.has(key)) return false;
       seen.add(key);
@@ -613,11 +620,14 @@ class MockFederatedSearchService implements FederatedSearchService {
     });
   }
 
-  private rankResultsAcrossSources(results: SearchResult[], sourceResults: SourceSearchResult[]): SearchResult[] {
+  private rankResultsAcrossSources(
+    results: SearchResult[],
+    sourceResults: SourceSearchResult[]
+  ): SearchResult[] {
     // Simple ranking by confidence score with source weighting
     return results.sort((a, b) => {
-      const aSource = sourceResults.find(sr => sr.results.includes(a));
-      const bSource = sourceResults.find(sr => sr.results.includes(b));
+      const aSource = sourceResults.find((sr) => sr.results.includes(a));
+      const bSource = sourceResults.find((sr) => sr.results.includes(b));
 
       const aScore = a.confidence_score * (aSource?.confidence || 1);
       const bScore = b.confidence_score * (bSource?.confidence || 1);
@@ -626,62 +636,73 @@ class MockFederatedSearchService implements FederatedSearchService {
     });
   }
 
-  private calculateSourceContribution(results: SearchResult[], sourceResults: SourceSearchResult[]): SourceContribution[] {
-    return sourceResults.map(sr => {
-      const contribution = sr.results.filter(result => results.includes(result)).length;
+  private calculateSourceContribution(
+    results: SearchResult[],
+    sourceResults: SourceSearchResult[]
+  ): SourceContribution[] {
+    return sourceResults.map((sr) => {
+      const contribution = sr.results.filter((result) => results.includes(result)).length;
       return {
         sourceId: sr.sourceId,
         sourceName: sr.sourceName,
         contributionCount: contribution,
         contributionPercentage: (contribution / results.length) * 100,
         averageQuality: sr.metadata.resultQuality,
-        processingTime: sr.processingTime
+        processingTime: sr.processingTime,
       };
     });
   }
 
-  private calculateQualityMetrics(results: SearchResult[], sourceResults: SourceSearchResult[]): QualityMetrics {
+  private calculateQualityMetrics(
+    results: SearchResult[],
+    sourceResults: SourceSearchResult[]
+  ): QualityMetrics {
     const avgConfidence = results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length;
-    const avgSourceQuality = sourceResults.reduce((sum, sr) => sum + sr.metadata.resultQuality, 0) / sourceResults.length;
+    const avgSourceQuality =
+      sourceResults.reduce((sum, sr) => sum + sr.metadata.resultQuality, 0) / sourceResults.length;
 
     return {
       overallQuality: (avgConfidence + avgSourceQuality) / 2,
       diversityScore: this.calculateDiversityScore(results),
       freshnessScore: this.calculateFreshnessScore(results),
       relevanceScore: avgConfidence,
-      completenessScore: this.calculateCompletenessScore(results)
+      completenessScore: this.calculateCompletenessScore(results),
     };
   }
 
   private calculateDiversityScore(results: SearchResult[]): number {
-    const uniqueTypes = new Set(results.map(r => r.kind)).size;
+    const uniqueTypes = new Set(results.map((r) => r.kind)).size;
     return Math.min(uniqueTypes / results.length, 1);
   }
 
   private calculateFreshnessScore(results: SearchResult[]): number {
     const now = Date.now();
-    const avgAge = results.reduce((sum, r) => {
-      const created = new Date(r.created_at).getTime();
-      return sum + (now - created);
-    }, 0) / results.length;
+    const avgAge =
+      results.reduce((sum, r) => {
+        const created = new Date(r.created_at).getTime();
+        return sum + (now - created);
+      }, 0) / results.length;
 
     // Convert to freshness score (newer = higher score)
-    return Math.max(0, 1 - (avgAge / (30 * 24 * 60 * 60 * 1000))); // 30 days max
+    return Math.max(0, 1 - avgAge / (30 * 24 * 60 * 60 * 1000)); // 30 days max
   }
 
   private calculateCompletenessScore(results: SearchResult[]): number {
-    const completeResults = results.filter(r =>
-      r.data?.title && r.data?.content && r.created_at
+    const completeResults = results.filter(
+      (r) => r.data?.title && r.data?.content && r.created_at
     ).length;
     return completeResults / results.length;
   }
 
-  private calculateDeduplicationStats(original: SearchResult[], deduplicated: SearchResult[]): DeduplicationStats {
+  private calculateDeduplicationStats(
+    original: SearchResult[],
+    deduplicated: SearchResult[]
+  ): DeduplicationStats {
     return {
       originalCount: original.length,
       deduplicatedCount: deduplicated.length,
       duplicatesRemoved: original.length - deduplicated.length,
-      deduplicationRate: (original.length - deduplicated.length) / original.length
+      deduplicationRate: (original.length - deduplicated.length) / original.length,
     };
   }
 
@@ -690,12 +711,12 @@ class MockFederatedSearchService implements FederatedSearchService {
       algorithm: 'weighted_confidence_with_source_boost',
       factors: ['confidence_score', 'source_quality', 'freshness', 'relevance'],
       rankingTime: Math.random() * 10,
-      scoreDistribution: this.calculateScoreDistribution(results)
+      scoreDistribution: this.calculateScoreDistribution(results),
     };
   }
 
   private calculateScoreDistribution(results: SearchResult[]): ScoreDistribution {
-    const scores = results.map(r => r.confidence_score);
+    const scores = results.map((r) => r.confidence_score);
     const min = Math.min(...scores);
     const max = Math.max(...scores);
     const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
@@ -710,18 +731,21 @@ class MockFederatedSearchService implements FederatedSearchService {
   }
 
   private generateSourceAttribution(sourceResults: SourceSearchResult[]): SourceAttribution[] {
-    return sourceResults.map(sr => ({
+    return sourceResults.map((sr) => ({
       sourceId: sr.sourceId,
       sourceName: sr.sourceName,
       resultCount: sr.results.length,
       contributionPercentage: 0, // Will be calculated later
       confidence: sr.confidence,
       processingTime: sr.processingTime,
-      metadata: sr.metadata
+      metadata: sr.metadata,
     }));
   }
 
-  private generateAggregationMetadata(aggregatedResult: AggregatedResult, sourceResults: SourceSearchResult[]): AggregationMetadata {
+  private generateAggregationMetadata(
+    aggregatedResult: AggregatedResult,
+    sourceResults: SourceSearchResult[]
+  ): AggregationMetadata {
     return {
       aggregationTime: Math.random() * 50,
       strategy: AggregationStrategy.MERGE_AND_RANK,
@@ -729,23 +753,27 @@ class MockFederatedSearchService implements FederatedSearchService {
       totalResultsBeforeAggregation: sourceResults.reduce((sum, sr) => sum + sr.results.length, 0),
       totalResultsAfterAggregation: aggregatedResult.mergedResults.length,
       deduplicationEnabled: true,
-      rankingEnabled: true
+      rankingEnabled: true,
     };
   }
 
-  private generatePerformanceMetrics(startTime: number, sourceResults: SourceSearchResult[]): PerformanceMetrics {
+  private generatePerformanceMetrics(
+    startTime: number,
+    sourceResults: SourceSearchResult[]
+  ): PerformanceMetrics {
     const totalTime = Date.now() - startTime;
 
     return {
       totalProcessingTime: totalTime,
-      sourceProcessingTimes: sourceResults.map(sr => ({
+      sourceProcessingTimes: sourceResults.map((sr) => ({
         sourceId: sr.sourceId,
-        processingTime: sr.processingTime
+        processingTime: sr.processingTime,
       })),
       aggregationTime: Math.random() * 20,
       networkLatency: Math.random() * 100,
       cacheHitRate: Math.random(),
-      throughput: sourceResults.reduce((sum, sr) => sum + sr.results.length, 0) / (totalTime / 1000)
+      throughput:
+        sourceResults.reduce((sum, sr) => sum + sr.results.length, 0) / (totalTime / 1000),
     };
   }
 
@@ -762,15 +790,15 @@ class MockFederatedSearchService implements FederatedSearchService {
         responseTime: Math.random() * 1000,
         errorRate: isHealthy ? 0 : Math.random() * 0.1,
         throughput: Math.random() * 1000,
-        availability: isHealthy ? 0.99 : 0.9
-      }
+        availability: isHealthy ? 0.99 : 0.9,
+      },
     };
   }
 
   private calculateOverallHealth(sourceStatuses: SourceStatus[]): HealthStatus {
-    const healthyCount = sourceStatuses.filter(s => s.status === HealthStatus.HEALTHY).length;
-    const degradedCount = sourceStatuses.filter(s => s.status === HealthStatus.DEGRADED).length;
-    const unhealthyCount = sourceStatuses.filter(s => s.status === HealthStatus.UNHEALTHY).length;
+    const healthyCount = sourceStatuses.filter((s) => s.status === HealthStatus.HEALTHY).length;
+    const degradedCount = sourceStatuses.filter((s) => s.status === HealthStatus.DEGRADED).length;
+    const unhealthyCount = sourceStatuses.filter((s) => s.status === HealthStatus.UNHEALTHY).length;
 
     if (unhealthyCount > 0) return HealthStatus.UNHEALTHY;
     if (degradedCount > healthyCount) return HealthStatus.DEGRADED;
@@ -780,12 +808,15 @@ class MockFederatedSearchService implements FederatedSearchService {
 
   private findAlternativeSources(failedSourceId: string): DataSource[] {
     return Array.from(this.registeredSources.values())
-      .filter(source => source.id !== failedSourceId && source.priority > 0)
+      .filter((source) => source.id !== failedSourceId && source.priority > 0)
       .sort((a, b) => b.priority - a.priority)
       .slice(0, 3); // Top 3 alternatives
   }
 
-  private calculatePerformanceImpact(failedSources: string[], activatedSources: string[]): PerformanceImpact {
+  private calculatePerformanceImpact(
+    failedSources: string[],
+    activatedSources: string[]
+  ): PerformanceImpact {
     const estimatedRecoveryTime = failedSources.length * 5000; // 5 seconds per failed source
     const performanceDegradation = failedSources.length * 0.1; // 10% degradation per failed source
 
@@ -794,7 +825,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       performanceDegradation,
       throughputImpact: -performanceDegradation,
       latencyImpact: performanceDegradation * 1000, // ms
-      availabilityImpact: -performanceDegradation
+      availabilityImpact: -performanceDegradation,
     };
   }
 
@@ -802,7 +833,10 @@ class MockFederatedSearchService implements FederatedSearchService {
     // Mock query adaptation based on source capabilities
     const adaptedQuery = { ...query };
 
-    if (source.capabilities.maxResults && (!query.limit || query.limit > source.capabilities.maxResults)) {
+    if (
+      source.capabilities.maxResults &&
+      (!query.limit || query.limit > source.capabilities.maxResults)
+    ) {
       adaptedQuery.limit = source.capabilities.maxResults;
     }
 
@@ -816,20 +850,23 @@ class MockFederatedSearchService implements FederatedSearchService {
       timeout: 30000,
       retryPolicy: {
         maxRetries: 3,
-        backoffStrategy: 'exponential'
-      }
+        backoffStrategy: 'exponential',
+      },
     };
   }
 
   private configureLoadBalancing(sources: DataSource[]): LoadBalancingConfig {
     return {
       strategy: 'round_robin',
-      weights: sources.reduce((acc, source) => {
-        acc[source.id] = source.priority;
-        return acc;
-      }, {} as Record<string, number>),
+      weights: sources.reduce(
+        (acc, source) => {
+          acc[source.id] = source.priority;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
       healthCheckInterval: 60000, // 1 minute
-      failoverThreshold: 3
+      failoverThreshold: 3,
     };
   }
 
@@ -839,7 +876,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       preferFastSources: query.limit && query.limit < 10,
       enableEarlyTermination: sources.length > 5,
       batchSimilarQueries: true,
-      optimizeForRecency: query.query.includes('recent') || query.query.includes('latest')
+      optimizeForRecency: query.query.includes('recent') || query.query.includes('latest'),
     };
   }
 
@@ -847,7 +884,7 @@ class MockFederatedSearchService implements FederatedSearchService {
     if (distributedQueries.length === 0) return 0;
 
     // For parallel execution, use max time; for sequential, use sum
-    const maxTime = Math.max(...distributedQueries.map(dq => dq.estimatedTime));
+    const maxTime = Math.max(...distributedQueries.map((dq) => dq.estimatedTime));
     const sumTime = distributedQueries.reduce((sum, dq) => sum + dq.estimatedTime, 0);
 
     return Math.min(maxTime, sumTime / 2); // Optimistic estimate
@@ -883,11 +920,14 @@ class MockFederatedSearchService implements FederatedSearchService {
       canParallelize: true,
       suggestedBatchSize: 10,
       estimatedParallelQueries: 3,
-      preferredSources: ['knowledge_base', 'document_store']
+      preferredSources: ['knowledge_base', 'document_store'],
     };
   }
 
-  private calculatePerformanceGains(strategies: OptimizationStrategy[], cacheHits: CacheHit[]): PerformanceGains {
+  private calculatePerformanceGains(
+    strategies: OptimizationStrategy[],
+    cacheHits: CacheHit[]
+  ): PerformanceGains {
     const strategyGains = strategies.reduce((sum, strategy) => sum + strategy.expectedGain, 0);
     const cacheGains = cacheHits.length * 0.5; // Each cache hit saves 50%
 
@@ -895,7 +935,7 @@ class MockFederatedSearchService implements FederatedSearchService {
       overallGain: Math.min(strategyGains + cacheGains, 0.8), // Max 80% improvement
       timeReduction: (strategyGains + cacheGains) * 1000, // ms
       qualityImprovement: strategyGains * 0.5,
-      resourceSavings: cacheGains * 0.3
+      resourceSavings: cacheGains * 0.3,
     };
   }
 
@@ -910,7 +950,7 @@ class MockFederatedSearchService implements FederatedSearchService {
 
       // Visit dependencies first
       for (const depId of operation.dependencies) {
-        const dep = operations.find(op => op.operationId === depId);
+        const dep = operations.find((op) => op.operationId === depId);
         if (dep) visit(dep);
       }
 
@@ -932,50 +972,55 @@ class MockFederatedSearchService implements FederatedSearchService {
       status: 'success',
       result: { data: 'mock result' },
       executionTime: Math.random() * 1000,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   private async rollbackOperations(rollbackLog: RollbackLog): Promise<void> {
     // Mock rollback - in reality would execute rollback operations
     for (const operation of rollbackLog.operations) {
-      console.log(`Rolling back operation ${operation.operationId} on source ${operation.sourceId}`);
+      console.log(
+        `Rolling back operation ${operation.operationId} on source ${operation.sourceId}`
+      );
     }
   }
 
   private async performConsistencyCheck(results: OperationResult[]): Promise<ConsistencyCheck> {
     // Mock consistency check
-    const allSuccessful = results.every(r => r.status === 'success');
+    const allSuccessful = results.every((r) => r.status === 'success');
 
     return {
       status: allSuccessful ? 'passed' : 'failed',
       errors: allSuccessful ? [] : ['Some operations failed'],
-      verifiedAt: new Date().toISOString()
+      verifiedAt: new Date().toISOString(),
     };
   }
 
   private calculateSourceCompatibility(source1: DataSource, source2: DataSource): number {
     // Simple compatibility calculation based on capabilities
-    const commonTypes = source1.capabilities.supportedTypes.filter(type =>
+    const commonTypes = source1.capabilities.supportedTypes.filter((type) =>
       source2.capabilities.supportedTypes.includes(type)
     ).length;
 
-    const maxTypes = Math.max(source1.capabilities.supportedTypes.length, source2.capabilities.supportedTypes.length);
+    const maxTypes = Math.max(
+      source1.capabilities.supportedTypes.length,
+      source2.capabilities.supportedTypes.length
+    );
 
     return maxTypes > 0 ? commonTypes / maxTypes : 0;
   }
 
   private identifyFallbackOptions(sources: DataSource[]): FallbackOption[] {
     return sources
-      .filter(source => source.priority > 5) // High priority sources
-      .map(source => ({
+      .filter((source) => source.priority > 5) // High priority sources
+      .map((source) => ({
         sourceId: source.id,
         fallbackReason: 'high_priority_source',
         estimatedAvailability: 0.95,
         performanceCharacteristics: {
           responseTime: source.performanceProfile.averageResponseTime,
-          throughput: source.performanceProfile.maxThroughput
-        }
+          throughput: source.performanceProfile.maxThroughput,
+        },
       }));
   }
 }
@@ -1194,7 +1239,7 @@ interface ConsistencyCheck {
 enum TransactionStatus {
   COMMITTED = 'committed',
   ABORTED = 'aborted',
-  IN_PROGRESS = 'in_progress'
+  IN_PROGRESS = 'in_progress',
 }
 
 interface CompatibilityMatrix {
@@ -1243,16 +1288,16 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
   getQdrantClient: () => ({
     search: vi.fn().mockResolvedValue([]),
     upsert: vi.fn().mockResolvedValue({}),
-    delete: vi.fn().mockResolvedValue({})
-  })
+    delete: vi.fn().mockResolvedValue({}),
+  }),
 }));
 
 describe('FederatedSearchService - Comprehensive Multi-Source Search Functionality', () => {
@@ -1276,18 +1321,18 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           features: ['semantic_search', 'filtering', 'ranking'],
           performanceCharacteristics: {
             averageResponseTime: 200,
-            maxThroughput: 1000
-          }
+            maxThroughput: 1000,
+          },
         },
         healthStatus: HealthStatus.HEALTHY,
         performanceProfile: {
           averageResponseTime: 200,
           maxThroughput: 1000,
-          reliability: 0.99
+          reliability: 0.99,
         },
         authentication: { type: 'none' },
         priority: 10,
-        timeout: 5000
+        timeout: 5000,
       },
       {
         id: 'document-store-1',
@@ -1300,18 +1345,18 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           features: ['full_text_search', 'preview'],
           performanceCharacteristics: {
             averageResponseTime: 500,
-            maxThroughput: 500
-          }
+            maxThroughput: 500,
+          },
         },
         healthStatus: HealthStatus.HEALTHY,
         performanceProfile: {
           averageResponseTime: 500,
           maxThroughput: 500,
-          reliability: 0.95
+          reliability: 0.95,
         },
         authentication: { type: 'api_key' },
         priority: 8,
-        timeout: 10000
+        timeout: 10000,
       },
       {
         id: 'search-engine-1',
@@ -1324,23 +1369,23 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           features: ['global_search', 'ranking', 'caching'],
           performanceCharacteristics: {
             averageResponseTime: 300,
-            maxThroughput: 2000
-          }
+            maxThroughput: 2000,
+          },
         },
         healthStatus: HealthStatus.DEGRADED,
         performanceProfile: {
           averageResponseTime: 300,
           maxThroughput: 2000,
-          reliability: 0.90
+          reliability: 0.9,
         },
         authentication: { type: 'oauth' },
         priority: 6,
-        timeout: 8000
-      }
+        timeout: 8000,
+      },
     ];
 
     // Register mock data sources
-    mockDataSources.forEach(source => {
+    mockDataSources.forEach((source) => {
       federatedSearchService.registerDataSource(source);
     });
   });
@@ -1359,7 +1404,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1379,17 +1424,17 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
 
       // Should include results from different source types
-      const sourceTypes = [...new Set(result.sourceAttribution.map(sa => sa.sourceId))];
+      const sourceTypes = [...new Set(result.sourceAttribution.map((sa) => sa.sourceId))];
       expect(sourceTypes.length).toBeGreaterThan(1);
 
       // Results should be harmonized
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.id).toBeTruthy();
         expect(searchResult.kind).toBeTruthy();
         expect(searchResult.data).toBeTruthy();
@@ -1407,14 +1452,18 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
         distributionMode: DistributionMode.PRIORITY_BASED,
         failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.FAST
+        performanceProfile: PerformanceProfile.FAST,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
 
       // Should respect source capabilities
-      const knowledgeBaseResults = result.sourceAttribution.find(sa => sa.sourceId === 'knowledge-base-1');
-      const searchEngineResults = result.sourceAttribution.find(sa => sa.sourceId === 'search-engine-1');
+      const knowledgeBaseResults = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'knowledge-base-1'
+      );
+      const searchEngineResults = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'search-engine-1'
+      );
 
       expect(knowledgeBaseResults).toBeTruthy();
       expect(searchEngineResults).toBeTruthy();
@@ -1432,7 +1481,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.LOAD_BALANCED,
         failoverStrategy: FailoverStrategy.CUSTOM,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(technicalQuery);
@@ -1441,10 +1490,11 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.results.length).toBeGreaterThan(0);
 
       // Results should handle technical jargon appropriately
-      const hasRelevantResults = result.results.some(r =>
-        r.data?.title?.toLowerCase().includes('kubernetes') ||
-        r.data?.title?.toLowerCase().includes('deployment') ||
-        r.data?.title?.toLowerCase().includes('microservices')
+      const hasRelevantResults = result.results.some(
+        (r) =>
+          r.data?.title?.toLowerCase().includes('kubernetes') ||
+          r.data?.title?.toLowerCase().includes('deployment') ||
+          r.data?.title?.toLowerCase().includes('microservices')
       );
 
       expect(hasRelevantResults).toBe(true);
@@ -1459,7 +1509,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1469,7 +1519,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.aggregationMetadata.totalResultsAfterAggregation).toBeGreaterThan(0);
 
       // Source-specific limits should be respected
-      const documentStoreResults = result.sourceAttribution.find(sa => sa.sourceId === 'document-store-1');
+      const documentStoreResults = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'document-store-1'
+      );
       if (documentStoreResults) {
         expect(documentStoreResults.resultCount).toBeLessThanOrEqual(100); // Max for document store
       }
@@ -1486,7 +1538,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1503,7 +1555,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       }
 
       // Should include aggregation metadata
-      expect(result.aggregationMetadata.aggregationStrategy).toBe(AggregationStrategy.MERGE_AND_RANK);
+      expect(result.aggregationMetadata.aggregationStrategy).toBe(
+        AggregationStrategy.MERGE_AND_RANK
+      );
       expect(result.aggregationMetadata.deduplicationEnabled).toBe(true);
       expect(result.aggregationMetadata.rankingEnabled).toBe(true);
     });
@@ -1516,7 +1570,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1525,7 +1579,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.aggregationMetadata.deduplicationEnabled).toBe(true);
 
       // Results should not contain duplicates
-      const titles = result.results.map(r => r.data?.title).filter(Boolean);
+      const titles = result.results.map((r) => r.data?.title).filter(Boolean);
       const uniqueTitles = [...new Set(titles)];
       expect(titles.length).toBe(uniqueTitles.length);
 
@@ -1543,7 +1597,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.PRIORITY_BASED,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1551,7 +1605,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.results.length).toBeGreaterThan(0);
 
       // Results should be ranked by combined score from multiple sources
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.confidence_score).toBeGreaterThan(0);
         expect(searchResult.confidence_score).toBeLessThanOrEqual(1);
       });
@@ -1559,7 +1613,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       // Higher priority sources should have influence on ranking
       const sourceContribution = result.aggregationMetadata.sourceContribution;
       if (sourceContribution && sourceContribution.length > 0) {
-        const totalContribution = sourceContribution.reduce((sum, sc) => sum + sc.contributionPercentage, 0);
+        const totalContribution = sourceContribution.reduce(
+          (sum, sc) => sum + sc.contributionPercentage,
+          0
+        );
         expect(totalContribution).toBeCloseTo(100, 1); // Should sum to ~100%
       }
     });
@@ -1572,7 +1629,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1580,7 +1637,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       // Should include detailed source attribution
       expect(result.sourceAttribution).toHaveLength(2);
 
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         expect(attribution.sourceId).toBeTruthy();
         expect(attribution.sourceName).toBeTruthy();
         expect(attribution.resultCount).toBeGreaterThan(0);
@@ -1589,7 +1646,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       });
 
       // Should include provenance information
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.created_at).toBeTruthy();
         expect(searchResult.match_type).toBe('federated');
       });
@@ -1603,7 +1660,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1619,7 +1676,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       }
 
       // Results should meet minimum quality thresholds
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.confidence_score).toBeGreaterThan(0.1); // Minimum confidence
       });
     });
@@ -1635,7 +1692,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1660,7 +1717,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.FAST
+        performanceProfile: PerformanceProfile.FAST,
       };
 
       const startTime = Date.now();
@@ -1674,7 +1731,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.sourceAttribution.length).toBe(3);
 
       // Processing times should reflect parallel execution
-      const maxSourceTime = Math.max(...result.performanceMetrics.sourceProcessingTimes.map(st => st.processingTime));
+      const maxSourceTime = Math.max(
+        ...result.performanceMetrics.sourceProcessingTimes.map((st) => st.processingTime)
+      );
       expect(totalTime).toBeLessThan(maxSourceTime * 1.5); // Should be close to max individual time
     });
 
@@ -1686,13 +1745,13 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
         distributionMode: DistributionMode.PRIORITY_BASED,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
 
       // Each source should receive optimized queries
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         expect(attribution.processingTime).toBeGreaterThan(0);
 
         // Processing time should be reasonable for source capabilities
@@ -1714,7 +1773,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
         distributionMode: DistributionMode.LOAD_BALANCED,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1723,12 +1782,16 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       const sourceContributions = result.aggregationMetadata.sourceContribution;
       if (sourceContributions) {
         // Higher priority sources should handle more load
-        const sortedByContribution = [...sourceContributions].sort((a, b) => b.contributionCount - a.contributionCount);
+        const sortedByContribution = [...sourceContributions].sort(
+          (a, b) => b.contributionCount - a.contributionCount
+        );
         expect(sortedByContribution[0].contributionCount).toBeGreaterThan(0);
       }
 
       // Should balance response times across sources
-      const processingTimes = result.performanceMetrics.sourceProcessingTimes.map(st => st.processingTime);
+      const processingTimes = result.performanceMetrics.sourceProcessingTimes.map(
+        (st) => st.processingTime
+      );
       const maxTime = Math.max(...processingTimes);
       const minTime = Math.min(...processingTimes);
 
@@ -1738,14 +1801,15 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
 
     it('should handle source-specific query adaptation', async () => {
       const complexQuery: FederatedSearchQuery = {
-        query: 'comprehensive guide to implementing secure microservices with API gateway and service mesh',
+        query:
+          'comprehensive guide to implementing secure microservices with API gateway and service mesh',
         types: ['entity', 'decision', 'runbook', 'section'],
         limit: 100,
         sources: ['knowledge-base-1', 'document-store-1'],
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(complexQuery);
@@ -1753,7 +1817,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       // Query should be adapted for each source's capabilities
       expect(result.sourceAttribution.length).toBe(2);
 
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         // Each source should receive appropriate query modifications
         expect(attribution.metadata.queryComplexity).toBeGreaterThan(0);
         expect(attribution.metadata.queryComplexity).toBeLessThanOrEqual(1);
@@ -1774,7 +1838,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.REAL_TIME
+        performanceProfile: PerformanceProfile.REAL_TIME,
       };
 
       const startTime = Date.now();
@@ -1801,7 +1865,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       // First search
@@ -1828,12 +1892,12 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK as const,
         distributionMode: DistributionMode.PARALLEL as const,
         failoverStrategy: FailoverStrategy.IMMEDIATE as const,
-        performanceProfile: PerformanceProfile.FAST as const
+        performanceProfile: PerformanceProfile.FAST as const,
       }));
 
       const startTime = Date.now();
       const results = await Promise.all(
-        queries.map(query => federatedSearchService.performFederatedSearch(query))
+        queries.map((query) => federatedSearchService.performFederatedSearch(query))
       );
       const totalTime = Date.now() - startTime;
 
@@ -1842,7 +1906,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(totalTime).toBeLessThan(10000); // Should complete 5 queries within 10 seconds
 
       // Each result should be complete
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.results.length).toBeGreaterThan(0);
         expect(result.sourceAttribution.length).toBeGreaterThan(0);
         expect(result.transactionId).toBeTruthy();
@@ -1861,7 +1925,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1870,8 +1934,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.performanceMetrics.networkLatency).toBeGreaterThan(0);
 
       // Should optimize for latency by prioritizing faster sources
-      const fasterSource = result.sourceAttribution.find(sa => sa.sourceId === 'knowledge-base-1');
-      const slowerSource = result.sourceAttribution.find(sa => sa.sourceId === 'search-engine-1');
+      const fasterSource = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'knowledge-base-1'
+      );
+      const slowerSource = result.sourceAttribution.find((sa) => sa.sourceId === 'search-engine-1');
 
       if (fasterSource && slowerSource) {
         expect(fasterSource.processingTime).toBeLessThanOrEqual(slowerSource.processingTime * 1.5);
@@ -1889,7 +1955,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
         distributionMode: DistributionMode.LOAD_BALANCED,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1901,7 +1967,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.performanceMetrics.sourceProcessingTimes).toHaveLength(3);
 
       // Should track performance at source level
-      result.performanceMetrics.sourceProcessingTimes.forEach(sourceTime => {
+      result.performanceMetrics.sourceProcessingTimes.forEach((sourceTime) => {
         expect(sourceTime.sourceId).toBeTruthy();
         expect(sourceTime.processingTime).toBeGreaterThan(0);
       });
@@ -1926,18 +1992,18 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           features: ['real_time_search', 'advanced_filtering'],
           performanceCharacteristics: {
             averageResponseTime: 150,
-            maxThroughput: 1500
-          }
+            maxThroughput: 1500,
+          },
         },
         healthStatus: HealthStatus.HEALTHY,
         performanceProfile: {
           averageResponseTime: 150,
           maxThroughput: 1500,
-          reliability: 0.98
+          reliability: 0.98,
         },
         authentication: { type: 'api_key' },
         priority: 9,
-        timeout: 6000
+        timeout: 6000,
       };
 
       const registration = await federatedSearchService.registerDataSource(newSource);
@@ -1958,7 +2024,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(healthReport.sourceStatuses['search-engine-1']).toBeTruthy();
 
       // Should include performance metrics
-      Object.values(healthReport.sourceStatuses).forEach(status => {
+      Object.values(healthReport.sourceStatuses).forEach((status) => {
         if (status.metrics) {
           expect(status.metrics.responseTime).toBeGreaterThan(0);
           expect(status.metrics.availability).toBeGreaterThan(0);
@@ -1967,8 +2033,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       });
 
       // Should provide recommendations for unhealthy sources
-      const degradedSources = Object.entries(healthReport.sourceStatuses)
-        .filter(([_, status]) => status.status === HealthStatus.DEGRADED);
+      const degradedSources = Object.entries(healthReport.sourceStatuses).filter(
+        ([_, status]) => status.status === HealthStatus.DEGRADED
+      );
 
       if (degradedSources.length > 0) {
         expect(healthReport.recommendations.length).toBeGreaterThan(0);
@@ -1978,7 +2045,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
     it('should handle source capability negotiation', async () => {
       const sources = [
         mockDataSources[0], // knowledge-base-1
-        mockDataSources[1]  // document-store-1
+        mockDataSources[1], // document-store-1
       ];
 
       const negotiation = await federatedSearchService.negotiateSourceCapabilities(sources);
@@ -2006,9 +2073,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(failoverResponse.recoveryStatus.status).toBeTruthy();
 
       // Should identify alternative sources
-      expect(failoverResponse.activatedSources.every(sourceId =>
-        !failedSources.includes(sourceId)
-      )).toBe(true);
+      expect(
+        failoverResponse.activatedSources.every((sourceId) => !failedSources.includes(sourceId))
+      ).toBe(true);
 
       // Should assess performance impact
       expect(failoverResponse.performanceImpact.performanceDegradation).toBeGreaterThan(0);
@@ -2023,14 +2090,18 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
         distributionMode: DistributionMode.PRIORITY_BASED,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.FAST
+        performanceProfile: PerformanceProfile.FAST,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
 
       // Higher priority sources should be utilized first
-      const highPrioritySource = result.sourceAttribution.find(sa => sa.sourceId === 'knowledge-base-1');
-      const lowPrioritySource = result.sourceAttribution.find(sa => sa.sourceId === 'search-engine-1');
+      const highPrioritySource = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'knowledge-base-1'
+      );
+      const lowPrioritySource = result.sourceAttribution.find(
+        (sa) => sa.sourceId === 'search-engine-1'
+      );
 
       if (highPrioritySource && lowPrioritySource) {
         // Higher priority source should have better metrics
@@ -2050,7 +2121,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2059,14 +2130,19 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.aggregationMetadata.totalResultsAfterAggregation).toBeGreaterThan(0);
 
       // Should handle capability mismatches gracefully
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         expect(attribution.resultCount).toBeGreaterThan(0);
         expect(attribution.processingTime).toBeGreaterThan(0);
       });
 
       // Should aggregate results respecting individual source limits
-      const totalFromSources = result.sourceAttribution.reduce((sum, sa) => sum + sa.resultCount, 0);
-      expect(result.aggregationMetadata.totalResultsAfterAggregation).toBeLessThanOrEqual(totalFromSources);
+      const totalFromSources = result.sourceAttribution.reduce(
+        (sum, sa) => sum + sa.resultCount,
+        0
+      );
+      expect(result.aggregationMetadata.totalResultsAfterAggregation).toBeLessThanOrEqual(
+        totalFromSources
+      );
     });
   });
 
@@ -2080,7 +2156,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
         distributionMode: DistributionMode.PARALLEL,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2093,7 +2169,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.performanceMetrics.sourceProcessingTimes).toHaveLength(3);
 
       // Should handle service coordination transparently
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         expect(attribution.sourceId).toBeTruthy();
         expect(attribution.processingTime).toBeGreaterThan(0);
         expect(attribution.metadata).toBeTruthy();
@@ -2107,18 +2183,19 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           sourceId: 'knowledge-base-1',
           operation: { type: 'search', parameters: { query: 'test query 1' } },
           dependencies: [],
-          rollbackOperation: { type: 'cleanup', parameters: { operationId: 'op-1' } }
+          rollbackOperation: { type: 'cleanup', parameters: { operationId: 'op-1' } },
         },
         {
           operationId: 'op-2',
           sourceId: 'document-store-1',
           operation: { type: 'search', parameters: { query: 'test query 2' } },
           dependencies: ['op-1'],
-          rollbackOperation: { type: 'cleanup', parameters: { operationId: 'op-2' } }
-        }
+          rollbackOperation: { type: 'cleanup', parameters: { operationId: 'op-2' } },
+        },
       ];
 
-      const transactionResult = await federatedSearchService.coordinateDistributedTransaction(operations);
+      const transactionResult =
+        await federatedSearchService.coordinateDistributedTransaction(operations);
 
       expect(transactionResult.transactionId).toBeTruthy();
       expect(transactionResult.status).toBe(TransactionStatus.COMMITTED);
@@ -2135,13 +2212,13 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE
+        performanceProfile: PerformanceProfile.COMPREHENSIVE,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
 
       // Should maintain consistency across federated results
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.id).toBeTruthy();
         expect(searchResult.kind).toBeTruthy();
         expect(searchResult.data).toBeTruthy();
@@ -2149,7 +2226,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       });
 
       // Should ensure result consistency
-      const uniqueIds = [...new Set(result.results.map(r => r.id))];
+      const uniqueIds = [...new Set(result.results.map((r) => r.id))];
       expect(uniqueIds.length).toBe(result.results.length); // No duplicate IDs
 
       // Should provide consistency metadata
@@ -2161,29 +2238,31 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         {
           query: 'service orchestration patterns',
           types: ['entity', 'decision'],
-          sources: ['knowledge-base-1'] as const
+          sources: ['knowledge-base-1'] as const,
         },
         {
           query: 'microservices coordination',
           types: ['observation', 'runbook'],
-          sources: ['document-store-1'] as const
-        }
+          sources: ['document-store-1'] as const,
+        },
       ];
 
       const results = await Promise.all(
-        queries.map(q => federatedSearchService.performFederatedSearch({
-          ...q,
-          aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-          distributionMode: DistributionMode.PARALLEL,
-          failoverStrategy: FailoverStrategy.GRACEFUL,
-          performanceProfile: PerformanceProfile.BALANCED
-        }))
+        queries.map((q) =>
+          federatedSearchService.performFederatedSearch({
+            ...q,
+            aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
+            distributionMode: DistributionMode.PARALLEL,
+            failoverStrategy: FailoverStrategy.GRACEFUL,
+            performanceProfile: PerformanceProfile.BALANCED,
+          })
+        )
       );
 
       // Should coordinate multiple federated searches
       expect(results).toHaveLength(2);
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.transactionId).toBeTruthy();
         expect(result.sourceAttribution.length).toBeGreaterThan(0);
         expect(result.results.length).toBeGreaterThan(0);
@@ -2193,8 +2272,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       });
 
       // Should handle orchestration efficiently
-      const processingTimes = results.map(r => r.performanceMetrics.totalProcessingTime);
-      const avgProcessingTime = processingTimes.reduce((sum, time) => sum + time, 0) / processingTimes.length;
+      const processingTimes = results.map((r) => r.performanceMetrics.totalProcessingTime);
+      const avgProcessingTime =
+        processingTimes.reduce((sum, time) => sum + time, 0) / processingTimes.length;
       expect(avgProcessingTime).toBeLessThan(3000);
     });
 
@@ -2206,7 +2286,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.BALANCED
+        performanceProfile: PerformanceProfile.BALANCED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2216,8 +2296,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.sourceHealth.overall).toBeTruthy();
 
       // Should provide error recovery mechanisms
-      const unhealthySources = Object.entries(result.sourceHealth.sources)
-        .filter(([_, health]) => health === HealthStatus.UNHEALTHY || health === HealthStatus.DEGRADED);
+      const unhealthySources = Object.entries(result.sourceHealth.sources).filter(
+        ([_, health]) => health === HealthStatus.UNHEALTHY || health === HealthStatus.DEGRADED
+      );
 
       if (unhealthySources.length > 0) {
         // Should have recommendations for recovery
@@ -2236,12 +2317,12 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.MERGE_AND_RANK as const,
         distributionMode: DistributionMode.PARALLEL as const,
         failoverStrategy: FailoverStrategy.GRACEFUL as const,
-        performanceProfile: PerformanceProfile.BALANCED as const
+        performanceProfile: PerformanceProfile.BALANCED as const,
       }));
 
       const startTime = Date.now();
       const results = await Promise.all(
-        concurrentQueries.map(query => federatedSearchService.performFederatedSearch(query))
+        concurrentQueries.map((query) => federatedSearchService.performFederatedSearch(query))
       );
       const totalTime = Date.now() - startTime;
 
@@ -2250,7 +2331,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(totalTime).toBeLessThan(15000); // Should handle 10 queries within 15 seconds
 
       // Each result should be complete and consistent
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.results.length).toBeGreaterThan(0);
         expect(result.sourceAttribution.length).toBeGreaterThan(0);
         expect(result.transactionId).toBeTruthy();
@@ -2270,7 +2351,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         AggregationStrategy.MERGE_AND_RANK,
         AggregationStrategy.DEDUPLICATE_AND_BOOST,
         AggregationStrategy.WEIGHTED_AVERAGE,
-        AggregationStrategy.CONSENSUS_BASED
+        AggregationStrategy.CONSENSUS_BASED,
       ];
 
       for (const strategy of strategies) {
@@ -2281,7 +2362,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           aggregationStrategy: strategy,
           distributionMode: DistributionMode.PARALLEL,
           failoverStrategy: FailoverStrategy.GRACEFUL,
-          performanceProfile: PerformanceProfile.BALANCED
+          performanceProfile: PerformanceProfile.BALANCED,
         };
 
         const result = await federatedSearchService.performFederatedSearch(query);
@@ -2300,7 +2381,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.RESILIENT
+        performanceProfile: PerformanceProfile.RESILIENT,
       };
 
       // First, monitor health to identify issues
@@ -2327,7 +2408,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
         distributionMode: DistributionMode.LOAD_BALANCED,
         failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.OPTIMIZED
+        performanceProfile: PerformanceProfile.OPTIMIZED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2342,7 +2423,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.aggregationMetadata.rankingMetadata.factors).toBeInstanceOf(Array);
 
       // Should provide source-level performance insights
-      result.sourceAttribution.forEach(attribution => {
+      result.sourceAttribution.forEach((attribution) => {
         expect(attribution.processingTime).toBeGreaterThan(0);
         expect(attribution.confidence).toBeGreaterThan(0);
       });
@@ -2357,7 +2438,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
         distributionMode: DistributionMode.ADAPTIVE,
         failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.PERSONALIZED
+        performanceProfile: PerformanceProfile.PERSONALIZED,
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2366,7 +2447,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.results.length).toBeGreaterThan(0);
 
       // Results should reflect context-specific optimization
-      result.results.forEach(searchResult => {
+      result.results.forEach((searchResult) => {
         expect(searchResult.scope).toBeTruthy();
       });
 

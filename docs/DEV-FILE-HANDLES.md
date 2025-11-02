@@ -23,19 +23,19 @@ import {
   writeFileManaged,
   getFileHandleStats,
   cleanupFileHandles,
-  setMaxFileHandles
+  setMaxFileHandles,
 } from '../src/utils/file-handle-manager.js';
 
 // Read a file
 const content = await readFileManaged('./data/config.json', {
   encoding: 'utf-8',
-  correlationId: 'config-load-001'
+  correlationId: 'config-load-001',
 });
 
 // Write a file
 await writeFileManaged('./output/result.json', content, {
   encoding: 'utf-8',
-  correlationId: 'result-save-001'
+  correlationId: 'result-save-001',
 });
 
 // Get statistics
@@ -61,20 +61,20 @@ const fileManager = new FileHandleManager({
   enableWindowsOptimizations: true,
   operationTimeout: 60000,
   enableGracefulDegradation: true,
-  logLevel: 'info'
+  logLevel: 'info',
 });
 
 // Use the manager
 try {
   const data = await fileManager.managedReadFile('./large-file.txt', {
     timeout: 120000,
-    correlationId: 'large-read-001'
+    correlationId: 'large-read-001',
   });
 
   await fileManager.managedWriteFile('./processed.txt', processedData, {
     encoding: 'utf-8',
     flag: 'w',
-    correlationId: 'large-write-001'
+    correlationId: 'large-write-001',
   });
 } catch (error) {
   if (error instanceof FileHandleManagerError) {
@@ -96,7 +96,7 @@ console.log('File Handle Manager Statistics:', {
   cleanupCount: stats.cleanupCount,
   degradationCount: stats.degradationCount,
   averageOperationDuration: stats.averageOperationDuration,
-  peakHandleCount: stats.peakHandleCount
+  peakHandleCount: stats.peakHandleCount,
 });
 
 // Cleanup when done
@@ -138,7 +138,7 @@ import {
   readFileManaged,
   writeFileManaged,
   setMaxFileHandles,
-  getFileHandleStats
+  getFileHandleStats,
 } from '../src/utils/file-handle-manager.js';
 
 // Safe code with handle management
@@ -153,7 +153,7 @@ async function processMultipleFiles(filePaths: string[]) {
       // Read with managed handles
       const content = await readFileManaged(filePath, {
         encoding: 'utf-8',
-        correlationId: `process-${filePaths.indexOf(filePath)}`
+        correlationId: `process-${filePaths.indexOf(filePath)}`,
       });
 
       // Process content
@@ -162,7 +162,7 @@ async function processMultipleFiles(filePaths: string[]) {
       // Write with managed handles
       await writeFileManaged(`${filePath}.processed`, processed, {
         encoding: 'utf-8',
-        correlationId: `process-${filePaths.indexOf(filePath)}`
+        correlationId: `process-${filePaths.indexOf(filePath)}`,
       });
 
       results.push(filePath);
@@ -198,7 +198,7 @@ export class FileTestHelper {
   async createTestFile(name: string, content: string): Promise<string> {
     const filePath = `${this.testDataDir}/${name}`;
     await writeFileManaged(filePath, content, {
-      correlationId: `test-create-${name}`
+      correlationId: `test-create-${name}`,
     });
     return filePath;
   }
@@ -207,7 +207,7 @@ export class FileTestHelper {
     const filePath = `${this.testDataDir}/${name}`;
     const content = await readFileManaged(filePath, {
       encoding: 'utf-8',
-      correlationId: `test-read-${name}`
+      correlationId: `test-read-${name}`,
     });
     return content as string;
   }
@@ -265,16 +265,15 @@ export class ConfigurationService {
       const content = await readFileManaged(this.configPath, {
         encoding: 'utf-8',
         correlationId: 'config-load',
-        timeout: 10000
+        timeout: 10000,
       });
 
       return JSON.parse(content as string);
     } catch (error) {
       if (error instanceof FileHandleManagerError) {
-        throw new ConfigurationError(
-          `Failed to load configuration: ${error.message}`,
-          { cause: error }
-        );
+        throw new ConfigurationError(`Failed to load configuration: ${error.message}`, {
+          cause: error,
+        });
       }
       throw error;
     }
@@ -286,14 +285,13 @@ export class ConfigurationService {
       await writeFileManaged(this.configPath, content, {
         encoding: 'utf-8',
         correlationId: 'config-save',
-        timeout: 10000
+        timeout: 10000,
       });
     } catch (error) {
       if (error instanceof FileHandleManagerError) {
-        throw new ConfigurationError(
-          `Failed to save configuration: ${error.message}`,
-          { cause: error }
-        );
+        throw new ConfigurationError(`Failed to save configuration: ${error.message}`, {
+          cause: error,
+        });
       }
       throw error;
     }
@@ -303,14 +301,14 @@ export class ConfigurationService {
 
 ## Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `maxHandles` | `number` | `100` (Windows), `1000` (other) | Maximum concurrent file handles |
-| `cleanupThreshold` | `number` | `0.8` | Percentage threshold to trigger cleanup |
-| `enableWindowsOptimizations` | `boolean` | `true` on Windows | Enable Windows-specific optimizations |
-| `operationTimeout` | `number` | `30000` | Default timeout for operations (ms) |
-| `enableGracefulDegradation` | `boolean` | `true` | Fall back to direct fs operations on errors |
-| `logLevel` | `'debug' \| 'info' \| 'warn' \| 'error'` | `'debug'` | Logging level for operations |
+| Option                       | Type                                     | Default                         | Description                                 |
+| ---------------------------- | ---------------------------------------- | ------------------------------- | ------------------------------------------- |
+| `maxHandles`                 | `number`                                 | `100` (Windows), `1000` (other) | Maximum concurrent file handles             |
+| `cleanupThreshold`           | `number`                                 | `0.8`                           | Percentage threshold to trigger cleanup     |
+| `enableWindowsOptimizations` | `boolean`                                | `true` on Windows               | Enable Windows-specific optimizations       |
+| `operationTimeout`           | `number`                                 | `30000`                         | Default timeout for operations (ms)         |
+| `enableGracefulDegradation`  | `boolean`                                | `true`                          | Fall back to direct fs operations on errors |
+| `logLevel`                   | `'debug' \| 'info' \| 'warn' \| 'error'` | `'debug'`                       | Logging level for operations                |
 
 ## Error Handling
 
@@ -359,7 +357,9 @@ function logHandleStats() {
   console.log('File Handle Manager Statistics:');
   console.log(`  Current handles: ${stats.currentHandles}/${stats.maxHandles}`);
   console.log(`  Total operations: ${stats.totalOperations}`);
-  console.log(`  Success rate: ${((stats.successfulOperations / stats.totalOperations) * 100).toFixed(2)}%`);
+  console.log(
+    `  Success rate: ${((stats.successfulOperations / stats.totalOperations) * 100).toFixed(2)}%`
+  );
   console.log(`  Average duration: ${stats.averageOperationDuration.toFixed(2)}ms`);
   console.log(`  Peak handles: ${stats.peakHandleCount}`);
   console.log(`  Cleanup count: ${stats.cleanupCount}`);
@@ -384,7 +384,7 @@ setMaxFileHandles(25);
 // For batch processing
 const batchManager = new FileHandleManager({
   maxHandles: 10,
-  cleanupThreshold: 0.6
+  cleanupThreshold: 0.6,
 });
 ```
 
@@ -397,7 +397,7 @@ const correlationId = generateCorrelationId();
 
 await readFileManaged('./data.json', {
   correlationId,
-  timeout: 15000
+  timeout: 15000,
 });
 ```
 
@@ -502,14 +502,16 @@ if (process.env.NODE_ENV === 'production') {
 ### EMFILE Errors Still Occur
 
 1. **Increase handle limit**:
+
    ```typescript
    setMaxFileHandles(200);
    ```
 
 2. **Lower cleanup threshold**:
+
    ```typescript
    const manager = new FileHandleManager({
-     cleanupThreshold: 0.6
+     cleanupThreshold: 0.6,
    });
    ```
 
@@ -522,6 +524,7 @@ if (process.env.NODE_ENV === 'production') {
 ### Performance Issues
 
 1. **Monitor operation duration**:
+
    ```typescript
    const stats = getFileHandleStats();
    if (stats.averageOperationDuration > 5000) {
@@ -539,6 +542,7 @@ if (process.env.NODE_ENV === 'production') {
 ### Memory Issues
 
 1. **Enable regular cleanup**:
+
    ```typescript
    setInterval(cleanupFileHandles, 60000); // Every minute
    ```

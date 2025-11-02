@@ -9,7 +9,11 @@
  * Run with: node examples/file-handle-manager-integration.ts
  */
 
-import { FileHandleManager, readFileManaged, writeFileManaged } from '../src/utils/file-handle-manager.js';
+import {
+  FileHandleManager,
+  readFileManaged,
+  writeFileManaged,
+} from '../src/utils/file-handle-manager.js';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 
@@ -46,7 +50,7 @@ class ConfigurationServiceNew {
     const content = await readFileManaged(this.configPath, {
       encoding: 'utf-8',
       correlationId: 'config-load',
-      timeout: 10000
+      timeout: 10000,
     });
     return JSON.parse(content);
   }
@@ -57,7 +61,7 @@ class ConfigurationServiceNew {
     await writeFileManaged(this.configPath, content, {
       encoding: 'utf-8',
       correlationId: 'config-save',
-      timeout: 10000
+      timeout: 10000,
     });
   }
 }
@@ -94,7 +98,7 @@ class BatchFileProcessorNew {
       enableWindowsOptimizations: true,
       operationTimeout: 30000,
       enableGracefulDegradation: true,
-      logLevel: 'info'
+      logLevel: 'info',
     });
   }
 
@@ -108,7 +112,7 @@ class BatchFileProcessorNew {
         const content = await this.fileManager.managedReadFile(filePath, {
           encoding: 'utf-8',
           correlationId: `batch-read-${i}`,
-          timeout: 15000
+          timeout: 15000,
         });
 
         const processed = content.toUpperCase();
@@ -117,7 +121,7 @@ class BatchFileProcessorNew {
         await this.fileManager.managedWriteFile(outputPath, processed, {
           encoding: 'utf-8',
           correlationId: `batch-write-${i}`,
-          timeout: 15000
+          timeout: 15000,
         });
 
         results.push(outputPath);
@@ -184,7 +188,7 @@ class TestDataHelperNew {
     const filePath = join(this.testDataDir, name);
     await writeFileManaged(filePath, content, {
       encoding: 'utf-8',
-      correlationId: `test-create-${name.replace(/[^a-zA-Z0-9]/g, '_')}`
+      correlationId: `test-create-${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
     });
     return filePath;
   }
@@ -194,7 +198,7 @@ class TestDataHelperNew {
     const filePath = join(this.testDataDir, name);
     const content = await readFileManaged(filePath, {
       encoding: 'utf-8',
-      correlationId: `test-read-${name.replace(/[^a-zA-Z0-9]/g, '_')}`
+      correlationId: `test-read-${name.replace(/[^a-zA-Z0-9]/g, '_')}`,
     });
     return content as string;
   }
@@ -219,7 +223,7 @@ class LogFileManagerOld {
       timestamp,
       level,
       message,
-      metadata
+      metadata,
     };
 
     const logFile = join(this.logDir, `${level}.log`);
@@ -236,9 +240,7 @@ class LogFileManagerOld {
     const content = await fs.readFile(logFile, 'utf-8');
     const lines = content.trim().split('\n');
 
-    return lines
-      .slice(-limit)
-      .map(line => JSON.parse(line));
+    return lines.slice(-limit).map((line) => JSON.parse(line));
   }
 }
 
@@ -253,7 +255,7 @@ class LogFileManagerNew {
       cleanupThreshold: 0.6,
       enableWindowsOptimizations: true,
       operationTimeout: 5000,
-      logLevel: 'warn' // Reduce log noise for logging operations
+      logLevel: 'warn', // Reduce log noise for logging operations
     });
   }
 
@@ -263,7 +265,7 @@ class LogFileManagerNew {
       timestamp,
       level,
       message,
-      metadata
+      metadata,
     };
 
     const logFile = join(this.logDir, `${level}.log`);
@@ -274,7 +276,7 @@ class LogFileManagerNew {
       encoding: 'utf-8',
       flag: 'a',
       correlationId: `log-write-${level}`,
-      timeout: 2000 // Short timeout for logging
+      timeout: 2000, // Short timeout for logging
     });
   }
 
@@ -286,14 +288,12 @@ class LogFileManagerNew {
       const content = await this.fileManager.managedReadFile(logFile, {
         encoding: 'utf-8',
         correlationId: `log-read-${level}`,
-        timeout: 10000
+        timeout: 10000,
       });
 
       const lines = content.trim().split('\n');
 
-      return lines
-        .slice(-limit)
-        .map(line => JSON.parse(line));
+      return lines.slice(-limit).map((line) => JSON.parse(line));
     } catch (error) {
       console.warn(`Failed to read logs for level ${level}:`, error);
       return [];
@@ -363,7 +363,9 @@ async function demonstrateIntegration(): Promise<void> {
 
     const processorStats = processor.getStats();
     console.log(`   - Total operations: ${processorStats.totalOperations}`);
-    console.log(`   - Success rate: ${((processorStats.successfulOperations / processorStats.totalOperations) * 100).toFixed(1)}%`);
+    console.log(
+      `   - Success rate: ${((processorStats.successfulOperations / processorStats.totalOperations) * 100).toFixed(1)}%`
+    );
     console.log(`   - Peak handles: ${processorStats.peakHandleCount}\n`);
 
     await processor.shutdown();
@@ -414,7 +416,9 @@ async function demonstrateIntegration(): Promise<void> {
     console.log(`   - Current handles: ${globalStats.currentHandles}`);
     console.log(`   - Max handles: ${globalStats.maxHandles}`);
     console.log(`   - Total operations: ${globalStats.totalOperations}`);
-    console.log(`   - Success rate: ${globalStats.totalOperations > 0 ? ((globalStats.successfulOperations / globalStats.totalOperations) * 100).toFixed(1) : 0}%`);
+    console.log(
+      `   - Success rate: ${globalStats.totalOperations > 0 ? ((globalStats.successfulOperations / globalStats.totalOperations) * 100).toFixed(1) : 0}%`
+    );
     console.log(`   - Average duration: ${globalStats.averageOperationDuration.toFixed(2)}ms`);
     console.log(`   - Peak handles: ${globalStats.peakHandleCount}\n`);
 
@@ -423,7 +427,6 @@ async function demonstrateIntegration(): Promise<void> {
     console.log('✓ File Handle Manager prevented EMFILE errors');
     console.log('✓ Operations were tracked and monitored');
     console.log('✓ Graceful degradation was available if needed');
-
   } catch (error) {
     console.error('Demo failed:', error);
   } finally {
@@ -455,5 +458,5 @@ export {
   TestDataHelperNew,
   LogFileManagerOld,
   LogFileManagerNew,
-  demonstrateIntegration
+  demonstrateIntegration,
 };

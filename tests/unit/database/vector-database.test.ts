@@ -125,7 +125,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     async createSnapshot(collectionName: string) {
       return mockCreateSnapshot(collectionName);
     }
-  }
+  },
 }));
 
 describe('Vector Database - Comprehensive Core Functionality Testing', () => {
@@ -137,10 +137,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     const testCollectionName = 'test-cortex-memory';
 
     mockGetCollections.mockResolvedValue({
-      collections: [
-        { name: testCollectionName },
-        { name: 'test_collection' }
-      ]
+      collections: [{ name: testCollectionName }, { name: 'test_collection' }],
     });
 
     mockCreateCollection.mockResolvedValue({ name: testCollectionName });
@@ -157,9 +154,9 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       optimizer_status: 'ok',
       config: {
         vector_size: 1536,
-        distance: 'Cosine'
+        distance: 'Cosine',
       },
-      payload_schema: {}
+      payload_schema: {},
     });
 
     mockUpsert.mockResolvedValue({ operation_id: 'upsert_123', status: 'completed' });
@@ -173,8 +170,8 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
             kind: 'entity',
             scope: { project: 'test-project', branch: 'main' },
             content: 'Test entity content for search',
-            created_at: '2025-01-01T00:00:00Z'
-          }
+            created_at: '2025-01-01T00:00:00Z',
+          },
         },
         {
           id: 'result_2',
@@ -183,9 +180,9 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
             kind: 'decision',
             scope: { project: 'test-project', branch: 'main' },
             content: 'Test decision content for search',
-            created_at: '2025-01-01T01:00:00Z'
-          }
-        }
+            created_at: '2025-01-01T01:00:00Z',
+          },
+        },
       ];
 
       return mockResults.slice(0, params.limit || 10);
@@ -242,7 +239,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
   describe('Collection Management', () => {
     it('should create collection if it does not exist', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: [] // No existing collections
+        collections: [], // No existing collections
       });
 
       await db.initialize();
@@ -252,15 +249,15 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         expect.objectContaining({
           vectors: expect.objectContaining({
             size: 1536,
-            distance: 'Cosine'
-          })
+            distance: 'Cosine',
+          }),
         })
       );
     });
 
     it('should not create collection if it already exists', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: [{ name: 'test-cortex-memory' }]
+        collections: [{ name: 'test-cortex-memory' }],
       });
 
       await db.initialize();
@@ -270,7 +267,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
 
     it('should handle collection creation errors', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: []
+        collections: [],
       });
       mockCreateCollection.mockRejectedValue(new Error('Insufficient permissions'));
 
@@ -284,7 +281,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         kind: 'entity',
         content: 'Test entity content',
         scope: { project: 'test-project', branch: 'main' },
-        metadata: { test: true }
+        metadata: { test: true },
       };
 
       const result = await db.storeItems([item]);
@@ -302,18 +299,18 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         {
           kind: 'entity',
           content: 'First entity content',
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'decision',
           content: 'First decision content',
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'issue',
           content: 'First issue content',
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -326,7 +323,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should handle storage errors gracefully', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test entity content'
+        content: 'Test entity content',
       };
 
       mockUpsert.mockRejectedValue(new Error('Connection failed'));
@@ -383,12 +380,12 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should auto-initialize database on first operation', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test content'
+        content: 'Test content',
       };
 
       // Mock that collection doesn't exist initially
       mockGetCollections.mockResolvedValue({
-        collections: []
+        collections: [],
       });
 
       await db.storeItems([item]);
@@ -402,15 +399,28 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
   describe('Knowledge Type Integration', () => {
     it('should handle all 16 knowledge types', async () => {
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
-      const items = knowledgeTypes.map(kind => ({
+      const items = knowledgeTypes.map((kind) => ({
         kind,
         content: `Test ${kind} content`,
-        scope: { project: 'test-project', branch: 'main' }
+        scope: { project: 'test-project', branch: 'main' },
       }));
 
       const result = await db.storeItems(items);
@@ -419,8 +429,8 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify all types were stored
-      const storedKinds = result.stored.map(item => item.kind);
-      knowledgeTypes.forEach(kind => {
+      const storedKinds = result.stored.map((item) => item.kind);
+      knowledgeTypes.forEach((kind) => {
         expect(storedKinds).toContain(kind);
       });
     });
@@ -434,9 +444,9 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
           rationale: 'Performance optimization',
           stakeholders: ['team-lead', 'architect'],
           impact: 'high',
-          timeline: 'Q2 2025'
+          timeline: 'Q2 2025',
         },
-        scope: { project: 'test-project', branch: 'main' }
+        scope: { project: 'test-project', branch: 'main' },
       };
 
       const result = await db.storeItems([item]);
@@ -450,18 +460,18 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         {
           kind: 'entity',
           content: 'Project A entity',
-          scope: { project: 'project-A', branch: 'main' }
+          scope: { project: 'project-A', branch: 'main' },
         },
         {
           kind: 'entity',
           content: 'Project B entity',
-          scope: { project: 'project-B', branch: 'develop' }
+          scope: { project: 'project-B', branch: 'develop' },
         },
         {
           kind: 'entity',
           content: 'Organization entity',
-          scope: { project: 'project-C', branch: 'main', org: 'organization-X' }
-        }
+          scope: { project: 'project-C', branch: 'main', org: 'organization-X' },
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -477,7 +487,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should generate embeddings for content', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test content for embedding generation'
+        content: 'Test content for embedding generation',
       };
 
       await db.storeItems([item]);
@@ -490,10 +500,10 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
               vector: expect.any(Array),
               payload: expect.objectContaining({
                 kind: 'entity',
-                content: 'Test content for embedding generation'
-              })
-            })
-          ])
+                content: 'Test content for embedding generation',
+              }),
+            }),
+          ]),
         })
       );
     });
@@ -502,7 +512,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       const content = 'Same content for embedding test';
       const items: KnowledgeItem[] = [
         { kind: 'entity', content },
-        { kind: 'decision', content }
+        { kind: 'decision', content },
       ];
 
       await db.storeItems(items);
@@ -523,7 +533,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       const longContent = 'x'.repeat(10000); // 10KB content
       const item: KnowledgeItem = {
         kind: 'section',
-        content: longContent
+        content: longContent,
       };
 
       const result = await db.storeItems([item]);
@@ -540,12 +550,10 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         undefined,
         { kind: 'entity' }, // Missing content
         { content: 'Missing kind' }, // Missing kind
-        { kind: '', content: 'Empty kind' }
+        { kind: '', content: 'Empty kind' },
       ];
 
-      const results = await Promise.all(
-        invalidItems.map(item => db.storeItems([item as any]))
-      );
+      const results = await Promise.all(invalidItems.map((item) => db.storeItems([item as any])));
 
       // Some should result in errors, others might be handled gracefully
       // Let's check that at least some items were processed
@@ -569,13 +577,11 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should handle network timeouts during storage', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test content'
+        content: 'Test content',
       };
 
-      mockUpsert.mockImplementation(() =>
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('ETIMEDOUT')), 100)
-        )
+      mockUpsert.mockImplementation(
+        () => new Promise((_, reject) => setTimeout(() => reject(new Error('ETIMEDOUT')), 100))
       );
 
       const result = await db.storeItems([item]);
@@ -597,7 +603,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should handle database connection loss during operation', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test content'
+        content: 'Test content',
       };
 
       // Simulate connection loss
@@ -616,8 +622,8 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         content: `Large content item ${i} with additional data: ${'x'.repeat(1000)}`,
         metadata: {
           index: i,
-          largeArray: Array.from({ length: 100 }, (_, j) => `data_${i}_${j}`)
-        }
+          largeArray: Array.from({ length: 100 }, (_, j) => `data_${i}_${j}`),
+        },
       }));
 
       const result = await db.storeItems(largeItems);
@@ -632,24 +638,24 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       const items = Array.from({ length: 50 }, (_, i) => ({
         kind: 'entity' as const,
         content: `Concurrent item ${i}`,
-        scope: { project: 'concurrent-test' }
+        scope: { project: 'concurrent-test' },
       }));
 
-      const promises = items.map(item => db.storeItems([item]));
+      const promises = items.map((item) => db.storeItems([item]));
       const results = await Promise.all(promises);
 
-      expect(results.every(r => r.stored.length === 1)).toBe(true);
+      expect(results.every((r) => r.stored.length === 1)).toBe(true);
       expect(results.reduce((sum, r) => sum + r.stored.length, 0)).toBe(50);
     });
 
     it('should handle concurrent search operations', async () => {
       const queries = Array.from({ length: 20 }, (_, i) => `search query ${i}`);
 
-      const promises = queries.map(query => db.searchItems(query));
+      const promises = queries.map((query) => db.searchItems(query));
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(20);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toHaveProperty('items');
         expect(result).toHaveProperty('query');
         expect(result).toHaveProperty('strategy');
@@ -660,7 +666,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       const largeBatch = Array.from({ length: 200 }, (_, i) => ({
         kind: 'entity' as const,
         content: `Batch item ${i}`,
-        scope: { project: 'performance-test' }
+        scope: { project: 'performance-test' },
       }));
 
       const startTime = Date.now();
@@ -714,7 +720,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should generate unique UUIDs for stored items', async () => {
       const items: KnowledgeItem[] = [
         { kind: 'entity', content: 'First item' },
-        { kind: 'entity', content: 'Second item' }
+        { kind: 'entity', content: 'Second item' },
       ];
 
       const result = await db.storeItems(items);
@@ -734,7 +740,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
       const itemWithId: KnowledgeItem = {
         id: 'provided-id',
         kind: 'entity',
-        content: 'Item with provided ID'
+        content: 'Item with provided ID',
       };
 
       const result = await db.storeItems([itemWithId]);
@@ -750,7 +756,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should handle items with missing optional fields', async () => {
       const minimalItem: KnowledgeItem = {
         kind: 'entity',
-        content: 'Minimal item'
+        content: 'Minimal item',
       };
 
       const result = await db.storeItems([minimalItem]);
@@ -769,7 +775,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         metadata: { test: true },
         customField: 'custom value',
         anotherField: 123,
-        nestedObject: { prop: 'value' }
+        nestedObject: { prop: 'value' },
       };
 
       const result = await db.storeItems([itemWithExtraFields]);
@@ -784,15 +790,13 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
         { content: 'Missing kind' },
         { kind: 'entity' }, // Missing content
         { kind: '', content: 'Empty kind' },
-        { kind: 'entity', content: '' } // Empty content
+        { kind: 'entity', content: '' }, // Empty content
       ];
 
-      const results = await Promise.all(
-        invalidItems.map(item => db.storeItems([item as any]))
-      );
+      const results = await Promise.all(invalidItems.map((item) => db.storeItems([item as any])));
 
       // Should handle various validation states gracefully
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         // Some might succeed, some might fail depending on validation logic
       });
@@ -807,20 +811,20 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
           kind: 'entity',
           content: 'User entity with profile information',
           scope: { project: 'user-management', branch: 'main' },
-          metadata: { userType: 'premium', active: true }
+          metadata: { userType: 'premium', active: true },
         },
         {
           kind: 'decision',
           content: 'Decision to implement new authentication system',
           scope: { project: 'user-management', branch: 'main' },
-          metadata: { impact: 'high', timeline: 'Q3 2025' }
+          metadata: { impact: 'high', timeline: 'Q3 2025' },
         },
         {
           kind: 'issue',
           content: 'Security vulnerability in password reset',
           scope: { project: 'user-management', branch: 'main' },
-          metadata: { severity: 'critical', status: 'open' }
-        }
+          metadata: { severity: 'critical', status: 'open' },
+        },
       ];
 
       const storeResult = await db.storeItems(items);
@@ -847,7 +851,7 @@ describe('Vector Database - Comprehensive Core Functionality Testing', () => {
     it('should handle error recovery workflow', async () => {
       const item: KnowledgeItem = {
         kind: 'entity',
-        content: 'Test recovery item'
+        content: 'Test recovery item',
       };
 
       // First attempt fails

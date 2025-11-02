@@ -13,15 +13,7 @@
  * Comprehensive coverage with 20+ test cases covering all MCP protocol compliance functionality.
  */
 
-import {
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  type MockedFunction
-} from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -31,7 +23,7 @@ import {
   RequestMessage,
   ResponseMessage,
   NotificationMessage,
-  ErrorCode
+  ErrorCode,
 } from '@modelcontextprotocol/sdk/types.js';
 
 import {
@@ -44,7 +36,7 @@ import {
   withMCPCompliance,
   type MCPErrorResponse,
   type MCPSuccessResponse,
-  type MCPToolResponse
+  type MCPToolResponse,
 } from '../../../src/utils/mcp-compliance.js';
 
 // Test interfaces
@@ -84,7 +76,7 @@ const originalEnv = process.env;
 const mockEnv = {
   NODE_ENV: 'test',
   LOG_LEVEL: 'error',
-  MCP_PROTOCOL_VERSION: '2024-11-05'
+  MCP_PROTOCOL_VERSION: '2024-11-05',
 };
 
 describe('MCP Protocol Compliance', () => {
@@ -112,12 +104,12 @@ describe('MCP Protocol Compliance', () => {
         tools: {},
         resources: {},
         prompts: {},
-        logging: {}
+        logging: {},
       },
       serverInfo: {
         name: 'cortex-memory-mcp',
-        version: '2.0.0'
-      }
+        version: '2.0.0',
+      },
     };
     vi.mocked(Server).mockImplementation(() => mockServer);
 
@@ -129,7 +121,7 @@ describe('MCP Protocol Compliance', () => {
       close: vi.fn(),
       onClose: vi.fn(),
       onError: vi.fn(),
-      onMessage: vi.fn()
+      onMessage: vi.fn(),
     };
     vi.mocked(StdioServerTransport).mockImplementation(() => mockTransport as any);
   });
@@ -147,7 +139,7 @@ describe('MCP Protocol Compliance', () => {
         jsonrpc: '2.0',
         id: 'test-request-1',
         method: 'tools/list',
-        params: {}
+        params: {},
       };
 
       // Act
@@ -155,7 +147,7 @@ describe('MCP Protocol Compliance', () => {
         jsonrpc: '2.0',
         id: 'test-request-1',
         method: 'tools/list',
-        params: {}
+        params: {},
       };
 
       // Assert
@@ -203,14 +195,14 @@ describe('MCP Protocol Compliance', () => {
           jsonrpc: '2.0',
           id: 1,
           method: 'tools/list',
-          params: {}
+          params: {},
         },
         {
           jsonrpc: '2.0',
           id: 2,
           method: 'tools/call',
-          params: { name: 'test_tool', arguments: {} }
-        }
+          params: { name: 'test_tool', arguments: {} },
+        },
       ];
 
       // Act & Assert
@@ -229,7 +221,7 @@ describe('MCP Protocol Compliance', () => {
       const notification = {
         jsonrpc: '2.0',
         method: 'notifications/message',
-        params: { level: 'info', message: 'Test notification' }
+        params: { level: 'info', message: 'Test notification' },
       };
 
       // Assert
@@ -245,10 +237,10 @@ describe('MCP Protocol Compliance', () => {
         { jsonrpc: '2.0', id: 1, method: 'test', params: {} },
         { jsonrpc: '2.0', method: 'notification', params: {} },
         { jsonrpc: '2.0', id: 'test', result: { data: 'success' } },
-        { jsonrpc: '2.0', id: 'test', error: { code: -32600, message: 'Invalid Request' } }
+        { jsonrpc: '2.0', id: 'test', error: { code: -32600, message: 'Invalid Request' } },
       ];
 
-      validMessages.forEach(message => {
+      validMessages.forEach((message) => {
         expect(message.jsonrpc).toBe('2.0');
         expect(message).toHaveProperty('jsonrpc');
 
@@ -273,7 +265,7 @@ describe('MCP Protocol Compliance', () => {
       // Arrange
       const serverInfo = {
         name: 'cortex-memory-mcp',
-        version: '2.0.0'
+        version: '2.0.0',
       };
 
       // Act
@@ -281,9 +273,9 @@ describe('MCP Protocol Compliance', () => {
         capabilities: {
           tools: {},
           experimental: {
-            protocolVersion: '2024-11-05'
-          }
-        }
+            protocolVersion: '2024-11-05',
+          },
+        },
       });
 
       // Assert
@@ -293,9 +285,9 @@ describe('MCP Protocol Compliance', () => {
           capabilities: expect.objectContaining({
             tools: {},
             experimental: expect.objectContaining({
-              protocolVersion: '2024-11-05'
-            })
-          })
+              protocolVersion: '2024-11-05',
+            }),
+          }),
         })
       );
     });
@@ -319,8 +311,8 @@ describe('MCP Protocol Compliance', () => {
         'legacy-search': {
           deprecated: true,
           alternative: 'memory_find',
-          removalVersion: '2025-06-01'
-        }
+          removalVersion: '2025-06-01',
+        },
       };
 
       // Act & Assert
@@ -339,8 +331,8 @@ describe('MCP Protocol Compliance', () => {
         experimental: {
           streaming: true,
           batchOperations: true,
-          advancedFiltering: false
-        }
+          advancedFiltering: false,
+        },
       };
 
       // Act & Assert
@@ -359,8 +351,8 @@ describe('MCP Protocol Compliance', () => {
         method: 'tools/list',
         params: {
           // Older clients might use different parameter formats
-          includeMetadata: true
-        }
+          includeMetadata: true,
+        },
       };
 
       // Act & Assert
@@ -380,9 +372,9 @@ describe('MCP Protocol Compliance', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{ kind: 'entity', content: 'test' }]
-          }
-        }
+            items: [{ kind: 'entity', content: 'test' }],
+          },
+        },
       };
 
       // Act & Assert
@@ -402,10 +394,10 @@ describe('MCP Protocol Compliance', () => {
           content: [
             {
               type: 'text',
-              text: 'Operation completed successfully'
-            }
-          ]
-        }
+              text: 'Operation completed successfully',
+            },
+          ],
+        },
       };
 
       // Act & Assert
@@ -438,8 +430,8 @@ describe('MCP Protocol Compliance', () => {
         params: {
           progressToken: 'token-123',
           progress: 0.5,
-          message: 'Processing request...'
-        }
+          message: 'Processing request...',
+        },
       };
 
       // Act & Assert
@@ -458,10 +450,10 @@ describe('MCP Protocol Compliance', () => {
         { jsonrpc: '2.0', id: 1 }, // Missing method or result/error
         { jsonrpc: '2.0', id: 1, method: 'test', result: {}, error: {} }, // Both result and error
         null, // Not an object
-        'string' // Wrong type
+        'string', // Wrong type
       ];
 
-      malformedMessages.forEach(message => {
+      malformedMessages.forEach((message) => {
         // These should be caught by validation
         expect(message === null || typeof message !== 'object').toBeTruthy();
       });
@@ -475,7 +467,7 @@ describe('MCP Protocol Compliance', () => {
         jsonrpc: '2.0',
         id: 1,
         method: 'test',
-        params: { data: 'x'.repeat(maxMessageSize + 1) }
+        params: { data: 'x'.repeat(maxMessageSize + 1) },
       };
 
       // Act
@@ -520,7 +512,7 @@ describe('MCP Protocol Compliance', () => {
         jsonrpc: '2.0',
         id: 'frame-test',
         method: 'tools/list',
-        params: {}
+        params: {},
       };
 
       // Act
@@ -565,11 +557,11 @@ describe('MCP Protocol Compliance', () => {
         { type: 'connection_lost', recoverable: true },
         { type: 'parse_error', recoverable: true },
         { type: 'timeout', recoverable: true },
-        { type: 'protocol_error', recoverable: false }
+        { type: 'protocol_error', recoverable: false },
       ];
 
       // Act & Assert
-      errorStates.forEach(state => {
+      errorStates.forEach((state) => {
         expect(state).toHaveProperty('type');
         expect(state).toHaveProperty('recoverable');
         expect(typeof state.recoverable).toBe('boolean');
@@ -585,20 +577,17 @@ describe('MCP Protocol Compliance', () => {
         resources: {},
         prompts: {},
         logging: {
-          level: 'debug'
+          level: 'debug',
         },
         experimental: {
           streaming: true,
           batchOperations: true,
-          advancedFiltering: false
-        }
+          advancedFiltering: false,
+        },
       };
 
       // Act
-      const server = new Server(
-        { name: 'cortex-memory-mcp', version: '2.0.0' },
-        { capabilities }
-      );
+      const server = new Server({ name: 'cortex-memory-mcp', version: '2.0.0' }, { capabilities });
 
       // Assert
       expect(Server).toHaveBeenCalledWith(
@@ -612,25 +601,25 @@ describe('MCP Protocol Compliance', () => {
       const clientCapabilities = {
         experimental: {
           streaming: true,
-          compression: ['gzip', 'br']
-        }
+          compression: ['gzip', 'br'],
+        },
       };
 
       const serverCapabilities = {
         tools: {},
         experimental: {
           streaming: true,
-          compression: ['gzip']
-        }
+          compression: ['gzip'],
+        },
       };
 
       // Act
       const commonCapabilities = {
-        streaming: clientCapabilities.experimental.streaming &&
-                      serverCapabilities.experimental.streaming,
-        compression: clientCapabilities.experimental.compression.filter(
-          (comp: string) => serverCapabilities.experimental.compression.includes(comp)
-        )
+        streaming:
+          clientCapabilities.experimental.streaming && serverCapabilities.experimental.streaming,
+        compression: clientCapabilities.experimental.compression.filter((comp: string) =>
+          serverCapabilities.experimental.compression.includes(comp)
+        ),
       };
 
       // Assert
@@ -642,12 +631,12 @@ describe('MCP Protocol Compliance', () => {
       // Arrange
       const featureMatrix = {
         client: ['streaming', 'batch', 'filtering'],
-        server: ['streaming', 'filtering', 'compression']
+        server: ['streaming', 'filtering', 'compression'],
       };
 
       // Act
-      const supportedFeatures = featureMatrix.client.filter(
-        feature => featureMatrix.server.includes(feature)
+      const supportedFeatures = featureMatrix.client.filter((feature) =>
+        featureMatrix.server.includes(feature)
       );
 
       // Assert
@@ -661,12 +650,12 @@ describe('MCP Protocol Compliance', () => {
       const extensions = {
         'custom-search': {
           version: '1.0.0',
-          capabilities: ['semantic', 'hybrid', 'federated']
+          capabilities: ['semantic', 'hybrid', 'federated'],
         },
         'advanced-analytics': {
           version: '2.1.0',
-          capabilities: ['metrics', 'dashboard', 'export']
-        }
+          capabilities: ['metrics', 'dashboard', 'export'],
+        },
       };
 
       // Act & Assert
@@ -683,8 +672,8 @@ describe('MCP Protocol Compliance', () => {
         prompts: '0.9.0',
         experimental: {
           streaming: '1.0.0',
-          batchOperations: '0.5.0'
-        }
+          batchOperations: '0.5.0',
+        },
       };
 
       // Act & Assert
@@ -706,8 +695,8 @@ describe('MCP Protocol Compliance', () => {
           invalidRequest: -32600,
           methodNotFound: -32601,
           invalidParams: -32602,
-          internalError: -32603
-        }
+          internalError: -32603,
+        },
       };
 
       // Act & Assert
@@ -723,8 +712,8 @@ describe('MCP Protocol Compliance', () => {
       const architectures = ['x64', 'arm64'];
 
       // Act
-      const compatibilityMatrix = platforms.flatMap(platform =>
-        architectures.map(arch => ({ platform, arch }))
+      const compatibilityMatrix = platforms.flatMap((platform) =>
+        architectures.map((arch) => ({ platform, arch }))
       );
 
       // Assert
@@ -738,11 +727,11 @@ describe('MCP Protocol Compliance', () => {
       const thirdPartyIntegrations = [
         { name: 'claude-code', version: '>=1.0.0', protocol: 'mcp' },
         { name: 'gemini', version: '>=2.0.0', protocol: 'mcp' },
-        { name: 'codex', version: '>=1.5.0', protocol: 'mcp' }
+        { name: 'codex', version: '>=1.5.0', protocol: 'mcp' },
       ];
 
       // Act & Assert
-      thirdPartyIntegrations.forEach(integration => {
+      thirdPartyIntegrations.forEach((integration) => {
         expect(integration).toHaveProperty('name');
         expect(integration).toHaveProperty('version');
         expect(integration.protocol).toBe('mcp');
@@ -757,11 +746,11 @@ describe('MCP Protocol Compliance', () => {
         errorHandling: true,
         messageFormat: true,
         capabilityExchange: true,
-        versionNegotiation: true
+        versionNegotiation: true,
       };
 
       // Act
-      const allPassed = Object.values(conformanceTests).every(test => test === true);
+      const allPassed = Object.values(conformanceTests).every((test) => test === true);
 
       // Assert
       expect(allPassed).toBe(true);
@@ -774,13 +763,13 @@ describe('MCP Protocol Compliance', () => {
       const specVersions = [
         { version: '2024-11-05', status: 'current', features: ['tools', 'resources'] },
         { version: '2025-01-01', status: 'draft', features: ['tools', 'resources', 'prompts'] },
-        { version: '2023-06-01', status: 'deprecated', features: ['tools'] }
+        { version: '2023-06-01', status: 'deprecated', features: ['tools'] },
       ];
 
       // Act & Assert
-      const currentSpec = specVersions.find(v => v.status === 'current');
-      const draftSpec = specVersions.find(v => v.status === 'draft');
-      const deprecatedSpec = specVersions.find(v => v.status === 'deprecated');
+      const currentSpec = specVersions.find((v) => v.status === 'current');
+      const draftSpec = specVersions.find((v) => v.status === 'draft');
+      const deprecatedSpec = specVersions.find((v) => v.status === 'deprecated');
 
       expect(currentSpec?.version).toBe('2024-11-05');
       expect(draftSpec?.features).toContain('prompts');
@@ -818,10 +807,16 @@ describe('MCP Protocol Compliance', () => {
       // Arrange
       const testCases = [
         { error: new Error('validation failed'), expectedCode: MCPErrorCode._VALIDATION_ERROR },
-        { error: new Error('database connection failed'), expectedCode: MCPErrorCode._DATABASE_ERROR },
+        {
+          error: new Error('database connection failed'),
+          expectedCode: MCPErrorCode._DATABASE_ERROR,
+        },
         { error: new Error('operation timeout'), expectedCode: MCPErrorCode._TIMEOUT_ERROR },
         { error: new Error('resource not found'), expectedCode: MCPErrorCode._RESOURCE_NOT_FOUND },
-        { error: new Error('unauthorized access'), expectedCode: MCPErrorCode._AUTHORIZATION_ERROR }
+        {
+          error: new Error('unauthorized access'),
+          expectedCode: MCPErrorCode._AUTHORIZATION_ERROR,
+        },
       ];
 
       // Act & Assert
@@ -834,7 +829,11 @@ describe('MCP Protocol Compliance', () => {
     test('should handle error context and metadata', () => {
       // Arrange
       const error = new Error('Contextual error');
-      const context = { requestId: 'req-123', userId: 'user-456', timestamp: '2024-01-01T00:00:00Z' };
+      const context = {
+        requestId: 'req-123',
+        userId: 'user-456',
+        timestamp: '2024-01-01T00:00:00Z',
+      };
 
       // Act
       const response = createMCPError(
@@ -860,8 +859,8 @@ describe('MCP Protocol Compliance', () => {
         method: 'tools/call',
         params: {
           name: 'memory_find',
-          arguments: { query: 'test query' }
-        }
+          arguments: { query: 'test query' },
+        },
       };
 
       // Act
@@ -882,8 +881,8 @@ describe('MCP Protocol Compliance', () => {
         params: {
           content: 'Special chars: "quotes", \n newlines, \t tabs, \\ backslashes',
           unicode: 'Unicode: 🚀 ✓ é ñ 中文',
-          emoji: '🧠💾🔍'
-        }
+          emoji: '🧠💾🔍',
+        },
       };
 
       // Act
@@ -904,8 +903,8 @@ describe('MCP Protocol Compliance', () => {
         id: 'large-payload',
         method: 'tools/call',
         params: {
-          data: largeData
-        }
+          data: largeData,
+        },
       };
 
       // Act
@@ -929,8 +928,8 @@ describe('MCP Protocol Compliance', () => {
         method: 'tools/call',
         params: {
           data: base64Data,
-          encoding: 'base64'
-        }
+          encoding: 'base64',
+        },
       };
 
       // Assert
@@ -947,13 +946,13 @@ describe('MCP Protocol Compliance', () => {
         jsonrpc: '2.0',
         id: i,
         method: 'tools/list',
-        params: {}
+        params: {},
       }));
 
       const startTime = Date.now();
 
       // Act
-      const serializedMessages = messages.map(msg => JSON.stringify(msg));
+      const serializedMessages = messages.map((msg) => JSON.stringify(msg));
       const duration = Date.now() - startTime;
 
       // Assert
@@ -969,7 +968,7 @@ describe('MCP Protocol Compliance', () => {
           jsonrpc: '2.0',
           id: `concurrent-${i}`,
           method: 'tools/call',
-          params: { name: 'test_tool', arguments: { index: i } }
+          params: { name: 'test_tool', arguments: { index: i } },
         };
         return JSON.stringify(message);
       });
@@ -987,17 +986,19 @@ describe('MCP Protocol Compliance', () => {
     test('should implement proper timeout handling', async () => {
       // Arrange
       const timeout = 1000; // 1 second
-      const longRunningOperation = new Promise(resolve => {
+      const longRunningOperation = new Promise((resolve) => {
         setTimeout(resolve, timeout + 100); // Longer than timeout
       });
 
       // Act & Assert
-      await expect(Promise.race([
-        longRunningOperation,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Operation timeout')), timeout)
-        )
-      ])).rejects.toThrow('Operation timeout');
+      await expect(
+        Promise.race([
+          longRunningOperation,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Operation timeout')), timeout)
+          ),
+        ])
+      ).rejects.toThrow('Operation timeout');
     });
 
     test('should handle resource exhaustion gracefully', () => {
@@ -1007,7 +1008,7 @@ describe('MCP Protocol Compliance', () => {
       const messageSize = 1024; // 1KB
 
       // Act
-      const canProcess = (currentUsage + messageSize) < maxMemory;
+      const canProcess = currentUsage + messageSize < maxMemory;
 
       // Assert
       expect(canProcess).toBe(true);

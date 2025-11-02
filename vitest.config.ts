@@ -27,7 +27,7 @@ function jsToTsResolution() {
             try {
               readFileSync(tsPath, 'utf8');
               return tsPath;
-            } catch (e) {
+            } catch (_e) {
               // .ts file doesn't exist, return original
               return id;
             }
@@ -39,7 +39,7 @@ function jsToTsResolution() {
             try {
               readFileSync(tsPath, 'utf8');
               return tsPath;
-            } catch (e) {
+            } catch (_e) {
               // .ts file doesn't exist, return original
               return id;
             }
@@ -47,7 +47,7 @@ function jsToTsResolution() {
         }
       }
       return null;
-    }
+    },
   };
 }
 
@@ -69,7 +69,7 @@ export default defineConfig({
   },
   esbuild: {
     target: 'node18',
-    format: 'esm'
+    format: 'esm',
   },
   test: {
     globals: true,
@@ -78,7 +78,7 @@ export default defineConfig({
       'tests/unit/**/*.test.ts',
       'tests/contract/**/*.test.ts',
       'tests/validation/**/*.test.ts',
-      'tests/**/*.spec.ts'
+      'tests/**/*.spec.ts',
     ],
     exclude: [
       'tests/integration/**',
@@ -86,11 +86,11 @@ export default defineConfig({
       'node_modules',
       'dist/',
       'coverage/',
-      '**/*.d.ts'
+      '**/*.d.ts',
     ],
     transformMode: {
       web: [/\.[jt]sx?$/],
-      ssr: [/\.[jt]sx?$/]
+      ssr: [/\.[jt]sx?$/],
     },
     // Remove deps configuration to use default handling
     coverage: {
@@ -112,46 +112,46 @@ export default defineConfig({
         '.husky/',
         '.claude/',
         '.serena/',
-        '.specify/'
+        '.specify/',
       ],
       thresholds: {
         global: {
           branches: 85,
           functions: 90,
           lines: 90,
-          statements: 90
+          statements: 90,
         },
         // Critical paths have higher thresholds
         'src/core/**': {
           branches: 90,
           functions: 95,
           lines: 95,
-          statements: 95
+          statements: 95,
         },
         'src/db/**': {
           branches: 85,
           functions: 90,
           lines: 90,
-          statements: 90
+          statements: 90,
         },
         // Less critical code can have lower thresholds
         'src/utils/**': {
           branches: 80,
           functions: 85,
           lines: 85,
-          statements: 85
-        }
+          statements: 85,
+        },
       },
       all: true,
       clean: true,
       cleanOnRerun: true,
-      enabled: false // Disable coverage temporarily to resolve EMFILE
+      enabled: false, // Disable coverage temporarily to resolve EMFILE
     },
     testTimeout: 60000, // Increased timeout to prevent timeouts
     setupFiles: ['tests/setup.ts'],
     reporters: ['verbose', 'json'],
     outputFile: {
-      json: 'test-results/unit.json'
+      json: 'test-results/unit.json',
     },
     watch: false, // Disabled to reduce file handles
     isolate: true,
@@ -160,8 +160,8 @@ export default defineConfig({
       threads: {
         singleThread: true, // Use single thread to reduce file handles
         maxThreads: 1, // Conservative threading
-        minThreads: 1
-      }
+        minThreads: 1,
+      },
     },
     // Add cleanup hooks to prevent EMFILE
     teardownTimeout: 30000, // Increased for proper cleanup
@@ -174,9 +174,9 @@ export default defineConfig({
     watchExclude: ['**/*'],
     // Additional EMFILE prevention
     sequence: {
-      concurrent: false // Run tests sequentially to prevent file handle exhaustion
+      concurrent: false, // Run tests sequentially to prevent file handle exhaustion
     },
     // Global setup for file descriptor management
-    globalSetup: ['tests/global-setup.ts']
+    globalSetup: ['tests/global-setup.ts'],
   },
 });

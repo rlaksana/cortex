@@ -19,7 +19,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
     }
     getCollection = vi.fn().mockResolvedValue({});
@@ -31,17 +31,17 @@ vi.mock('@qdrant/js-client-rest', () => ({
       const limit = options?.limit || 10;
       return Array.from({ length: Math.min(limit, 5) }, (_, i) => ({
         id: `mock-result-${i}`,
-        score: 0.9 - (i * 0.1),
+        score: 0.9 - i * 0.1,
         payload: {
           kind: 'entity',
           content: `Mock search result ${i}`,
-          metadata: { mock: true }
-        }
+          metadata: { mock: true },
+        },
       }));
     });
     scroll = vi.fn().mockResolvedValue({ result: [] });
     count = vi.fn().mockResolvedValue({ count: 0 });
-  }
+  },
 }));
 
 // Import test framework
@@ -54,7 +54,7 @@ import {
   _generateEdgeCaseItems,
   _generateStressTestItems,
   generateSearchTestData,
-  validateTestItem
+  validateTestItem,
 } from '../fixtures/test-data-factory.js';
 
 import {
@@ -64,7 +64,7 @@ import {
   DATABASE_STATS_SCENARIOS,
   PERFORMANCE_SCENARIOS,
   _executeAllParameterizedTests,
-  _executePerformanceTests
+  _executePerformanceTests,
 } from '../utils/parameterized-test-framework.js';
 
 // ============================================================================
@@ -78,12 +78,14 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
     // Global setup for all tests
     console.log('🚀 Starting Comprehensive MCP Cortex Test Suite');
     console.log(`📊 Knowledge Types: ${KNOWLEDGE_TYPES.length}`);
-    console.log(`🔬 Total Scenarios: ${
-      MEMORY_STORE_SCENARIOS.length +
-      MEMORY_FIND_SCENARIOS.length +
-      DATABASE_HEALTH_SCENARIOS.length +
-      DATABASE_STATS_SCENARIOS.length
-    }`);
+    console.log(
+      `🔬 Total Scenarios: ${
+        MEMORY_STORE_SCENARIOS.length +
+        MEMORY_FIND_SCENARIOS.length +
+        DATABASE_HEALTH_SCENARIOS.length +
+        DATABASE_STATS_SCENARIOS.length
+      }`
+    );
   });
 
   afterAll(() => {
@@ -101,7 +103,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
 
     describe('Basic Knowledge Type Validation', () => {
       it('should validate all 16 knowledge types with minimal data', async () => {
-        const items = KNOWLEDGE_TYPES.map(type => generateMinimalItem(type));
+        const items = KNOWLEDGE_TYPES.map((type) => generateMinimalItem(type));
         const result = await db.storeItems(items);
 
         expect(result.errors).toHaveLength(0);
@@ -115,7 +117,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       });
 
       it('should validate all 16 knowledge types with complete data', async () => {
-        const items = KNOWLEDGE_TYPES.map(type => generateCompleteItem(type));
+        const items = KNOWLEDGE_TYPES.map((type) => generateCompleteItem(type));
         const result = await db.storeItems(items);
 
         expect(result.errors).toHaveLength(0);
@@ -198,7 +200,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       });
 
       it('should handle small batch (5 items)', async () => {
-        const items = KNOWLEDGE_TYPES.slice(0, 5).map(type => generateCompleteItem(type));
+        const items = KNOWLEDGE_TYPES.slice(0, 5).map((type) => generateCompleteItem(type));
         const result = await db.storeItems(items);
 
         expect(result.errors).toHaveLength(0);
@@ -209,7 +211,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         const items = Array.from({ length: 25 }, (_, i) =>
           generateCompleteItem(KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length], {
             content: `Medium batch item ${i}`,
-            metadata: { batchIndex: i }
+            metadata: { batchIndex: i },
           })
         );
         const result = await db.storeItems(items);
@@ -222,7 +224,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         const items = Array.from({ length: 50 }, (_, i) =>
           generateCompleteItem(KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length], {
             content: `Large batch item ${i}`,
-            metadata: { batchIndex: i }
+            metadata: { batchIndex: i },
           })
         );
         const result = await db.storeItems(items);
@@ -242,10 +244,12 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       });
 
       it('should handle very long content', async () => {
-        const items = [generateMinimalItem('observation', {
-          content: 'A'.repeat(1000),
-          metadata: { contentLength: 1000 }
-        })];
+        const items = [
+          generateMinimalItem('observation', {
+            content: 'A'.repeat(1000),
+            metadata: { contentLength: 1000 },
+          }),
+        ];
         const result = await db.storeItems(items);
 
         expect(result.errors).toHaveLength(0);
@@ -255,11 +259,11 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       it('should handle Unicode and special characters', async () => {
         const items = [
           generateMinimalItem('issue', {
-            content: 'Issue with émojis 🚨 and spëcial chars & symbols @#$%^&*()'
+            content: 'Issue with émojis 🚨 and spëcial chars & symbols @#$%^&*()',
           }),
           generateMinimalItem('decision', {
-            content: 'Décision regarding café and naïve approach with 中文'
-          })
+            content: 'Décision regarding café and naïve approach with 中文',
+          }),
         ];
         const result = await db.storeItems(items);
 
@@ -268,12 +272,17 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       });
 
       it('should handle large metadata objects', async () => {
-        const items = [generateCompleteItem('runbook', {
-          metadata: {
-            largeArray: Array.from({ length: 100 }, (_, i) => ({ step: i, action: `action-${i}` })),
-            nestedObject: { level1: { level2: { level3: { deep: 'value' } } } }
-          }
-        })];
+        const items = [
+          generateCompleteItem('runbook', {
+            metadata: {
+              largeArray: Array.from({ length: 100 }, (_, i) => ({
+                step: i,
+                action: `action-${i}`,
+              })),
+              nestedObject: { level1: { level2: { level3: { deep: 'value' } } } },
+            },
+          }),
+        ];
         const result = await db.storeItems(items);
 
         expect(result.errors).toHaveLength(0);
@@ -291,7 +300,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
           { content: 'Missing kind' },
           { kind: 'entity' }, // Missing content
           123,
-          'string-instead-of-object'
+          'string-instead-of-object',
         ];
         const result = await db.storeItems(items as any);
 
@@ -301,10 +310,10 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
 
       it('should handle mixed valid and invalid items', async () => {
         const items = [
-          ...KNOWLEDGE_TYPES.slice(0, 3).map(type => generateCompleteItem(type)),
+          ...KNOWLEDGE_TYPES.slice(0, 3).map((type) => generateCompleteItem(type)),
           { kind: 'invalid-type', content: 'Invalid item' },
           { kind: 'entity' }, // Missing content
-          null
+          null,
         ];
         const result = await db.storeItems(items as any);
 
@@ -368,7 +377,9 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       });
 
       it('should search with long query', async () => {
-        const result = await db.searchItems('User authentication system with OAuth2 integration for better security');
+        const result = await db.searchItems(
+          'User authentication system with OAuth2 integration for better security'
+        );
 
         expect(result.items).toBeDefined();
         expect(result.total).toBeDefined();
@@ -493,15 +504,17 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify different knowledge types are present
-      const kinds = new Set(result.stored.map(item => item.kind));
+      const kinds = new Set(result.stored.map((item) => item.kind));
       expect(kinds.size).toBeGreaterThan(0);
     });
 
     it('should handle statistics with scope filtering', async () => {
-      const items = generateCompleteItems().slice(0, 5).map(item => ({
-        ...item,
-        scope: { project: 'stats-test-project' }
-      }));
+      const items = generateCompleteItems()
+        .slice(0, 5)
+        .map((item) => ({
+          ...item,
+          scope: { project: 'stats-test-project' },
+        }));
       const result = await db.storeItems(items);
 
       expect(result.stored).toHaveLength(5);
@@ -546,7 +559,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         const items = Array.from({ length: 100 }, (_, i) =>
           generateMinimalItem(KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length], {
             content: `Performance test item ${i}`,
-            metadata: { performanceTest: true, index: i }
+            metadata: { performanceTest: true, index: i },
           })
         );
 
@@ -566,7 +579,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         const items = Array.from({ length: 500 }, (_, i) =>
           generateMinimalItem(KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length], {
             content: `Performance test item ${i}`,
-            metadata: { performanceTest: true, index: i }
+            metadata: { performanceTest: true, index: i },
           })
         );
 
@@ -589,7 +602,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         const items = Array.from({ length: 50 }, (_, i) =>
           generateCompleteItem(KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length], {
             content: `Search performance test item ${i} with unique keywords keyword${i % 10}`,
-            metadata: { performanceTest: true, index: i }
+            metadata: { performanceTest: true, index: i },
           })
         );
 
@@ -632,7 +645,7 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
 
     it('should handle store-then-search workflow for all knowledge types', async () => {
       // Store all knowledge types
-      const items = KNOWLEDGE_TYPES.map(type => generateCompleteItem(type));
+      const items = KNOWLEDGE_TYPES.map((type) => generateCompleteItem(type));
       const storeResult = await db.storeItems(items);
 
       expect(storeResult.errors).toHaveLength(0);
@@ -650,12 +663,12 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       // Store items with different scopes
       const projectItems = [
         generateCompleteItem('entity', { scope: { project: 'project-a' } }),
-        generateCompleteItem('observation', { scope: { project: 'project-b' } })
+        generateCompleteItem('observation', { scope: { project: 'project-b' } }),
       ];
 
       const orgItems = [
         generateCompleteItem('decision', { scope: { org: 'org-x' } }),
-        generateCompleteItem('issue', { scope: { org: 'org-y' } })
+        generateCompleteItem('issue', { scope: { org: 'org-y' } }),
       ];
 
       // Store items
@@ -674,7 +687,9 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
         generateCompleteItem('entity', { scope: { project: 'test-project' } }),
         generateCompleteItem('relation', { scope: { branch: 'feature-branch' } }),
         generateCompleteItem('observation', { scope: { org: 'test-org' } }),
-        generateCompleteItem('decision', { scope: { project: 'test-project', branch: 'main', org: 'test-org' } })
+        generateCompleteItem('decision', {
+          scope: { project: 'test-project', branch: 'main', org: 'test-org' },
+        }),
       ];
 
       const result = await db.storeItems(items);
@@ -682,13 +697,13 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       expect(result.stored).toHaveLength(4);
 
       // Verify different scopes are preserved
-      const scopes = result.stored.map(item => item.scope);
+      const scopes = result.stored.map((item) => item.scope);
       expect(scopes).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ project: 'test-project' }),
           expect.objectContaining({ branch: 'feature-branch' }),
           expect.objectContaining({ org: 'test-org' }),
-          expect.objectContaining({ project: 'test-project', branch: 'main', org: 'test-org' })
+          expect.objectContaining({ project: 'test-project', branch: 'main', org: 'test-org' }),
         ])
       );
     });
@@ -743,7 +758,9 @@ describe('Comprehensive MCP Cortex Test Suite', () => {
       console.log(`🔍 Memory Find Scenarios: ${MEMORY_FIND_SCENARIOS.length}`);
       console.log(`🏥 Database Health Scenarios: ${DATABASE_HEALTH_SCENARIOS.length}`);
       console.log(`📈 Database Stats Scenarios: ${DATABASE_STATS_SCENARIOS.length}`);
-      console.log(`⚡ Performance Scenarios: ${Object.keys(PERFORMANCE_SCENARIOS).reduce((sum, key) => sum + PERFORMANCE_SCENARIOS[key as keyof typeof PERFORMANCE_SCENARIOS].length, 0)}`);
+      console.log(
+        `⚡ Performance Scenarios: ${Object.keys(PERFORMANCE_SCENARIOS).reduce((sum, key) => sum + PERFORMANCE_SCENARIOS[key as keyof typeof PERFORMANCE_SCENARIOS].length, 0)}`
+      );
 
       const totalScenarios =
         MEMORY_STORE_SCENARIOS.length +

@@ -14,7 +14,7 @@ import {
   ReleaseDataSchema,
   RiskDataSchema,
   AssumptionDataSchema,
-  ChangeDataSchema
+  ChangeDataSchema,
 } from './dist/schemas/knowledge-types.js';
 
 const schemas = {
@@ -27,7 +27,7 @@ const schemas = {
   release: ReleaseDataSchema,
   risk: RiskDataSchema,
   assumption: AssumptionDataSchema,
-  change: ChangeDataSchema
+  change: ChangeDataSchema,
 };
 
 console.log('🔍 Checking schema definitions for failing types...\n');

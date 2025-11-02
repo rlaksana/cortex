@@ -7,7 +7,9 @@ This document describes the mandatory test profile with mocked embedding service
 ## Configuration Files
 
 ### 1. `config/test.local.json`
+
 Main test configuration file that defines:
+
 - Environment variables
 - Mock service settings
 - Database configuration
@@ -15,14 +17,18 @@ Main test configuration file that defines:
 - CI/CD specific settings
 
 ### 2. `tests/setup/test-profile-setup.ts`
+
 Test setup script that:
+
 - Loads test configuration
 - Sets environment variables
 - Validates test profile
 - Provides utilities for test reporting
 
 ### 3. `.env.test.example`
+
 Example environment file with:
+
 - Database connection settings
 - API key placeholders
 - Feature flags
@@ -114,6 +120,7 @@ The test profile is automatically used in CI/CD environments:
 ### Requirements for PR Validation
 
 All PRs must pass:
+
 - ✅ Lint checks (`npm run lint`)
 - ✅ Type checks (`npm run type-check`)
 - ✅ Unit tests with profile (`npm run test:profile`)
@@ -231,6 +238,7 @@ if (!result.valid) console.log('Errors:', result.errors);
 ### Updating Mock Services
 
 When updating the main application:
+
 1. Update corresponding mock services
 2. Test with both real and mocked services
 3. Update test profile configuration if needed

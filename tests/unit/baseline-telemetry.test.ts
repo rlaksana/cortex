@@ -51,14 +51,14 @@ describe('BaselineTelemetry', () => {
         stores: 1,
         queries: 2,
         zero_results: 1,
-        avg_score: 0.35
+        avg_score: 0.35,
       });
 
       expect(analysis['project-b']).toEqual({
         stores: 1,
         queries: 1,
         zero_results: 0,
-        avg_score: 0.9
+        avg_score: 0.9,
       });
     });
   });

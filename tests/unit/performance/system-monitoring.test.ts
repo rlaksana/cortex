@@ -15,8 +15,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { performanceCollector, PerformanceAlert } from '../../../src/monitoring/performance-collector';
-import { performanceDashboard, PerformanceDashboard } from '../../../src/monitoring/performance-dashboard';
+import {
+  performanceCollector,
+  PerformanceAlert,
+} from '../../../src/monitoring/performance-collector';
+import {
+  performanceDashboard,
+  PerformanceDashboard,
+} from '../../../src/monitoring/performance-dashboard';
 import { EventEmitter } from 'events';
 import { logger } from '../../../src/utils/logger';
 
@@ -26,18 +32,18 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 // Mock Express request/response for testing
-const mockRequest = (query: any = {}, params: any = {}) => ({
+const mockRequest = (query: any = {}, _params: any = {}) => ({
   query,
-  params,
+  params: _params,
   headers: {},
   body: {},
   method: 'GET',
-  url: '/test'
+  url: '/test',
 });
 
 const mockResponse = () => {
@@ -54,26 +60,26 @@ const mockSystemMetrics = {
   cpu: {
     usage: 45.2,
     loadAverage: [1.2, 1.5, 1.8],
-    cores: 8
+    cores: 8,
   },
   memory: {
     total: 16 * 1024 * 1024 * 1024, // 16GB
-    used: 8 * 1024 * 1024 * 1024,  // 8GB
-    free: 8 * 1024 * 1024 * 1024,  // 8GB
-    usagePercent: 50
+    used: 8 * 1024 * 1024 * 1024, // 8GB
+    free: 8 * 1024 * 1024 * 1024, // 8GB
+    usagePercent: 50,
   },
   disk: {
     total: 500 * 1024 * 1024 * 1024, // 500GB
-    used: 200 * 1024 * 1024 * 1024,  // 200GB
-    free: 300 * 1024 * 1024 * 1024,  // 300GB
-    usagePercent: 40
+    used: 200 * 1024 * 1024 * 1024, // 200GB
+    free: 300 * 1024 * 1024 * 1024, // 300GB
+    usagePercent: 40,
   },
   network: {
     bytesReceived: 1024 * 1024 * 100, // 100MB
-    bytesSent: 1024 * 1024 * 50,      // 50MB
+    bytesSent: 1024 * 1024 * 50, // 50MB
     packetsReceived: 10000,
-    packetsSent: 8000
-  }
+    packetsSent: 8000,
+  },
 };
 
 // Mock health check results
@@ -81,7 +87,7 @@ const mockHealthChecks = {
   database: { status: 'healthy', responseTime: 120, lastCheck: new Date() },
   redis: { status: 'healthy', responseTime: 25, lastCheck: new Date() },
   externalApi: { status: 'degraded', responseTime: 1200, lastCheck: new Date() },
-  storage: { status: 'healthy', responseTime: 85, lastCheck: new Date() }
+  storage: { status: 'healthy', responseTime: 85, lastCheck: new Date() },
 };
 
 describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
@@ -101,7 +107,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       enableAlertsEndpoint: true,
       enableTrendsEndpoint: true,
       requireAuthentication: false,
-      cacheTimeout: 1000 // Short timeout for testing
+      cacheTimeout: 1000, // Short timeout for testing
     });
 
     // Create event emitter for testing events
@@ -117,14 +123,18 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
   describe('System Health Monitoring', () => {
     it('should perform comprehensive service health checks', async () => {
       // Record some performance metrics
-      const endMetric1 = performanceCollector.startMetric('database_query', { query: 'SELECT * FROM users' });
+      const endMetric1 = performanceCollector.startMetric('database_query', {
+        query: 'SELECT * FROM users',
+      });
       setTimeout(endMetric1, 100);
 
-      const endMetric2 = performanceCollector.startMetric('api_request', { endpoint: '/api/health' });
+      const endMetric2 = performanceCollector.startMetric('api_request', {
+        endpoint: '/api/health',
+      });
       setTimeout(endMetric2, 150);
 
       // Wait for metrics to be processed
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const req = mockRequest();
       const res = mockResponse();
@@ -140,17 +150,17 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           memory: expect.objectContaining({
             used: expect.any(Number),
             total: expect.any(Number),
-            usagePercent: expect.any(Number)
+            usagePercent: expect.any(Number),
           }),
           performance: expect.objectContaining({
             totalOperations: expect.any(Number),
             averageSuccessRate: expect.any(Number),
-            problemOperations: expect.any(Array)
+            problemOperations: expect.any(Array),
           }),
           alerts: expect.objectContaining({
             critical: expect.any(Number),
-            total: expect.any(Number)
-          })
+            total: expect.any(Number),
+          }),
         })
       );
     });
@@ -164,7 +174,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         currentValue: 95,
         severity: 'critical',
         message: 'Database connection error rate exceeds threshold',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       // Manually add critical alert to dashboard
@@ -178,7 +188,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       expect(res.status).toHaveBeenCalledWith(503);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: 'critical'
+          status: 'critical',
         })
       );
     });
@@ -189,7 +199,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { operation: 'memory_store', duration: 120, success: true },
         { operation: 'memory_find', duration: 250, success: true },
         { operation: 'database_query', duration: 450, success: false },
-        { operation: 'vector_search', duration: 180, success: true }
+        { operation: 'vector_search', duration: 180, success: true },
       ];
 
       for (const op of dbOperations) {
@@ -202,7 +212,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       }
 
       // Wait for metrics processing
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const dbSummary = performanceCollector.getSummary('database_query');
       const memorySummary = performanceCollector.getSummary('memory_store');
@@ -229,24 +239,24 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
             uptime: expect.any(Number),
             version: expect.any(String),
             platform: expect.any(String),
-            arch: expect.any(String)
+            arch: expect.any(String),
           }),
           memory: expect.objectContaining({
             rss: expect.any(Number),
             heapTotal: expect.any(Number),
             heapUsed: expect.any(Number),
             external: expect.any(Number),
-            arrayBuffers: expect.any(Number)
+            arrayBuffers: expect.any(Number),
           }),
           cpu: expect.objectContaining({
             user: expect.any(Number),
-            system: expect.any(Number)
+            system: expect.any(Number),
           }),
           performance: expect.objectContaining({
             totalOperations: expect.any(Number),
-            trackedOperations: expect.any(Number)
+            trackedOperations: expect.any(Number),
           }),
-          timestamp: expect.any(Number)
+          timestamp: expect.any(Number),
         })
       );
     });
@@ -262,7 +272,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { operation: 'external_api_call', duration: 2500, success: true },
         { operation: 'cache_service', duration: 150, success: false },
         { operation: 'message_queue', duration: 400, success: true },
-        { operation: 'external_api_call', duration: 3000, success: false }
+        { operation: 'external_api_call', duration: 3000, success: false },
       ];
 
       for (const metric of dependencyMetrics) {
@@ -275,7 +285,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       }
 
       // Wait for processing and alert checking
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const apiSummary = performanceCollector.getSummary('external_api_call');
       const cacheSummary = performanceCollector.getSummary('cache_service');
@@ -297,13 +307,13 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       operations.forEach((operation, index) => {
         const endMetric = performanceCollector.startMetric(operation, {
           userId: `user_${index}`,
-          sessionId: `session_${index}`
+          sessionId: `session_${index}`,
         });
         setTimeout(endMetric, durations[index]);
       });
 
       // Wait for batch processing
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const summaries = performanceCollector.getAllSummaries();
       expect(summaries).toHaveLength(operations.length);
@@ -321,7 +331,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         userId: 'user123',
         feature: 'advanced_search',
         plan: 'premium',
-        region: 'us-west-2'
+        region: 'us-west-2',
       };
 
       const tags = ['api', 'v2', 'critical'];
@@ -329,7 +339,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const endMetric = performanceCollector.startMetric('custom_operation', customMetadata, tags);
       setTimeout(endMetric, 450);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const recentMetrics = performanceCollector.getRecentMetrics('custom_operation', 1);
       expect(recentMetrics).toHaveLength(1);
@@ -351,7 +361,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, duration);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Test different time windows
       const trends1min = performanceCollector.getPerformanceTrends(1);
@@ -380,7 +390,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, duration);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const summary = performanceCollector.getSummary(operation);
       expect(summary).toBeDefined();
@@ -402,12 +412,12 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       // Simulate performance degradation over time
       const baseDuration = 100;
       for (let i = 0; i < 20; i++) {
-        const duration = baseDuration + (i * 10); // Gradually increasing
+        const duration = baseDuration + i * 10; // Gradually increasing
         const endMetric = performanceCollector.startMetric(operation);
         setTimeout(endMetric, duration);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       const trends = performanceCollector.getPerformanceTrends(60);
       const trend = trends[operation];
@@ -420,7 +430,8 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const recentMetrics = performanceCollector.getRecentMetrics(operation, 5);
       const oldMetrics = performanceCollector.getRecentMetrics(operation, 5).slice(-5);
 
-      const recentAvg = recentMetrics.reduce((sum, m) => sum + m.duration, 0) / recentMetrics.length;
+      const recentAvg =
+        recentMetrics.reduce((sum, m) => sum + m.duration, 0) / recentMetrics.length;
       const oldAvg = oldMetrics.reduce((sum, m) => sum + m.duration, 0) / oldMetrics.length;
 
       expect(recentAvg).toBeGreaterThan(oldAvg);
@@ -446,7 +457,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, duration);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(alertReceived).toBeDefined();
       expect(alertReceived!.operation).toBe('slow_operation');
@@ -477,7 +488,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(alertReceived).toBeDefined();
       expect(alertReceived!.operation).toBe('error_prone_operation');
@@ -488,10 +499,10 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
 
     it('should implement alert severity levels correctly', async () => {
       const testCases = [
-        { threshold: 100, duration: 120, expectedSeverity: 'low' },      // 1.2x threshold
-        { threshold: 100, duration: 160, expectedSeverity: 'medium' },   // 1.6x threshold
-        { threshold: 100, duration: 200, expectedSeverity: 'high' },     // 2.0x threshold
-        { threshold: 100, duration: 300, expectedSeverity: 'critical' }  // 3.0x threshold
+        { threshold: 100, duration: 120, expectedSeverity: 'low' }, // 1.2x threshold
+        { threshold: 100, duration: 160, expectedSeverity: 'medium' }, // 1.6x threshold
+        { threshold: 100, duration: 200, expectedSeverity: 'high' }, // 2.0x threshold
+        { threshold: 100, duration: 300, expectedSeverity: 'critical' }, // 3.0x threshold
       ];
 
       for (const testCase of testCases) {
@@ -508,7 +519,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         const endMetric = performanceCollector.startMetric(operation);
         setTimeout(endMetric, testCase.duration);
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         expect(alertReceived).toBeDefined();
         expect(alertReceived!.severity).toBe(testCase.expectedSeverity);
@@ -522,17 +533,25 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       // Simulate multiple alerts
       const alerts = [
         { operation: 'api_server', alertType: 'slow_query' as const, severity: 'high' as const },
-        { operation: 'database', alertType: 'high_error_rate' as const, severity: 'critical' as const },
-        { operation: 'cache_service', alertType: 'slow_query' as const, severity: 'medium' as const }
+        {
+          operation: 'database',
+          alertType: 'high_error_rate' as const,
+          severity: 'critical' as const,
+        },
+        {
+          operation: 'cache_service',
+          alertType: 'slow_query' as const,
+          severity: 'medium' as const,
+        },
       ];
 
-      alerts.forEach(alert => {
+      alerts.forEach((alert) => {
         dashboard['alerts'].push({
           ...alert,
           threshold: 100,
           currentValue: 150,
           message: `Test alert for ${alert.operation}`,
-          timestamp: Date.now() - Math.random() * 3600000 // Random time in last hour
+          timestamp: Date.now() - Math.random() * 3600000, // Random time in last hour
         } as PerformanceAlert);
       });
 
@@ -547,11 +566,11 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           alerts: expect.arrayContaining([
             expect.objectContaining({
               operation: 'database',
-              severity: 'critical'
-            })
+              severity: 'critical',
+            }),
           ]),
           total: expect.any(Number),
-          timestamp: expect.any(Number)
+          timestamp: expect.any(Number),
         })
       );
 
@@ -565,19 +584,19 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         expect.objectContaining({
           alerts: expect.arrayContaining([
             expect.objectContaining({
-              operation: 'api_server'
-            })
-          ])
+              operation: 'api_server',
+            }),
+          ]),
         })
       );
     });
 
     it('should handle alert escalation procedures', async () => {
       const escalationRules = {
-        'low': { delay: 300000, actions: ['log_warning'] },      // 5 minutes
-        'medium': { delay: 120000, actions: ['send_email', 'log_warning'] }, // 2 minutes
-        'high': { delay: 60000, actions: ['send_sms', 'create_incident'] },   // 1 minute
-        'critical': { delay: 0, actions: ['immediate_call', 'create_incident', 'send_sms'] } // Immediate
+        low: { delay: 300000, actions: ['log_warning'] }, // 5 minutes
+        medium: { delay: 120000, actions: ['send_email', 'log_warning'] }, // 2 minutes
+        high: { delay: 60000, actions: ['send_sms', 'create_incident'] }, // 1 minute
+        critical: { delay: 0, actions: ['immediate_call', 'create_incident', 'send_sms'] }, // Immediate
       };
 
       const escalatedAlerts: any[] = [];
@@ -589,7 +608,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           escalatedAlerts.push({
             alert,
             escalatedActions: rule.actions,
-            escalatedAt: Date.now()
+            escalatedAt: Date.now(),
           });
         }, rule.delay);
       });
@@ -599,7 +618,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const endMetric = performanceCollector.startMetric('critical_operation');
       setTimeout(endMetric, 500); // 5x threshold for critical
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Critical alert should escalate immediately
       expect(escalatedAlerts.length).toBeGreaterThan(0);
@@ -614,8 +633,12 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const testEvents = [
         { level: 'info', message: 'System startup completed', data: { uptime: 45 } },
         { level: 'warn', message: 'High memory usage detected', data: { usage: 85 } },
-        { level: 'error', message: 'Database connection failed', data: { error: 'Connection timeout' } },
-        { level: 'debug', message: 'Cache miss for key', data: { key: 'user_123' } }
+        {
+          level: 'error',
+          message: 'Database connection failed',
+          data: { error: 'Connection timeout' },
+        },
+        { level: 'debug', message: 'Cache miss for key', data: { key: 'user_123' } },
       ];
 
       for (const event of testEvents) {
@@ -658,7 +681,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const performancePatterns = [
         { operation: 'api_request', pattern: 'fast', durations: [50, 75, 60, 80, 70] },
         { operation: 'database_query', pattern: 'slow', durations: [500, 600, 550, 700, 650] },
-        { operation: 'cache_lookup', pattern: 'mixed', durations: [5, 150, 8, 200, 12] }
+        { operation: 'cache_lookup', pattern: 'mixed', durations: [5, 150, 8, 200, 12] },
       ];
 
       for (const pattern of performancePatterns) {
@@ -668,7 +691,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Analyze the patterns
       const apiSummary = performanceCollector.getSummary('api_request');
@@ -691,7 +714,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { type: 'ValidationError', message: 'Invalid input parameters' },
         { type: 'AuthenticationError', message: 'Invalid API key' },
         { type: 'DatabaseError', message: 'Connection pool exhausted' },
-        { type: 'NetworkError', message: 'Request timeout' }
+        { type: 'NetworkError', message: 'Request timeout' },
       ];
 
       for (const errorType of errorTypes) {
@@ -699,17 +722,17 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         performanceCollector.recordError(operation, new Error(errorType.message), {
           errorType: errorType.type,
           userId: 'test_user',
-          endpoint: '/api/test'
+          endpoint: '/api/test',
         });
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Check that errors were recorded with metadata
       const summaries = performanceCollector.getAllSummaries();
       expect(summaries.length).toBeGreaterThanOrEqual(4);
 
-      summaries.forEach(summary => {
+      summaries.forEach((summary) => {
         if (summary.errorCount > 0) {
           expect(summary.successRate).toBeLessThan(100);
           const recentMetrics = performanceCollector.getRecentMetrics(summary.operation, 1);
@@ -727,19 +750,19 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { action: 'threshold_update', entity: 'api_response_time', oldValue: 1000, newValue: 2000 },
         { action: 'alert_triggered', entity: 'database_connection', severity: 'high' },
         { action: 'metric_cleared', entity: 'memory_usage', reason: 'maintenance' },
-        { action: 'dashboard_accessed', entity: 'performance_dashboard', userId: 'admin' }
+        { action: 'dashboard_accessed', entity: 'performance_dashboard', userId: 'admin' },
       ];
 
       // Simulate audit logging
       const auditLog: any[] = [];
 
-      auditEvents.forEach(event => {
+      auditEvents.forEach((event) => {
         const auditEntry = {
           timestamp: new Date(),
           event: event.action,
           entity: event.entity,
           details: { ...event },
-          sessionId: `test_session_${  Math.random().toString(36).substr(2, 9)}`
+          sessionId: `test_session_${Math.random().toString(36).substr(2, 9)}`,
         };
         auditLog.push(auditEntry);
 
@@ -749,7 +772,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       expect(logger.info).toHaveBeenCalledTimes(auditEvents.length);
 
       // Verify audit trail structure
-      auditLog.forEach(entry => {
+      auditLog.forEach((entry) => {
         expect(entry).toHaveProperty('timestamp');
         expect(entry).toHaveProperty('event');
         expect(entry).toHaveProperty('entity');
@@ -768,7 +791,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { name: 'user_authentication', avgDuration: 150, successRate: 99.5 },
         { name: 'data_retrieval', avgDuration: 350, successRate: 98.2 },
         { name: 'file_processing', avgDuration: 1200, successRate: 96.8 },
-        { name: 'search_operations', avgDuration: 280, successRate: 99.1 }
+        { name: 'search_operations', avgDuration: 280, successRate: 99.1 },
       ];
 
       for (const op of operations) {
@@ -780,13 +803,13 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         }
 
         // Record some failures based on success rate
-        const failureCount = Math.floor(10 * (100 - op.successRate) / 100);
+        const failureCount = Math.floor((10 * (100 - op.successRate)) / 100);
         for (let i = 0; i < failureCount; i++) {
           performanceCollector.recordError(op.name, new Error('Simulated failure'));
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const req = mockRequest();
       const res = mockResponse();
@@ -802,12 +825,12 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
               averageDuration: expect.any(Number),
               successRate: expect.any(Number),
               p95: expect.any(Number),
-              p99: expect.any(Number)
-            })
+              p99: expect.any(Number),
+            }),
           ]),
           trends: expect.any(Object),
           memory: expect.any(Object),
-          timestamp: expect.any(Number)
+          timestamp: expect.any(Number),
         })
       );
     });
@@ -817,7 +840,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const endMetric = performanceCollector.startMetric('export_test');
       setTimeout(endMetric, 250);
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Test JSON export
       const jsonReq = mockRequest({ format: 'json' });
@@ -891,7 +914,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           expect.objectContaining({
             trends: expect.any(Object),
             timeWindowMinutes: window,
-            timestamp: expect.any(Number)
+            timestamp: expect.any(Number),
           })
         );
       }
@@ -902,7 +925,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const performanceData = [
         { operation: 'optimal_operation', durations: [50, 60, 55, 65, 58] },
         { operation: 'slow_operation', durations: [1500, 1800, 1600, 2000, 1750] },
-        { operation: 'unstable_operation', durations: [100, 1000, 80, 1200, 90] }
+        { operation: 'unstable_operation', durations: [100, 1000, 80, 1200, 90] },
       ];
 
       for (const data of performanceData) {
@@ -912,7 +935,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const trends = performanceCollector.getPerformanceTrends(60);
 
@@ -936,14 +959,18 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { name: 'auth_service', endpoint: '/auth/health', expectedResponseTime: 200 },
         { name: 'user_service', endpoint: '/users/health', expectedResponseTime: 300 },
         { name: 'payment_service', endpoint: '/payments/health', expectedResponseTime: 500 },
-        { name: 'notification_service', endpoint: '/notifications/health', expectedResponseTime: 150 }
+        {
+          name: 'notification_service',
+          endpoint: '/notifications/health',
+          expectedResponseTime: 150,
+        },
       ];
 
       // Record cross-service health checks
       for (const service of services) {
         const endMetric = performanceCollector.startMetric('service_health_check', {
           serviceName: service.name,
-          endpoint: service.endpoint
+          endpoint: service.endpoint,
         });
 
         // Simulate different response times
@@ -951,7 +978,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, Math.max(50, responseTime));
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const healthSummary = performanceCollector.getSummary('service_health_check');
       expect(healthSummary).toBeDefined();
@@ -963,8 +990,8 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const recentMetrics = performanceCollector.getRecentMetrics('service_health_check', 10);
       expect(recentMetrics).toHaveLength(services.length);
 
-      const serviceNames = recentMetrics.map(m => m.metadata?.serviceName);
-      services.forEach(service => {
+      const serviceNames = recentMetrics.map((m) => m.metadata?.serviceName);
+      services.forEach((service) => {
         expect(serviceNames).toContain(service.name);
       });
     });
@@ -975,7 +1002,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { method: 'POST', path: '/api/users', expectedTime: 350 },
         { method: 'GET', path: '/api/products', expectedTime: 150 },
         { method: 'PUT', path: '/api/products/:id', expectedTime: 400 },
-        { method: 'DELETE', path: '/api/users/:id', expectedTime: 250 }
+        { method: 'DELETE', path: '/api/users/:id', expectedTime: 250 },
       ];
 
       for (const endpoint of apiEndpoints) {
@@ -987,20 +1014,21 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
           const endMetric = performanceCollector.startMetric(operation, {
             method: endpoint.method,
             path: endpoint.path,
-            statusCode: 200
+            statusCode: 200,
           });
 
-          const responseTime = endpoint.expectedTime + (Math.random() - 0.5) * endpoint.expectedTime * 0.6;
+          const responseTime =
+            endpoint.expectedTime + (Math.random() - 0.5) * endpoint.expectedTime * 0.6;
           setTimeout(endMetric, Math.max(50, responseTime));
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const summaries = performanceCollector.getAllSummaries();
       expect(summaries.length).toBeGreaterThanOrEqual(apiEndpoints.length);
 
-      summaries.forEach(summary => {
+      summaries.forEach((summary) => {
         expect(summary.averageDuration).toBeGreaterThan(0);
         expect(summary.successRate).toBe(100);
         expect(summary.p95).toBeGreaterThan(summary.averageDuration * 0.8);
@@ -1014,7 +1042,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { type: 'INSERT', table: 'orders', avgTime: 200 },
         { type: 'UPDATE', table: 'products', avgTime: 180 },
         { type: 'DELETE', table: 'sessions', avgTime: 90 },
-        { type: 'JOIN', tables: ['users', 'orders'], avgTime: 350 }
+        { type: 'JOIN', tables: ['users', 'orders'], avgTime: 350 },
       ];
 
       for (const op of dbOperations) {
@@ -1024,37 +1052,40 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         for (let i = 0; i < 8; i++) {
           const duration = op.avgTime + (Math.random() - 0.5) * op.avgTime * 0.8;
 
-          if (Math.random() > 0.05) { // 95% success rate
+          if (Math.random() > 0.05) {
+            // 95% success rate
             const endMetric = performanceCollector.startMetric(operation, {
               queryType: op.type,
               table: op.table,
               tables: op.tables,
-              affectedRows: Math.floor(Math.random() * 100) + 1
+              affectedRows: Math.floor(Math.random() * 100) + 1,
             });
             setTimeout(endMetric, Math.max(50, duration));
           } else {
             // Record occasional database errors
             performanceCollector.recordError(operation, new Error('Database deadlock'), {
               queryType: op.type,
-              table: op.table
+              table: op.table,
             });
           }
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const dbSummaries = performanceCollector.getAllSummaries().filter(s => s.operation.startsWith('db_'));
+      const dbSummaries = performanceCollector
+        .getAllSummaries()
+        .filter((s) => s.operation.startsWith('db_'));
       expect(dbSummaries.length).toBe(dbOperations.length);
 
-      dbSummaries.forEach(summary => {
+      dbSummaries.forEach((summary) => {
         expect(summary.count).toBeGreaterThan(0);
         expect(summary.successRate).toBeGreaterThan(90); // Should be around 95%
         expect(summary.averageDuration).toBeGreaterThan(0);
 
         // Verify database operation metadata
         const recentMetrics = performanceCollector.getRecentMetrics(summary.operation, 3);
-        recentMetrics.forEach(metric => {
+        recentMetrics.forEach((metric) => {
           if (metric.success && metric.metadata) {
             expect(metric.metadata).toHaveProperty('queryType');
             if (metric.metadata.table) {
@@ -1070,7 +1101,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { name: 'stripe_payment', baseUrl: 'https://api.stripe.com', timeout: 5000 },
         { name: 'sendgrid_email', baseUrl: 'https://api.sendgrid.com', timeout: 3000 },
         { name: 'twilio_sms', baseUrl: 'https://api.twilio.com', timeout: 2000 },
-        { name: 'google_auth', baseUrl: 'https://accounts.google.com', timeout: 4000 }
+        { name: 'google_auth', baseUrl: 'https://accounts.google.com', timeout: 4000 },
       ];
 
       for (const service of externalServices) {
@@ -1085,35 +1116,37 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
             const endMetric = performanceCollector.startMetric(operation, {
               service: service.name,
               baseUrl: service.baseUrl,
-              statusCode: responseTime > service.timeout * 0.9 ? 429 : 200
+              statusCode: responseTime > service.timeout * 0.9 ? 429 : 200,
             });
             setTimeout(endMetric, responseTime);
           } else {
             performanceCollector.recordError(operation, new Error('Service timeout'), {
               service: service.name,
               timeout: service.timeout,
-              actualTime: responseTime
+              actualTime: responseTime,
             });
           }
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const externalSummaries = performanceCollector.getAllSummaries().filter(s => s.operation.startsWith('external_'));
+      const externalSummaries = performanceCollector
+        .getAllSummaries()
+        .filter((s) => s.operation.startsWith('external_'));
       expect(externalSummaries.length).toBe(externalServices.length);
 
-      externalSummaries.forEach(summary => {
+      externalSummaries.forEach((summary) => {
         const serviceName = summary.operation.replace('external_', '');
-        const serviceConfig = externalServices.find(s => s.name === serviceName);
+        const serviceConfig = externalServices.find((s) => s.name === serviceName);
 
         expect(serviceConfig).toBeDefined();
         expect(summary.averageDuration).toBeGreaterThan(0);
 
         // Check for rate limiting (429 status codes)
         const recentMetrics = performanceCollector.getRecentMetrics(summary.operation, 10);
-        const rateLimitedCalls = recentMetrics.filter(m =>
-          m.success && m.metadata?.statusCode === 429
+        const rateLimitedCalls = recentMetrics.filter(
+          (m) => m.success && m.metadata?.statusCode === 429
         );
 
         if (rateLimitedCalls.length > 0) {
@@ -1131,7 +1164,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         { category: 'internal_services', operations: ['auth', 'users', 'products'] },
         { category: 'external_apis', operations: ['payment', 'email', 'sms'] },
         { category: 'database', operations: ['read', 'write', 'query'] },
-        { category: 'cache', operations: ['get', 'set', 'delete'] }
+        { category: 'cache', operations: ['get', 'set', 'delete'] },
       ];
 
       for (const category of integrationMetrics) {
@@ -1140,21 +1173,21 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
 
           // Record metrics with different performance characteristics
           for (let i = 0; i < 5; i++) {
-            const baseTime = category === 'external_apis' ? 500 :
-                           category === 'database' ? 200 : 100;
+            const baseTime =
+              category === 'external_apis' ? 500 : category === 'database' ? 200 : 100;
 
             const duration = baseTime + Math.random() * baseTime;
             const endMetric = performanceCollector.startMetric(fullOperation, {
               category,
               operation,
-              integration_type: category
+              integration_type: category,
             });
             setTimeout(endMetric, duration);
           }
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const req = mockRequest();
       const res = mockResponse();
@@ -1165,13 +1198,15 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         expect.objectContaining({
           summaries: expect.arrayContaining([
             expect.objectContaining({
-              operation: expect.stringMatching(/^(internal_services|external_apis|database|cache)_/),
+              operation: expect.stringMatching(
+                /^(internal_services|external_apis|database|cache)_/
+              ),
               count: expect.any(Number),
               averageDuration: expect.any(Number),
-              successRate: expect.any(Number)
-            })
+              successRate: expect.any(Number),
+            }),
           ]),
-          trends: expect.any(Object)
+          trends: expect.any(Object),
         })
       );
 
@@ -1189,13 +1224,15 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       // Record many metrics rapidly
       const promises = [];
       for (let i = 0; i < metricCount; i++) {
-        promises.push(new Promise<void>((resolve) => {
-          const endMetric = performanceCollector.startMetric(`bulk_operation_${i % 10}`);
-          setTimeout(() => {
-            endMetric();
-            resolve();
-          }, Math.random() * 100);
-        }));
+        promises.push(
+          new Promise<void>((resolve) => {
+            const endMetric = performanceCollector.startMetric(`bulk_operation_${i % 10}`);
+            setTimeout(() => {
+              endMetric();
+              resolve();
+            }, Math.random() * 100);
+          })
+        );
       }
 
       await Promise.all(promises);
@@ -1221,12 +1258,12 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         const operation = `memory_test_${i}`;
         const endMetric = performanceCollector.startMetric(operation, {
           largeData: 'x'.repeat(1000), // 1KB of metadata
-          iteration: i
+          iteration: i,
         });
         setTimeout(endMetric, Math.random() * 200);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // System should still be responsive
       const req = mockRequest();
@@ -1252,19 +1289,21 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, 100 + i * 10);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Make concurrent requests
       const promises = [];
       for (let i = 0; i < concurrentRequests; i++) {
-        promises.push(new Promise<void>((resolve) => {
-          const req = mockRequest({ timeWindow: '60' });
-          const res = mockResponse();
+        promises.push(
+          new Promise<void>((resolve) => {
+            const req = mockRequest({ timeWindow: '60' });
+            const res = mockResponse();
 
-          dashboard.getTrends(req, res);
-          expect(res.json).toHaveBeenCalled();
-          resolve();
-        }));
+            dashboard.getTrends(req, res);
+            expect(res.json).toHaveBeenCalled();
+            resolve();
+          })
+        );
       }
 
       const startTime = Date.now();
@@ -1285,7 +1324,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, 150);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       let summaries = performanceCollector.getAllSummaries();
       expect(summaries.length).toBe(initialMetrics.length);
@@ -1305,7 +1344,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, 100);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       summaries = performanceCollector.getAllSummaries();
       expect(summaries.length).toBe(recoveryMetrics.length);
@@ -1327,7 +1366,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         enableAlertsEndpoint: true,
         enableTrendsEndpoint: false,
         requireAuthentication: true,
-        cacheTimeout: 60000
+        cacheTimeout: 60000,
       };
 
       const customDashboard = new PerformanceDashboard(customConfig);
@@ -1344,11 +1383,15 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
       const customThresholds = [
         { operation: 'custom_fast', duration: 50, errorRate: 1 },
         { operation: 'custom_slow', duration: 2000, errorRate: 15 },
-        { operation: 'custom_critical', duration: 100, errorRate: 0.5 }
+        { operation: 'custom_critical', duration: 100, errorRate: 0.5 },
       ];
 
-      customThresholds.forEach(threshold => {
-        performanceCollector.setAlertThreshold(threshold.operation, threshold.duration, threshold.errorRate);
+      customThresholds.forEach((threshold) => {
+        performanceCollector.setAlertThreshold(
+          threshold.operation,
+          threshold.duration,
+          threshold.errorRate
+        );
       });
 
       // Verify thresholds were set (this would need access to private method)
@@ -1364,7 +1407,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         setTimeout(endMetric, 100);
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       let summaries = performanceCollector.getAllSummaries();
       expect(summaries.length).toBeGreaterThan(0);
@@ -1381,7 +1424,7 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
 
       dashboard.clearMetrics(req, res);
       expect(res.json).toHaveBeenCalledWith({
-        message: 'Metrics and alerts cleared successfully'
+        message: 'Metrics and alerts cleared successfully',
       });
     });
 

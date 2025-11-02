@@ -3,22 +3,26 @@
 ## 🚀 Quick Setup (Clone & Run)
 
 ### **1. Clone Repository**
+
 ```bash
 git clone <repository-url>
 cd mcp-cortex
 ```
 
 ### **2. Install Dependencies**
+
 ```bash
 npm install
 ```
 
 ### **3. Build Project**
+
 ```bash
 npm run build
 ```
 
 ### **4. Setup Environment Variable**
+
 ```bash
 # Windows (PowerShell)
 $env:OPENAI_API_KEY = "your-openai-api-key"
@@ -31,11 +35,13 @@ export OPENAI_API_KEY=your-openai-api-key
 ```
 
 ### **5. Start Qdrant**
+
 ```bash
 docker run -p 6333:6333 -d --name cortex-qdrant qdrant/qdrant:latest
 ```
 
 ### **6. Add to Claude Code**
+
 Copy `claude-code-config.json` to your Claude Code config location:
 
 **Windows:** `%APPDATA%\Claude\claude_code_config.json`
@@ -43,6 +49,7 @@ Copy `claude-code-config.json` to your Claude Code config location:
 **Linux:** `~/.config/claude/claude_code_config.json`
 
 Then merge with your existing config:
+
 ```json
 {
   "mcpServers": {
@@ -59,26 +66,32 @@ Then merge with your existing config:
 ```
 
 ### **7. Restart Claude Code**
+
 Done! Cortex MCP will automatically connect.
 
 ## ✅ Why This Works Portably
 
 ### **Relative Paths**
+
 - `"./dist/index.js"` works from any directory
 - No absolute paths like `"D:\\WORKSPACE\\..."`
 
 ### **Environment Variables**
+
 - `${OPENAI_API_KEY}` pulls from system environment
 - Works across Windows, Mac, Linux
 
 ### **Standard MCP Pattern**
+
 - Follows official MCP server configuration
 - Same pattern as @modelcontextprotocol/server-github
 
 ## 🔧 Alternative Configurations
 
 ### **For Different Working Directories**
+
 If you run Claude Desktop from a different directory, use:
+
 ```json
 {
   "mcpServers": {
@@ -95,6 +108,7 @@ If you run Claude Desktop from a different directory, use:
 ```
 
 ### **For Production**
+
 ```json
 {
   "mcpServers": {
@@ -114,11 +128,13 @@ If you run Claude Desktop from a different directory, use:
 ## 🧪 Verification
 
 1. **Build Success:**
+
    ```bash
    npm run build && ls -la dist/index.js
    ```
 
 2. **Manual Test:**
+
    ```bash
    node ./dist/index.js
    ```
@@ -131,21 +147,25 @@ If you run Claude Desktop from a different directory, use:
 ## 🆚 Old vs New Approach
 
 ### **❌ Old (Not Portable)**
+
 ```json
 {
   "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"]
 }
 ```
+
 - ❌ Hardcoded Windows path
 - ❌ Only works on your machine
 - ❌ Breaks when moved
 
 ### **✅ New (Portable)**
+
 ```json
 {
   "args": ["./dist/index.js"]
 }
 ```
+
 - ✅ Relative path works anywhere
 - ✅ Cross-platform compatible
 - ✅ Clone and run directly

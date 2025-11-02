@@ -19,12 +19,14 @@ This guide helps you set up the Cortex Memory MCP server from scratch. No prior 
 ## ⚡ Prerequisites
 
 **Required Software:**
+
 - **Node.js** 20.0.0 or higher
 - **Git** (for cloning)
 - **Docker** (for Qdrant database)
 - **OpenAI API Key** (MANDATORY - system will not start without it)
 
 **Check if you have prerequisites:**
+
 ```bash
 # Check Node.js version
 node --version
@@ -50,6 +52,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" https://api.openai.com/v1/models
 ## 📦 Installation Steps
 
 ### Step 1: Clone and Navigate
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-org/cortex-memory-mcp.git
@@ -61,6 +64,7 @@ ls
 ```
 
 ### Step 2: Install Dependencies
+
 ```bash
 # Install Node.js dependencies
 npm install
@@ -71,6 +75,7 @@ npm install
 ```
 
 ### Step 3: Start Qdrant Database
+
 ```bash
 # Start Qdrant with Docker
 docker run -d --name cortex-qdrant -p 6333:6333 qdrant/qdrant:latest
@@ -89,6 +94,7 @@ curl http://localhost:6333/health
 ## ⚙️ Configuration
 
 ### Step 4: Environment Setup
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -99,6 +105,7 @@ cp .env.example .env
 ```
 
 **REQUIRED: Edit `.env` and set your OpenAI API key:**
+
 ```bash
 # ⚠️ MANDATORY - Replace with your actual OpenAI API key
 OPENAI_API_KEY=your-openai-api-key-here
@@ -110,9 +117,11 @@ LOG_LEVEL=info
 ```
 
 **What you MUST change:**
+
 - `OPENAI_API_KEY` - Get from https://platform.openai.com/api-keys
 
 **Optional settings (keep defaults for now):**
+
 - `QDRANT_URL` - Keep `http://localhost:6333`
 - `SEARCH_LIMIT` - Keep `50`
 - `LOG_LEVEL` - Keep `info`
@@ -124,6 +133,7 @@ LOG_LEVEL=info
 ## 🔨 Build & Run
 
 ### Step 5: Build the Project
+
 ```bash
 # Build TypeScript to JavaScript
 npm run build
@@ -134,6 +144,7 @@ npm run build
 ```
 
 ### Step 6: Start the Server
+
 ```bash
 # Start the Cortex MCP server
 npm start
@@ -147,6 +158,7 @@ npm start
 ```
 
 **Alternative: Development mode**
+
 ```bash
 # For development with auto-restart
 npm run dev
@@ -161,6 +173,7 @@ npm run dev
 ### Test Your Setup
 
 **Step 7A: Test Database Health**
+
 ```bash
 # In a NEW terminal window (keep server running)
 
@@ -174,6 +187,7 @@ npm run db:health
 ```
 
 **Step 7B: Test API Connection**
+
 ```bash
 # Test OpenAI connection
 npm run test:connection
@@ -186,20 +200,21 @@ npm run test:connection
 ### Step 8: Your First Memory Operations
 
 Create a test file `test-memory.js`:
+
 ```javascript
 import { CortexMemoryMCP } from './dist/index.js';
 
 // Create a memory item
 const testItem = {
-  kind: "entity",
+  kind: 'entity',
   data: {
-    title: "My First Test Entity",
-    description: "Testing the Cortex Memory system",
-    content: "This is my first knowledge item stored in Cortex"
+    title: 'My First Test Entity',
+    description: 'Testing the Cortex Memory system',
+    content: 'This is my first knowledge item stored in Cortex',
   },
   scope: {
-    project: "my-test-project"
-  }
+    project: 'my-test-project',
+  },
 };
 
 // Store the item
@@ -209,6 +224,7 @@ console.log('✅ Item stored successfully');
 ```
 
 **Expected outcome:**
+
 - ✅ Server starts without errors
 - ✅ Database health check passes
 - ✅ OpenAI API connection works
@@ -223,6 +239,7 @@ console.log('✅ Item stored successfully');
 ### Common Issues & Solutions
 
 **❌ Issue: "OPENAI_API_KEY is required"**
+
 ```bash
 # Solution: Verify your .env file
 cat .env | grep OPENAI_API_KEY
@@ -230,6 +247,7 @@ cat .env | grep OPENAI_API_KEY
 ```
 
 **❌ Issue: "Qdrant connection failed"**
+
 ```bash
 # Check if Qdrant is running
 docker ps | grep qdrant
@@ -240,6 +258,7 @@ docker start cortex-qdrant
 ```
 
 **❌ Issue: "Node.js version too old"**
+
 ```bash
 # Check version
 node --version
@@ -247,6 +266,7 @@ node --version
 ```
 
 **❌ Issue: "Port 6333 already in use"**
+
 ```bash
 # Find what's using the port
 netstat -tulpn | grep 6333
@@ -254,6 +274,7 @@ netstat -tulpn | grep 6333
 ```
 
 **❌ Issue: Build errors**
+
 ```bash
 # Clean and rebuild
 rm -rf dist/ node_modules/
@@ -264,6 +285,7 @@ npm run build
 ### Get Help
 
 **Quick diagnostic commands:**
+
 ```bash
 # Check everything at once
 npm run quality-check
@@ -272,6 +294,7 @@ npm run test:connection
 ```
 
 **Expected outputs:**
+
 - ✅ All linters pass
 - ✅ Database healthy
 - ✅ Connections working
@@ -306,6 +329,7 @@ npm run test:connection
 5. **Production Deployment:** [Deployment Guide](docs/CONFIG-DEPLOYMENT.md)
 
 **Example next commands:**
+
 ```bash
 # Run comprehensive tests
 npm test
@@ -322,12 +346,14 @@ cat docs/API-REFERENCE.md
 ## 🆘 Still Need Help?
 
 **Check these resources:**
+
 - 📖 [Full Documentation Index](README.md) - 38 comprehensive guides
 - 🔧 [Troubleshooting Guide](docs/TROUBLESHOOT-EMFILE.md) - Detailed problem solving
 - 🐛 [GitHub Issues](https://github.com/your-org/cortex-memory-mcp/issues)
 - 💬 [GitHub Discussions](https://github.com/your-org/cortex-memory-mcp/discussions)
 
 **Quick diagnostic:**
+
 ```bash
 # Generate system report
 echo "=== System Info ===" && \
@@ -344,6 +370,7 @@ npm run db:health
 ## 📚 Quick Reference
 
 **Essential Commands:**
+
 ```bash
 npm install          # Install dependencies
 npm run build        # Compile TypeScript
@@ -355,12 +382,14 @@ npm run lint       # Code quality
 ```
 
 **File Locations:**
+
 - Configuration: `.env`
 - Main code: `src/index.ts`
 - Documentation: `docs/`
 - Docker files: `docker/`
 
 **Ports Used:**
+
 - 6333: Qdrant database
 - 3000: Optional HTTP API
 
@@ -368,4 +397,4 @@ npm run lint       # Code quality
 
 **🎯 Congratulations! You have a working Cortex Memory MCP server ready for intelligent knowledge management!**
 
-*Last updated: 2025-10-30 | Version: 2.0.0 | Architecture: Qdrant-only*
+_Last updated: 2025-10-30 | Version: 2.0.0 | Architecture: Qdrant-only_

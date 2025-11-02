@@ -109,10 +109,7 @@ mockLogger.info({ operation: 'test' }, 'Test message');
 mockLogger.error({ error: new Error('test') }, 'Error message');
 
 // Assertions
-expect(mockLogger.info).toHaveBeenCalledWith(
-  { operation: 'test' },
-  'Test message'
-);
+expect(mockLogger.info).toHaveBeenCalledWith({ operation: 'test' }, 'Test message');
 ```
 
 ### Qdrant Client Mock
@@ -134,7 +131,7 @@ const customQdrant = testUtils.createMockTestEnvironment({
     collections: [{ name: 'test-collection', points_count: 100 }],
     searchResults: [MockDataGenerators.searchResult()],
     healthStatus: true,
-  }
+  },
 }).qdrantClient;
 ```
 
@@ -199,7 +196,7 @@ const mockStore = testUtils.mocks.createMockMemoryStore({
 const result = await mockStore.store({
   kind: 'entity',
   content: 'test',
-  scope: { project: 'test' }
+  scope: { project: 'test' },
 });
 ```
 
@@ -285,7 +282,7 @@ Prefer specific mocks over generic ones:
 ```typescript
 // Good
 const mockAuth = testUtils.mocks.createMockAuthService({
-  validUsers: [MockDataGenerators.user({ role: 'admin' })]
+  validUsers: [MockDataGenerators.user({ role: 'admin' })],
 });
 
 // Avoid
@@ -301,7 +298,9 @@ When testing error scenarios, be explicit about what should fail:
 const failingQdrant = testUtils.mocks.createFailingQdrantClient(['search']);
 
 // Avoid
-const mockQdrant = vi.fn(() => { throw new Error(); });
+const mockQdrant = vi.fn(() => {
+  throw new Error();
+});
 ```
 
 ### 3. Use Realistic Data
@@ -348,7 +347,7 @@ it('should search with correct parameters', async () => {
   expect(mockQdrant.search).toHaveBeenCalledWith({
     vector: expect.any(Array),
     limit: 10,
-    filter: expect.any(Object)
+    filter: expect.any(Object),
   });
 });
 ```
@@ -384,7 +383,7 @@ describe('MyService', () => {
     expect(mockQdrant.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         collection_name: 'test-cortex-memory',
-        points: expect.any(Array)
+        points: expect.any(Array),
       })
     );
   });
@@ -413,10 +412,12 @@ import { AuthService } from '../src/auth/auth-service';
 describe('AuthService', () => {
   it('should authenticate valid users', async () => {
     const mockAuth = testUtils.mocks.createMockAuthService({
-      validUsers: [MockDataGenerators.user({
-        username: 'testuser',
-        role: 'admin'
-      })]
+      validUsers: [
+        MockDataGenerators.user({
+          username: 'testuser',
+          role: 'admin',
+        }),
+      ],
     });
 
     const result = await mockAuth.validateUserWithDatabase('testuser', 'password');
@@ -424,19 +425,17 @@ describe('AuthService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         username: 'testuser',
-        role: 'admin'
+        role: 'admin',
       })
     );
   });
 
   it('should reject invalid credentials', async () => {
     const mockAuth = testUtils.mocks.createMockAuthService({
-      failOperations: ['validateUserWithDatabase']
+      failOperations: ['validateUserWithDatabase'],
     });
 
-    await expect(
-      mockAuth.validateUserWithDatabase('invalid', 'credentials')
-    ).rejects.toThrow();
+    await expect(mockAuth.validateUserWithDatabase('invalid', 'credentials')).rejects.toThrow();
   });
 });
 ```

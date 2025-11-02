@@ -21,7 +21,7 @@
  */
 
 import { logger } from '../../utils/logger.js';
-import { auditService } from '../audit/audit-service.js';
+// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import type {
   SearchResult,
   SearchQuery,
@@ -194,10 +194,11 @@ export class MemoryFindOrchestratorQdrant {
       logger.error({ error, query }, 'Memory find operation failed (Qdrant)');
 
       // Log error
-      await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
-        operation: 'memory_find_qdrant',
-        query: query.query,
-      });
+      // await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
+      //   operation: 'memory_find_qdrant',
+      //   query: query.query,
+      // }); // REMOVED: audit-service deleted
+      logger.error({ error, query: query.query }, 'Memory find error (logging disabled)');
 
       return this.createErrorResponse(error);
     }
@@ -1010,15 +1011,23 @@ export class MemoryFindOrchestratorQdrant {
     response: SmartFindResult,
     _executionTime: number
   ): Promise<void> {
-    await auditService.logSearchOperation(
-      query.query,
-      response.hits.length,
-      response.autonomous_metadata.strategy_used,
+    // await auditService.logSearchOperation(
+    //   query.query,
+    //   response.hits.length,
+    //   response.autonomous_metadata.strategy_used,
+    //   {
+    //     strategy: response.autonomous_metadata.strategy_used,
+    //     confidence: response.autonomous_metadata.confidence,
+    //     fallback: response.autonomous_metadata.fallback_attempted,
+    //   }
+    // ); // REMOVED: audit-service deleted
+    logger.debug(
       {
+        query: query.query,
+        resultsFound: response.hits.length,
         strategy: response.autonomous_metadata.strategy_used,
-        confidence: response.autonomous_metadata.confidence,
-        fallback: response.autonomous_metadata.fallback_attempted,
-      }
+      },
+      'Search operation (logging disabled)'
     );
   }
 

@@ -27,7 +27,7 @@ class MockTracker {
   }
 
   clearAllMocks(): void {
-    this.mocks.forEach(mock => {
+    this.mocks.forEach((mock) => {
       if (mock && typeof mock.mockClear === 'function') {
         mock.mockClear();
       }
@@ -39,7 +39,7 @@ class MockTracker {
   }
 
   restoreAllMocks(): void {
-    this.mocks.forEach(mock => {
+    this.mocks.forEach((mock) => {
       if (mock && typeof mock.mockRestore === 'function') {
         mock.mockRestore();
       }
@@ -166,10 +166,7 @@ export class StandardTestUtils {
   /**
    * Standard async timeout wrapper
    */
-  static withTimeout<T>(
-    promise: Promise<T>,
-    timeoutMs: number = 5000
-  ): Promise<T> {
+  static withTimeout<T>(promise: Promise<T>, timeoutMs: number = 5000): Promise<T> {
     return Promise.race([
       promise,
       new Promise<never>((_, reject) =>
@@ -189,7 +186,7 @@ export class MockFactory {
   static createQdrantClient() {
     const mock = {
       getCollections: vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection', points_count: 0 }]
+        collections: [{ name: 'test-collection', points_count: 0 }],
       }),
       createCollection: vi.fn().mockResolvedValue(undefined),
       deleteCollection: vi.fn().mockResolvedValue(undefined),
@@ -198,15 +195,15 @@ export class MockFactory {
       getCollection: vi.fn().mockResolvedValue({
         points_count: 0,
         status: 'green',
-        optimizer_status: 'ok'
+        optimizer_status: 'ok',
       }),
       delete: vi.fn().mockResolvedValue({ status: 'completed' }),
       scroll: vi.fn().mockResolvedValue({
         points: [],
-        next_page_offset: null
+        next_page_offset: null,
       }),
       count: vi.fn().mockResolvedValue({ count: 0 }),
-      healthCheck: vi.fn().mockResolvedValue(true)
+      healthCheck: vi.fn().mockResolvedValue(true),
     };
 
     StandardTestUtils.registerMock('qdrantClient', mock);
@@ -226,7 +223,7 @@ export class MockFactory {
       invalidateToken: vi.fn().mockResolvedValue(true),
       createSession: vi.fn().mockResolvedValue({ sessionId: 'test-session' }),
       validateSession: vi.fn().mockResolvedValue(true),
-      destroySession: vi.fn().mockResolvedValue(true)
+      destroySession: vi.fn().mockResolvedValue(true),
     };
 
     StandardTestUtils.registerMock('authService', mock);
@@ -244,7 +241,7 @@ export class MockFactory {
       logSecurityEvent: vi.fn().mockResolvedValue(undefined),
       getAuditLog: vi.fn().mockResolvedValue([]),
       searchAuditLog: vi.fn().mockResolvedValue([]),
-      exportAuditLog: vi.fn().mockResolvedValue({ data: [], totalCount: 0 })
+      exportAuditLog: vi.fn().mockResolvedValue({ data: [], totalCount: 0 }),
     };
 
     StandardTestUtils.registerMock('auditService', mock);
@@ -259,10 +256,10 @@ export class MockFactory {
       generateEmbedding: vi.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]),
       generateBatchEmbeddings: vi.fn().mockResolvedValue([
         [0.1, 0.2, 0.3, 0.4, 0.5],
-        [0.6, 0.7, 0.8, 0.9, 1.0]
+        [0.6, 0.7, 0.8, 0.9, 1.0],
       ]),
       calculateSimilarity: vi.fn().mockReturnValue(0.85),
-      findMostSimilar: vi.fn().mockResolvedValue({ id: 'test-item', score: 0.9 })
+      findMostSimilar: vi.fn().mockResolvedValue({ id: 'test-item', score: 0.9 }),
     };
 
     StandardTestUtils.registerMock('embeddingService', mock);
@@ -292,7 +289,10 @@ export class TestPatterns {
   /**
    * Integration test pattern - testing component interactions
    */
-  static integrationTest(setupFn?: () => void | Promise<void>, teardownFn?: () => void | Promise<void>) {
+  static integrationTest(
+    setupFn?: () => void | Promise<void>,
+    teardownFn?: () => void | Promise<void>
+  ) {
     beforeAll(async () => {
       StandardTestUtils.setupTestEnvironment();
       if (setupFn) await setupFn();
@@ -349,13 +349,7 @@ export class TestPatterns {
 
         // Verify no sensitive data was logged
         const errorCalls = (console.error as any).mock.calls;
-        const sensitiveDataPatterns = [
-          /password/i,
-          /secret/i,
-          /token/i,
-          /key/i,
-          /auth/i
-        ];
+        const sensitiveDataPatterns = [/password/i, /secret/i, /token/i, /key/i, /auth/i];
 
         for (const call of errorCalls) {
           const message = call.join(' ');

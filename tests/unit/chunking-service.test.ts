@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { ChunkingService } from '../../src/services/chunking/chunking-service';
 import { KnowledgeItem } from '../../src/types/core-interfaces';
 
@@ -54,7 +55,7 @@ describe('ChunkingService', () => {
     });
 
     it('should preserve paragraph boundaries when possible', async () => {
-      const content = `${`Paragraph 1. `.repeat(1000)  }\n\n${  `Paragraph 2. `.repeat(1000)}`;
+      const content = `${`Paragraph 1. `.repeat(1000)}\n\n${`Paragraph 2. `.repeat(1000)}`;
       const chunks = await service.chunkContent(content);
 
       expect(chunks.length).toBeGreaterThan(1);
@@ -78,20 +79,20 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'a'.repeat(12000),
-          title: 'Test Item'
-        }
+          title: 'Test Item',
+        },
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Should have parent item
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
       expect(parentItem).toBeDefined();
       expect(parentItem?.data.total_chunks).toBeGreaterThan(1);
       expect(parentItem?.data.original_length).toBe(12000);
 
       // Should have child chunks
-      const childItems = chunkedItems.filter(item => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
       expect(childItems.length).toBeGreaterThan(1);
 
       // Check chunk metadata
@@ -109,8 +110,8 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'Short content',
-          title: 'Test Item'
-        }
+          title: 'Test Item',
+        },
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
@@ -129,16 +130,16 @@ describe('ChunkingService', () => {
           content: 'a'.repeat(12000),
           title: 'Test Decision',
           rationale: 'Test rationale',
-          component: 'test-component'
+          component: 'test-component',
         },
         metadata: { source: 'test' },
-        created_at: '2025-01-01T00:00:00Z'
+        created_at: '2025-01-01T00:00:00Z',
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item preserves all fields
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
       expect(parentItem?.id).toBe('test-id');
       expect(parentItem?.kind).toBe('decision');
       expect(parentItem?.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
@@ -147,8 +148,8 @@ describe('ChunkingService', () => {
       expect(parentItem?.created_at).toBe('2025-01-01T00:00:00Z');
 
       // Check child items preserve essential fields
-      const childItems = chunkedItems.filter(item => item.data.is_chunk);
-      childItems.forEach(chunk => {
+      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+      childItems.forEach((chunk) => {
         expect(chunk.kind).toBe('decision');
         expect(chunk.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
         expect(chunk.metadata.source).toBe('test');
@@ -166,14 +167,14 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'a'.repeat(12000),
-          title: 'Test Section'
-        }
+          title: 'Test Section',
+        },
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item metadata
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
       expect(parentItem).toBeDefined();
       expect(parentItem?.data.parent_id).toBeUndefined(); // Parent has no parent_id
       expect(parentItem?.data.chunk_index).toBe(0);
@@ -183,7 +184,7 @@ describe('ChunkingService', () => {
       expect(parentItem?.data.is_chunk).toBe(false);
 
       // Check child items metadata
-      const childItems = chunkedItems.filter(item => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
       expect(childItems.length).toBe(parentItem?.data.total_chunks);
 
       childItems.forEach((chunk, index) => {
@@ -215,15 +216,15 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'a'.repeat(12000),
-          title: 'Sequential Test'
-        }
+          title: 'Sequential Test',
+        },
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
-      const childItems = chunkedItems.filter(item => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
 
       // Extract chunk_index values and sort them
-      const chunkIndexes = childItems.map(chunk => chunk.data.chunk_index).sort((a, b) => a - b);
+      const chunkIndexes = childItems.map((chunk) => chunk.data.chunk_index).sort((a, b) => a - b);
 
       // Should start from 0
       expect(chunkIndexes[0]).toBe(0);
@@ -245,8 +246,8 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'a'.repeat(12000),
-          title: 'Test Item'
-        }
+          title: 'Test Item',
+        },
       };
 
       const stats = service.getChunkingStats(baseItem);
@@ -264,8 +265,8 @@ describe('ChunkingService', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           content: 'Short content',
-          title: 'Test Item'
-        }
+          title: 'Test Item',
+        },
       };
 
       const stats = service.getChunkingStats(baseItem);
@@ -286,8 +287,8 @@ describe('ChunkingService', () => {
           scope: { project: 'test', branch: 'main' },
           data: {
             content: largeContent,
-            title: 'Large Section'
-          }
+            title: 'Large Section',
+          },
         };
 
         expect(service.shouldChunkItem(sectionItem)).toBe(true);
@@ -299,8 +300,8 @@ describe('ChunkingService', () => {
           scope: { project: 'test', branch: 'main' },
           data: {
             content: largeContent,
-            title: 'Large Runbook'
-          }
+            title: 'Large Runbook',
+          },
         };
 
         expect(service.shouldChunkItem(runbookItem)).toBe(true);
@@ -312,8 +313,8 @@ describe('ChunkingService', () => {
           scope: { project: 'test', branch: 'main' },
           data: {
             content: largeContent,
-            title: 'Large Incident'
-          }
+            title: 'Large Incident',
+          },
         };
 
         expect(service.shouldChunkItem(incidentItem)).toBe(true);
@@ -325,19 +326,19 @@ describe('ChunkingService', () => {
         const sectionItem: KnowledgeItem = {
           kind: 'section',
           scope: { project: 'test', branch: 'main' },
-          data: { content: smallContent, title: 'Small Section' }
+          data: { content: smallContent, title: 'Small Section' },
         };
 
         const runbookItem: KnowledgeItem = {
           kind: 'runbook',
           scope: { project: 'test', branch: 'main' },
-          data: { content: smallContent, title: 'Small Runbook' }
+          data: { content: smallContent, title: 'Small Runbook' },
         };
 
         const incidentItem: KnowledgeItem = {
           kind: 'incident',
           scope: { project: 'test', branch: 'main' },
-          data: { content: smallContent, title: 'Small Incident' }
+          data: { content: smallContent, title: 'Small Incident' },
         };
 
         expect(service.shouldChunkItem(sectionItem)).toBe(false);
@@ -348,20 +349,30 @@ describe('ChunkingService', () => {
 
     describe('Non-Chunkable Types (should never chunk regardless of size)', () => {
       const nonChunkableTypes = [
-        'entity', 'relation', 'observation', 'decision', 'todo',
-        'release_note', 'ddl', 'pr_context', 'assumption', 'change',
-        'release', 'risk', 'issue'
+        'entity',
+        'relation',
+        'observation',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'assumption',
+        'change',
+        'release',
+        'risk',
+        'issue',
       ];
 
-      nonChunkableTypes.forEach(type => {
+      nonChunkableTypes.forEach((type) => {
         it(`should not chunk ${type} type even with large content`, () => {
           const item: KnowledgeItem = {
             kind: type as any,
             scope: { project: 'test', branch: 'main' },
             data: {
               content: largeContent,
-              title: `Large ${type}`
-            }
+              title: `Large ${type}`,
+            },
           };
 
           expect(service.shouldChunkItem(item)).toBe(false);
@@ -380,40 +391,40 @@ describe('ChunkingService', () => {
         {
           kind: 'section',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Section' }
+          data: { content: largeContent, title: 'Large Section' },
         },
         {
           kind: 'runbook',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Runbook' }
+          data: { content: largeContent, title: 'Large Runbook' },
         },
         {
           kind: 'incident',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Incident' }
+          data: { content: largeContent, title: 'Large Incident' },
         },
         // Chunkable types with small content (should not be chunked)
         {
           kind: 'section',
           scope: { project: 'test', branch: 'main' },
-          data: { content: smallContent, title: 'Small Section' }
+          data: { content: smallContent, title: 'Small Section' },
         },
         // Non-chunkable types with large content (should not be chunked)
         {
           kind: 'decision',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Decision' }
+          data: { content: largeContent, title: 'Large Decision' },
         },
         {
           kind: 'observation',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Observation' }
+          data: { content: largeContent, title: 'Large Observation' },
         },
         {
           kind: 'todo',
           scope: { project: 'test', branch: 'main' },
-          data: { content: largeContent, title: 'Large Todo' }
-        }
+          data: { content: largeContent, title: 'Large Todo' },
+        },
       ];
 
       const processedItems = await service.processItemsForStorage(items);
@@ -422,29 +433,29 @@ describe('ChunkingService', () => {
       expect(processedItems.length).toBeGreaterThan(items.length);
 
       // Count chunked vs non-chunked items
-      const chunkedItems = processedItems.filter(item => item.data.is_chunk);
-      const nonChunkedItems = processedItems.filter(item => !item.data.is_chunk);
+      const chunkedItems = processedItems.filter((item) => item.data.is_chunk);
+      const nonChunkedItems = processedItems.filter((item) => !item.data.is_chunk);
 
       // Should have chunk items for the large chunkable types
       expect(chunkedItems.length).toBeGreaterThan(0);
-      chunkedItems.forEach(chunk => {
+      chunkedItems.forEach((chunk) => {
         expect(['section', 'runbook', 'incident']).toContain(chunk.kind);
         expect(chunk.data.is_chunk).toBe(true);
       });
 
       // Should have parent items for chunked content
-      const parentItems = nonChunkedItems.filter(item => item.data.total_chunks > 1);
+      const parentItems = nonChunkedItems.filter((item) => item.data.total_chunks > 1);
       expect(parentItems).toHaveLength(3);
-      parentItems.forEach(parent => {
+      parentItems.forEach((parent) => {
         expect(['section', 'runbook', 'incident']).toContain(parent.kind);
         expect(parent.data.total_chunks).toBeGreaterThan(1);
         expect(parent.data.original_length).toBe(largeContent.length);
       });
 
       // Should have single items for small chunkable types and all non-chunkable types
-      const singleItems = nonChunkedItems.filter(item => item.data.total_chunks === 1);
+      const singleItems = nonChunkedItems.filter((item) => item.data.total_chunks === 1);
       expect(singleItems.length).toBe(4); // 1 small section + 3 large non-chunkable types
-      singleItems.forEach(item => {
+      singleItems.forEach((item) => {
         expect(item.data.total_chunks).toBe(1);
         expect(item.data.original_length).toBeDefined();
       });
@@ -455,7 +466,7 @@ describe('ChunkingService', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
-      jest.resetModules();
+      vi.resetModules();
       process.env = { ...originalEnv };
     });
 
@@ -478,7 +489,7 @@ describe('ChunkingService', () => {
       expect(chunks.length).toBeLessThan(10);
 
       // Verify chunks are reasonable size (traditional chunking)
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         expect(chunk.length).toBeLessThanOrEqual(1400); // CHUNK_SIZE + some tolerance
         expect(chunk.length).toBeGreaterThanOrEqual(800); // Minimum reasonable size
       });
@@ -487,8 +498,10 @@ describe('ChunkingService', () => {
     it('should fallback to traditional chunking when semantic analysis fails', async () => {
       // Create a service with a mocked semantic analyzer that fails
       const mockFailingAnalyzer = {
-        analyzeSemanticBoundaries: jest.fn().mockRejectedValue(new Error('Embedding service unavailable')),
-        isAnalysisAvailable: jest.fn().mockReturnValue(false)
+        analyzeSemanticBoundaries: vi
+          .fn()
+          .mockRejectedValue(new Error('Embedding service unavailable')),
+        isAnalysisAvailable: vi.fn().mockReturnValue(false),
       };
 
       const serviceWithFailingAnalyzer = new ChunkingService();
@@ -503,7 +516,7 @@ describe('ChunkingService', () => {
       expect(chunks.length).toBeLessThan(10);
 
       // Verify chunks are from traditional chunking
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         expect(chunk.length).toBeLessThanOrEqual(1400);
         expect(chunk.length).toBeGreaterThanOrEqual(800);
       });
@@ -517,12 +530,12 @@ describe('ChunkingService', () => {
 
       // Mock the semantic analyzer to return boundaries
       const mockAnalyzer = {
-        analyzeSemanticBoundaries: jest.fn().mockResolvedValue([
+        analyzeSemanticBoundaries: vi.fn().mockResolvedValue([
           { position: 1000, strength: 0.8, type: 'semantic' },
           { position: 2000, strength: 0.9, type: 'semantic' },
-          { position: 3000, strength: 0.7, type: 'semantic' }
+          { position: 3000, strength: 0.7, type: 'semantic' },
         ]),
-        isAnalysisAvailable: jest.fn().mockReturnValue(true)
+        isAnalysisAvailable: vi.fn().mockReturnValue(true),
       };
 
       (testService as any).semanticAnalyzer = mockAnalyzer;
@@ -541,8 +554,8 @@ describe('ChunkingService', () => {
 
       // Mock semantic analyzer to fail
       const mockFailingAnalyzer = {
-        analyzeSemanticBoundaries: jest.fn().mockRejectedValue(new Error('Complete failure')),
-        isAnalysisAvailable: jest.fn().mockReturnValue(false)
+        analyzeSemanticBoundaries: vi.fn().mockRejectedValue(new Error('Complete failure')),
+        isAnalysisAvailable: vi.fn().mockReturnValue(false),
       };
 
       (testService as any).semanticAnalyzer = mockFailingAnalyzer;

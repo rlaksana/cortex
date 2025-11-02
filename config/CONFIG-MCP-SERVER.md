@@ -1,7 +1,9 @@
 # MCP Configuration Guide for Multiple CLI Tools
 
 ## Overview
+
 Cortex Memory MCP Server dengan **single unified index.ts** yang compatible dengan multiple CLI tools:
+
 - Claude Code (Anthropic)
 - OpenAI CLI/Codex
 - Gemini CLI (Google)
@@ -9,6 +11,7 @@ Cortex Memory MCP Server dengan **single unified index.ts** yang compatible deng
 ## Universal Configuration
 
 ### Environment Variables (Required)
+
 ```bash
 # OpenAI API (MANDATORY untuk embeddings)
 OPENAI_API_KEY=your-openai-api-key
@@ -26,9 +29,7 @@ QDRANT_URL=http://localhost:6333
   "mcpServers": {
     "cortex": {
       "command": "node",
-      "args": [
-        "${PROJECT_ROOT}/dist/index.js"
-      ],
+      "args": ["${PROJECT_ROOT}/dist/index.js"],
       "env": {
         "OPENAI_API_KEY": "${OPENAI_API_KEY}",
         "PROJECT_ROOT": "D:\\WORKSPACE\\tools-node\\mcp-cortex",
@@ -41,6 +42,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 ### Cross-Platform Configuration
+
 ```json
 {
   "mcpServers": {
@@ -59,6 +61,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 ### Environment-Based Configuration
+
 ```json
 {
   "mcpServers": {
@@ -102,6 +105,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 ### Alternative Format (OpenAI CLI v2+)
+
 ```json
 {
   "mcp": {
@@ -148,6 +152,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 ### Google Cloud Integration Format
+
 ```json
 {
   "gemini": {
@@ -200,18 +205,8 @@ QDRANT_URL=http://localhost:6333
     "LOG_LEVEL": "${LOG_LEVEL:info}"
   },
   "capabilities": {
-    "tools": [
-      "memory_store",
-      "memory_find",
-      "database_health",
-      "database_stats"
-    ],
-    "features": [
-      "semantic_search",
-      "deduplication",
-      "multi_strategy_search",
-      "scope_isolation"
-    ]
+    "tools": ["memory_store", "memory_find", "database_health", "database_stats"],
+    "features": ["semantic_search", "deduplication", "multi_strategy_search", "scope_isolation"]
   }
 }
 ```
@@ -229,8 +224,10 @@ QDRANT_URL=http://localhost:6333
         "run",
         "--rm",
         "-i",
-        "--env", "OPENAI_API_KEY=${OPENAI_API_KEY}",
-        "--env", "QDRANT_URL=http://host.docker.internal:6333",
+        "--env",
+        "OPENAI_API_KEY=${OPENAI_API_KEY}",
+        "--env",
+        "QDRANT_URL=http://host.docker.internal:6333",
         "cortex-memory:latest"
       ],
       "timeout": 60000
@@ -242,6 +239,7 @@ QDRANT_URL=http://localhost:6333
 ## 🚫 Anti-Hardcoding Best Practices
 
 ### **Why Avoid Hardcoding?**
+
 - **Portability**: Works across different machines and environments
 - **Security**: Sensitive data tidak ada di source code
 - **Maintainability**: Easy to update without code changes
@@ -251,6 +249,7 @@ QDRANT_URL=http://localhost:6333
 ### **Hardcoded vs Dynamic Examples**
 
 #### ❌ **FORBIDDEN: Hardcoded References**
+
 ```json
 {
   "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"],
@@ -263,12 +262,13 @@ QDRANT_URL=http://localhost:6333
 
 ```typescript
 // ❌ FORBIDDEN in code
-const configPath = "D:\\WORKSPACE\\tools-node\\mcp-cortex\\config.json";
-const apiKey = "sk-proj-fixed-key-here";
-const dbUrl = "http://localhost:6333";
+const configPath = 'D:\\WORKSPACE\\tools-node\\mcp-cortex\\config.json';
+const apiKey = 'sk-proj-fixed-key-here';
+const dbUrl = 'http://localhost:6333';
 ```
 
 #### ✅ **CORRECT: Dynamic Configuration**
+
 ```json
 {
   "args": ["${CORTEX_EXECUTABLE}"],
@@ -282,14 +282,15 @@ const dbUrl = "http://localhost:6333";
 
 ```typescript
 // ✅ CORRECT in code
-const configPath = process.env.CONFIG_PATH || "./config.json";
+const configPath = process.env.CONFIG_PATH || './config.json';
 const apiKey = process.env.OPENAI_API_KEY;
-const dbUrl = process.env.QDRANT_URL || "http://localhost:6333";
+const dbUrl = process.env.QDRANT_URL || 'http://localhost:6333';
 ```
 
 ### **Environment Variable Patterns**
 
 #### **Required Variables**
+
 ```bash
 # Mandatory (no defaults)
 OPENAI_API_KEY=your-openai-api-key
@@ -302,6 +303,7 @@ NODE_ENV=${NODE_ENV:-development}
 ```
 
 #### **Path Resolution**
+
 ```bash
 # Cross-platform path handling
 PROJECT_ROOT=$(pwd)                           # Current directory
@@ -313,6 +315,7 @@ LOG_PATH="${LOG_PATH:-./logs/app.log}"       # Configurable logs
 ## Usage Instructions
 
 ### 1. Setup Environment (Cross-Platform)
+
 ```bash
 # Windows (PowerShell)
 $env:OPENAI_API_KEY = "your-key-here"
@@ -336,6 +339,7 @@ QDRANT_URL=http://localhost:6333
 ```
 
 ### 2. Start Qdrant
+
 ```bash
 # Docker (portable)
 docker run -p 6333:6333 -d --name cortex-qdrant qdrant/qdrant:latest
@@ -348,6 +352,7 @@ docker-compose -f docker/docker-compose.yml up -d
 ```
 
 ### 3. Test Connection (Dynamic Paths)
+
 ```bash
 # Test MCP server dengan dynamic path
 export CORTEX_PATH="${PROJECT_ROOT}/dist/index.js"
@@ -370,12 +375,14 @@ curl ${QDRANT_URL}/health
 ## Troubleshooting
 
 ### Common Issues
+
 - **Connection timeout**: Increase timeout value in config
 - **OpenAI API errors**: Verify API key is valid and has quota
 - **Qdrant connection**: Ensure Qdrant is running on port 6333
 - **Path issues**: Use absolute paths in configuration
 
 ### Debug Mode
+
 ```json
 {
   "env": {

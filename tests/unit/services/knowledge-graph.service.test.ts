@@ -24,7 +24,7 @@ import {
   type TraversalOptions,
   type GraphNode,
   type GraphEdge,
-  type GraphTraversalResult
+  type GraphTraversalResult,
 } from '../../../src/services/graph-traversal';
 import {
   storeRelation,
@@ -32,7 +32,7 @@ import {
   getIncomingRelations,
   getAllRelations,
   relationExists,
-  softDeleteRelation
+  softDeleteRelation,
 } from '../../../src/services/knowledge/relation';
 
 // Mock Qdrant client
@@ -40,14 +40,14 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
@@ -55,25 +55,25 @@ vi.mock('@qdrant/js-client-rest', () => ({
 
       // Mock entity-specific methods
       this.section = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
       this.adrDecision = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
       this.issueLog = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
       this.runbook = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
       this.todoLog = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
       this.knowledgeEntity = {
-        findMany: vi.fn().mockResolvedValue([])
+        findMany: vi.fn().mockResolvedValue([]),
       };
     }
-  }
+  },
 }));
 
 // Mock Unified Database Layer
@@ -117,7 +117,7 @@ vi.mock('../../../src/db/unified-database-layer-v2', () => ({
             to_entity_id: 'decision-1',
             relation_type: 'resolves',
             metadata: { weight: 0.9 },
-            created_at: new Date('2024-01-01')
+            created_at: new Date('2024-01-01'),
           },
           {
             id: 'rel-2',
@@ -125,8 +125,8 @@ vi.mock('../../../src/db/unified-database-layer-v2', () => ({
             to_entity_id: 'todo-1',
             relation_type: 'implements',
             metadata: null,
-            created_at: new Date('2024-01-02')
-          }
+            created_at: new Date('2024-01-02'),
+          },
         ];
       }
 
@@ -139,14 +139,14 @@ vi.mock('../../../src/db/unified-database-layer-v2', () => ({
             from_entity_id: 'issue-1',
             relation_type: 'blocks',
             metadata: { severity: 'high' },
-            created_at: new Date('2024-01-01')
-          }
+            created_at: new Date('2024-01-01'),
+          },
         ];
       }
 
       return [];
     }
-  }
+  },
 }));
 
 describe('Knowledge Graph Service', () => {
@@ -187,7 +187,7 @@ describe('Knowledge Graph Service', () => {
       const startEntityType = 'entity';
       const startEntityId = 'entity-1';
       const options: TraversalOptions = {
-        relation_types: ['resolves', 'implements']
+        relation_types: ['resolves', 'implements'],
       };
 
       const result = await traverseGraph(startEntityType, startEntityId, options);
@@ -260,7 +260,7 @@ describe('Knowledge Graph Service', () => {
       const nodes: GraphNode[] = [
         { entity_type: 'section', entity_id: 'section-1', depth: 1 },
         { entity_type: 'decision', entity_id: 'decision-1', depth: 2 },
-        { entity_type: 'todo', entity_id: 'todo-1', depth: 1 }
+        { entity_type: 'todo', entity_id: 'todo-1', depth: 1 },
       ];
 
       const enrichedNodes = await enrichGraphNodes(nodes);
@@ -275,20 +275,18 @@ describe('Knowledge Graph Service', () => {
       const nodes: GraphNode[] = [
         { entity_type: 'section', entity_id: 'section-1', depth: 0 },
         { entity_type: 'unknown_type', entity_id: 'unknown-1', depth: 1 },
-        { entity_type: 'runbook', entity_id: 'runbook-1', depth: 2 }
+        { entity_type: 'runbook', entity_id: 'runbook-1', depth: 2 },
       ];
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
       expect(enrichedNodes).toHaveLength(3);
       // Unknown entity types should be skipped but included in results
-      expect(enrichedNodes.some(n => n.entity_type === 'unknown_type')).toBe(true);
+      expect(enrichedNodes.some((n) => n.entity_type === 'unknown_type')).toBe(true);
     });
 
     it('should handle enrichment errors gracefully', async () => {
-      const nodes: GraphNode[] = [
-        { entity_type: 'section', entity_id: 'section-1', depth: 1 }
-      ];
+      const nodes: GraphNode[] = [{ entity_type: 'section', entity_id: 'section-1', depth: 1 }];
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
@@ -302,14 +300,14 @@ describe('Knowledge Graph Service', () => {
         { entity_type: 'section', entity_id: 'section-1', depth: 1 },
         { entity_type: 'section', entity_id: 'section-2', depth: 2 },
         { entity_type: 'decision', entity_id: 'decision-1', depth: 1 },
-        { entity_type: 'decision', entity_id: 'decision-2', depth: 3 }
+        { entity_type: 'decision', entity_id: 'decision-2', depth: 3 },
       ];
 
       const enrichedNodes = await enrichGraphNodes(nodes);
 
       expect(enrichedNodes).toHaveLength(4);
       // Verify batching doesn't duplicate nodes
-      const uniqueNodes = new Set(enrichedNodes.map(n => `${n.entity_type}:${n.entity_id}`));
+      const uniqueNodes = new Set(enrichedNodes.map((n) => `${n.entity_type}:${n.entity_id}`));
       expect(uniqueNodes.size).toBe(4);
     });
   });
@@ -381,7 +379,7 @@ describe('Knowledge Graph Service', () => {
         to_entity_type: 'decision',
         to_entity_id: 'decision-1',
         relation_type: 'resolves',
-        metadata: { weight: 0.9, confidence: 0.95 }
+        metadata: { weight: 0.9, confidence: 0.95 },
       };
       const scope = { project: 'test-project', branch: 'main' };
 
@@ -397,7 +395,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'todo-1',
         to_entity_type: 'runbook',
         to_entity_id: 'runbook-1',
-        relation_type: 'documents'
+        relation_type: 'documents',
       };
       const scope = { project: 'test-project' };
 
@@ -413,12 +411,11 @@ describe('Knowledge Graph Service', () => {
         // Missing from_entity_id
         to_entity_type: 'decision',
         to_entity_id: 'decision-1',
-        relation_type: 'resolves'
+        relation_type: 'resolves',
       };
       const scope = { project: 'test-project' };
 
-      await expect(storeRelation(invalidRelationData as any, scope))
-        .rejects.toThrow();
+      await expect(storeRelation(invalidRelationData as any, scope)).rejects.toThrow();
     });
 
     it('should handle relation metadata', async () => {
@@ -431,8 +428,8 @@ describe('Knowledge Graph Service', () => {
         metadata: {
           severity: 'critical',
           resolution_time: '2h',
-          verified: true
-        }
+          verified: true,
+        },
       };
       const scope = { project: 'test-project' };
 
@@ -590,7 +587,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'entity-1',
         to_entity_type: 'entity',
         to_entity_id: 'entity-2',
-        relation_type: 'relates_to'
+        relation_type: 'relates_to',
       };
       const scope = { project: 'test-project' };
 
@@ -605,7 +602,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'issue-1',
         to_entity_type: 'decision',
         to_entity_id: 'decision-1',
-        relation_type: 'resolves'
+        relation_type: 'resolves',
       };
       const scope = { project: 'test-project' };
 
@@ -620,7 +617,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'invalid-1',
         to_entity_type: 'decision',
         to_entity_id: 'decision-1',
-        relation_type: 'resolves'
+        relation_type: 'resolves',
       };
       const scope = { project: 'test-project' };
 
@@ -635,7 +632,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'unknown-1',
         to_entity_type: 'entity',
         to_entity_id: 'entity-1',
-        relation_type: 'references'
+        relation_type: 'references',
       };
       const scope = { project: 'test-project' };
 
@@ -661,7 +658,7 @@ describe('Knowledge Graph Service', () => {
       const startEntityType = 'decision';
       const startEntityId = 'decision-1';
       const options: TraversalOptions = {
-        relation_types: ['resolves', 'implements', 'documents']
+        relation_types: ['resolves', 'implements', 'documents'],
       };
 
       const result = await traverseGraph(startEntityType, startEntityId, options);
@@ -678,7 +675,7 @@ describe('Knowledge Graph Service', () => {
       const result = await traverseGraph(startEntityType, startEntityId, options);
 
       // Should not have duplicate nodes
-      const nodeKeys = new Set(result.nodes.map(n => `${n.entity_type}:${n.entity_id}`));
+      const nodeKeys = new Set(result.nodes.map((n) => `${n.entity_type}:${n.entity_id}`));
       expect(nodeKeys.size).toBe(result.nodes.length);
     });
   });
@@ -703,13 +700,13 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: `entity-${i}`,
         to_entity_type: 'entity',
         to_entity_id: `entity-${i + 1}`,
-        relation_type: 'connects_to'
+        relation_type: 'connects_to',
       }));
       const scope = { project: 'test-project' };
 
       const startTime = Date.now();
       const results = await Promise.all(
-        relations.map(relation => storeRelation(relation, scope))
+        relations.map((relation) => storeRelation(relation, scope))
       );
       const endTime = Date.now();
 
@@ -734,7 +731,7 @@ describe('Knowledge Graph Service', () => {
       const nodes: GraphNode[] = Array.from({ length: 100 }, (_, i) => ({
         entity_type: 'entity',
         entity_id: `entity-${i}`,
-        depth: i % 5
+        depth: i % 5,
       }));
 
       const enrichedNodes = await enrichGraphNodes(nodes);
@@ -752,7 +749,7 @@ describe('Knowledge Graph Service', () => {
         to_entity_type: 'todo',
         to_entity_id: 'todo-1',
         relation_type: 'implements',
-        metadata: { priority: 'high' }
+        metadata: { priority: 'high' },
       };
       const scope = { project: 'test-project', branch: 'main' };
 
@@ -773,7 +770,7 @@ describe('Knowledge Graph Service', () => {
 
       const [graphResult, enrichedNodes] = await Promise.all([
         traverseGraph(startEntityType, startEntityId),
-        enrichGraphNodes([{ entity_type: startEntityType, entity_id: startEntityId, depth: 0 }])
+        enrichGraphNodes([{ entity_type: startEntityType, entity_id: startEntityId, depth: 0 }]),
       ]);
 
       expect(graphResult.root_entity_id).toBe(startEntityId);
@@ -787,24 +784,24 @@ describe('Knowledge Graph Service', () => {
           from_entity_id: 'issue-1',
           to_entity_type: 'decision',
           to_entity_id: 'decision-1',
-          relation_type: 'resolves'
+          relation_type: 'resolves',
         },
         {
           from_entity_type: 'decision',
           from_entity_id: 'decision-1',
           to_entity_type: 'todo',
           to_entity_id: 'todo-1',
-          relation_type: 'implements'
-        }
+          relation_type: 'implements',
+        },
       ];
       const scope = { project: 'test-project' };
 
       const results = await Promise.all(
-        relations.map(relation => storeRelation(relation, scope))
+        relations.map((relation) => storeRelation(relation, scope))
       );
 
       expect(results).toHaveLength(2);
-      expect(results.every(id => typeof id === 'string')).toBe(true);
+      expect(results.every((id) => typeof id === 'string')).toBe(true);
     });
   });
 
@@ -816,20 +813,20 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'entity-1',
         to_entity_type: 'entity',
         to_entity_id: 'entity-2',
-        relation_type: 'references'
+        relation_type: 'references',
       };
       const relation2 = {
         from_entity_type: 'entity',
         from_entity_id: 'entity-2',
         to_entity_type: 'entity',
         to_entity_id: 'entity-1',
-        relation_type: 'references'
+        relation_type: 'references',
       };
       const scope = { project: 'test-project' };
 
       const [id1, id2] = await Promise.all([
         storeRelation(relation1, scope),
-        storeRelation(relation2, scope)
+        storeRelation(relation2, scope),
       ]);
 
       expect(id1).toBeDefined();
@@ -842,7 +839,7 @@ describe('Knowledge Graph Service', () => {
         from_entity_id: 'entity-1',
         to_entity_type: 'entity',
         to_entity_id: 'entity-1', // Self-reference
-        relation_type: 'references_self'
+        relation_type: 'references_self',
       };
       const scope = { project: 'test-project' };
 
@@ -864,7 +861,7 @@ describe('Knowledge Graph Service', () => {
     it('should handle missing entity data gracefully', async () => {
       const nodes: GraphNode[] = [
         { entity_type: 'nonexistent', entity_id: 'missing-1', depth: 1 },
-        { entity_type: 'section', entity_id: 'missing-2', depth: 2 }
+        { entity_type: 'section', entity_id: 'missing-2', depth: 2 },
       ];
 
       const enrichedNodes = await enrichGraphNodes(nodes);
@@ -880,7 +877,7 @@ describe('Knowledge Graph Service', () => {
         to_entity_type: 'entity',
         to_entity_id: 'entity-2',
         relation_type: 'test',
-        metadata: 'invalid_metadata' // Should be object
+        metadata: 'invalid_metadata', // Should be object
       };
       const scope = { project: 'test-project' };
 

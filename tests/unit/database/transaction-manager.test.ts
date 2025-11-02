@@ -23,10 +23,13 @@ import {
   optimisticUpdate,
   transactionHealthCheck,
   TransactionOptions,
-  VectorTransactionContext
+  VectorTransactionContext,
 } from '../../../src/utils/transaction';
-import { dbErrorHandler, DbErrorType, DbOperationResult } from '../../../src/utils/db-error-handler';
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+import {
+  dbErrorHandler,
+  DbErrorType,
+  DbOperationResult,
+} from '../../../src/utils/db-error-handler';
 
 // Local test utilities to avoid import conflicts
 class TestUtils {
@@ -67,7 +70,7 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  }
+  },
 }));
 
 describe('Transaction Manager - Transaction Lifecycle', () => {
@@ -102,7 +105,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
     const options: TransactionOptions = {
       timeout: 5000,
       maxRetries: 5,
-      ensureConsistency: true
+      ensureConsistency: true,
     };
 
     const result = await executeTransaction(operationSpy, options);
@@ -119,7 +122,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
       ctx.operations.push({
         type: 'test_operation',
         data: { test: 'data' },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       return 'operation_completed';
     };
@@ -149,7 +152,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
 
   it('should respect transaction timeout settings', async () => {
     const slowOperation = async () => {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       return 'completed';
     };
 
@@ -168,7 +171,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
     const operation1 = async (ctx: VectorTransactionContext) => {
       operations.push('op1_start');
       ctx.operations.push({ type: 'isolation_test_1', data: {}, timestamp: Date.now() });
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       operations.push('op1_end');
       return 'result1';
     };
@@ -176,7 +179,7 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
     const operation2 = async (ctx: VectorTransactionContext) => {
       operations.push('op2_start');
       ctx.operations.push({ type: 'isolation_test_2', data: {}, timestamp: Date.now() });
-      await new Promise(resolve => setTimeout(resolve, 25));
+      await new Promise((resolve) => setTimeout(resolve, 25));
       operations.push('op2_end');
       return 'result2';
     };
@@ -197,7 +200,11 @@ describe('Transaction Manager - Transaction Lifecycle', () => {
     const flakyOperation = async (ctx: VectorTransactionContext) => {
       attemptCount++;
       timestamps.push(Date.now());
-      ctx.operations.push({ type: 'retry_test', data: { attempt: attemptCount }, timestamp: Date.now() });
+      ctx.operations.push({
+        type: 'retry_test',
+        data: { attempt: attemptCount },
+        timestamp: Date.now(),
+      });
 
       if (attemptCount < 3) {
         throw new Error('Temporary failure');
@@ -274,7 +281,7 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
         ctx.operations.push({
           type: `batch_operation_${i}`,
           data: { index: i },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
       return { processed: 5 };
@@ -326,7 +333,7 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
         ctx.operations.push({
           type: `successful_op_${i}`,
           data: { index: i },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
@@ -355,14 +362,14 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
         { type: 'create', data: { id: 1 } },
         { type: 'update', data: { id: 1, changes: { field: 'value' } } },
         { type: 'validate', data: { id: 1 } },
-        { type: 'commit', data: { id: 1 } }
+        { type: 'commit', data: { id: 1 } },
       ];
 
       for (const op of operations) {
         ctx.operations.push({
           type: op.type,
           data: op.data,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         // Simulate validation failure on one operation
@@ -386,15 +393,15 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
     }
 
     // At least some should succeed
-    const successes = outcomes.filter(o => o.success);
-    const failures = outcomes.filter(o => !o.success);
+    const successes = outcomes.filter((o) => o.success);
+    const failures = outcomes.filter((o) => !o.success);
 
     expect(successes.length + failures.length).toBe(attempts);
     expect(successes.length).toBeGreaterThan(0);
     expect(failures.length).toBeGreaterThan(0);
 
     // Successful operations should have completed all steps
-    successes.forEach(success => {
+    successes.forEach((success) => {
       expect(success.data.operations).toBe(4);
     });
   });
@@ -408,10 +415,10 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
       ctx?.operations.push({
         type: 'batch_processing',
         data: { batchSize: items.length },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
-      return items.map(i => ({ id: i, processed: true }));
+      return items.map((i) => ({ id: i, processed: true }));
     };
 
     const result = await batchOperation(largeBatch, 100, batchProcessor);
@@ -428,29 +435,29 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
     const operations = [
       async () => {
         operationResults.push('op1_start');
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         operationResults.push('op1_end');
         return 'result1';
       },
       async () => {
         operationResults.push('op2_start');
-        await new Promise(resolve => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, 25));
         operationResults.push('op2_end');
         return 'result2';
       },
       async () => {
         operationResults.push('op3_start');
-        await new Promise(resolve => setTimeout(resolve, 75));
+        await new Promise((resolve) => setTimeout(resolve, 75));
         operationResults.push('op3_end');
         return 'result3';
-      }
+      },
     ];
 
     const results = await executeParallelTransactions(operations);
 
     expect(results).toHaveLength(3);
-    expect(results.every(r => r.success)).toBe(true);
-    expect(results.map(r => r.data)).toEqual(['result1', 'result2', 'result3']);
+    expect(results.every((r) => r.success)).toBe(true);
+    expect(results.map((r) => r.data)).toEqual(['result1', 'result2', 'result3']);
 
     // Operations should have run in parallel (no specific order guaranteed)
     expect(operationResults).toContain('op1_start');
@@ -461,24 +468,28 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
   it('should handle partial failures in parallel transactions', async () => {
     const operations = [
       async () => 'success1',
-      async () => { throw new Error('failure2'); },
+      async () => {
+        throw new Error('failure2');
+      },
       async () => 'success3',
-      async () => { throw new Error('failure4'); },
-      async () => 'success5'
+      async () => {
+        throw new Error('failure4');
+      },
+      async () => 'success5',
     ];
 
     const results = await executeParallelTransactions(operations);
 
     expect(results).toHaveLength(5);
 
-    const successes = results.filter(r => r.success);
-    const failures = results.filter(r => !r.success);
+    const successes = results.filter((r) => r.success);
+    const failures = results.filter((r) => !r.success);
 
     expect(successes).toHaveLength(3);
     expect(failures).toHaveLength(2);
 
-    expect(successes.map(r => r.data)).toEqual(['success1', 'success3', 'success5']);
-    failures.forEach(failure => {
+    expect(successes.map((r) => r.data)).toEqual(['success1', 'success3', 'success5']);
+    failures.forEach((failure) => {
       expect(failure.error).toBeDefined();
     });
   });
@@ -495,14 +506,14 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         id: 'item1',
         kind: 'entity',
         scope: { project: 'test-project' },
-        data: { title: 'Test Entity 1', content: 'Test content 1' }
+        data: { title: 'Test Entity 1', content: 'Test content 1' },
       },
       {
         id: 'item2',
         kind: 'decision',
         scope: { project: 'test-project' },
-        data: { title: 'Test Decision 1', rationale: 'Test rationale' }
-      }
+        data: { title: 'Test Decision 1', rationale: 'Test rationale' },
+      },
     ];
 
     const storeOperation = async (ctx: VectorTransactionContext) => {
@@ -512,7 +523,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         ctx.operations.push({
           type: 'store_knowledge_item',
           data: { item },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         // Simulate storage
@@ -534,21 +545,21 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       id: `batch_item_${i}`,
       kind: 'entity' as const,
       scope: { project: 'batch-test' },
-      data: { title: `Batch Item ${i}`, index: i }
+      data: { title: `Batch Item ${i}`, index: i },
     }));
 
     const batchStoreOperation = async (items: KnowledgeItem[], ctx?: VectorTransactionContext) => {
       ctx?.operations.push({
         type: 'batch_store_knowledge_items',
         data: { batchSize: items.length },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Simulate batch storage
-      return items.map(item => ({
+      return items.map((item) => ({
         ...item,
         created_at: new Date().toISOString(),
-        stored: true
+        stored: true,
       }));
     };
 
@@ -567,14 +578,14 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         id: 'rollback_item1',
         kind: 'entity',
         scope: { project: 'rollback-test' },
-        data: { title: 'Rollback Item 1' }
+        data: { title: 'Rollback Item 1' },
       },
       {
         id: 'rollback_item2',
         kind: 'entity',
         scope: { project: 'rollback-test' },
-        data: { title: 'Rollback Item 2' }
-      }
+        data: { title: 'Rollback Item 2' },
+      },
     ];
 
     const storedItems: KnowledgeItem[] = [];
@@ -584,7 +595,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       ctx.operations.push({
         type: 'store_knowledge_item',
         data: { item: itemsToStore[0] },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       storedItems.push({ ...itemsToStore[0] });
 
@@ -592,7 +603,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       ctx.operations.push({
         type: 'store_knowledge_item',
         data: { item: itemsToStore[1] },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       throw new Error('Storage operation failed - should trigger rollback');
@@ -614,14 +625,14 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         id: 'consistent_item',
         kind: 'entity',
         scope: { project: 'consistency-test' },
-        data: { title: 'Consistent Item' }
+        data: { title: 'Consistent Item' },
       },
       {
         id: '', // Invalid: empty ID
         kind: 'entity',
         scope: { project: 'consistency-test' },
-        data: { title: 'Inconsistent Item' }
-      }
+        data: { title: 'Inconsistent Item' },
+      },
     ];
 
     const validationOperation = async (ctx: VectorTransactionContext) => {
@@ -632,7 +643,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         ctx.operations.push({
           type: 'validate_knowledge_item',
           data: { item },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         // Simulate validation
@@ -668,7 +679,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       id: 'update_item',
       kind: 'entity',
       scope: { project: 'update-test' },
-      data: { title: 'Original Title', version: 1 }
+      data: { title: 'Original Title', version: 1 },
     };
 
     const updatedData = { title: 'Updated Title', version: 2, updated_field: 'new value' };
@@ -678,21 +689,21 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
       ctx.operations.push({
         type: 'record_original_state',
         data: { item: originalItem },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Simulate update
       const updatedItem = {
         ...originalItem,
         data: { ...originalItem.data, ...updatedData },
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       // Record update
       ctx.operations.push({
         type: 'update_knowledge_item',
         data: { original: originalItem, updated: updatedItem },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return updatedItem;
@@ -717,7 +728,7 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
         ctx.operations.push({
           type: 'delete_knowledge_item',
           data: { itemId },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         // Simulate deletion
@@ -748,7 +759,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       new Error('Connection refused'),
       new Error('Database constraint violation'),
       new Error('Insufficient permissions'),
-      new Error('Invalid data format')
+      new Error('Invalid data format'),
     ];
 
     const results: DbOperationResult<any>[] = [];
@@ -763,7 +774,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
     }
 
     expect(results).toHaveLength(5);
-    results.forEach(result => {
+    results.forEach((result) => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.retryAttempts).toBe(2); // Default maxRetries = 3, so 2 retries
@@ -775,7 +786,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
     const deadlockErrors = [
       new Error('Deadlock detected'),
       new Error('Lock wait timeout exceeded'),
-      new Error('Deadlock detected')
+      new Error('Deadlock detected'),
     ];
 
     const deadlockProneOperation = async (ctx: VectorTransactionContext) => {
@@ -784,7 +795,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'deadlock_prone_operation',
         data: { attempt: attemptCount },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       if (attemptCount <= deadlockErrors.length) {
@@ -813,14 +824,14 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'create_resource',
         data: { resourceId: 'temp_resource_1' },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       operationsLog.push('create_resource');
 
       ctx.operations.push({
         type: 'create_resource',
         data: { resourceId: 'temp_resource_2' },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       operationsLog.push('create_second_resource');
 
@@ -858,13 +869,13 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'allocate_resource',
         data: { resourceId: resource1 },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       ctx.operations.push({
         type: 'allocate_resource',
         data: { resourceId: resource2 },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Simulate operation failure
@@ -873,7 +884,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
 
     // Cleanup function (normally called in finally block)
     const cleanupResources = () => {
-      resources.forEach(resource => {
+      resources.forEach((resource) => {
         cleanupLog.push(`cleanup_${resource}`);
       });
       resources.length = 0; // Clear resources array
@@ -894,7 +905,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'always_failing_operation',
         data: { attempt: ctx.operations.length + 1 },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       throw new Error(`Persistent failure attempt ${ctx.operations.length}`);
@@ -912,7 +923,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       { error: new Error('Constraint violation'), expectedType: DbErrorType._CONSTRAINT_VIOLATION },
       { error: new Error('Permission denied'), expectedType: DbErrorType._PERMISSION_ERROR },
       { error: new Error('Record not found'), expectedType: DbErrorType._RECORD_NOT_FOUND },
-      { error: new Error('Schema error'), expectedType: DbErrorType._SCHEMA_ERROR }
+      { error: new Error('Schema error'), expectedType: DbErrorType._SCHEMA_ERROR },
     ];
 
     for (const { error, expectedType } of nonRetryableErrors) {
@@ -926,11 +937,11 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'timeout_operation',
         data: {},
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Simulate long-running operation
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       return 'should_not_complete';
     };
 
@@ -950,7 +961,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
       ctx.operations.push({
         type: 'optimistic_update',
         data: { conflictCount, version: conflictCount },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       if (conflictCount <= maxConflicts) {
@@ -988,7 +999,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       operationResults.push(`operation_${index}_start`);
 
       // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
 
       operationResults.push(`operation_${index}_end`);
 
@@ -996,13 +1007,14 @@ describe('Transaction Manager - Performance and Concurrency', () => {
         index,
         startTime,
         endTime: Date.now(),
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     };
 
     // Create concurrent operations
-    const operations = Array.from({ length: concurrentOperations }, (_, i) =>
-      () => concurrentOperation(i)
+    const operations = Array.from(
+      { length: concurrentOperations },
+      (_, i) => () => concurrentOperation(i)
     );
 
     const startTime = Date.now();
@@ -1010,10 +1022,10 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     const totalTime = Date.now() - startTime;
 
     expect(results).toHaveLength(concurrentOperations);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
 
     // Operations should have run concurrently (total time should be less than sum of individual times)
-    const maxDuration = Math.max(...results.map(r => r.data!.duration));
+    const maxDuration = Math.max(...results.map((r) => r.data!.duration));
     expect(totalTime).toBeLessThan(maxDuration * 2); // Allow some overhead
   });
 
@@ -1025,7 +1037,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       ctx.operations.push({
         type: 'throughput_test',
         data: {},
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return 'completed';
@@ -1043,7 +1055,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     const throughput = transactionCount / (totalTime / 1000); // transactions per second
 
     expect(results).toHaveLength(transactionCount);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
     expect(throughput).toBeGreaterThan(10); // Should handle at least 10 tx/sec
   });
 
@@ -1056,8 +1068,8 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       const startTime = Date.now();
 
       // Simulate trying to acquire a lock
-      while (sharedResource.lock && (Date.now() - startTime) < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, 10));
+      while (sharedResource.lock && Date.now() - startTime < maxWaitTime) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       if (sharedResource.lock) {
@@ -1070,14 +1082,14 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       try {
         // Perform some work
         const originalValue = sharedResource.value;
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
         sharedResource.value = originalValue + 1;
 
         return {
           index,
           success: true,
           value: sharedResource.value,
-          waitTime: Date.now() - startTime
+          waitTime: Date.now() - startTime,
         };
       } finally {
         // Release lock
@@ -1086,17 +1098,15 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     };
 
     // Create multiple contending operations
-    const operations = Array.from({ length: 10 }, (_, i) =>
-      () => contendedOperation(i)
-    );
+    const operations = Array.from({ length: 10 }, (_, i) => () => contendedOperation(i));
 
     const results = await executeParallelTransactions(operations);
 
     expect(results).toHaveLength(10);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
 
     // All operations should have completed successfully
-    const successfulResults = results.map(r => r.data);
+    const successfulResults = results.map((r) => r.data);
     expect(sharedResource.value).toBe(10);
   });
 
@@ -1104,7 +1114,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     const resourceUsage = {
       maxConcurrentOperations: 0,
       currentOperations: 0,
-      totalOperations: 0
+      totalOperations: 0,
     };
 
     const resourceAwareOperation = async (ctx: VectorTransactionContext) => {
@@ -1120,14 +1130,14 @@ describe('Transaction Manager - Performance and Concurrency', () => {
         type: 'resource_aware_operation',
         data: {
           currentOperations: resourceUsage.currentOperations,
-          maxConcurrent: resourceUsage.maxConcurrentOperations
+          maxConcurrent: resourceUsage.maxConcurrentOperations,
         },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       try {
         // Simulate work
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
         return { operationId: ctx.operationId };
       } finally {
         resourceUsage.currentOperations--;
@@ -1135,14 +1145,15 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     };
 
     // Execute multiple operations concurrently
-    const operations = Array.from({ length: 20 }, (_, i) =>
-      () => executeTransaction(resourceAwareOperation)
+    const operations = Array.from(
+      { length: 20 },
+      (_, i) => () => executeTransaction(resourceAwareOperation)
     );
 
     const results = await Promise.all(operations);
 
     expect(results).toHaveLength(20);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
     expect(resourceUsage.totalOperations).toBe(20);
     expect(resourceUsage.currentOperations).toBe(0); // All should be completed
     expect(resourceUsage.maxConcurrentOperations).toBeGreaterThan(1);
@@ -1157,7 +1168,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       const largeData = Array.from({ length: largeDataSize }, (_, i) => ({
         id: i,
         data: 'x'.repeat(100), // 100 characters per item
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }));
 
       // Track memory usage (simplified)
@@ -1169,14 +1180,14 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       ctx.operations.push({
         type: 'large_data_operation',
         data: { dataSize: largeData.length },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Process the data
-      const processedData = largeData.map(item => ({
+      const processedData = largeData.map((item) => ({
         ...item,
         processed: true,
-        hash: `hash_${item.id}`
+        hash: `hash_${item.id}`,
       }));
 
       // Track memory after processing
@@ -1209,17 +1220,17 @@ describe('Transaction Manager - Performance and Concurrency', () => {
         const items = Array.from({ length: totalItems / batchSize }, (_, i) => ({
           id: `item_${i}`,
           batch: batchSize,
-          data: `data_${i}`.repeat(10)
+          data: `data_${i}`.repeat(10),
         }));
 
         ctx.operations.push({
           type: 'batch_size_test',
           data: { batchSize, itemCount: items.length },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         // Simulate processing
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         return { processed: items.length, batchSize };
       };
@@ -1231,12 +1242,12 @@ describe('Transaction Manager - Performance and Concurrency', () => {
       performanceResults.push({
         batchSize,
         duration,
-        success: result.success
+        success: result.success,
       });
     }
 
     expect(performanceResults).toHaveLength(4);
-    expect(performanceResults.every(r => r.success)).toBe(true);
+    expect(performanceResults.every((r) => r.success)).toBe(true);
 
     // Find optimal batch size (simplified - just check that all completed)
     const sortedByPerformance = performanceResults.sort((a, b) => a.duration - b.duration);
@@ -1252,10 +1263,10 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
   it('should handle vector operations within transactions', async () => {
     const mockVectorOperations = {
       upsert: vi.fn().mockResolvedValue({ status: 'completed' }),
-      search: vi.fn().mockResolvedValue([
-        { id: 'vector_result_1', score: 0.9, payload: { data: 'test' } }
-      ]),
-      delete: vi.fn().mockResolvedValue({ status: 'completed' })
+      search: vi
+        .fn()
+        .mockResolvedValue([{ id: 'vector_result_1', score: 0.9, payload: { data: 'test' } }]),
+      delete: vi.fn().mockResolvedValue({ status: 'completed' }),
     };
 
     const vectorTransactionOperation = async (ctx: VectorTransactionContext) => {
@@ -1265,30 +1276,30 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       ctx.operations.push({
         type: 'vector_upsert',
         data: { vector: vectorData, payload: { test: 'data' } },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       const upsertResult = await mockVectorOperations.upsert({
         vector: vectorData,
-        payload: { test: 'data' }
+        payload: { test: 'data' },
       });
 
       // Record vector search operation
       ctx.operations.push({
         type: 'vector_search',
         data: { queryVector: vectorData, limit: 10 },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       const searchResult = await mockVectorOperations.search({
         vector: vectorData,
-        limit: 10
+        limit: 10,
       });
 
       return {
         upsertResult,
         searchResult,
-        operationsCount: ctx.operations.length
+        operationsCount: ctx.operations.length,
       };
     };
 
@@ -1306,34 +1317,34 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     const vectorConsistencyOperation = async (ctx: VectorTransactionContext) => {
       const vectors = [
         { id: 'vec1', data: [0.1, 0.2, 0.3], metadata: { version: 1 } },
-        { id: 'vec2', data: [0.4, 0.5, 0.6], metadata: { version: 1 } }
+        { id: 'vec2', data: [0.4, 0.5, 0.6], metadata: { version: 1 } },
       ];
 
       // Record initial state
       ctx.operations.push({
         type: 'record_vector_state',
         data: { state: 'initial', vectors },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       vectorStates.push({ state: 'initial', vectors });
 
       // Perform vector updates
-      const updatedVectors = vectors.map(vec => ({
+      const updatedVectors = vectors.map((vec) => ({
         ...vec,
-        data: vec.data.map(v => v * 2), // Double each value
-        metadata: { ...vec.metadata, version: 2 }
+        data: vec.data.map((v) => v * 2), // Double each value
+        metadata: { ...vec.metadata, version: 2 },
       }));
 
       ctx.operations.push({
         type: 'update_vectors',
         data: { updatedVectors },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       vectorStates.push({ state: 'updated', vectors: updatedVectors });
 
       // Verify consistency
-      const isConsistent = updatedVectors.every(vec =>
-        vec.data.every(v => v > 0.2) && vec.metadata.version === 2
+      const isConsistent = updatedVectors.every(
+        (vec) => vec.data.every((v) => v > 0.2) && vec.metadata.version === 2
       );
 
       if (!isConsistent) {
@@ -1359,7 +1370,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       const vectorOperations = [
         { type: 'create_vector', id: 'vec1', data: [1, 2, 3] },
         { type: 'create_vector', id: 'vec2', data: [4, 5, 6] },
-        { type: 'update_vector', id: 'vec1', data: [1.1, 2.1, 3.1] }
+        { type: 'update_vector', id: 'vec1', data: [1.1, 2.1, 3.1] },
       ];
 
       try {
@@ -1367,18 +1378,17 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
           ctx.operations.push({
             type: op.type,
             data: { id: op.id, vector: op.data },
-            timestamp: Date.now()
+            timestamp: Date.now(),
           });
 
           vectorStorageLog.push({ action: 'execute', operation: op });
 
           // Simulate some processing time
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
 
         // Simulate a failure that should rollback vector operations
         throw new Error('Vector operation failed - rollback needed');
-
       } catch (error) {
         // Record rollback operations
         for (const op of vectorOperations.slice().reverse()) {
@@ -1387,8 +1397,8 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
             operation: {
               type: `rollback_${op.type}`,
               id: op.id,
-              data: op.data
-            }
+              data: op.data,
+            },
           };
           vectorStorageLog.push(rollbackOp);
         }
@@ -1403,7 +1413,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     expect(result.error?.message).toContain('rollback needed');
 
     // Verify rollback was recorded
-    const rollbackOperations = vectorStorageLog.filter(log => log.action === 'rollback');
+    const rollbackOperations = vectorStorageLog.filter((log) => log.action === 'rollback');
     expect(rollbackOperations).toHaveLength(3);
 
     expect(rollbackOperations[0].operation.type).toBe('rollback_update_vector');
@@ -1421,7 +1431,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
 
       const vectorBatch = [
         { id: 'meta_vec1', data: [0.1, 0.2], tags: ['tag1', 'tag2'] },
-        { id: 'meta_vec2', data: [0.3, 0.4], tags: ['tag3', 'tag4'] }
+        { id: 'meta_vec2', data: [0.3, 0.4], tags: ['tag3', 'tag4'] },
       ];
 
       for (const vector of vectorBatch) {
@@ -1429,13 +1439,13 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
           ...vector,
           transactionId: ctx.operationId,
           transactionTimestamp: ctx.startTime,
-          batchIndex: vectorBatch.indexOf(vector)
+          batchIndex: vectorBatch.indexOf(vector),
         };
 
         ctx.operations.push({
           type: 'store_vector_with_metadata',
           data: { vector: vectorWithMetadata },
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
@@ -1446,7 +1456,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       return {
         transactionId: ctx.operationId,
         vectorsStored: vectorBatch.length,
-        metadata: transactionMetadata
+        metadata: transactionMetadata,
       };
     };
 
@@ -1464,11 +1474,11 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       ctx.operations.push({
         type: 'slow_vector_operation',
         data: {},
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       // Simulate slow vector processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       return { processed: true };
     };
@@ -1487,7 +1497,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       { id: 'vec_success_1', data: [1, 2, 3], shouldSucceed: true },
       { id: 'vec_fail_1', data: [4, 5, 6], shouldSucceed: false },
       { id: 'vec_success_2', data: [7, 8, 9], shouldSucceed: true },
-      { id: 'vec_fail_2', data: [10, 11, 12], shouldSucceed: false }
+      { id: 'vec_fail_2', data: [10, 11, 12], shouldSucceed: false },
     ];
 
     const batchVectorOperation = async (ctx: VectorTransactionContext) => {
@@ -1496,8 +1506,8 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       for (const vecOp of vectorOperations) {
         ctx.operations.push({
           type: 'batch_vector_operation',
-          data: { vectorOp },
-          timestamp: Date.now()
+          data: { vecOp },
+          timestamp: Date.now(),
         });
 
         try {
@@ -1507,11 +1517,15 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
             throw new Error(`Vector operation failed for ${vecOp.id}`);
           }
         } catch (error) {
-          results.push({ id: vecOp.id, success: false, error: error instanceof Error ? error.message : String(error) });
+          results.push({
+            id: vecOp.id,
+            success: false,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
 
-      return { results, successCount: results.filter(r => r.success).length };
+      return { results, successCount: results.filter((r) => r.success).length };
     };
 
     const result = await executeTransaction(batchVectorOperation);
@@ -1547,10 +1561,12 @@ describe('Transaction Manager - Health Check and Utilities', () => {
     // Mock a failing transaction
     const originalExecuteTransaction = executeTransaction;
     vi.doMock('../../../src/utils/transaction', async () => {
-      const actual = await vi.importActual<typeof import('../../../src/utils/transaction')>('../../../src/utils/transaction');
+      const actual = await vi.importActual<typeof import('../../../src/utils/transaction')>(
+        '../../../src/utils/transaction'
+      );
       return {
         ...actual,
-        executeTransaction: vi.fn().mockRejectedValue(new Error('Health check failed'))
+        executeTransaction: vi.fn().mockRejectedValue(new Error('Health check failed')),
       };
     });
 
@@ -1566,7 +1582,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
       ctx.operations.push({
         type: 'simple_api_test',
         data: {},
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       return 'simple_result';
     };
@@ -1603,7 +1619,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
       ctx.operations.push({
         type: 'context_validation',
         data: { test: true },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return { contextValid: true };
@@ -1627,7 +1643,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
       ctx.operations.push({
         type: 'isolation_test',
         data: { contextId: ctx.operationId },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return { contextId: ctx.operationId };
@@ -1637,20 +1653,20 @@ describe('Transaction Manager - Health Check and Utilities', () => {
     const results = await Promise.all([
       executeTransaction(isolationTestOperation),
       executeTransaction(isolationTestOperation),
-      executeTransaction(isolationTestOperation)
+      executeTransaction(isolationTestOperation),
     ]);
 
     expect(results).toHaveLength(3);
-    expect(results.every(r => r.success)).toBe(true);
+    expect(results.every((r) => r.success)).toBe(true);
     expect(contexts).toHaveLength(3);
 
     // Verify each context is unique
-    const operationIds = contexts.map(ctx => ctx.operationId);
+    const operationIds = contexts.map((ctx) => ctx.operationId);
     const uniqueIds = [...new Set(operationIds)];
     expect(uniqueIds).toHaveLength(3);
 
     // Verify operations are isolated
-    contexts.forEach(ctx => {
+    contexts.forEach((ctx) => {
       expect(ctx.operations).toHaveLength(1);
       expect(ctx.operations[0].data.contextId).toBe(ctx.operationId);
     });
@@ -1665,11 +1681,11 @@ describe('Transaction Manager - Health Check and Utilities', () => {
       ctx.operations.push({
         type: 'timing_test_start',
         data: { startTime: operationStart },
-        timestamp: operationStart
+        timestamp: operationStart,
       });
 
       // Simulate some work
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const operationEnd = Date.now();
       const duration = operationEnd - operationStart;
@@ -1677,7 +1693,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
       ctx.operations.push({
         type: 'timing_test_end',
         data: { endTime: operationEnd, duration },
-        timestamp: operationEnd
+        timestamp: operationEnd,
       });
 
       timingData.push({
@@ -1685,7 +1701,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
         operationStart,
         operationEnd,
         duration,
-        totalTransactionTime: operationEnd - ctx.startTime
+        totalTransactionTime: operationEnd - ctx.startTime,
       });
 
       return { duration, operationsCount: ctx.operations.length };

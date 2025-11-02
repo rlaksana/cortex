@@ -18,7 +18,7 @@ import type {
   SearchQuery,
   StoreResult,
   MemoryStoreResponse,
-  MemoryFindResponse
+  MemoryFindResponse,
 } from '../../../src/types/core-interfaces';
 
 // Mock dependencies
@@ -27,12 +27,12 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 // Mock Qdrant client with performance tracking
@@ -42,113 +42,113 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   knowledgeRelation: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   knowledgeObservation: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   section: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   adrDecision: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   issueLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   todoLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   runbook: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   changeLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   releaseNote: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   ddlHistory: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   prContext: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   incidentLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   releaseLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   riskLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
   },
   assumptionLog: {
     create: vi.fn(),
     findMany: vi.fn(),
     count: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn()
-  }
+    delete: vi.fn(),
+  },
 };
 
 // Mock performance benchmarking service
@@ -170,7 +170,7 @@ class MockPerformanceBenchmarkingService {
 
   async benchmarkKnowledgeStorage(items: KnowledgeItem[]): Promise<any> {
     const endMetric = this.collector.startMetric('knowledge_storage_benchmark', {
-      itemCount: items.length
+      itemCount: items.length,
     });
 
     try {
@@ -180,7 +180,7 @@ class MockPerformanceBenchmarkingService {
           id: `mock-${Date.now()}-${Math.random()}`,
           status: 'inserted',
           kind: item.kind,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         };
         results.push(mockResult);
       }
@@ -188,10 +188,15 @@ class MockPerformanceBenchmarkingService {
       endMetric();
       return {
         itemCount: items.length,
-        totalDuration: this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 0,
-        averageItemDuration: (this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 0) / items.length,
-        throughput: items.length / ((this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 1) / 1000),
-        results
+        totalDuration:
+          this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 0,
+        averageItemDuration:
+          (this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 0) /
+          items.length,
+        throughput:
+          items.length /
+          ((this.collector.getSummary('knowledge_storage_benchmark')?.averageDuration || 1) / 1000),
+        results,
       };
     } catch (error) {
       this.collector.recordError('knowledge_storage_benchmark', error as Error);
@@ -202,7 +207,7 @@ class MockPerformanceBenchmarkingService {
   async benchmarkKnowledgeRetrieval(query: SearchQuery): Promise<any> {
     const endMetric = this.collector.startMetric('knowledge_retrieval_benchmark', {
       query: query.query,
-      mode: query.mode || 'auto'
+      mode: query.mode || 'auto',
     });
 
     try {
@@ -215,16 +220,19 @@ class MockPerformanceBenchmarkingService {
         data: { title: `Result ${i}`, content: `Content for ${query.query}` },
         created_at: new Date().toISOString(),
         confidence_score: Math.random() * 0.5 + 0.5,
-        match_type: ['exact', 'fuzzy', 'semantic'][Math.floor(Math.random() * 3)] as any
+        match_type: ['exact', 'fuzzy', 'semantic'][Math.floor(Math.random() * 3)] as any,
       }));
 
       endMetric();
       return {
         query: query.query,
         resultCount,
-        totalDuration: this.collector.getSummary('knowledge_retrieval_benchmark')?.averageDuration || 0,
-        averageResultDuration: (this.collector.getSummary('knowledge_retrieval_benchmark')?.averageDuration || 0) / resultCount,
-        results: mockResults
+        totalDuration:
+          this.collector.getSummary('knowledge_retrieval_benchmark')?.averageDuration || 0,
+        averageResultDuration:
+          (this.collector.getSummary('knowledge_retrieval_benchmark')?.averageDuration || 0) /
+          resultCount,
+        results: mockResults,
       };
     } catch (error) {
       this.collector.recordError('knowledge_retrieval_benchmark', error as Error);
@@ -234,7 +242,7 @@ class MockPerformanceBenchmarkingService {
 
   async benchmarkDatabaseOperations(operationCount: number): Promise<any> {
     const endMetric = this.collector.startMetric('database_operations_benchmark', {
-      operationCount
+      operationCount,
     });
 
     try {
@@ -243,7 +251,7 @@ class MockPerformanceBenchmarkingService {
         operations.push({
           type: ['create', 'read', 'update', 'delete'][Math.floor(Math.random() * 4)],
           duration: Math.random() * 100 + 10,
-          success: Math.random() > 0.05 // 95% success rate
+          success: Math.random() > 0.05, // 95% success rate
         });
       }
 
@@ -254,8 +262,8 @@ class MockPerformanceBenchmarkingService {
         totalDuration: summary?.averageDuration || 0,
         averageOperationDuration: (summary?.averageDuration || 0) / operationCount,
         throughput: operationCount / ((summary?.averageDuration || 1) / 1000),
-        successRate: operations.filter(op => op.success).length / operations.length * 100,
-        operations
+        successRate: (operations.filter((op) => op.success).length / operations.length) * 100,
+        operations,
       };
     } catch (error) {
       this.collector.recordError('database_operations_benchmark', error as Error);
@@ -265,7 +273,7 @@ class MockPerformanceBenchmarkingService {
 
   async benchmarkSearchPerformance(queries: SearchQuery[]): Promise<any> {
     const endMetric = this.collector.startMetric('search_performance_benchmark', {
-      queryCount: queries.length
+      queryCount: queries.length,
     });
 
     try {
@@ -278,7 +286,7 @@ class MockPerformanceBenchmarkingService {
           data: { title: `Search result for ${query.query}`, content: `Matching content` },
           created_at: new Date().toISOString(),
           confidence_score: Math.random() * 0.6 + 0.4,
-          match_type: 'semantic'
+          match_type: 'semantic',
         };
         results.push(mockResult);
       }
@@ -286,10 +294,16 @@ class MockPerformanceBenchmarkingService {
       endMetric();
       return {
         queryCount: queries.length,
-        totalDuration: this.collector.getSummary('search_performance_benchmark')?.averageDuration || 0,
-        averageQueryDuration: (this.collector.getSummary('search_performance_benchmark')?.averageDuration || 0) / queries.length,
-        queriesPerSecond: queries.length / ((this.collector.getSummary('search_performance_benchmark')?.averageDuration || 1) / 1000),
-        results
+        totalDuration:
+          this.collector.getSummary('search_performance_benchmark')?.averageDuration || 0,
+        averageQueryDuration:
+          (this.collector.getSummary('search_performance_benchmark')?.averageDuration || 0) /
+          queries.length,
+        queriesPerSecond:
+          queries.length /
+          ((this.collector.getSummary('search_performance_benchmark')?.averageDuration || 1) /
+            1000),
+        results,
       };
     } catch (error) {
       this.collector.recordError('search_performance_benchmark', error as Error);
@@ -297,10 +311,13 @@ class MockPerformanceBenchmarkingService {
     }
   }
 
-  async benchmarkConcurrentOperations(concurrency: number, operationsPerWorker: number): Promise<any> {
+  async benchmarkConcurrentOperations(
+    concurrency: number,
+    operationsPerWorker: number
+  ): Promise<any> {
     const endMetric = this.collector.startMetric('concurrent_operations_benchmark', {
       concurrency,
-      operationsPerWorker
+      operationsPerWorker,
     });
 
     try {
@@ -308,12 +325,12 @@ class MockPerformanceBenchmarkingService {
         const workerResults = [];
         for (let i = 0; i < operationsPerWorker; i++) {
           const operationDuration = Math.random() * 200 + 50;
-          await new Promise(resolve => setTimeout(resolve, operationDuration));
+          await new Promise((resolve) => setTimeout(resolve, operationDuration));
           workerResults.push({
             workerId,
             operationId: i,
             duration: operationDuration,
-            success: Math.random() > 0.02 // 98% success rate
+            success: Math.random() > 0.02, // 98% success rate
           });
         }
         return workerResults;
@@ -327,11 +344,16 @@ class MockPerformanceBenchmarkingService {
         concurrency,
         operationsPerWorker,
         totalOperations: concurrency * operationsPerWorker,
-        totalDuration: this.collector.getSummary('concurrent_operations_benchmark')?.averageDuration || 0,
-        averageOperationDuration: allOperations.reduce((sum, op) => sum + op.duration, 0) / allOperations.length,
-        throughput: (concurrency * operationsPerWorker) / ((this.collector.getSummary('concurrent_operations_benchmark')?.averageDuration || 1) / 1000),
-        successRate: allOperations.filter(op => op.success).length / allOperations.length * 100,
-        results
+        totalDuration:
+          this.collector.getSummary('concurrent_operations_benchmark')?.averageDuration || 0,
+        averageOperationDuration:
+          allOperations.reduce((sum, op) => sum + op.duration, 0) / allOperations.length,
+        throughput:
+          (concurrency * operationsPerWorker) /
+          ((this.collector.getSummary('concurrent_operations_benchmark')?.averageDuration || 1) /
+            1000),
+        successRate: (allOperations.filter((op) => op.success).length / allOperations.length) * 100,
+        results,
       };
     } catch (error) {
       this.collector.recordError('concurrent_operations_benchmark', error as Error);
@@ -342,7 +364,7 @@ class MockPerformanceBenchmarkingService {
   async benchmarkLoadTesting(requestCount: number, rampUpTimeMs: number): Promise<any> {
     const endMetric = this.collector.startMetric('load_testing_benchmark', {
       requestCount,
-      rampUpTimeMs
+      rampUpTimeMs,
     });
 
     try {
@@ -354,7 +376,7 @@ class MockPerformanceBenchmarkingService {
         setTimeout(async () => {
           const requestStart = Date.now();
           // Simulate request processing
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 100 + 20));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 100 + 20));
           const requestEnd = Date.now();
 
           requests.push({
@@ -362,18 +384,18 @@ class MockPerformanceBenchmarkingService {
             startTime: requestStart,
             endTime: requestEnd,
             duration: requestEnd - requestStart,
-            success: Math.random() > 0.01 // 99% success rate
+            success: Math.random() > 0.01, // 99% success rate
           });
         }, i * intervalMs);
       }
 
       // Wait for all requests to complete
-      await new Promise(resolve => setTimeout(resolve, rampUpTimeMs + 1000));
+      await new Promise((resolve) => setTimeout(resolve, rampUpTimeMs + 1000));
 
       endMetric();
       const totalTestDuration = Date.now() - startTime;
-      const successfulRequests = requests.filter(req => req.success);
-      const responseTimes = successfulRequests.map(req => req.duration);
+      const successfulRequests = requests.filter((req) => req.success);
+      const responseTimes = successfulRequests.map((req) => req.duration);
 
       return {
         requestCount,
@@ -382,11 +404,12 @@ class MockPerformanceBenchmarkingService {
         successfulRequests: successfulRequests.length,
         failedRequests: requests.length - successfulRequests.length,
         successRate: (successfulRequests.length / requests.length) * 100,
-        averageResponseTime: responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
+        averageResponseTime:
+          responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
         minResponseTime: Math.min(...responseTimes),
         maxResponseTime: Math.max(...responseTimes),
         requestsPerSecond: requests.length / (totalTestDuration / 1000),
-        requests
+        requests,
       };
     } catch (error) {
       this.collector.recordError('load_testing_benchmark', error as Error);
@@ -400,7 +423,9 @@ class MockPerformanceBenchmarkingService {
       return { status: 'no_baseline', message: `No baseline found for operation: ${operation}` };
     }
 
-    const avgDiff = ((currentMetrics.averageDuration - baseline.averageDuration) / baseline.averageDuration) * 100;
+    const avgDiff =
+      ((currentMetrics.averageDuration - baseline.averageDuration) / baseline.averageDuration) *
+      100;
     const p95Diff = ((currentMetrics.p95 - baseline.p95) / baseline.p95) * 100;
     const p99Diff = ((currentMetrics.p99 - baseline.p99) / baseline.p99) * 100;
 
@@ -421,19 +446,26 @@ class MockPerformanceBenchmarkingService {
       differences: {
         average: avgDiff,
         p95: p95Diff,
-        p99: p99Diff
+        p99: p99Diff,
       },
-      recommendation: this.getRecommendation(status, avgDiff, p95Diff, p99Diff)
+      recommendation: this.getRecommendation(status, avgDiff, p95Diff, p99Diff),
     };
   }
 
-  private getRecommendation(status: string, avgDiff: number, p95Diff: number, p99Diff: number): string {
+  private getRecommendation(
+    status: string,
+    avgDiff: number,
+    p95Diff: number,
+    p99Diff: number
+  ): string {
     switch (status) {
       case 'improved':
         return 'Performance has improved. Consider updating baseline.';
       case 'degraded':
-        if (avgDiff > 25) return 'Significant performance degradation detected. Immediate investigation required.';
-        if (p95Diff > 20) return 'P95 response time degradation detected. Review optimization strategies.';
+        if (avgDiff > 25)
+          return 'Significant performance degradation detected. Immediate investigation required.';
+        if (p95Diff > 20)
+          return 'P95 response time degradation detected. Review optimization strategies.';
         return 'Performance has degraded. Monitor and consider optimization.';
       case 'stable':
         return 'Performance is stable within acceptable range.';
@@ -449,7 +481,7 @@ class MockPerformanceBenchmarkingService {
       trends: this.collector.getPerformanceTrends(),
       memoryUsage: this.collector.getMemoryUsage(),
       baselines: Object.fromEntries(this.baselines),
-      alerts: this.getActiveAlerts()
+      alerts: this.getActiveAlerts(),
     };
   }
 
@@ -464,7 +496,7 @@ class MockPerformanceBenchmarkingService {
           type: 'slow_operation',
           operation: summary.operation,
           severity: 'high',
-          message: `Operation ${summary.operation} has slow average response time: ${summary.averageDuration}ms`
+          message: `Operation ${summary.operation} has slow average response time: ${summary.averageDuration}ms`,
         });
       }
 
@@ -473,7 +505,7 @@ class MockPerformanceBenchmarkingService {
           type: 'low_success_rate',
           operation: summary.operation,
           severity: 'medium',
-          message: `Operation ${summary.operation} has low success rate: ${summary.successRate}%`
+          message: `Operation ${summary.operation} has low success rate: ${summary.successRate}%`,
         });
       }
     }
@@ -501,7 +533,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { itemCount: 10, expectedMaxDuration: 500 },
         { itemCount: 50, expectedMaxDuration: 2000 },
         { itemCount: 100, expectedMaxDuration: 4000 },
-        { itemCount: 500, expectedMaxDuration: 15000 }
+        { itemCount: 500, expectedMaxDuration: 15000 },
       ];
 
       for (const testCase of testCases) {
@@ -509,7 +541,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           id: `item-${i}`,
           kind: 'entity',
           scope: { project: 'performance-test' },
-          data: { title: `Test Item ${i}`, content: `Test content for item ${i}` }
+          data: { title: `Test Item ${i}`, content: `Test content for item ${i}` },
         }));
 
         const results = await benchmarkingService.benchmarkKnowledgeStorage(items);
@@ -525,15 +557,24 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
     it('should benchmark knowledge retrieval performance with different query complexities', async () => {
       const queries = [
         { query: 'simple', complexity: 'simple', expectedMaxDuration: 200 },
-        { query: 'more complex query with multiple terms', complexity: 'medium', expectedMaxDuration: 400 },
-        { query: 'very complex query with many terms and filters and specific requirements for detailed search results', complexity: 'complex', expectedMaxDuration: 800 }
+        {
+          query: 'more complex query with multiple terms',
+          complexity: 'medium',
+          expectedMaxDuration: 400,
+        },
+        {
+          query:
+            'very complex query with many terms and filters and specific requirements for detailed search results',
+          complexity: 'complex',
+          expectedMaxDuration: 800,
+        },
       ];
 
       for (const queryTest of queries) {
         const query: SearchQuery = {
           query: queryTest.query,
           mode: 'auto',
-          limit: 10
+          limit: 10,
         };
 
         const results = await benchmarkingService.benchmarkKnowledgeRetrieval(query);
@@ -552,8 +593,11 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         scope: { project: 'large-scale-test', branch: 'main' },
         data: {
           title: `Large Scale Test Item ${i}`,
-          content: `This is large scale test content for item ${i} with substantial data to simulate real-world knowledge entries`.repeat(5)
-        }
+          content:
+            `This is large scale test content for item ${i} with substantial data to simulate real-world knowledge entries`.repeat(
+              5
+            ),
+        },
       }));
 
       const startTime = Date.now();
@@ -569,7 +613,10 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const concurrency = 10;
       const operationsPerWorker = 20;
 
-      const results = await benchmarkingService.benchmarkConcurrentOperations(concurrency, operationsPerWorker);
+      const results = await benchmarkingService.benchmarkConcurrentOperations(
+        concurrency,
+        operationsPerWorker
+      );
 
       expect(results.concurrency).toBe(concurrency);
       expect(results.operationsPerWorker).toBe(operationsPerWorker);
@@ -587,8 +634,8 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         scope: { project: 'memory-test' },
         data: {
           title: `Memory Test Item ${i}`,
-          content: 'Large content block '.repeat(100) // Significant content to test memory usage
-        }
+          content: 'Large content block '.repeat(100), // Significant content to test memory usage
+        },
       }));
 
       await benchmarkingService.benchmarkKnowledgeStorage(items);
@@ -622,7 +669,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         query: `vector search query ${i} with embedding simulation`,
         mode: 'deep' as const,
         top_k: 10,
-        limit: 10
+        limit: 10,
       }));
 
       const results = await benchmarkingService.benchmarkSearchPerformance(vectorSearchQueries);
@@ -637,7 +684,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const connectionTest = {
         maxConnections: 20,
         concurrentRequests: 50,
-        operationsPerRequest: 5
+        operationsPerRequest: 5,
       };
 
       const results = await benchmarkingService.benchmarkConcurrentOperations(
@@ -645,7 +692,9 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         connectionTest.operationsPerRequest
       );
 
-      expect(results.totalOperations).toBe(connectionTest.concurrentRequests * connectionTest.operationsPerRequest);
+      expect(results.totalOperations).toBe(
+        connectionTest.concurrentRequests * connectionTest.operationsPerRequest
+      );
       expect(results.successRate).toBeGreaterThan(95); // Connection pool should maintain high success rate
       expect(results.throughput).toBeGreaterThan(0);
     });
@@ -655,7 +704,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
       for (const size of transactionSizes) {
         const endMetric = benchmarkingService['collector'].startMetric('transaction_benchmark', {
-          transactionSize: size
+          transactionSize: size,
         });
 
         try {
@@ -663,11 +712,11 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           const operations = Array.from({ length: size }, (_, i) => ({
             id: `tx-operation-${i}`,
             type: ['insert', 'update', 'delete'][Math.floor(Math.random() * 3)],
-            data: { value: `transaction-data-${i}` }
+            data: { value: `transaction-data-${i}` },
           }));
 
           // Simulate transaction processing time
-          await new Promise(resolve => setTimeout(resolve, size * 5));
+          await new Promise((resolve) => setTimeout(resolve, size * 5));
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('transaction_benchmark');
@@ -695,9 +744,9 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
             tags: Array.from({ length: 20 }, (_, j) => `tag-${j}`),
             properties: Object.fromEntries(
               Array.from({ length: 30 }, (_, k) => [`property-${k}`, `value-${k}`])
-            )
-          }
-        }
+            ),
+          },
+        },
       }));
 
       const memoryBefore = benchmarkingService['collector'].getMemoryUsage();
@@ -717,7 +766,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { name: 'health_check', expectedMaxTime: 50 },
         { name: 'knowledge_store', expectedMaxTime: 500 },
         { name: 'knowledge_find', expectedMaxTime: 300 },
-        { name: 'analytics_metrics', expectedMaxTime: 200 }
+        { name: 'analytics_metrics', expectedMaxTime: 200 },
       ];
 
       for (const endpoint of endpoints) {
@@ -725,7 +774,9 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
         try {
           // Simulate API endpoint processing
-          await new Promise(resolve => setTimeout(resolve, Math.random() * endpoint.expectedMaxTime * 0.8));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.random() * endpoint.expectedMaxTime * 0.8)
+          );
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary(`api_${endpoint.name}`);
@@ -743,11 +794,13 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
     it('should test service layer concurrent request handling', async () => {
       const concurrentRequests = 20;
       const requests = Array.from({ length: concurrentRequests }, async (_, i) => {
-        const endMetric = benchmarkingService['collector'].startMetric('concurrent_api_request', { requestId: i });
+        const endMetric = benchmarkingService['collector'].startMetric('concurrent_api_request', {
+          requestId: i,
+        });
 
         try {
           // Simulate API request processing
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 200 + 50));
           endMetric();
           return { requestId: i, success: true };
         } catch (error) {
@@ -757,7 +810,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       });
 
       const results = await Promise.all(requests);
-      const successfulRequests = results.filter(r => r.success);
+      const successfulRequests = results.filter((r) => r.success);
 
       expect(successfulRequests.length).toBeGreaterThan(concurrentRequests * 0.95); // 95% success rate
 
@@ -771,17 +824,22 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
       // Simulate intensive service operations
       const intensiveOperations = Array.from({ length: 100 }, async (_, i) => {
-        const endMetric = benchmarkingService['collector'].startMetric('intensive_service_operation');
+        const endMetric = benchmarkingService['collector'].startMetric(
+          'intensive_service_operation'
+        );
 
         try {
           // Simulate memory-intensive operation
           const largeData = new Array(1000).fill(`data-${i}`);
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
 
           endMetric();
           return largeData.length;
         } catch (error) {
-          benchmarkingService['collector'].recordError('intensive_service_operation', error as Error);
+          benchmarkingService['collector'].recordError(
+            'intensive_service_operation',
+            error as Error
+          );
           throw error;
         }
       });
@@ -801,19 +859,21 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { size: 'small', bytes: 1024, expectedMaxTime: 100 },
         { size: 'medium', bytes: 10240, expectedMaxTime: 200 },
         { size: 'large', bytes: 102400, expectedMaxTime: 500 },
-        { size: 'xlarge', bytes: 1024000, expectedMaxTime: 1000 }
+        { size: 'xlarge', bytes: 1024000, expectedMaxTime: 1000 },
       ];
 
       for (const payloadTest of payloadSizes) {
         const payload = 'x'.repeat(payloadTest.bytes);
         const endMetric = benchmarkingService['collector'].startMetric('payload_processing', {
           size: payloadTest.size,
-          bytes: payloadTest.bytes
+          bytes: payloadTest.bytes,
         });
 
         try {
           // Simulate payload processing
-          await new Promise(resolve => setTimeout(resolve, Math.random() * payloadTest.expectedMaxTime * 0.7));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.random() * payloadTest.expectedMaxTime * 0.7)
+          );
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('payload_processing');
@@ -831,13 +891,13 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const errorScenarios = [
         { type: 'validation_error', rate: 0.1 },
         { type: 'database_error', rate: 0.05 },
-        { type: 'network_timeout', rate: 0.02 }
+        { type: 'network_timeout', rate: 0.02 },
       ];
 
       for (const scenario of errorScenarios) {
         const requests = Array.from({ length: 100 }, async (_, i) => {
           const endMetric = benchmarkingService['collector'].startMetric('error_handling_test', {
-            scenario: scenario.type
+            scenario: scenario.type,
           });
 
           try {
@@ -846,7 +906,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
               throw new Error(`Simulated ${scenario.type}`);
             }
 
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+            await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
             endMetric();
             return { success: true, scenario: scenario.type };
           } catch (error) {
@@ -856,7 +916,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         });
 
         const results = await Promise.all(requests);
-        const successfulRequests = results.filter(r => r.success);
+        const successfulRequests = results.filter((r) => r.success);
         const actualErrorRate = (results.length - successfulRequests.length) / results.length;
 
         expect(actualErrorRate).toBeGreaterThan(scenario.rate * 0.5); // At least 50% of expected error rate
@@ -872,7 +932,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { complexity: 'simple', terms: 1, filters: 0, expectedMaxTime: 50 },
         { complexity: 'medium', terms: 3, filters: 2, expectedMaxTime: 150 },
         { complexity: 'complex', terms: 5, filters: 4, expectedMaxTime: 300 },
-        { complexity: 'very_complex', terms: 10, filters: 8, expectedMaxTime: 500 }
+        { complexity: 'very_complex', terms: 10, filters: 8, expectedMaxTime: 500 },
       ];
 
       for (const complexityTest of queryComplexities) {
@@ -882,12 +942,15 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
             project: 'search-test',
             ...(complexityTest.filters > 0 && {
               filters: Object.fromEntries(
-                Array.from({ length: complexityTest.filters }, (_, i) => [`filter${i}`, `value${i}`])
-              )
-            })
+                Array.from({ length: complexityTest.filters }, (_, i) => [
+                  `filter${i}`,
+                  `value${i}`,
+                ])
+              ),
+            }),
           },
           mode: 'auto',
-          limit: 20
+          limit: 20,
         };
 
         const results = await benchmarkingService.benchmarkKnowledgeRetrieval(query);
@@ -901,19 +964,19 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const vectorSearchTests = [
         { dimensions: 128, topK: 5, expectedMaxTime: 100 },
         { dimensions: 512, topK: 10, expectedMaxTime: 200 },
-        { dimensions: 1024, topK: 20, expectedMaxTime: 400 }
+        { dimensions: 1024, topK: 20, expectedMaxTime: 400 },
       ];
 
       for (const vectorTest of vectorSearchTests) {
         const endMetric = benchmarkingService['collector'].startMetric('vector_similarity_search', {
           dimensions: vectorTest.dimensions,
-          topK: vectorTest.topK
+          topK: vectorTest.topK,
         });
 
         try {
           // Simulate vector search processing
           const mockVector = Array.from({ length: vectorTest.dimensions }, () => Math.random());
-          await new Promise(resolve => setTimeout(resolve, vectorTest.expectedMaxTime * 0.6));
+          await new Promise((resolve) => setTimeout(resolve, vectorTest.expectedMaxTime * 0.6));
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('vector_similarity_search');
@@ -932,12 +995,12 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
       for (const indexSize of indexSizes) {
         const endMetric = benchmarkingService['collector'].startMetric('search_index_benchmark', {
-          indexSize
+          indexSize,
         });
 
         try {
           // Simulate index search
-          await new Promise(resolve => setTimeout(resolve, Math.log(indexSize) * 10));
+          await new Promise((resolve) => setTimeout(resolve, Math.log(indexSize) * 10));
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('search_index_benchmark');
@@ -954,18 +1017,18 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
     it('should test search caching performance', async () => {
       const cacheTests = [
         { cacheHit: true, expectedMaxTime: 10 },
-        { cacheHit: false, expectedMaxTime: 200 }
+        { cacheHit: false, expectedMaxTime: 200 },
       ];
 
       for (const cacheTest of cacheTests) {
         const endMetric = benchmarkingService['collector'].startMetric('search_cache_test', {
-          cacheHit: cacheTest.cacheHit
+          cacheHit: cacheTest.cacheHit,
         });
 
         try {
           // Simulate cache vs database lookup
           const delay = cacheTest.cacheHit ? 5 : Math.random() * 150 + 50;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('search_cache_test');
@@ -985,19 +1048,19 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { page: 10, pageSize: 10, expectedMaxTime: 100 },
         { page: 100, pageSize: 10, expectedMaxTime: 200 },
         { page: 1, pageSize: 100, expectedMaxTime: 150 },
-        { page: 10, pageSize: 100, expectedMaxTime: 250 }
+        { page: 10, pageSize: 100, expectedMaxTime: 250 },
       ];
 
       for (const paginationTest of paginationTests) {
         const endMetric = benchmarkingService['collector'].startMetric('search_pagination_test', {
           page: paginationTest.page,
-          pageSize: paginationTest.pageSize
+          pageSize: paginationTest.pageSize,
         });
 
         try {
           // Simulate pagination processing
           const offset = (paginationTest.page - 1) * paginationTest.pageSize;
-          await new Promise(resolve => setTimeout(resolve, 20 + offset * 0.5));
+          await new Promise((resolve) => setTimeout(resolve, 20 + offset * 0.5));
 
           endMetric();
           const summary = benchmarkingService['collector'].getSummary('search_pagination_test');
@@ -1018,7 +1081,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const loadTestConfig = {
         requestCount: 100,
         rampUpTimeMs: 5000, // 5 seconds
-        expectedMinSuccessRate: 95
+        expectedMinSuccessRate: 95,
       };
 
       const results = await benchmarkingService.benchmarkLoadTesting(
@@ -1036,7 +1099,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const stressTestConfig = {
         concurrency: 50, // High concurrency
         operationsPerWorker: 10,
-        expectedMinSuccessRate: 80 // Lower tolerance for stress test
+        expectedMinSuccessRate: 80, // Lower tolerance for stress test
       };
 
       const results = await benchmarkingService.benchmarkConcurrentOperations(
@@ -1044,7 +1107,9 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         stressTestConfig.operationsPerWorker
       );
 
-      expect(results.totalOperations).toBe(stressTestConfig.concurrency * stressTestConfig.operationsPerWorker);
+      expect(results.totalOperations).toBe(
+        stressTestConfig.concurrency * stressTestConfig.operationsPerWorker
+      );
       expect(results.successRate).toBeGreaterThan(stressTestConfig.expectedMinSuccessRate);
       expect(results.throughput).toBeGreaterThan(0);
     });
@@ -1054,18 +1119,21 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         { concurrency: 5, expectedMaxAvgTime: 100 },
         { concurrency: 10, expectedMaxAvgTime: 200 },
         { concurrency: 20, expectedMaxAvgTime: 400 },
-        { concurrency: 40, expectedMaxAvgTime: 800 }
+        { concurrency: 40, expectedMaxAvgTime: 800 },
       ];
 
       const performanceResults = [];
 
       for (const loadLevel of loadLevels) {
-        const results = await benchmarkingService.benchmarkConcurrentOperations(loadLevel.concurrency, 5);
+        const results = await benchmarkingService.benchmarkConcurrentOperations(
+          loadLevel.concurrency,
+          5
+        );
 
         performanceResults.push({
           concurrency: loadLevel.concurrency,
           averageDuration: results.averageOperationDuration,
-          successRate: results.successRate
+          successRate: results.successRate,
         });
 
         expect(results.averageOperationDuration).toBeLessThan(loadLevel.expectedMaxAvgTime);
@@ -1087,7 +1155,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const loadTests = [
         { name: 'light', concurrency: 5, operationsPerWorker: 10 },
         { name: 'moderate', concurrency: 15, operationsPerWorker: 10 },
-        { name: 'heavy', concurrency: 30, operationsPerWorker: 10 }
+        { name: 'heavy', concurrency: 30, operationsPerWorker: 10 },
       ];
 
       const resourceUtilization = [];
@@ -1109,7 +1177,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           totalOperations: results.totalOperations,
           memoryUsedPerOperation: memoryUsed / results.totalOperations,
           throughput: results.throughput,
-          successRate: results.successRate
+          successRate: results.successRate,
         });
       }
 
@@ -1146,7 +1214,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const baselineTests = [
         { operation: 'knowledge_storage', itemCount: 100 },
         { operation: 'knowledge_retrieval', queryCount: 50 },
-        { operation: 'database_operations', operationCount: 200 }
+        { operation: 'database_operations', operationCount: 200 },
       ];
 
       const baselines = new Map();
@@ -1154,23 +1222,25 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       for (const test of baselineTests) {
         let result;
         switch (test.operation) {
-          case 'knowledge_storage':
+          case 'knowledge_storage': {
             const items = Array.from({ length: test.itemCount }, (_, i) => ({
               id: `baseline-item-${i}`,
               kind: 'entity',
               scope: { project: 'baseline-test' },
-              data: { title: `Baseline Item ${i}` }
+              data: { title: `Baseline Item ${i}` },
             }));
             result = await benchmarkingService.benchmarkKnowledgeStorage(items);
             break;
-          case 'knowledge_retrieval':
+          }
+          case 'knowledge_retrieval': {
             const queries = Array.from({ length: test.queryCount }, (_, i) => ({
               query: `baseline query ${i}`,
               mode: 'auto' as const,
-              limit: 10
+              limit: 10,
             }));
             result = await benchmarkingService.benchmarkSearchPerformance(queries);
             break;
+          }
           case 'database_operations':
             result = await benchmarkingService.benchmarkDatabaseOperations(test.operationCount);
             break;
@@ -1181,8 +1251,8 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           metrics: {
             averageDuration: result.totalDuration,
             throughput: result.throughput,
-            successRate: result.successRate || 100
-          }
+            successRate: result.successRate || 100,
+          },
         });
       }
 
@@ -1199,7 +1269,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const currentMetrics = {
         averageDuration: 150,
         p95: 300,
-        p99: 450
+        p99: 450,
       };
 
       const comparison = benchmarkingService.compareWithBaseline('memory_store', currentMetrics);
@@ -1218,7 +1288,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const degradedMetrics = {
         averageDuration: 200, // 100% increase from baseline of 100
         p95: 400, // 100% increase from baseline of 200
-        p99: 600  // 100% increase from baseline of 300
+        p99: 600, // 100% increase from baseline of 300
       };
 
       const comparison = benchmarkingService.compareWithBaseline('memory_store', degradedMetrics);
@@ -1242,11 +1312,11 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           timestamp: new Date().toISOString(),
           averageDuration: results.averageOperationDuration,
           throughput: results.throughput,
-          successRate: results.successRate
+          successRate: results.successRate,
         });
 
         // Small delay between measurements
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       expect(trendData).toHaveLength(timePoints);
@@ -1262,12 +1332,14 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
     it('should generate comprehensive performance reports', async () => {
       // Run various performance tests to generate report data
-      await benchmarkingService.benchmarkKnowledgeStorage(Array.from({ length: 50 }, (_, i) => ({
-        id: `report-item-${i}`,
-        kind: 'entity',
-        scope: { project: 'report-test' },
-        data: { title: `Report Item ${i}` }
-      })));
+      await benchmarkingService.benchmarkKnowledgeStorage(
+        Array.from({ length: 50 }, (_, i) => ({
+          id: `report-item-${i}`,
+          kind: 'entity',
+          scope: { project: 'report-test' },
+          data: { title: `Report Item ${i}` },
+        }))
+      );
 
       await benchmarkingService.benchmarkDatabaseOperations(100);
       await benchmarkingService.benchmarkConcurrentOperations(10, 5);
@@ -1296,18 +1368,20 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
         maxAverageResponseTime: 500,
         minSuccessRate: 99,
         maxP99ResponseTime: 1000,
-        minThroughput: 10
+        minThroughput: 10,
       };
 
       const results = await benchmarkingService.benchmarkConcurrentOperations(20, 10);
-      const summary = benchmarkingService['collector'].getSummary('concurrent_operations_benchmark');
+      const summary = benchmarkingService['collector'].getSummary(
+        'concurrent_operations_benchmark'
+      );
 
       expect(summary).toBeDefined();
 
       const slaCompliance = {
         responseTime: (summary!.averageDuration || 0) <= slaThresholds.maxAverageResponseTime,
         successRate: results.successRate >= slaThresholds.minSuccessRate,
-        throughput: results.throughput >= slaThresholds.minThroughput
+        throughput: results.throughput >= slaThresholds.minThroughput,
       };
 
       // At least response time and success rate should meet SLA for normal operations
@@ -1322,7 +1396,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       const customThresholds = [
         { operation: 'test_operation_1', duration: 100, errorRate: 5 },
         { operation: 'test_operation_2', duration: 200, errorRate: 3 },
-        { operation: 'test_operation_3', duration: 500, errorRate: 1 }
+        { operation: 'test_operation_3', duration: 500, errorRate: 1 },
       ];
 
       for (const threshold of customThresholds) {
@@ -1345,7 +1419,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
             startTime: Date.now() - duration,
             endTime: Date.now(),
             duration,
-            success
+            success,
           });
         } else {
           benchmarkingService['collector'].recordError(operation, new Error('Test error'));
@@ -1372,7 +1446,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
           startTime: Date.now() - duration,
           endTime: Date.now(),
           duration,
-          success: Math.random() > 0.05 // 95% success rate
+          success: Math.random() > 0.05, // 95% success rate
         });
       }
 
@@ -1387,7 +1461,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       expect(summary!.successRate).toBeGreaterThan(90);
 
       expect(recentMetrics).toHaveLength(20);
-      recentMetrics.forEach(metric => {
+      recentMetrics.forEach((metric) => {
         expect(metric.operation).toBe(testOperation);
         expect(metric.duration).toBeGreaterThan(0);
       });
@@ -1405,7 +1479,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
             startTime: Date.now() - (20 - i) * 60000, // Spread over last 20 minutes
             endTime: Date.now() - (20 - i) * 60000 + duration,
             duration,
-            success: Math.random() > 0.02
+            success: Math.random() > 0.02,
           });
         }
       }
@@ -1426,12 +1500,14 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
 
     it('should test performance metrics export functionality', async () => {
       // Generate some test metrics
-      await benchmarkingService.benchmarkKnowledgeStorage(Array.from({ length: 10 }, (_, i) => ({
-        id: `export-test-${i}`,
-        kind: 'entity',
-        scope: { project: 'export-test' },
-        data: { title: `Export Test Item ${i}` }
-      })));
+      await benchmarkingService.benchmarkKnowledgeStorage(
+        Array.from({ length: 10 }, (_, i) => ({
+          id: `export-test-${i}`,
+          kind: 'entity',
+          scope: { project: 'export-test' },
+          data: { title: `Export Test Item ${i}` },
+        }))
+      );
 
       const jsonExport = benchmarkingService['collector'].exportMetrics('json');
       const prometheusExport = benchmarkingService['collector'].exportMetrics('prometheus');
@@ -1463,7 +1539,7 @@ describe('Performance Benchmarking - Comprehensive Performance Testing', () => {
       );
 
       // Process the data to simulate memory usage
-      const processedData = memoryIntensiveData.map(data => data.toUpperCase());
+      const processedData = memoryIntensiveData.map((data) => data.toUpperCase());
 
       const finalMemory = benchmarkingService['collector'].getMemoryUsage();
 

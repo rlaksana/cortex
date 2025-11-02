@@ -16,13 +16,15 @@ Critical configuration conflicts identified between `src/config/env.ts` and `src
 ### 1. Database URL Configuration Conflict
 
 **env.ts:** `DATABASE_URL` (expects qdrant connection string)
+
 ```typescript
-DATABASE_URL: z.string().url('DATABASE_URL must be a valid qdrant connection string')
+DATABASE_URL: z.string().url('DATABASE_URL must be a valid qdrant connection string');
 ```
 
 **environment.ts:** `QDRANT_URL` (different variable name)
+
 ```typescript
-QDRANT_URL: z.string().url().default('http://localhost:6333')
+QDRANT_URL: z.string().url().default('http://localhost:6333');
 ```
 
 **Impact:** Applications using different configuration files will look for different environment variables, causing connection failures.
@@ -37,6 +39,7 @@ QDRANT_URL: z.string().url().default('http://localhost:6333')
 ### 3. Database Configuration Approaches
 
 **env.ts:** Simple connection pool variables
+
 ```typescript
 DB_POOL_MIN: z.coerce.number().int().min(1).default(2),
 DB_POOL_MAX: z.coerce.number().int().min(2).max(100).default(10),
@@ -44,6 +47,7 @@ DB_IDLE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000)
 ```
 
 **environment.ts:** Comprehensive connection configuration
+
 ```typescript
 DB_CONNECTION_TIMEOUT: z.string().transform(Number).pipe(z.number().int().min(1000)).default('30000'),
 DB_MAX_CONNECTIONS: z.string().transform(Number).pipe(z.number().int().min(1).max(100)).default('10'),
@@ -56,10 +60,12 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ### 4. Missing Variables in Each System
 
 **env.ts missing from environment.ts:**
+
 - `MCP_TRANSPORT` (critical for MCP server configuration)
 - Scope inference variables: `CORTEX_ORG`, `CORTEX_PROJECT`, `CORTEX_BRANCH`
 
 **environment.ts missing from env.ts:**
+
 - All vector/embedding configurations
 - Security configurations (JWT_SECRET, ENCRYPTION_KEY)
 - Feature flags and application metadata
@@ -68,12 +74,14 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ## Usage Pattern Analysis
 
 ### Files Using env.ts (Simple Configuration):
+
 - `src/index-qdrant.ts` - Main Qdrant entry point
 - `src/utils/scope.ts` - Scope inference utilities
 - Multiple test files (integration, e2e, functional)
 - Various utility scripts
 
 ### Files Using environment.ts (Comprehensive Configuration):
+
 - `src/db/pool.ts` - Database connection pooling
 - `src/config/database-config.ts` - Database configuration
 - `src/utils/config-tester.ts` - Configuration testing
@@ -81,11 +89,13 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ## Runtime Risk Assessment
 
 ### High Risk Issues:
+
 1. **Startup Failures:** Applications may fail to start if conflicting validation schemas are loaded
 2. **Configuration Inconsistency:** Same environment variables interpreted differently
 3. **Missing Critical Variables:** Some components require variables only defined in one system
 
 ### Medium Risk Issues:
+
 1. **Maintenance Overhead:** Two systems to maintain and configure
 2. **Developer Confusion:** Unclear which configuration system to use
 3. **Testing Complexity:** Different configurations in different test scenarios
@@ -93,12 +103,14 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ## Root Cause Analysis
 
 ### Historical Evolution:
+
 1. **Original System:** `env.ts` provided simple configuration for basic functionality
 2. **Feature Expansion:** `environment.ts` added later to support advanced Qdrant + embedding features
 3. **Incomplete Migration:** Migration from simple to comprehensive system was never completed
 4. **Code Divergence:** Both systems continued to evolve independently
 
 ### Architectural Issues:
+
 1. **Lack of Configuration Strategy:** No clear decision on unified configuration approach
 2. **Incremental Development:** Features added without considering existing configuration system
 3. **Backward Compatibility Concerns:** Fear of breaking existing code prevented complete migration
@@ -108,6 +120,7 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ### Primary Strategy: Consolidate on environment.ts
 
 **Rationale:**
+
 - Most comprehensive feature set
 - Already supports advanced Qdrant and embedding configurations
 - Better state management through singleton pattern
@@ -140,11 +153,13 @@ DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).def
 ## Migration Impact Assessment
 
 ### Files Requiring Updates:
+
 - 8 source files using `env.ts`
 - Multiple test files
 - Configuration documentation
 
 ### Risk Level: Medium
+
 - Careful implementation required to avoid breaking changes
 - Transition period needed for backward compatibility
 - Comprehensive testing essential

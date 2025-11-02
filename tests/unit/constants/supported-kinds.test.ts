@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 
 // Setup global performance mock
 (global as any).performance = {
-  now: () => Date.now()
+  now: () => Date.now(),
 };
 import {
   SUPPORTED_KINDS,
@@ -35,16 +35,28 @@ describe('SUPPORTED_KINDS', () => {
 
   it('should contain all expected knowledge types', () => {
     const expectedTypes = [
-      'entity', 'relation', 'observation',
+      'entity',
+      'relation',
+      'observation',
       'section',
-      'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context',
-      'incident', 'release', 'risk', 'assumption'
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
     expect(SUPPORTED_KINDS).toEqual(expect.arrayContaining(expectedTypes));
   });
 
   it('should have type-safe string literal array', () => {
-    const kind: typeof SUPPORTED_KINDS[number] = 'entity';
+    const kind: (typeof SUPPORTED_KINDS)[number] = 'entity';
     expect(kind).toBe('entity');
   });
 });
@@ -93,7 +105,9 @@ describe('getKnowledgeTypeMetadata', () => {
   });
 
   it('should throw for invalid knowledge types', () => {
-    expect(() => getKnowledgeTypeMetadata('invalid' as any)).toThrow('Unknown knowledge type: invalid');
+    expect(() => getKnowledgeTypeMetadata('invalid' as any)).toThrow(
+      'Unknown knowledge type: invalid'
+    );
   });
 });
 
@@ -211,7 +225,7 @@ describe('Exported constants', () => {
 
 describe('Table name consistency', () => {
   it('should have unique table names for each knowledge type', () => {
-    const tableNames = Object.values(KNOWLEDGE_TYPE_METADATA).map(m => m.tableName);
+    const tableNames = Object.values(KNOWLEDGE_TYPE_METADATA).map((m) => m.tableName);
     const uniqueTableNames = [...new Set(tableNames)];
     expect(tableNames).toHaveLength(uniqueTableNames.length);
   });
@@ -237,7 +251,8 @@ describe('Table name consistency', () => {
     };
 
     for (const [kind, expectedTableName] of Object.entries(expectedTableNames)) {
-      const actualTableName = KNOWLEDGE_TYPE_METADATA[kind as keyof typeof expectedTableNames].tableName;
+      const actualTableName =
+        KNOWLEDGE_TYPE_METADATA[kind as keyof typeof expectedTableNames].tableName;
       expect(actualTableName).toBe(expectedTableName);
     }
   });
@@ -269,12 +284,24 @@ describe('Business rules validation', () => {
 // ============================================================================
 
 describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Types', () => {
-
   // Extract all implemented schema types from knowledge-types.ts
   const implementedSchemaTypes = [
-    'section', 'runbook', 'change', 'issue', 'decision', 'todo',
-    'release_note', 'ddl', 'pr_context', 'entity', 'relation',
-    'observation', 'incident', 'release', 'risk', 'assumption'
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'entity',
+    'relation',
+    'observation',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
   ] as const;
 
   describe('Bidirectional Exact Match Validation', () => {
@@ -294,8 +321,12 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
       expect(supportedSet).toEqual(implementedSet);
 
       // Detailed assertion with helpful error messages
-      const missingInSupported = implementedSchemaTypes.filter(k => !SUPPORTED_KINDS.includes(k as any));
-      const extraInSupported = SUPPORTED_KINDS.filter(k => !implementedSchemaTypes.includes(k as any));
+      const missingInSupported = implementedSchemaTypes.filter(
+        (k) => !SUPPORTED_KINDS.includes(k as any)
+      );
+      const extraInSupported = SUPPORTED_KINDS.filter(
+        (k) => !implementedSchemaTypes.includes(k as any)
+      );
 
       expect(missingInSupported).toEqual([]);
       expect(extraInSupported).toEqual([]);
@@ -336,10 +367,22 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
 
       // Verify all expected knowledge types are present
       const expectedKinds = [
-        'entity', 'relation', 'observation',
+        'entity',
+        'relation',
+        'observation',
         'section',
-        'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context',
-        'incident', 'release', 'risk', 'assumption'
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       expect(SUPPORTED_KINDS).toEqual(expect.arrayContaining(expectedKinds));
@@ -362,7 +405,7 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
 
         // Should not fail due to kind discriminator (data validation is separate)
         if (!parseResult.success) {
-          const errors = parseResult.error.issues.map(e => e.message).join(', ');
+          const errors = parseResult.error.issues.map((e) => e.message).join(', ');
           // Only fail if the error is not about data validation
           if (!errors.includes('data') && !errors.includes('Required')) {
             throw new Error(`Schema validation failed for ${kind}: ${errors}`);
@@ -374,9 +417,22 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
     it('should have TypeScript types that match Zod schemas', () => {
       // Verify all TypeScript types are properly referenced
       const expectedTypeNames = [
-        'SectionItem', 'RunbookItem', 'ChangeItem', 'IssueItem', 'DecisionItem', 'TodoItem',
-        'ReleaseNoteItem', 'DDLItem', 'PRContextItem', 'EntityItem', 'RelationItem',
-        'ObservationItem', 'IncidentItem', 'ReleaseItem', 'RiskItem', 'AssumptionItem'
+        'SectionItem',
+        'RunbookItem',
+        'ChangeItem',
+        'IssueItem',
+        'DecisionItem',
+        'TodoItem',
+        'ReleaseNoteItem',
+        'DDLItem',
+        'PRContextItem',
+        'EntityItem',
+        'RelationItem',
+        'ObservationItem',
+        'IncidentItem',
+        'ReleaseItem',
+        'RiskItem',
+        'AssumptionItem',
       ];
 
       for (const kind of SUPPORTED_KINDS) {
@@ -390,9 +446,20 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
   describe('Metadata Completeness and Accuracy', () => {
     it('should have complete metadata for all knowledge types', () => {
       const requiredMetadataFields = [
-        'kind', 'displayName', 'category', 'description', 'useCases',
-        'validationFeatures', 'businessRules', 'schemaType', 'typescriptType',
-        'tableName', 'isImplemented', 'introducedIn', 'relatedTypes', 'tags'
+        'kind',
+        'displayName',
+        'category',
+        'description',
+        'useCases',
+        'validationFeatures',
+        'businessRules',
+        'schemaType',
+        'typescriptType',
+        'tableName',
+        'isImplemented',
+        'introducedIn',
+        'relatedTypes',
+        'tags',
       ];
 
       for (const kind of SUPPORTED_KINDS) {
@@ -422,7 +489,7 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
     });
 
     it('should have consistent table names across metadata', () => {
-      const tableNames = Object.values(KNOWLEDGE_TYPE_METADATA).map(m => m.tableName);
+      const tableNames = Object.values(KNOWLEDGE_TYPE_METADATA).map((m) => m.tableName);
       const uniqueTableNames = [...new Set(tableNames)];
 
       // All table names should be unique
@@ -449,7 +516,8 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
       };
 
       for (const [kind, expectedTableName] of Object.entries(expectedTableNames)) {
-        const actualTableName = KNOWLEDGE_TYPE_METADATA[kind as keyof typeof expectedTableNames].tableName;
+        const actualTableName =
+          KNOWLEDGE_TYPE_METADATA[kind as keyof typeof expectedTableNames].tableName;
         expect(actualTableName).toBe(expectedTableName);
       }
     });
@@ -487,7 +555,12 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
       expect(eightLogTypes).toHaveLength(4);
 
       // Verify all types are accounted for in categories
-      const allCategorizedTypes = [...coreGraphTypes, ...coreDocTypes, ...devLifecycleTypes, ...eightLogTypes];
+      const allCategorizedTypes = [
+        ...coreGraphTypes,
+        ...coreDocTypes,
+        ...devLifecycleTypes,
+        ...eightLogTypes,
+      ];
       expect(allCategorizedTypes).toHaveLength(16);
       expect(allCategorizedTypes.sort()).toEqual(SUPPORTED_KINDS.sort());
     });
@@ -495,7 +568,9 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
 
   describe('Error Handling and Edge Cases', () => {
     it('should handle invalid knowledge types gracefully', () => {
-      expect(() => getKnowledgeTypeMetadata('invalid' as any)).toThrow('Unknown knowledge type: invalid');
+      expect(() => getKnowledgeTypeMetadata('invalid' as any)).toThrow(
+        'Unknown knowledge type: invalid'
+      );
       expect(isSupportedKind('invalid')).toBe(false);
     });
 
@@ -504,8 +579,9 @@ describe('P1-T1.1: Exact Match Between Documented and Implemented Knowledge Type
     });
 
     it('should provide clear error messages for validation failures', () => {
-      expect(() => getKnowledgeTypeMetadata('nonexistent' as any))
-        .toThrow('Unknown knowledge type: nonexistent');
+      expect(() => getKnowledgeTypeMetadata('nonexistent' as any)).toThrow(
+        'Unknown knowledge type: nonexistent'
+      );
     });
   });
 

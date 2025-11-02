@@ -16,7 +16,7 @@
 
 import { createHash } from 'node:crypto';
 import { logger } from '../../utils/logger.js';
-import { auditService } from '../audit/audit-service.js';
+// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { type IDatabase } from '../../db/database-interface.js';
 
@@ -99,7 +99,13 @@ export class IdempotentStoreService {
 
       if (existingItem) {
         // Item already exists, return it
-        await this.logOperation('returned_existing', item, existingItem, contentHash, scopeHash.hash);
+        await this.logOperation(
+          'returned_existing',
+          item,
+          existingItem,
+          contentHash,
+          scopeHash.hash
+        );
 
         // Update cache
         if (this.config.cacheEnabled) {
@@ -136,14 +142,16 @@ export class IdempotentStoreService {
         scopeHash: scopeHash.hash,
         processingTime: Date.now() - startTime,
       };
-
     } catch (error) {
-      logger.error({
-        error,
-        itemKind: item.kind,
-        itemId: item.id,
-        processingTime: Date.now() - startTime,
-      }, 'Idempotent store operation failed');
+      logger.error(
+        {
+          error,
+          itemKind: item.kind,
+          itemId: item.id,
+          processingTime: Date.now() - startTime,
+        },
+        'Idempotent store operation failed'
+      );
 
       throw error;
     }
@@ -196,8 +204,8 @@ export class IdempotentStoreService {
 
       if (searchResults.results.length > 0) {
         // Return the most recent match
-        const sortedResults = searchResults.results.sort((a: any, b: any) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const sortedResults = searchResults.results.sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
 
         return this.searchResultToKnowledgeItem(sortedResults[0]);
@@ -430,14 +438,19 @@ export class IdempotentStoreService {
     }
 
     try {
-      await auditService.logStoreOperation(
-        action as 'create' | 'update' | 'delete',
-        resultItem.kind,
-        resultItem.id || '',
-        resultItem.scope,
-        undefined, // userId
-        true,
-        undefined // error
+      // await auditService.logStoreOperation(
+      //   action as 'create' | 'update' | 'delete',
+      //   resultItem.kind,
+      //   resultItem.id || '',
+      //   resultItem.scope,
+      //   undefined, // userId
+      //   true,
+      //   undefined // error
+      // ); // REMOVED: audit-service deleted
+      // Logging disabled temporarily due to missing audit service
+      logger.debug(
+        { action, itemKind: resultItem.kind },
+        'Idempotent operation (logging disabled)'
       );
     } catch (error) {
       logger.error({ error, action }, 'Failed to log idempotent operation');

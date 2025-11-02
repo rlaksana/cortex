@@ -202,29 +202,38 @@ export async function runExpiryWorker(
         deleted_counts: result.deleted_counts,
         total_deleted: result.total_deleted,
         items_processed: result.total_processed,
-        purge_efficiency: result.total_processed > 0 ? (purgedCount / result.total_processed) * 100 : 0,
+        purge_efficiency:
+          result.total_processed > 0 ? (purgedCount / result.total_processed) * 100 : 0,
       },
       batch_summary: {
         total_batches: Math.ceil(result.total_processed / finalConfig.batch_size),
-        items_per_batch_average: result.total_processed > 0 ? Math.round(result.total_processed / Math.ceil(result.total_processed / finalConfig.batch_size)) : 0,
-      }
+        items_per_batch_average:
+          result.total_processed > 0
+            ? Math.round(
+                result.total_processed / Math.ceil(result.total_processed / finalConfig.batch_size)
+              )
+            : 0,
+      },
     };
 
     logger.info(structuredLogData, 'P6-T6.2: Expiry worker run completed with enhanced metrics');
 
     // Additional structured log for purged_count metric
     if (purgedCount > 0) {
-      logger.info({
-        metric_type: 'purged_count',
-        metric_value: purgedCount,
-        timestamp: new Date().toISOString(),
-        operation: 'expiry_purge',
-        details: {
-          by_kind: result.deleted_counts,
-          efficiency_percentage: structuredLogData.purging.purge_efficiency,
-          dry_run: finalConfig.dry_run,
-        }
-      }, 'TTL worker purged_count metric logged');
+      logger.info(
+        {
+          metric_type: 'purged_count',
+          metric_value: purgedCount,
+          timestamp: new Date().toISOString(),
+          operation: 'expiry_purge',
+          details: {
+            by_kind: result.deleted_counts,
+            efficiency_percentage: structuredLogData.purging.purge_efficiency,
+            dry_run: finalConfig.dry_run,
+          },
+        },
+        'TTL worker purged_count metric logged'
+      );
     }
 
     return result;
@@ -233,31 +242,34 @@ export async function runExpiryWorker(
     result.error = error instanceof Error ? error.message : 'Unknown error';
 
     // Enhanced structured error logging
-    logger.error({
-      operation: 'expiry_worker_failed',
-      error: {
-        message: result.error,
-        type: error instanceof Error ? error.constructor.name : 'Unknown',
-        stack: error instanceof Error ? error.stack : undefined,
+    logger.error(
+      {
+        operation: 'expiry_worker_failed',
+        error: {
+          message: result.error,
+          type: error instanceof Error ? error.constructor.name : 'Unknown',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        worker_config: {
+          enabled: finalConfig.enabled,
+          dry_run: finalConfig.dry_run,
+          batch_size: finalConfig.batch_size,
+          max_batches: finalConfig.max_batches,
+        },
+        performance: {
+          duration_ms: result.duration_ms,
+          total_processed: result.total_processed,
+          success: false,
+        },
+        purging: {
+          purged_count: result.total_deleted,
+          deleted_counts: result.deleted_counts,
+          items_processed_before_failure: result.total_processed,
+        },
+        timestamp: new Date().toISOString(),
       },
-      worker_config: {
-        enabled: finalConfig.enabled,
-        dry_run: finalConfig.dry_run,
-        batch_size: finalConfig.batch_size,
-        max_batches: finalConfig.max_batches,
-      },
-      performance: {
-        duration_ms: result.duration_ms,
-        total_processed: result.total_processed,
-        success: false,
-      },
-      purging: {
-        purged_count: result.total_deleted,
-        deleted_counts: result.deleted_counts,
-        items_processed_before_failure: result.total_processed,
-      },
-      timestamp: new Date().toISOString(),
-    }, 'P6-T6.2: Expiry worker run failed with structured error details');
+      'P6-T6.2: Expiry worker run failed with structured error details'
+    );
 
     throw error;
   }
@@ -633,7 +645,6 @@ export async function runExpiryWorkerWithReport(
           },
           `TTL batch ${i + 1}/${batches.length} completed`
         );
-
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         const batchDuration = Date.now() - batchStartTime;
@@ -662,7 +673,9 @@ export async function runExpiryWorkerWithReport(
     report.performance_metrics.items_per_second =
       report.summary.total_items_processed / (report.duration_ms / 1000);
     report.performance_metrics.average_batch_duration_ms =
-      batchDurations.length > 0 ? batchDurations.reduce((a, b) => a + b, 0) / batchDurations.length : 0;
+      batchDurations.length > 0
+        ? batchDurations.reduce((a, b) => a + b, 0) / batchDurations.length
+        : 0;
 
     // Calculate expiry statistics
     const expiryStats = calculateExpiryStatistics(report.deleted_items);
@@ -680,7 +693,6 @@ export async function runExpiryWorkerWithReport(
     await logPurgeReport(report);
 
     return report;
-
   } catch (error) {
     report.duration_ms = Date.now() - startTime;
     report.errors.push({
@@ -688,10 +700,7 @@ export async function runExpiryWorkerWithReport(
       timestamp: new Date().toISOString(),
     });
 
-    logger.error(
-      { error, duration_ms: report.duration_ms },
-      'Enhanced TTL worker failed'
-    );
+    logger.error({ error, duration_ms: report.duration_ms }, 'Enhanced TTL worker failed');
 
     await logPurgeReport(report);
     return report;
@@ -798,7 +807,7 @@ function calculateExpiryStatistics(deletedItems: any[]): {
     };
   }
 
-  const daysExpired = deletedItems.map(item => item.days_expired || 0);
+  const daysExpired = deletedItems.map((item) => item.days_expired || 0);
   const averageDays = daysExpired.reduce((a, b) => a + b, 0) / daysExpired.length;
   const oldestDays = Math.max(...daysExpired);
   const newestDays = Math.min(...daysExpired);
@@ -811,7 +820,7 @@ function calculateExpiryStatistics(deletedItems: any[]): {
     '90+ days': 0,
   };
 
-  daysExpired.forEach(days => {
+  daysExpired.forEach((days) => {
     if (days <= 7) distribution['1-7 days']++;
     else if (days <= 30) distribution['8-30 days']++;
     else if (days <= 90) distribution['31-90 days']++;
@@ -928,21 +937,27 @@ export async function getRecentPurgeReports(limit: number = 10): Promise<PurgeRe
           reports.push(reportData);
         }
       } catch (parseError) {
-        logger.warn({
-          item_id: item.id,
-          error: parseError instanceof Error ? parseError.message : 'Unknown error'
-        }, 'Failed to parse purge report content');
+        logger.warn(
+          {
+            item_id: item.id,
+            error: parseError instanceof Error ? parseError.message : 'Unknown error',
+          },
+          'Failed to parse purge report content'
+        );
       }
     }
 
     // Sort by timestamp (newest first)
     reports.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    logger.info({
-      requested_limit: limit,
-      found_count: reports.length,
-      returned_count: Math.min(limit, reports.length)
-    }, 'Retrieved purge reports');
+    logger.info(
+      {
+        requested_limit: limit,
+        found_count: reports.length,
+        returned_count: Math.min(limit, reports.length),
+      },
+      'Retrieved purge reports'
+    );
 
     return reports.slice(0, limit);
   } catch (error) {
@@ -972,9 +987,7 @@ export async function getPurgeStatistics(days: number = 30): Promise<{
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     // Filter reports within the time period
-    const recentReports = reports.filter(report =>
-      new Date(report.timestamp) >= cutoffDate
-    );
+    const recentReports = reports.filter((report) => new Date(report.timestamp) >= cutoffDate);
 
     if (recentReports.length === 0) {
       return {
@@ -1025,12 +1038,15 @@ export async function getPurgeStatistics(days: number = 30): Promise<{
       top_deleted_kinds: topDeletedKinds,
     };
 
-    logger.info({
-      period_days: days,
-      reports_analyzed: recentReports.length,
-      total_deleted: totalItemsDeleted,
-      average_performance: statistics.average_performance,
-    }, 'Calculated purge statistics');
+    logger.info(
+      {
+        period_days: days,
+        reports_analyzed: recentReports.length,
+        total_deleted: totalItemsDeleted,
+        average_performance: statistics.average_performance,
+      },
+      'Calculated purge statistics'
+    );
 
     return statistics;
   } catch (error) {

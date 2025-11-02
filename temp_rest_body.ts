@@ -1,4 +1,3 @@
-
 // Error types
 export class DatabaseError extends Error {
   constructor(

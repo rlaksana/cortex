@@ -24,5 +24,5 @@ export enum OperationType {
   DATABASE_STATS = 'database_stats',
   AUTHENTICATION = 'authentication',
   SYSTEM = 'system',
-  ERROR = 'error'
+  ERROR = 'error',
 }

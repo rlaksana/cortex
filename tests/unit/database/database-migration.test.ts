@@ -20,7 +20,11 @@ import { join } from 'path';
 import { QdrantMigrationManager, qdrantMigrationManager } from '../../../src/db/migrate';
 import { qdrantConnectionManager } from '../../../src/db/pool';
 import { logger } from '../../../src/utils/logger';
-import { DatabaseError, ValidationError, MigrationError } from '../../../src/db/types/database-types';
+import {
+  DatabaseError,
+  ValidationError,
+  MigrationError,
+} from '../../../src/db/types/database-types';
 import { StandardTestUtils, MockFactory, TestPatterns } from '../../framework/standard-test-setup';
 
 // Mock Qdrant client using vi.hoisted to avoid hoisting issues
@@ -39,8 +43,8 @@ const { mockQdrantClient } = vi.hoisted(() => {
       mockDeleteCollection,
       mockUpsert,
       mockSearch,
-      mockGetCollection
-    }
+      mockGetCollection,
+    },
   };
 });
 
@@ -65,7 +69,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     async getCollection(name: string) {
       return mockQdrantClient.mockGetCollection(name);
     }
-  }
+  },
 }));
 
 // Mock file system operations using vi.hoisted to avoid hoisting issues
@@ -80,8 +84,8 @@ const { mockFileSystem } = vi.hoisted(() => {
       mockReadDir,
       mockReadFile,
       mockWriteFile,
-      mockMkdir
-    }
+      mockMkdir,
+    },
   };
 });
 
@@ -135,13 +139,13 @@ describe('Database Migration - Migration Lifecycle Management', () => {
 
     // Setup default mocks
     mockQdrantClient.mockGetCollections.mockResolvedValue({
-      collections: [{ name: 'migrations' }]
+      collections: [{ name: 'migrations' }],
     });
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue([
+    mockFileSystem.mockReadDir.mockResolvedValue([
       '001_initial_setup.json',
       '002_add_entity_collection.json',
-      '003_add_indexes.json'
+      '003_add_indexes.json',
     ]);
 
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
@@ -155,9 +159,9 @@ describe('Database Migration - Migration Lifecycle Management', () => {
               operation: 'create_collection',
               collection: 'entities',
               parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-              rollback: {}
-            }
-          ]
+              rollback: {},
+            },
+          ],
         }),
         '002_add_entity_collection.json': JSON.stringify({
           version: '1.1.0',
@@ -167,9 +171,9 @@ describe('Database Migration - Migration Lifecycle Management', () => {
               operation: 'create_collection',
               collection: 'relations',
               parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-              rollback: {}
-            }
-          ]
+              rollback: {},
+            },
+          ],
         }),
         '003_add_indexes.json': JSON.stringify({
           version: '1.2.0',
@@ -179,18 +183,18 @@ describe('Database Migration - Migration Lifecycle Management', () => {
               operation: 'create_index',
               collection: 'entities',
               parameters: { field_name: 'entity_type' },
-              rollback: {}
-            }
-          ]
-        })
+              rollback: {},
+            },
+          ],
+        }),
       };
       return Promise.resolve(mockMigrations[fileName || ''] || '{}');
     });
 
-    mockSearch.mockResolvedValue([]); // No applied migrations initially
-    mockUpsert.mockResolvedValue({ status: 'completed' });
-    mockCreateCollection.mockResolvedValue(undefined);
-    mockDeleteCollection.mockResolvedValue(undefined);
+    mockQdrantClient.mockSearch.mockResolvedValue([]); // No applied migrations initially
+    mockQdrantClient.mockUpsert.mockResolvedValue({ status: 'completed' });
+    mockQdrantClient.mockCreateCollection.mockResolvedValue(undefined);
+    mockQdrantClient.mockDeleteCollection.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -207,16 +211,19 @@ describe('Database Migration - Migration Lifecycle Management', () => {
 
     const status = await migrationManager.status();
 
-    expect(mockCreateCollection).toHaveBeenCalledWith('migrations', expect.objectContaining({
-      vectors: { size: 1, distance: 'Cosine' }
-    }));
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledWith(
+      'migrations',
+      expect.objectContaining({
+        vectors: { size: 1, distance: 'Cosine' },
+      })
+    );
     expect(status).toBeDefined();
   });
 
   it('should detect available migrations from file system', async () => {
     const status = await migrationManager.status();
 
-    expect(mockReadDir).toHaveBeenCalled();
+    expect(mockFileSystem.mockReadDir).toHaveBeenCalled();
     expect(status.available).toHaveLength(3);
     expect(status.available[0].id).toBe('001');
     expect(status.available[0].name).toBe('001_initial_setup');
@@ -226,7 +233,7 @@ describe('Database Migration - Migration Lifecycle Management', () => {
   it('should calculate migration checksums for integrity validation', async () => {
     const status = await migrationManager.status();
 
-    status.available.forEach(migration => {
+    status.available.forEach((migration) => {
       expect(migration.checksum).toBeDefined();
       expect(typeof migration.checksum).toBe('string');
       expect(migration.checksum.length).toBe(64); // SHA256 hex length
@@ -235,15 +242,15 @@ describe('Database Migration - Migration Lifecycle Management', () => {
 
   it('should identify pending migrations correctly', async () => {
     // Mock one applied migration
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_initial_setup',
           version: '1.0.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
     const status = await migrationManager.status();
@@ -261,16 +268,19 @@ describe('Database Migration - Migration Lifecycle Management', () => {
     expect(results[0].migration_id).toBe('001');
     expect(results[0].status).toBe('success');
     expect(results[0].duration).toBeGreaterThan(0);
-    expect(mockUpsert).toHaveBeenCalledWith('migrations', expect.objectContaining({
-      points: expect.arrayContaining([
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            migration_id: '001',
-            status: 'applied'
-          })
-        })
-      ])
-    }));
+    expect(mockQdrantClient.mockUpsert).toHaveBeenCalledWith(
+      'migrations',
+      expect.objectContaining({
+        points: expect.arrayContaining([
+          expect.objectContaining({
+            payload: expect.objectContaining({
+              migration_id: '001',
+              status: 'applied',
+            }),
+          }),
+        ]),
+      })
+    );
   });
 
   it('should handle migration version tracking', async () => {
@@ -281,23 +291,23 @@ describe('Database Migration - Migration Lifecycle Management', () => {
     expect(results[1].migration_id).toBe('002');
 
     // Should not include version 1.2.0 (003)
-    expect(results.some(r => r.migration_id === '003')).toBe(false);
+    expect(results.some((r) => r.migration_id === '003')).toBe(false);
   });
 
   it('should validate migration state consistency', async () => {
     // Mock inconsistent state - migration recorded but collection missing
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_initial_setup',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
     mockQdrantClient.mockGetCollections.mockResolvedValue({
-      collections: [{ name: 'migrations' }] // Missing entities collection
+      collections: [{ name: 'migrations' }], // Missing entities collection
     });
 
     const status = await migrationManager.status();
@@ -310,7 +320,7 @@ describe('Database Migration - Migration Lifecycle Management', () => {
   it('should handle migration execution order', async () => {
     const executionOrder: string[] = [];
 
-    mockCreateCollection.mockImplementation((name: string) => {
+    mockQdrantClient.mockCreateCollection.mockImplementation((name: string) => {
       executionOrder.push(name);
       return Promise.resolve(undefined);
     });
@@ -318,7 +328,7 @@ describe('Database Migration - Migration Lifecycle Management', () => {
     await migrationManager.migrate();
 
     // Should execute in order: 001, 002, 003
-    expect(mockCreateCollection).toHaveBeenCalledTimes(2); // 001 and 002 create collections
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledTimes(2); // 001 and 002 create collections
     expect(executionOrder).toContain('entities');
     expect(executionOrder).toContain('relations');
   });
@@ -342,9 +352,11 @@ describe('Database Migration - Schema Migration Operations', () => {
     vi.clearAllMocks();
     migrationManager = new QdrantMigrationManager();
 
-    mockQdrantClient.mockGetCollections.mockResolvedValue({ collections: [{ name: 'migrations' }] });
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_schema_migration.json']);
-    mockSearch.mockResolvedValue([]);
+    mockQdrantClient.mockGetCollections.mockResolvedValue({
+      collections: [{ name: 'migrations' }],
+    });
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_schema_migration.json']);
+    mockQdrantClient.mockSearch.mockResolvedValue([]);
   });
 
   it('should handle collection schema migrations', async () => {
@@ -355,44 +367,51 @@ describe('Database Migration - Schema Migration Operations', () => {
         properties: {
           entity_type: { type: 'keyword' },
           name: { type: 'text' },
-          created_at: { type: 'datetime' }
-        }
-      }
+          created_at: { type: 'datetime' },
+        },
+      },
     };
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Create entity collection',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'entities',
-          parameters: collectionConfig,
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Create entity collection',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'entities',
+            parameters: collectionConfig,
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockCreateCollection).toHaveBeenCalledWith('entities', collectionConfig);
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledWith(
+      'entities',
+      collectionConfig
+    );
   });
 
   it('should handle index creation and modification', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Add indexes',
-      steps: [
-        {
-          operation: 'create_index',
-          collection: 'entities',
-          parameters: { field_name: 'entity_type' },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Add indexes',
+        steps: [
+          {
+            operation: 'create_index',
+            collection: 'entities',
+            parameters: { field_name: 'entity_type' },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -405,18 +424,20 @@ describe('Database Migration - Schema Migration Operations', () => {
   });
 
   it('should handle field addition operations', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.1.0',
-      description: 'Add metadata fields',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entities',
-          parameters: { fields: { priority: 'keyword', status: 'keyword' } },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.1.0',
+        description: 'Add metadata fields',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entities',
+            parameters: { fields: { priority: 'keyword', status: 'keyword' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -428,18 +449,20 @@ describe('Database Migration - Schema Migration Operations', () => {
   });
 
   it('should handle field removal operations', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.2.0',
-      description: 'Remove deprecated fields',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entities',
-          parameters: { remove_fields: ['legacy_field', 'deprecated_property'] },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.2.0',
+        description: 'Remove deprecated fields',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entities',
+            parameters: { remove_fields: ['legacy_field', 'deprecated_property'] },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -448,23 +471,25 @@ describe('Database Migration - Schema Migration Operations', () => {
   });
 
   it('should handle data type transformations', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.3.0',
-      description: 'Transform data types',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entities',
-          parameters: {
-            transforms: [
-              { field: 'priority', from: 'text', to: 'keyword' },
-              { field: 'count', from: 'text', to: 'integer' }
-            ]
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.3.0',
+        description: 'Transform data types',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entities',
+            parameters: {
+              transforms: [
+                { field: 'priority', from: 'text', to: 'keyword' },
+                { field: 'count', from: 'text', to: 'integer' },
+              ],
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -474,21 +499,23 @@ describe('Database Migration - Schema Migration Operations', () => {
 
   it('should validate collection configuration compatibility', async () => {
     const incompatibleConfig = {
-      vectors: { size: 1024, distance: 'Euclid' } // Different from existing
+      vectors: { size: 1024, distance: 'Euclid' }, // Different from existing
     };
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Incompatible collection change',
-      steps: [
-        {
-          operation: 'update_collection_config',
-          collection: 'entities',
-          parameters: incompatibleConfig,
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Incompatible collection change',
+        steps: [
+          {
+            operation: 'update_collection_config',
+            collection: 'entities',
+            parameters: incompatibleConfig,
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -500,57 +527,64 @@ describe('Database Migration - Schema Migration Operations', () => {
   });
 
   it('should handle collection deletion for schema cleanup', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.0.0',
-      description: 'Remove deprecated collection',
-      steps: [
-        {
-          operation: 'delete_collection',
-          collection: 'legacy_entities',
-          parameters: {},
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.0.0',
+        description: 'Remove deprecated collection',
+        steps: [
+          {
+            operation: 'delete_collection',
+            collection: 'legacy_entities',
+            parameters: {},
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockDeleteCollection).toHaveBeenCalledWith('legacy_entities');
+    expect(mockQdrantClient.mockDeleteCollection).toHaveBeenCalledWith('legacy_entities');
   });
 
   it('should handle complex multi-step schema migrations', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.5.0',
-      description: 'Complex schema migration',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'new_entities',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        },
-        {
-          operation: 'update_payload_schema',
-          collection: 'new_entities',
-          parameters: { fields: { new_field: 'keyword' } },
-          rollback: {}
-        },
-        {
-          operation: 'create_index',
-          collection: 'new_entities',
-          parameters: { field_name: 'new_field' },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.5.0',
+        description: 'Complex schema migration',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'new_entities',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+          {
+            operation: 'update_payload_schema',
+            collection: 'new_entities',
+            parameters: { fields: { new_field: 'keyword' } },
+            rollback: {},
+          },
+          {
+            operation: 'create_index',
+            collection: 'new_entities',
+            parameters: { field_name: 'new_field' },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockCreateCollection).toHaveBeenCalledWith('new_entities', expect.any(Object));
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledWith(
+      'new_entities',
+      expect.any(Object)
+    );
   });
 });
 
@@ -562,14 +596,10 @@ describe('Database Migration - Knowledge Type Migration', () => {
     migrationManager = new QdrantMigrationManager();
 
     mockQdrantClient.mockGetCollections.mockResolvedValue({
-      collections: [
-        { name: 'migrations' },
-        { name: 'entities' },
-        { name: 'relations' }
-      ]
+      collections: [{ name: 'migrations' }, { name: 'entities' }, { name: 'relations' }],
     });
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_knowledge_types.json']);
-    mockSearch.mockResolvedValue([]);
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_knowledge_types.json']);
+    mockQdrantClient.mockSearch.mockResolvedValue([]);
   });
 
   it('should handle knowledge type schema evolution', async () => {
@@ -592,13 +622,13 @@ describe('Database Migration - Knowledge Type Migration', () => {
                 created_at: { type: 'datetime' },
                 updated_at: { type: 'datetime' },
                 tags: { type: 'array', items: { type: 'keyword' } },
-                metadata: { type: 'object' }
-              }
-            }
+                metadata: { type: 'object' },
+              },
+            },
           },
-          rollback: {}
-        }
-      ]
+          rollback: {},
+        },
+      ],
     };
 
     mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify(knowledgeTypeSchema));
@@ -607,34 +637,39 @@ describe('Database Migration - Knowledge Type Migration', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockCreateCollection).toHaveBeenCalledWith('decisions', expect.objectContaining({
-      vectors: { size: 1536, distance: 'Cosine' }
-    }));
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledWith(
+      'decisions',
+      expect.objectContaining({
+        vectors: { size: 1536, distance: 'Cosine' },
+      })
+    );
   });
 
   it('should handle data migration between knowledge types', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.1.0',
-      description: 'Migrate entities to new schema',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entities',
-          parameters: {
-            data_migration: {
-              from_type: 'legacy_entity',
-              to_type: 'entity_v2',
-              transforms: [
-                { field: 'entity_name', target: 'name' },
-                { field: 'entity_data', target: 'data' },
-                { field: 'created', target: 'created_at', transform: 'to_datetime' }
-              ]
-            }
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.1.0',
+        description: 'Migrate entities to new schema',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entities',
+            parameters: {
+              data_migration: {
+                from_type: 'legacy_entity',
+                to_type: 'entity_v2',
+                transforms: [
+                  { field: 'entity_name', target: 'name' },
+                  { field: 'entity_data', target: 'data' },
+                  { field: 'created', target: 'created_at', transform: 'to_datetime' },
+                ],
+              },
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -643,26 +678,28 @@ describe('Database Migration - Knowledge Type Migration', () => {
   });
 
   it('should maintain backward compatibility during migration', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.0.1',
-      description: 'Add backward compatibility layer',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entities',
-          parameters: {
-            compatibility: {
-              preserve_fields: ['id', 'created_at', 'updated_at'],
-              add_aliases: {
-                'entity_name': 'name',
-                'entity_type': 'type'
-              }
-            }
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.0.1',
+        description: 'Add backward compatibility layer',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entities',
+            parameters: {
+              compatibility: {
+                preserve_fields: ['id', 'created_at', 'updated_at'],
+                add_aliases: {
+                  entity_name: 'name',
+                  entity_type: 'type',
+                },
+              },
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -671,24 +708,26 @@ describe('Database Migration - Knowledge Type Migration', () => {
   });
 
   it('should handle cross-type relationship migration', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.2.0',
-      description: 'Migrate relationship schemas',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'relations',
-          parameters: {
-            relationship_update: {
-              from_entities: ['entity'],
-              to_entities: ['entity', 'decision', 'incident'],
-              relationship_types: ['relates_to', 'depends_on', 'blocks']
-            }
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.2.0',
+        description: 'Migrate relationship schemas',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'relations',
+            parameters: {
+              relationship_update: {
+                from_entities: ['entity'],
+                to_entities: ['entity', 'decision', 'incident'],
+                relationship_types: ['relates_to', 'depends_on', 'blocks'],
+              },
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -697,63 +736,80 @@ describe('Database Migration - Knowledge Type Migration', () => {
   });
 
   it('should validate knowledge type consistency', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.0.0',
-      description: 'Create all 16 knowledge type collections',
-      steps: [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
-      ].map(type => ({
-        operation: 'create_collection',
-        collection: type,
-        parameters: {
-          vectors: { size: 1536, distance: 'Cosine' },
-          payload_schema: {
-            type: 'object',
-            properties: {
-              created_at: { type: 'datetime' },
-              updated_at: { type: 'datetime' },
-              tags: { type: 'array', items: { type: 'keyword' } },
-              metadata: { type: 'object' }
-            }
-          }
-        },
-        rollback: {}
-      }))
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.0.0',
+        description: 'Create all 16 knowledge type collections',
+        steps: [
+          'entity',
+          'relation',
+          'observation',
+          'section',
+          'runbook',
+          'change',
+          'issue',
+          'decision',
+          'todo',
+          'release_note',
+          'ddl',
+          'pr_context',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
+        ].map((type) => ({
+          operation: 'create_collection',
+          collection: type,
+          parameters: {
+            vectors: { size: 1536, distance: 'Cosine' },
+            payload_schema: {
+              type: 'object',
+              properties: {
+                created_at: { type: 'datetime' },
+                updated_at: { type: 'datetime' },
+                tags: { type: 'array', items: { type: 'keyword' } },
+                metadata: { type: 'object' },
+              },
+            },
+          },
+          rollback: {},
+        })),
+      })
+    );
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockCreateCollection).toHaveBeenCalledTimes(16);
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledTimes(16);
   });
 
   it('should handle knowledge type field additions', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.1.0',
-      description: 'Add scope support to knowledge types',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entity',
-          parameters: {
-            add_fields: {
-              scope: {
-                type: 'object',
-                properties: {
-                  project: { type: 'keyword' },
-                  branch: { type: 'keyword' },
-                  org: { type: 'keyword' }
-                }
-              }
-            }
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.1.0',
+        description: 'Add scope support to knowledge types',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entity',
+            parameters: {
+              add_fields: {
+                scope: {
+                  type: 'object',
+                  properties: {
+                    project: { type: 'keyword' },
+                    branch: { type: 'keyword' },
+                    org: { type: 'keyword' },
+                  },
+                },
+              },
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -762,21 +818,23 @@ describe('Database Migration - Knowledge Type Migration', () => {
   });
 
   it('should handle knowledge type field deprecation', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.3.0',
-      description: 'Deprecate legacy fields',
-      steps: [
-        {
-          operation: 'update_payload_schema',
-          collection: 'entity',
-          parameters: {
-            deprecate_fields: ['legacy_property', 'old_field'],
-            migration_strategy: 'move_to_metadata'
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.3.0',
+        description: 'Deprecate legacy fields',
+        steps: [
+          {
+            operation: 'update_payload_schema',
+            collection: 'entity',
+            parameters: {
+              deprecate_fields: ['legacy_property', 'old_field'],
+              migration_strategy: 'move_to_metadata',
+            },
+            rollback: {},
           },
-          rollback: {}
-        }
-      ]
-    }));
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -792,38 +850,42 @@ describe('Database Migration - Rollback and Recovery', () => {
     vi.clearAllMocks();
     migrationManager = new QdrantMigrationManager();
 
-    mockQdrantClient.mockGetCollections.mockResolvedValue({ collections: [{ name: 'migrations' }] });
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_rollback_test.json']);
+    mockQdrantClient.mockGetCollections.mockResolvedValue({
+      collections: [{ name: 'migrations' }],
+    });
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_rollback_test.json']);
   });
 
   it('should handle single migration rollback', async () => {
     // Mock applied migration
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_rollback_test',
           version: '1.0.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Test migration with rollback',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'test_collection',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {
-            operation: 'delete_collection',
-            collection: 'test_collection'
-          }
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Test migration with rollback',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'test_collection',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {
+              operation: 'delete_collection',
+              collection: 'test_collection',
+            },
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.rollback(1);
 
@@ -831,49 +893,57 @@ describe('Database Migration - Rollback and Recovery', () => {
     expect(results[0].migration_id).toBe('001');
     expect(results[0].status).toBe('success');
     expect(results[0].message).toContain('rolled back successfully');
-    expect(mockDeleteCollection).toHaveBeenCalledWith('test_collection');
+    expect(mockQdrantClient.mockDeleteCollection).toHaveBeenCalledWith('test_collection');
   });
 
   it('should handle multiple migration rollback', async () => {
     // Mock multiple applied migrations
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_rollback_test',
           version: '1.0.0',
-          status: 'applied'
-        }
+          status: 'applied',
+        },
       },
       {
         payload: {
           migration_id: '002',
           name: '002_rollback_test',
           version: '1.1.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue([
+    mockFileSystem.mockReadDir.mockResolvedValue([
       '001_rollback_test.json',
-      '002_rollback_test.json'
+      '002_rollback_test.json',
     ]);
 
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
       const fileName = (filePath as string).split('/').pop();
       if (fileName === '001_rollback_test.json') {
-        return Promise.resolve(JSON.stringify({
-          version: '1.0.0',
-          description: 'Test migration 1',
-          steps: [{ operation: 'create_collection', collection: 'test1', parameters: {}, rollback: {} }]
-        }));
+        return Promise.resolve(
+          JSON.stringify({
+            version: '1.0.0',
+            description: 'Test migration 1',
+            steps: [
+              { operation: 'create_collection', collection: 'test1', parameters: {}, rollback: {} },
+            ],
+          })
+        );
       } else {
-        return Promise.resolve(JSON.stringify({
-          version: '1.1.0',
-          description: 'Test migration 2',
-          steps: [{ operation: 'create_collection', collection: 'test2', parameters: {}, rollback: {} }]
-        }));
+        return Promise.resolve(
+          JSON.stringify({
+            version: '1.1.0',
+            description: 'Test migration 2',
+            steps: [
+              { operation: 'create_collection', collection: 'test2', parameters: {}, rollback: {} },
+            ],
+          })
+        );
       }
     });
 
@@ -885,29 +955,31 @@ describe('Database Migration - Rollback and Recovery', () => {
   });
 
   it('should validate rollback safety before execution', async () => {
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_unsafe_rollback',
           version: '1.0.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Migration without rollback steps',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'permanent_collection',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } }
-          // No rollback defined
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Migration without rollback steps',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'permanent_collection',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            // No rollback defined
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.rollback(1);
 
@@ -917,150 +989,168 @@ describe('Database Migration - Rollback and Recovery', () => {
   });
 
   it('should handle partial rollback failure recovery', async () => {
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_partial_failure',
           version: '1.0.0',
-          status: 'applied'
-        }
+          status: 'applied',
+        },
       },
       {
         payload: {
           migration_id: '002',
           name: '002_partial_failure',
           version: '1.1.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_partial_failure.json', '002_partial_failure.json']);
+    mockFileSystem.mockReadDir.mockResolvedValue([
+      '001_partial_failure.json',
+      '002_partial_failure.json',
+    ]);
 
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
       const fileName = (filePath as string).split('/').pop();
       if (fileName === '001_partial_failure.json') {
-        return Promise.resolve(JSON.stringify({
-          version: '1.0.0',
-          description: 'Migration that fails rollback',
-          steps: [{
-            operation: 'delete_collection',
-            collection: 'nonexistent_collection',
-            rollback: {}
-          }]
-        }));
+        return Promise.resolve(
+          JSON.stringify({
+            version: '1.0.0',
+            description: 'Migration that fails rollback',
+            steps: [
+              {
+                operation: 'delete_collection',
+                collection: 'nonexistent_collection',
+                rollback: {},
+              },
+            ],
+          })
+        );
       } else {
-        return Promise.resolve(JSON.stringify({
-          version: '1.1.0',
-          description: 'Migration that succeeds rollback',
-          steps: [{
-            operation: 'create_collection',
-            collection: 'temp_collection',
-            rollback: {}
-          }]
-        }));
+        return Promise.resolve(
+          JSON.stringify({
+            version: '1.1.0',
+            description: 'Migration that succeeds rollback',
+            steps: [
+              {
+                operation: 'create_collection',
+                collection: 'temp_collection',
+                rollback: {},
+              },
+            ],
+          })
+        );
       }
     });
 
     // Mock delete collection failure
-    mockDeleteCollection.mockRejectedValueOnce(new Error('Collection not found'));
+    mockQdrantClient.mockDeleteCollection.mockRejectedValueOnce(new Error('Collection not found'));
 
     const results = await migrationManager.rollback(2);
 
     expect(results).toHaveLength(2);
     // One should succeed, one should fail
-    expect(results.some(r => r.status === 'success')).toBe(true);
-    expect(results.some(r => r.status === 'failed')).toBe(true);
+    expect(results.some((r) => r.status === 'success')).toBe(true);
+    expect(results.some((r) => r.status === 'failed')).toBe(true);
   });
 
   it('should verify state consistency after rollback', async () => {
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_state_verification',
           version: '1.0.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Migration with state verification',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'verify_collection',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {
-            operation: 'delete_collection',
-            collection: 'verify_collection'
-          }
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Migration with state verification',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'verify_collection',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {
+              operation: 'delete_collection',
+              collection: 'verify_collection',
+            },
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.rollback(1);
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
-    expect(mockDeleteCollection).toHaveBeenCalledWith('verify_collection');
+    expect(mockQdrantClient.mockDeleteCollection).toHaveBeenCalledWith('verify_collection');
 
     // Verify rollback was recorded
-    expect(mockUpsert).toHaveBeenCalledWith('migrations', expect.objectContaining({
-      points: expect.arrayContaining([
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            migration_id: '001',
-            status: 'rolled_back'
-          })
-        })
-      ])
-    }));
+    expect(mockQdrantClient.mockUpsert).toHaveBeenCalledWith(
+      'migrations',
+      expect.objectContaining({
+        points: expect.arrayContaining([
+          expect.objectContaining({
+            payload: expect.objectContaining({
+              migration_id: '001',
+              status: 'rolled_back',
+            }),
+          }),
+        ]),
+      })
+    );
   });
 
   it('should handle rollback when no migrations applied', async () => {
-    mockSearch.mockResolvedValue([]); // No applied migrations
+    mockQdrantClient.mockSearch.mockResolvedValue([]); // No applied migrations
 
     const results = await migrationManager.rollback(1);
 
     expect(results).toHaveLength(0);
-    expect(mockDeleteCollection).not.toHaveBeenCalled();
+    expect(mockQdrantClient.mockDeleteCollection).not.toHaveBeenCalled();
   });
 
   it('should handle rollback execution timeout', async () => {
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       {
         payload: {
           migration_id: '001',
           name: '001_slow_rollback',
           version: '1.0.0',
-          status: 'applied'
-        }
-      }
+          status: 'applied',
+        },
+      },
     ]);
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Slow rollback migration',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'slow_collection',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {
-            operation: 'delete_collection',
-            collection: 'slow_collection'
-          }
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Slow rollback migration',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'slow_collection',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {
+              operation: 'delete_collection',
+              collection: 'slow_collection',
+            },
+          },
+        ],
+      })
+    );
 
     // Mock slow delete operation
-    mockDeleteCollection.mockImplementationOnce(() =>
-      new Promise(resolve => setTimeout(resolve, 2000))
+    mockQdrantClient.mockDeleteCollection.mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(resolve, 2000))
     );
 
     const startTime = Date.now();
@@ -1079,32 +1169,36 @@ describe('Database Migration - Batch Migration Management', () => {
     vi.clearAllMocks();
     migrationManager = new QdrantMigrationManager();
 
-    mockQdrantClient.mockGetCollections.mockResolvedValue({ collections: [{ name: 'migrations' }] });
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue([
+    mockQdrantClient.mockGetCollections.mockResolvedValue({
+      collections: [{ name: 'migrations' }],
+    });
+    mockFileSystem.mockReadDir.mockResolvedValue([
       '001_batch_test_1.json',
       '002_batch_test_2.json',
       '003_batch_test_3.json',
       '004_batch_test_4.json',
-      '005_batch_test_5.json'
+      '005_batch_test_5.json',
     ]);
-    mockSearch.mockResolvedValue([]);
+    mockQdrantClient.mockSearch.mockResolvedValue([]);
 
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
       const fileName = (filePath as string).split('/').pop();
       const version = fileName?.split('_')[2]?.replace('.json', '') || '1.0.0';
 
-      return Promise.resolve(JSON.stringify({
-        version: `1.${version}.0`,
-        description: `Batch test migration ${version}`,
-        steps: [
-          {
-            operation: 'create_collection',
-            collection: `batch_collection_${version}`,
-            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-            rollback: {}
-          }
-        ]
-      }));
+      return Promise.resolve(
+        JSON.stringify({
+          version: `1.${version}.0`,
+          description: `Batch test migration ${version}`,
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: `batch_collection_${version}`,
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+        })
+      );
     });
   });
 
@@ -1112,8 +1206,8 @@ describe('Database Migration - Batch Migration Management', () => {
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(5);
-    expect(results.every(r => r.status === 'success')).toBe(true);
-    expect(mockCreateCollection).toHaveBeenCalledTimes(5);
+    expect(results.every((r) => r.status === 'success')).toBe(true);
+    expect(mockQdrantClient.mockCreateCollection).toHaveBeenCalledTimes(5);
   });
 
   it('should handle migration dependency resolution', async () => {
@@ -1125,50 +1219,62 @@ describe('Database Migration - Batch Migration Management', () => {
         '001_batch_test_1.json': {
           version: '1.0.0',
           description: 'Base migration',
-          steps: [{
-            operation: 'create_collection',
-            collection: 'base_collection',
-            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-            rollback: {}
-          }],
-          dependencies: []
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: 'base_collection',
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+          dependencies: [],
         },
         '002_batch_test_2.json': {
           version: '1.1.0',
           description: 'Depends on base',
-          steps: [{
-            operation: 'create_collection',
-            collection: 'dependent_collection',
-            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-            rollback: {}
-          }],
-          dependencies: ['001']
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: 'dependent_collection',
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+          dependencies: ['001'],
         },
         '003_batch_test_3.json': {
           version: '1.2.0',
           description: 'Depends on dependent',
-          steps: [{
-            operation: 'create_collection',
-            collection: 'final_collection',
-            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-            rollback: {}
-          }],
-          dependencies: ['002']
-        }
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: 'final_collection',
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+          dependencies: ['002'],
+        },
       };
 
-      return Promise.resolve(JSON.stringify(migrationData[fileName || ''] || migrationData['001_batch_test_1.json']));
+      return Promise.resolve(
+        JSON.stringify(migrationData[fileName || ''] || migrationData['001_batch_test_1.json'])
+      );
     });
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_batch_test_1.json', '002_batch_test_2.json', '003_batch_test_3.json']);
+    mockFileSystem.mockReadDir.mockResolvedValue([
+      '001_batch_test_1.json',
+      '002_batch_test_2.json',
+      '003_batch_test_3.json',
+    ]);
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(3);
-    expect(results.every(r => r.status === 'success')).toBe(true);
+    expect(results.every((r) => r.status === 'success')).toBe(true);
 
     // Should execute in dependency order
-    const executionOrder = mockCreateCollection.mock.calls.map(call => call[0]);
+    const executionOrder = mockQdrantClient.mockCreateCollection.mock.calls.map((call) => call[0]);
     expect(executionOrder).toContain('base_collection');
     expect(executionOrder).toContain('dependent_collection');
     expect(executionOrder).toContain('final_collection');
@@ -1177,7 +1283,7 @@ describe('Database Migration - Batch Migration Management', () => {
   it('should handle migration sequencing correctly', async () => {
     const executionSequence: string[] = [];
 
-    mockCreateCollection.mockImplementation((name: string) => {
+    mockQdrantClient.mockCreateCollection.mockImplementation((name: string) => {
       executionSequence.push(name as string);
       return Promise.resolve(undefined);
     });
@@ -1195,34 +1301,36 @@ describe('Database Migration - Batch Migration Management', () => {
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
       const fileName = (filePath as string).split('/').pop();
 
-      return Promise.resolve(JSON.stringify({
-        version: '1.0.0',
-        description: `Conflicting migration ${fileName}`,
-        steps: [
-          {
-            operation: 'create_collection',
-            collection: 'conflicting_collection', // Same collection name
-            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-            rollback: {}
-          }
-        ]
-      }));
+      return Promise.resolve(
+        JSON.stringify({
+          version: '1.0.0',
+          description: `Conflicting migration ${fileName}`,
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: 'conflicting_collection', // Same collection name
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+        })
+      );
     });
 
     // Mock collection already exists error for second migration
-    mockCreateCollection
+    mockQdrantClient.mockCreateCollection
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('Collection already exists'));
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(5);
-    expect(results.some(r => r.status === 'failed')).toBe(true);
-    expect(results.some(r => r.status === 'success')).toBe(true);
+    expect(results.some((r) => r.status === 'failed')).toBe(true);
+    expect(results.some((r) => r.status === 'success')).toBe(true);
   });
 
   it('should handle partial batch failure', async () => {
-    mockCreateCollection
+    mockQdrantClient.mockCreateCollection
       .mockResolvedValueOnce(undefined) // 001 success
       .mockResolvedValueOnce(undefined) // 002 success
       .mockRejectedValueOnce(new Error('Network error')) // 003 failure
@@ -1232,24 +1340,24 @@ describe('Database Migration - Batch Migration Management', () => {
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(5);
-    expect(results.filter(r => r.status === 'success')).toHaveLength(4);
-    expect(results.filter(r => r.status === 'failed')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'success')).toHaveLength(4);
+    expect(results.filter((r) => r.status === 'failed')).toHaveLength(1);
     expect(results[2].status).toBe('failed'); // Third migration failed
     expect(results[2].error).toContain('Network error');
   });
 
   it('should handle batch rollback operations', async () => {
     // Mock applied migrations
-    mockSearch.mockResolvedValue([
+    mockQdrantClient.mockSearch.mockResolvedValue([
       { payload: { migration_id: '001', name: '001_batch_test_1', status: 'applied' } },
       { payload: { migration_id: '002', name: '002_batch_test_2', status: 'applied' } },
-      { payload: { migration_id: '003', name: '003_batch_test_3', status: 'applied' } }
+      { payload: { migration_id: '003', name: '003_batch_test_3', status: 'applied' } },
     ]);
 
     const results = await migrationManager.rollback(3);
 
     expect(results).toHaveLength(3);
-    expect(results.every(r => r.status === 'success')).toBe(true);
+    expect(results.every((r) => r.status === 'success')).toBe(true);
 
     // Should rollback in reverse order
     expect(results[0].migration_id).toBe('003');
@@ -1259,7 +1367,7 @@ describe('Database Migration - Batch Migration Management', () => {
 
   it('should handle batch migration with force option', async () => {
     // Mock failures in some migrations
-    mockCreateCollection
+    mockQdrantClient.mockCreateCollection
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('Permission denied'))
       .mockResolvedValueOnce(undefined)
@@ -1270,20 +1378,20 @@ describe('Database Migration - Batch Migration Management', () => {
 
     expect(results).toHaveLength(5);
     // Should continue despite failures when force=true
-    expect(results.filter(r => r.status === 'failed')).toHaveLength(2);
-    expect(results.filter(r => r.status === 'success')).toHaveLength(3);
+    expect(results.filter((r) => r.status === 'failed')).toHaveLength(2);
+    expect(results.filter((r) => r.status === 'success')).toHaveLength(3);
   });
 
   it('should handle batch dry-run mode', async () => {
     const results = await migrationManager.migrate({ dryRun: true });
 
     expect(results).toHaveLength(5);
-    expect(results.every(r => r.status === 'skipped')).toBe(true);
-    expect(results.every(r => r.message.contains('Dry run'))).toBe(true);
+    expect(results.every((r) => r.status === 'skipped')).toBe(true);
+    expect(results.every((r) => r.message.includes('Dry run'))).toBe(true);
 
     // Should not execute any actual operations
-    expect(mockCreateCollection).not.toHaveBeenCalled();
-    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockQdrantClient.mockCreateCollection).not.toHaveBeenCalled();
+    expect(mockQdrantClient.mockUpsert).not.toHaveBeenCalled();
   });
 });
 
@@ -1294,9 +1402,11 @@ describe('Database Migration - Error Handling and Validation', () => {
     vi.clearAllMocks();
     migrationManager = new QdrantMigrationManager();
 
-    mockQdrantClient.mockGetCollections.mockResolvedValue({ collections: [{ name: 'migrations' }] });
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_error_test.json']);
-    mockSearch.mockResolvedValue([]);
+    mockQdrantClient.mockGetCollections.mockResolvedValue({
+      collections: [{ name: 'migrations' }],
+    });
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_error_test.json']);
+    mockQdrantClient.mockSearch.mockResolvedValue([]);
   });
 
   it('should handle migration failure scenarios', async () => {
@@ -1305,21 +1415,25 @@ describe('Database Migration - Error Handling and Validation', () => {
       { error: new Error('Permission denied'), expectedType: 'permission' },
       { error: new Error('Disk space full'), expectedType: 'resource' },
       { error: new Error('Invalid configuration'), expectedType: 'validation' },
-      { error: new Error('Connection lost'), expectedType: 'connection' }
+      { error: new Error('Connection lost'), expectedType: 'connection' },
     ];
 
     for (const scenario of errorScenarios) {
-      mockCreateCollection.mockRejectedValueOnce(scenario.error);
-      mockFileSystem.mockReadFile.mockResolvedValueOnce(JSON.stringify({
-        version: '1.0.0',
-        description: 'Error test migration',
-        steps: [{
-          operation: 'create_collection',
-          collection: 'error_collection',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }]
-      }));
+      mockQdrantClient.mockCreateCollection.mockRejectedValueOnce(scenario.error);
+      mockFileSystem.mockReadFile.mockResolvedValueOnce(
+        JSON.stringify({
+          version: '1.0.0',
+          description: 'Error test migration',
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: 'error_collection',
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+        })
+      );
 
       const results = await migrationManager.migrate({ step: 1 });
 
@@ -1328,27 +1442,29 @@ describe('Database Migration - Error Handling and Validation', () => {
       expect(results[0].error).toContain(scenario.error.message);
 
       // Reset mock for next iteration
-      mockCreateCollection.mockReset();
+      mockQdrantClient.mockCreateCollection.mockReset();
     }
   });
 
   it('should validate data integrity during migration', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Data integrity test',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'integrity_test',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {},
-          validation: {
-            required_fields: ['id', 'created_at', 'updated_at'],
-            data_types: { id: 'string', created_at: 'datetime' }
-          }
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Data integrity test',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'integrity_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+            validation: {
+              required_fields: ['id', 'created_at', 'updated_at'],
+              data_types: { id: 'string', created_at: 'datetime' },
+            },
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -1357,24 +1473,26 @@ describe('Database Migration - Error Handling and Validation', () => {
   });
 
   it('should handle compatibility checking', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '2.0.0',
-      description: 'Compatibility check test',
-      requirements: {
-        min_qdrant_version: '1.7.0',
-        required_features: ['payload_indexing', 'filtering'],
-        vector_size: 1536,
-        distance_metric: 'Cosine'
-      },
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'compatibility_test',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '2.0.0',
+        description: 'Compatibility check test',
+        requirements: {
+          min_qdrant_version: '1.7.0',
+          required_features: ['payload_indexing', 'filtering'],
+          vector_size: 1536,
+          distance_metric: 'Cosine',
+        },
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'compatibility_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -1384,7 +1502,7 @@ describe('Database Migration - Error Handling and Validation', () => {
 
   it('should handle error recovery mechanisms', async () => {
     let attemptCount = 0;
-    mockCreateCollection.mockImplementation(() => {
+    mockQdrantClient.mockCreateCollection.mockImplementation(() => {
       attemptCount++;
       if (attemptCount < 3) {
         return Promise.reject(new Error('Temporary failure'));
@@ -1392,23 +1510,25 @@ describe('Database Migration - Error Handling and Validation', () => {
       return Promise.resolve(undefined);
     });
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Recovery test migration',
-      retry_config: {
-        max_attempts: 3,
-        backoff_strategy: 'exponential',
-        base_delay: 1000
-      },
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'recovery_test',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Recovery test migration',
+        retry_config: {
+          max_attempts: 3,
+          backoff_strategy: 'exponential',
+          base_delay: 1000,
+        },
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'recovery_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -1418,7 +1538,7 @@ describe('Database Migration - Error Handling and Validation', () => {
   });
 
   it('should handle malformed migration files', async () => {
-    mockReadFile.mockResolvedValue('invalid json content');
+    mockFileSystem.mockReadFile.mockResolvedValue('invalid json content');
 
     const results = await migrationManager.migrate();
 
@@ -1442,25 +1562,31 @@ describe('Database Migration - Error Handling and Validation', () => {
     const originalContent = JSON.stringify({
       version: '1.0.0',
       description: 'Checksum test',
-      steps: [{
-        operation: 'create_collection',
-        collection: 'checksum_test',
-        parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-        rollback: {}
-      }]
+      steps: [
+        {
+          operation: 'create_collection',
+          collection: 'checksum_test',
+          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+          rollback: {},
+        },
+      ],
     });
 
     mockFileSystem.mockReadFile.mockResolvedValueOnce(originalContent);
-    mockFileSystem.mockReadFile.mockResolvedValueOnce(JSON.stringify({
-      version: '1.0.0',
-      description: 'Modified content', // Different description
-      steps: [{
-        operation: 'create_collection',
-        collection: 'checksum_test',
-        parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-        rollback: {}
-      }]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValueOnce(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Modified content', // Different description
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'checksum_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -1491,30 +1617,32 @@ describe('Database Migration - Error Handling and Validation', () => {
     const promises = [
       migrationManager.migrate({ step: 1 }),
       migrationManager.migrate({ step: 1 }),
-      migrationManager.migrate({ step: 1 })
+      migrationManager.migrate({ step: 1 }),
     ];
 
     const results = await Promise.allSettled(promises);
 
     // At least one should succeed
-    expect(results.some(r => r.status === 'fulfilled')).toBe(true);
+    expect(results.some((r) => r.status === 'fulfilled')).toBe(true);
   });
 
   it('should provide detailed error reporting', async () => {
-    mockCreateCollection.mockRejectedValue(new Error('Detailed error message'));
+    mockQdrantClient.mockCreateCollection.mockRejectedValue(new Error('Detailed error message'));
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Detailed error test',
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'detailed_error_test',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Detailed error test',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'detailed_error_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
@@ -1527,25 +1655,28 @@ describe('Database Migration - Error Handling and Validation', () => {
   });
 
   it('should handle migration timeout scenarios', async () => {
-    mockCreateCollection.mockImplementation(() =>
-      new Promise((resolve, reject) =>
-        setTimeout(() => reject(new Error('Migration timeout')), 2000)
-      )
+    mockQdrantClient.mockCreateCollection.mockImplementation(
+      () =>
+        new Promise((resolve, reject) =>
+          setTimeout(() => reject(new Error('Migration timeout')), 2000)
+        )
     );
 
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Timeout test migration',
-      timeout: 1000, // 1 second timeout
-      steps: [
-        {
-          operation: 'create_collection',
-          collection: 'timeout_test',
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Timeout test migration',
+        timeout: 1000, // 1 second timeout
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'timeout_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     const startTime = Date.now();
     const results = await migrationManager.migrate();
@@ -1558,27 +1689,27 @@ describe('Database Migration - Error Handling and Validation', () => {
   });
 
   it('should validate migration rollback safety', async () => {
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'Unsafe rollback test',
-      steps: [
-        {
-          operation: 'delete_collection',
-          collection: 'important_collection',
-          parameters: {},
-          rollback: undefined // No rollback defined
-        }
-      ]
-    }));
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'Unsafe rollback test',
+        steps: [
+          {
+            operation: 'delete_collection',
+            collection: 'important_collection',
+            parameters: {},
+            rollback: undefined, // No rollback defined
+          },
+        ],
+      })
+    );
 
     const results = await migrationManager.migrate();
 
     expect(results).toHaveLength(1);
     expect(results[0].status).toBe('success');
     // Should log warning about missing rollback
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('No rollback defined')
-    );
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No rollback defined'));
   });
 });
 
@@ -1589,14 +1720,17 @@ describe('Database Migration - Integration and Performance', () => {
     vi.clearAllMocks();
     migrationManager = new QdrantMigrationManager();
 
-    mockQdrantClient.mockGetCollections.mockResolvedValue({ collections: [{ name: 'migrations' }] });
-    mockSearch.mockResolvedValue([]);
+    mockQdrantClient.mockGetCollections.mockResolvedValue({
+      collections: [{ name: 'migrations' }],
+    });
+    mockQdrantClient.mockSearch.mockResolvedValue([]);
   });
 
   it('should handle large-scale migration batches', async () => {
     // Mock 100 migrations
-    const migrationFiles = Array.from({ length: 100 }, (_, i) =>
-      `${String(i + 1).padStart(3, '0')}_large_scale_${i + 1}.json`
+    const migrationFiles = Array.from(
+      { length: 100 },
+      (_, i) => `${String(i + 1).padStart(3, '0')}_large_scale_${i + 1}.json`
     );
 
     mockFileSystem.mockReadDir.mockResolvedValue(migrationFiles);
@@ -1605,16 +1739,20 @@ describe('Database Migration - Integration and Performance', () => {
       const fileName = (filePath as string).split('/').pop();
       const number = fileName?.split('_')[2]?.replace('.json', '') || '1';
 
-      return Promise.resolve(JSON.stringify({
-        version: `1.${number}.0`,
-        description: `Large scale migration ${number}`,
-        steps: [{
-          operation: 'create_collection',
-          collection: `large_scale_${number}`,
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }]
-      }));
+      return Promise.resolve(
+        JSON.stringify({
+          version: `1.${number}.0`,
+          description: `Large scale migration ${number}`,
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: `large_scale_${number}`,
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+        })
+      );
     });
 
     const startTime = Date.now();
@@ -1622,7 +1760,7 @@ describe('Database Migration - Integration and Performance', () => {
     const duration = Date.now() - startTime;
 
     expect(results).toHaveLength(100);
-    expect(results.every(r => r.status === 'success')).toBe(true);
+    expect(results.every((r) => r.status === 'success')).toBe(true);
     expect(duration).toBeLessThan(10000); // Should complete within 10 seconds
   });
 
@@ -1636,11 +1774,11 @@ describe('Database Migration - Integration and Performance', () => {
         operation: 'create_collection',
         collection: `memory_test_${i}`,
         parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-        rollback: {}
-      }))
+        rollback: {},
+      })),
     };
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_large_memory.json']);
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_large_memory.json']);
     mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify(largeMigrationData));
 
     const initialMemory = process.memoryUsage().heapUsed;
@@ -1656,39 +1794,43 @@ describe('Database Migration - Integration and Performance', () => {
   });
 
   it('should handle concurrent migration operations', async () => {
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue([
+    mockFileSystem.mockReadDir.mockResolvedValue([
       '001_concurrent_1.json',
       '002_concurrent_2.json',
-      '003_concurrent_3.json'
+      '003_concurrent_3.json',
     ]);
 
     mockFileSystem.mockReadFile.mockImplementation((filePath: string) => {
       const fileName = (filePath as string).split('/').pop();
       const number = fileName?.split('_')[2] || '1';
 
-      return Promise.resolve(JSON.stringify({
-        version: `1.0.${number}`,
-        description: `Concurrent migration ${number}`,
-        steps: [{
-          operation: 'create_collection',
-          collection: `concurrent_${number}`,
-          parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-          rollback: {}
-        }]
-      }));
+      return Promise.resolve(
+        JSON.stringify({
+          version: `1.0.${number}`,
+          description: `Concurrent migration ${number}`,
+          steps: [
+            {
+              operation: 'create_collection',
+              collection: `concurrent_${number}`,
+              parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+              rollback: {},
+            },
+          ],
+        })
+      );
     });
 
     // Run migrations concurrently (should be safe due to internal locking)
     const promises = [
       migrationManager.migrate({ step: 1 }),
       migrationManager.migrate({ step: 1 }),
-      migrationManager.migrate({ step: 1 })
+      migrationManager.migrate({ step: 1 }),
     ];
 
     const results = await Promise.allSettled(promises);
 
     // Should handle concurrency safely
-    expect(results.every(r => r.status === 'fulfilled')).toBe(true);
+    expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
   });
 
   it('should maintain performance during complex migrations', async () => {
@@ -1705,22 +1847,22 @@ describe('Database Migration - Integration and Performance', () => {
               type: 'object',
               properties: {
                 field: { type: 'keyword' },
-                timestamp: { type: 'datetime' }
-              }
-            }
+                timestamp: { type: 'datetime' },
+              },
+            },
           },
-          rollback: {}
+          rollback: {},
         })),
         ...Array.from({ length: 25 }, (_, i) => ({
           operation: 'create_index',
           collection: `perf_test_${i}`,
           parameters: { field_name: 'field' },
-          rollback: {}
-        }))
-      ]
+          rollback: {},
+        })),
+      ],
     };
 
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_complex_performance.json']);
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_complex_performance.json']);
     mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify(complexMigration));
 
     const startTime = Date.now();
@@ -1733,17 +1875,21 @@ describe('Database Migration - Integration and Performance', () => {
   });
 
   it('should handle migration state persistence', async () => {
-    mockFileSystem.mockFileSystem.mockReadDir.mockResolvedValue(['001_state_test.json']);
-    mockFileSystem.mockReadFile.mockResolvedValue(JSON.stringify({
-      version: '1.0.0',
-      description: 'State persistence test',
-      steps: [{
-        operation: 'create_collection',
-        collection: 'state_test',
-        parameters: { vectors: { size: 1536, distance: 'Cosine' } },
-        rollback: {}
-      }]
-    }));
+    mockFileSystem.mockReadDir.mockResolvedValue(['001_state_test.json']);
+    mockFileSystem.mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        version: '1.0.0',
+        description: 'State persistence test',
+        steps: [
+          {
+            operation: 'create_collection',
+            collection: 'state_test',
+            parameters: { vectors: { size: 1536, distance: 'Cosine' } },
+            rollback: {},
+          },
+        ],
+      })
+    );
 
     // Execute migration
     const migrateResults = await migrationManager.migrate();
@@ -1751,26 +1897,31 @@ describe('Database Migration - Integration and Performance', () => {
     expect(migrateResults[0].status).toBe('success');
 
     // Verify state was persisted
-    expect(mockUpsert).toHaveBeenCalledWith('migrations', expect.objectContaining({
-      points: expect.arrayContaining([
-        expect.objectContaining({
-          payload: expect.objectContaining({
-            migration_id: '001',
-            status: 'applied'
-          })
-        })
-      ])
-    }));
+    expect(mockQdrantClient.mockUpsert).toHaveBeenCalledWith(
+      'migrations',
+      expect.objectContaining({
+        points: expect.arrayContaining([
+          expect.objectContaining({
+            payload: expect.objectContaining({
+              migration_id: '001',
+              status: 'applied',
+            }),
+          }),
+        ]),
+      })
+    );
 
     // Mock subsequent status check
-    mockSearch.mockResolvedValue([{
-      payload: {
-        migration_id: '001',
-        name: '001_state_test',
-        version: '1.0.0',
-        status: 'applied'
-      }
-    }]);
+    mockQdrantClient.mockSearch.mockResolvedValue([
+      {
+        payload: {
+          migration_id: '001',
+          name: '001_state_test',
+          version: '1.0.0',
+          status: 'applied',
+        },
+      },
+    ]);
 
     const status = await migrationManager.status();
     expect(status.applied).toHaveLength(1);

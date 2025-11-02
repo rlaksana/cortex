@@ -4,8 +4,14 @@
  * Provides deterministic embeddings for testing without requiring real OpenAI API calls
  */
 
-// import { vi } from 'vitest';
-// import type { EmbeddingConfig, EmbeddingRequest, EmbeddingResult, BatchEmbeddingRequest, EmbeddingStats } from '../../src/services/embeddings/embedding-service.js';
+import { vi } from 'vitest';
+import type {
+  EmbeddingConfig,
+  EmbeddingRequest,
+  EmbeddingResult,
+  BatchEmbeddingRequest,
+  EmbeddingStats,
+} from '../../src/services/embeddings/embedding-service.js';
 import { DatabaseError } from '../../src/db/database-interface.js';
 
 export interface MockEmbeddingConfig {
@@ -53,7 +59,7 @@ export class MockEmbeddingService {
     let hash = 0;
     for (let i = 0; i < text.length; i++) {
       const char = text.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
 
@@ -68,7 +74,7 @@ export class MockEmbeddingService {
     // Normalize the vector
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
     if (magnitude > 0) {
-      return vector.map(val => val / magnitude);
+      return vector.map((val) => val / magnitude);
     }
 
     return vector;
@@ -89,11 +95,14 @@ export class MockEmbeddingService {
 
     // Simulate latency
     if (this.config.latency > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.config.latency));
+      await new Promise((resolve) => setTimeout(resolve, this.config.latency));
     }
 
     // Check if should fail
-    if (this.config.shouldFail && (this.config.failMethod === 'single' || this.config.failMethod === 'both')) {
+    if (
+      this.config.shouldFail &&
+      (this.config.failMethod === 'single' || this.config.failMethod === 'both')
+    ) {
       this.stats.errors++;
       throw new DatabaseError('Mock embedding service failed', 'INVALID_EMBEDDING_RESPONSE');
     }
@@ -118,12 +127,15 @@ export class MockEmbeddingService {
       return {
         vector,
         model: 'text-embedding-ada-002',
-        usage: { prompt_tokens: Math.ceil(request.text.length / 4), total_tokens: Math.ceil(request.text.length / 4) },
+        usage: {
+          prompt_tokens: Math.ceil(request.text.length / 4),
+          total_tokens: Math.ceil(request.text.length / 4),
+        },
         cached: false,
         processingTime,
         ...(request.metadata && { metadata: request.metadata }),
       };
-    } catch (_error) {
+    } catch (error) {
       this.stats.errors++;
       throw error;
     }
@@ -155,11 +167,14 @@ export class MockEmbeddingService {
 
     // Simulate latency
     if (this.config.latency > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.config.latency));
+      await new Promise((resolve) => setTimeout(resolve, this.config.latency));
     }
 
     // Check if should fail
-    if (this.config.shouldFail && (this.config.failMethod === 'batch' || this.config.failMethod === 'both')) {
+    if (
+      this.config.shouldFail &&
+      (this.config.failMethod === 'batch' || this.config.failMethod === 'both')
+    ) {
       this.stats.errors++;
       throw new Error('Mock batch embedding service failed');
     }
@@ -172,7 +187,10 @@ export class MockEmbeddingService {
         return {
           vector,
           model: 'text-embedding-ada-002',
-          usage: { prompt_tokens: Math.ceil(text.length / 4), total_tokens: Math.ceil(text.length / 4) },
+          usage: {
+            prompt_tokens: Math.ceil(text.length / 4),
+            total_tokens: Math.ceil(text.length / 4),
+          },
           cached: false,
           processingTime: 0,
           ...(metadata && { metadata }),
@@ -183,7 +201,7 @@ export class MockEmbeddingService {
       this.updateAverageProcessingTime(processingTime);
 
       return results;
-    } catch (_error) {
+    } catch (error) {
       this.stats.errors++;
       throw error;
     }

@@ -16,30 +16,27 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { VectorDatabase } from '../../../src/index';
-import {
-  PRContextSchema,
-  validateKnowledgeItem
-} from '../../../src/schemas/knowledge-types';
+import { PRContextSchema, validateKnowledgeItem } from '../../../src/schemas/knowledge-types';
 
 // Mock Qdrant client - reusing pattern from memory-store.test.ts
 vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () => {
@@ -57,26 +54,27 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         kind: 'pr_context' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           pr_number: 12345,
           title: 'Add OAuth 2.0 authentication to API gateway',
-          description: 'This PR implements OAuth 2.0 authentication using JWT tokens with refresh token support. It includes user authentication, token validation, and proper error handling.',
+          description:
+            'This PR implements OAuth 2.0 authentication using JWT tokens with refresh token support. It includes user authentication, token validation, and proper error handling.',
           author: 'john.doe',
           status: 'open' as const,
           base_branch: 'main',
           head_branch: 'feature/oauth-authentication',
           merged_at: undefined,
-          expires_at: '2025-02-15T00:00:00Z'
+          expires_at: '2025-02-15T00:00:00Z',
         },
         tags: { security: true, authentication: true, 'api-gateway': true },
         source: {
           actor: 'github-actions',
           tool: 'pr-analyzer',
-          timestamp: '2025-01-15T10:30:00Z'
+          timestamp: '2025-01-15T10:30:00Z',
         },
-        ttl_policy: '30d' as const
+        ttl_policy: '30d' as const,
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -99,7 +97,7 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         kind: 'pr_context' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           pr_number: 1,
@@ -107,8 +105,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'alice',
           status: 'draft' as const,
           base_branch: 'main',
-          head_branch: 'feature/initial-setup'
-        }
+          head_branch: 'feature/initial-setup',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -135,8 +133,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -147,8 +145,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -159,8 +157,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             // Missing author
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -171,8 +169,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             // Missing status
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -183,8 +181,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             // Missing base_branch
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -194,10 +192,10 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             title: 'Test PR',
             author: 'test-user',
             status: 'open',
-            base_branch: 'main'
+            base_branch: 'main',
             // Missing head_branch
-          }
-        }
+          },
+        },
       ];
 
       invalidPRContexts.forEach((prContext, index) => {
@@ -220,8 +218,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -232,8 +230,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -244,8 +242,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -256,9 +254,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
-        }
+            head_branch: 'feature/test',
+          },
+        },
       ];
 
       invalidPRContexts.forEach((prContext) => {
@@ -280,8 +278,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status,
             base_branch: 'main',
-            head_branch: 'feature/test'
-          }
+            head_branch: 'feature/test',
+          },
         };
 
         const result = PRContextSchema.safeParse(prContext);
@@ -301,8 +299,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'test-user',
           status: 'invalid-status' as any,
           base_branch: 'main',
-          head_branch: 'feature/test'
-        }
+          head_branch: 'feature/test',
+        },
       };
 
       const result = PRContextSchema.safeParse(invalidPRContext);
@@ -319,8 +317,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'test-user',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'feature/test'
-        }
+          head_branch: 'feature/test',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -340,8 +338,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'x'.repeat(201), // Exceeds 200 character limit
           status: 'open',
           base_branch: 'main',
-          head_branch: 'feature/test'
-        }
+          head_branch: 'feature/test',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -354,7 +352,7 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
     it('should enforce branch name length constraints', () => {
       const invalidBranchNames = [
         { field: 'base_branch', value: 'x'.repeat(201) },
-        { field: 'head_branch', value: 'x'.repeat(201) }
+        { field: 'head_branch', value: 'x'.repeat(201) },
       ];
 
       invalidBranchNames.forEach(({ field, value }) => {
@@ -367,8 +365,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'test-user',
             status: 'open',
             base_branch: field === 'base_branch' ? value : 'main',
-            head_branch: field === 'head_branch' ? value : 'feature/test'
-          }
+            head_branch: field === 'head_branch' ? value : 'feature/test',
+          },
         };
 
         const result = PRContextSchema.safeParse(prContext);
@@ -391,8 +389,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           base_branch: 'main',
           head_branch: 'feature/test',
           merged_at: '2025-01-15T14:30:00Z',
-          expires_at: '2025-02-14T14:30:00Z'
-        }
+          expires_at: '2025-02-14T14:30:00Z',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -414,8 +412,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           status: 'merged',
           base_branch: 'main',
           head_branch: 'feature/test',
-          merged_at: 'invalid-date-format'
-        }
+          merged_at: 'invalid-date-format',
+        },
       };
 
       const result = PRContextSchema.safeParse(invalidPRContext);
@@ -429,7 +427,7 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         kind: 'pr_context' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           pr_number: 42,
@@ -437,8 +435,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'bugfix-expert',
           status: 'open' as const,
           base_branch: 'main',
-          head_branch: 'fix/auth-bug-42'
-        }
+          head_branch: 'fix/auth-bug-42',
+        },
       };
 
       const result = await db.storeItems([prContext]);
@@ -466,8 +464,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'backend-dev',
             status: 'open' as const,
             base_branch: 'main',
-            head_branch: 'feature/user-registration'
-          }
+            head_branch: 'feature/user-registration',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -479,8 +477,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             status: 'merged' as const,
             base_branch: 'main',
             head_branch: 'feature/password-reset',
-            merged_at: '2025-01-10T16:45:00Z'
-          }
+            merged_at: '2025-01-10T16:45:00Z',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -491,8 +489,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'frontend-lead',
             status: 'closed' as const,
             base_branch: 'main',
-            head_branch: 'chore/react-upgrade'
-          }
+            head_branch: 'chore/react-upgrade',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -503,9 +501,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'architect',
             status: 'draft' as const,
             base_branch: 'main',
-            head_branch: 'wip/auth-refactor'
-          }
-        }
+            head_branch: 'wip/auth-refactor',
+          },
+        },
       ];
 
       const result = await db.storeItems(prContexts);
@@ -532,8 +530,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'valid-user',
             status: 'open' as const,
             base_branch: 'main',
-            head_branch: 'feature/valid'
-          }
+            head_branch: 'feature/valid',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -544,8 +542,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'invalid-user',
             status: 'open' as const,
             base_branch: 'main',
-            head_branch: 'feature/invalid'
-          }
+            head_branch: 'feature/invalid',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -556,9 +554,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'another-valid-user',
             status: 'merged' as const,
             base_branch: 'main',
-            head_branch: 'feature/another-valid'
-          }
-        }
+            head_branch: 'feature/another-valid',
+          },
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -584,10 +582,10 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
               status: 'open',
               base_branch: 'main',
               head_branch: 'feature/oauth-authentication',
-              description: 'Implements OAuth 2.0 with JWT tokens'
+              description: 'Implements OAuth 2.0 with JWT tokens',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'pr-id-2',
@@ -601,11 +599,11 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
               status: 'merged',
               base_branch: 'main',
               head_branch: 'fix/auth-middleware-bug',
-              merged_at: '2025-01-10T12:00:00Z'
+              merged_at: '2025-01-10T12:00:00Z',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -655,8 +653,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'frontend-dev',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/component-library'
-          }
+            head_branch: 'feature/component-library',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -667,14 +665,12 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'backend-dev',
             status: 'open',
             base_branch: 'main',
-            head_branch: 'feature/api-endpoints'
-          }
-        }
+            head_branch: 'feature/api-endpoints',
+          },
+        },
       ];
 
-      const results = await Promise.all(
-        prContexts.map(prContext => db.storeItems([prContext]))
-      );
+      const results = await Promise.all(prContexts.map((prContext) => db.storeItems([prContext])));
 
       results.forEach((result) => {
         expect(result.stored).toHaveLength(1);
@@ -699,8 +695,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'dev-1',
             status: 'merged',
             base_branch: 'main',
-            head_branch: 'feature/main-branch'
-          }
+            head_branch: 'feature/main-branch',
+          },
         },
         {
           kind: 'pr_context' as const,
@@ -711,14 +707,12 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
             author: 'dev-2',
             status: 'open',
             base_branch: 'develop',
-            head_branch: 'feature/develop-branch'
-          }
-        }
+            head_branch: 'feature/develop-branch',
+          },
+        },
       ];
 
-      await Promise.all(
-        prContexts.map(prContext => db.storeItems([prContext]))
-      );
+      await Promise.all(prContexts.map((prContext) => db.storeItems([prContext])));
 
       const storedCalls = mockQdrant.upsert.mock.calls;
       expect(storedCalls[0][0][0].payload.scope.branch).toBe('main');
@@ -737,8 +731,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'test-user',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'feature/test'
-        }
+          head_branch: 'feature/test',
+        },
       };
 
       // Mock upsert to throw an error
@@ -758,12 +752,13 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         data: {
           pr_number: 777,
           title: 'Fix: 🐛 Bug in API endpoint /api/v2/users/{id} returns 500 error',
-          description: 'The API endpoint was failing when user ID contained special characters like @, #, $. This fix adds proper URL encoding and validation.',
+          description:
+            'The API endpoint was failing when user ID contained special characters like @, #, $. This fix adds proper URL encoding and validation.',
           author: 'bug-hunter',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'fix/api-url-encoding'
-        }
+          head_branch: 'fix/api-url-encoding',
+        },
       };
 
       const result = await db.storeItems([prContext]);
@@ -774,7 +769,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
     });
 
     it('should handle PR context with long description within limits', async () => {
-      const longDescription = 'This is a comprehensive PR that addresses multiple issues and improvements. '.repeat(20);
+      const longDescription =
+        'This is a comprehensive PR that addresses multiple issues and improvements. '.repeat(20);
 
       const prContext = {
         kind: 'pr_context' as const,
@@ -786,8 +782,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'senior-dev',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'refactor/major-performance'
-        }
+          head_branch: 'refactor/major-performance',
+        },
       };
 
       const result = await db.storeItems([prContext]);
@@ -807,8 +803,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           status: 'open',
           base_branch: 'main',
           head_branch: 'feature/minimal',
-          description: '' // Empty string is valid
-        }
+          description: '', // Empty string is valid
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -830,8 +826,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           base_branch: 'main',
           head_branch: 'hotfix/security-patch',
           merged_at: '2025-01-20T09:15:30Z',
-          expires_at: '2025-02-19T09:15:30Z' // 30 days after merge
-        }
+          expires_at: '2025-02-19T09:15:30Z', // 30 days after merge
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -853,8 +849,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'test-user',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'feature/test'
-        }
+          head_branch: 'feature/test',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -871,8 +867,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'test-user',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'feature/high-number'
-        }
+          head_branch: 'feature/high-number',
+        },
       };
 
       const result = await db.storeItems([prContext]);
@@ -888,25 +884,26 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         kind: 'pr_context' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           pr_number: 369,
           title: 'Implement CI/CD pipeline improvements',
-          description: 'Add automated testing, security scanning, and deployment automation to the CI/CD pipeline.',
+          description:
+            'Add automated testing, security scanning, and deployment automation to the CI/CD pipeline.',
           author: 'devops-engineer',
           status: 'merged',
           base_branch: 'main',
           head_branch: 'feature/ci-cd-improvements',
-          merged_at: '2025-01-18T14:20:00Z'
+          merged_at: '2025-01-18T14:20:00Z',
         },
-        tags: { 'ci-cd': true, automation: true, 'devops': true },
+        tags: { 'ci-cd': true, automation: true, devops: true },
         source: {
           actor: 'github-actions',
           tool: 'pr-analyzer',
-          timestamp: '2025-01-18T14:25:00Z'
+          timestamp: '2025-01-18T14:25:00Z',
         },
-        ttl_policy: '30d' as const
+        ttl_policy: '30d' as const,
       };
 
       const result = validateKnowledgeItem(prContext);
@@ -925,18 +922,19 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         data: {
           pr_number: 258,
           title: 'Feature: Add real-time notifications with WebSocket',
-          description: 'Implement real-time notification system using WebSocket connections. Includes push notifications, desktop alerts, and mobile push support.',
+          description:
+            'Implement real-time notification system using WebSocket connections. Includes push notifications, desktop alerts, and mobile push support.',
           author: 'fullstack-developer',
           status: 'open',
           base_branch: 'develop',
-          head_branch: 'feature/realtime-notifications'
+          head_branch: 'feature/realtime-notifications',
         },
         tags: {
-          'websocket': true,
-          'notifications': true,
+          websocket: true,
+          notifications: true,
           'real-time': true,
-          'frontend': true,
-          'backend': true
+          frontend: true,
+          backend: true,
         },
         metadata: {
           files_changed: 15,
@@ -944,8 +942,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           lines_removed: 28,
           reviewers: ['tech-lead', 'senior-dev', 'frontend-expert'],
           approval_status: 'pending',
-          ci_status: 'passed'
-        }
+          ci_status: 'passed',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -969,9 +967,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           base_branch: 'main',
           head_branch: 'hotfix/db-connection',
           merged_at: '2025-01-22T03:45:00Z',
-          expires_at: '2025-02-21T03:45:00Z' // 30 days post-merge
+          expires_at: '2025-02-21T03:45:00Z', // 30 days post-merge
         },
-        ttl_policy: '30d' as const
+        ttl_policy: '30d' as const,
       };
 
       const result = await db.storeItems([prContext]);
@@ -991,9 +989,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
           author: 'qa-engineer',
           status: 'open',
           base_branch: 'main',
-          head_branch: 'test/auth-unit-tests'
+          head_branch: 'test/auth-unit-tests',
         },
-        idempotency_key: 'pr-963-auth-tests-v1'
+        idempotency_key: 'pr-963-auth-tests-v1',
       };
 
       const result = await db.storeItems([prContext]);

@@ -70,7 +70,7 @@ export class KeyVaultService {
       keyDerivationRounds: config.keyDerivationRounds || 32768,
     };
 
-    this.initializeMasterKey().catch(error => {
+    this.initializeMasterKey().catch((error) => {
       logger.error({ error }, 'Failed to initialize master key');
     });
   }
@@ -106,7 +106,10 @@ export class KeyVaultService {
   /**
    * Encrypt a key value for storage
    */
-  async encryptKey(value: string, _additionalData?: string): Promise<{
+  async encryptKey(
+    value: string,
+    _additionalData?: string
+  ): Promise<{
     encrypted_value: string;
     iv: string;
     salt: string;
@@ -133,7 +136,7 @@ export class KeyVaultService {
     encrypted += cipher.final('hex');
 
     const authTag = (cipher as any).getAuthTag();
-    encrypted += `:${  authTag.toString('hex')}`;
+    encrypted += `:${authTag.toString('hex')}`;
 
     return {
       encrypted_value: encrypted,
@@ -172,7 +175,11 @@ export class KeyVaultService {
     const [encrypted, authTagHex] = parts;
     const key = (await scryptAsync(this.masterKey, Buffer.from(salt, 'hex'), 32)) as Buffer;
 
-    const decipher = createDecipheriv(this.config.encryptionAlgorithm as any, key, Buffer.from(iv, 'hex'));
+    const decipher = createDecipheriv(
+      this.config.encryptionAlgorithm as any,
+      key,
+      Buffer.from(iv, 'hex')
+    );
     (decipher as any).setAuthTag(Buffer.from(authTagHex, 'hex'));
 
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -197,8 +204,8 @@ export class KeyVaultService {
     const iv = 'fallback-iv';
 
     // XOR obfuscation (not encryption, but better than plaintext)
-    const encryptedArray = Array.from(Buffer.from(value)).map((byte, index) =>
-      byte ^ obfuscationKey.charCodeAt(index % obfuscationKey.length)
+    const encryptedArray = Array.from(Buffer.from(value)).map(
+      (byte, index) => byte ^ obfuscationKey.charCodeAt(index % obfuscationKey.length)
     );
     const encrypted = Buffer.from(encryptedArray).toString('base64');
 
@@ -217,8 +224,8 @@ export class KeyVaultService {
     const obfuscationKey = process.env.NODE_ENV || 'development';
     const encrypted = Buffer.from(encrypted_value, 'base64');
 
-    const decryptedArray = Array.from(encrypted).map((byte, index) =>
-      byte ^ obfuscationKey.charCodeAt(index % obfuscationKey.length)
+    const decryptedArray = Array.from(encrypted).map(
+      (byte, index) => byte ^ obfuscationKey.charCodeAt(index % obfuscationKey.length)
     );
     return Buffer.from(decryptedArray).toString('utf8');
   }
@@ -226,7 +233,9 @@ export class KeyVaultService {
   /**
    * Store a new encrypted key
    */
-  async storeKey(entry: Omit<KeyEntry, 'id' | 'created_at' | 'updated_at' | 'access_count'>): Promise<string> {
+  async storeKey(
+    entry: Omit<KeyEntry, 'id' | 'created_at' | 'updated_at' | 'access_count'>
+  ): Promise<string> {
     const id = `kv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // In a real implementation, this would encrypt and store the key
@@ -236,7 +245,7 @@ export class KeyVaultService {
         keyId: id,
         keyName: entry.name,
         keyType: entry.type,
-        environment: entry.environment
+        environment: entry.environment,
       },
       'Key stored in vault'
     );
@@ -264,10 +273,10 @@ export class KeyVaultService {
    */
   private getFromEnvironment(id: string): DecryptedKey | null {
     const envMappings: Record<string, { env: string; type: KeyEntry['type'] }> = {
-      'openai_api_key': { env: 'OPENAI_API_KEY', type: 'openai_api_key' },
-      'qdrant_api_key': { env: 'QDRANT_API_KEY', type: 'qdrant_api_key' },
-      'jwt_secret': { env: 'JWT_SECRET', type: 'jwt_secret' },
-      'encryption_key': { env: 'ENCRYPTION_KEY', type: 'encryption_key' },
+      openai_api_key: { env: 'OPENAI_API_KEY', type: 'openai_api_key' },
+      qdrant_api_key: { env: 'QDRANT_API_KEY', type: 'qdrant_api_key' },
+      jwt_secret: { env: 'JWT_SECRET', type: 'jwt_secret' },
+      encryption_key: { env: 'ENCRYPTION_KEY', type: 'encryption_key' },
     };
 
     const mapping = envMappings[id];
@@ -363,7 +372,7 @@ export class KeyVaultService {
     // For now, return common keys that might exist in environment
     const commonKeys = ['openai_api_key', 'qdrant_api_key', 'jwt_secret', 'encryption_key'];
 
-    return commonKeys.map(name => ({
+    return commonKeys.map((name) => ({
       id: name,
       name,
       type: this.getKeyTypeFromName(name),

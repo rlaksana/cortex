@@ -14,8 +14,8 @@ const child = spawn('node', [serverPath], {
     ...process.env,
     // Override with MCP client environment if provided
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-    NODE_ENV: process.env.NODE_ENV || 'development'
-  }
+    NODE_ENV: process.env.NODE_ENV || 'development',
+  },
 });
 
 child.on('error', (error) => {

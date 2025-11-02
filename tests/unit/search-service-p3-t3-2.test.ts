@@ -17,64 +17,64 @@ vi.mock('../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 // Mock Qdrant client
 const mockQdrantClient = {
   section: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   adrDecision: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   issueLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   todoLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   runbook: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   changeLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   releaseNote: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   ddlHistory: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   prContext: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeEntity: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeRelation: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeObservation: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   incidentLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   releaseLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   riskLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   assumptionLog: {
-    findMany: vi.fn()
-  }
+    findMany: vi.fn(),
+  },
 };
 
 // Mock cache factory
@@ -92,10 +92,10 @@ vi.mock('../../src/utils/lru-cache', () => ({
         totalHits: 0,
         totalMisses: 0,
         expiredItems: 0,
-        evictedItems: 0
-      }))
-    })
-  }
+        evictedItems: 0,
+      })),
+    }),
+  },
 }));
 
 describe('SearchService - P3-T3.2 Search Modes', () => {
@@ -121,7 +121,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'authentication system error',
         mode: 'fast',
-        limit: 20
+        limit: 20,
       };
 
       // Act
@@ -147,22 +147,24 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
           data: { title: 'Authentication System Error', content: 'Exact match content' },
           created_at: '2024-01-01',
           confidence_score: 0.95,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
-      mockQdrantClient.issueLog.findMany.mockResolvedValue([{
-        id: 'exact-match-1',
-        kind: 'issue',
-        data: { title: 'Authentication System Error', content: 'Exact match content' },
-        tags: { project: 'test' },
-        created_at: new Date('2024-01-01')
-      }]);
+      mockQdrantClient.issueLog.findMany.mockResolvedValue([
+        {
+          id: 'exact-match-1',
+          kind: 'issue',
+          data: { title: 'Authentication System Error', content: 'Exact match content' },
+          tags: { project: 'test' },
+          created_at: new Date('2024-01-01'),
+        },
+      ]);
 
       const query: SearchQuery = {
         query: '"Authentication System Error"',
         mode: 'fast',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -180,7 +182,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'xyz123nonexistent456',
         mode: 'fast',
-        limit: 15
+        limit: 15,
       };
 
       // Act
@@ -198,7 +200,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'common search term',
         mode: 'fast',
-        limit: 50 // Request more than fast mode allows
+        limit: 50, // Request more than fast mode allows
       };
 
       // Act
@@ -216,7 +218,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'database performance optimization',
         mode: 'auto',
-        limit: 50
+        limit: 50,
       };
 
       // Act
@@ -234,7 +236,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'security authentication',
         mode: 'auto',
-        limit: 25
+        limit: 25,
       };
 
       // Act
@@ -244,16 +246,17 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       expect(result.results).toBeDefined();
 
       // Should contain appropriate match types for hybrid search
-      const matchTypes = new Set(result.results.map(r => r.match_type));
+      const matchTypes = new Set(result.results.map((r) => r.match_type));
       // Auto mode uses hybrid search, so we expect hybrid results or component types
-      const hasValidMatchTypes = result.results.length === 0 ||
+      const hasValidMatchTypes =
+        result.results.length === 0 ||
         matchTypes.has('keyword') ||
         matchTypes.has('semantic') ||
         matchTypes.has('hybrid');
       expect(hasValidMatchTypes).toBe(true);
 
       // Results should be deduplicated
-      const ids = result.results.map(r => r.id);
+      const ids = result.results.map((r) => r.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length);
 
@@ -265,11 +268,13 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'fallback test query',
         mode: 'auto',
-        limit: 30
+        limit: 30,
       };
 
       // Mock one method to fail
-      mockQdrantClient.knowledgeEntity.findMany.mockRejectedValueOnce(new Error('Semantic search failed'));
+      mockQdrantClient.knowledgeEntity.findMany.mockRejectedValueOnce(
+        new Error('Semantic search failed')
+      );
 
       // Act
       const result = await searchService.searchByMode(query);
@@ -285,7 +290,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'api rest service',
         mode: 'auto',
-        limit: 20
+        limit: 20,
       };
 
       // Act
@@ -295,7 +300,9 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       if (result.results.length > 1) {
         // Results should be ordered by confidence score
         for (let i = 0; i < result.results.length - 1; i++) {
-          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(result.results[i + 1].confidence_score);
+          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(
+            result.results[i + 1].confidence_score
+          );
         }
       }
 
@@ -307,7 +314,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'common search term',
         mode: 'auto',
-        limit: 100 // Request more than auto mode allows
+        limit: 100, // Request more than auto mode allows
       };
 
       // Act
@@ -325,7 +332,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'microservices architecture patterns',
         mode: 'deep',
-        limit: 100
+        limit: 100,
       };
 
       // Act
@@ -343,7 +350,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'authentication system',
         mode: 'deep',
-        limit: 50
+        limit: 50,
       };
 
       // Mock results that could be expanded
@@ -355,8 +362,8 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
           tags: { project: 'auth' },
           created_at: new Date('2024-01-01'),
           // Mock related items for expansion
-          related_items: ['observation-1', 'issue-1']
-        }
+          related_items: ['observation-1', 'issue-1'],
+        },
       ]);
 
       mockQdrantClient.knowledgeObservation.findMany.mockResolvedValue([
@@ -365,8 +372,8 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
           kind: 'observation',
           data: { content: 'Related observation about authentication' },
           tags: { project: 'auth' },
-          created_at: new Date('2024-01-02')
-        }
+          created_at: new Date('2024-01-02'),
+        },
       ]);
 
       // Act
@@ -378,7 +385,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       expect(result.results.length).toBeGreaterThan(0);
 
       // Should indicate semantic matches with expansion
-      result.results.forEach(item => {
+      result.results.forEach((item) => {
         expect(['semantic', 'expanded']).toContain(item.match_type);
       });
 
@@ -393,16 +400,16 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
         scope: {
           project: 'infra',
           branch: 'main',
-          org: 'company'
+          org: 'company',
         },
-        limit: 75
+        limit: 75,
       };
 
       // Act
       const result = await searchService.searchByMode(query);
 
       // Assert
-      result.results.forEach(item => {
+      result.results.forEach((item) => {
         if (item.scope) {
           expect(item.scope.project).toBe('infra');
           expect(item.scope.branch).toBe('main');
@@ -418,14 +425,14 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'complex system architecture',
         mode: 'deep',
-        limit: 60
+        limit: 60,
       };
 
       // Act
       const result = await searchService.searchByMode(query);
 
       // Assert
-      result.results.forEach(item => {
+      result.results.forEach((item) => {
         expect(item.confidence_score).toBeGreaterThan(0);
         expect(item.confidence_score).toBeLessThanOrEqual(1);
         expect(typeof item.confidence_score).toBe('number');
@@ -433,7 +440,8 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
 
       // Should have more nuanced scoring in deep mode
       if (result.results.length > 0) {
-        const avgConfidence = result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length;
+        const avgConfidence =
+          result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length;
         expect(avgConfidence).toBeGreaterThan(0.3); // Deep mode should find relevant results
       }
 
@@ -445,7 +453,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'common search term',
         mode: 'deep',
-        limit: 200 // Request more than deep mode allows
+        limit: 200, // Request more than deep mode allows
       };
 
       // Act
@@ -462,7 +470,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'test query',
-        limit: 10
+        limit: 10,
         // No mode specified - should default to 'auto'
       };
 
@@ -478,7 +486,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'test query',
         mode: 'invalid' as any,
-        limit: 10
+        limit: 10,
       };
 
       // Act & Assert - Should fallback to auto mode
@@ -491,14 +499,14 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const modes = [
         { mode: 'fast' as const, maxLimit: 20 },
         { mode: 'auto' as const, maxLimit: 50 },
-        { mode: 'deep' as const, maxLimit: 100 }
+        { mode: 'deep' as const, maxLimit: 100 },
       ];
 
       for (const { mode, maxLimit } of modes) {
         const query: SearchQuery = {
           query: 'test query',
           mode,
-          limit: 999 // Excessive limit
+          limit: 999, // Excessive limit
         };
 
         const result = await searchService.searchByMode(query);
@@ -511,7 +519,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const fastQuery: SearchQuery = {
         query: 'performance test',
         mode: 'fast',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -531,7 +539,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'test semantic',
         mode: 'deep',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -550,7 +558,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'test keyword',
         mode: 'fast',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -569,7 +577,7 @@ describe('SearchService - P3-T3.2 Search Modes', () => {
       const query: SearchQuery = {
         query: 'test hybrid',
         mode: 'auto',
-        limit: 10
+        limit: 10,
       };
 
       // Act

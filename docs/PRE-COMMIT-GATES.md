@@ -7,15 +7,18 @@ This document describes the implementation of the required pre-commit gate seque
 The MCP Cortex project implements a systematic 5+1 gate sequence that ensures code quality and consistency:
 
 ### Required Gates (Blocking)
+
 1. **Type checking** - TypeScript compilation validation
 2. **Linting** - ESLint code quality checks
 3. **Format/Imports** - Prettier formatting and import ordering
 
 ### Advisory Gates (Non-blocking)
+
 4. **Dead code detection** - ts-prune unused export analysis
 5. **Complexity analysis** - Code complexity reporting
 
 ### Final Gate (Blocking)
+
 6. **Test coverage verification** - Comprehensive test coverage validation
 
 ## Implementation Details
@@ -137,6 +140,7 @@ The GitHub Actions `code-quality` job mirrors the pre-commit hook exactly:
 ### Blocking Gates (Stop on First Failure)
 
 **Gates 1, 2, 3, and Final:**
+
 - **Exit immediately** on failure
 - **Provide Fix Plan** with actionable steps
 - **Stop execution** of subsequent gates
@@ -145,6 +149,7 @@ The GitHub Actions `code-quality` job mirrors the pre-commit hook exactly:
 ### Advisory Gates (Continue with Warnings)
 
 **Gates 4 and 5:**
+
 - **Report issues** without stopping
 - **Provide Fix Plan** for improvements
 - **Continue execution** to subsequent gates
@@ -171,31 +176,37 @@ Each gate corresponds to specific NPM scripts:
 ## Failure Handling
 
 ### Type Checking Failures
+
 - **Common Issues**: Type mismatches, missing imports, interface errors
 - **Fix Commands**: `npm run type-check` for detailed errors
 - **Auto-fixes**: Limited - usually manual fixes required
 
 ### Linting Failures
+
 - **Common Issues**: Unused variables, formatting, quote styles
 - **Fix Commands**: `npm run lint:fix` for auto-fixable issues
 - **Auto-fixes**: High - many issues auto-fixable
 
 ### Format/Import Failures
+
 - **Common Issues**: Inconsistent formatting, import ordering
 - **Fix Commands**: `npm run format` and `npm run lint:imports`
 - **Auto-fixes**: Very high - mostly automated
 
 ### Dead Code Warnings
+
 - **Common Issues**: Unused exports, dead code paths
 - **Fix Commands**: `npm run dead-code` for identification
 - **Auto-fixes**: Manual - requires developer decision
 
 ### Complexity Warnings
+
 - **Common Issues**: High cyclomatic complexity, large functions
 - **Fix Commands**: Review `complexity-report.json`
 - **Auto-fixes**: Manual - requires refactoring
 
 ### Test Coverage Failures
+
 - **Common Issues**: Missing test files, low coverage percentages
 - **Fix Commands**: `npm run verify-test-coverage` for detailed analysis
 - **Auto-fixes**: Manual - requires writing tests
@@ -297,18 +308,21 @@ husky - pre-commit script failed (code 1)
 ## Benefits
 
 ### For Developers
+
 - **Consistent Feedback**: Same gate sequence locally and in CI/CD
 - **Actionable Fix Plans**: Clear steps to resolve each issue
 - **Fast Feedback**: Early detection prevents CI/CD failures
 - **Progressive Enhancement**: Advisory gates encourage improvement without blocking
 
 ### For Code Quality
+
 - **Type Safety**: Ensures TypeScript compilation
 - **Code Consistency**: Standardized formatting and linting
 - **Maintainability**: Dead code removal and complexity management
 - **Test Coverage**: Comprehensive test verification
 
 ### For Team Collaboration
+
 - **Unified Standards**: Same quality gates for all team members
 - **Reduced Review Friction**: Automated quality checks
 - **Clear Expectations**: Documented requirements and processes

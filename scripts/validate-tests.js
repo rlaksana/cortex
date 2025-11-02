@@ -9,24 +9,17 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, extname, basename } from 'path';
-import { TestValidator, TestMetrics, ValidationReporter } from '../tests/framework/test-validation.js';
+import {
+  TestValidator,
+  TestMetrics,
+  ValidationReporter,
+} from '../tests/framework/test-validation.js';
 
 // Configuration
 const CONFIG = {
   testDirectories: ['tests'],
-  excludePatterns: [
-    'node_modules',
-    '.git',
-    'dist',
-    'coverage',
-    'temp'
-  ],
-  filePatterns: [
-    '*.test.ts',
-    '*.test.js',
-    '*.spec.ts',
-    '*.spec.js'
-  ],
+  excludePatterns: ['node_modules', '.git', 'dist', 'coverage', 'temp'],
+  filePatterns: ['*.test.ts', '*.test.js', '*.spec.ts', '*.spec.js'],
   validationRules: {
     'mock-cleanup': { enabled: true, severity: 'error' },
     'standardized-setup': { enabled: true, severity: 'warning' },
@@ -34,8 +27,8 @@ const CONFIG = {
     'async-handling': { enabled: true, severity: 'error' },
     'mock-best-practices': { enabled: true, severity: 'warning' },
     'error-handling': { enabled: true, severity: 'suggestion' },
-    'performance-testing': { enabled: true, severity: 'warning' }
-  }
+    'performance-testing': { enabled: true, severity: 'warning' },
+  },
 };
 
 /**
@@ -54,7 +47,7 @@ function findTestFiles(dir, foundFiles = []) {
 
     if (stat.isDirectory()) {
       // Skip excluded directories
-      if (!CONFIG.excludePatterns.some(pattern => item.includes(pattern))) {
+      if (!CONFIG.excludePatterns.some((pattern) => item.includes(pattern))) {
         findTestFiles(fullPath, foundFiles);
       }
     } else if (stat.isFile()) {
@@ -62,7 +55,7 @@ function findTestFiles(dir, foundFiles = []) {
       const extension = extname(item);
       const _name = basename(item, extension);
 
-      const isTestFile = CONFIG.filePatterns.some(pattern => {
+      const isTestFile = CONFIG.filePatterns.some((pattern) => {
         const regex = new RegExp(pattern.replace('*', '.*'));
         return regex.test(item);
       });
@@ -96,7 +89,7 @@ function validateFile(filePath) {
       errors: [`Failed to read file: ${error.message}`],
       warnings: [],
       suggestions: [],
-      lines: 0
+      lines: 0,
     };
   }
 }
@@ -106,11 +99,11 @@ function validateFile(filePath) {
  */
 function generateReport(validationResults, metrics) {
   console.log('\n📋 Test Validation Report');
-  console.log('=' .repeat(80));
+  console.log('='.repeat(80));
 
   // Summary statistics
   const totalFiles = validationResults.length;
-  const validFiles = validationResults.filter(r => r.valid).length;
+  const validFiles = validationResults.filter((r) => r.valid).length;
   const totalErrors = validationResults.reduce((sum, r) => sum + r.errors.length, 0);
   const totalWarnings = validationResults.reduce((sum, r) => sum + r.warnings.length, 0);
   const totalSuggestions = validationResults.reduce((sum, r) => sum + r.suggestions.length, 0);
@@ -127,28 +120,28 @@ function generateReport(validationResults, metrics) {
   console.log(`\n📁 File Details:`);
   console.log('-'.repeat(80));
 
-  validationResults.forEach(result => {
+  validationResults.forEach((result) => {
     const status = result.valid ? '✅' : '❌';
     console.log(`\n${status} ${result.filePath}`);
     console.log(`   Lines: ${result.lines}`);
 
     if (result.errors.length > 0) {
       console.log('   Errors:');
-      result.errors.forEach(error => {
+      result.errors.forEach((error) => {
         console.log(`     ❌ ${error}`);
       });
     }
 
     if (result.warnings.length > 0) {
       console.log('   Warnings:');
-      result.warnings.forEach(warning => {
+      result.warnings.forEach((warning) => {
         console.log(`     ⚠️  ${warning}`);
       });
     }
 
     if (result.suggestions.length > 0) {
       console.log('   Suggestions:');
-      result.suggestions.forEach(suggestion => {
+      result.suggestions.forEach((suggestion) => {
         console.log(`     💡 ${suggestion}`);
       });
     }
@@ -162,8 +155,12 @@ function generateReport(validationResults, metrics) {
     const summary = TestMetrics.generateSummary(Object.keys(metrics));
     console.log(`  Total tests: ${summary.totalTests}`);
     console.log(`  Average tests per file: ${summary.averageTestsPerFile.toFixed(1)}`);
-    console.log(`  Files using standardized setup: ${summary.filesWithStandardizedSetup}/${summary.totalFiles}`);
-    console.log(`  Files with proper cleanup: ${summary.filesWithProperCleanup}/${summary.totalFiles}`);
+    console.log(
+      `  Files using standardized setup: ${summary.filesWithStandardizedSetup}/${summary.totalFiles}`
+    );
+    console.log(
+      `  Files with proper cleanup: ${summary.filesWithProperCleanup}/${summary.totalFiles}`
+    );
     console.log(`  Files with mocks: ${summary.filesWithMocks}/${summary.totalFiles}`);
   }
 
@@ -199,7 +196,7 @@ function generateReport(validationResults, metrics) {
     totalErrors,
     totalWarnings,
     totalSuggestions,
-    success: totalErrors === 0 && invalidFiles === 0
+    success: totalErrors === 0 && invalidFiles === 0,
   };
 }
 
@@ -223,7 +220,8 @@ function writeJsonReport(results, outputPath) {
 async function main() {
   const args = process.argv.slice(2);
   const jsonOutput = args.includes('--json');
-  const outputPath = args.find(arg => arg.startsWith('--output='))?.split('=')[1] || 'test-validation-report.json';
+  const outputPath =
+    args.find((arg) => arg.startsWith('--output='))?.split('=')[1] || 'test-validation-report.json';
 
   console.log('🔍 Starting test validation...');
 

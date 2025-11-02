@@ -5,6 +5,7 @@ This document defines the mandatory testing profile for Continuous Integration (
 ## Overview
 
 The CI testing profile ensures:
+
 - **Fast execution**: Tests run quickly in CI environments
 - **Reliable results**: No flaky tests due to external dependencies
 - **Consistent behavior**: Predictable test execution and results
@@ -18,6 +19,7 @@ The CI testing profile ensures:
 **Purpose**: Test individual functions and classes in isolation
 
 **Requirements**:
+
 - ✅ Must run in under 100ms per test
 - ✅ All external services mocked
 - ✅ No network calls to external services
@@ -34,6 +36,7 @@ The CI testing profile ensures:
 **Purpose**: Test interactions between components
 
 **Requirements**:
+
 - ✅ Use in-memory databases or test containers
 - ✅ Maximum 5 second timeout per test
 - ✅ Clean up all resources after each test
@@ -47,6 +50,7 @@ The CI testing profile ensures:
 **Purpose**: Validate performance characteristics
 
 **Requirements**:
+
 - ⚠️ Run separately from unit/integration tests
 - ⚠️ Use realistic data sizes
 - ⚠️ Include baseline measurements
@@ -59,6 +63,7 @@ The CI testing profile ensures:
 **Purpose**: Validate security measures
 
 **Requirements**:
+
 - ⚠️ Test authentication and authorization
 - ⚠️ Validate input sanitization
 - ⚠️ Check for common vulnerabilities
@@ -105,16 +110,16 @@ EXTERNAL_SERVICE_TIMEOUT=1000
 ### Mock Data Requirements
 
 **Embeddings**: Must be deterministic and reproducible
+
 ```typescript
 const generateMockEmbedding = (text: string): number[] => {
   const hash = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return Array.from({ length: 1536 }, (_, i) =>
-    (Math.sin((hash + i) * 0.1) + 1) * 0.5
-  );
+  return Array.from({ length: 1536 }, (_, i) => (Math.sin((hash + i) * 0.1) + 1) * 0.5);
 };
 ```
 
 **Database**: Must use in-memory or mocked implementations
+
 - No persistence required between tests
 - Fast setup and teardown
 - Consistent behavior across test runs
@@ -122,18 +127,21 @@ const generateMockEmbedding = (text: string): number[] => {
 ## Coverage Requirements
 
 ### Global Thresholds
+
 - **Statements**: 80%
 - **Branches**: 75%
 - **Functions**: 80%
 - **Lines**: 80%
 
 ### Critical Path Thresholds
+
 - **Services**: 85%
 - **Core Utilities**: 90%
 - **Authentication**: 95%
 - **Database Operations**: 90%
 
 ### Exclusions
+
 - Type definition files (`src/types/**`)
 - Configuration files (`src/constants/**`)
 - Test files themselves
@@ -142,21 +150,25 @@ const generateMockEmbedding = (text: string): number[] => {
 ## Test Execution Order
 
 ### 1. Unit Tests (Fastest)
+
 ```bash
 npm run test:unit
 ```
 
 ### 2. Integration Tests (Slower)
+
 ```bash
 npm run test:integration
 ```
 
 ### 3. Coverage Report
+
 ```bash
 npm run test:coverage
 ```
 
 ### 4. Coverage Check (Gate)
+
 ```bash
 npm run verify-test-coverage
 ```
@@ -164,6 +176,7 @@ npm run verify-test-coverage
 ## CI Configuration Files
 
 ### Vitest CI Config (`vitest.ci.config.ts`)
+
 - Single-threaded execution
 - Isolated test environment
 - Strict timeouts
@@ -171,12 +184,14 @@ npm run verify-test-coverage
 - JUnit output for CI integrations
 
 ### Global Setup (`tests/setup/global-setup.ts`)
+
 - Initialize test environment
 - Setup global mocks
 - Configure test database
 - Generate test run ID
 
 ### Per-Test Setup (`tests/setup/test-setup.ts`)
+
 - Reset mocks before each test
 - Generate consistent test data
 - Setup service mocks
@@ -185,7 +200,9 @@ npm run verify-test-coverage
 ## Test Data Management
 
 ### Sample Data
+
 Use deterministic sample data:
+
 ```typescript
 const sampleKnowledgeItems = [
   {
@@ -199,7 +216,9 @@ const sampleKnowledgeItems = [
 ```
 
 ### Data Factories
+
 Use factory patterns for test data:
+
 ```typescript
 export const createMockKnowledgeItem = (overrides = {}) => ({
   id: 'test-id',
@@ -213,28 +232,29 @@ export const createMockKnowledgeItem = (overrides = {}) => ({
 ## Error Handling in Tests
 
 ### Expected Errors
+
 ```typescript
 // Test expected error scenarios
-expect(() => service.validate(invalidData))
-  .toThrow('Validation failed');
+expect(() => service.validate(invalidData)).toThrow('Validation failed');
 ```
 
 ### Mock Errors
+
 ```typescript
 // Simulate external service errors
-vi.mocked(mockDatabase.store).mockRejectedValue(
-  new Error('Database connection failed')
-);
+vi.mocked(mockDatabase.store).mockRejectedValue(new Error('Database connection failed'));
 ```
 
 ## Performance Requirements
 
 ### Test Execution Speed
+
 - Unit tests: < 100ms each
 - Integration tests: < 5s each
 - Total test suite: < 5 minutes
 
 ### Resource Usage
+
 - Memory: < 512MB per test process
 - CPU: Minimal CPU usage
 - Network: No external network calls
@@ -242,6 +262,7 @@ vi.mocked(mockDatabase.store).mockRejectedValue(
 ## Quality Gates
 
 ### Pre-commit Hooks
+
 ```bash
 # Run in .husky/pre-commit
 npm run type-check
@@ -251,6 +272,7 @@ npm run verify-test-coverage
 ```
 
 ### CI Pipeline Gates
+
 ```bash
 # Run in CI pipeline
 npm run type-check
@@ -264,12 +286,14 @@ npm run verify-test-coverage
 ## Reporting
 
 ### Test Results
+
 - JSON output for CI integrations
 - JUnit XML for test reporting systems
 - Console output for developers
 - Coverage reports (HTML, JSON, LCOV)
 
 ### Coverage Reports
+
 - Stored in `coverage/` directory
 - Uploaded to coverage services
 - Included in CI artifacts
@@ -277,12 +301,14 @@ npm run verify-test-coverage
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Flaky Tests**: Check for async timing issues
 2. **Memory Leaks**: Verify cleanup in teardown
 3. **Slow Tests**: Mock external dependencies
 4. **Coverage Gaps**: Add tests for missing paths
 
 ### Debug Mode
+
 ```bash
 # Run with verbose output
 npm run test:unit -- --reporter=verbose
@@ -297,12 +323,14 @@ npm run test:unit -- --inspect
 ## Maintenance
 
 ### Regular Tasks
+
 - Update mock implementations when APIs change
 - Review and adjust coverage thresholds
 - Update sample data as features evolve
 - Monitor test execution times
 
 ### When Adding New Features
+
 1. Create comprehensive unit tests
 2. Add appropriate mocks
 3. Update coverage requirements

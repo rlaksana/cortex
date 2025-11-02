@@ -18,7 +18,7 @@ class DependencyAuditor {
       vulnerabilities: [],
       unused: [],
       missingLicenses: [],
-      recommendations: []
+      recommendations: [],
     };
   }
 
@@ -38,7 +38,6 @@ class DependencyAuditor {
 
       // Generate report
       this.generateReport();
-
     } catch (error) {
       console.error('❌ Audit failed:', error.message);
       process.exit(1);
@@ -67,7 +66,7 @@ class DependencyAuditor {
           wanted: info.wanted,
           latest: info.latest,
           type: info.type || 'dependency',
-          severity: this.getOutdatedSeverity(info.current, info.latest)
+          severity: this.getOutdatedSeverity(info.current, info.latest),
         });
       }
 
@@ -86,7 +85,7 @@ class DependencyAuditor {
                 wanted: info.wanted,
                 latest: info.latest,
                 type: info.type || 'dependency',
-                severity: this.getOutdatedSeverity(info.current, info.latest)
+                severity: this.getOutdatedSeverity(info.current, info.latest),
               });
             }
             console.log(`✅ Found ${this.results.outdated.length} outdated packages`);
@@ -116,7 +115,7 @@ class DependencyAuditor {
             url: vuln.url,
             fixAvailable: vuln.fixAvailable,
             patchedVersions: vuln.patchedVersions,
-            recommendation: vuln.fixAvailable ? 'Update available' : 'Manual review required'
+            recommendation: vuln.fixAvailable ? 'Update available' : 'Manual review required',
           });
         }
       }
@@ -136,13 +135,13 @@ class DependencyAuditor {
 
     for (const file of sourceFiles) {
       const imports = this.extractImports(file);
-      imports.forEach(imp => importedModules.add(imp));
+      imports.forEach((imp) => importedModules.add(imp));
     }
 
     // Check each dependency
     const allDeps = {
       ...packageJson.dependencies,
-      ...packageJson.devDependencies
+      ...packageJson.devDependencies,
     };
 
     for (const [name, version] of Object.entries(allDeps)) {
@@ -150,7 +149,7 @@ class DependencyAuditor {
         this.results.unused.push({
           name,
           version,
-          type: packageJson.dependencies[name] ? 'dependency' : 'devDependency'
+          type: packageJson.dependencies[name] ? 'dependency' : 'devDependency',
         });
       }
     }
@@ -165,7 +164,7 @@ class DependencyAuditor {
       // Check each dependency's license
       const allDeps = {
         ...packageJson.dependencies,
-        ...packageJson.devDependencies
+        ...packageJson.devDependencies,
       };
 
       for (const [name, version] of Object.entries(allDeps)) {
@@ -176,7 +175,7 @@ class DependencyAuditor {
               name,
               version,
               license: packageInfo.license || 'Unknown',
-              issue: !packageInfo.license ? 'Missing license' : 'Problematic license'
+              issue: !packageInfo.license ? 'Missing license' : 'Problematic license',
             });
           }
         } catch {
@@ -195,7 +194,7 @@ class DependencyAuditor {
 
     const allDeps = {
       ...packageJson.dependencies,
-      ...packageJson.devDependencies
+      ...packageJson.devDependencies,
     };
 
     // Check for deprecated packages
@@ -209,7 +208,7 @@ class DependencyAuditor {
             name,
             version,
             message: packageInfo.deprecated,
-            action: 'Replace with alternative'
+            action: 'Replace with alternative',
           });
         }
 
@@ -221,13 +220,14 @@ class DependencyAuditor {
             version,
             weeklyDownloads: packageInfo.weeklyDownloads,
             message: 'Package has low download count, may be unmaintained',
-            action: 'Consider alternatives'
+            action: 'Consider alternatives',
           });
         }
 
         // Check for packages without recent updates
         if (packageInfo.lastUpdate) {
-          const daysSinceUpdate = (Date.now() - new Date(packageInfo.lastUpdate).getTime()) / (1000 * 60 * 60 * 24);
+          const daysSinceUpdate =
+            (Date.now() - new Date(packageInfo.lastUpdate).getTime()) / (1000 * 60 * 60 * 24);
           if (daysSinceUpdate > 365) {
             this.results.recommendations.push({
               type: 'stale_package',
@@ -235,7 +235,7 @@ class DependencyAuditor {
               version,
               daysSinceUpdate: Math.floor(daysSinceUpdate),
               message: `Package hasn't been updated in ${Math.floor(daysSinceUpdate)} days`,
-              action: 'Check for alternatives or fork if necessary'
+              action: 'Check for alternatives or fork if necessary',
             });
           }
         }
@@ -255,7 +255,7 @@ class DependencyAuditor {
     if (this.results.outdated.length > 0) {
       console.log('📦 OUTDATED DEPENDENCIES:');
       console.log('----------------------------');
-      this.results.outdated.forEach(dep => {
+      this.results.outdated.forEach((dep) => {
         const icon = dep.severity === 'high' ? '🔴' : dep.severity === 'medium' ? '🟡' : '🟢';
         console.log(`${icon} ${dep.name}: ${dep.current} → ${dep.latest} (${dep.type})`);
       });
@@ -266,7 +266,7 @@ class DependencyAuditor {
     if (this.results.vulnerabilities.length > 0) {
       console.log('🔒 SECURITY VULNERABILITIES:');
       console.log('----------------------------');
-      this.results.vulnerabilities.forEach(vuln => {
+      this.results.vulnerabilities.forEach((vuln) => {
         const icon = vuln.severity === 'high' ? '🔴' : vuln.severity === 'moderate' ? '🟡' : '🟢';
         console.log(`${icon} ${vuln.name}: ${vuln.title}`);
         console.log(`   Severity: ${vuln.severity}`);
@@ -280,7 +280,7 @@ class DependencyAuditor {
     if (this.results.unused.length > 0) {
       console.log('🗑️  UNUSED DEPENDENCIES:');
       console.log('------------------------');
-      this.results.unused.forEach(dep => {
+      this.results.unused.forEach((dep) => {
         console.log(`📋 ${dep.name}@${dep.version} (${dep.type})`);
       });
       console.log();
@@ -290,7 +290,7 @@ class DependencyAuditor {
     if (this.results.missingLicenses.length > 0) {
       console.log('📄 LICENSE ISSUES:');
       console.log('-------------------');
-      this.results.missingLicenses.forEach(lic => {
+      this.results.missingLicenses.forEach((lic) => {
         console.log(`⚠️  ${lic.name}@${lic.version}: ${lic.issue}`);
         if (lic.license) console.log(`   License: ${lic.license}`);
       });
@@ -301,7 +301,7 @@ class DependencyAuditor {
     if (this.results.recommendations.length > 0) {
       console.log('💊 RECOMMENDATIONS:');
       console.log('-------------------');
-      this.results.recommendations.forEach(rec => {
+      this.results.recommendations.forEach((rec) => {
         const icon = rec.type === 'deprecated' ? '🚫' : rec.type === 'low_downloads' ? '📉' : '⏰';
         console.log(`${icon} ${rec.name}@${rec.version}`);
         console.log(`   Issue: ${rec.message}`);
@@ -338,7 +338,7 @@ class DependencyAuditor {
 
       if (this.results.unused.length > 0) {
         console.log('\n# Remove unused dependencies (review first):');
-        this.results.unused.forEach(dep => {
+        this.results.unused.forEach((dep) => {
           console.log(`npm uninstall ${dep.name}`);
         });
       }
@@ -358,8 +358,8 @@ class DependencyAuditor {
         vulnerabilities: this.results.vulnerabilities.length,
         unused: this.results.unused.length,
         licenseIssues: this.results.missingLicenses.length,
-        recommendations: this.results.recommendations.length
-      }
+        recommendations: this.results.recommendations.length,
+      },
     };
 
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
@@ -379,7 +379,12 @@ class DependencyAuditor {
 
       if (stat.isDirectory()) {
         files.push(...this.getSourceFiles(fullPath));
-      } else if (item.endsWith('.js') || item.endsWith('.ts') || item.endsWith('.jsx') || item.endsWith('.tsx')) {
+      } else if (
+        item.endsWith('.js') ||
+        item.endsWith('.ts') ||
+        item.endsWith('.jsx') ||
+        item.endsWith('.tsx')
+      ) {
         files.push(fullPath);
       }
     }
@@ -426,8 +431,15 @@ class DependencyAuditor {
 
     // Check for common patterns and CLI tools
     const commonPatterns = [
-      'typescript', 'eslint', 'prettier', 'vitest',
-      'rollup', 'webpack', 'babel', 'nodemon', 'ts-node'
+      'typescript',
+      'eslint',
+      'prettier',
+      'vitest',
+      'rollup',
+      'webpack',
+      'babel',
+      'nodemon',
+      'ts-node',
     ];
 
     if (commonPatterns.includes(moduleName)) {
@@ -445,7 +457,7 @@ class DependencyAuditor {
         return {
           license: packageInfo.license,
           deprecated: packageInfo.deprecated,
-          lastUpdate: packageInfo._lastModified || new Date().toISOString()
+          lastUpdate: packageInfo._lastModified || new Date().toISOString(),
         };
       }
     } catch {
@@ -474,14 +486,14 @@ class DependencyAuditor {
 
   isProblematicLicense(license) {
     const problematicLicenses = ['GPL-2.0', 'GPL-3.0', 'AGPL', 'LGPL', 'UNLICENSED'];
-    return problematicLicenses.some(lic => license.toUpperCase().includes(lic));
+    return problematicLicenses.some((lic) => license.toUpperCase().includes(lic));
   }
 }
 
 // Run the audit
 if (require.main === module) {
   const auditor = new DependencyAuditor();
-  auditor.runAudit().catch(error => {
+  auditor.runAudit().catch((error) => {
     console.error('❌ Audit failed:', error);
     process.exit(1);
   });

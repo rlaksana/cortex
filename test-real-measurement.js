@@ -49,7 +49,7 @@ const chunkedItems = chunkingService.createChunkedItems({
   kind: 'observation',
   scope: { project: 'test-project', branch: 'main' },
   data: { content: largeContent },
-  content: largeContent
+  content: largeContent,
 });
 
 console.log(`Created ${chunkedItems.length} items`);
@@ -60,7 +60,9 @@ console.log(`Number of child chunks: ${chunkedItems.slice(1).length}`);
 telemetry.logStoreAttempt(
   shouldChunk,
   largeContent.length,
-  shouldChunk ? chunkedItems.reduce((sum, item) => sum + (item.data.content || '').length, 0) : largeContent.length,
+  shouldChunk
+    ? chunkedItems.reduce((sum, item) => sum + (item.data.content || '').length, 0)
+    : largeContent.length,
   'observation',
   'test-project:main'
 );
@@ -75,20 +77,24 @@ const testItems = [
     kind: 'observation',
     scope: { project: 'test-project', branch: 'main' },
     data: { content: 'This is pure English content for testing language detection.' },
-    content: 'This is pure English content for testing language detection.'
+    content: 'This is pure English content for testing language detection.',
   },
   {
     kind: 'observation',
     scope: { project: 'test-project', branch: 'main' },
     data: { content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.' },
-    content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.'
+    content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.',
   },
   {
     kind: 'observation',
     scope: { project: 'test-project', branch: 'main' },
-    data: { content: 'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.' },
-    content: 'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.'
-  }
+    data: {
+      content:
+        'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.',
+    },
+    content:
+      'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.',
+  },
 ];
 
 const enhancedItems = languageService.enhanceItemsWithLanguage(testItems);
@@ -104,8 +110,14 @@ enhancedItems.forEach((item, index) => {
 });
 
 // Log telemetry for language enhancement
-enhancedItems.forEach(item => {
-  telemetry.logStoreAttempt(false, item.data.content?.length || 0, item.data.content?.length || 0, item.kind, 'test-project:main');
+enhancedItems.forEach((item) => {
+  telemetry.logStoreAttempt(
+    false,
+    item.data.content?.length || 0,
+    item.data.content?.length || 0,
+    item.kind,
+    'test-project:main'
+  );
 });
 
 console.log('✅ Test 2 completed\n');
@@ -122,11 +134,11 @@ const mockSearchResults = [
     data: {
       is_chunk: false,
       total_chunks: 3,
-      title: 'Large Document Analysis'
+      title: 'Large Document Analysis',
     },
     created_at: '2025-01-31T04:30:00Z',
     confidence_score: 0.95,
-    match_type: 'semantic'
+    match_type: 'semantic',
   },
   {
     id: 'chunk-1-1',
@@ -138,11 +150,11 @@ const mockSearchResults = [
       chunk_index: 0,
       total_chunks: 3,
       content: 'First part of the document content...',
-      title: 'Section 1'
+      title: 'Section 1',
     },
     created_at: '2025-01-31T04:30:00Z',
     confidence_score: 0.92,
-    match_type: 'semantic'
+    match_type: 'semantic',
   },
   {
     id: 'chunk-1-2',
@@ -154,11 +166,11 @@ const mockSearchResults = [
       chunk_index: 1,
       total_chunks: 3,
       content: 'Second part with Indonesian text: Sistem ini digunakan untuk...',
-      title: 'Section 2'
+      title: 'Section 2',
     },
     created_at: '2025-01-31T04:30:00Z',
     confidence_score: 0.88,
-    match_type: 'semantic'
+    match_type: 'semantic',
   },
   {
     id: 'regular-1',
@@ -166,12 +178,12 @@ const mockSearchResults = [
     scope: { project: 'test-project', branch: 'main' },
     data: {
       title: 'Regular Decision',
-      component: 'auth-service'
+      component: 'auth-service',
     },
     created_at: '2025-01-31T04:30:00Z',
     confidence_score: 0.75,
-    match_type: 'keyword'
-  }
+    match_type: 'keyword',
+  },
 ];
 
 const groupedResults = groupingService.groupAndSortResults(mockSearchResults);
@@ -192,7 +204,13 @@ groupedResults.forEach((group, index) => {
 });
 
 // Simulate search telemetry
-telemetry.logFindAttempt('large document analysis', 'test-project:main', groupedResults.length, 0.92, 'semantic');
+telemetry.logFindAttempt(
+  'large document analysis',
+  'test-project:main',
+  groupedResults.length,
+  0.92,
+  'semantic'
+);
 telemetry.logFindAttempt('auth service decision', 'test-project:main', 1, 0.75, 'keyword');
 
 console.log('\n✅ Test 3 completed\n');
@@ -232,12 +250,18 @@ console.log('\nInsights:');
 const insights = {
   truncation_issues: storeMetrics.truncation_ratio > 0.1,
   search_quality: findMetrics.zero_result_ratio > 0.3,
-  scope_utilization: Object.keys(telemetryData.summary.scope_analysis).length > 1
+  scope_utilization: Object.keys(telemetryData.summary.scope_analysis).length > 1,
 };
 
-console.log(`  Truncation Issues: ${insights.truncation_issues ? '⚠️  High truncation rate detected' : '✅ Within acceptable limits'}`);
-console.log(`  Search Quality: ${insights.search_quality ? '⚠️  High zero-result rate' : '✅ Search quality appears acceptable'}`);
-console.log(`  Scope Utilization: ${insights.scope_utilization ? '✅ Multi-scope usage detected' : 'ℹ️  Single-scope usage'}`);
+console.log(
+  `  Truncation Issues: ${insights.truncation_issues ? '⚠️  High truncation rate detected' : '✅ Within acceptable limits'}`
+);
+console.log(
+  `  Search Quality: ${insights.search_quality ? '⚠️  High zero-result rate' : '✅ Search quality appears acceptable'}`
+);
+console.log(
+  `  Scope Utilization: ${insights.scope_utilization ? '✅ Multi-scope usage detected' : 'ℹ️  Single-scope usage'}`
+);
 
 console.log('\n✅ Test 4 completed\n');
 

@@ -45,7 +45,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
         activeConnections: 0,
         idleConnections: 10,
         totalConnections: 10,
-        waitingRequests: 0
+        waitingRequests: 0,
       };
     }
 
@@ -109,7 +109,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     getConnectionPoolStats() {
       return this.connectionPool;
     }
-  }
+  },
 }));
 
 // Interface definitions for performance optimizer components
@@ -163,19 +163,19 @@ class DatabasePerformanceOptimizer {
     this.embeddingCache = new LRUCache<string, number[]>({
       maxSize: 500,
       maxSizeBytes: 50 * 1024 * 1024, // 50MB
-      ttlMs: 30 * 60 * 1000 // 30 minutes
+      ttlMs: 30 * 60 * 1000, // 30 minutes
     });
 
     this.searchResultCache = new LRUCache<string, any>({
       maxSize: 1000,
       maxSizeBytes: 100 * 1024 * 1024, // 100MB
-      ttlMs: 15 * 60 * 1000 // 15 minutes
+      ttlMs: 15 * 60 * 1000, // 15 minutes
     });
 
     this.queryCache = new LRUCache<string, QueryPlan>({
       maxSize: 200,
       maxSizeBytes: 20 * 1024 * 1024, // 20MB
-      ttlMs: 60 * 60 * 1000 // 1 hour
+      ttlMs: 60 * 60 * 1000, // 1 hour
     });
   }
 
@@ -195,7 +195,7 @@ class DatabasePerformanceOptimizer {
       cost: isExpensive ? 75 : Math.random() * 100,
       executionTime: isExpensive ? 800 : Math.random() * 1000,
       indexes: ['content_vector_index', 'metadata_payload_index'],
-      recommendations: []
+      recommendations: [],
     };
 
     // Analyze and add recommendations
@@ -210,7 +210,10 @@ class DatabasePerformanceOptimizer {
     return plan;
   }
 
-  async optimizeQuery(query: string, options: any = {}): Promise<{ optimizedQuery: any; recommendations: OptimizationRecommendation[] }> {
+  async optimizeQuery(
+    query: string,
+    options: any = {}
+  ): Promise<{ optimizedQuery: any; recommendations: OptimizationRecommendation[] }> {
     const plan = await this.analyzeQueryPlan(query);
     const recommendations: OptimizationRecommendation[] = [];
 
@@ -220,7 +223,7 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: 'Add compound index for better query performance',
         expectedImprovement: 40,
-        implementation: 'CREATE INDEX compound_idx ON collection (content, metadata)'
+        implementation: 'CREATE INDEX compound_idx ON collection (content, metadata)',
       });
     }
 
@@ -228,14 +231,18 @@ class DatabasePerformanceOptimizer {
       optimizedQuery: {
         ...query,
         limit: options.limit || 10,
-        useIndex: plan.indexes[0]
+        useIndex: plan.indexes[0],
       },
-      recommendations
+      recommendations,
     };
   }
 
   // Index Management Methods
-  async createIndex(name: string, field: string, type: 'scalar' | 'payload' | 'fulltext' = 'scalar'): Promise<void> {
+  async createIndex(
+    name: string,
+    field: string,
+    type: 'scalar' | 'payload' | 'fulltext' = 'scalar'
+  ): Promise<void> {
     const indexDef: IndexDefinition = {
       name,
       field,
@@ -244,14 +251,18 @@ class DatabasePerformanceOptimizer {
       usage: {
         searches: 0,
         hits: 0,
-        lastUsed: new Date().toISOString()
-      }
+        lastUsed: new Date().toISOString(),
+      },
     };
 
     this.indexes.set(name, indexDef);
   }
 
-  async analyzeIndexEfficiency(): Promise<{ efficient: string[]; inefficient: string[]; unused: string[] }> {
+  async analyzeIndexEfficiency(): Promise<{
+    efficient: string[];
+    inefficient: string[];
+    unused: string[];
+  }> {
     const efficient: string[] = [];
     const inefficient: string[] = [];
     const unused: string[] = [];
@@ -295,20 +306,20 @@ class DatabasePerformanceOptimizer {
         ...embeddingStats,
         size: embeddingStats.size || 0,
         hitRate: embeddingStats.hitRate || 0,
-        memoryUsage: embeddingStats.memoryUsage || 0
+        memoryUsage: embeddingStats.memoryUsage || 0,
       },
       searchResult: {
         ...searchResultStats,
         size: searchResultStats.size || 0,
         hitRate: searchResultStats.hitRate || 0,
-        memoryUsage: searchResultStats.memoryUsage || 0
+        memoryUsage: searchResultStats.memoryUsage || 0,
       },
       query: {
         ...queryStats,
         size: queryStats.size || 0,
         hitRate: queryStats.hitRate || 0,
-        memoryUsage: queryStats.memoryUsage || 0
-      }
+        memoryUsage: queryStats.memoryUsage || 0,
+      },
     };
   }
 
@@ -327,7 +338,7 @@ class DatabasePerformanceOptimizer {
         priority: 'medium',
         description: 'Embedding cache hit rate is below 70%',
         expectedImprovement: 25,
-        implementation: 'Increase embedding cache size to 1000 items'
+        implementation: 'Increase embedding cache size to 1000 items',
       });
     }
 
@@ -338,7 +349,7 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: 'Search result cache hit rate is below 80%',
         expectedImprovement: 35,
-        implementation: 'Increase search result cache TTL to 30 minutes'
+        implementation: 'Increase search result cache TTL to 30 minutes',
       });
     }
 
@@ -356,7 +367,7 @@ class DatabasePerformanceOptimizer {
         priority: 'critical',
         description: 'Connection pool utilization is above 90%',
         expectedImprovement: 50,
-        implementation: 'Increase connection pool size by 50%'
+        implementation: 'Increase connection pool size by 50%',
       });
     } else if (utilization < 0.3 && stats.totalConnections > 5) {
       recommendations.push({
@@ -364,7 +375,7 @@ class DatabasePerformanceOptimizer {
         priority: 'medium',
         description: 'Connection pool is underutilized',
         expectedImprovement: 15,
-        implementation: 'Reduce connection pool size to optimize resource usage'
+        implementation: 'Reduce connection pool size to optimize resource usage',
       });
     }
 
@@ -374,7 +385,7 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: 'Requests are waiting for connections',
         expectedImprovement: 40,
-        implementation: 'Implement connection pooling with queue management'
+        implementation: 'Implement connection pooling with queue management',
       });
     }
 
@@ -382,7 +393,10 @@ class DatabasePerformanceOptimizer {
   }
 
   // Batch Operation Optimization
-  async optimizeBatchOperations(batchSize: number, operationType: string): Promise<{
+  async optimizeBatchOperations(
+    batchSize: number,
+    operationType: string
+  ): Promise<{
     optimalBatchSize: number;
     expectedThroughput: number;
     recommendations: OptimizationRecommendation[];
@@ -413,14 +427,14 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: `Batch size should be adjusted for ${operationType} operations`,
         expectedImprovement: 30,
-        implementation: `Set batch size to ${optimalBatchSize} for ${operationType} operations`
+        implementation: `Set batch size to ${optimalBatchSize} for ${operationType} operations`,
       });
     }
 
     return {
       optimalBatchSize,
       expectedThroughput,
-      recommendations
+      recommendations,
     };
   }
 
@@ -445,7 +459,7 @@ class DatabasePerformanceOptimizer {
       memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024, // MB
       throughput: Math.random() * 1000, // operations per second
       connectionUtilization: Math.random(), // 0-1
-      batchEfficiency: Math.random() // 0-1
+      batchEfficiency: Math.random(), // 0-1
     };
   }
 
@@ -459,7 +473,7 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: 'Query latency is above 500ms',
         expectedImprovement: 45,
-        implementation: 'Optimize query patterns and add appropriate indexes'
+        implementation: 'Optimize query patterns and add appropriate indexes',
       });
     }
 
@@ -469,7 +483,7 @@ class DatabasePerformanceOptimizer {
         priority: 'medium',
         description: 'Index hit rate is below 70%',
         expectedImprovement: 30,
-        implementation: 'Review and optimize index usage patterns'
+        implementation: 'Review and optimize index usage patterns',
       });
     }
 
@@ -479,7 +493,7 @@ class DatabasePerformanceOptimizer {
         priority: 'high',
         description: 'Overall cache hit rate is below 80%',
         expectedImprovement: 40,
-        implementation: 'Optimize cache configuration and sizing'
+        implementation: 'Optimize cache configuration and sizing',
       });
     }
 
@@ -489,7 +503,7 @@ class DatabasePerformanceOptimizer {
         priority: 'critical',
         description: 'Memory usage is above 512MB',
         expectedImprovement: 60,
-        implementation: 'Implement cache size limits and memory optimization'
+        implementation: 'Implement cache size limits and memory optimization',
       });
     }
 
@@ -499,7 +513,7 @@ class DatabasePerformanceOptimizer {
         priority: 'medium',
         description: 'Throughput is below 100 operations per second',
         expectedImprovement: 35,
-        implementation: 'Optimize batch sizes and parallel processing'
+        implementation: 'Optimize batch sizes and parallel processing',
       });
     }
 
@@ -548,7 +562,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
   beforeEach(() => {
     // Set up default mock behaviors
     mockGetCollections.mockResolvedValue({
-      collections: [{ name: 'test-collection' }]
+      collections: [{ name: 'test-collection' }],
     });
 
     mockGetCollection.mockResolvedValue({
@@ -556,8 +570,8 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       vectors_count: 10000,
       indexed_vectors_count: 9500,
       disk_data_size: 1073741824, // 1GB
-      ram_data_size: 536870912,   // 512MB
-      optimizer_status: 'ok'
+      ram_data_size: 536870912, // 512MB
+      optimizer_status: 'ok',
     });
 
     mockUpsert.mockResolvedValue({ operation_id: 'upsert_123', status: 'completed' });
@@ -570,20 +584,20 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       operation: 'vector_search',
       cost: 25.5,
       executionTime: 150,
-      indexes: ['content_vector_index']
+      indexes: ['content_vector_index'],
     });
     mockAnalyzeQuery.mockResolvedValue({
       complexity: 'medium',
-      optimization_potential: 0.3
+      optimization_potential: 0.3,
     });
     mockOptimizeQuery.mockResolvedValue({
       optimized_query: { vector: [0.1, 0.2, 0.3] },
-      improvement_estimate: 0.25
+      improvement_estimate: 0.25,
     });
     mockGetPerformanceStats.mockResolvedValue({
       avg_query_time: 250,
       queries_per_second: 150,
-      index_usage_ratio: 0.85
+      index_usage_ratio: 0.85,
     });
 
     // Initialize optimizer
@@ -637,7 +651,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
 
       expect(result.recommendations.length).toBeGreaterThan(0);
 
-      const indexRecommendations = result.recommendations.filter(r => r.type === 'index');
+      const indexRecommendations = result.recommendations.filter((r) => r.type === 'index');
       if (indexRecommendations.length > 0) {
         expect(indexRecommendations[0].priority).toBe('high');
         expect(indexRecommendations[0].expectedImprovement).toBeGreaterThan(0);
@@ -678,7 +692,9 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
 
       const analysis = await optimizer.analyzeIndexEfficiency();
 
-      expect(analysis.efficient.length + analysis.inefficient.length + analysis.unused.length).toBe(3);
+      expect(analysis.efficient.length + analysis.inefficient.length + analysis.unused.length).toBe(
+        3
+      );
     });
 
     it('should analyze index efficiency correctly', async () => {
@@ -689,9 +705,21 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
 
       // Simulate usage
       const indexes = (optimizer as any).indexes;
-      indexes.get('efficient_index').usage = { searches: 100, hits: 85, lastUsed: new Date().toISOString() };
-      indexes.get('inefficient_index').usage = { searches: 100, hits: 40, lastUsed: new Date().toISOString() };
-      indexes.get('unused_index').usage = { searches: 0, hits: 0, lastUsed: new Date().toISOString() };
+      indexes.get('efficient_index').usage = {
+        searches: 100,
+        hits: 85,
+        lastUsed: new Date().toISOString(),
+      };
+      indexes.get('inefficient_index').usage = {
+        searches: 100,
+        hits: 40,
+        lastUsed: new Date().toISOString(),
+      };
+      indexes.get('unused_index').usage = {
+        searches: 0,
+        hits: 0,
+        lastUsed: new Date().toISOString(),
+      };
 
       const analysis = await optimizer.analyzeIndexEfficiency();
 
@@ -708,7 +736,11 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
 
       // Mark some as unused (0 searches means unused)
       const indexes = (optimizer as any).indexes;
-      indexes.get('keep_index').usage = { searches: 100, hits: 80, lastUsed: new Date().toISOString() };
+      indexes.get('keep_index').usage = {
+        searches: 100,
+        hits: 80,
+        lastUsed: new Date().toISOString(),
+      };
       indexes.get('remove_index1').usage = { searches: 0, hits: 0, lastUsed: '2024-01-01' };
       indexes.get('remove_index2').usage = { searches: 2, hits: 0, lastUsed: '2024-01-01' };
 
@@ -739,10 +771,14 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       // Create index with poor performance
       await optimizer.createIndex('poor_index', 'field', 'scalar');
       const indexes = (optimizer as any).indexes;
-      indexes.get('poor_index').usage = { searches: 100, hits: 20, lastUsed: new Date().toISOString() };
+      indexes.get('poor_index').usage = {
+        searches: 100,
+        hits: 20,
+        lastUsed: new Date().toISOString(),
+      };
 
       const bottlenecks = await optimizer.identifyBottlenecks();
-      const indexRecs = bottlenecks.filter(r => r.type === 'index');
+      const indexRecs = bottlenecks.filter((r) => r.type === 'index');
 
       if (indexRecs.length > 0) {
         expect(indexRecs[0].priority).toBeDefined();
@@ -781,8 +817,12 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       const embeddingCache = (optimizer as any).embeddingCache;
 
       // Add embeddings to cache
-      for (let i = 0; i < 10; i++) { // Reduced for testing
-        embeddingCache.set(`embedding_${i}`, Array.from({ length: 1536 }, () => Math.random()));
+      for (let i = 0; i < 10; i++) {
+        // Reduced for testing
+        embeddingCache.set(
+          `embedding_${i}`,
+          Array.from({ length: 1536 }, () => Math.random())
+        );
       }
 
       const stats = optimizer.getCacheStats();
@@ -798,10 +838,10 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       embeddingCache.hitRate = 0.5; // Low hit rate
 
       const recommendations = optimizer.optimizeCacheConfiguration();
-      const cacheRecs = recommendations.filter(r => r.type === 'cache');
+      const cacheRecs = recommendations.filter((r) => r.type === 'cache');
 
       expect(cacheRecs.length).toBeGreaterThan(0);
-      expect(cacheRecs.some(r => r.description.includes('hit rate'))).toBe(true);
+      expect(cacheRecs.some((r) => r.description.includes('hit rate'))).toBe(true);
     });
 
     it('should manage cache memory usage effectively', () => {
@@ -812,7 +852,8 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       expect(stats.query.memoryUsage).toBeGreaterThanOrEqual(0);
 
       // Total memory usage should be reasonable
-      const totalMemory = stats.embedding.memoryUsage + stats.searchResult.memoryUsage + stats.query.memoryUsage;
+      const totalMemory =
+        stats.embedding.memoryUsage + stats.searchResult.memoryUsage + stats.query.memoryUsage;
       expect(totalMemory).toBeLessThan(200 * 1024 * 1024); // Less than 200MB
     });
 
@@ -823,14 +864,14 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       const shortTTLCache = new LRUCache<string, number[]>({
         maxSize: 10,
         maxSizeBytes: 1024 * 1024,
-        ttlMs: 100 // 100ms TTL
+        ttlMs: 100, // 100ms TTL
       });
 
       shortTTLCache.set('test_key', [1, 2, 3]);
       expect(shortTTLCache.get('test_key')).toEqual([1, 2, 3]);
 
       // Wait for TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(shortTTLCache.get('test_key')).toBeUndefined();
     });
   });
@@ -841,7 +882,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         activeConnections: 8,
         idleConnections: 2,
         totalConnections: 10,
-        waitingRequests: 0
+        waitingRequests: 0,
       };
 
       const recommendations = optimizer.analyzeConnectionPool(poolStats);
@@ -854,14 +895,14 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         activeConnections: 9,
         idleConnections: 1,
         totalConnections: 10,
-        waitingRequests: 5
+        waitingRequests: 5,
       };
 
       const recommendations = optimizer.analyzeConnectionPool(highUtilizationStats);
 
       expect(recommendations.length).toBeGreaterThan(0);
 
-      const criticalRecs = recommendations.filter(r => r.priority === 'critical');
+      const criticalRecs = recommendations.filter((r) => r.priority === 'critical');
       if (criticalRecs.length > 0) {
         expect(criticalRecs[0].description).toContain('90%');
       }
@@ -872,11 +913,11 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         activeConnections: 2,
         idleConnections: 8,
         totalConnections: 10,
-        waitingRequests: 0
+        waitingRequests: 0,
       };
 
       const recommendations = optimizer.analyzeConnectionPool(lowUtilizationStats);
-      const mediumRecs = recommendations.filter(r => r.priority === 'medium');
+      const mediumRecs = recommendations.filter((r) => r.priority === 'medium');
 
       expect(mediumRecs.length).toBeGreaterThan(0);
       expect(mediumRecs[0].description).toContain('underutilized');
@@ -887,11 +928,11 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         activeConnections: 5,
         idleConnections: 5,
         totalConnections: 10,
-        waitingRequests: 3
+        waitingRequests: 3,
       };
 
       const recommendations = optimizer.analyzeConnectionPool(waitingStats);
-      const waitingRecs = recommendations.filter(r => r.description.includes('waiting'));
+      const waitingRecs = recommendations.filter((r) => r.description.includes('waiting'));
 
       expect(waitingRecs.length).toBeGreaterThan(0);
       expect(waitingRecs[0].priority).toBe('high');
@@ -902,15 +943,15 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         { active: 1, idle: 9, total: 10, waiting: 0 },
         { active: 9, idle: 1, total: 10, waiting: 0 },
         { active: 5, idle: 5, total: 10, waiting: 5 },
-        { active: 3, idle: 7, total: 10, waiting: 0 }
+        { active: 3, idle: 7, total: 10, waiting: 0 },
       ];
 
-      testCases.forEach(stats => {
+      testCases.forEach((stats) => {
         const recommendations = optimizer.analyzeConnectionPool(stats);
         expect(Array.isArray(recommendations)).toBe(true);
 
         // Each recommendation should have proper structure
-        recommendations.forEach(rec => {
+        recommendations.forEach((rec) => {
           expect(rec).toHaveProperty('type', 'connection');
           expect(rec).toHaveProperty('priority');
           expect(rec).toHaveProperty('description');
@@ -926,7 +967,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       const testCases = [
         { type: 'upsert', batchSize: 25 },
         { type: 'search', batchSize: 100 },
-        { type: 'delete', batchSize: 25 }
+        { type: 'delete', batchSize: 25 },
       ];
 
       for (const testCase of testCases) {
@@ -953,7 +994,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       const result = await optimizer.optimizeBatchOperations(10, 'upsert');
 
       expect(result.recommendations.length).toBeGreaterThan(0);
-      const batchRecs = result.recommendations.filter(r => r.type === 'batch');
+      const batchRecs = result.recommendations.filter((r) => r.type === 'batch');
       expect(batchRecs.length).toBeGreaterThan(0);
     });
 
@@ -967,7 +1008,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       }
 
       // Different operations should have different optimal batch sizes
-      const batchSizes = results.map(r => r.optimalBatchSize);
+      const batchSizes = results.map((r) => r.optimalBatchSize);
       expect(new Set(batchSizes).size).toBeGreaterThan(1);
     });
 
@@ -1020,7 +1061,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       expect(Array.isArray(bottlenecks)).toBe(true);
 
       if (bottlenecks.length > 0) {
-        bottlenecks.forEach(bottleneck => {
+        bottlenecks.forEach((bottleneck) => {
           expect(bottleneck).toHaveProperty('type');
           expect(bottleneck).toHaveProperty('priority');
           expect(bottleneck).toHaveProperty('description');
@@ -1060,8 +1101,12 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       expect(trends.predictions.memoryUsage).toBeGreaterThan(0);
 
       // Predictions should be based on current trends
-      expect(trends.predictions.queryLatency).toBeGreaterThanOrEqual(trends.trends.queryLatency * 0.9);
-      expect(trends.predictions.memoryUsage).toBeGreaterThanOrEqual(trends.trends.memoryUsage * 0.9);
+      expect(trends.predictions.queryLatency).toBeGreaterThanOrEqual(
+        trends.trends.queryLatency * 0.9
+      );
+      expect(trends.predictions.memoryUsage).toBeGreaterThanOrEqual(
+        trends.trends.memoryUsage * 0.9
+      );
     });
 
     it('should generate appropriate performance alerts', async () => {
@@ -1070,7 +1115,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       expect(Array.isArray(trends.alerts)).toBe(true);
 
       if (trends.alerts.length > 0) {
-        trends.alerts.forEach(alert => {
+        trends.alerts.forEach((alert) => {
           expect(typeof alert).toBe('string');
           expect(alert.length).toBeGreaterThan(0);
         });
@@ -1139,13 +1184,13 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         optimizer.optimizeQuery('concurrent query 1'),
         optimizer.optimizeQuery('concurrent query 2'),
         optimizer.analyzeIndexEfficiency(),
-        optimizer.optimizeBatchOperations(50, 'upsert')
+        optimizer.optimizeBatchOperations(50, 'upsert'),
       ];
 
       const results = await Promise.all(operations);
 
       expect(results).toHaveLength(6);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
       });
     });
@@ -1176,7 +1221,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       const workload = Array.from({ length: 100 }, (_, i) => ({
         query: `test query ${i}`,
         expectedLatency: Math.random() * 1000,
-        priority: i % 3 === 0 ? 'high' : 'normal'
+        priority: i % 3 === 0 ? 'high' : 'normal',
       }));
 
       const results = [];
@@ -1188,15 +1233,21 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         results.push({
           query: item.query,
           optimization,
-          bottlenecks: bottlenecks.filter(b => b.priority === 'high' || b.priority === 'critical')
+          bottlenecks: bottlenecks.filter(
+            (b) => b.priority === 'high' || b.priority === 'critical'
+          ),
         });
       }
 
       expect(results).toHaveLength(100);
 
       // High-priority queries should have more recommendations
-      const highPriorityResults = results.filter(r => workload.find(w => w.query === r.query)?.priority === 'high');
-      const normalPriorityResults = results.filter(r => workload.find(w => w.query === r.query)?.priority === 'normal');
+      const highPriorityResults = results.filter(
+        (r) => workload.find((w) => w.query === r.query)?.priority === 'high'
+      );
+      const normalPriorityResults = results.filter(
+        (r) => workload.find((w) => w.query === r.query)?.priority === 'normal'
+      );
 
       expect(highPriorityResults.length).toBeGreaterThan(0);
       expect(normalPriorityResults.length).toBeGreaterThan(0);
@@ -1208,7 +1259,7 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
         bottlenecks: await optimizer.identifyBottlenecks(),
         indexAnalysis: await optimizer.analyzeIndexEfficiency(),
         cacheStats: optimizer.getCacheStats(),
-        trends: await optimizer.getPerformanceTrends()
+        trends: await optimizer.getPerformanceTrends(),
       };
 
       expect(comprehensiveReport).toBeDefined();
@@ -1219,8 +1270,12 @@ describe('Database Performance Optimizer - Comprehensive Testing', () => {
       expect(comprehensiveReport.trends).toBeDefined();
 
       // Report should contain actionable insights
-      const criticalIssues = comprehensiveReport.bottlenecks.filter(b => b.priority === 'critical');
-      const highPriorityIssues = comprehensiveReport.bottlenecks.filter(b => b.priority === 'high');
+      const criticalIssues = comprehensiveReport.bottlenecks.filter(
+        (b) => b.priority === 'critical'
+      );
+      const highPriorityIssues = comprehensiveReport.bottlenecks.filter(
+        (b) => b.priority === 'high'
+      );
 
       expect(criticalIssues.length + highPriorityIssues.length).toBeGreaterThanOrEqual(0);
     });

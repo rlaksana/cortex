@@ -20,14 +20,14 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
@@ -36,25 +36,30 @@ vi.mock('@qdrant/js-client-rest', () => ({
       // Mock existing data for deduplication testing
       this.existingHashes = new Set(['duplicate-content-hash']);
       this.existingDecisions = new Map([
-        ['existing-decision-id', {
-          id: 'existing-decision-id',
-          status: 'accepted',
-          component: 'Authentication',
-          title: 'Use OAuth 2.0',
-          rationale: 'Industry standard',
-          alternativesConsidered: ['Basic Auth', 'JWT']
-        }]
+        [
+          'existing-decision-id',
+          {
+            id: 'existing-decision-id',
+            status: 'accepted',
+            component: 'Authentication',
+            title: 'Use OAuth 2.0',
+            rationale: 'Industry standard',
+            alternativesConsidered: ['Basic Auth', 'JWT'],
+          },
+        ],
       ]);
     }
 
     // Simulate finding existing items by content hash
     async findByHash(contentHash) {
       if (this.existingHashes.has(contentHash)) {
-        return [{
-          id: 'existing-item-id',
-          content_hash: contentHash,
-          created_at: '2024-01-01T00:00:00Z'
-        }];
+        return [
+          {
+            id: 'existing-item-id',
+            content_hash: contentHash,
+            created_at: '2024-01-01T00:00:00Z',
+          },
+        ];
       }
       return [];
     }
@@ -66,7 +71,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
       }
       return null;
     }
-  }
+  },
 }));
 
 describe('VectorDatabase - Enhanced memory_store batch response', () => {
@@ -88,12 +93,12 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
           metadata: {
             component: 'User Service',
             status: 'active',
-            created_by: 'test-user'
+            created_by: 'test-user',
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
+            branch: 'main',
+          },
         },
         {
           kind: 'decision',
@@ -103,12 +108,12 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
             status: 'accepted',
             title: 'Use OAuth 2.0',
             rationale: 'Industry standard',
-            alternatives_considered: ['Basic Auth', 'JWT']
+            alternatives_considered: ['Basic Auth', 'JWT'],
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
+            branch: 'main',
+          },
         },
         {
           kind: 'decision',
@@ -119,13 +124,13 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
             status: 'accepted',
             title: 'Use OAuth 2.0',
             rationale: 'Modified rationale - this should fail',
-            alternatives_considered: ['Basic Auth']
+            alternatives_considered: ['Basic Auth'],
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
-        }
+            branch: 'main',
+          },
+        },
       ];
 
       // Act: Call memory_store with batch items
@@ -147,7 +152,7 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
         input_index: 0,
         status: 'stored',
         kind: 'entity',
-        content: 'New component: User Service'
+        content: 'New component: User Service',
       });
       expect(result.items[0]).toHaveProperty('id'); // Should have generated UUID
 
@@ -157,7 +162,7 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
         status: 'skipped_dedupe',
         reason: 'Duplicate content',
         kind: 'decision',
-        content: 'Use OAuth 2.0 for authentication'
+        content: 'Use OAuth 2.0 for authentication',
       });
       expect(result.items[1]).toHaveProperty('existing_id'); // Should reference existing item
 
@@ -165,9 +170,10 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
       expect(result.items[2]).toMatchObject({
         input_index: 2,
         status: 'business_rule_blocked',
-        reason: 'Cannot modify accepted ADR "Use OAuth 2.0". Create a new ADR with supersedes reference instead.',
+        reason:
+          'Cannot modify accepted ADR "Use OAuth 2.0". Create a new ADR with supersedes reference instead.',
         kind: 'decision',
-        content: 'Update existing accepted ADR'
+        content: 'Update existing accepted ADR',
       });
       expect(result.items[2]).toHaveProperty('error_code', 'IMMUTABILITY_VIOLATION');
 
@@ -177,7 +183,7 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
         stored: 1,
         skipped_dedupe: 1,
         business_rule_blocked: 1,
-        total: 3
+        total: 3,
       });
 
       // 7. Legacy compatibility fields should still exist
@@ -204,13 +210,13 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
         {
           kind: 'entity',
           content: 'New service: Payment API',
-          metadata: { component: 'Payment API' }
+          metadata: { component: 'Payment API' },
         },
         {
           kind: 'observation',
           content: 'System performance metrics collected',
-          metadata: { cpu: 45, memory: 62 }
-        }
+          metadata: { cpu: 45, memory: 62 },
+        },
       ];
 
       // Act
@@ -221,19 +227,19 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
       expect(result.items[0]).toMatchObject({
         input_index: 0,
         status: 'stored',
-        kind: 'entity'
+        kind: 'entity',
       });
       expect(result.items[1]).toMatchObject({
         input_index: 1,
         status: 'stored',
-        kind: 'observation'
+        kind: 'observation',
       });
 
       expect(result.summary).toMatchObject({
         stored: 2,
         skipped_dedupe: 0,
         business_rule_blocked: 0,
-        total: 2
+        total: 2,
       });
     });
 
@@ -243,13 +249,13 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
         {
           kind: 'entity',
           content: 'Duplicate content 1', // Pre-configured as duplicate in mock
-          metadata: { duplicate: true }
+          metadata: { duplicate: true },
         },
         {
           kind: 'section',
           content: 'Duplicate content 1', // Same content hash
-          metadata: { duplicate: true }
-        }
+          metadata: { duplicate: true },
+        },
       ];
 
       // Act
@@ -260,28 +266,30 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
       expect(result.items[0]).toMatchObject({
         input_index: 0,
         status: 'skipped_dedupe',
-        reason: 'Duplicate content'
+        reason: 'Duplicate content',
       });
       expect(result.items[1]).toMatchObject({
         input_index: 1,
         status: 'skipped_dedupe',
-        reason: 'Duplicate content'
+        reason: 'Duplicate content',
       });
 
       expect(result.summary).toMatchObject({
         stored: 0,
         skipped_dedupe: 2,
         business_rule_blocked: 0,
-        total: 2
+        total: 2,
       });
     });
 
     it('should maintain backward compatibility with existing response shape', async () => {
       // Arrange: Simple valid item
-      const items = [{
-        kind: 'entity',
-        content: 'Test entity for backward compatibility'
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test entity for backward compatibility',
+        },
+      ];
 
       // Act
       const result = await db.storeItems(items);
@@ -308,14 +316,14 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
       const items = [
         {
           kind: 'entity',
-          content: 'Valid item'
+          content: 'Valid item',
         },
         {
           kind: 'invalid-kind', // Invalid knowledge type
-          content: 'Invalid item'
+          content: 'Invalid item',
         },
         null, // Completely invalid
-        undefined // Also invalid
+        undefined, // Also invalid
       ];
 
       // Act
@@ -327,32 +335,32 @@ describe('VectorDatabase - Enhanced memory_store batch response', () => {
       // First item should be valid
       expect(result.items[0]).toMatchObject({
         input_index: 0,
-        status: 'stored'
+        status: 'stored',
       });
 
       // Invalid items should have validation errors
       expect(result.items[1]).toMatchObject({
         input_index: 1,
         status: 'validation_error',
-        reason: expect.stringContaining('Invalid knowledge type')
+        reason: expect.stringContaining('Invalid knowledge type'),
       });
 
       expect(result.items[2]).toMatchObject({
         input_index: 2,
         status: 'validation_error',
-        reason: expect.stringContaining('required')
+        reason: expect.stringContaining('required'),
       });
 
       expect(result.items[3]).toMatchObject({
         input_index: 3,
         status: 'validation_error',
-        reason: expect.stringContaining('required')
+        reason: expect.stringContaining('required'),
       });
 
       expect(result.summary).toMatchObject({
         stored: 1,
         validation_error: 3,
-        total: 4
+        total: 4,
       });
     });
   });

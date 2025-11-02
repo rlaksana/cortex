@@ -13,12 +13,14 @@ The performance monitoring system provides real-time insights into application p
 #### 1. Performance Collector (`src/monitoring/performance-collector.ts`)
 
 The core metrics collection engine that tracks:
+
 - Operation timing and success rates
 - Memory usage and system resources
 - Custom metrics for business operations
 - Automatic alerting based on thresholds
 
 **Key Features:**
+
 - Real-time metric collection
 - Percentile calculations (P95, P99)
 - Memory usage monitoring
@@ -26,6 +28,7 @@ The core metrics collection engine that tracks:
 - Prometheus metrics export
 
 **Usage:**
+
 ```typescript
 import { performanceCollector, PerformanceMiddleware } from './monitoring/index.js';
 
@@ -49,12 +52,14 @@ async function queryDatabase(sql: string) {
 Provides automatic performance tracking for HTTP requests and operations.
 
 **Key Features:**
+
 - HTTP request timing
 - Request/response metadata collection
 - Slow query detection
 - Operation-specific tracking decorators
 
 **Usage:**
+
 ```typescript
 import { httpPerformance, PerformanceMiddleware } from './monitoring/index.js';
 
@@ -80,6 +85,7 @@ class UserService {
 HTTP API endpoints for monitoring and alerting.
 
 **Endpoints:**
+
 - `GET /monitoring/metrics` - Get performance metrics
 - `GET /monitoring/alerts` - Get performance alerts
 - `GET /monitoring/trends` - Get performance trends
@@ -87,6 +93,7 @@ HTTP API endpoints for monitoring and alerting.
 - `GET /monitoring/system` - System information
 
 **Usage:**
+
 ```typescript
 import { performanceDashboard } from './monitoring/index.js';
 
@@ -114,11 +121,13 @@ performanceCollector.startCollection(30000); // 30 seconds
 The dashboard can be integrated with external monitoring tools:
 
 **Prometheus:**
+
 ```bash
 curl http://localhost:3000/monitoring/metrics?format=prometheus
 ```
 
 **JSON API:**
+
 ```bash
 curl http://localhost:3000/monitoring/metrics
 curl http://localhost:3000/monitoring/trends?timeWindow=60
@@ -136,6 +145,7 @@ The security middleware provides comprehensive protection against common web vul
 #### Security Middleware (`src/middleware/security-middleware.ts`)
 
 A comprehensive security suite that includes:
+
 - Rate limiting and DDoS protection
 - Input validation and sanitization
 - SQL injection prevention
@@ -145,6 +155,7 @@ A comprehensive security suite that includes:
 - API key authentication
 
 **Key Features:**
+
 - Configurable rate limiting per IP/endpoint
 - Input validation using Zod schemas
 - Automatic SQL injection detection
@@ -153,6 +164,7 @@ A comprehensive security suite that includes:
 - IP blocking capabilities
 
 **Usage:**
+
 ```typescript
 import { security, rateLimit, validateInput, commonSchemas } from './middleware/index.js';
 
@@ -160,19 +172,19 @@ import { security, rateLimit, validateInput, commonSchemas } from './middleware/
 app.use(security);
 
 // Apply rate limiting with custom settings
-app.use('/api/', rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
-  message: 'Too many requests from this IP'
-}));
+app.use(
+  '/api/',
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per window
+    message: 'Too many requests from this IP',
+  })
+);
 
 // Input validation
-app.post('/api/memory',
-  validateInput(commonSchemas.memoryStore),
-  (req, res) => {
-    // Request is validated and sanitized
-  }
-);
+app.post('/api/memory', validateInput(commonSchemas.memoryStore), (req, res) => {
+  // Request is validated and sanitized
+});
 
 // SQL injection prevention
 app.use('/api/', preventSQLInjection());
@@ -189,20 +201,39 @@ Predefined validation schemas for common operations:
 // Memory store validation
 const memoryStoreSchema = z.object({
   content: z.string().min(1).max(1000000),
-  kind: z.enum(['entity', 'relation', 'observation', 'section', 'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption']),
-  items: z.array(z.any()).optional()
+  kind: z.enum([
+    'entity',
+    'relation',
+    'observation',
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
+  ]),
+  items: z.array(z.any()).optional(),
 });
 
 // Memory find validation
 const memoryFindSchema = z.object({
   query: z.string().min(1).max(1000),
   limit: z.number().min(1).max(1000).optional(),
-  scope: z.object({
-    project: z.string().optional(),
-    branch: z.string().optional(),
-    organization: z.string().optional()
-  }).optional(),
-  types: z.array(z.string()).optional()
+  scope: z
+    .object({
+      project: z.string().optional(),
+      branch: z.string().optional(),
+      organization: z.string().optional(),
+    })
+    .optional(),
+  types: z.array(z.string()).optional(),
 });
 ```
 
@@ -222,7 +253,7 @@ const security = new SecurityMiddleware({
   rateLimitMax: 100, // 100 requests per window
   maxRequestSize: 10 * 1024 * 1024, // 10MB
   allowedOrigins: ['https://yourdomain.com'],
-  blockedIPs: ['192.168.1.100'] // Block malicious IPs
+  blockedIPs: ['192.168.1.100'], // Block malicious IPs
 });
 ```
 
@@ -246,18 +277,24 @@ Configurable rate limiting with multiple strategies:
 app.use(rateLimit());
 
 // Endpoint-specific rate limiting
-app.use('/api/auth/', rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5, // 5 login attempts per 15 minutes
-  message: 'Too many login attempts'
-}));
+app.use(
+  '/api/auth/',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, // 5 login attempts per 15 minutes
+    message: 'Too many login attempts',
+  })
+);
 
 // API key rate limiting
-app.use('/api/premium/', rateLimit({
-  windowMs: 60 * 1000,
-  max: 1000, // Higher limit for premium users
-  keyGenerator: (req) => req.apiKey // Use API key for rate limiting
-}));
+app.use(
+  '/api/premium/',
+  rateLimit({
+    windowMs: 60 * 1000,
+    max: 1000, // Higher limit for premium users
+    keyGenerator: (req) => req.apiKey, // Use API key for rate limiting
+  })
+);
 ```
 
 ## 📊 Dependency Management
@@ -267,6 +304,7 @@ app.use('/api/premium/', rateLimit({
 Automated dependency auditing for security vulnerabilities, outdated packages, and unused dependencies.
 
 **Features:**
+
 - Security vulnerability detection
 - Outdated package identification
 - Unused dependency analysis
@@ -275,6 +313,7 @@ Automated dependency auditing for security vulnerabilities, outdated packages, a
 - Automated fixes where possible
 
 **Usage:**
+
 ```bash
 # Run dependency audit
 node scripts/audit-dependencies.js
@@ -288,6 +327,7 @@ npm update
 ```
 
 **Report Sections:**
+
 - Outdated dependencies with severity levels
 - Security vulnerabilities with fix availability
 - Unused dependencies
@@ -301,6 +341,7 @@ npm update
 Automated code organization analysis and improvement tools.
 
 **Features:**
+
 - Directory structure analysis
 - Circular dependency detection
 - Large file identification
@@ -310,6 +351,7 @@ Automated code organization analysis and improvement tools.
 - Automated refactoring
 
 **Usage:**
+
 ```bash
 # Analyze code organization
 node scripts/improve-code-organization.js
@@ -322,6 +364,7 @@ node scripts/improve-code-organization.js > organization-report.json
 ```
 
 **Analysis Areas:**
+
 - Directory structure consistency
 - Module dependency graph
 - Circular dependencies
@@ -350,7 +393,8 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 app.use(httpPerformance);
 
 // API routes with security
-app.post('/api/memory',
+app.post(
+  '/api/memory',
   authMiddleware.authenticate({ required_scopes: [AuthScope.MEMORY_WRITE] }),
   validateInput(commonSchemas.memoryStore),
   preventSQLInjection(),
@@ -397,7 +441,7 @@ class DatabaseService {
     try {
       const embedding = await this.openai.embeddings.create({
         input: text,
-        model: 'text-embedding-ada-002'
+        model: 'text-embedding-ada-002',
       });
       endMetric();
       return embedding;
@@ -420,18 +464,21 @@ class DatabaseService {
 ### Key Metrics to Monitor
 
 **Performance:**
+
 - Operation duration percentiles (P50, P95, P99)
 - Error rates by operation
 - Request throughput
 - Memory usage trends
 
 **Security:**
+
 - Failed authentication attempts
 - Rate limit violations
 - Suspicious activity patterns
 - IP block events
 
 **System:**
+
 - Memory usage
 - CPU utilization
 - Database connection pool status
@@ -466,13 +513,10 @@ const security = new SecurityMiddleware({
   maxRequestSize: 10 * 1024 * 1024, // 10MB
 
   // Restrict CORS origins
-  allowedOrigins: [
-    'https://yourdomain.com',
-    'https://app.yourdomain.com'
-  ],
+  allowedOrigins: ['https://yourdomain.com', 'https://app.yourdomain.com'],
 
   // Block known malicious IPs
-  blockedIPs: []
+  blockedIPs: [],
 });
 ```
 
@@ -492,12 +536,9 @@ Always validate input using the provided schemas:
 
 ```typescript
 // Always validate request bodies
-app.post('/api/endpoint',
-  validateInput(commonSchemas.appropriateSchema),
-  (req, res) => {
-    // req.body is now validated and sanitized
-  }
-);
+app.post('/api/endpoint', validateInput(commonSchemas.appropriateSchema), (req, res) => {
+  // req.body is now validated and sanitized
+});
 
 // Prevent SQL injection
 app.use('/api/', preventSQLInjection());
@@ -541,7 +582,8 @@ performanceCollector.on('alert', (alert) => {
 });
 
 performanceCollector.on('metric', (metric) => {
-  if (metric.duration > 1000) { // Log slow operations
+  if (metric.duration > 1000) {
+    // Log slow operations
     logger.info(metric, 'Slow operation detected');
   }
 });

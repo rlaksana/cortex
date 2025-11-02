@@ -41,7 +41,7 @@ describe('Chunk Metadata Inheritance', () => {
       expect(chunkedItems.length).toBeGreaterThan(1);
 
       // All chunks should inherit scope from parent
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.scope).toEqual(parentItem.scope);
       });
     });
@@ -60,7 +60,7 @@ describe('Chunk Metadata Inheritance', () => {
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
       // Should set empty scope object if not provided
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.scope).toEqual({});
       });
     });
@@ -84,7 +84,7 @@ describe('Chunk Metadata Inheritance', () => {
 
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.scope).toEqual({ project: 'test-project' });
       });
     });
@@ -107,7 +107,7 @@ describe('Chunk Metadata Inheritance', () => {
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
       // All chunks should inherit TTL policy from parent
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.data.ttl_policy).toBe('short');
         expect(item.data.expires_at).toBeDefined();
       });
@@ -126,7 +126,7 @@ describe('Chunk Metadata Inheritance', () => {
 
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.data.ttl_policy).toBe('long'); // Default for sections
         expect(item.data.expires_at).toBeDefined();
       });
@@ -148,7 +148,7 @@ describe('Chunk Metadata Inheritance', () => {
 
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
-      chunkedItems.forEach(item => {
+      chunkedItems.forEach((item) => {
         expect(item.data.expires_at).toBe(expiresAt.toISOString());
       });
     });
@@ -169,13 +169,11 @@ describe('Chunk Metadata Inheritance', () => {
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
       // Find parent and children
-      const parents = chunkedItems.filter(item =>
-        item.data.is_chunk === false &&
-        item.metadata?.chunking_info?.is_parent === true
+      const parents = chunkedItems.filter(
+        (item) => item.data.is_chunk === false && item.metadata?.chunking_info?.is_parent === true
       );
-      const children = chunkedItems.filter(item =>
-        item.data.is_chunk === true &&
-        item.metadata?.chunking_info?.is_child === true
+      const children = chunkedItems.filter(
+        (item) => item.data.is_chunk === true && item.metadata?.chunking_info?.is_child === true
       );
 
       // Should have exactly one parent
@@ -269,7 +267,7 @@ describe('Chunk Metadata Inheritance', () => {
         expect(chunkedItems.length).toBeGreaterThan(1);
 
         // All chunks should have content
-        chunkedItems.forEach(chunk => {
+        chunkedItems.forEach((chunk) => {
           expect(chunk.data.content).toBeDefined();
           expect(typeof chunk.data.content).toBe('string');
         });
@@ -292,7 +290,7 @@ describe('Chunk Metadata Inheritance', () => {
       expect(chunkedItems.length).toBeGreaterThan(1);
 
       // Should combine fields for content
-      const parent = chunkedItems.find(item => item.data.is_chunk === false);
+      const parent = chunkedItems.find((item) => item.data.is_chunk === false);
       expect(parent?.data.content).toContain('chunks created');
     });
   });

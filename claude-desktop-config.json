@@ -2,9 +2,7 @@
   "mcpServers": {
     "cortex": {
       "command": "node",
-      "args": [
-        "D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"
-      ]
+      "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"]
     }
   }
 }

@@ -14,8 +14,9 @@ describe('Language Field Enhancement', () => {
         kind: 'observation',
         scope: { project: 'test', branch: 'main' },
         data: {
-          content: 'Sistem ini digunakan untuk mengelola data pengguna dengan aplikasi yang telah dibuat'
-        }
+          content:
+            'Sistem ini digunakan untuk mengelola data pengguna dengan aplikasi yang telah dibuat',
+        },
       };
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
@@ -29,8 +30,9 @@ describe('Language Field Enhancement', () => {
         kind: 'decision',
         scope: { project: 'test', branch: 'main' },
         data: {
-          content: 'This system is used to manage user data using the application that has been created'
-        }
+          content:
+            'This system is used to manage user data using the application that has been created',
+        },
       };
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
@@ -44,8 +46,9 @@ describe('Language Field Enhancement', () => {
         kind: 'runbook',
         scope: { project: 'test', branch: 'main' },
         data: {
-          content: 'Sistem ini digunakan untuk manage user data dengan menggunakan application yang telah dibuat'
-        }
+          content:
+            'Sistem ini digunakan untuk manage user data dengan menggunakan application yang telah dibuat',
+        },
       };
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
@@ -58,8 +61,8 @@ describe('Language Field Enhancement', () => {
         kind: 'entity',
         scope: { project: 'test', branch: 'main' },
         data: {
-          content: 'xyz abc 123'
-        }
+          content: 'xyz abc 123',
+        },
       };
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
@@ -76,10 +79,10 @@ describe('Language Field Enhancement', () => {
         data: {
           content: 'System incident occurred with Indonesian error messages',
           title: 'Test Incident',
-          severity: 'high'
+          severity: 'high',
         },
         metadata: { source: 'monitoring' },
-        created_at: '2025-01-01T00:00:00Z'
+        created_at: '2025-01-01T00:00:00Z',
       };
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
@@ -101,18 +104,18 @@ describe('Language Field Enhancement', () => {
         {
           kind: 'observation',
           scope: { project: 'test' },
-          data: { content: 'Sistem ini digunakan untuk data' }
+          data: { content: 'Sistem ini digunakan untuk data' },
         },
         {
           kind: 'decision',
           scope: { project: 'test' },
-          data: { content: 'This is an English decision' }
+          data: { content: 'This is an English decision' },
         },
         {
           kind: 'runbook',
           scope: { project: 'test' },
-          data: { content: 'Process ini digunakan untuk system management' }
-        }
+          data: { content: 'Process ini digunakan untuk system management' },
+        },
       ];
 
       const enhancedItems = languageService.enhanceItemsWithLanguage(items);
@@ -132,13 +135,13 @@ describe('Language Field Enhancement', () => {
         {
           kind: 'observation',
           scope: { project: 'test' },
-          data: { content: 'Sistem ini digunakan untuk data' }
+          data: { content: 'Sistem ini digunakan untuk data' },
         },
         {
           kind: 'decision',
           scope: { project: 'test' },
-          data: { content: 'This is an English decision' }
-        }
+          data: { content: 'This is an English decision' },
+        },
       ];
 
       const enhancedItems = languageService.enhanceItemsWithLanguage(items);
@@ -155,13 +158,13 @@ describe('Language Field Enhancement', () => {
         {
           kind: 'observation',
           scope: { project: 'test' },
-          data: { content: 'Sistem ini digunakan untuk data' }
+          data: { content: 'Sistem ini digunakan untuk data' },
         },
         {
           kind: 'decision',
           scope: { project: 'test' },
-          data: { content: 'This is an English decision' }
-        }
+          data: { content: 'This is an English decision' },
+        },
       ];
 
       const enhancedItems = languageService.enhanceItemsWithLanguage(items);
@@ -188,20 +191,20 @@ describe('Language Field Enhancement', () => {
         {
           kind: 'observation',
           scope: { project: 'test' },
-          data: { content: 'Sistem yang sangat jelas menggunakan bahasa Indonesia yang murni' }
+          data: { content: 'Sistem yang sangat jelas menggunakan bahasa Indonesia yang murni' },
         },
         {
           kind: 'decision',
           scope: { project: 'test' },
-          data: { content: 'mixed system data' }
-        }
+          data: { content: 'mixed system data' },
+        },
       ];
 
       const enhancedItems = languageService.enhanceItemsWithLanguage(items);
       const highConfidenceItems = languageService.getHighConfidenceItems(enhancedItems, 0.7);
 
       expect(highConfidenceItems.length).toBeGreaterThanOrEqual(1);
-      highConfidenceItems.forEach(item => {
+      highConfidenceItems.forEach((item) => {
         expect(item.data.lang_confidence).toBeGreaterThanOrEqual(0.7);
       });
     });
@@ -212,13 +215,13 @@ describe('Language Field Enhancement', () => {
       const itemWithBodyText: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { body_text: 'Ini adalah konten dalam bahasa Indonesia' }
+        data: { body_text: 'Ini adalah konten dalam bahasa Indonesia' },
       };
 
       const itemWithDescription: KnowledgeItem = {
         kind: 'entity',
         scope: { project: 'test' },
-        data: { description: 'This is an English description' }
+        data: { description: 'This is an English description' },
       };
 
       const enhanced1 = languageService.enhanceItemWithLanguage(itemWithBodyText);
@@ -232,14 +235,14 @@ describe('Language Field Enhancement', () => {
       const baseItem: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { content: 'Original content' }
+        data: { content: 'Original content' },
       };
 
       const languageResult = {
         detected_lang: 'en' as const,
         lang_confidence: 0.95,
         lang_indonesian_ratio: 0.05,
-        lang_english_ratio: 0.95
+        lang_english_ratio: 0.95,
       };
 
       const updatedItem = languageService.updateLanguageFields(baseItem, languageResult);

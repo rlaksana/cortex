@@ -15,7 +15,7 @@ import {
   DEVELOPMENT_LIFECYCLE_TYPES,
   EIGHT_LOG_SYSTEM_TYPES,
   IMMUTABLE_TYPES,
-  type KnowledgeCategory,
+  KnowledgeCategory,
 } from '../src/constants/supported-kinds';
 
 console.log('=== Cortex Memory SUPPORTED_KINDS Module Demo ===\n');
@@ -42,10 +42,10 @@ const categories: KnowledgeCategory[] = [
   'core-graph-extension',
   'core-document-types',
   'development-lifecycle',
-  'eight-log-system'
+  'eight-log-system',
 ];
 
-categories.forEach(category => {
+categories.forEach((category) => {
   const types = getKnowledgeTypesByCategory(category);
   console.log(`- ${category}: ${types.join(', ')}`);
 });
@@ -86,16 +86,18 @@ console.log();
 // 8. Use cases example
 console.log('8. Use Cases for Runbook Type:');
 const runbookMetadata = getKnowledgeTypeMetadata('runbook');
-console.log(runbookMetadata.useCases.map(useCase => `  - ${useCase}`).join('\n'));
+console.log(runbookMetadata.useCases.map((useCase) => `  - ${useCase}`).join('\n'));
 console.log();
 
 // 9. Business rules example
 console.log('9. Business Rules for Decision Type:');
 const decisionMetadata = getKnowledgeTypeMetadata('decision');
 console.log('Rules:');
-decisionMetadata.businessRules.rules.forEach(rule => console.log(`  - ${rule}`));
+decisionMetadata.businessRules.rules.forEach((rule) => console.log(`  - ${rule}`));
 console.log('Constraints:');
-decisionMetadata.businessRules.constraints.forEach(constraint => console.log(`  - ${constraint}`));
+decisionMetadata.businessRules.constraints.forEach((constraint) =>
+  console.log(`  - ${constraint}`)
+);
 console.log();
 
 console.log('=== Demo Complete ===');

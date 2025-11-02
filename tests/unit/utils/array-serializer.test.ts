@@ -19,7 +19,7 @@ import {
 
 // Setup global performance mock
 (global as any).performance = {
-  now: () => Date.now()
+  now: () => Date.now(),
 };
 
 describe('Array Serialization Utilities', () => {
@@ -51,10 +51,10 @@ describe('Array Serialization Utilities', () => {
     });
 
     it('should escape single quotes', () => {
-      const input = ["item'with'quotes", "normal"];
+      const input = ["item'with'quotes", 'normal'];
       const result = serializeArray(input);
 
-      expect(result).toEqual(["item''with''quotes", "normal"]);
+      expect(result).toEqual(["item''with''quotes", 'normal']);
     });
 
     it('should escape backslashes', () => {
@@ -137,10 +137,10 @@ describe('Array Serialization Utilities', () => {
     });
 
     it('should unescape single quotes', () => {
-      const input = ["item''with''quotes", "normal"];
+      const input = ["item''with''quotes", 'normal'];
       const result = deserializeArray(input);
 
-      expect(result).toEqual(["item'with'quotes", "normal"]);
+      expect(result).toEqual(["item'with'quotes", 'normal']);
     });
 
     it('should unescape backslashes', () => {
@@ -179,10 +179,16 @@ describe('Array Serialization Utilities', () => {
     });
 
     it('should handle complex escape sequences', () => {
-      const input = ["item''''with'''''multiple''quotes", "item\\\\\\\\with\\\\\\\\multiple\\\\\\\\backslashes"];
+      const input = [
+        "item''''with'''''multiple''quotes",
+        'item\\\\\\\\with\\\\\\\\multiple\\\\\\\\backslashes',
+      ];
       const result = deserializeArray(input);
 
-      expect(result).toEqual(["item''with'''multiple'quotes", "item\\\\with\\\\multiple\\\\backslashes"]);
+      expect(result).toEqual([
+        "item''with'''multiple'quotes",
+        'item\\\\with\\\\multiple\\\\backslashes',
+      ]);
     });
   });
 
@@ -236,17 +242,9 @@ describe('Array Serialization Utilities', () => {
 
   describe('serializeForDatabase', () => {
     it('should pass through non-array values unchanged', () => {
-      const nonArrayValues = [
-        'string',
-        123,
-        true,
-        false,
-        null,
-        undefined,
-        { key: 'value' },
-      ];
+      const nonArrayValues = ['string', 123, true, false, null, undefined, { key: 'value' }];
 
-      nonArrayValues.forEach(value => {
+      nonArrayValues.forEach((value) => {
         const result = serializeForDatabase(value);
         // For primitives, use toBe; for objects, use toEqual
         if (value && typeof value === 'object') {
@@ -357,17 +355,9 @@ describe('Array Serialization Utilities', () => {
     });
 
     it('should return non-array values unchanged', () => {
-      const nonArrayValues = [
-        'string',
-        123,
-        true,
-        false,
-        null,
-        undefined,
-        { key: 'value' },
-      ];
+      const nonArrayValues = ['string', 123, true, false, null, undefined, { key: 'value' }];
 
-      nonArrayValues.forEach(value => {
+      nonArrayValues.forEach((value) => {
         const result = deserializeFromDatabase(value);
         expect(result).toBe(value); // Should be the same reference
       });
@@ -379,7 +369,15 @@ describe('Array Serialization Utilities', () => {
       const input = ['string', 123, true, null, undefined, { key: 'value' }, ['nested', 'array']];
       const result = serializeArray(input as any);
 
-      expect(result).toEqual(['string', '123', 'true', 'null', 'undefined', '[object Object]', 'nested,array']);
+      expect(result).toEqual([
+        'string',
+        '123',
+        'true',
+        'null',
+        'undefined',
+        '[object Object]',
+        'nested,array',
+      ]);
     });
 
     it('should handle arrays with very large number of items', () => {
@@ -445,10 +443,14 @@ describe('Array Serialization Utilities', () => {
     });
 
     it('should handle many small arrays efficiently', () => {
-      const arrays = Array.from({ length: 10000 }, (_, i) => [`item${i}-1`, `item${i}-2`, `item${i}-3`]);
+      const arrays = Array.from({ length: 10000 }, (_, i) => [
+        `item${i}-1`,
+        `item${i}-2`,
+        `item${i}-3`,
+      ]);
 
       const startTime = performance.now();
-      const results = arrays.map(array => serializeArray(array));
+      const results = arrays.map((array) => serializeArray(array));
       const endTime = performance.now();
 
       expect(results).toHaveLength(10000);
@@ -502,7 +504,7 @@ describe('Array Serialization Utilities', () => {
       const config = [
         'localhost:5432',
         'user="admin"',
-        'password=\'secret\'',
+        "password='secret'",
         'database="my_app"',
         'sslmode=require',
         'timeout=30',

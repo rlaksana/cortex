@@ -63,7 +63,10 @@ export class ChunkingService {
         });
         logger.info('Semantic analyzer initialized successfully');
       } catch (error) {
-        logger.warn({ error }, 'Failed to initialize semantic analyzer, using traditional chunking only');
+        logger.warn(
+          { error },
+          'Failed to initialize semantic analyzer, using traditional chunking only'
+        );
         // Continue without semantic analyzer - service still works perfectly
       }
     } else {
@@ -103,10 +106,13 @@ export class ChunkingService {
 
     if (this.circuitBreaker.failures >= this.circuitBreaker.threshold) {
       this.circuitBreaker.state = 'OPEN';
-      logger.warn({
-        failures: this.circuitBreaker.failures,
-        error: error.message,
-      }, 'Circuit breaker opened due to repeated semantic analysis failures');
+      logger.warn(
+        {
+          failures: this.circuitBreaker.failures,
+          error: error.message,
+        },
+        'Circuit breaker opened due to repeated semantic analysis failures'
+      );
     }
   }
 
@@ -137,11 +143,16 @@ export class ChunkingService {
       this.recordSemanticAnalysisSuccess();
       return result;
     } catch (error) {
-      this.recordSemanticAnalysisFailure(error instanceof Error ? error : new Error('Unknown error'));
-      logger.warn({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        circuitState: this.circuitBreaker.state,
-      }, 'Semantic analysis failed, falling back to traditional chunking');
+      this.recordSemanticAnalysisFailure(
+        error instanceof Error ? error : new Error('Unknown error')
+      );
+      logger.warn(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          circuitState: this.circuitBreaker.state,
+        },
+        'Semantic analysis failed, falling back to traditional chunking'
+      );
       return null;
     }
   }
@@ -193,7 +204,7 @@ export class ChunkingService {
   /**
    * Split content into chunks with overlap (enhanced with semantic analysis)
    */
-  async chunkContent(content: string): Promise<{ chunks: string[], fallback_used: boolean }> {
+  async chunkContent(content: string): Promise<{ chunks: string[]; fallback_used: boolean }> {
     if (!this.shouldChunk(content)) {
       return { chunks: [content], fallback_used: false };
     }
@@ -201,7 +212,11 @@ export class ChunkingService {
     let fallback_used = false;
 
     // Use semantic chunking if available and content is long enough
-    if (this.shouldUseSemanticAnalysis(content) && this.semanticAnalyzer && this.isSemanticAnalysisAvailable()) {
+    if (
+      this.shouldUseSemanticAnalysis(content) &&
+      this.semanticAnalyzer &&
+      this.isSemanticAnalysisAvailable()
+    ) {
       try {
         const chunks = await this.chunkContentSemantically(content);
 
@@ -249,8 +264,7 @@ export class ChunkingService {
     }
 
     return (
-      this.semanticAnalyzer !== undefined &&
-      content.length >= this.SEMANTIC_ANALYSIS_THRESHOLD
+      this.semanticAnalyzer !== undefined && content.length >= this.SEMANTIC_ANALYSIS_THRESHOLD
     );
   }
 
@@ -508,7 +522,9 @@ export class ChunkingService {
           semantic_analysis_enabled: semanticAnalysisEnabled,
           chunk_fallback_used: fallback_used,
           title_carried: extractedTitle !== '',
-          average_chunk_size: Math.round(chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length),
+          average_chunk_size: Math.round(
+            chunks.reduce((sum, chunk) => sum + chunk.length, 0) / chunks.length
+          ),
         },
       },
     };
@@ -673,7 +689,12 @@ export class ChunkingService {
   /**
    * Add context to chunk (title carry and position info)
    */
-  private addContextToChunk(chunk: string, title: string, index: number, totalChunks: number): string {
+  private addContextToChunk(
+    chunk: string,
+    title: string,
+    index: number,
+    totalChunks: number
+  ): string {
     let contextualizedChunk = chunk;
 
     // Add title prefix if available
@@ -718,19 +739,24 @@ export class ChunkingService {
     const normalizedOriginal = originalContent.replace(/\s+/g, ' ').trim();
 
     // Allow for some differences due to preprocessing, but content should be substantially similar
-    const similarityRatio = Math.min(combinedContent.length, normalizedOriginal.length) /
-                           Math.max(combinedContent.length, normalizedOriginal.length);
+    const similarityRatio =
+      Math.min(combinedContent.length, normalizedOriginal.length) /
+      Math.max(combinedContent.length, normalizedOriginal.length);
 
     if (similarityRatio < 0.8) {
       logger.warn(
-        { similarityRatio, originalLength: normalizedOriginal.length, combinedLength: combinedContent.length },
+        {
+          similarityRatio,
+          originalLength: normalizedOriginal.length,
+          combinedLength: combinedContent.length,
+        },
         'Chunk validation failed: Content integrity compromised'
       );
       return false;
     }
 
     // Check chunk size distribution
-    const chunkSizes = chunks.map(chunk => chunk.length);
+    const chunkSizes = chunks.map((chunk) => chunk.length);
     const avgChunkSize = chunkSizes.reduce((sum, size) => sum + size, 0) / chunkSizes.length;
 
     // Average chunk size should be reasonable
@@ -743,8 +769,8 @@ export class ChunkingService {
     }
 
     // Check for extremely small or large chunks
-    const extremelySmallChunks = chunkSizes.filter(size => size < 50).length;
-    const extremelyLargeChunks = chunkSizes.filter(size => size > this.CHUNK_SIZE * 2.5).length;
+    const extremelySmallChunks = chunkSizes.filter((size) => size < 50).length;
+    const extremelyLargeChunks = chunkSizes.filter((size) => size > this.CHUNK_SIZE * 2.5).length;
 
     if (extremelySmallChunks > chunks.length * 0.2) {
       logger.warn(

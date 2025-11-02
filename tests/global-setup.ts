@@ -29,13 +29,13 @@ const fileHandleMonitor: FileHandleMonitor = {
   warningThreshold: 100, // Warning at 100 handles
   criticalThreshold: 200, // Critical at 200 handles
   gcInterval: null,
-  monitoringInterval: null
+  monitoringInterval: null,
 };
 
 const windowsEMFILEPrevention: WindowsEMFILEPrevention = {
   maxListenersExceededHandler: null,
   originalMaxListeners: 0,
-  cleanupScheduled: false
+  cleanupScheduled: false,
 };
 
 /**
@@ -64,14 +64,19 @@ class WindowsEMFILEPreventionUtil {
     fileHandleMonitor.handleCount = handleCount;
 
     if (handleCount > fileHandleMonitor.criticalThreshold) {
-      console.error(`🚨 CRITICAL: File handle count (${handleCount}) exceeds critical threshold (${fileHandleMonitor.criticalThreshold})`);
+      console.error(
+        `🚨 CRITICAL: File handle count (${handleCount}) exceeds critical threshold (${fileHandleMonitor.criticalThreshold})`
+      );
       this.forceCleanup();
     } else if (handleCount > fileHandleMonitor.warningThreshold) {
-      console.warn(`⚠️  WARNING: File handle count (${handleCount}) exceeds warning threshold (${fileHandleMonitor.warningThreshold})`);
+      console.warn(
+        `⚠️  WARNING: File handle count (${handleCount}) exceeds warning threshold (${fileHandleMonitor.warningThreshold})`
+      );
     }
 
     // Log handle count periodically for debugging
-    if (Date.now() - fileHandleMonitor.lastCleanup > 30000) { // Every 30 seconds
+    if (Date.now() - fileHandleMonitor.lastCleanup > 30000) {
+      // Every 30 seconds
       console.log(`📊 Current file handles: ${handleCount}`);
       fileHandleMonitor.lastCleanup = Date.now();
     }
@@ -99,10 +104,13 @@ class WindowsEMFILEPreventionUtil {
         activeHandles.forEach((handle: any, index: number) => {
           try {
             // Attempt to close certain types of handles safely
-            if (handle && typeof handle.close === 'function' &&
-                !handle.destroyed &&
-                handle.fd !== undefined &&
-                handle.fd > 0) {
+            if (
+              handle &&
+              typeof handle.close === 'function' &&
+              !handle.destroyed &&
+              handle.fd !== undefined &&
+              handle.fd > 0
+            ) {
               handle.close();
               closedHandles++;
             }
@@ -119,7 +127,6 @@ class WindowsEMFILEPreventionUtil {
       if (global.gc) {
         setTimeout(() => global.gc(), 100);
       }
-
     } catch (error) {
       console.error('❌ Error during forced cleanup:', error);
     }
@@ -135,7 +142,10 @@ class WindowsEMFILEPreventionUtil {
         this.forceCleanup();
       };
 
-      process.on('maxListenersExceededWarning', windowsEMFILEPrevention.maxListenersExceededHandler);
+      process.on(
+        'maxListenersExceededWarning',
+        windowsEMFILEPrevention.maxListenersExceededHandler
+      );
     }
   }
 
@@ -144,7 +154,10 @@ class WindowsEMFILEPreventionUtil {
    */
   static removeMaxListenersHandler(): void {
     if (windowsEMFILEPrevention.maxListenersExceededHandler) {
-      process.removeListener('maxListenersExceededWarning', windowsEMFILEPrevention.maxListenersExceededHandler);
+      process.removeListener(
+        'maxListenersExceededWarning',
+        windowsEMFILEPrevention.maxListenersExceededHandler
+      );
       windowsEMFILEPrevention.maxListenersExceededHandler = null;
     }
   }
@@ -241,7 +254,9 @@ export async function setup() {
     // Store original max listeners and increase limits
     windowsEMFILEPrevention.originalMaxListeners = EventEmitter.defaultMaxListeners;
     EventEmitter.defaultMaxListeners = 50; // Increase from default 10 to 50
-    console.log(`✅ Increased EventEmitter max listeners to 50 (was ${windowsEMFILEPrevention.originalMaxListeners})`);
+    console.log(
+      `✅ Increased EventEmitter max listeners to 50 (was ${windowsEMFILEPrevention.originalMaxListeners})`
+    );
 
     // Initial file handle count
     const initialHandles = WindowsEMFILEPreventionUtil.getFileHandleCount();
@@ -272,8 +287,8 @@ export async function setup() {
     ...console,
     log: console.log, // Keep logs for debugging
     debug: () => {}, // Suppress debug logs
-    info: () => {},   // Suppress info logs
-    warn: () => {},   // Suppress warn logs
+    info: () => {}, // Suppress info logs
+    warn: () => {}, // Suppress warn logs
     error: console.error, // Keep error logs
   };
 
@@ -300,7 +315,9 @@ export async function teardown() {
       // Restore original EventEmitter max listeners
       if (windowsEMFILEPrevention.originalMaxListeners > 0) {
         EventEmitter.defaultMaxListeners = windowsEMFILEPrevention.originalMaxListeners;
-        console.log(`✅ Restored EventEmitter max listeners to ${windowsEMFILEPrevention.originalMaxListeners}`);
+        console.log(
+          `✅ Restored EventEmitter max listeners to ${windowsEMFILEPrevention.originalMaxListeners}`
+        );
       }
 
       // Cleanup Windows EMFILE prevention utilities
@@ -349,7 +366,7 @@ export async function teardown() {
     }
 
     // Wait for all cleanup operations to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     console.log('✅ Global test teardown completed');
   } catch (error) {

@@ -19,7 +19,17 @@
  * @since 2025
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi, type MockedFunction, type MockedObject } from 'vitest';
+import {
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type MockedFunction,
+  type MockedObject,
+} from 'vitest';
+import { AbortController } from 'node:abort_controller';
 
 // Import API types for validation
 import type {
@@ -117,7 +127,7 @@ import type {
   ApiResponseBody,
   ExtractEndpoints,
   EndpointMethod,
-  EndpointPath
+  EndpointPath,
 } from '../../../src/types/api-types.js';
 
 // Mock logger to avoid console output during tests
@@ -126,8 +136,8 @@ vi.mock('../../../src/utils/logger.js', () => ({
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 describe('API Type Validation', () => {
@@ -148,26 +158,26 @@ describe('API Type Validation', () => {
       const contract: RestApiContract = {
         endpoint: '/api/v1/users',
         method: 'POST',
-        pathParams: { id: 'string' },
+        pathParams: { id: 'String' },
         queryParams: { page: 'number', limit: 'number' },
-        requestBody: { name: 'string', email: 'string' },
-        responseType: { id: 'string', name: 'string', email: 'string', createdAt: 'string' },
+        requestBody: { name: 'String', email: 'String' },
+        responseType: { id: 'String', name: 'String', email: 'String', createdAt: 'String' },
         headers: { 'Content-Type': 'application/json' },
         auth: {
           required: true,
           scopes: ['users:write'],
-          apiKey: true
+          apiKey: true,
         },
         rateLimit: {
           requests: 100,
           windowMs: 60000,
-          skipSuccessfulRequests: false
+          skipSuccessfulRequests: false,
         },
         validation: {
-          body: { name: 'string', email: 'string' },
-          params: { id: 'string' },
-          query: { page: 'number', limit: 'number' }
-        }
+          body: { name: 'String', email: 'String' },
+          params: { id: 'String' },
+          query: { page: 'number', limit: 'number' },
+        },
       };
 
       expect(contract.endpoint).toBe('/api/v1/users');
@@ -182,7 +192,7 @@ describe('API Type Validation', () => {
       const contract: RestApiContract = {
         endpoint: '/api/v1/status',
         method: 'GET',
-        responseType: { status: 'string', timestamp: 'string' }
+        responseType: { status: 'String', timestamp: 'String' },
       };
 
       expect(contract.endpoint).toBe('/api/v1/status');
@@ -192,13 +202,21 @@ describe('API Type Validation', () => {
     });
 
     test('should validate HTTP method types', () => {
-      const validMethods: HttpMethod[] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+      const validMethods: HttpMethod[] = [
+        'GET',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'HEAD',
+        'OPTIONS',
+      ];
 
-      validMethods.forEach(method => {
+      validMethods.forEach((method) => {
         const contract: RestApiContract = {
           endpoint: '/api/v1/test',
           method,
-          responseType: {}
+          responseType: {},
         };
         expect(contract.method).toBe(method);
       });
@@ -211,17 +229,17 @@ describe('API Type Validation', () => {
         oauth: {
           provider: 'google',
           scopes: ['profile', 'email'],
-          flow: 'authorization_code'
-        }
+          flow: 'authorization_code',
+        },
       };
 
       const authWithApiKey: AuthRequirement = {
         required: true,
-        apiKey: true
+        apiKey: true,
       };
 
       const noAuth: AuthRequirement = {
-        required: false
+        required: false,
       };
 
       expect(authWithOAuth.oauth?.provider).toBe('google');
@@ -235,7 +253,7 @@ describe('API Type Validation', () => {
         requests: 1000,
         windowMs: 900000,
         skipSuccessfulRequests: true,
-        skipFailedRequests: false
+        skipFailedRequests: false,
       };
 
       expect(rateLimit.requests).toBe(1000);
@@ -251,12 +269,12 @@ describe('API Type Validation', () => {
 
   describe('HTTP Request/Response Type Safety', () => {
     test('should validate complete HTTP request structure', () => {
-      const request: HttpRequest<{ name: string }> = {
+      const request: HttpRequest<{ name: String }> = {
         method: 'POST',
         url: 'https://api.example.com/users',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token123'
+          Authorization: 'Bearer token123',
         },
         params: { id: '123' },
         query: { verbose: 'true' },
@@ -264,7 +282,7 @@ describe('API Type Validation', () => {
         timestamp: Date.now(),
         id: 'req-123',
         userAgent: 'Mozilla/5.0...',
-        ip: '192.168.1.1'
+        ip: '192.168.1.1',
       };
 
       expect(request.method).toBe('POST');
@@ -276,17 +294,17 @@ describe('API Type Validation', () => {
     });
 
     test('should validate HTTP response structure', () => {
-      const response: HttpResponse<{ id: string; name: string }> = {
+      const response: HttpResponse<{ id: String; name: String }> = {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'X-Request-ID': 'req-123'
+          'X-Request-ID': 'req-123',
         },
         body: { id: '123', name: 'John Doe' },
         timestamp: Date.now(),
         requestId: 'req-123',
         duration: 150,
-        size: 1024
+        size: 1024,
       };
 
       expect(response.status).toBe(200);
@@ -298,19 +316,17 @@ describe('API Type Validation', () => {
 
     test('should validate HTTP status codes', () => {
       const validStatuses: HttpStatus[] = [
-        200, 201, 202, 204, 301, 302, 304,
-        400, 401, 403, 404, 409, 422, 429,
-        500, 502, 503, 504
+        200, 201, 202, 204, 301, 302, 304, 400, 401, 403, 404, 409, 422, 429, 500, 502, 503, 504,
       ];
 
-      validStatuses.forEach(status => {
+      validStatuses.forEach((status) => {
         const response: HttpResponse = {
           status,
           headers: {},
           timestamp: Date.now(),
           requestId: 'test',
           duration: 100,
-          size: 0
+          size: 0,
         };
         expect(response.status).toBe(status);
       });
@@ -323,7 +339,7 @@ describe('API Type Validation', () => {
         details: {
           field: 'email',
           value: 'invalid-email',
-          constraint: 'must be a valid email'
+          constraint: 'must be a valid email',
         },
         timestamp: new Date().toISOString(),
         requestId: 'req-123',
@@ -333,9 +349,9 @@ describe('API Type Validation', () => {
             field: 'email',
             message: 'Invalid email format',
             value: 'invalid-email',
-            constraint: 'email'
-          }
-        ]
+            constraint: 'email',
+          },
+        ],
       };
 
       expect(apiError.code).toBe('VALIDATION_ERROR');
@@ -350,7 +366,7 @@ describe('API Type Validation', () => {
         field: 'username',
         message: 'Username must be at least 3 characters',
         value: 'ab',
-        constraint: 'minLength'
+        constraint: 'minLength',
       };
 
       expect(validationError.field).toBe('username');
@@ -377,15 +393,15 @@ describe('API Type Validation', () => {
               {
                 name: 'id',
                 type: 'ID!',
-                description: 'User unique identifier'
+                description: 'User unique identifier',
               },
               {
                 name: 'name',
                 type: 'String!',
-                description: 'User full name'
-              }
-            ]
-          }
+                description: 'User full name',
+              },
+            ],
+          },
         ],
         directives: [
           {
@@ -395,11 +411,11 @@ describe('API Type Validation', () => {
               {
                 name: 'reason',
                 type: 'String',
-                description: 'Reason for deprecation'
-              }
-            ]
-          }
-        ]
+                description: 'Reason for deprecation',
+              },
+            ],
+          },
+        ],
       };
 
       expect(schema.query).toBeDefined();
@@ -426,9 +442,9 @@ describe('API Type Validation', () => {
         extensions: {
           persistedQuery: {
             version: 1,
-            sha256Hash: 'abc123'
-          }
-        }
+            sha256Hash: 'abc123',
+          },
+        },
       };
 
       expect(request.query).toContain('query GetUser');
@@ -438,25 +454,25 @@ describe('API Type Validation', () => {
     });
 
     test('should validate GraphQL response structure', () => {
-      const response: GraphQLResponse<{ user: { id: string; name: string } }> = {
+      const response: GraphQLResponse<{ user: { id: String; name: String } }> = {
         data: {
           user: {
             id: '123',
-            name: 'John Doe'
-          }
+            name: 'John Doe',
+          },
         },
         errors: [
           {
             message: 'Field not found',
             locations: [{ line: 2, column: 3 }],
             path: ['user', 'email'],
-            extensions: { code: 'FIELD_NOT_FOUND' }
-          }
+            extensions: { code: 'FIELD_NOT_FOUND' },
+          },
         ],
         extensions: {
           cost: 1,
-          complexity: 10
-        }
+          complexity: 10,
+        },
       };
 
       expect(response.data?.user.id).toBe('123');
@@ -471,13 +487,13 @@ describe('API Type Validation', () => {
         message: 'Cannot query field "nonexistent" on type "User"',
         locations: [
           { line: 3, column: 5 },
-          { line: 7, column: 10 }
+          { line: 7, column: 10 },
         ],
         path: ['user', 'nonexistent'],
         extensions: {
           code: 'GRAPHQL_VALIDATION_FAILED',
-          exception: { stacktrace: ['Error: ...'] }
-        }
+          exception: { stacktrace: ['Error: ...'] },
+        },
       };
 
       expect(graphQLError.message).toContain('Cannot query field');
@@ -503,12 +519,12 @@ describe('API Type Validation', () => {
           contact: {
             name: 'API Support',
             url: 'https://example.com/support',
-            email: 'support@example.com'
+            email: 'support@example.com',
           },
           license: {
             name: 'MIT',
-            url: 'https://opensource.org/licenses/MIT'
-          }
+            url: 'https://opensource.org/licenses/MIT',
+          },
         },
         servers: [
           {
@@ -518,10 +534,10 @@ describe('API Type Validation', () => {
               version: {
                 enum: ['v1', 'v2'],
                 default: 'v1',
-                description: 'API version'
-              }
-            }
-          }
+                description: 'API version',
+              },
+            },
+          },
         ],
         paths: {
           '/users': {
@@ -534,8 +550,8 @@ describe('API Type Validation', () => {
                   name: 'page',
                   in: 'query',
                   description: 'Page number',
-                  schema: { type: 'integer', default: 1 }
-                }
+                  schema: { type: 'integer', default: 1 },
+                },
               ],
               responses: {
                 '200': {
@@ -545,15 +561,15 @@ describe('API Type Validation', () => {
                       schema: {
                         type: 'object',
                         properties: {
-                          users: { type: 'array', items: { $ref: '#/components/schemas/User' } }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                          users: { type: 'array', items: { $ref: '#/components/schemas/User' } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         components: {
           schemas: {
@@ -561,31 +577,31 @@ describe('API Type Validation', () => {
               type: 'object',
               required: ['id', 'name'],
               properties: {
-                id: { type: 'string', format: 'uuid' },
-                name: { type: 'string', minLength: 1 },
-                email: { type: 'string', format: 'email' }
-              }
-            }
+                id: { type: 'String', format: 'uuid' },
+                name: { type: 'String', minLength: 1 },
+                email: { type: 'String', format: 'email' },
+              },
+            },
           },
           securitySchemes: {
             bearerAuth: {
               type: 'http',
               scheme: 'bearer',
-              bearerFormat: 'JWT'
-            }
-          }
+              bearerFormat: 'JWT',
+            },
+          },
         },
         security: [
           {
-            bearerAuth: []
-          }
+            bearerAuth: [],
+          },
         ],
         tags: [
           {
             name: 'users',
-            description: 'User management operations'
-          }
-        ]
+            description: 'User management operations',
+          },
+        ],
       };
 
       expect(openApiDoc.openapi).toBe('3.0.3');
@@ -608,26 +624,26 @@ describe('API Type Validation', () => {
               schema: { $ref: '#/components/schemas/CreateUserRequest' },
               example: {
                 name: 'John Doe',
-                email: 'john@example.com'
-              }
-            }
+                email: 'john@example.com',
+              },
+            },
           },
-          required: true
+          required: true,
         },
         responses: {
           '201': {
             description: 'User created successfully',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/User' }
-              }
-            }
+                schema: { $ref: '#/components/schemas/User' },
+              },
+            },
           },
           '400': {
-            description: 'Invalid request'
-          }
+            description: 'Invalid request',
+          },
         },
-        deprecated: false
+        deprecated: false,
       };
 
       expect(operation.requestBody?.required).toBe(true);
@@ -644,31 +660,31 @@ describe('API Type Validation', () => {
         required: ['username', 'email', 'password'],
         properties: {
           username: {
-            type: 'string',
+            type: 'String',
             minLength: 3,
             maxLength: 20,
             pattern: '^[a-zA-Z0-9_]+$',
-            description: 'Unique username'
+            description: 'Unique username',
           },
           email: {
-            type: 'string',
+            type: 'String',
             format: 'email',
-            description: 'Valid email address'
+            description: 'Valid email address',
           },
           password: {
-            type: 'string',
+            type: 'String',
             minLength: 8,
             pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d@$!%*?&]{8,}$',
-            description: 'Strong password'
+            description: 'Strong password',
           },
           age: {
             type: 'integer',
             minimum: 18,
             maximum: 120,
-            description: 'User age'
-          }
+            description: 'User age',
+          },
         },
-        additionalProperties: false
+        additionalProperties: false,
       };
 
       expect(schema.required).toContain('username');
@@ -688,15 +704,17 @@ describe('API Type Validation', () => {
             refreshUrl: 'https://example.com/oauth/refresh',
             scopes: {
               'read:users': 'Read user information',
-              'write:users': 'Create and update users'
-            }
-          }
-        }
+              'write:users': 'Create and update users',
+            },
+          },
+        },
       };
 
       expect(oauthScheme.type).toBe('oauth2');
       expect(oauthScheme.flows?.authorizationCode).toBeDefined();
-      expect(oauthScheme.flows?.authorizationCode?.scopes['read:users']).toBe('Read user information');
+      expect(oauthScheme.flows?.authorizationCode?.scopes['read:users']).toBe(
+        'Read user information'
+      );
     });
   });
 
@@ -714,26 +732,26 @@ describe('API Type Validation', () => {
         retryDelay: 1000,
         headers: {
           'User-Agent': 'MyApp/1.0.0',
-          'Accept': 'application/json'
+          Accept: 'application/json',
         },
         auth: {
           type: 'bearer',
           credentials: {
-            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
-          }
+            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          },
         },
         interceptors: [
           {
             type: 'request',
             handler: 'authInterceptor',
-            options: { addTimestamp: true }
+            options: { addTimestamp: true },
           },
           {
             type: 'response',
             handler: 'errorInterceptor',
-            options: { logErrors: true }
-          }
-        ]
+            options: { logErrors: true },
+          },
+        ],
       };
 
       expect(config.baseUrl).toBe('https://api.example.com/v1');
@@ -747,16 +765,16 @@ describe('API Type Validation', () => {
       const apiKeyCreds: ApiKeyCredentials = {
         key: 'api-key-123',
         headerName: 'X-API-Key',
-        queryParam: 'api_key'
+        queryParam: 'api_key',
       };
 
       const bearerCreds: BearerCredentials = {
-        token: 'jwt-token-123'
+        token: 'jwt-token-123',
       };
 
       const basicCreds: BasicCredentials = {
         username: 'user123',
-        password: 'pass123'
+        password: 'pass123',
       };
 
       const oauthCreds: OAuthCredentials = {
@@ -764,7 +782,7 @@ describe('API Type Validation', () => {
         clientSecret: 'secret123',
         accessToken: 'access123',
         refreshToken: 'refresh123',
-        expiresAt: Date.now() + 3600000
+        expiresAt: Date.now() + 3600000,
       };
 
       expect(apiKeyCreds.headerName).toBe('X-API-Key');
@@ -777,13 +795,13 @@ describe('API Type Validation', () => {
       const options: RequestOptions = {
         headers: {
           'Content-Type': 'application/json',
-          'X-Request-ID': 'req-123'
+          'X-Request-ID': 'req-123',
         },
         params: { userId: '123' },
         query: { verbose: 'true', page: '1' },
         timeout: 15000,
         retries: 2,
-        signal: new AbortController().signal
+        signal: new AbortController().signal,
       };
 
       expect(options.headers?.['X-Request-ID']).toBe('req-123');
@@ -794,22 +812,22 @@ describe('API Type Validation', () => {
     });
 
     test('should validate API response structure', () => {
-      const response: ApiResponse<{ id: string; name: string }> = {
+      const response: ApiResponse<{ id: String; name: String }> = {
         data: { id: '123', name: 'John Doe' },
         status: 200,
         statusText: 'OK',
         headers: {
           'content-type': 'application/json',
-          'x-request-id': 'req-123'
+          'x-request-id': 'req-123',
         },
         config: {
-          headers: { 'Accept': 'application/json' },
-          timeout: 30000
+          headers: { Accept: 'application/json' },
+          timeout: 30000,
         },
         request: {
           url: 'https://api.example.com/users/123',
-          method: 'GET'
-        }
+          method: 'GET',
+        },
       };
 
       expect(response.data.id).toBe('123');
@@ -820,7 +838,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate SDK method definition', () => {
-      const method: SdkMethod<{ name: string }, { id: string; name: string }> = {
+      const method: SdkMethod<{ name: String }, { id: String; name: String }> = {
         name: 'createUser',
         description: 'Creates a new user',
         parameters: [
@@ -831,14 +849,14 @@ describe('API Type Validation', () => {
             description: 'User data to create',
             validation: [
               { type: 'required', constraint: true, message: 'User data is required' },
-              { type: 'min', constraint: 1, message: 'At least one field is required' }
-            ]
-          }
+              { type: 'min', constraint: 1, message: 'At least one field is required' },
+            ],
+          },
         ],
-        returnType: { id: 'string', name: string },
-        requestType: { name: 'string' },
+        returnType: { id: 'String', name: String },
+        requestType: { name: 'String' },
         exampleRequest: { name: 'John Doe' },
-        exampleResponse: { id: '123', name: 'John Doe' }
+        exampleResponse: { id: '123', name: 'John Doe' },
       };
 
       expect(method.name).toBe('createUser');
@@ -865,14 +883,14 @@ describe('API Type Validation', () => {
           {
             type: 'field_removed',
             description: 'Removed deprecated "legacyId" field',
-            migrationPath: 'Use "id" field instead'
+            migrationPath: 'Use "id" field instead',
           },
           {
             type: 'response_type_changed',
             description: 'User endpoint now returns paginated results',
-            migrationPath: 'Update client to handle pagination'
-          }
-        ]
+            migrationPath: 'Update client to handle pagination',
+          },
+        ],
       };
 
       expect(version.version).toBe('2.1.0');
@@ -886,35 +904,37 @@ describe('API Type Validation', () => {
         endpoint: '/users',
         defaultVersion: 'v2',
         versions: {
-          'v1': {
+          v1: {
             version: 'v1',
             contract: {
               endpoint: '/users',
               method: 'GET',
-              responseType: { users: 'array' }
+              responseType: { users: 'array' },
             },
             deprecationInfo: {
               deprecatedAt: '2024-01-01T00:00:00Z',
               sunsetAt: '2024-06-01T00:00:00Z',
               reason: 'Replaced by more efficient v2',
               replacementEndpoint: '/v2/users',
-              migrationGuide: 'https://docs.example.com/migration/users-v1-to-v2'
-            }
+              migrationGuide: 'https://docs.example.com/migration/users-v1-to-v2',
+            },
           },
-          'v2': {
+          v2: {
             version: 'v2',
             contract: {
               endpoint: '/users',
               method: 'GET',
-              responseType: { data: 'array', pagination: 'object' }
-            }
-          }
-        }
+              responseType: { data: 'array', pagination: 'object' },
+            },
+          },
+        },
       };
 
       expect(versionedEndpoint.defaultVersion).toBe('v2');
       expect(versionedEndpoint.versions['v1'].deprecationInfo).toBeDefined();
-      expect(versionedEndpoint.versions['v1'].deprecationInfo?.sunsetAt).toBe('2024-06-01T00:00:00Z');
+      expect(versionedEndpoint.versions['v1'].deprecationInfo?.sunsetAt).toBe(
+        '2024-06-01T00:00:00Z'
+      );
     });
 
     test('should validate migration information', () => {
@@ -925,29 +945,29 @@ describe('API Type Validation', () => {
           {
             type: 'add',
             path: 'users.email',
-            newValue: 'string',
-            breaking: false
+            newValue: 'String',
+            breaking: false,
           },
           {
             type: 'remove',
             path: 'users.legacyId',
-            oldValue: 'string',
-            breaking: true
+            oldValue: 'String',
+            breaking: true,
           },
           {
             type: 'modify',
             path: 'users.name',
-            oldValue: 'string',
+            oldValue: 'String',
             newValue: 'object',
-            breaking: true
-          }
+            breaking: true,
+          },
         ],
         automatedMigration: true,
-        migrationScript: 'migrate-users-1-to-2.js'
+        migrationScript: 'migrate-users-1-to-2.js',
       };
 
       expect(migrationInfo.changes).toHaveLength(3);
-      expect(migrationInfo.changes.filter(c => c.breaking)).toHaveLength(2);
+      expect(migrationInfo.changes.filter((c) => c.breaking)).toHaveLength(2);
       expect(migrationInfo.automatedMigration).toBe(true);
       expect(migrationInfo.migrationScript).toBe('migrate-users-1-to-2.js');
     });
@@ -971,25 +991,25 @@ describe('API Type Validation', () => {
             retries: 2,
             circuitBreaker: {
               failureThreshold: 5,
-              recoveryTimeout: 30000
-            }
+              recoveryTimeout: 30000,
+            },
           },
           {
             name: 'getPayment',
             method: 'GET',
             path: '/payments/{id}',
             timeout: 5000,
-            retries: 1
-          }
+            retries: 1,
+          },
         ],
         authentication: {
           required: true,
           scopes: ['payments:write'],
-          apiKey: true
+          apiKey: true,
         },
         rateLimit: {
           requests: 100,
-          windowMs: 60000
+          windowMs: 60000,
         },
         healthCheck: {
           endpoint: '/health',
@@ -997,15 +1017,15 @@ describe('API Type Validation', () => {
           timeout: 5000,
           expectedStatus: 200,
           healthyThreshold: 2,
-          unhealthyThreshold: 3
+          unhealthyThreshold: 3,
         },
         circuitBreaker: {
           enabled: true,
           failureThreshold: 10,
           recoveryTimeout: 60000,
           monitoringPeriod: 120000,
-          expectedRecoveryTime: 30000
-        }
+          expectedRecoveryTime: 30000,
+        },
       };
 
       expect(integration.name).toBe('Payment Service');
@@ -1024,7 +1044,7 @@ describe('API Type Validation', () => {
         p99ResponseTime: 800,
         throughput: 166.67,
         errorRate: 0.005,
-        timestamp: '2024-01-15T10:30:00Z'
+        timestamp: '2024-01-15T10:30:00Z',
       };
 
       expect(metrics.requestCount).toBe(10000);
@@ -1048,8 +1068,8 @@ describe('API Type Validation', () => {
             p99ResponseTime: 900,
             throughput: 50,
             errorRate: 0.01,
-            timestamp: '2024-01-15T10:00:00Z'
-          }
+            timestamp: '2024-01-15T10:00:00Z',
+          },
         ],
         alerts: [
           {
@@ -1062,14 +1082,14 @@ describe('API Type Validation', () => {
               {
                 type: 'slack',
                 destination: '#api-alerts',
-                enabled: true
+                enabled: true,
               },
               {
                 type: 'email',
                 destination: 'alerts@example.com',
-                enabled: true
-              }
-            ]
+                enabled: true,
+              },
+            ],
           },
           {
             name: 'Slow Response Time',
@@ -1081,10 +1101,10 @@ describe('API Type Validation', () => {
               {
                 type: 'webhook',
                 destination: 'https://hooks.example.com/alerts',
-                enabled: false
-              }
-            ]
-          }
+                enabled: false,
+              },
+            ],
+          },
         ],
         dashboards: [
           {
@@ -1096,17 +1116,17 @@ describe('API Type Validation', () => {
                 type: 'metric',
                 title: 'Request Rate',
                 query: 'rate(requests_total[5m])',
-                config: { unit: 'req/s' }
+                config: { unit: 'req/s' },
               },
               {
                 type: 'chart',
                 title: 'Response Time Trend',
                 query: 'avg(response_time)',
-                config: { type: 'line', timespan: '1h' }
-              }
-            ]
-          }
-        ]
+                config: { type: 'line', timespan: '1h' },
+              },
+            ],
+          },
+        ],
       };
 
       expect(monitoring.alerts).toHaveLength(2);
@@ -1121,7 +1141,7 @@ describe('API Type Validation', () => {
         failureThreshold: 5,
         recoveryTimeout: 30000,
         monitoringPeriod: 60000,
-        expectedRecoveryTime: 15000
+        expectedRecoveryTime: 15000,
       };
 
       expect(circuitBreaker.enabled).toBe(true);
@@ -1144,13 +1164,13 @@ describe('API Type Validation', () => {
           headers: { 'Content-Type': 'application/json' },
           body: { name: 'John' },
           timestamp: Date.now(),
-          id: 'req-123'
+          id: 'req-123',
         },
         endpoint: 'createUser',
         userId: 'user-123',
         sessionId: 'session-456',
         correlationId: 'corr-789',
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       expect(context.request.method).toBe('POST');
@@ -1165,15 +1185,15 @@ describe('API Type Validation', () => {
           code: 'VALIDATION_FAILED',
           message: 'Request validation failed',
           timestamp: '2024-01-15T10:30:00Z',
-          requestId: 'req-123'
+          requestId: 'req-123',
         },
         statusCode: 400,
         headers: {
           'Content-Type': 'application/json',
-          'X-Request-ID': 'req-123'
+          'X-Request-ID': 'req-123',
         },
         correlationId: 'corr-789',
-        timestamp: '2024-01-15T10:30:00Z'
+        timestamp: '2024-01-15T10:30:00Z',
       };
 
       expect(errorResponse.error.code).toBe('VALIDATION_FAILED');
@@ -1187,21 +1207,21 @@ describe('API Type Validation', () => {
         type: 'client_error',
         severity: 'medium',
         actionable: true,
-        retryable: false
+        retryable: false,
       };
 
       const serverError: ErrorCategory = {
         type: 'server_error',
         severity: 'high',
         actionable: true,
-        retryable: true
+        retryable: true,
       };
 
       const networkError: ErrorCategory = {
         type: 'network_error',
         severity: 'low',
         actionable: false,
-        retryable: true
+        retryable: true,
       };
 
       expect(clientError.type).toBe('client_error');
@@ -1213,42 +1233,42 @@ describe('API Type Validation', () => {
 
     test('should validate error mapping configuration', () => {
       const errorMapping: ErrorMapping = {
-        'VALIDATION_ERROR': {
+        VALIDATION_ERROR: {
           category: {
             type: 'client_error',
             severity: 'medium',
             actionable: true,
-            retryable: false
+            retryable: false,
           },
           httpStatus: 400,
           message: 'Request validation failed',
           userMessage: 'Please check your input and try again',
-          resolution: 'Fix the validation errors in your request'
+          resolution: 'Fix the validation errors in your request',
         },
-        'RATE_LIMIT_EXCEEDED': {
+        RATE_LIMIT_EXCEEDED: {
           category: {
             type: 'client_error',
             severity: 'low',
             actionable: true,
-            retryable: true
+            retryable: true,
           },
           httpStatus: 429,
           message: 'Rate limit exceeded',
           userMessage: 'Too many requests. Please try again later.',
-          resolution: 'Wait before making more requests or upgrade your plan'
+          resolution: 'Wait before making more requests or upgrade your plan',
         },
-        'INTERNAL_SERVER_ERROR': {
+        INTERNAL_SERVER_ERROR: {
           category: {
             type: 'server_error',
             severity: 'high',
             actionable: true,
-            retryable: true
+            retryable: true,
           },
           httpStatus: 500,
           message: 'Internal server error',
           userMessage: 'Something went wrong. Please try again.',
-          resolution: 'Contact support if the problem persists'
-        }
+          resolution: 'Contact support if the problem persists',
+        },
       };
 
       expect(errorMapping['VALIDATION_ERROR'].httpStatus).toBe(400);
@@ -1265,8 +1285,8 @@ describe('API Type Validation', () => {
   describe('Utility Types Validation', () => {
     test('should validate ApiResponseData utility type', () => {
       // This test validates that the utility type correctly extracts the data type
-      type ApiResponsePromise = Promise<{ id: string; name: string }>;
-      type ExtractedData = ApiResponseData<ApiResponsePromise>; // Should be { id: string; name: string }
+      type ApiResponsePromise = Promise<{ id: String; name: String }>;
+      type ExtractedData = ApiResponseData<ApiResponsePromise>; // Should be { id: String; name: String }
 
       const testData: ExtractedData = { id: '123', name: 'test' };
       expect(testData.id).toBe('123');
@@ -1274,14 +1294,14 @@ describe('API Type Validation', () => {
     });
 
     test('should validate request/response body extraction types', () => {
-      type UserContract = RestApiContract<{ name: string }, { id: string; name: string }>;
+      type UserContract = RestApiContract<{ name: String }, { id: String; name: String }>;
 
-      // ApiRequestBody should extract { name: string }
+      // ApiRequestBody should extract { name: String }
       type RequestBodyType = ApiRequestBody<UserContract>;
       const requestBody: RequestBodyType = { name: 'John' };
       expect(requestBody.name).toBe('John');
 
-      // ApiResponseBody should extract { id: string; name: string }
+      // ApiResponseBody should extract { id: String; name: String }
       type ResponseBodyType = ApiResponseBody<UserContract>;
       const responseBody: ResponseBodyType = { id: '123', name: 'John' };
       expect(responseBody.id).toBe('123');
@@ -1290,7 +1310,7 @@ describe('API Type Validation', () => {
     test('should validate endpoint extraction utilities', () => {
       type Endpoints = {
         getUsers: RestApiContract<null, { users: any[] }>;
-        createUser: RestApiContract<{ name: string }, { id: string; name: string }>;
+        createUser: RestApiContract<{ name: String }, { id: String; name: String }>;
       };
 
       // ExtractEndpoints should preserve the structure
@@ -1299,14 +1319,14 @@ describe('API Type Validation', () => {
         getUsers: {
           endpoint: '/users',
           method: 'GET',
-          responseType: { users: [] }
+          responseType: { users: [] },
         },
         createUser: {
           endpoint: '/users',
           method: 'POST',
           requestBody: { name: 'test' },
-          responseType: { id: '123', name: 'test' }
-        }
+          responseType: { id: '123', name: 'test' },
+        },
       };
 
       expect(endpoints.getUsers.method).toBe('GET');
@@ -1314,15 +1334,15 @@ describe('API Type Validation', () => {
     });
 
     test('should validate endpoint method/path extraction', () => {
-      type GetUserEndpoint = RestApiContract<null, { id: string; name: string }>;
-      type CreateUserEndpoint = RestApiContract<{ name: string }, { id: string; name: string }>;
+      type GetUserEndpoint = RestApiContract<null, { id: String; name: String }>;
+      type CreateUserEndpoint = RestApiContract<{ name: String }, { id: String; name: String }>;
 
       // EndpointMethod should extract 'GET'
       type GetUserMethod = EndpointMethod<GetUserEndpoint>;
       const getUserMethod: GetUserMethod = 'GET';
       expect(getUserMethod).toBe('GET');
 
-      // EndpointPath should extract the endpoint string
+      // EndpointPath should extract the endpoint String
       type GetUserPath = EndpointPath<GetUserEndpoint>;
       const getUserPath: GetUserPath = '/users/{id}';
       expect(getUserPath).toBe('/users/{id}');
@@ -1337,17 +1357,17 @@ describe('API Type Validation', () => {
     test('should validate end-to-end type flow from request to response', () => {
       // Define a complete API contract
       const userApiContract: RestApiContract<
-        { name: string; email: string },
-        { id: string; name: string; email: string; createdAt: string }
+        { name: String; email: String },
+        { id: String; name: String; email: String; createdAt: String }
       > = {
         endpoint: '/api/v2/users',
         method: 'POST',
-        requestBody: { name: 'string', email: 'string' },
-        responseType: { id: 'string', name: 'string', email: 'string', createdAt: 'string' },
+        requestBody: { name: 'String', email: 'String' },
+        responseType: { id: 'String', name: 'String', email: 'String', createdAt: 'String' },
         auth: {
           required: true,
-          scopes: ['users:write']
-        }
+          scopes: ['users:write'],
+        },
       };
 
       // Create request
@@ -1357,7 +1377,7 @@ describe('API Type Validation', () => {
         headers: { 'Content-Type': 'application/json' },
         body: { name: 'John Doe', email: 'john@example.com' },
         timestamp: Date.now(),
-        id: 'req-123'
+        id: 'req-123',
       };
 
       // Create response
@@ -1368,12 +1388,12 @@ describe('API Type Validation', () => {
           id: 'user-123',
           name: 'John Doe',
           email: 'john@example.com',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         },
         timestamp: Date.now(),
         requestId: request.id,
         duration: 150,
-        size: 256
+        size: 256,
       };
 
       expect(request.body?.name).toBe('John Doe');
@@ -1387,20 +1407,20 @@ describe('API Type Validation', () => {
         type: 'object',
         required: ['id', 'name', 'email'],
         properties: {
-          id: { type: 'string', format: 'uuid' },
-          name: { type: 'string', minLength: 1 },
-          email: { type: 'string', format: 'email' },
+          id: { type: 'String', format: 'uuid' },
+          name: { type: 'String', minLength: 1 },
+          email: { type: 'String', format: 'email' },
           age: { type: 'integer', minimum: 0, maximum: 150 },
-          isActive: { type: 'boolean', default: true }
+          isActive: { type: 'boolean', default: true },
         },
-        additionalProperties: false
+        additionalProperties: false,
       };
 
       // Corresponding TypeScript type
       type UserType = {
-        id: string;
-        name: string;
-        email: string;
+        id: String;
+        name: String;
+        email: String;
         age?: number;
         isActive?: boolean;
       };
@@ -1411,7 +1431,7 @@ describe('API Type Validation', () => {
         name: 'John Doe',
         email: 'john@example.com',
         age: 30,
-        isActive: true
+        isActive: true,
       };
 
       expect(userSchema.required).toContain('id');
@@ -1430,19 +1450,19 @@ describe('API Type Validation', () => {
           { name: 'id', type: 'ID!', description: 'User ID' },
           { name: 'name', type: 'String!', description: 'User name' },
           { name: 'email', type: 'String', description: 'User email' },
-          { name: 'posts', type: '[Post!]!', description: 'User posts' }
-        ]
+          { name: 'posts', type: '[Post!]!', description: 'User posts' },
+        ],
       };
 
       // Corresponding TypeScript type
       type GraphQLUser = {
-        id: string;
-        name: string;
-        email?: string;
+        id: String;
+        name: String;
+        email?: String;
         posts: Array<{
-          id: string;
-          title: string;
-          content: string;
+          id: String;
+          title: String;
+          content: String;
         }>;
       };
 
@@ -1462,7 +1482,7 @@ describe('API Type Validation', () => {
             }
           }
         `,
-        variables: { id: '123' }
+        variables: { id: '123' },
       };
 
       const gqlResponse: GraphQLResponse<{ user: GraphQLUser }> = {
@@ -1471,11 +1491,9 @@ describe('API Type Validation', () => {
             id: '123',
             name: 'John Doe',
             email: 'john@example.com',
-            posts: [
-              { id: 'post1', title: 'First Post', content: 'Hello World' }
-            ]
-          }
-        }
+            posts: [{ id: 'post1', title: 'First Post', content: 'Hello World' }],
+          },
+        },
       };
 
       expect(graphQLType.name).toBe('User');

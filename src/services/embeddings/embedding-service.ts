@@ -168,7 +168,9 @@ export class EmbeddingService {
     }
 
     // If still no API key, we can't proceed
-    throw new Error('OpenAI API key is required but not found in config, key vault, or environment');
+    throw new Error(
+      'OpenAI API key is required but not found in config, key vault, or environment'
+    );
   }
 
   /**

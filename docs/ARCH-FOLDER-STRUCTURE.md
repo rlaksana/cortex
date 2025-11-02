@@ -322,25 +322,30 @@ mcp-cortex/
 ## 🎯 Directory Purpose Categories
 
 ### 🔧 Core Application Code
+
 - **`src/`** - All TypeScript source code (main application)
 - **`dist/`** - Compiled JavaScript output (production code)
 - **`types/`** - TypeScript type definitions and interfaces
 
 ### 🧪 Testing & Quality Assurance
+
 - **`tests/`** - Comprehensive test suite (unit, integration, e2e)
 - **`coverage/`** - Code coverage reports and analysis
 - **`test-results/`** - Test execution artifacts and results
 
 ### 📚 Documentation & Guides
+
 - **`docs/`** - Comprehensive technical documentation
 - **Root `*.md` files** - Setup guides, policies, and quick references
 
 ### ⚙️ Configuration & Infrastructure
+
 - **`config/`** - Configuration templates and specifications
 - **`scripts/`** - Build, deployment, and utility scripts
 - **Infrastructure files** - Docker, Kubernetes, Terraform configurations
 
 ### 🛠️ Development Tools & Environment
+
 - **Environment files** - Multiple environment configurations
 - **Development tools** - Git hooks, CI/CD, AI assistant configs
 - **Build artifacts** - Logs, temporary files, caches
@@ -348,9 +353,11 @@ mcp-cortex/
 ## 🧭 User-Specific Navigation Guide
 
 ### 🆕 For New Developers
+
 **Starting Point:** `README.md` → `SETUP-QUICK-START.md` → `docs/SETUP-DEVELOPER.md`
 
 **Key Directories to Explore:**
+
 1. **`src/`** - Main application code
 2. **`src/services/`** - Core business logic
 3. **`src/types/`** - Type definitions
@@ -358,6 +365,7 @@ mcp-cortex/
 5. **`docs/`** - Comprehensive documentation
 
 **Recommended Workflow:**
+
 1. Read `README.md` for project overview
 2. Follow `SETUP-QUICK-START.md` for environment setup
 3. Study `docs/SETUP-DEVELOPER.md` for development guidelines
@@ -365,45 +373,54 @@ mcp-cortex/
 5. Run tests to understand functionality
 
 ### 🔧 For API Users
+
 **Starting Point:** `docs/API-REFERENCE.md` → `docs/ARCH-SYSTEM.md`
 
 **Key Directories:**
+
 1. **`src/services/`** - Available MCP services
 2. **`src/schemas/`** - Input/output schemas
 3. **`src/types/`** - API type definitions
 4. **`examples/`** - Usage examples
 
 **API Service Categories:**
+
 - **Memory Operations:** `src/services/orchestrators/memory-store-orchestrator.ts`
 - **Search Operations:** `src/services/search/`
 - **Knowledge Types:** `src/services/knowledge/`
 - **Authentication:** `src/services/auth/`
 
 ### 🐛 For Troubleshooters
+
 **Starting Point:** `docs/TROUBLESHOOT-EMFILE.md` → `docs/TROUBLESHOOT-ERRORS.md`
 
 **Key Locations:**
+
 1. **`logs/`** - Application logs
 2. **`test-logs/`** - Test execution logs
 3. **Environment files** - Configuration debugging
 4. **`scripts/validate-*.js`** - Validation scripts
 
 **Troubleshooting Workflow:**
+
 1. Check `logs/` for runtime errors
 2. Review `test-logs/` for test failures
 3. Validate configuration with `scripts/validate-config.js`
 4. Run health checks: `npm run db:health`
 
 ### 🤝 For Contributors
+
 **Starting Point:** `DEV-POLICY.md` → `docs/SETUP-DEVELOPER.md`
 
 **Key Areas for Contribution:**
+
 1. **`src/services/`** - New service implementations
 2. **`tests/unit/`** - Unit test coverage
 3. **`docs/`** - Documentation improvements
 4. **`scripts/`** - Development tooling
 
 **Contribution Guidelines:**
+
 1. Follow patterns in existing service modules
 2. Add comprehensive tests in corresponding test directories
 3. Update documentation for new features
@@ -412,6 +429,7 @@ mcp-cortex/
 ## 📝 File Naming Conventions
 
 ### TypeScript Files
+
 - **PascalCase** for classes and interfaces: `AuthMiddleware.ts`, `DatabaseFactory.ts`
 - **kebab-case** for utilities and helpers: `crypto.ts`, `validation.ts`
 - **Suffix conventions:**
@@ -423,17 +441,20 @@ mcp-cortex/
   - `.util.ts` or `.utils.ts` - Utility functions
 
 ### Test Files
+
 - **`.test.ts`** - Unit and integration tests
 - **`.spec.ts`** - Specification tests (alternative naming)
 - **Test structure mirrors source structure**
 - **Descriptive naming:** `authentication-service.test.ts`, `user-validation.test.ts`
 
 ### Configuration Files
+
 - **Environment files:** `.env`, `.env.example`, `.env.production`
 - **Configuration templates:** `*-template.json`, `*-config.json`
 - **Documentation:** `CONFIG-*.md`, `SETUP-*.md`
 
 ### Documentation Files
+
 - **`ARCH-*.md`** - Architecture documentation
 - **`API-*.md`** - API documentation
 - **`SETUP-*.md`** - Setup and installation guides
@@ -443,6 +464,7 @@ mcp-cortex/
 ## 🔄 Import/Export Patterns
 
 ### Service Module Pattern
+
 ```typescript
 // src/services/example/example.service.ts
 export class ExampleService {
@@ -455,6 +477,7 @@ export type ExampleServiceConfig = {
 ```
 
 ### Index File Pattern
+
 ```typescript
 // src/services/example/index.ts
 export { ExampleService } from './example.service';
@@ -462,6 +485,7 @@ export { ExampleServiceConfig } from './example.types';
 ```
 
 ### Type Definition Pattern
+
 ```typescript
 // src/types/example-types.ts
 export interface ExampleEntity {
@@ -480,6 +504,7 @@ export type ExampleOperation = {
 ### 📍 Where to Add New Components
 
 #### New Services
+
 1. Create directory: `src/services/new-service/`
 2. Add service file: `src/services/new-service/new-service.service.ts`
 3. Add types: `src/services/new-service/new-service.types.ts`
@@ -487,18 +512,21 @@ export type ExampleOperation = {
 5. Add documentation: `docs/NEW-SERVICE.md`
 
 #### New Knowledge Types
+
 1. Add type file: `src/services/knowledge/new-type.ts`
 2. Add tests: `tests/unit/knowledge-types/new-type.test.ts`
 3. Update schemas: `src/schemas/knowledge-types.ts`
 4. Update documentation
 
 #### New API Endpoints
+
 1. Update service: `src/services/api.service.ts`
 2. Add types: `src/types/api-types.ts`
 3. Add validation: `src/schemas/mcp-inputs.ts`
 4. Add tests: `tests/unit/api/`
 
 #### New Utilities
+
 1. Add utility: `src/utils/new-utility.ts`
 2. Add tests: `tests/unit/utilities/new-utility.test.ts`
 3. Export from appropriate index files
@@ -506,6 +534,7 @@ export type ExampleOperation = {
 ### 📋 Maintenance Guidelines
 
 #### When Adding New Files
+
 1. **Follow naming conventions** consistently
 2. **Add comprehensive tests** with proper coverage
 3. **Update documentation** for new functionality
@@ -514,6 +543,7 @@ export type ExampleOperation = {
 6. **Update import paths** in affected files
 
 #### When Modifying Existing Files
+
 1. **Maintain backward compatibility** when possible
 2. **Update corresponding tests** for changed functionality
 3. **Document breaking changes** in appropriate documentation
@@ -521,6 +551,7 @@ export type ExampleOperation = {
 5. **Update type definitions** if interfaces change
 
 #### Documentation Requirements
+
 1. **All public APIs** must have JSDoc comments
 2. **Complex algorithms** need inline documentation
 3. **Configuration options** require comprehensive documentation
@@ -532,6 +563,7 @@ export type ExampleOperation = {
 ### Finding Specific Types of Files
 
 #### Services
+
 ```bash
 # Find all service files
 find src/services -name "*.service.ts"
@@ -541,6 +573,7 @@ find src/services -name "*auth*.ts"
 ```
 
 #### Tests
+
 ```bash
 # Find all test files
 find tests -name "*.test.ts"
@@ -550,6 +583,7 @@ find tests -name "*auth*.test.ts"
 ```
 
 #### Configuration
+
 ```bash
 # Find configuration files
 find . -name "*.config.ts" -o -name "*.env*"
@@ -559,6 +593,7 @@ find . -name "*.env.example"
 ```
 
 #### Documentation
+
 ```bash
 # Find architecture documentation
 find docs -name "ARCH-*.md"
@@ -570,18 +605,21 @@ find . -name "SETUP-*.md"
 ## 📊 File Type Distribution
 
 ### By Purpose
+
 - **Source Code:** ~65% (src/ directory)
 - **Tests:** ~20% (tests/ directory)
-- **Documentation:** ~10% (docs/ + *.md files)
+- **Documentation:** ~10% (docs/ + \*.md files)
 - **Configuration:** ~5% (config/ + environment files)
 
 ### By Language
+
 - **TypeScript:** ~80% (main implementation)
 - **JavaScript:** ~15% (scripts, build tools)
 - **Markdown:** ~4% (documentation)
 - **JSON:** ~1% (configuration)
 
 ### By Category
+
 - **Services:** ~30% of source code
 - **Database Layer:** ~20% of source code
 - **Types & Interfaces:** ~15% of source code

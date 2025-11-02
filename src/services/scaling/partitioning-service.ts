@@ -187,7 +187,7 @@ export class PartitioningService {
 
       const reasoning = this.generateRoutingReasoning(partition, targetShard, item);
 
-        const routingDecision: RoutingDecision = {
+      const routingDecision: RoutingDecision = {
         targetPartition: partition,
         strategy: this.config.strategy,
         confidence: 0.9, // High confidence for partitioned routing
@@ -195,12 +195,11 @@ export class PartitioningService {
         fallbackAvailable: true,
       };
 
-    if (targetShard !== undefined) {
-      routingDecision.targetShard = targetShard;
-    }
+      if (targetShard !== undefined) {
+        routingDecision.targetShard = targetShard;
+      }
 
-    return routingDecision;
-
+      return routingDecision;
     } catch (error) {
       logger.error({ error, itemId: item.id }, 'Failed to get routing decision');
 
@@ -256,7 +255,10 @@ export class PartitioningService {
   /**
    * Get or create partition for key
    */
-  private async getOrCreatePartition(partitionKey: string, item: KnowledgeItem): Promise<PartitionInfo> {
+  private async getOrCreatePartition(
+    partitionKey: string,
+    item: KnowledgeItem
+  ): Promise<PartitionInfo> {
     // Check if partition exists
     const existingPartition = await this.findPartitionByKey(partitionKey);
     if (existingPartition) {
@@ -265,11 +267,14 @@ export class PartitioningService {
 
     // Create new partition
     const partition = await this.createPartition(partitionKey, item);
-    logger.info({
-      partitionId: partition.id,
-      partitionKey,
-      strategy: this.config.strategy,
-    }, 'Created new partition');
+    logger.info(
+      {
+        partitionId: partition.id,
+        partitionKey,
+        strategy: this.config.strategy,
+      },
+      'Created new partition'
+    );
 
     return partition;
   }
@@ -328,7 +333,6 @@ export class PartitioningService {
       partition.scope.branch = item.scope.branch;
     }
 
-    
     // Create collection in database if auto-creation is enabled
     if (this.config.autoCreateCollections) {
       try {
@@ -430,7 +434,10 @@ export class PartitioningService {
   /**
    * Select optimal shard for item
    */
-  private async selectOptimalShard(partition: PartitionInfo, item: KnowledgeItem): Promise<ShardInfo | undefined> {
+  private async selectOptimalShard(
+    partition: PartitionInfo,
+    item: KnowledgeItem
+  ): Promise<ShardInfo | undefined> {
     if (partition.shardCount === 1) {
       return undefined; // No sharding
     }
@@ -459,7 +466,7 @@ export class PartitioningService {
    */
   private selectShardByLoad(shards: ShardInfo[], _item: KnowledgeItem): ShardInfo {
     // Find healthiest shard with lowest load
-    const healthyShards = shards.filter(shard => shard.isHealthy);
+    const healthyShards = shards.filter((shard) => shard.isHealthy);
 
     if (healthyShards.length === 0) {
       logger.warn('No healthy shards available, falling back to first shard');
@@ -537,15 +544,17 @@ export class PartitioningService {
   private async loadShardsForPartition(partition: PartitionInfo): Promise<ShardInfo[]> {
     // This would load actual shard information from the database
     // For now, return a single shard
-    return [{
-      id: `${partition.id}_shard_0`,
-      partitionId: partition.id,
-      shardIndex: 0,
-      collectionName: partition.collectionName,
-      itemCount: partition.itemCount,
-      isHealthy: true,
-      lastHealthCheck: new Date().toISOString(),
-    }];
+    return [
+      {
+        id: `${partition.id}_shard_0`,
+        partitionId: partition.id,
+        shardIndex: 0,
+        collectionName: partition.collectionName,
+        itemCount: partition.itemCount,
+        isHealthy: true,
+        lastHealthCheck: new Date().toISOString(),
+      },
+    ];
   }
 
   /**
@@ -587,7 +596,10 @@ export class PartitioningService {
   /**
    * Update partition metrics
    */
-  private async updatePartitionMetrics(partitionId: string, updates: Partial<PartitionInfo>): Promise<void> {
+  private async updatePartitionMetrics(
+    partitionId: string,
+    updates: Partial<PartitionInfo>
+  ): Promise<void> {
     const partition = this.partitionCache.get(partitionId);
     if (partition) {
       Object.assign(partition, updates);
@@ -597,7 +609,11 @@ export class PartitioningService {
   /**
    * Generate routing reasoning
    */
-  private generateRoutingReasoning(partition: PartitionInfo, shard?: ShardInfo, item?: KnowledgeItem): string {
+  private generateRoutingReasoning(
+    partition: PartitionInfo,
+    shard?: ShardInfo,
+    item?: KnowledgeItem
+  ): string {
     const reasons = [];
 
     reasons.push(`Using ${this.config.strategy} strategy`);
@@ -614,7 +630,9 @@ export class PartitioningService {
 
     if (item) {
       reasons.push(`Item type: ${item.kind}`);
-      reasons.push(`Scope: org=${item.scope.org || 'default'}, project=${item.scope.project || 'default'}`);
+      reasons.push(
+        `Scope: org=${item.scope.org || 'default'}, project=${item.scope.project || 'default'}`
+      );
     }
 
     return reasons.join('; ');
@@ -646,11 +664,14 @@ export class PartitioningService {
       for (const partition of this.partitionCache.values()) {
         // Perform partition-specific health checks
         if (partition.itemCount > this.config.shardSizeThreshold) {
-          logger.info({
-            partitionId: partition.id,
-            itemCount: partition.itemCount,
-            threshold: this.config.shardSizeThreshold,
-          }, 'Partition exceeds size threshold, consider sharding');
+          logger.info(
+            {
+              partitionId: partition.id,
+              itemCount: partition.itemCount,
+              threshold: this.config.shardSizeThreshold,
+            },
+            'Partition exceeds size threshold, consider sharding'
+          );
         }
       }
     } catch (error) {
@@ -718,7 +739,7 @@ export class PartitioningService {
       });
 
       return searchResults.results
-        .map(result => this.parsePartitionFromData(result.data))
+        .map((result) => this.parsePartitionFromData(result.data))
         .filter(Boolean) as PartitionInfo[];
     } catch (error) {
       logger.error({ error }, 'Failed to list partitions');

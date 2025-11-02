@@ -103,14 +103,7 @@ describe('Validation Service - Core Functionality', () => {
 
     it('should handle malformed input gracefully', async () => {
       // Arrange
-      const malformedInputs = [
-        null,
-        undefined,
-        'string',
-        123,
-        {},
-        { invalid: 'structure' },
-      ];
+      const malformedInputs = [null, undefined, 'string', 123, {}, { invalid: 'structure' }];
 
       for (const input of malformedInputs) {
         // Act
@@ -238,7 +231,9 @@ describe('Validation Service - Core Functionality', () => {
       };
 
       // Act
-      const result = await validationService.validateKnowledgeItem(itemWithoutScope as KnowledgeItem);
+      const result = await validationService.validateKnowledgeItem(
+        itemWithoutScope as KnowledgeItem
+      );
 
       // Assert
       expect(result).toBeDefined();
@@ -466,7 +461,7 @@ describe('Validation Service - Core Functionality', () => {
 
       // Assert
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(typeof result.valid).toBe('boolean');
         expect(Array.isArray(result.errors)).toBe(true);
@@ -489,7 +484,7 @@ describe('Validation Service - Core Functionality', () => {
 
       // Assert
       expect(results).toHaveLength(7);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(typeof result.valid).toBe('boolean');
         expect(Array.isArray(result.errors)).toBe(true);
@@ -550,13 +545,15 @@ describe('Validation Service - Core Functionality', () => {
 
       // Act
       const results = await Promise.all(
-        Array.from({ length: 5 }, () => validationService.validateKnowledgeItem(testItem as KnowledgeItem))
+        Array.from({ length: 5 }, () =>
+          validationService.validateKnowledgeItem(testItem as KnowledgeItem)
+        )
       );
 
       // Assert
       expect(results).toHaveLength(5);
       const firstResult = results[0];
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.valid).toBe(firstResult.valid);
         expect(result.errors.length).toBe(firstResult.errors.length);
       });

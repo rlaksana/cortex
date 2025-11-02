@@ -25,7 +25,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         types: ['entity'],
-        limit: 10
+        limit: 10,
       };
 
       // Mock database to return exact entity match
@@ -37,18 +37,18 @@ describe('P4-T4.3: Entity-First Search', () => {
         data: {
           name: 'User Service',
           description: 'Handles user authentication and management',
-          type: 'service'
+          type: 'service',
         },
         tags: { project: 'test-project' },
-        created_at: new Date()
+        created_at: new Date(),
       };
 
       // Mock entity lookup
       vi.mock('../../../src/db/unified-database-layer-v2', () => ({
         UnifiedDatabaseLayer: vi.fn().mockImplementation(() => ({
           initialize: vi.fn().mockResolvedValue(undefined),
-          find: vi.fn().mockResolvedValue([mockEntity])
-        }))
+          find: vi.fn().mockResolvedValue([mockEntity]),
+        })),
       }));
 
       const result = await searchService.searchByMode(testQuery);
@@ -64,7 +64,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         types: ['entity'],
-        limit: 10
+        limit: 10,
       };
 
       // Mock entities with different cases
@@ -72,18 +72,18 @@ describe('P4-T4.3: Entity-First Search', () => {
         {
           id: 'entity-123',
           name: 'User Service', // Exact match
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: 'entity-456',
           name: 'user service', // Different case
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: 'entity-789',
           name: 'USER SERVICE', // Different case
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ];
 
       // Should only match the exact case
@@ -97,15 +97,15 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'NonExistent Service',
         types: ['entity'],
-        limit: 10
+        limit: 10,
       };
 
       // Mock empty entity lookup
       vi.mock('../../../src/db/unified-database-layer-v2', () => ({
         UnifiedDatabaseLayer: vi.fn().mockImplementation(() => ({
           initialize: vi.fn().mockResolvedValue(undefined),
-          find: vi.fn().mockResolvedValue([])
-        }))
+          find: vi.fn().mockResolvedValue([]),
+        })),
       }));
 
       const result = await searchService.searchByMode(testQuery);
@@ -120,7 +120,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         expand: 'relations',
-        limit: 20
+        limit: 20,
       };
 
       // Mock the exact entity match
@@ -131,10 +131,10 @@ describe('P4-T4.3: Entity-First Search', () => {
         name: 'User Service',
         data: {
           name: 'User Service',
-          description: 'Handles user authentication and management'
+          description: 'Handles user authentication and management',
         },
         tags: { project: 'test-project' },
-        created_at: new Date()
+        created_at: new Date(),
       };
 
       // Mock related entities via relations
@@ -145,7 +145,7 @@ describe('P4-T4.3: Entity-First Search', () => {
           from_entity_id: 'entity-123',
           to_entity_type: 'decision',
           to_entity_id: 'decision-456',
-          relation_type: 'implements'
+          relation_type: 'implements',
         },
         {
           id: 'rel-2',
@@ -153,8 +153,8 @@ describe('P4-T4.3: Entity-First Search', () => {
           from_entity_id: 'issue-789',
           to_entity_type: 'entity',
           to_entity_id: 'entity-123',
-          relation_type: 'affects'
-        }
+          relation_type: 'affects',
+        },
       ];
 
       // Mock related entities
@@ -163,10 +163,10 @@ describe('P4-T4.3: Entity-First Search', () => {
         kind: 'decision',
         data: {
           title: 'Use OAuth 2.0 for User Service',
-          content: 'Decision to implement OAuth 2.0'
+          content: 'Decision to implement OAuth 2.0',
         },
         tags: { project: 'test-project' },
-        created_at: new Date()
+        created_at: new Date(),
       };
 
       const mockIssue = {
@@ -174,10 +174,10 @@ describe('P4-T4.3: Entity-First Search', () => {
         kind: 'issue',
         data: {
           title: 'User Service authentication bug',
-          description: 'Authentication failing for User Service'
+          description: 'Authentication failing for User Service',
         },
         tags: { project: 'test-project' },
-        created_at: new Date()
+        created_at: new Date(),
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -188,14 +188,14 @@ describe('P4-T4.3: Entity-First Search', () => {
       expect(result.results.length).toBeGreaterThan(1);
 
       // Verify main entity is first with high confidence
-      const mainEntity = result.results.find(r => r.id === 'entity-123');
+      const mainEntity = result.results.find((r) => r.id === 'entity-123');
       expect(mainEntity).toBeDefined();
       expect(mainEntity!.confidence_score).toBeGreaterThan(0.9);
       expect(mainEntity!.match_type).toBe('exact');
 
       // Verify related entities are included with graph match_type
-      const relatedDecision = result.results.find(r => r.id === 'decision-456');
-      const relatedIssue = result.results.find(r => r.id === 'issue-789');
+      const relatedDecision = result.results.find((r) => r.id === 'decision-456');
+      const relatedIssue = result.results.find((r) => r.id === 'issue-789');
 
       expect(relatedDecision).toBeDefined();
       expect(relatedIssue).toBeDefined();
@@ -209,20 +209,20 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQueryWithoutExpand: SearchQuery = {
         query: 'User Service',
         expand: 'none',
-        limit: 20
+        limit: 20,
       };
 
       const testQueryWithExpand: SearchQuery = {
         query: 'User Service',
         expand: 'relations',
-        limit: 20
+        limit: 20,
       };
 
       // Mock exact entity match
       const mockEntity = {
         id: 'entity-123',
         name: 'User Service',
-        created_at: new Date()
+        created_at: new Date(),
       };
 
       // Test without expansion
@@ -247,7 +247,7 @@ describe('P4-T4.3: Entity-First Search', () => {
         query: 'User Service',
         mode: 'auto',
         expand: 'relations',
-        limit: 20
+        limit: 20,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -267,7 +267,7 @@ describe('P4-T4.3: Entity-First Search', () => {
         const testQuery: SearchQuery = {
           query: 'User Service',
           mode,
-          limit: 10
+          limit: 10,
         };
 
         const result = await searchService.searchByMode(testQuery);
@@ -283,9 +283,9 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         scope: {
-          project: 'my-project'
+          project: 'my-project',
         },
-        limit: 10
+        limit: 10,
       };
 
       // Mock entities in different projects
@@ -294,14 +294,14 @@ describe('P4-T4.3: Entity-First Search', () => {
           id: 'entity-123',
           name: 'User Service',
           tags: { project: 'my-project' }, // Matching scope
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: 'entity-456',
           name: 'User Service',
           tags: { project: 'other-project' }, // Different scope
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ];
 
       const result = await searchService.searchByMode(testQuery);
@@ -318,9 +318,9 @@ describe('P4-T4.3: Entity-First Search', () => {
         scope: {
           project: 'my-project',
           branch: 'main',
-          org: 'my-org'
+          org: 'my-org',
         },
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -339,15 +339,15 @@ describe('P4-T4.3: Entity-First Search', () => {
     it('should fallback to regular search when no exact entity match', async () => {
       const testQuery: SearchQuery = {
         query: 'search term without exact entity match',
-        limit: 10
+        limit: 10,
       };
 
       // Mock no exact entity matches
       vi.mock('../../../src/db/unified-database-layer-v2', () => ({
         UnifiedDatabaseLayer: vi.fn().mockImplementation(() => ({
           initialize: vi.fn().mockResolvedValue(undefined),
-          find: vi.fn().mockResolvedValue([])
-        }))
+          find: vi.fn().mockResolvedValue([]),
+        })),
       }));
 
       const result = await searchService.searchByMode(testQuery);
@@ -360,15 +360,15 @@ describe('P4-T4.3: Entity-First Search', () => {
     it('should gracefully handle database errors during entity lookup', async () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
-        limit: 10
+        limit: 10,
       };
 
       // Mock database error
       vi.mock('../../../src/db/unified-database-layer-v2', () => ({
         UnifiedDatabaseLayer: vi.fn().mockImplementation(() => ({
           initialize: vi.fn().mockRejectedValue(new Error('Database error')),
-          find: vi.fn().mockRejectedValue(new Error('Database error'))
-        }))
+          find: vi.fn().mockRejectedValue(new Error('Database error')),
+        })),
       }));
 
       const result = await searchService.searchByMode(testQuery);
@@ -383,7 +383,7 @@ describe('P4-T4.3: Entity-First Search', () => {
     it('should perform fast exact entity lookup', async () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
-        limit: 10
+        limit: 10,
       };
 
       const startTime = Date.now();
@@ -398,7 +398,7 @@ describe('P4-T4.3: Entity-First Search', () => {
     it('should cache entity lookup results', async () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
-        limit: 10
+        limit: 10,
       };
 
       // First call
@@ -417,7 +417,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         expand: 'relations',
-        limit: 20
+        limit: 20,
       };
 
       // This test verifies that entity-first search uses the existing
@@ -426,7 +426,7 @@ describe('P4-T4.3: Entity-First Search', () => {
 
       // If relations exist, they should be fetched using relation storage
       if (result.results.length > 1) {
-        const graphResults = result.results.filter(r => r.match_type === 'graph');
+        const graphResults = result.results.filter((r) => r.match_type === 'graph');
         expect(graphResults.length).toBeGreaterThan(0);
       }
     });
@@ -435,7 +435,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const testQuery: SearchQuery = {
         query: 'User Service',
         expand: 'relations',
-        limit: 20
+        limit: 20,
       };
 
       // This test verifies that entity-first search integrates with
@@ -443,7 +443,7 @@ describe('P4-T4.3: Entity-First Search', () => {
       const result = await searchService.searchByMode(testQuery);
 
       // Should include graph-tagged results from expansion
-      const hasGraphResults = result.results.some(r => r.match_type === 'graph');
+      const hasGraphResults = result.results.some((r) => r.match_type === 'graph');
       if (result.results.length > 1) {
         expect(hasGraphResults).toBe(true);
       }

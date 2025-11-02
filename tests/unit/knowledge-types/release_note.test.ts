@@ -22,7 +22,7 @@ import {
   validateKnowledgeItem,
   safeValidateKnowledgeItem,
   KnowledgeItem,
-  ReleaseNoteItem
+  ReleaseNoteItem,
 } from '../../../src/schemas/knowledge-types';
 
 // Mock Qdrant client - reusing pattern from memory-store.test.ts
@@ -30,20 +30,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Release Note Knowledge Type - Comprehensive Testing', () => {
@@ -61,7 +61,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.1.0',
@@ -70,28 +70,28 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           new_features: [
             'OAuth 2.0 authentication support',
             'Real-time collaboration features',
-            'Enhanced dashboard with customizable widgets'
+            'Enhanced dashboard with customizable widgets',
           ],
           bug_fixes: [
             'Fixed memory leak in data processing pipeline',
             'Resolved login redirect loop issue',
-            'Fixed CSV export formatting problems'
+            'Fixed CSV export formatting problems',
           ],
           breaking_changes: [
             'Authentication API endpoints changed from /auth/* to /api/v2/auth/*',
-            'Deprecated legacy session management system'
+            'Deprecated legacy session management system',
           ],
           deprecations: [
             'Legacy API endpoints will be removed in v3.0.0',
-            'Old dashboard layout will be deprecated in next release'
-          ]
+            'Old dashboard layout will be deprecated in next release',
+          ],
         },
         tags: { major: true, security: true, performance: true },
         source: {
           actor: 'release-manager',
           tool: 'ci-cd-pipeline',
-          timestamp: '2025-01-15T10:00:00Z'
-        }
+          timestamp: '2025-01-15T10:00:00Z',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -110,13 +110,13 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note' as const,
         scope: {
           project: 'minimal-project',
-          branch: 'develop'
+          branch: 'develop',
         },
         data: {
           version: '1.0.1',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Bug fix release'
-        }
+          summary: 'Bug fix release',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -138,18 +138,18 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         'v2025.01.15',
         '1.0.0-alpha',
         '1.0.0-beta.1',
-        '1.0.0+build.123'
+        '1.0.0+build.123',
       ];
 
-      validVersions.forEach(version => {
+      validVersions.forEach((version) => {
         const releaseNote = {
           kind: 'release_note' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             version,
             release_date: '2025-01-15T10:00:00Z',
-            summary: 'Test release'
-          }
+            summary: 'Test release',
+          },
         };
 
         const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -161,18 +161,18 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validDates = [
         '2025-01-15T10:00:00Z',
         '2025-12-31T23:59:59Z',
-        '2024-02-29T00:00:00Z' // Leap year
+        '2024-02-29T00:00:00Z', // Leap year
       ];
 
-      validDates.forEach(date => {
+      validDates.forEach((date) => {
         const releaseNote = {
           kind: 'release_note' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             version: '1.0.0',
             release_date: date,
-            summary: 'Test release'
-          }
+            summary: 'Test release',
+          },
         };
 
         const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -191,13 +191,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           new_features: [
             'User authentication system',
             'Real-time notifications',
-            'Data export functionality'
+            'Data export functionality',
           ],
-          bug_fixes: [
-            'Fixed login page loading issue',
-            'Resolved data corruption bug'
-          ]
-        }
+          bug_fixes: ['Fixed login page loading issue', 'Resolved data corruption bug'],
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -216,8 +213,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Test release'
-        }
+          summary: 'Test release',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -226,7 +223,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         expect(result.error.issues).toContainEqual(
           expect.objectContaining({
             path: ['data', 'version'],
-            message: expect.stringContaining('Required')
+            message: expect.stringContaining('Required'),
           })
         );
       }
@@ -238,8 +235,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           version: '1.0.0',
-          summary: 'Test release'
-        }
+          summary: 'Test release',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -248,7 +245,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         expect(result.error.issues).toContainEqual(
           expect.objectContaining({
             path: ['data', 'release_date'],
-            message: expect.stringContaining('Required')
+            message: expect.stringContaining('Required'),
           })
         );
       }
@@ -260,8 +257,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           version: '1.0.0',
-          release_date: '2025-01-15T10:00:00Z'
-        }
+          release_date: '2025-01-15T10:00:00Z',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -270,7 +267,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         expect(result.error.issues).toContainEqual(
           expect.objectContaining({
             path: ['data', 'summary'],
-            message: expect.stringContaining('Required')
+            message: expect.stringContaining('Required'),
           })
         );
       }
@@ -282,18 +279,18 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         'Jan 15, 2025', // Wrong format
         '2025-13-01T10:00:00Z', // Invalid month
         '2025-01-32T10:00:00Z', // Invalid day
-        'not-a-date'
+        'not-a-date',
       ];
 
-      invalidDates.forEach(date => {
+      invalidDates.forEach((date) => {
         const releaseNote = {
           kind: 'release_note' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             version: '1.0.0',
             release_date: date,
-            summary: 'Test release'
-          }
+            summary: 'Test release',
+          },
         };
 
         const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -306,10 +303,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note' as const,
         scope: { project: 'test', branch: 'main' },
         data: {
-          version: `v${  '1.0.0'.repeat(25)}`, // Exceeds 100 chars
+          version: `v${'1.0.0'.repeat(25)}`, // Exceeds 100 chars
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Test release'
-        }
+          summary: 'Test release',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -318,7 +315,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         expect(result.error.issues).toContainEqual(
           expect.objectContaining({
             path: ['data', 'version'],
-            message: expect.stringContaining('100 characters or less')
+            message: expect.stringContaining('100 characters or less'),
           })
         );
       }
@@ -331,7 +328,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note',
         scope: {
           project: 'web-platform',
-          branch: 'production'
+          branch: 'production',
         },
         data: {
           version: '3.0.0',
@@ -340,18 +337,16 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           new_features: [
             'AI-powered code suggestions',
             'Intelligent test generation',
-            'Automated performance optimization'
+            'Automated performance optimization',
           ],
-          breaking_changes: [
-            'Removed deprecated legacy API endpoints'
-          ]
+          breaking_changes: ['Removed deprecated legacy API endpoints'],
         },
         tags: { major: true, ai: true, 'breaking-change': true },
         source: {
           actor: 'release-automation',
           tool: 'ci-cd-pipeline',
-          timestamp: '2025-01-15T10:00:00Z'
-        }
+          timestamp: '2025-01-15T10:00:00Z',
+        },
       };
 
       const validation = safeValidateKnowledgeItem(releaseNote);
@@ -372,8 +367,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             version: '2.0.0',
             release_date: '2025-01-10T10:00:00Z',
             summary: 'Major mobile app redesign',
-            new_features: ['New UI components', 'Offline mode support']
-          }
+            new_features: ['New UI components', 'Offline mode support'],
+          },
         },
         {
           kind: 'release_note',
@@ -382,12 +377,12 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             version: '2.1.0',
             release_date: '2025-01-15T10:00:00Z',
             summary: 'Performance improvements and bug fixes',
-            bug_fixes: ['Fixed crash on startup', 'Improved battery usage']
-          }
-        }
+            bug_fixes: ['Fixed crash on startup', 'Improved battery usage'],
+          },
+        },
       ];
 
-      releaseNotes.forEach(releaseNote => {
+      releaseNotes.forEach((releaseNote) => {
         const validation = safeValidateKnowledgeItem(releaseNote);
         expect(validation.success).toBe(true);
       });
@@ -401,8 +396,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing version - invalid
             release_date: '2025-01-15T10:00:00Z',
-            summary: 'Invalid release note'
-          }
+            summary: 'Invalid release note',
+          },
         },
         {
           kind: 'release_note' as const,
@@ -410,8 +405,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           data: {
             version: '1.0.0',
             // Missing release_date - invalid
-            summary: 'Another invalid release note'
-          }
+            summary: 'Another invalid release note',
+          },
         },
         {
           kind: 'release_note' as const,
@@ -420,11 +415,11 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             version: '2.0.0',
             release_date: 'invalid-date-format',
             // Missing summary - invalid
-          }
-        }
+          },
+        },
       ];
 
-      invalidReleaseNotes.forEach(releaseNote => {
+      invalidReleaseNotes.forEach((releaseNote) => {
         const validation = safeValidateKnowledgeItem(releaseNote);
         expect(validation.success).toBe(false);
         if (!validation.success) {
@@ -444,9 +439,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           release_date: '2025-01-15T10:00:00Z',
           summary: 'Major release with authentication system',
           new_features: ['OAuth 2.0 support', 'Enhanced security'],
-          bug_fixes: ['Fixed login issues']
+          bug_fixes: ['Fixed login issues'],
         },
-        tags: { major: true, security: true }
+        tags: { major: true, security: true },
       };
 
       const validation = safeValidateKnowledgeItem(releaseNote);
@@ -467,8 +462,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         data: {
           version: '1.0.1',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Bug fix release'
-        }
+          summary: 'Bug fix release',
+        },
       };
 
       const validation = safeValidateKnowledgeItem(minimalReleaseNote);
@@ -491,17 +486,12 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           new_features: [
             'Real-time collaboration',
             'Dark mode support',
-            'Advanced search functionality'
+            'Advanced search functionality',
           ],
-          bug_fixes: [
-            'Fixed synchronization issues',
-            'Resolved performance bottlenecks'
-          ],
-          breaking_changes: [
-            'Updated API endpoints to v2'
-          ]
+          bug_fixes: ['Fixed synchronization issues', 'Resolved performance bottlenecks'],
+          breaking_changes: ['Updated API endpoints to v2'],
         },
-        tags: { feature: true, collaboration: true, 'ui-improvement': true }
+        tags: { feature: true, collaboration: true, 'ui-improvement': true },
       };
 
       const validation = safeValidateKnowledgeItem(richReleaseNote);
@@ -521,13 +511,13 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note',
         scope: {
           project: 'project-alpha',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Project Alpha initial release'
-        }
+          summary: 'Project Alpha initial release',
+        },
       };
 
       const validation = safeValidateKnowledgeItem(projectReleaseNote);
@@ -544,26 +534,26 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note',
         scope: {
           project: 'web-platform',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.0.0',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Main branch release'
-        }
+          summary: 'Main branch release',
+        },
       };
 
       const developBranchRelease: ReleaseNoteItem = {
         kind: 'release_note',
         scope: {
           project: 'web-platform',
-          branch: 'develop'
+          branch: 'develop',
         },
         data: {
           version: '1.9.0-beta',
           release_date: '2025-01-14T10:00:00Z',
-          summary: 'Develop branch preview release'
-        }
+          summary: 'Develop branch preview release',
+        },
       };
 
       // Validate both release notes
@@ -590,29 +580,29 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           kind: 'release_note' as const,
           scope: {
             // Missing project
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             version: '1.0.0',
             release_date: '2025-01-15T10:00:00Z',
-            summary: 'Invalid scope release'
-          }
+            summary: 'Invalid scope release',
+          },
         },
         {
           kind: 'release_note' as const,
           scope: {
-            project: 'test-project'
+            project: 'test-project',
             // Missing branch
           },
           data: {
             version: '1.0.0',
             release_date: '2025-01-15T10:00:00Z',
-            summary: 'Another invalid scope release'
-          }
-        }
+            summary: 'Another invalid scope release',
+          },
+        },
       ];
 
-      invalidScopeReleaseNotes.forEach(releaseNote => {
+      invalidScopeReleaseNotes.forEach((releaseNote) => {
         const validation = safeValidateKnowledgeItem(releaseNote);
         expect(validation.success).toBe(false);
       });
@@ -632,13 +622,13 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             'Advanced machine learning pipeline with automated model training and deployment capabilities',
             'Multi-tenant architecture with role-based access control and resource isolation',
             'Real-time data streaming platform supporting Apache Kafka integration and custom connectors',
-            'Comprehensive audit logging system with immutable records and regulatory compliance features'
+            'Comprehensive audit logging system with immutable records and regulatory compliance features',
           ],
           bug_fixes: [
             'Resolved memory corruption issues in high-throughput data processing scenarios',
-            'Fixed authentication token validation problems under concurrent load conditions'
-          ]
-        }
+            'Fixed authentication token validation problems under concurrent load conditions',
+          ],
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(complexReleaseNote);
@@ -662,13 +652,13 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             'Database schema completely redesigned - requires full data migration using provided migration scripts',
             'API authentication changed from Basic Auth to Bearer tokens - all clients must be updated',
             'Configuration file format changed from JSON to YAML - manual conversion required',
-            'Removed support for Node.js < 18.0.0 - upgrade runtime environment'
+            'Removed support for Node.js < 18.0.0 - upgrade runtime environment',
           ],
           deprecations: [
             'Legacy REST endpoints will be removed in v6.0.0',
-            'Old configuration loader will be deprecated in next release'
-          ]
-        }
+            'Old configuration loader will be deprecated in next release',
+          ],
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(breakingReleaseNote);
@@ -682,23 +672,23 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
 
     it('should handle version format edge cases', () => {
       const edgeCaseVersions = [
-        '1.0',           // Missing patch
-        'v1.0.0.0',     // Extra version component
-        '1.0.0.0',      // Extra without v prefix
-        'latest',       // Non-semantic
+        '1.0', // Missing patch
+        'v1.0.0.0', // Extra version component
+        '1.0.0.0', // Extra without v prefix
+        'latest', // Non-semantic
         '1.0.0-alpha.1.beta.2', // Complex pre-release
-        '1.0.0+build.123.456'  // Complex build metadata
+        '1.0.0+build.123.456', // Complex build metadata
       ];
 
-      edgeCaseVersions.forEach(version => {
+      edgeCaseVersions.forEach((version) => {
         const releaseNote = {
           kind: 'release_note' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             version,
             release_date: '2025-01-15T10:00:00Z',
-            summary: 'Test release'
-          }
+            summary: 'Test release',
+          },
         };
 
         const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -718,8 +708,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           new_features: [],
           bug_fixes: [],
           breaking_changes: [],
-          deprecations: []
-        }
+          deprecations: [],
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithEmptyArrays);
@@ -741,8 +731,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
           release_date: '2025-01-15T10:00:00Z',
           summary: 'Test release',
           unknown_field: 'should not be allowed',
-          another_unknown: { nested: 'object' }
-        }
+          another_unknown: { nested: 'object' },
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithExtraFields);
@@ -756,23 +746,23 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note',
         scope: {
           project: 'integration-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '3.2.1',
           release_date: '2025-01-15T10:00:00Z',
           summary: 'Integration test release',
           new_features: ['Feature A', 'Feature B'],
-          bug_fixes: ['Bug X fix']
+          bug_fixes: ['Bug X fix'],
         },
         tags: { integration: true, test: true },
         source: {
           actor: 'test-system',
           tool: 'automated-tests',
-          timestamp: '2025-01-15T10:00:00Z'
+          timestamp: '2025-01-15T10:00:00Z',
         },
         idempotency_key: 'test-integration-key-12345',
-        ttl_policy: 'long'
+        ttl_policy: 'long',
       };
 
       const validation = safeValidateKnowledgeItem(knowledgeItem);
@@ -790,9 +780,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         data: {
           version: '1.0.0',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Test release with TTL'
+          summary: 'Test release with TTL',
         },
-        ttl_policy: 'short'
+        ttl_policy: 'short',
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithTTL);
@@ -809,9 +799,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         data: {
           version: '1.0.0',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Test release with idempotency'
+          summary: 'Test release with idempotency',
         },
-        idempotency_key: 'release-1.0.0-2025-01-15'
+        idempotency_key: 'release-1.0.0-2025-01-15',
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithIdempotency);
@@ -828,20 +818,20 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         data: {
           version: '2.1.0',
           release_date: '2025-01-15T10:00:00Z',
-          summary: 'Test release with metadata'
+          summary: 'Test release with metadata',
         },
         tags: {
           major: true,
           feature: 'authentication',
           priority: 'high',
           requires_migration: true,
-          affected_teams: 'backend'
+          affected_teams: 'backend',
         },
         source: {
           actor: 'release-coordinator',
           tool: 'release-management-system',
-          timestamp: '2025-01-15T10:00:00Z'
-        }
+          timestamp: '2025-01-15T10:00:00Z',
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithMetadata);
@@ -859,7 +849,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
         kind: 'release_note',
         scope: {
           project: 'complex-enterprise-system',
-          branch: 'production'
+          branch: 'production',
         },
         data: {
           version: '10.0.0-enterprise',
@@ -870,41 +860,41 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
             'Microservices architecture migration with service mesh integration',
             'Advanced analytics and real-time business intelligence dashboard',
             'Global multi-region deployment with automatic failover capabilities',
-            'Zero-trust security model with advanced threat detection'
+            'Zero-trust security model with advanced threat detection',
           ],
           bug_fixes: [
             'Resolved critical memory leaks in high-transaction processing workloads',
             'Fixed data consistency issues in distributed transaction management',
             'Corrected authentication failures under concurrent user load scenarios',
-            'Eliminated race conditions in real-time event processing pipeline'
+            'Eliminated race conditions in real-time event processing pipeline',
           ],
           breaking_changes: [
             'Complete API redesign - all endpoints migrated to GraphQL v2 specification',
             'Database layer migration from monolithic to distributed microservices architecture',
             'Authentication and authorization model completely overhauled',
-            'Configuration management system replaced with hierarchical distributed config service'
+            'Configuration management system replaced with hierarchical distributed config service',
           ],
           deprecations: [
             'Legacy REST API v1 will be discontinued in v11.0.0',
             'Old authentication middleware deprecated in favor of OAuth 2.2 + OpenID Connect',
             'Monolithic deployment approach deprecated - migrate to containerized orchestration',
-            'Legacy reporting system will be replaced in next major release cycle'
-          ]
+            'Legacy reporting system will be replaced in next major release cycle',
+          ],
         },
         tags: {
           milestone: true,
           major: true,
           'breaking-change': true,
           enterprise: true,
-          transformation: true
+          transformation: true,
         },
         source: {
           actor: 'enterprise-release-team',
           tool: 'enterprise-release-platform',
-          timestamp: '2025-01-15T10:00:00Z'
+          timestamp: '2025-01-15T10:00:00Z',
         },
         idempotency_key: 'enterprise-10.0.0-milestone-2025-01-15',
-        ttl_policy: 'permanent'
+        ttl_policy: 'permanent',
       };
 
       const result = ReleaseNoteSchema.safeParse(complexRelease);

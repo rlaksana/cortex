@@ -377,9 +377,22 @@ describe('Memory Store Service - Core Operations', () => {
 
   describe('Knowledge Type Integration (All 16 Types)', () => {
     const knowledgeTypes = [
-      'entity', 'relation', 'observation', 'section', 'runbook',
-      'change', 'issue', 'decision', 'todo', 'release_note',
-      'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
 
     it.each(knowledgeTypes)('should handle %s knowledge type', async (kind) => {
@@ -583,7 +596,7 @@ describe('Memory Store Service - Core Operations', () => {
             source: 'Component A',
             target: 'Component B',
             type: 'depends_on',
-            metadata: { relationship_strength: 'strong' }
+            metadata: { relationship_strength: 'strong' },
           },
         },
         {
@@ -592,7 +605,7 @@ describe('Memory Store Service - Core Operations', () => {
           scope: { project: 'test-project' },
           data: {
             content: 'Component A depends on Component B for database operations',
-            related_entities: ['Component A', 'Component B']
+            related_entities: ['Component A', 'Component B'],
           },
         },
       ];
@@ -624,7 +637,12 @@ describe('Memory Store Service - Core Operations', () => {
       // Assert
       expect(result.stored).toHaveLength(4);
       expect(result.errors).toHaveLength(0);
-      expect(result.stored.map(s => s.kind)).toEqual(['entity', 'entity', 'relation', 'observation']);
+      expect(result.stored.map((s) => s.kind)).toEqual([
+        'entity',
+        'entity',
+        'relation',
+        'observation',
+      ]);
     });
   });
 
@@ -684,13 +702,13 @@ describe('Memory Store Service - Core Operations', () => {
       expect(mockOrchestrator.storeItems).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
-            scope: { project: 'project-a', branch: 'main' }
+            scope: { project: 'project-a', branch: 'main' },
           }),
           expect.objectContaining({
-            scope: { project: 'project-a', branch: 'main' }
+            scope: { project: 'project-a', branch: 'main' },
           }),
           expect.objectContaining({
-            scope: { project: 'project-b', branch: 'develop' }
+            scope: { project: 'project-b', branch: 'develop' },
           }),
         ])
       );
@@ -758,7 +776,7 @@ describe('Memory Store Service - Core Operations', () => {
           data: {
             source: 'Project X Service',
             target: 'Auth Component',
-            type: 'uses'
+            type: 'uses',
           },
         },
       ];
@@ -1087,14 +1105,14 @@ describe('Memory Store Service - Core Operations', () => {
           scope: { project: 'test-project' },
           data: {
             // Missing required title field
-            rationale: 'Some rationale'
+            rationale: 'Some rationale',
           },
         },
         {
           kind: 'runbook',
           scope: { project: 'test-project' },
           data: {
-            title: 'Runbook without steps'
+            title: 'Runbook without steps',
             // Missing required steps field
           },
         },
@@ -1195,7 +1213,7 @@ describe('Memory Store Service - Core Operations', () => {
           data: {
             source: 'Nonexistent Entity',
             target: 'Another Nonexistent Entity',
-            type: 'depends_on'
+            type: 'depends_on',
           },
         },
       ];
@@ -1246,7 +1264,7 @@ describe('Memory Store Service - Core Operations', () => {
             name: 'Searchable Component',
             type: 'service',
             description: 'A component that can be found through search',
-            tags: ['searchable', 'indexed', 'discoverable']
+            tags: ['searchable', 'indexed', 'discoverable'],
           },
           metadata: {
             searchable_fields: ['name', 'description', 'tags'],
@@ -1385,7 +1403,7 @@ describe('Memory Store Service - Core Operations', () => {
           data: {
             title: 'Implement Database Indexing',
             rationale: 'Improve query performance',
-            alternatives: ['Add indexes', 'Optimize queries', 'Add caching']
+            alternatives: ['Add indexes', 'Optimize queries', 'Add caching'],
           },
           metadata: {
             semantic_vector: true,
@@ -1531,8 +1549,8 @@ describe('Memory Store Service - Core Operations', () => {
       // Assert
       expect(result.stored).toHaveLength(5);
       expect(result.errors).toHaveLength(3);
-      expect(result.stored.filter(s => s.kind === 'entity')).toHaveLength(3);
-      expect(result.stored.filter(s => s.kind === 'decision')).toHaveLength(2);
+      expect(result.stored.filter((s) => s.kind === 'entity')).toHaveLength(3);
+      expect(result.stored.filter((s) => s.kind === 'decision')).toHaveLength(2);
     });
 
     it('should handle transaction-like behavior for batches', async () => {
@@ -1551,7 +1569,7 @@ describe('Memory Store Service - Core Operations', () => {
           data: {
             source: 'Primary Entity',
             target: 'Secondary Entity',
-            type: 'depends_on'
+            type: 'depends_on',
           },
         },
         {
@@ -1590,7 +1608,7 @@ describe('Memory Store Service - Core Operations', () => {
       expect(result.stored).toHaveLength(3);
       expect(result.errors).toHaveLength(0);
       // All items should be stored successfully for transaction-like behavior
-      expect(result.stored.every(s => s.status === 'inserted')).toBe(true);
+      expect(result.stored.every((s) => s.status === 'inserted')).toBe(true);
     });
   });
 
@@ -1732,7 +1750,7 @@ describe('Memory Store Service - Core Operations', () => {
 
       // Assert
       expect(result.stored).toHaveLength(3);
-      expect(result.stored.every(s => s.status === 'deleted')).toBe(true);
+      expect(result.stored.every((s) => s.status === 'deleted')).toBe(true);
     });
   });
 
@@ -1770,12 +1788,12 @@ describe('Memory Store Service - Core Operations', () => {
       mockOrchestrator.storeItems.mockResolvedValue(expectedResponses[0]);
 
       // Act - Execute concurrent operations
-      const concurrentPromises = concurrentBatches.map(batch => memoryStore(batch));
+      const concurrentPromises = concurrentBatches.map((batch) => memoryStore(batch));
       const results = await Promise.all(concurrentPromises);
 
       // Assert
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.stored).toHaveLength(10);
         expect(result.errors).toHaveLength(0);
       });

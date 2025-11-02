@@ -1,39 +1,45 @@
 # Cortex MCP API - Short Reference
 
 ## Overview
+
 Cortex Memory MCP provides persistent knowledge management with 16 supported types, semantic deduplication, and intelligent search capabilities.
 
 ## Quick Start
 
 ### Store Knowledge Items
+
 ```typescript
 // Store items with automatic deduplication and expiry calculation
 await memory_store({
-  items: [{
-    kind: "entity",
-    content: "User authentication service",
-    scope: { project: "my-app", org: "default" },
-    data: { type: "service", status: "active" }
-  }]
-})
+  items: [
+    {
+      kind: 'entity',
+      content: 'User authentication service',
+      scope: { project: 'my-app', org: 'default' },
+      data: { type: 'service', status: 'active' },
+    },
+  ],
+});
 ```
 
 ### Search Knowledge Items
+
 ```typescript
 // Search with semantic matching and graph expansion
 await memory_find({
-  query: "authentication decisions",
-  scope: { project: "my-app" },
-  types: ["decision"],
-  mode: "auto",
+  query: 'authentication decisions',
+  scope: { project: 'my-app' },
+  types: ['decision'],
+  mode: 'auto',
   limit: 10,
-  expand: "relations"
-})
+  expand: 'relations',
+});
 ```
 
 ## Response Shapes
 
 ### Store Response
+
 ```typescript
 {
   results: [{
@@ -59,6 +65,7 @@ await memory_find({
 ```
 
 ### Find Response
+
 ```typescript
 {
   results: [{
@@ -90,11 +97,13 @@ await memory_find({
 ## Current Limits
 
 **Operations:**
+
 - Store: 100 items per batch, 10MB content per item
 - Search: 10,000 results max, semantic matching enabled
 - Batches: 100 items/batch for processing operations
 
 **Features:**
+
 - Scope isolation: project, branch, org levels
 - Expiry: Automatic TTL calculation (default=30d, short=24h, long=90d, permanent=∞)
 - Deduplication: Content hashing with similarity scoring
@@ -102,16 +111,19 @@ await memory_find({
 - Validation: Business rules and schema validation per type
 
 ## Error Handling
+
 - Business rule violations return `business_rule_blocked` status
 - Validation errors return `validation_error` with field details
 - Batch processing continues on individual item failures
 - Comprehensive logging with structured error context
 
 ## Search Modes
+
 - `fast`: Exact keyword matching (≤20 results)
 - `auto`: Smart hybrid approach (≤50 results)
 - `deep`: Semantic + graph expansion (≤100 results)
 
 ## Scope Management
+
 Default org scope `{org: 'default'}` applied automatically when no scope provided.
 Use project/branch/org combinations for proper isolation and cross-project querying.

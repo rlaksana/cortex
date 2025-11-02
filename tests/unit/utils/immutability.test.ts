@@ -23,7 +23,7 @@ import { vi } from 'vitest';
 // Setup global performance mock if not available
 if (typeof global.performance === 'undefined') {
   (global as any).performance = {
-    now: () => Date.now()
+    now: () => Date.now(),
   };
 }
 
@@ -100,12 +100,7 @@ describe('Immutability Helpers', () => {
     });
 
     it('should handle any ADR ID without database access', async () => {
-      const testIds = [
-        '123e4567-e89b-12d3-a456-426614174000',
-        'invalid-uuid',
-        '',
-        'any-string',
-      ];
+      const testIds = ['123e4567-e89b-12d3-a456-426614174000', 'invalid-uuid', '', 'any-string'];
 
       for (const adrId of testIds) {
         await expect(validateADRImmutability(adrId)).resolves.not.toThrow();
@@ -224,8 +219,8 @@ describe('Immutability Helpers', () => {
       const entityTypes = ['section', 'decision', 'todo', 'issue', 'runbook'];
       const operations = ['UPDATE', 'DELETE', 'INSERT'] as const;
 
-      entityTypes.forEach(entityType => {
-        operations.forEach(operation => {
+      entityTypes.forEach((entityType) => {
+        operations.forEach((operation) => {
           const result = checkImmutabilityConstraint(entityType, operation);
           expect(result).toBeNull();
         });
@@ -267,7 +262,7 @@ describe('Immutability Helpers', () => {
     it('should handle audit log protection across different operations', () => {
       const operations = ['INSERT', 'UPDATE', 'DELETE'] as const;
 
-      operations.forEach(operation => {
+      operations.forEach((operation) => {
         const violation = checkImmutabilityConstraint('event_audit', operation);
 
         if (operation === 'INSERT') {
@@ -301,7 +296,7 @@ describe('Immutability Helpers', () => {
       const adrIds = Array.from({ length: 10 }, (_, i) => `adr-id-${i}`);
 
       // All operations should complete without database access
-      const promises = adrIds.map(id => validateADRImmutability(id));
+      const promises = adrIds.map((id) => validateADRImmutability(id));
       await expect(Promise.all(promises)).resolves.not.toThrow();
     });
   });
@@ -336,7 +331,7 @@ describe('Immutability Helpers', () => {
     it('should handle malformed inputs to constraint checker', () => {
       const invalidInputs = [123, {}, [], true, Symbol('test')];
 
-      invalidInputs.forEach(input => {
+      invalidInputs.forEach((input) => {
         expect(() => checkImmutabilityConstraint(input as any, 'UPDATE')).not.toThrow();
         expect(() => checkImmutabilityConstraint('event_audit', input as any)).not.toThrow();
       });
@@ -371,7 +366,7 @@ describe('Immutability Helpers', () => {
     it('should handle constraint checking performance efficiently', () => {
       const testCases = Array.from({ length: 1000 }, (_, i) => ({
         entityType: i % 2 === 0 ? 'event_audit' : 'section',
-        operation: i % 3 === 0 ? 'INSERT' : 'UPDATE' as const,
+        operation: i % 3 === 0 ? 'INSERT' : ('UPDATE' as const),
       }));
 
       const startTime = performance.now();

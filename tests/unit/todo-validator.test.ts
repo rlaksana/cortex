@@ -47,9 +47,7 @@ describe('TodoValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Circular dependency detected: todo-A -> todo-B -> todo-A'
-      );
+      expect(result.errors).toContain('Circular dependency detected: todo-A -> todo-B -> todo-A');
     });
 
     it('should REJECT todo with complex circular dependency (A -> B -> C -> A)', async () => {
@@ -200,7 +198,9 @@ describe('TodoValidator - P5-T5.1 Business Rules', () => {
       );
       // Check that completed_at was auto-set
       expect(todoBeingCompleted.data.completed_at).toBeDefined();
-      expect(todoBeingCompleted.data.completed_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
+      expect(todoBeingCompleted.data.completed_at).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
+      );
     });
 
     it('should ACCEPT todo marked as done with existing completed_at timestamp', async () => {
@@ -282,9 +282,7 @@ describe('TodoValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Completed timestamp must be a valid ISO 8601 date string'
-      );
+      expect(result.errors).toContain('Completed timestamp must be a valid ISO 8601 date string');
     });
   });
 

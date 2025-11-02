@@ -17,20 +17,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('VectorDatabase - memory_store functionality', () => {
@@ -45,11 +45,13 @@ describe('VectorDatabase - memory_store functionality', () => {
 
   describe('storeItems', () => {
     it('should store single item successfully', async () => {
-      const items = [{
-        kind: 'entity',
-        content: 'Test entity',
-        metadata: { test: true }
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test entity',
+          metadata: { test: true },
+        },
+      ];
 
       const result = await db.storeItems(items);
 
@@ -67,7 +69,7 @@ describe('VectorDatabase - memory_store functionality', () => {
       const items = Array.from({ length: 10 }, (_, i) => ({
         kind: 'entity',
         content: `Test item ${i}`,
-        metadata: { batch: true, index: i }
+        metadata: { batch: true, index: i },
       }));
 
       const result = await db.storeItems(items);
@@ -78,10 +80,12 @@ describe('VectorDatabase - memory_store functionality', () => {
     });
 
     it('should handle storage errors gracefully', async () => {
-      const items = [{
-        kind: 'entity',
-        content: 'Test item'
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test item',
+        },
+      ];
 
       // Mock upsert to throw an error
       mockQdrant.upsert.mockRejectedValue(new Error('Connection failed'));
@@ -94,12 +98,7 @@ describe('VectorDatabase - memory_store functionality', () => {
     });
 
     it('should handle invalid items', async () => {
-      const items = [
-        null,
-        undefined,
-        {},
-        { kind: 'invalid-kind' }
-      ];
+      const items = [null, undefined, {}, { kind: 'invalid-kind' }];
 
       const result = await db.storeItems(items as any);
 
@@ -118,8 +117,8 @@ describe('VectorDatabase - memory_store functionality', () => {
           payload: {
             kind: 'entity',
             content: 'Test content 1',
-            metadata: { test: true }
-          }
+            metadata: { test: true },
+          },
         },
         {
           id: 'test-id-2',
@@ -127,9 +126,9 @@ describe('VectorDatabase - memory_store functionality', () => {
           payload: {
             kind: 'observation',
             content: 'Test content 2',
-            metadata: { test: true }
-          }
-        }
+            metadata: { test: true },
+          },
+        },
       ]);
     });
 
@@ -165,7 +164,7 @@ describe('VectorDatabase - memory_store functionality', () => {
       mockQdrant.getCollection.mockResolvedValue({
         points_count: 100,
         status: 'green',
-        optimizer_status: 'ok'
+        optimizer_status: 'ok',
       });
     });
 
@@ -190,7 +189,7 @@ describe('VectorDatabase - memory_store functionality', () => {
   describe('getHealth', () => {
     it('should return healthy status when connection works', async () => {
       mockQdrant.getCollections.mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
 
       const health = await db.getHealth();
@@ -213,9 +212,22 @@ describe('VectorDatabase - memory_store functionality', () => {
   describe('Knowledge Type Operations', () => {
     it('should handle all 16 knowledge types', async () => {
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       for (const kind of knowledgeTypes) {
@@ -232,18 +244,18 @@ describe('VectorDatabase - memory_store functionality', () => {
         {
           kind: 'decision',
           content: 'Technical decision',
-          metadata: { alternatives: ['Option A', 'Option B'], rationale: 'Performance' }
+          metadata: { alternatives: ['Option A', 'Option B'], rationale: 'Performance' },
         },
         {
           kind: 'observation',
           content: 'System observation',
-          metadata: { metrics: { cpu: 80, memory: 60 } }
+          metadata: { metrics: { cpu: 80, memory: 60 } },
         },
         {
           kind: 'runbook',
           content: 'Operational procedure',
-          metadata: { steps: ['Step 1', 'Step 2'], owner: 'ops-team' }
-        }
+          metadata: { steps: ['Step 1', 'Step 2'], owner: 'ops-team' },
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -255,10 +267,12 @@ describe('VectorDatabase - memory_store functionality', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should handle network timeouts', async () => {
-      const items = [{
-        kind: 'entity',
-        content: 'Test item'
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test item',
+        },
+      ];
 
       // Mock timeout error
       mockQdrant.upsert.mockRejectedValue(new Error('ETIMEDOUT'));
@@ -273,7 +287,7 @@ describe('VectorDatabase - memory_store functionality', () => {
       const items = [
         { content: 'Missing kind' },
         { kind: 'entity' }, // Missing content
-        { kind: 'entity', content: 'test' } // Valid item
+        { kind: 'entity', content: 'test' }, // Valid item
       ];
 
       const result = await db.storeItems(items as any);
@@ -287,7 +301,7 @@ describe('VectorDatabase - memory_store functionality', () => {
       const item = {
         kind: 'entity',
         content: largeContent,
-        metadata: { size: largeContent.length }
+        metadata: { size: largeContent.length },
       };
 
       const result = await db.storeItems([item]);
@@ -305,7 +319,7 @@ describe('VectorDatabase - memory_store functionality', () => {
         { kind: 'entity', content: 'Valid item 2' },
         undefined,
         { invalid: 'item' },
-        { kind: 'entity', content: 'Valid item 3' }
+        { kind: 'entity', content: 'Valid item 3' },
       ];
 
       const result = await db.storeItems(items as any);

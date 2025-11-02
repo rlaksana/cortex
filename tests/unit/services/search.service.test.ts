@@ -21,64 +21,64 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 // Mock Qdrant client
 const mockQdrantClient = {
   section: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   adrDecision: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   issueLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   todoLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   runbook: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   changeLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   releaseNote: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   ddlHistory: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   prContext: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeEntity: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeRelation: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   knowledgeObservation: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   incidentLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   releaseLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   riskLog: {
-    findMany: vi.fn()
+    findMany: vi.fn(),
   },
   assumptionLog: {
-    findMany: vi.fn()
-  }
+    findMany: vi.fn(),
+  },
 };
 
 // Mock cache factory
@@ -96,10 +96,10 @@ vi.mock('../../../src/utils/lru-cache', () => ({
         totalHits: 0,
         totalMisses: 0,
         expiredItems: 0,
-        evictedItems: 0
-      }))
-    })
-  }
+        evictedItems: 0,
+      })),
+    }),
+  },
 }));
 
 describe('SearchService - Comprehensive Search Functionality', () => {
@@ -156,7 +156,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const query: SearchQuery = {
         query: 'search kind:decision project:myapp after:2024-01-01',
         scope: { project: 'myapp' },
-        types: ['decision']
+        types: ['decision'],
       };
 
       const { parsed, validation } = queryParser.parseQuery(query);
@@ -171,7 +171,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       searchService.updateConfig({
         enableFuzzyMatching: true,
         enableTrigramSearch: true,
-        similarityThreshold: 0.7
+        similarityThreshold: 0.7,
       });
 
       const config = searchService.getConfig();
@@ -184,12 +184,12 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const queries = [
         { query: 'recherche en français', expected: ['recherche', 'français'] },
         { query: 'búsqueda en español', expected: ['búsqueda', 'español'] },
-        { query: 'Suche auf Deutsch', expected: ['suche', 'deutsch'] }
+        { query: 'Suche auf Deutsch', expected: ['suche', 'deutsch'] },
       ];
 
       queries.forEach(({ query, expected }) => {
         const { parsed } = queryParser.parseQuery({ query });
-        expected.forEach(term => {
+        expected.forEach((term) => {
           expect(parsed.normalized).toContain(term.toLowerCase());
         });
       });
@@ -206,8 +206,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'entity',
           data: { title: 'User Authentication System', content: 'Secure login mechanisms' },
           tags: { project: 'myapp' },
-          created_at: new Date('2024-01-01')
-        }
+          created_at: new Date('2024-01-01'),
+        },
       ];
 
       mockQdrantClient.knowledgeEntity.findMany.mockResolvedValue(mockCandidates);
@@ -228,15 +228,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'decision',
           data: { title: 'Database Architecture Decision', description: 'Choosing PostgreSQL' },
           tags: { project: 'backend' },
-          created_at: new Date('2024-02-01')
-        }
+          created_at: new Date('2024-02-01'),
+        },
       ];
 
       mockQdrantClient.adrDecision.findMany.mockResolvedValue(mockCandidates);
 
       const query: SearchQuery = {
         query: 'PostgreSQL database architecture',
-        types: ['decision']
+        types: ['decision'],
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -255,15 +255,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'observation',
           data: { title: 'System Performance Metrics', content: 'CPU usage at 80%' },
           tags: { project: 'monitoring', branch: 'main' },
-          created_at: new Date('2024-03-01')
-        }
+          created_at: new Date('2024-03-01'),
+        },
       ];
 
       mockQdrantClient.knowledgeObservation.findMany.mockResolvedValue(mockCandidates);
 
       const query: SearchQuery = {
         query: 'performance metrics',
-        scope: { project: 'monitoring', branch: 'main' }
+        scope: { project: 'monitoring', branch: 'main' },
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -282,15 +282,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'entity',
           data: { title: 'Exact Match Title', content: 'Related content' },
           tags: { project: 'test' },
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: '2',
           kind: 'entity',
           data: { title: 'Partial Match', content: 'Some related content here' },
           tags: { project: 'test' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ];
 
       mockQdrantClient.knowledgeEntity.findMany.mockResolvedValue(mockCandidates);
@@ -300,7 +300,9 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const result = await searchService.performFallbackSearch(parsed, query);
 
       if (result.results.length > 1) {
-        expect(result.results[0].confidence_score).toBeGreaterThanOrEqual(result.results[1].confidence_score);
+        expect(result.results[0].confidence_score).toBeGreaterThanOrEqual(
+          result.results[1].confidence_score
+        );
       }
     });
   });
@@ -314,8 +316,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'decision',
           data: { title: 'Security Decision', description: 'Authentication method' },
           tags: { project: 'security', org: 'company' },
-          created_at: new Date('2024-01-15')
-        }
+          created_at: new Date('2024-01-15'),
+        },
       ];
 
       mockQdrantClient.adrDecision.findMany.mockResolvedValue(mockCandidates);
@@ -323,7 +325,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const query: SearchQuery = {
         query: 'security',
         types: ['decision'],
-        scope: { project: 'security', org: 'company' }
+        scope: { project: 'security', org: 'company' },
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -333,9 +335,9 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             AND: expect.arrayContaining([
-              expect.objectContaining({ tags: expect.objectContaining({ project: 'security' }) })
-            ])
-          })
+              expect.objectContaining({ tags: expect.objectContaining({ project: 'security' }) }),
+            ]),
+          }),
         })
       );
     });
@@ -348,8 +350,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'decision',
           data: { title: 'Architecture Decision' },
           tags: { project: 'backend' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockQdrantClient.issueLog.findMany.mockResolvedValue([
@@ -358,13 +360,13 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'issue',
           data: { title: 'Frontend Bug' },
           tags: { project: 'frontend' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       const query: SearchQuery = {
         query: 'architecture',
-        types: ['decision', 'issue']
+        types: ['decision', 'issue'],
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -378,7 +380,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
     it('should handle dynamic filter generation', async () => {
       const query: SearchQuery = {
         query: 'test',
-        scope: { project: 'dynamic', branch: 'feature-branch', org: 'test-org' }
+        scope: { project: 'dynamic', branch: 'feature-branch', org: 'test-org' },
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -390,10 +392,12 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           where: expect.objectContaining({
             AND: expect.arrayContaining([
               expect.objectContaining({ tags: expect.objectContaining({ project: 'dynamic' }) }),
-              expect.objectContaining({ tags: expect.objectContaining({ branch: 'feature-branch' }) }),
-              expect.objectContaining({ tags: expect.objectContaining({ org: 'test-org' }) })
-            ])
-          })
+              expect.objectContaining({
+                tags: expect.objectContaining({ branch: 'feature-branch' }),
+              }),
+              expect.objectContaining({ tags: expect.objectContaining({ org: 'test-org' }) }),
+            ]),
+          }),
         })
       );
     });
@@ -406,8 +410,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           entity_type: 'component',
           data: { title: 'Test Component' },
           tags: { project: 'test' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ];
 
       mockQdrantClient.knowledgeEntity.findMany.mockResolvedValue(mockCandidates);
@@ -415,7 +419,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const query: SearchQuery = {
         query: 'component',
         types: ['entity'],
-        scope: { project: 'test' }
+        scope: { project: 'test' },
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -426,9 +430,9 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           where: expect.objectContaining({
             entity_type: { in: ['entity'] },
             AND: expect.arrayContaining([
-              expect.objectContaining({ tags: expect.objectContaining({ project: 'test' }) })
-            ])
-          })
+              expect.objectContaining({ tags: expect.objectContaining({ project: 'test' }) }),
+            ]),
+          }),
         })
       );
     });
@@ -441,7 +445,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         get: vi.fn().mockReturnValue([]),
         set: vi.fn(),
         clear: vi.fn(),
-        getStats: vi.fn(() => ({ hitRate: 85, totalHits: 100, totalMisses: 15 }))
+        getStats: vi.fn(() => ({ hitRate: 85, totalHits: 100, totalMisses: 15 })),
       };
 
       // Create search service with mocked cache
@@ -466,15 +470,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           data: { title: 'Cached Result' },
           created_at: '2024-01-01',
           confidence_score: 0.9,
-          match_type: 'exact'
-        }
+          match_type: 'exact',
+        },
       ];
 
       const mockCache = {
         get: vi.fn().mockReturnValue(cachedResults),
         set: vi.fn(),
         clear: vi.fn(),
-        getStats: vi.fn()
+        getStats: vi.fn(),
       };
 
       const searchServiceWithMockCache = new SearchService();
@@ -497,7 +501,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
 
       // Mock slow database response
       mockQdrantClient.knowledgeEntity.findMany.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve([]), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve([]), 100))
       );
 
       const query: SearchQuery = { query: 'performance test' };
@@ -525,7 +529,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       // Setup multiple concurrent searches
       const queries = Array.from({ length: 5 }, (_, i) => ({
         query: `concurrent search ${i}`,
-        parsed: queryParser.parseQuery({ query: `concurrent search ${i}` }).parsed
+        parsed: queryParser.parseQuery({ query: `concurrent search ${i}` }).parsed,
       }));
 
       // Mock responses
@@ -535,8 +539,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'section',
           data: { title: 'Concurrent Result' },
           tags: {},
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       const searchPromises = queries.map(({ query, parsed }) =>
@@ -546,7 +550,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const results = await Promise.all(searchPromises);
 
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toHaveProperty('results');
         expect(result).toHaveProperty('totalCount');
       });
@@ -557,9 +561,22 @@ describe('SearchService - Comprehensive Search Functionality', () => {
   describe('Knowledge Type-Specific Search', () => {
     it('should implement specialized search for each knowledge type', async () => {
       const knowledgeTypes = [
-        'section', 'decision', 'issue', 'todo', 'runbook', 'change',
-        'release_note', 'ddl', 'pr_context', 'entity', 'relation',
-        'observation', 'incident', 'release', 'risk', 'assumption'
+        'section',
+        'decision',
+        'issue',
+        'todo',
+        'runbook',
+        'change',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'entity',
+        'relation',
+        'observation',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       for (const kind of knowledgeTypes) {
@@ -569,13 +586,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         // Mock response for each type
         const mockModel = (mockQdrantClient as any)[tableName];
         if (mockModel) {
-          mockModel.findMany.mockResolvedValueOnce([{
-            id: `test-${kind}`,
-            kind,
-            data: { title: `Test ${kind}` },
-            tags: {},
-            created_at: new Date()
-          }]);
+          mockModel.findMany.mockResolvedValueOnce([
+            {
+              id: `test-${kind}`,
+              kind,
+              data: { title: `Test ${kind}` },
+              tags: {},
+              created_at: new Date(),
+            },
+          ]);
         }
       }
 
@@ -591,20 +610,38 @@ describe('SearchService - Comprehensive Search Functionality', () => {
     it('should handle cross-type federated search', async () => {
       // Mock responses from different types
       mockQdrantClient.adrDecision.findMany.mockResolvedValue([
-        { id: 'decision-1', kind: 'decision', data: { title: 'Architecture Decision' }, tags: {}, created_at: new Date() }
+        {
+          id: 'decision-1',
+          kind: 'decision',
+          data: { title: 'Architecture Decision' },
+          tags: {},
+          created_at: new Date(),
+        },
       ]);
 
       mockQdrantClient.issueLog.findMany.mockResolvedValue([
-        { id: 'issue-1', kind: 'issue', data: { title: 'Critical Issue' }, tags: {}, created_at: new Date() }
+        {
+          id: 'issue-1',
+          kind: 'issue',
+          data: { title: 'Critical Issue' },
+          tags: {},
+          created_at: new Date(),
+        },
       ]);
 
       mockQdrantClient.knowledgeEntity.findMany.mockResolvedValue([
-        { id: 'entity-1', kind: 'entity', data: { title: 'System Component' }, tags: {}, created_at: new Date() }
+        {
+          id: 'entity-1',
+          kind: 'entity',
+          data: { title: 'System Component' },
+          tags: {},
+          created_at: new Date(),
+        },
       ]);
 
       const query: SearchQuery = {
         query: 'architecture critical system',
-        types: ['decision', 'issue', 'entity']
+        types: ['decision', 'issue', 'entity'],
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -623,8 +660,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'decision',
           data: { title: 'Exact Architecture Decision Match' },
           tags: { project: 'architecture' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockQdrantClient.knowledgeObservation.findMany.mockResolvedValue([
@@ -633,13 +670,13 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'observation',
           data: { content: 'Some architecture related observation' },
           tags: { project: 'other' },
-          created_at: new Date('2023-01-01')
-        }
+          created_at: new Date('2023-01-01'),
+        },
       ]);
 
       const query: SearchQuery = {
         query: 'architecture decision',
-        types: ['decision', 'observation']
+        types: ['decision', 'observation'],
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -647,7 +684,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
 
       if (result.results.length > 1) {
         // Results should be ranked by confidence score
-        const scores = result.results.map(r => r.confidence_score);
+        const scores = result.results.map((r) => r.confidence_score);
         const sortedScores = [...scores].sort((a, b) => b - a);
         expect(scores).toEqual(sortedScores);
       }
@@ -662,13 +699,13 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           entity_type: 'service',
           data: { name: 'User Service', description: 'Handles user operations' },
           tags: { project: 'backend' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       const query: SearchQuery = {
         query: 'user service',
-        types: ['entity']
+        types: ['entity'],
       };
 
       const { parsed } = queryParser.parseQuery(query);
@@ -678,8 +715,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         expect.objectContaining({
           select: expect.objectContaining({
             entity_type: true,
-            name: true
-          })
+            name: true,
+          }),
         })
       );
     });
@@ -691,11 +728,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const searchService = new SearchService();
 
       // Perform multiple searches to generate analytics
-      const queries = [
-        'user authentication',
-        'database performance',
-        'security policies'
-      ];
+      const queries = ['user authentication', 'database performance', 'security policies'];
 
       for (const query of queries) {
         const { parsed } = queryParser.parseQuery({ query });
@@ -711,7 +744,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const complexQuery: SearchQuery = {
         query: 'authentication system "exact phrase" kind:decision project:security',
         types: ['decision'],
-        scope: { project: 'security' }
+        scope: { project: 'security' },
       };
 
       const { parsed, validation } = queryParser.parseQuery(complexQuery);
@@ -729,15 +762,15 @@ describe('SearchService - Comprehensive Search Functionality', () => {
           kind: 'entity',
           data: { title: 'High Quality Match', content: 'Exact content match' },
           tags: { project: 'test' },
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: 'medium-quality-1',
           kind: 'entity',
           data: { content: 'Partial match content' },
           tags: { project: 'test' },
-          created_at: new Date('2023-01-01')
-        }
+          created_at: new Date('2023-01-01'),
+        },
       ]);
 
       const query: SearchQuery = { query: 'high quality exact match' };
@@ -745,7 +778,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
       const result = await searchService.performFallbackSearch(parsed, query);
 
       if (result.results.length > 0) {
-        const avgConfidence = result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length;
+        const avgConfidence =
+          result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length;
         expect(avgConfidence).toBeGreaterThan(0);
         expect(avgConfidence).toBeLessThanOrEqual(1.0);
       }
@@ -770,7 +804,9 @@ describe('SearchService - Comprehensive Search Functionality', () => {
 
     it('should handle search error tracking and recovery', async () => {
       // Mock database error
-      mockQdrantClient.knowledgeEntity.findMany.mockRejectedValue(new Error('Database connection failed'));
+      mockQdrantClient.knowledgeEntity.findMany.mockRejectedValue(
+        new Error('Database connection failed')
+      );
 
       const query: SearchQuery = { query: 'error test' };
       const { parsed } = queryParser.parseQuery(query);
@@ -793,8 +829,8 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         similarityThreshold: 0.8,
         resultBoosting: {
           exactMatch: 2.0,
-          titleMatch: 1.5
-        }
+          titleMatch: 1.5,
+        },
       });
 
       const config = searchService.getConfig();
@@ -809,7 +845,7 @@ describe('SearchService - Comprehensive Search Functionality', () => {
         query: 'test query',
         types: ['decision'],
         scope: { project: 'test' },
-        limit: 25
+        limit: 25,
       };
 
       const { parsed } = queryParser.parseQuery(query);

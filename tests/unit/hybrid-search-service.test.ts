@@ -10,29 +10,29 @@ import type { SearchQuery, SearchResult } from '../../src/types/core-interfaces.
 vi.mock('../../src/db/qdrant.js', () => ({
   getQdrantClient: vi.fn(() => ({
     search: vi.fn(),
-    scroll: vi.fn()
-  }))
+    scroll: vi.fn(),
+  })),
 }));
 
 vi.mock('../../src/services/search/query-parser.js', () => ({
   queryParser: {
-    parse: vi.fn()
-  }
+    parse: vi.fn(),
+  },
 }));
 
 vi.mock('../../src/services/search/graph-expansion-service.js', () => ({
   graphExpansionService: {
-    expandGraph: vi.fn()
-  }
+    expandGraph: vi.fn(),
+  },
 }));
 
 vi.mock('../../src/utils/lru-cache.js', () => ({
   CacheFactory: {
     createSearchCache: vi.fn(() => ({
       get: vi.fn(),
-      set: vi.fn()
-    }))
-  }
+      set: vi.fn(),
+    })),
+  },
 }));
 
 // Import after mocking
@@ -51,7 +51,7 @@ describe('HybridSearchService', () => {
       const query: SearchQuery = {
         query: 'architecture decisions',
         mode: 'auto',
-        limit: 10
+        limit: 10,
       };
 
       // Mock semantic results
@@ -63,8 +63,8 @@ describe('HybridSearchService', () => {
           data: { title: 'Microservices Architecture Decision', content: '...' },
           created_at: new Date().toISOString(),
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock sparse results
@@ -76,15 +76,17 @@ describe('HybridSearchService', () => {
           data: { title: 'Database Choice Decision', content: '...' },
           created_at: new Date().toISOString(),
           confidence_score: 0.7,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       // Mock the search methods to return our test data
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockResolvedValue(mockSemanticResults);
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockResolvedValue(mockSparseResults);
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockResolvedValue(
+        mockSemanticResults
+      );
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockResolvedValue(
+        mockSparseResults
+      );
 
       const result = await hybridSearchService.searchByMode(query);
 
@@ -97,7 +99,7 @@ describe('HybridSearchService', () => {
     it('should apply type-aware boosting for critical knowledge types', async () => {
       const query: SearchQuery = {
         query: 'test query',
-        mode: 'auto'
+        mode: 'auto',
       };
 
       const mockResults: SearchResult[] = [
@@ -107,7 +109,7 @@ describe('HybridSearchService', () => {
           scope: { org: 'test' },
           data: { content: '...' },
           confidence_score: 0.5,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'section-1',
@@ -115,36 +117,35 @@ describe('HybridSearchService', () => {
           scope: { org: 'test' },
           data: { content: '...' },
           confidence_score: 0.5,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockResolvedValue(mockResults);
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockResolvedValue([]);
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockResolvedValue(mockResults);
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockResolvedValue([]);
 
       const result = await hybridSearchService.searchByMode(query);
 
       // Decision should be boosted higher than section
-      const decisionResult = result.results.find(r => r.kind === 'decision');
-      const sectionResult = result.results.find(r => r.kind === 'section');
+      const decisionResult = result.results.find((r) => r.kind === 'decision');
+      const sectionResult = result.results.find((r) => r.kind === 'section');
 
       expect(decisionResult?.rankingFactors.typeBoost).toBe(1.5);
       expect(sectionResult?.rankingFactors.typeBoost).toBe(1.0);
-      expect(decisionResult?.rankingFactors.finalScore)
-        .toBeGreaterThan(sectionResult?.rankingFactors.finalScore || 0);
+      expect(decisionResult?.rankingFactors.finalScore).toBeGreaterThan(
+        sectionResult?.rankingFactors.finalScore || 0
+      );
     });
 
     it('should apply recency boost to recent items', async () => {
       const query: SearchQuery = {
         query: 'test query',
-        mode: 'auto'
+        mode: 'auto',
       };
 
       const now = new Date();
-      const recentDate = new Date(now.getTime() - (1000 * 60 * 60 * 24 * 5)); // 5 days ago
-      const oldDate = new Date(now.getTime() - (1000 * 60 * 60 * 24 * 60)); // 60 days ago
+      const recentDate = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 5); // 5 days ago
+      const oldDate = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 60); // 60 days ago
 
       const mockResults: SearchResult[] = [
         {
@@ -154,7 +155,7 @@ describe('HybridSearchService', () => {
           data: { content: '...' },
           created_at: recentDate.toISOString(),
           confidence_score: 0.5,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'old-1',
@@ -163,19 +164,17 @@ describe('HybridSearchService', () => {
           data: { content: '...' },
           created_at: oldDate.toISOString(),
           confidence_score: 0.5,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockResolvedValue(mockResults);
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockResolvedValue([]);
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockResolvedValue(mockResults);
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockResolvedValue([]);
 
       const result = await hybridSearchService.searchByMode(query);
 
-      const recentResult = result.results.find(r => r.id === 'recent-1');
-      const oldResult = result.results.find(r => r.id === 'old-1');
+      const recentResult = result.results.find((r) => r.id === 'recent-1');
+      const oldResult = result.results.find((r) => r.id === 'old-1');
 
       expect(recentResult?.rankingFactors.recencyBoost).toBeGreaterThan(1.0);
       expect(oldResult?.rankingFactors.recencyBoost).toBe(1.0);
@@ -185,7 +184,7 @@ describe('HybridSearchService', () => {
       const query: SearchQuery = {
         query: 'test query',
         mode: 'auto',
-        scope: { org: 'test-org', project: 'test-project' }
+        scope: { org: 'test-org', project: 'test-project' },
       };
 
       const mockResults: SearchResult[] = [
@@ -195,7 +194,7 @@ describe('HybridSearchService', () => {
           scope: { org: 'test-org', project: 'test-project' },
           data: { content: '...' },
           confidence_score: 0.5,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'unscoped-1',
@@ -203,19 +202,17 @@ describe('HybridSearchService', () => {
           scope: { org: 'other-org' },
           data: { content: '...' },
           confidence_score: 0.5,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockResolvedValue(mockResults);
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockResolvedValue([]);
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockResolvedValue(mockResults);
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockResolvedValue([]);
 
       const result = await hybridSearchService.searchByMode(query);
 
-      const scopedResult = result.results.find(r => r.id === 'scoped-1');
-      const unscopedResult = result.results.find(r => r.id === 'unscoped-1');
+      const scopedResult = result.results.find((r) => r.id === 'scoped-1');
+      const unscopedResult = result.results.find((r) => r.id === 'unscoped-1');
 
       expect(scopedResult?.rankingFactors.scopeBoost).toBeGreaterThan(1.0);
       expect(unscopedResult?.rankingFactors.scopeBoost).toBe(1.0);
@@ -226,12 +223,13 @@ describe('HybridSearchService', () => {
     it('should enforce timeout guardrail for deep search', async () => {
       const query: SearchQuery = {
         query: 'complex query',
-        mode: 'deep'
+        mode: 'deep',
       };
 
       // Mock a slow deep search that exceeds timeout
-      vi.spyOn(hybridSearchService as any, 'performBoundedDeepSearch')
-        .mockImplementation(() => new Promise(resolve => setTimeout(resolve, 10000)));
+      vi.spyOn(hybridSearchService as any, 'performBoundedDeepSearch').mockImplementation(
+        () => new Promise((resolve) => setTimeout(resolve, 10000))
+      );
 
       const result = await hybridSearchService.searchByMode(query);
 
@@ -242,7 +240,7 @@ describe('HybridSearchService', () => {
     it('should enforce node limit for deep search', async () => {
       const query: SearchQuery = {
         query: 'complex query',
-        mode: 'deep'
+        mode: 'deep',
       };
 
       // Mock deep search that returns too many nodes
@@ -252,11 +250,12 @@ describe('HybridSearchService', () => {
         scope: { org: 'test' },
         data: { content: `Node ${i}` },
         confidence_score: 0.8,
-        match_type: 'semantic'
+        match_type: 'semantic',
       }));
 
-      vi.spyOn(hybridSearchService as any, 'performBoundedDeepSearch')
-        .mockResolvedValue(mockDeepResults.slice(0, 100)); // Should be limited to 100
+      vi.spyOn(hybridSearchService as any, 'performBoundedDeepSearch').mockResolvedValue(
+        mockDeepResults.slice(0, 100)
+      ); // Should be limited to 100
 
       const result = await hybridSearchService.searchByMode(query);
 
@@ -271,7 +270,7 @@ describe('HybridSearchService', () => {
       const query: SearchQuery = {
         query: 'test query',
         mode: 'auto',
-        expand: 'parents'
+        expand: 'parents',
       };
 
       const mockResults: SearchResult[] = [
@@ -284,11 +283,11 @@ describe('HybridSearchService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 1,
-            total_chunks: 3
+            total_chunks: 3,
           },
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const mockSiblings: SearchResult[] = [
@@ -301,10 +300,10 @@ describe('HybridSearchService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 2,
-            total_chunks: 3
+            total_chunks: 3,
           },
           confidence_score: 0.8,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-3',
@@ -315,30 +314,27 @@ describe('HybridSearchService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 3,
-            total_chunks: 3
+            total_chunks: 3,
           },
           confidence_score: 0.7,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockResolvedValue(mockResults);
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockResolvedValue([]);
-      vi.spyOn(hybridSearchService as any, 'findParentSiblings')
-        .mockResolvedValue(mockSiblings);
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockResolvedValue(mockResults);
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockResolvedValue([]);
+      vi.spyOn(hybridSearchService as any, 'findParentSiblings').mockResolvedValue(mockSiblings);
 
       const result = await hybridSearchService.searchByMode(query);
 
       // Should include original chunk + expanded siblings
       expect(result.results.length).toBeGreaterThan(1);
-      expect(result.results.some(r => r.id === 'chunk-1')).toBe(true);
-      expect(result.results.some(r => r.id === 'chunk-2')).toBe(true);
-      expect(result.results.some(r => r.id === 'chunk-3')).toBe(true);
+      expect(result.results.some((r) => r.id === 'chunk-1')).toBe(true);
+      expect(result.results.some((r) => r.id === 'chunk-2')).toBe(true);
+      expect(result.results.some((r) => r.id === 'chunk-3')).toBe(true);
 
       // Expanded results should have slightly lower confidence scores
-      const expandedChunk = result.results.find(r => r.id === 'chunk-2');
+      const expandedChunk = result.results.find((r) => r.id === 'chunk-2');
       expect(expandedChunk?.confidence_score).toBe(0.8 * 0.8); // 0.8 * 0.8 expansion penalty
     });
   });
@@ -348,7 +344,7 @@ describe('HybridSearchService', () => {
       const query: SearchQuery = {
         query: 'cached query',
         mode: 'auto',
-        limit: 10
+        limit: 10,
       };
 
       const mockResults: SearchResult[] = [
@@ -358,25 +354,25 @@ describe('HybridSearchService', () => {
           scope: { org: 'test' },
           data: { content: 'Cached content' },
           confidence_score: 0.8,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
-      const semanticSpy = vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
+      const semanticSpy = vi
+        .spyOn(hybridSearchService as any, 'performSemanticSearch')
         .mockResolvedValue(mockResults);
-      const sparseSpy = vi.spyOn(hybridSearchService as any, 'performSparseSearch')
+      const sparseSpy = vi
+        .spyOn(hybridSearchService as any, 'performSparseSearch')
         .mockResolvedValue([]);
 
       // Mock cache to return undefined first time, then cached results
       let cacheCallCount = 0;
-      vi.spyOn(hybridSearchService as any, 'searchCache', 'get')
-        .mockImplementation(() => {
-          cacheCallCount++;
-          return cacheCallCount === 1 ? undefined : mockResults;
-        });
+      vi.spyOn(hybridSearchService as any, 'searchCache', 'get').mockImplementation(() => {
+        cacheCallCount++;
+        return cacheCallCount === 1 ? undefined : mockResults;
+      });
 
-      vi.spyOn(hybridSearchService as any, 'searchCache', 'set')
-        .mockImplementation(() => {});
+      vi.spyOn(hybridSearchService as any, 'searchCache', 'set').mockImplementation(() => {});
 
       // First call
       const result1 = await hybridSearchService.searchByMode(query);
@@ -397,22 +393,23 @@ describe('HybridSearchService', () => {
     it('should fallback to semantic search when hybrid search fails', async () => {
       const query: SearchQuery = {
         query: 'test query',
-        mode: 'auto'
+        mode: 'auto',
       };
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockRejectedValue(new Error('Semantic search failed'));
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockRejectedValue(new Error('Sparse search failed'));
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockRejectedValue(
+        new Error('Semantic search failed')
+      );
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockRejectedValue(
+        new Error('Sparse search failed')
+      );
 
       // Mock fallbackToSemantic to return error strategy
-      vi.spyOn(hybridSearchService as any, 'fallbackToSemantic')
-        .mockResolvedValue({
-          results: [],
-          totalCount: 0,
-          strategy: 'semantic-fallback',
-          executionTime: 100
-        });
+      vi.spyOn(hybridSearchService as any, 'fallbackToSemantic').mockResolvedValue({
+        results: [],
+        totalCount: 0,
+        strategy: 'semantic-fallback',
+        executionTime: 100,
+      });
 
       const result = await hybridSearchService.searchByMode(query);
 
@@ -423,20 +420,21 @@ describe('HybridSearchService', () => {
     it('should handle complete search failure gracefully', async () => {
       const query: SearchQuery = {
         query: 'test query',
-        mode: 'auto'
+        mode: 'auto',
       };
 
-      vi.spyOn(hybridSearchService as any, 'performSemanticSearch')
-        .mockRejectedValue(new Error('All search failed'));
-      vi.spyOn(hybridSearchService as any, 'performSparseSearch')
-        .mockRejectedValue(new Error('All search failed'));
-      vi.spyOn(hybridSearchService as any, 'fallbackToSemantic')
-        .mockResolvedValue({
-          results: [],
-          totalCount: 0,
-          strategy: 'error',
-          executionTime: 100
-        });
+      vi.spyOn(hybridSearchService as any, 'performSemanticSearch').mockRejectedValue(
+        new Error('All search failed')
+      );
+      vi.spyOn(hybridSearchService as any, 'performSparseSearch').mockRejectedValue(
+        new Error('All search failed')
+      );
+      vi.spyOn(hybridSearchService as any, 'fallbackToSemantic').mockResolvedValue({
+        results: [],
+        totalCount: 0,
+        strategy: 'error',
+        executionTime: 100,
+      });
 
       const result = await hybridSearchService.searchByMode(query);
 
@@ -459,12 +457,12 @@ describe('HybridSearchService', () => {
         data: { content: 'test' },
         created_at: new Date().toISOString(), // Should get recency boost
         confidence_score: 0.7,
-        match_type: 'semantic'
+        match_type: 'semantic',
       };
 
       const query: SearchQuery = {
         query: 'test',
-        scope: { org: 'test' } // Should get scope boost
+        scope: { org: 'test' }, // Should get scope boost
       };
 
       const finalScore = (hybridSearchService as any).calculateHybridScore(
@@ -490,11 +488,11 @@ describe('HybridSearchService', () => {
         data: { content: 'test' },
         // No created_at
         confidence_score: 0.5,
-        match_type: 'semantic'
+        match_type: 'semantic',
       };
 
       const query: SearchQuery = {
-        query: 'test'
+        query: 'test',
         // No scope
       };
 

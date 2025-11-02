@@ -157,7 +157,10 @@ export class ErrorTestHelper {
       const tableCheck = await context.testDb.query(
         "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'section')"
       );
-      this.assert(tableCheck.rows[0].exists, 'Section table should still exist after SQL injection attempt');
+      this.assert(
+        tableCheck.rows[0].exists,
+        'Section table should still exist after SQL injection attempt'
+      );
     });
   }
 
@@ -213,7 +216,10 @@ export class ErrorTestHelper {
           entity_id: storeResult.stored[0].id,
         });
 
-        this.assert(deleteResult.status === 'immutable', 'Should not allow deletion of immutable entity');
+        this.assert(
+          deleteResult.status === 'immutable',
+          'Should not allow deletion of immutable entity'
+        );
         throw new Error('Cannot delete immutable entity');
       }
     });
@@ -303,7 +309,8 @@ export class ErrorTestHelper {
       const duration = Date.now() - startTime;
 
       // If operation takes too long, it should be handled appropriately
-      if (duration > 30000) { // 30 seconds
+      if (duration > 30000) {
+        // 30 seconds
         throw new Error('Operation timed out');
       }
     });
@@ -333,7 +340,7 @@ export class ErrorTestHelper {
 
         const results = await Promise.all(promises);
         // Should handle concurrent access gracefully
-        const errors = results.flatMap(r => r.errors);
+        const errors = results.flatMap((r) => r.errors);
         if (errors.length > 0) {
           throw new Error(errors[0].message);
         }
@@ -376,7 +383,9 @@ export class ErrorTestHelper {
       this.assert(result.errors.length > 0, 'Invalid items should produce errors');
 
       if (result.errors.length > 0) {
-        throw new Error(`Partial success: ${result.stored.length} stored, ${result.errors.length} errors`);
+        throw new Error(
+          `Partial success: ${result.stored.length} stored, ${result.errors.length} errors`
+        );
       }
     });
   }
@@ -403,7 +412,10 @@ export class ErrorTestHelper {
 
       if (result.errors.length > 0) {
         const errorMessage = result.errors[0].message;
-        this.assert(!errorMessage.includes('secret123'), 'Error message should not contain passwords');
+        this.assert(
+          !errorMessage.includes('secret123'),
+          'Error message should not contain passwords'
+        );
         this.assert(!errorMessage.includes('abc123'), 'Error message should not contain tokens');
         throw new Error('Sanitized error message');
       }
@@ -429,8 +441,9 @@ export class ErrorTestHelper {
       });
     } catch (error) {
       const actualError = error instanceof Error ? error.message : String(error);
-      const errorHandled = actualError.includes(expectedErrorType) ||
-                        actualError.toLowerCase().includes(expectedErrorType.toLowerCase());
+      const errorHandled =
+        actualError.includes(expectedErrorType) ||
+        actualError.toLowerCase().includes(expectedErrorType.toLowerCase());
 
       this.results.push({
         testName,
@@ -459,7 +472,7 @@ export class ErrorTestHelper {
     console.log('='.repeat(50));
 
     const total = this.results.length;
-    const passed = this.results.filter(r => r.passed).length;
+    const passed = this.results.filter((r) => r.passed).length;
     const failed = total - passed;
 
     console.log(`Total Tests: ${total}`);
@@ -469,7 +482,7 @@ export class ErrorTestHelper {
 
     if (failed > 0) {
       console.log('\n❌ Failed Error Tests:');
-      for (const result of this.results.filter(r => !r.passed)) {
+      for (const result of this.results.filter((r) => !r.passed)) {
         console.log(`  ${result.testName}`);
         console.log(`    Expected: ${result.expectedError}`);
         console.log(`    Actual: ${result.actualError || 'No error thrown'}`);
@@ -497,21 +510,28 @@ export class ErrorTestHelper {
   private analyzeErrorPatterns(): string[] {
     const patterns: string[] = [];
 
-    const notFoundErrors = this.results.filter(r => r.expectedError.includes('NOT_FOUND'));
+    const notFoundErrors = this.results.filter((r) => r.expectedError.includes('NOT_FOUND'));
     if (notFoundErrors.length > 0) {
-      const handledRate = (notFoundErrors.filter(r => r.passed).length / notFoundErrors.length) * 100;
+      const handledRate =
+        (notFoundErrors.filter((r) => r.passed).length / notFoundErrors.length) * 100;
       patterns.push(`NOT_FOUND errors: ${Math.round(handledRate)}% handled correctly`);
     }
 
-    const validationErrors = this.results.filter(r => r.expectedError.includes('VALIDATION_FAILED'));
+    const validationErrors = this.results.filter((r) =>
+      r.expectedError.includes('VALIDATION_FAILED')
+    );
     if (validationErrors.length > 0) {
-      const handledRate = (validationErrors.filter(r => r.passed).length / validationErrors.length) * 100;
+      const handledRate =
+        (validationErrors.filter((r) => r.passed).length / validationErrors.length) * 100;
       patterns.push(`VALIDATION errors: ${Math.round(handledRate)}% handled correctly`);
     }
 
-    const immutableErrors = this.results.filter(r => r.expectedError.includes('IMMUTABLE_ENTITY'));
+    const immutableErrors = this.results.filter((r) =>
+      r.expectedError.includes('IMMUTABLE_ENTITY')
+    );
     if (immutableErrors.length > 0) {
-      const handledRate = (immutableErrors.filter(r => r.passed).length / immutableErrors.length) * 100;
+      const handledRate =
+        (immutableErrors.filter((r) => r.passed).length / immutableErrors.length) * 100;
       patterns.push(`IMMUTABILITY errors: ${Math.round(handledRate)}% handled correctly`);
     }
 
@@ -536,7 +556,7 @@ export class ErrorTestHelper {
    * Check if all error tests passed
    */
   allTestsPassed(): boolean {
-    return this.results.every(r => r.passed);
+    return this.results.every((r) => r.passed);
   }
 
   /**
@@ -549,7 +569,7 @@ export class ErrorTestHelper {
     errorsByType: Record<string, { total: number; handled: number; rate: number }>;
   } {
     const total = this.results.length;
-    const passed = this.results.filter(r => r.passed).length;
+    const passed = this.results.filter((r) => r.passed).length;
     const handlingRate = total > 0 ? (passed / total) * 100 : 0;
 
     const errorsByType: Record<string, { total: number; handled: number; rate: number }> = {};

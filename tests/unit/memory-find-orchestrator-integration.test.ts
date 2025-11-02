@@ -9,7 +9,7 @@ const mockDatabase: IDatabase = {
     hits: [],
     total: 0,
     search_time: 0,
-    strategy_used: 'semantic'
+    strategy_used: 'semantic',
   }),
   storeItems: vi.fn(),
   deleteItems: vi.fn(),
@@ -46,7 +46,7 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
           data: { is_chunk: false, total_chunks: 3 },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1',
@@ -57,11 +57,11 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
             parent_id: 'parent-1',
             chunk_index: 0,
             total_chunks: 3,
-            content: 'First part'
+            content: 'First part',
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.85,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-2',
@@ -72,12 +72,12 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
             parent_id: 'parent-1',
             chunk_index: 1,
             total_chunks: 3,
-            content: 'Second part'
+            content: 'Second part',
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.8,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const grouped = groupingService.groupResultsByParent(mockSearchResults);
@@ -104,7 +104,7 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
           data: { is_chunk: false, total_chunks: 2 },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1',
@@ -115,11 +115,11 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
             parent_id: 'parent-1',
             chunk_index: 0,
             total_chunks: 2,
-            content: 'Chunk content'
+            content: 'Chunk content',
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.85,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'regular-1',
@@ -128,8 +128,8 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
           data: { title: 'Regular item' },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.7,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       const grouped = groupingService.groupAndSortResults(mockResults);

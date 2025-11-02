@@ -50,8 +50,8 @@ server.stdout.on('data', (data) => {
 
   try {
     // Parse JSON-RPC responses
-    const lines = response.split('\n').filter(line => line.trim());
-    lines.forEach(line => {
+    const lines = response.split('\n').filter((line) => line.trim());
+    lines.forEach((line) => {
       if (line.startsWith('{') && line.endsWith('}')) {
         const jsonRpcResponse = JSON.parse(line);
         console.log('📨 Server Response:', JSON.stringify(jsonRpcResponse, null, 2));
@@ -79,8 +79,12 @@ server.on('close', (code) => {
 
   console.log('\n🏁 Test Results:');
   console.log(`   Status: ${testPassed ? '✅ PASSED' : '❌ FAILED'}`);
-  console.log(`   MCP Handshake: ${responseBuffer.includes('protocolVersion') ? '✅ Success' : '❌ Failed'}`);
-  console.log(`   Server Ready: ${responseBuffer.includes('serverInfo') ? '✅ Success' : '❌ Failed'}`);
+  console.log(
+    `   MCP Handshake: ${responseBuffer.includes('protocolVersion') ? '✅ Success' : '❌ Failed'}`
+  );
+  console.log(
+    `   Server Ready: ${responseBuffer.includes('serverInfo') ? '✅ Success' : '❌ Failed'}`
+  );
 
   process.exit(testPassed ? 0 : 1);
 });
@@ -94,13 +98,13 @@ const initializeRequest = {
   params: {
     protocolVersion: '2024-11-05',
     capabilities: {
-      tools: {}
+      tools: {},
     },
     clientInfo: {
       name: 'codex-cli',
-      version: '1.0.0'
-    }
-  }
+      version: '1.0.0',
+    },
+  },
 };
 
 server.stdin.write(JSON.stringify(initializeRequest) + '\n');
@@ -112,7 +116,7 @@ setTimeout(() => {
     jsonrpc: '2.0',
     id: 2,
     method: 'tools/list',
-    params: {}
+    params: {},
   };
 
   server.stdin.write(JSON.stringify(toolsListRequest) + '\n');
@@ -127,8 +131,8 @@ setTimeout(() => {
     method: 'tools/call',
     params: {
       name: 'database_health',
-      arguments: {}
-    }
+      arguments: {},
+    },
   };
 
   server.stdin.write(JSON.stringify(toolCallRequest) + '\n');
@@ -141,7 +145,7 @@ setTimeout(() => {
     jsonrpc: '2.0',
     id: 4,
     method: 'shutdown',
-    params: {}
+    params: {},
   };
 
   server.stdin.write(JSON.stringify(shutdownRequest) + '\n');

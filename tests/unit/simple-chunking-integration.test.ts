@@ -17,8 +17,8 @@ describe('Simple Chunking Integration Test', () => {
       scope: { project: 'test', branch: 'main' },
       data: {
         title: 'Test Section',
-        body_text: largeContent
-      }
+        body_text: largeContent,
+      },
     };
 
     const chunkedItems = service.createChunkedItems(baseItem);
@@ -27,8 +27,8 @@ describe('Simple Chunking Integration Test', () => {
     expect(chunkedItems.length).toBeGreaterThan(1);
 
     // Find parent and children
-    const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-    const childItems = chunkedItems.filter(item => item.data.is_chunk);
+    const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+    const childItems = chunkedItems.filter((item) => item.data.is_chunk);
 
     expect(parentItem).toBeDefined();
     expect(childItems.length).toBeGreaterThan(0);
@@ -52,7 +52,7 @@ describe('Simple Chunking Integration Test', () => {
     });
 
     // Verify chunk_index is sequential
-    const chunkIndexes = childItems.map(child => child.data.chunk_index).sort((a, b) => a - b);
+    const chunkIndexes = childItems.map((child) => child.data.chunk_index).sort((a, b) => a - b);
     expect(chunkIndexes[0]).toBe(0);
     for (let i = 0; i < chunkIndexes.length; i++) {
       expect(chunkIndexes[i]).toBe(i);
@@ -70,15 +70,15 @@ describe('Simple Chunking Integration Test', () => {
       data: {
         title: 'Test Runbook',
         body_text: largeContent,
-        category: 'test'
-      }
+        category: 'test',
+      },
     };
 
     const chunkedItems = service.createChunkedItems(baseItem);
-    const childItems = chunkedItems.filter(item => item.data.is_chunk);
+    const childItems = chunkedItems.filter((item) => item.data.is_chunk);
 
     // Verify metadata is preserved
-    childItems.forEach(child => {
+    childItems.forEach((child) => {
       expect(child.kind).toBe('runbook');
       expect(child.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
       expect(child.metadata.author).toBe('test-author');
@@ -96,8 +96,8 @@ describe('Simple Chunking Integration Test', () => {
       scope: { project: 'test', branch: 'main' },
       data: {
         title: 'Small Section',
-        body_text: smallContent
-      }
+        body_text: smallContent,
+      },
     };
 
     const chunkedItems = service.createChunkedItems(baseItem);

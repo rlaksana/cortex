@@ -66,7 +66,7 @@ export function setupTestProfile() {
       databaseUrl: process.env.QDRANT_URL,
       collectionName: process.env.QDRANT_COLLECTION_NAME,
       logLevel: process.env.LOG_LEVEL,
-    }
+    },
   };
 }
 
@@ -81,10 +81,10 @@ export function validateTestProfile(): { valid: boolean; errors: string[] } {
     'NODE_ENV',
     'QDRANT_URL',
     'QDRANT_COLLECTION_NAME',
-    'MOCK_EMBEDDING_SERVICE'
+    'MOCK_EMBEDDING_SERVICE',
   ];
 
-  requiredVars.forEach(varName => {
+  requiredVars.forEach((varName) => {
     if (!process.env[varName]) {
       errors.push(`Missing required environment variable: ${varName}`);
     }
@@ -105,7 +105,7 @@ export function validateTestProfile(): { valid: boolean; errors: string[] } {
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -122,18 +122,18 @@ export function getTestProfileInfo() {
       embedding: process.env.MOCK_EMBEDDING_SERVICE === 'true',
       deterministic: process.env.MOCK_EMBEDDING_DETERMINISTIC === 'true',
       latency: parseInt(process.env.MOCK_EMBEDDING_LATENCY || '0'),
-      shouldFail: process.env.MOCK_EMBEDDING_SHOULD_FAIL === 'true'
+      shouldFail: process.env.MOCK_EMBEDDING_SHOULD_FAIL === 'true',
     },
     database: {
       url: process.env.QDRANT_URL,
       collection: process.env.QDRANT_COLLECTION_NAME,
-      vectorSize: parseInt(process.env.VECTOR_SIZE || '1536')
+      vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
     },
     features: {
       semanticChunkingOptional: process.env.SEMANTIC_CHUNKING_OPTIONAL === 'true',
       cachingEnabled: process.env.ENABLE_CACHING === 'true',
       metricsEnabled: process.env.ENABLE_METRICS === 'true',
-      authEnabled: process.env.ENABLE_AUTH === 'true'
+      authEnabled: process.env.ENABLE_AUTH === 'true',
     },
     testing: {
       timeout: parseInt(process.env.TEST_TIMEOUT || '30000'),
@@ -141,8 +141,8 @@ export function getTestProfileInfo() {
       parallel: process.env.TEST_PARALLEL === 'true',
       isolation: process.env.TEST_ISOLATION === 'true',
       headless: process.env.TEST_HEADLESS === 'true',
-      failFast: process.env.TEST_FAIL_FAST === 'true'
-    }
+      failFast: process.env.TEST_FAIL_FAST === 'true',
+    },
   };
 }
 

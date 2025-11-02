@@ -6,14 +6,18 @@
  * Tests the core array serialization functionality without database dependencies.
  */
 
-import { serializeArray, deserializeArray, serializeForDatabase } from '../src/utils/array-serializer.js';
+import {
+  serializeArray,
+  deserializeArray,
+  serializeForDatabase,
+} from '../src/utils/array-serializer.js';
 
 // Test results tracking
 const testResults = {
   passed: [],
   failed: [],
   total: 0,
-  startTime: Date.now()
+  startTime: Date.now(),
 };
 
 // Test helper functions
@@ -155,7 +159,7 @@ async function testSpecialCharacters() {
       'element with {brackets} and [parentheses]',
       'element with commas, and; semicolons',
       'element with |pipes| and &ampersands&',
-      'element with #hash and $dollar$ signs'
+      'element with #hash and $dollar$ signs',
     ];
 
     const serialized = serializeArray(input);
@@ -178,11 +182,11 @@ async function testComplexStructures() {
         nested: {
           deep: ['deep1', 'deep2'],
           deeper: {
-            deepest: ['array', 'in', 'deep', 'nesting']
-          }
-        }
+            deepest: ['array', 'in', 'deep', 'nesting'],
+          },
+        },
       },
-      simpleField: 'not an array'
+      simpleField: 'not an array',
     };
 
     const serialized = serializeForDatabase(input);
@@ -219,17 +223,13 @@ async function testComplexStructures() {
       alternatives: [
         "Option A: Use 'JSON.stringify' approach",
         'Option B: Use PostgreSQL native arrays',
-        'Option C: Use mixed approach with \\escapes\\'
+        'Option C: Use mixed approach with \\escapes\\',
       ],
-      files: [
-        'src/components/Component.tsx',
-        'src/utils/helper.js',
-        'config/database.json'
-      ],
+      files: ['src/components/Component.tsx', 'src/utils/helper.js', 'config/database.json'],
       config: {
         environments: ['development', 'staging', 'production'],
-        features: ['feature-1', 'feature-2', 'feature-3']
-      }
+        features: ['feature-1', 'feature-2', 'feature-3'],
+      },
     };
 
     const serialized = serializeForDatabase(input);
@@ -248,7 +248,7 @@ async function testComplexStructures() {
     }
 
     // Check special characters are handled in nested arrays
-    const hasEscapedQuotes = serialized.alternatives.some(alt => alt.includes("''"));
+    const hasEscapedQuotes = serialized.alternatives.some((alt) => alt.includes("''"));
     if (!hasEscapedQuotes) {
       throw new Error('Special characters in nested arrays should be escaped');
     }
@@ -260,8 +260,8 @@ async function testComplexStructures() {
       tags: [],
       metadata: {
         items: ['item1'],
-        emptyArray: []
-      }
+        emptyArray: [],
+      },
     };
 
     const serialized1 = serializeForDatabase(input1);
@@ -275,7 +275,7 @@ async function testComplexStructures() {
 
     // Test with arrays containing empty strings
     const input2 = {
-      values: ['valid1', '', 'valid3', '']
+      values: ['valid1', '', 'valid3', ''],
     };
 
     const serialized2 = serializeForDatabase(input2);
@@ -285,7 +285,7 @@ async function testComplexStructures() {
 
     // Test with arrays containing whitespace
     const input3 = {
-      values: ['  leading-space', 'trailing-space  ', '  both  ', '']
+      values: ['  leading-space', 'trailing-space  ', '  both  ', ''],
     };
 
     const serialized3 = serializeForDatabase(input3);
@@ -315,7 +315,7 @@ async function testRoundTripSerialization() {
       'item with {brackets}',
       'item with [brackets]',
       'item with (parentheses)',
-      'normal item'
+      'normal item',
     ];
 
     const serialized = serializeArray(original);
@@ -416,7 +416,9 @@ async function testPerformance() {
       throw new Error(`Deserialization too slow: ${deserializeTime}ms for 10k items`);
     }
 
-    logInfo(`✓ Large array performance: ${serializeTime}ms serialize, ${deserializeTime}ms deserialize`);
+    logInfo(
+      `✓ Large array performance: ${serializeTime}ms serialize, ${deserializeTime}ms deserialize`
+    );
   });
 }
 
@@ -447,7 +449,6 @@ async function runAllTests() {
 
     // Test performance
     await testPerformance();
-
   } catch (error) {
     console.error('❌ Test suite failed with error:', error);
   }
@@ -467,7 +468,7 @@ async function runAllTests() {
 
   if (testResults.failed.length > 0) {
     console.log('\n❌ Failed Tests:');
-    testResults.failed.forEach(failure => console.log(`   - ${failure}`));
+    testResults.failed.forEach((failure) => console.log(`   - ${failure}`));
   }
 
   console.log('\n✨ Key Achievements:');
@@ -495,10 +496,10 @@ async function runAllTests() {
 // Execute tests if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runAllTests()
-    .then(success => {
+    .then((success) => {
       process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Test execution failed:', error);
       process.exit(1);
     });
@@ -511,5 +512,5 @@ export {
   testComplexStructures,
   testRoundTripSerialization,
   testErrorConditions,
-  testPerformance
+  testPerformance,
 };

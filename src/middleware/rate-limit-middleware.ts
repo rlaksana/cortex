@@ -158,7 +158,10 @@ export class RateLimitMiddleware {
         windowCount: result.current_usage.window_count,
       };
     } catch (error) {
-      logger.error({ error, operation: this.options.operation }, 'Orchestrator rate limit check error');
+      logger.error(
+        { error, operation: this.options.operation },
+        'Orchestrator rate limit check error'
+      );
 
       // Fail open
       return {
@@ -207,21 +210,11 @@ export class RateLimitMiddleware {
 
     if (!entityId) {
       // No auth context - apply anonymous limits
-      return await rateLimitService.checkRateLimit(
-        'anonymous',
-        'api_key',
-        operation,
-        tokens
-      );
+      return await rateLimitService.checkRateLimit('anonymous', 'api_key', operation, tokens);
     }
 
     // Check rate limits
-    return await rateLimitService.checkRateLimit(
-      entityId,
-      entityType,
-      operation,
-      tokens
-    );
+    return await rateLimitService.checkRateLimit(entityId, entityType, operation, tokens);
   }
 
   /**
@@ -232,7 +225,8 @@ export class RateLimitMiddleware {
       return false;
     }
 
-    const { internalOperations, userRoles, organizations, lowLoadBypass } = this.options.bypassConditions;
+    const { internalOperations, userRoles, organizations, lowLoadBypass } =
+      this.options.bypassConditions;
 
     // Bypass internal operations
     if (internalOperations && request?.internal) {
@@ -245,8 +239,11 @@ export class RateLimitMiddleware {
     }
 
     // Bypass specific organizations
-    if (organizations && authContext?.user?.organizationId &&
-        organizations.includes(authContext.user.organizationId)) {
+    if (
+      organizations &&
+      authContext?.user?.organizationId &&
+      organizations.includes(authContext.user.organizationId)
+    ) {
       return true;
     }
 
@@ -328,7 +325,9 @@ export class RateLimitMiddleware {
 /**
  * Factory function to create rate limit middleware
  */
-export function createRateLimitMiddleware(options: RateLimitMiddlewareOptions): RateLimitMiddleware {
+export function createRateLimitMiddleware(
+  options: RateLimitMiddlewareOptions
+): RateLimitMiddleware {
   return new RateLimitMiddleware(options);
 }
 

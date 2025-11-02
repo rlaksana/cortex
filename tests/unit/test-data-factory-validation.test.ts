@@ -5,7 +5,7 @@
  * for all 16 knowledge types across all scenarios
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VectorDatabase } from '../../src/index.js';
 
 // Mock Qdrant client for testing
@@ -13,7 +13,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
     }
     getCollection = vi.fn().mockResolvedValue({});
@@ -23,7 +23,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     search = vi.fn().mockResolvedValue([]);
     scroll = vi.fn().mockResolvedValue({ result: [] });
     count = vi.fn().mockResolvedValue({ count: 0 });
-  }
+  },
 }));
 
 import {
@@ -36,7 +36,7 @@ import {
   generateSearchTestData,
   validateTestItem,
   getRandomKnowledgeType,
-  generateRandomItem
+  generateRandomItem,
 } from '../fixtures/test-data-factory.js';
 
 describe('Test Data Factory Validation', () => {
@@ -97,7 +97,7 @@ describe('Test Data Factory Validation', () => {
 
   describe('Batch Generation Functions', () => {
     it('should generate minimal items for all knowledge types', () => {
-      const items = KNOWLEDGE_TYPES.map(type => generateMinimalItem(type));
+      const items = KNOWLEDGE_TYPES.map((type) => generateMinimalItem(type));
 
       expect(items).toHaveLength(16);
 
@@ -182,8 +182,8 @@ describe('Test Data Factory Validation', () => {
       expect(items.length).toBeGreaterThan(0);
 
       // Some edge cases are intentionally invalid, but the generator should handle them
-      const validItems = items.filter(item => validateTestItem(item).valid);
-      const invalidItems = items.filter(item => !validateTestItem(item).valid);
+      const validItems = items.filter((item) => validateTestItem(item).valid);
+      const invalidItems = items.filter((item) => !validateTestItem(item).valid);
 
       expect(validItems.length).toBeGreaterThan(0);
       expect(invalidItems.length).toBeGreaterThan(0);
@@ -219,7 +219,7 @@ describe('Test Data Factory Validation', () => {
 
   describe('Storage Validation', () => {
     it('should successfully store all minimal items', async () => {
-      const items = KNOWLEDGE_TYPES.map(type => generateMinimalItem(type));
+      const items = KNOWLEDGE_TYPES.map((type) => generateMinimalItem(type));
       const result = await db.storeItems(items);
 
       expect(result.errors).toHaveLength(0);
@@ -251,7 +251,7 @@ describe('Test Data Factory Validation', () => {
         ...generateScopedItems('project-only').slice(0, 2),
         ...generateScopedItems('branch-only').slice(0, 2),
         ...generateScopedItems('org-only').slice(0, 2),
-        ...generateScopedItems('complete').slice(0, 2)
+        ...generateScopedItems('complete').slice(0, 2),
       ];
 
       const result = await db.storeItems(items);
@@ -260,7 +260,7 @@ describe('Test Data Factory Validation', () => {
       expect(result.stored).toHaveLength(8);
 
       // Verify different scope types are preserved
-      const scopes = result.stored.map(item => item.scope);
+      const scopes = result.stored.map((item) => item.scope);
       expect(scopes).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ project: expect.any(String) }),
@@ -269,8 +269,8 @@ describe('Test Data Factory Validation', () => {
           expect.objectContaining({
             project: expect.any(String),
             branch: expect.any(String),
-            org: expect.any(String)
-          })
+            org: expect.any(String),
+          }),
         ])
       );
     });
@@ -301,9 +301,7 @@ describe('Test Data Factory Validation', () => {
       console.log(`   Edge Case Items: ${generateEdgeCaseItems().length}`);
 
       // Test that we can generate a large number of items without issues
-      const stressTestItems = Array.from({ length: 100 }, (_, i) =>
-        generateRandomItem(false)
-      );
+      const stressTestItems = Array.from({ length: 100 }, (_, i) => generateRandomItem(false));
 
       expect(stressTestItems).toHaveLength(100);
       console.log(`   Stress Test Items: ${stressTestItems.length}`);

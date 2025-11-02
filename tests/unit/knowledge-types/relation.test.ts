@@ -20,20 +20,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Relation Knowledge Type - Comprehensive Testing', () => {
@@ -51,7 +51,7 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'decision',
@@ -62,15 +62,15 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           metadata: {
             weight: 1.0,
             confidence: 0.85,
-            since: '2025-01-01'
-          }
+            since: '2025-01-01',
+          },
         },
         tags: { graph_relation: true, verified: true },
         source: {
           actor: 'system-architect',
           tool: 'graph-builder',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = RelationSchema.safeParse(relation);
@@ -89,15 +89,15 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'issue',
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'decision',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'addresses'
-        }
+          relationType: 'addresses',
+        },
       };
 
       const result = RelationSchema.safeParse(relation);
@@ -120,8 +120,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'connects'
-          }
+            relationType: 'connects',
+          },
         },
         {
           kind: 'relation' as const,
@@ -131,8 +131,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             // Missing from_entity_id
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'connects'
-          }
+            relationType: 'connects',
+          },
         },
         {
           kind: 'relation' as const,
@@ -142,8 +142,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             // Missing to_entity_type
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'connects'
-          }
+            relationType: 'connects',
+          },
         },
         {
           kind: 'relation' as const,
@@ -152,10 +152,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_type: 'entity',
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440001'
+            to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
             // Missing relationType
-          }
-        }
+          },
+        },
       ];
 
       invalidRelations.forEach((relation, index) => {
@@ -177,8 +177,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: 'invalid-uuid-format', // Invalid UUID
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'connects'
-          }
+            relationType: 'connects',
+          },
         },
         {
           kind: 'relation' as const,
@@ -188,9 +188,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
             to_entity_id: 'not-a-uuid', // Invalid UUID
-            relationType: 'connects'
-          }
-        }
+            relationType: 'connects',
+          },
+        },
       ];
 
       invalidRelations.forEach((relation) => {
@@ -211,8 +211,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'connects'
-        }
+          relationType: 'connects',
+        },
       };
 
       const result = RelationSchema.safeParse(relation);
@@ -231,8 +231,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'x'.repeat(101) // Exceeds 100 character limit
-        }
+          relationType: 'x'.repeat(101), // Exceeds 100 character limit
+        },
       };
 
       const result = RelationSchema.safeParse(relation);
@@ -249,16 +249,16 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'issue',
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'decision',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'resolves'
+          relationType: 'resolves',
         },
-        content: 'Relation: issue resolves decision' // Required for embedding generation
+        content: 'Relation: issue resolves decision', // Required for embedding generation
       };
 
       const result = await db.storeItems([relation]);
@@ -279,16 +279,16 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'entity',
           from_entity_id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(3, '0')}0`,
           to_entity_type: 'entity',
           to_entity_id: `550e8400-e29b-41d4-a716-44665544${String(i).padStart(3, '0')}1`,
-          relationType: `relationType_${i}`
+          relationType: `relationType_${i}`,
         },
-        content: `Relation: entity ${i} connects to entity ${i + 1}`
+        content: `Relation: entity ${i} connects to entity ${i + 1}`,
       }));
 
       const result = await db.storeItems(relations);
@@ -308,9 +308,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'implements'
+            relationType: 'implements',
           },
-          content: 'Valid relation'
+          content: 'Valid relation',
         },
         {
           kind: 'relation' as const,
@@ -320,9 +320,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             // Missing from_entity_id
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'connects'
+            relationType: 'connects',
           },
-          content: 'Invalid relation missing ID'
+          content: 'Invalid relation missing ID',
         },
         {
           kind: 'relation' as const,
@@ -332,10 +332,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
             to_entity_type: 'release',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-            relationType: 'included_in'
+            relationType: 'included_in',
           },
-          content: 'Another valid relation'
-        }
+          content: 'Another valid relation',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -359,10 +359,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
               from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
               to_entity_type: 'entity',
               to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-              relationType: 'implements'
+              relationType: 'implements',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'relation-id-2',
@@ -374,11 +374,11 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
               from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
               to_entity_type: 'decision',
               to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-              relationType: 'resolves'
+              relationType: 'resolves',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -407,8 +407,14 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
   describe('Graph Relationship Types', () => {
     it('should handle common graph relationship types', async () => {
       const relationTypes = [
-        'resolves', 'implements', 'references', 'supersedes',
-        'depends_on', 'relates_to', 'connects', 'includes'
+        'resolves',
+        'implements',
+        'references',
+        'supersedes',
+        'depends_on',
+        'relates_to',
+        'connects',
+        'includes',
       ];
 
       for (const relationType of relationTypes) {
@@ -420,9 +426,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType
+            relationType,
           },
-          content: `Relation: entity ${relationType} entity`
+          content: `Relation: entity ${relationType} entity`,
         };
 
         const result = RelationSchema.safeParse(relation);
@@ -442,9 +448,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'runbook',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'requires'
+          relationType: 'requires',
         },
-        content: 'Decision requires runbook'
+        content: 'Decision requires runbook',
       };
 
       const relationB = {
@@ -455,9 +461,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
           to_entity_type: 'decision',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          relationType: 'supports'
+          relationType: 'supports',
         },
-        content: 'Runbook supports decision'
+        content: 'Runbook supports decision',
       };
 
       const resultA = RelationSchema.safeParse(relationA);
@@ -474,32 +480,32 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'entity',
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'connects'
+          relationType: 'connects',
         },
-        content: 'Relation in project-A'
+        content: 'Relation in project-A',
       };
 
       const relationProjectB = {
         kind: 'relation' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'entity',
           from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
           to_entity_type: 'entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-          relationType: 'connects'
+          relationType: 'connects',
         },
-        content: 'Relation in project-B'
+        content: 'Relation in project-B',
       };
 
       // Store both relations
@@ -515,32 +521,32 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           kind: 'relation' as const,
           scope: {
             project: 'test-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             from_entity_type: 'feature',
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'feature',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'depends_on'
+            relationType: 'depends_on',
           },
-          content: 'Feature dependency in main branch'
+          content: 'Feature dependency in main branch',
         },
         {
           kind: 'relation' as const,
           scope: {
             project: 'test-project',
-            branch: 'develop'
+            branch: 'develop',
           },
           data: {
             from_entity_type: 'feature',
             from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
             to_entity_type: 'feature',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-            relationType: 'conflicts_with'
+            relationType: 'conflicts_with',
           },
-          content: 'Feature conflict in develop branch'
-        }
+          content: 'Feature conflict in develop branch',
+        },
       ];
 
       await db.storeItems(relations);
@@ -567,11 +573,11 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             context: {
               environment: 'production',
               version: '2.1.0',
-              stakeholder: 'product-team'
-            }
-          }
+              stakeholder: 'product-team',
+            },
+          },
         },
-        content: 'Complex relation with rich metadata'
+        content: 'Complex relation with rich metadata',
       };
 
       const result = await db.storeItems([complexRelation]);
@@ -590,9 +596,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440000', // Same entity
-          relationType: 'references'
+          relationType: 'references',
         },
-        content: 'Self-referencing relation'
+        content: 'Self-referencing relation',
       };
 
       const result = RelationSchema.safeParse(selfRelation);
@@ -609,9 +615,9 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            relationType: 'relates-to-via-API'
+            relationType: 'relates-to-via-API',
           },
-          content: 'Relation with special characters'
+          content: 'Relation with special characters',
         },
         {
           kind: 'relation' as const,
@@ -621,14 +627,14 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-            relationType: 'version_2_dependency'
+            relationType: 'version_2_dependency',
           },
-          content: 'Another relation with special characters'
-        }
+          content: 'Another relation with special characters',
+        },
       ];
 
-      const results = relations.map(relation => RelationSchema.safeParse(relation));
-      results.forEach(result => {
+      const results = relations.map((relation) => RelationSchema.safeParse(relation));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -640,7 +646,7 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         kind: 'relation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           from_entity_type: 'incident',
@@ -648,15 +654,15 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           to_entity_type: 'runbook',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
           relationType: 'resolved_using',
-          metadata: { success_rate: 0.95, time_to_resolution: '2h' }
+          metadata: { success_rate: 0.95, time_to_resolution: '2h' },
         },
         tags: { graph_relation: true, verified: true },
         source: {
           actor: 'incident-commander',
           tool: 'incident-management-system',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'long' as const
+        ttl_policy: 'long' as const,
       };
 
       const result = validateKnowledgeItem(relation);
@@ -676,10 +682,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440000',
           to_entity_type: 'temp-entity',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          relationType: 'temporary_link'
+          relationType: 'temporary_link',
         },
         ttl_policy: 'short' as const,
-        content: 'Temporary relation with short TTL'
+        content: 'Temporary relation with short TTL',
       };
 
       const result = await db.storeItems([relation]);

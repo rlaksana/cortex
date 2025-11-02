@@ -21,20 +21,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Todo Knowledge Type - Comprehensive Testing', () => {
@@ -52,7 +52,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
@@ -62,14 +62,14 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           priority: 'high',
           assignee: 'developer-1',
           due_date: '2025-02-01T00:00:00Z',
-          closed_at: undefined
+          closed_at: undefined,
         },
         tags: { frontend: true, security: true },
         source: {
           actor: 'project-manager',
           tool: 'task-tracker',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -88,14 +88,14 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'epic',
           todo_type: 'story',
           text: 'Create user dashboard',
-          status: 'open'
-        }
+          status: 'open',
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -118,8 +118,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             // Missing scope
             todo_type: 'task',
             text: 'Test todo',
-            status: 'open'
-          }
+            status: 'open',
+          },
         },
         {
           kind: 'todo' as const,
@@ -128,8 +128,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             // Missing todo_type
             text: 'Test todo',
-            status: 'open'
-          }
+            status: 'open',
+          },
         },
         {
           kind: 'todo' as const,
@@ -138,8 +138,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             // Missing text
-            status: 'open'
-          }
+            status: 'open',
+          },
         },
         {
           kind: 'todo' as const,
@@ -147,10 +147,10 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           data: {
             scope: 'task',
             todo_type: 'task',
-            text: 'Test todo'
+            text: 'Test todo',
             // Missing status
-          }
-        }
+          },
+        },
       ];
 
       invalidTodos.forEach((todo, index) => {
@@ -170,8 +170,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'task',
           todo_type: 'invalid_type' as any, // Invalid todo type
           text: 'Test todo',
-          status: 'open'
-        }
+          status: 'open',
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -189,8 +189,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'task',
           todo_type: 'task',
           text: 'Test todo',
-          status: 'invalid_status' as any // Invalid status
-        }
+          status: 'invalid_status' as any, // Invalid status
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -208,8 +208,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'x'.repeat(201), // Exceeds 200 character limit
           todo_type: 'task',
           text: 'Test todo',
-          status: 'open'
-        }
+          status: 'open',
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -226,14 +226,14 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
           todo_type: 'bug',
           text: 'Fix login authentication issue',
           status: 'in_progress',
-          priority: 'critical'
+          priority: 'critical',
         },
       };
 
@@ -255,14 +255,14 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
           todo_type: 'task',
           text: `Task ${i + 1}: Complete feature implementation`,
           status: i % 2 === 0 ? 'done' : 'open',
-          priority: i % 3 === 0 ? 'high' : 'medium'
+          priority: i % 3 === 0 ? 'high' : 'medium',
         },
       }));
 
@@ -282,7 +282,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'story',
             text: 'Valid todo item',
-            status: 'open'
+            status: 'open',
           },
         },
         {
@@ -292,7 +292,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             // Missing text
-            status: 'open'
+            status: 'open',
           },
         },
         {
@@ -302,9 +302,9 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'epic',
             todo_type: 'epic',
             text: 'Another valid todo item',
-            status: 'in_progress'
+            status: 'in_progress',
           },
-        }
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -328,10 +328,10 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
               todo_type: 'bug',
               text: 'Fix authentication timeout issue',
               status: 'in_progress',
-              priority: 'high'
+              priority: 'high',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'todo-id-2',
@@ -343,11 +343,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
               todo_type: 'story',
               text: 'Implement user profile feature',
               status: 'open',
-              priority: 'medium'
+              priority: 'medium',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -376,7 +376,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
   describe('Todo Types and Statuses', () => {
     it('should handle all valid todo types', async () => {
       const todoTypes: Array<'task' | 'bug' | 'epic' | 'story' | 'spike'> = [
-        'task', 'bug', 'epic', 'story', 'spike'
+        'task',
+        'bug',
+        'epic',
+        'story',
+        'spike',
       ];
 
       for (const todoType of todoTypes) {
@@ -387,8 +391,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: todoType,
             text: `Test ${todoType} item`,
-            status: 'open'
-          }
+            status: 'open',
+          },
         };
 
         const result = TodoSchema.safeParse(todo);
@@ -404,7 +408,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
 
     it('should handle all valid todo statuses', async () => {
       const statuses: Array<'open' | 'in_progress' | 'done' | 'cancelled' | 'archived'> = [
-        'open', 'in_progress', 'done', 'cancelled', 'archived'
+        'open',
+        'in_progress',
+        'done',
+        'cancelled',
+        'archived',
       ];
 
       for (const status of statuses) {
@@ -415,8 +423,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             text: `Todo with status ${status}`,
-            status
-          }
+            status,
+          },
         };
 
         const result = TodoSchema.safeParse(todo);
@@ -429,7 +437,10 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
 
     it('should handle all valid priority levels', async () => {
       const priorities: Array<'low' | 'medium' | 'high' | 'critical'> = [
-        'low', 'medium', 'high', 'critical'
+        'low',
+        'medium',
+        'high',
+        'critical',
       ];
 
       for (const priority of priorities) {
@@ -441,8 +452,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'task',
             text: `Todo with priority ${priority}`,
             status: 'open',
-            priority
-          }
+            priority,
+          },
         };
 
         const result = TodoSchema.safeParse(todo);
@@ -461,7 +472,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         { from: 'in_progress', to: 'done' },
         { from: 'in_progress', to: 'cancelled' },
         { from: 'done', to: 'archived' },
-        { from: 'cancelled', to: 'open' }
+        { from: 'cancelled', to: 'open' },
       ];
 
       for (const transition of statusTransitions) {
@@ -472,8 +483,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             text: `Status transition test from ${transition.from} to ${transition.to}`,
-            status: transition.from
-          }
+            status: transition.from,
+          },
         };
 
         const todoUpdated = {
@@ -481,8 +492,8 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           data: {
             ...todoInitial.data,
             status: transition.to,
-            closed_at: transition.to === 'done' ? '2025-01-01T00:00:00Z' : undefined
-          }
+            closed_at: transition.to === 'done' ? '2025-01-01T00:00:00Z' : undefined,
+          },
         };
 
         const resultInitial = TodoSchema.safeParse(todoInitial);
@@ -503,7 +514,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'task',
             text: 'Todo due today',
             status: 'open',
-            due_date: '2025-01-01T23:59:59Z'
+            due_date: '2025-01-01T23:59:59Z',
           },
         },
         {
@@ -514,24 +525,19 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'bug',
             text: 'Bug due next week',
             status: 'open',
-            due_date: '2025-01-08T12:00:00Z'
+            due_date: '2025-01-08T12:00:00Z',
           },
-        }
+        },
       ];
 
-      const results = todos.map(todo => TodoSchema.safeParse(todo));
-      results.forEach(result => {
+      const results = todos.map((todo) => TodoSchema.safeParse(todo));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
 
     it('should handle todo assignments', async () => {
-      const assignments = [
-        'developer-1',
-        'designer-2',
-        'product-manager',
-        'qa-engineer-3'
-      ];
+      const assignments = ['developer-1', 'designer-2', 'product-manager', 'qa-engineer-3'];
 
       for (const assignee of assignments) {
         const todo = {
@@ -542,7 +548,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'task',
             text: `Todo assigned to ${assignee}`,
             status: 'in_progress',
-            assignee
+            assignee,
           },
         };
 
@@ -561,13 +567,13 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
           todo_type: 'task',
           text: 'Todo in project A',
-          status: 'open'
+          status: 'open',
         },
       };
 
@@ -575,13 +581,13 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
           todo_type: 'task',
           text: 'Todo in project B',
-          status: 'open'
+          status: 'open',
         },
       };
 
@@ -597,7 +603,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         { scope: 'task', description: 'Individual task' },
         { scope: 'story', description: 'User story' },
         { scope: 'epic', description: 'Large epic' },
-        { scope: 'spike', description: 'Research spike' }
+        { scope: 'spike', description: 'Research spike' },
       ];
 
       for (const level of scopeLevels) {
@@ -608,7 +614,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: level.scope as any,
             todo_type: 'task',
             text: `${level.description} item`,
-            status: 'open'
+            status: 'open',
           },
         };
 
@@ -632,7 +638,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             todo_type: 'bug',
             text: 'Fix: NullPointerException in UserService#getUserProfile() when user is null',
             status: 'open',
-            priority: 'critical'
+            priority: 'critical',
           },
         },
         {
@@ -642,13 +648,13 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
             scope: 'task',
             todo_type: 'task',
             text: 'Implement OAuth 2.0 integration with GitHub & Google providers (multi-provider auth)',
-            status: 'open'
+            status: 'open',
           },
-        }
+        },
       ];
 
-      const results = todos.map(todo => TodoSchema.safeParse(todo));
-      results.forEach(result => {
+      const results = todos.map((todo) => TodoSchema.safeParse(todo));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -662,7 +668,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'task',
           todo_type: 'epic',
           text: longTodoText,
-          status: 'open'
+          status: 'open',
         },
       };
 
@@ -681,7 +687,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'task',
           todo_type: 'task',
           text: 'Test todo',
-          status: 'open'
+          status: 'open',
         },
       };
 
@@ -702,7 +708,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         kind: 'todo' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           scope: 'task',
@@ -711,15 +717,15 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           status: 'in_progress',
           priority: 'high',
           assignee: 'frontend-developer',
-          due_date: '2025-01-15T00:00:00Z'
+          due_date: '2025-01-15T00:00:00Z',
         },
         tags: { user_story: true, security: true },
         source: {
           actor: 'product-owner',
           tool: 'agile-planner',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'default' as const
+        ttl_policy: 'default' as const,
       };
 
       const result = validateKnowledgeItem(todo);
@@ -739,7 +745,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
           scope: 'task',
           todo_type: 'task',
           text: 'Temporary task for testing',
-          status: 'open'
+          status: 'open',
         },
         ttl_policy: 'short' as const,
       };

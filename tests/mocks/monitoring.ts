@@ -354,17 +354,17 @@ export const monitoringTestHelpers = {
    * Reset all monitoring mocks
    */
   resetMonitoringMocks: () => {
-    Object.values(mockStructuredLogger).forEach(method => {
+    Object.values(mockStructuredLogger).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }
     });
-    Object.values(mockMetricsService).forEach(method => {
+    Object.values(mockMetricsService).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }
     });
-    Object.values(mockSlowQueryLogger).forEach(method => {
+    Object.values(mockSlowQueryLogger).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }

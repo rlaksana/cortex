@@ -3,12 +3,12 @@ import {
   type PerformanceMetric,
   type PerformanceSummary,
   type PerformanceAlert,
-  performanceCollector
+  performanceCollector,
 } from '../../../src/monitoring/performance-collector';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Simple sleep utility for tests
-const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe('MetricsService', () => {
   let metricsService: PerformanceCollector;
@@ -64,7 +64,7 @@ describe('MetricsService', () => {
         operation,
         success: true,
         metadata,
-        tags
+        tags,
       });
       expect(recentMetrics[0].duration).toBeGreaterThan(0);
     });
@@ -96,7 +96,7 @@ describe('MetricsService', () => {
       const customMetadata = {
         business_unit: 'sales',
         region: 'us-west',
-        product_category: 'enterprise'
+        product_category: 'enterprise',
       };
 
       // Record custom metric
@@ -153,7 +153,7 @@ describe('MetricsService', () => {
       const varyingMetadata = [
         { endpoint: '/users', method: 'GET' },
         { endpoint: '/users', method: 'POST' },
-        { endpoint: '/orders', method: 'GET' }
+        { endpoint: '/orders', method: 'GET' },
       ];
 
       for (const metadata of varyingMetadata) {
@@ -254,7 +254,7 @@ describe('MetricsService', () => {
         heapUsed: expect.any(Number),
         external: expect.any(Number),
         arrayBuffers: expect.any(Number),
-        timestamp: expect.any(Number)
+        timestamp: expect.any(Number),
       });
 
       expect(memoryUsage.heapUsed).toBeGreaterThan(0);
@@ -303,8 +303,8 @@ describe('MetricsService', () => {
         );
 
         expect(metrics.length).toBeGreaterThan(0);
-        expect(metrics.every(m => m.startTime >= now - windowMs)).toBe(true);
-        expect(metrics.every(m => m.endTime <= now + windowMs)).toBe(true);
+        expect(metrics.every((m) => m.startTime >= now - windowMs)).toBe(true);
+        expect(metrics.every((m) => m.endTime <= now + windowMs)).toBe(true);
       }
     });
   });
@@ -371,7 +371,9 @@ describe('MetricsService', () => {
       if (trends[operation]) {
         expect(trends[operation].totalRequests).toBeGreaterThan(0);
         expect(trends[operation].averageDuration).toBeGreaterThan(0);
-        expect(trends[operation].p95Duration).toBeGreaterThanOrEqual(trends[operation].averageDuration);
+        expect(trends[operation].p95Duration).toBeGreaterThanOrEqual(
+          trends[operation].averageDuration
+        );
         expect(trends[operation].p99Duration).toBeGreaterThanOrEqual(trends[operation].p95Duration);
       } else {
         // Fallback to checking summary directly
@@ -421,10 +423,10 @@ describe('MetricsService', () => {
       const allSummaries = metricsService.getAllSummaries();
 
       expect(allSummaries).toHaveLength(2);
-      expect(allSummaries.find(s => s.operation === operation1)).toBeDefined();
-      expect(allSummaries.find(s => s.operation === operation2)).toBeDefined();
+      expect(allSummaries.find((s) => s.operation === operation1)).toBeDefined();
+      expect(allSummaries.find((s) => s.operation === operation2)).toBeDefined();
 
-      allSummaries.forEach(summary => {
+      allSummaries.forEach((summary) => {
         expect(summary.count).toBe(5);
         expect(summary.averageDuration).toBeGreaterThan(0);
       });
@@ -483,7 +485,7 @@ describe('MetricsService', () => {
       const timePoints = [
         Date.now() - 3600000, // 1 hour ago
         Date.now() - 1800000, // 30 minutes ago
-        Date.now()             // Now
+        Date.now(), // Now
       ];
 
       for (const timePoint of timePoints) {
@@ -615,7 +617,7 @@ describe('MetricsService', () => {
 
       // Alert may be triggered for duration threshold
       if (alertEvents.length > 0) {
-        const durationAlerts = alertEvents.filter(a => a.alertType === 'slow_query');
+        const durationAlerts = alertEvents.filter((a) => a.alertType === 'slow_query');
         expect(durationAlerts[0].threshold).toBe(durationThreshold);
       } else {
         // If no alerts were triggered, at least verify we have slow metrics
@@ -628,7 +630,7 @@ describe('MetricsService', () => {
       const operations = ['rule_test_1', 'rule_test_2'];
       const thresholds = [
         { operation: operations[0], duration: 100, errorRate: 5 },
-        { operation: operations[1], duration: 200, errorRate: 10 }
+        { operation: operations[1], duration: 200, errorRate: 10 },
       ];
 
       // Configure multiple alert rules
@@ -663,7 +665,7 @@ describe('MetricsService', () => {
       const mockNotificationService = {
         sendAlert: vi.fn().mockImplementation((alert) => {
           notifications.push(alert);
-        })
+        }),
       };
 
       metricsService.setAlertThreshold(operation, 100, 5);
@@ -684,7 +686,7 @@ describe('MetricsService', () => {
       expect(notifications[0]).toMatchObject({
         operation,
         alertType: 'slow_query',
-        severity: expect.stringMatching(/^(low|medium|high|critical)$/)
+        severity: expect.stringMatching(/^(low|medium|high|critical)$/),
       });
     });
 
@@ -769,7 +771,7 @@ describe('MetricsService', () => {
 
       // Should receive some alerts, potentially deduplicated
       expect(alertEvents.length).toBeGreaterThanOrEqual(1);
-      alertEvents.forEach(alert => {
+      alertEvents.forEach((alert) => {
         expect(alert.operation).toBe(operation);
         expect(alert.alertType).toBe('slow_query');
       });
@@ -783,7 +785,7 @@ describe('MetricsService', () => {
         low: 'log',
         medium: 'email',
         high: 'slack',
-        critical: 'pager'
+        critical: 'pager',
       };
 
       metricsService.setAlertThreshold(operation, 100, 5);
@@ -791,7 +793,7 @@ describe('MetricsService', () => {
       metricsService.on('alert', (alert) => {
         routedAlerts.push({
           severity: alert.severity,
-          route: mockRoutes[alert.severity]
+          route: mockRoutes[alert.severity],
         });
       });
 
@@ -819,7 +821,7 @@ describe('MetricsService', () => {
   describe('Integration with Services', () => {
     it('should collect metrics from multiple services', async () => {
       const services = ['auth-service', 'user-service', 'order-service'];
-      const operations = services.map(service => `${service}_api`);
+      const operations = services.map((service) => `${service}_api`);
 
       // Simulate metrics from different services
       for (let i = 0; i < operations.length; i++) {
@@ -830,7 +832,7 @@ describe('MetricsService', () => {
           const endMetric = metricsService.startMetric(operation, {
             service,
             endpoint: `/api/v1/${service}`,
-            method: 'GET'
+            method: 'GET',
           });
           await sleep(50 + j * 10);
           endMetric();
@@ -855,10 +857,16 @@ describe('MetricsService', () => {
       const traceId = 'trace-123';
 
       // User service calls auth service
-      const userEnd = metricsService.startMetric(userOperation, { traceId, service: 'user-service' });
+      const userEnd = metricsService.startMetric(userOperation, {
+        traceId,
+        service: 'user-service',
+      });
       await sleep(50);
 
-      const authEnd = metricsService.startMetric(authOperation, { traceId, service: 'auth-service' });
+      const authEnd = metricsService.startMetric(authOperation, {
+        traceId,
+        service: 'auth-service',
+      });
       await sleep(30);
       authEnd();
 
@@ -885,7 +893,7 @@ describe('MetricsService', () => {
         for (let i = 0; i < 20; i++) {
           const endMetric = metricsService.startMetric(operation, {
             dashboard: true,
-            category: operation
+            category: operation,
           });
 
           if (operation === 'api_requests') await sleep(100 + Math.random() * 200);
@@ -899,7 +907,7 @@ describe('MetricsService', () => {
       const trends = metricsService.getPerformanceTrends(5);
 
       // Verify dashboard data is available
-      dashboardOperations.forEach(operation => {
+      dashboardOperations.forEach((operation) => {
         expect(trends[operation]).toBeDefined();
         expect(trends[operation].totalRequests).toBe(20);
         expect(trends[operation].averageDuration).toBeGreaterThan(0);
@@ -1019,7 +1027,7 @@ describe('MetricsService', () => {
           const endMetric = metricsService.startMetric(operation, {
             service,
             operationType: baseOperation,
-            orderId: `order-${i}`
+            orderId: `order-${i}`,
           });
 
           // Different processing times per service
@@ -1032,14 +1040,14 @@ describe('MetricsService', () => {
       }
 
       const allSummaries = metricsService.getAllSummaries();
-      const relatedSummaries = allSummaries.filter(s => s.operation.includes(baseOperation));
+      const relatedSummaries = allSummaries.filter((s) => s.operation.includes(baseOperation));
 
       expect(relatedSummaries).toHaveLength(3);
 
       // Verify aggregation patterns
-      const paymentSummary = relatedSummaries.find(s => s.operation.includes('payment'));
-      const inventorySummary = relatedSummaries.find(s => s.operation.includes('inventory'));
-      const shippingSummary = relatedSummaries.find(s => s.operation.includes('shipping'));
+      const paymentSummary = relatedSummaries.find((s) => s.operation.includes('payment'));
+      const inventorySummary = relatedSummaries.find((s) => s.operation.includes('inventory'));
+      const shippingSummary = relatedSummaries.find((s) => s.operation.includes('shipping'));
 
       expect(paymentSummary!.averageDuration).toBeGreaterThan(inventorySummary!.averageDuration);
       expect(shippingSummary!.averageDuration).toBeGreaterThan(inventorySummary!.averageDuration);
@@ -1055,7 +1063,7 @@ describe('MetricsService', () => {
       for (let i = 0; i < largeMetricCount; i++) {
         const endMetric = metricsService.startMetric(operation, {
           index: i,
-          data: `test-data-${i}`.repeat(10) // Include some payload
+          data: `test-data-${i}`.repeat(10), // Include some payload
         });
         endMetric();
       }
@@ -1082,7 +1090,7 @@ describe('MetricsService', () => {
       for (let i = 0; i < 10; i++) {
         const endMetric = metricsService.startMetric(operation, {
           customValue: i * 10,
-          category: i % 2 === 0 ? 'even' : 'odd'
+          category: i % 2 === 0 ? 'even' : 'odd',
         });
         await sleep(50 + i * 5);
         endMetric();
@@ -1103,8 +1111,9 @@ describe('MetricsService', () => {
       // Generate metrics rapidly to test batch processing
       const startTime = Date.now();
 
-      operations.forEach(operation => {
-        for (let i = 0; i < 150; i++) { // Exceed batch size
+      operations.forEach((operation) => {
+        for (let i = 0; i < 150; i++) {
+          // Exceed batch size
           const endMetric = metricsService.startMetric(operation, { batchIndex: i });
           endMetric(); // Immediate end for rapid processing
         }
@@ -1116,7 +1125,7 @@ describe('MetricsService', () => {
       expect(processingTime).toBeLessThan(1000);
 
       // Verify all metrics were processed
-      operations.forEach(operation => {
+      operations.forEach((operation) => {
         const summary = metricsService.getSummary(operation);
         expect(summary!.count).toBe(150);
       });
@@ -1132,7 +1141,7 @@ describe('MetricsService', () => {
           const endMetric = metricsService.startMetric(operation, {
             searchable: operation.includes('search'),
             tag: searchTag,
-            index: i
+            index: i,
           });
           await sleep(20);
           endMetric();
@@ -1140,13 +1149,13 @@ describe('MetricsService', () => {
       }
 
       const allSummaries = metricsService.getAllSummaries();
-      const searchableSummaries = allSummaries.filter(s => s.operation.includes('search'));
+      const searchableSummaries = allSummaries.filter((s) => s.operation.includes('search'));
 
       expect(searchableSummaries).toHaveLength(2);
 
-      searchableSummaries.forEach(summary => {
+      searchableSummaries.forEach((summary) => {
         const metrics = metricsService.getRecentMetrics(summary.operation, 5);
-        metrics.forEach(metric => {
+        metrics.forEach((metric) => {
           expect(metric.metadata.searchable).toBe(true);
           expect(metric.metadata.tag).toBe(searchTag);
         });

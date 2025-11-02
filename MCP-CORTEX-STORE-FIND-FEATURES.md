@@ -25,6 +25,7 @@
 The MCP Cortex Memory System provides a comprehensive knowledge management platform with intelligent storage, retrieval, and semantic analysis capabilities. The system supports 16 different knowledge types organized into 4 categories, with advanced features like semantic chunking, duplicate detection, TTL management, and scope-based isolation.
 
 ### Key Capabilities
+
 - **🧠 Semantic Chunking**: Intelligent content boundary detection using embeddings
 - **🔍 Advanced Search**: Multi-modal search with semantic, keyword, and graph expansion
 - **🛡️ Duplicate Detection**: Content hash and semantic similarity-based deduplication
@@ -39,27 +40,29 @@ The MCP Cortex Memory System provides a comprehensive knowledge management platf
 ### Core Store Functionality
 
 #### Basic Store Operation
+
 ```typescript
 memory_store({
   items: [
     {
-      kind: "entity",
-      content: "Knowledge content to store",
+      kind: 'entity',
+      content: 'Knowledge content to store',
       scope: {
-        org: "organization-name",
-        project: "project-name",
-        branch: "main"
+        org: 'organization-name',
+        project: 'project-name',
+        branch: 'main',
       },
       metadata: {
-        tags: ["important", "reference"],
-        priority: "high"
-      }
-    }
-  ]
-})
+        tags: ['important', 'reference'],
+        priority: 'high',
+      },
+    },
+  ],
+});
 ```
 
 #### Store Response Format
+
 ```typescript
 {
   items: [{
@@ -96,24 +99,28 @@ memory_store({
 ### Advanced Store Features
 
 #### 1. Semantic Chunking (NEW v2.0)
+
 **Automatic for content ≥ 2400 characters, semantic analysis ≥ 3600 characters**
 
 ```typescript
 // Long content automatically gets semantic chunking
 memory_store({
-  items: [{
-    kind: "section",
-    content: "Very long document content that exceeds 3600 characters...",
-    // System will automatically:
-    // - Detect semantic boundaries using embeddings (if available)
-    // - Create intelligent chunks at topic shifts
-    // - Preserve metadata and TTL across chunks
-    // - Fall back to character chunking if semantic analysis fails
-  }]
-})
+  items: [
+    {
+      kind: 'section',
+      content: 'Very long document content that exceeds 3600 characters...',
+      // System will automatically:
+      // - Detect semantic boundaries using embeddings (if available)
+      // - Create intelligent chunks at topic shifts
+      // - Preserve metadata and TTL across chunks
+      // - Fall back to character chunking if semantic analysis fails
+    },
+  ],
+});
 ```
 
 **Chunking Implementation Status:**
+
 - ✅ **Core chunking logic**: Implemented with 1200 character target chunks
 - ✅ **Semantic analyzer**: Complete with sentence-level boundary detection
 - ✅ **Fallback mechanism**: Traditional character-based chunking
@@ -121,6 +128,7 @@ memory_store({
 - ⚠️ **Test status**: Embedding generation issues in test environment
 
 **Chunking Features:**
+
 - **Thresholds**: Content ≥2400 chars triggers chunking; ≥3600 chars enables semantic analysis
 - **Target size**: 1200 characters per chunk with 200 character overlap
 - **Semantic boundaries**: Configurable thresholds - strong (0.3), medium (0.5), weak (0.7) similarity
@@ -131,24 +139,26 @@ memory_store({
 - **Metadata preservation**: Full metadata and TTL inheritance across chunks
 
 **Current Limitations:**
+
 - Semantic analysis disabled → falls back to traditional chunking
 - Embedding service failures → automatic fallback with logging
 - Test environment → embedding generation issues causing test failures
 
 #### 2. Duplicate Detection System
+
 **Multi-layer deduplication strategy:**
 
 ```typescript
 // Content Hash Detection (Exact Match)
 if (contentHash === existingHash) {
-  status: "skipped_dedupe"
-  reason: "Duplicate content detected (hash: abc123...)"
+  status: 'skipped_dedupe';
+  reason: 'Duplicate content detected (hash: abc123...)';
 }
 
 // Semantic Similarity Detection (85% threshold)
 if (semanticSimilarity > 0.85) {
-  status: "skipped_dedupe"
-  reason: "High semantic similarity (90.0%)"
+  status: 'skipped_dedupe';
+  reason: 'High semantic similarity (90.0%)';
 }
 
 // Scope-based Rules
@@ -158,21 +168,25 @@ if (semanticSimilarity > 0.85) {
 ```
 
 #### 3. TTL (Time-To-Live) Management
+
 **Automatic expiry with configurable policies:**
 
 ```typescript
 memory_store({
-  items: [{
-    kind: "todo",
-    content: "Task with expiry",
-    ttl_policy: "30d",              // 30 days from now
-    // OR explicit expiry
-    expiry_at: "2025-11-30T23:59:59.000Z"
-  }]
-})
+  items: [
+    {
+      kind: 'todo',
+      content: 'Task with expiry',
+      ttl_policy: '30d', // 30 days from now
+      // OR explicit expiry
+      expiry_at: '2025-11-30T23:59:59.000Z',
+    },
+  ],
+});
 ```
 
 **TTL Features:**
+
 - **Predefined policies**: 1d, 7d, 30d, 90d, permanent
 - **Custom expiry dates**: Absolute timestamps
 - **Inheritance**: Child chunks inherit parent TTL
@@ -180,23 +194,27 @@ memory_store({
 - **TTL-aware search**: Expired items excluded from results
 
 #### 4. Scope-Based Isolation
+
 **Multi-level data separation:**
 
 ```typescript
 memory_store({
-  items: [{
-    kind: "decision",
-    content: "Technical decision",
-    scope: {
-      org: "company-name",      // Organization level
-      project: "project-name", // Project level
-      branch: "feature-branch" // Branch level
-    }
-  }]
-})
+  items: [
+    {
+      kind: 'decision',
+      content: 'Technical decision',
+      scope: {
+        org: 'company-name', // Organization level
+        project: 'project-name', // Project level
+        branch: 'feature-branch', // Branch level
+      },
+    },
+  ],
+});
 ```
 
 **Scope Features:**
+
 - **Hierarchical isolation**: org → project → branch
 - **Cross-scope search**: Search across multiple scopes
 - **Default scope handling**: Automatic scope resolution
@@ -209,86 +227,94 @@ memory_store({
 ### Core Find Functionality
 
 #### Basic Search
+
 ```typescript
 memory_find({
-  query: "search terms",
-  mode: "auto",              // auto | fast | deep
+  query: 'search terms',
+  mode: 'auto', // auto | fast | deep
   limit: 10,
   scope: {
-    project: "project-name",
-    branch: "main"
-  }
-})
+    project: 'project-name',
+    branch: 'main',
+  },
+});
 ```
 
 #### Advanced Search Features
 
 #### 1. Multi-Modal Search Strategies
+
 **Automatic strategy selection based on query:**
 
 ```typescript
 memory_find({
-  query: "semantic search query",
-  mode: "deep",
-  expand: "relations",         // relations | parents | children | none
+  query: 'semantic search query',
+  mode: 'deep',
+  expand: 'relations', // relations | parents | children | none
   max_attempts: 3,
-  similarity_threshold: 0.7
-})
+  similarity_threshold: 0.7,
+});
 ```
 
 **Search Modes:**
+
 - **Auto**: Intelligent strategy selection
 - **Fast**: Keyword and exact matching only
 - **Deep**: Full semantic + graph expansion
 
 #### 2. Graph Expansion (P4-T4.2)
+
 **Knowledge graph traversal:**
 
 ```typescript
 memory_find({
-  query: "find related entities",
-  expand: "relations",         // Expand to related items
-  expansion_depth: 2,          // How many levels to expand
-  include_relations: ["causes", "enables", "relates_to"]
-})
+  query: 'find related entities',
+  expand: 'relations', // Expand to related items
+  expansion_depth: 2, // How many levels to expand
+  include_relations: ['causes', 'enables', 'relates_to'],
+});
 ```
 
 **Expansion Options:**
+
 - **Relations**: Find related knowledge items
 - **Parents**: Find parent items in hierarchy
 - **Children**: Find child items
 - **Combined**: Multiple expansion types
 
 **Graph Expansion Guardrails:**
+
 - **Maximum total nodes**: 100 items per expansion operation
 - **Timeout**: 5 seconds per expansion level
 - **Depth limit**: Maximum 3 levels of expansion
 
 #### 3. Type-Specific Search
+
 **Filter by knowledge types:**
 
 ```typescript
 memory_find({
-  query: "search decisions",
-  types: ["decision"],         // Specific types
-  kind: "decision"              // Legacy compatibility
-})
+  query: 'search decisions',
+  types: ['decision'], // Specific types
+  kind: 'decision', // Legacy compatibility
+});
 ```
 
 #### 4. Scope-Based Search
+
 **Multi-scope search:**
 
 ```typescript
 memory_find({
-  query: "search across projects",
+  query: 'search across projects',
   scope: {
-    org: "company-name",
+    org: 'company-name',
     // Multiple projects
-    project: ["project-a", "project-b"],
+    project: ['project-a', 'project-b'],
     // All branches
-    branch: null
-  }
-})
+    branch: null,
+  },
+});
 ```
 
 ### Search Response Format
@@ -339,54 +365,60 @@ memory_find({
 ### 16 Knowledge Types in 4 Categories
 
 #### 1. Core Graph Extension Types
+
 **For building knowledge graphs and relationships**
 
-| Type | Description | Use Cases |
-|------|-------------|-----------|
-| `entity` | Core concepts with dynamic schemas | Users, organizations, goals, preferences |
-| `relation` | Relationships between entities | User-organization, goal-dependencies |
-| `observation` | Facts and observations | System status, user behavior patterns |
+| Type          | Description                        | Use Cases                                |
+| ------------- | ---------------------------------- | ---------------------------------------- |
+| `entity`      | Core concepts with dynamic schemas | Users, organizations, goals, preferences |
+| `relation`    | Relationships between entities     | User-organization, goal-dependencies     |
+| `observation` | Facts and observations             | System status, user behavior patterns    |
 
 #### 2. Core Document Types
+
 **For structured documentation**
 
-| Type | Description | Use Cases |
-|------|-------------|-----------|
+| Type      | Description                                   | Use Cases                              |
+| --------- | --------------------------------------------- | -------------------------------------- |
 | `section` | Document sections with hierarchical structure | Documentation, knowledge base articles |
 
 #### 3. Development Lifecycle Types
+
 **For software development processes**
 
-| Type | Description | Use Cases |
-|------|-------------|-----------|
-| `runbook` | Operational procedures | Deployment guides, troubleshooting steps |
-| `change` | Change records and modifications | Code changes, configuration updates |
-| `issue` | Problems and incidents | Bug reports, feature requests |
-| `decision` | Decisions with ADR format | Technical decisions, architecture choices |
-| `todo` | Action items and tasks | Development tasks, action items |
-| `release_note` | Release documentation | Version notes, changelogs |
-| `ddl` | Database schema changes | Table definitions, migrations |
-| `pr_context` | Pull request context | PR descriptions, review comments |
+| Type           | Description                      | Use Cases                                 |
+| -------------- | -------------------------------- | ----------------------------------------- |
+| `runbook`      | Operational procedures           | Deployment guides, troubleshooting steps  |
+| `change`       | Change records and modifications | Code changes, configuration updates       |
+| `issue`        | Problems and incidents           | Bug reports, feature requests             |
+| `decision`     | Decisions with ADR format        | Technical decisions, architecture choices |
+| `todo`         | Action items and tasks           | Development tasks, action items           |
+| `release_note` | Release documentation            | Version notes, changelogs                 |
+| `ddl`          | Database schema changes          | Table definitions, migrations             |
+| `pr_context`   | Pull request context             | PR descriptions, review comments          |
 
 #### 4. 8-LOG System Types
+
 **For comprehensive project tracking**
 
-| Type | Description | Use Cases |
-|------|-------------|-----------|
-| `incident` | Incidents and outages | Production incidents, system failures |
-| `release` | Software releases | Version deployments, releases |
-| `risk` | Risk assessments | Security risks, project risks |
+| Type         | Description                 | Use Cases                                   |
+| ------------ | --------------------------- | ------------------------------------------- |
+| `incident`   | Incidents and outages       | Production incidents, system failures       |
+| `release`    | Software releases           | Version deployments, releases               |
+| `risk`       | Risk assessments            | Security risks, project risks               |
 | `assumption` | Assumptions and constraints | Technical assumptions, business constraints |
 
 ### Type-Specific Features
 
 #### Validation Features per Type
+
 - **Required Fields**: Each type has specific required fields
 - **Schema Validation**: Zod schemas ensure data integrity
 - **Business Rules**: Type-specific validation logic
 - **Metadata Requirements**: Custom metadata per type
 
 #### Specialized Behaviors
+
 - **Immutable Types**: Some types prevent modification (ADR, release notes)
 - **Chunkable Types**: Section, runbook, incident support semantic chunking
 - **Deduplicated Types**: Entity, relation, observation have strict deduplication
@@ -399,6 +431,7 @@ memory_find({
 ### 1. Semantic Analysis & Intelligence
 
 #### Autonomous Context Generation
+
 ```typescript
 {
   action_performed: "created",
@@ -412,11 +445,13 @@ memory_find({
 ```
 
 #### Contradiction Detection
+
 - **Content Analysis**: Detect conflicting information
 - **Semantic Comparison**: Compare meaning across items
 - **Recommendations**: Suggest resolutions for contradictions
 
 #### Knowledge Graph Integration
+
 - **Automatic Linking**: Create relationships between related items
 - **Graph Traversal**: Find connected knowledge
 - **Inference**: Derive new insights from existing knowledge
@@ -424,16 +459,19 @@ memory_find({
 ### 2. Performance & Optimization
 
 #### Caching Systems
+
 - **Embedding Cache**: 1-hour TTL for semantic analysis
 - **Result Cache**: Search result caching for repeated queries
 - **Connection Pooling**: Optimized database connections
 
 #### Chunking Performance
+
 - **Selective Analysis**: Only long content (>3600 chars) gets semantic chunking
 - **Early Termination**: Stop analysis if no boundaries found
 - **Fallback Mechanisms**: Graceful degradation to traditional methods
 
 #### Search Optimization
+
 - **Strategy Selection**: Automatic best search method
 - **Parallel Processing**: Concurrent search strategies
 - **Result Ranking**: Intelligent relevance scoring
@@ -441,6 +479,7 @@ memory_find({
 ### 3. Monitoring & Telemetry
 
 #### Store Metrics
+
 ```typescript
 {
   batch_stats: {
@@ -463,6 +502,7 @@ memory_find({
 ```
 
 #### Search Metrics
+
 ```typescript
 {
   search_metrics: {
@@ -482,6 +522,7 @@ memory_find({
 ### Environment Variables
 
 #### Core Configuration
+
 ```bash
 # Database Configuration
 QDRANT_URL=http://localhost:6333
@@ -509,6 +550,7 @@ ENABLE_JWT_AUTH=false
 ```
 
 #### Embedding Service Configuration
+
 ```bash
 # OpenAI Configuration (Default)
 OPENAI_API_KEY=sk-...
@@ -526,6 +568,7 @@ LOCAL_EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
 
 #### Semantic Chunking Configuration
+
 ```bash
 # Enable/Disable Semantic Features
 ENABLE_SEMANTIC_CHUNKING=true
@@ -552,6 +595,7 @@ RESULT_CACHE_SIZE=100
 ```
 
 #### Performance & Scaling
+
 ```bash
 # Connection Pooling
 DB_POOL_MIN=2
@@ -573,6 +617,7 @@ MAX_CONCURRENT_CHUNKING=5
 ```
 
 #### TTL and Cleanup Configuration
+
 ```bash
 # TTL Management
 DEFAULT_TTL_POLICY=30d
@@ -587,6 +632,7 @@ TTL_POLICIES=1d,7d,30d,90d,permanent
 ### Configuration File Reference
 
 #### config.json Structure
+
 ```json
 {
   "database": {
@@ -733,6 +779,7 @@ TTL_POLICIES=1d,7d,30d,90d,permanent
 ### Configuration Validation
 
 #### Schema Validation Rules
+
 ```typescript
 interface ConfigurationSchema {
   // Required fields
@@ -743,7 +790,7 @@ interface ConfigurationSchema {
 
   // Optional with defaults
   embedding?: {
-    provider: "openai" | "cohere" | "local";
+    provider: 'openai' | 'cohere' | 'local';
     apiKey?: string; // Required for OpenAI/Cohere
   };
 
@@ -755,12 +802,13 @@ interface ConfigurationSchema {
   };
 
   // Enum values
-  logLevel: "error" | "warn" | "info" | "debug";
-  environment: "development" | "staging" | "production";
+  logLevel: 'error' | 'warn' | 'info' | 'debug';
+  environment: 'development' | 'staging' | 'production';
 }
 ```
 
 #### Runtime Configuration Validation
+
 ```typescript
 // Validate on startup
 const validateConfig = (config: Config): ValidationResult => {
@@ -768,27 +816,27 @@ const validateConfig = (config: Config): ValidationResult => {
 
   // Database connectivity
   if (!isValidUrl(config.database.url)) {
-    errors.push("Invalid database URL format");
+    errors.push('Invalid database URL format');
   }
 
   // API key validation
-  if (config.embedding.provider === "openai" && !config.embedding.apiKey) {
-    errors.push("OpenAI API key required when using OpenAI provider");
+  if (config.embedding.provider === 'openai' && !config.embedding.apiKey) {
+    errors.push('OpenAI API key required when using OpenAI provider');
   }
 
   // Performance constraints
   if (config.performance.maxBatchSize > 1000) {
-    errors.push("Max batch size cannot exceed 1000");
+    errors.push('Max batch size cannot exceed 1000');
   }
 
   // Security checks
-  if (config.environment === "production" && config.auth.jwt.secret === "default") {
-    errors.push("Default JWT secret cannot be used in production");
+  if (config.environment === 'production' && config.auth.jwt.secret === 'default') {
+    errors.push('Default JWT secret cannot be used in production');
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 };
 ```
@@ -796,6 +844,7 @@ const validateConfig = (config: Config): ValidationResult => {
 ### Environment-Specific Configuration
 
 #### Development Environment
+
 ```json
 {
   "environment": "development",
@@ -819,6 +868,7 @@ const validateConfig = (config: Config): ValidationResult => {
 ```
 
 #### Production Environment
+
 ```json
 {
   "environment": "production",
@@ -852,26 +902,28 @@ const validateConfig = (config: Config): ValidationResult => {
 ### Configuration Best Practices
 
 #### Security Configuration
+
 ```typescript
 // Use environment variables for secrets
 const secureConfig = {
   auth: {
     jwt: {
       secret: process.env.JWT_SECRET, // Never hardcode
-      expiresIn: "24h"
+      expiresIn: '24h',
     },
     apiKey: {
-      encryptionKey: process.env.API_KEY_ENCRYPTION_KEY
-    }
+      encryptionKey: process.env.API_KEY_ENCRYPTION_KEY,
+    },
   },
   database: {
     apiKey: process.env.QDRANT_API_KEY,
-    ssl: process.env.NODE_ENV === "production"
-  }
+    ssl: process.env.NODE_ENV === 'production',
+  },
 };
 ```
 
 #### Performance Tuning
+
 ```typescript
 // Optimize for your workload
 const performanceConfig = {
@@ -880,7 +932,7 @@ const performanceConfig = {
     maxBatchSize: 500,
     dbPoolMax: 20,
     concurrentChunking: 10,
-    requestTimeout: 60000
+    requestTimeout: 60000,
   },
 
   // Low-latency scenario
@@ -888,7 +940,7 @@ const performanceConfig = {
     maxBatchSize: 50,
     dbPoolMax: 5,
     concurrentChunking: 2,
-    requestTimeout: 10000
+    requestTimeout: 10000,
   },
 
   // Memory-constrained scenario
@@ -896,8 +948,8 @@ const performanceConfig = {
     embeddingCacheSize: 100,
     resultCacheSize: 50,
     maxBatchSize: 25,
-    concurrentChunking: 1
-  }
+    concurrentChunking: 1,
+  },
 };
 ```
 
@@ -908,6 +960,7 @@ const performanceConfig = {
 ### Store Configuration
 
 #### Chunking Configuration
+
 ```typescript
 {
   semantic_analyzer: {
@@ -924,6 +977,7 @@ const performanceConfig = {
 ```
 
 #### Duplicate Detection Configuration
+
 ```typescript
 {
   duplicate_detection: {
@@ -939,6 +993,7 @@ const performanceConfig = {
 ```
 
 #### TTL Configuration
+
 ```typescript
 {
   ttl: {
@@ -953,6 +1008,7 @@ const performanceConfig = {
 ### Search Configuration
 
 #### Search Strategy Configuration
+
 ```typescript
 {
   search: {
@@ -975,6 +1031,7 @@ const performanceConfig = {
 ### Store Response Types
 
 #### Success Response
+
 ```typescript
 {
   items: [...],                   // Item-level results
@@ -986,6 +1043,7 @@ const performanceConfig = {
 ```
 
 #### Error Response
+
 ```typescript
 {
   items: [],
@@ -1014,6 +1072,7 @@ const performanceConfig = {
 ### Find Response Types
 
 #### Search Results
+
 ```typescript
 {
   hits: [...],                   // Search result items
@@ -1025,6 +1084,7 @@ const performanceConfig = {
 ```
 
 #### Error Response
+
 ```typescript
 {
   hits: [/* ... some results ... */],  // Partial results that succeeded
@@ -1059,12 +1119,14 @@ const performanceConfig = {
 ### Store Operation Errors
 
 #### Validation Errors
+
 - **Invalid kind**: Unsupported knowledge type
 - **Missing required fields**: Type-specific validation failures
 - **Invalid scope**: Malformed scope object
 - **Content too large**: Content exceeds maximum limits
 
 #### Processing Errors
+
 - **Database errors**: Connection or storage failures
 - **Chunking errors**: Semantic analysis failures
 - **Embedding errors**: Vector generation failures
@@ -1073,12 +1135,14 @@ const performanceConfig = {
 ### Find Operation Errors
 
 #### Search Errors
+
 - **Invalid query**: Malformed search query
 - **Database errors**: Search service failures
 - **Timeout errors**: Search operation exceeded time limits
 - **Scope errors**: Invalid scope configuration
 
 #### Recovery Mechanisms
+
 - **Graceful fallbacks**: Fallback to alternative strategies
 - **Retry logic**: Automatic retry with exponential backoff
 - **Partial results**: Return available results on partial failures
@@ -1091,6 +1155,7 @@ const performanceConfig = {
 ### Storage Performance
 
 #### Chunking Performance
+
 - **Selective processing**: Only content ≥2400 chars triggers chunking; ≥3600 chars enables semantic analysis
 - **Chunk size optimization**: 1200 character target chunks with 200 character overlap
 - **Batch optimization**: Process items in batches for efficiency
@@ -1099,6 +1164,7 @@ const performanceConfig = {
 - **Fallback efficiency**: Traditional chunking when semantic analysis unavailable
 
 #### Duplicate Detection Performance
+
 - **Early termination**: Fast hash-based detection first
 - **Cache utilization**: Reuse similarity calculations
 - **Batch similarity**: Compare multiple items efficiently
@@ -1106,12 +1172,14 @@ const performanceConfig = {
 ### Search Performance
 
 #### Search Strategy Selection
+
 - **Auto mode**: Intelligent strategy selection based on query complexity
 - **Parallel execution**: Run multiple search strategies concurrently
 - **Result caching**: Cache frequent search results
 - **Progressive loading**: Return results as they become available
 
 #### Scalability Considerations
+
 - **Vector database**: Optimized for high-dimensional similarity search
 - **Connection pooling**: Efficient database connection management
 - **Result pagination**: Large result set handling
@@ -1120,12 +1188,14 @@ const performanceConfig = {
 ### Performance Monitoring
 
 #### Key Metrics
+
 - **Store throughput**: Items processed per second
 - **Search latency**: Search response times
 - **Cache hit rates**: Embedding and result cache efficiency
 - **Error rates**: Failure rates and patterns
 
 #### Optimization Targets
+
 - **Store operations**: <100ms per item (average)
 - **Search operations**: <500ms for typical queries
 - **Chunking efficiency**: 90%+ semantic accuracy
@@ -1138,6 +1208,7 @@ const performanceConfig = {
 ### Core API Endpoints
 
 #### Memory Store API
+
 ```
 POST /api/v1/memory/store
 Content-Type: application/json
@@ -1145,6 +1216,7 @@ Authorization: Bearer <api_key>
 ```
 
 **Request Schema:**
+
 ```typescript
 interface StoreRequest {
   items: KnowledgeItem[];
@@ -1171,6 +1243,7 @@ interface KnowledgeItem {
 ```
 
 **Response Schema:**
+
 ```typescript
 interface StoreResponse {
   success: boolean;
@@ -1184,7 +1257,7 @@ interface StoreResponse {
 
 interface StoreItemResult {
   input_index: number;
-  status: "stored" | "skipped_dedupe" | "business_rule_blocked" | "validation_error";
+  status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
   kind: KnowledgeType;
   id?: string;
   created_at?: string;
@@ -1205,6 +1278,7 @@ interface StoreSummary {
 ```
 
 #### Memory Find API
+
 ```
 GET /api/v1/memory/find
 POST /api/v1/memory/find
@@ -1213,16 +1287,17 @@ Authorization: Bearer <api_key>
 ```
 
 **Request Schema:**
+
 ```typescript
 interface FindRequest {
   query: string;
-  mode?: "auto" | "fast" | "deep";
+  mode?: 'auto' | 'fast' | 'deep';
   limit?: number; // max 1000, default 50
   offset?: number; // for pagination
   scope?: Scope;
   types?: KnowledgeType[];
   kind?: KnowledgeType; // legacy
-  expand?: "relations" | "parents" | "children" | "none";
+  expand?: 'relations' | 'parents' | 'children' | 'none';
   expansion_depth?: number; // max 5, default 2
   include_relations?: string[];
   similarity_threshold?: number; // 0.0-1.0, default 0.7
@@ -1230,15 +1305,15 @@ interface FindRequest {
   filters?: {
     date_range?: {
       start?: string; // ISO 8601
-      end?: string;   // ISO 8601
+      end?: string; // ISO 8601
     };
     tags?: string[];
     priority?: string[];
     author?: string;
   };
   sort?: {
-    field: "relevance" | "created_at" | "updated_at" | "confidence_score";
-    order: "asc" | "desc";
+    field: 'relevance' | 'created_at' | 'updated_at' | 'confidence_score';
+    order: 'asc' | 'desc';
   };
   include_content?: boolean; // default true
   highlight?: boolean; // default false
@@ -1246,6 +1321,7 @@ interface FindRequest {
 ```
 
 **Response Schema:**
+
 ```typescript
 interface FindResponse {
   success: boolean;
@@ -1271,7 +1347,7 @@ interface SearchResult {
   created_at: string;
   updated_at?: string;
   confidence_score: number;
-  match_type: "exact" | "fuzzy" | "semantic" | "keyword" | "hybrid";
+  match_type: 'exact' | 'fuzzy' | 'semantic' | 'keyword' | 'hybrid';
   highlight?: string[];
   relations?: Relation[];
   chunk_info?: ChunkInfo;
@@ -1295,23 +1371,24 @@ interface SearchMetadata {
 
 ### HTTP Status Codes
 
-| Status | Code | Description | Retry |
-|--------|------|-------------|-------|
-| 200 | OK | Successful operation | No |
-| 201 | Created | Resource created | No |
-| 400 | Bad Request | Invalid request parameters | No |
-| 401 | Unauthorized | Authentication required | No |
-| 403 | Forbidden | Insufficient permissions | No |
-| 404 | Not Found | Resource not found | No |
-| 409 | Conflict | Duplicate resource | No |
-| 422 | Unprocessable Entity | Validation failed | No |
-| 429 | Too Many Requests | Rate limit exceeded | Yes |
-| 500 | Internal Server Error | Server error | Yes |
-| 502 | Bad Gateway | Upstream service error | Yes |
-| 503 | Service Unavailable | Temporary overload | Yes |
-| 504 | Gateway Timeout | Request timeout | Yes |
+| Status | Code                  | Description                | Retry |
+| ------ | --------------------- | -------------------------- | ----- |
+| 200    | OK                    | Successful operation       | No    |
+| 201    | Created               | Resource created           | No    |
+| 400    | Bad Request           | Invalid request parameters | No    |
+| 401    | Unauthorized          | Authentication required    | No    |
+| 403    | Forbidden             | Insufficient permissions   | No    |
+| 404    | Not Found             | Resource not found         | No    |
+| 409    | Conflict              | Duplicate resource         | No    |
+| 422    | Unprocessable Entity  | Validation failed          | No    |
+| 429    | Too Many Requests     | Rate limit exceeded        | Yes   |
+| 500    | Internal Server Error | Server error               | Yes   |
+| 502    | Bad Gateway           | Upstream service error     | Yes   |
+| 503    | Service Unavailable   | Temporary overload         | Yes   |
+| 504    | Gateway Timeout       | Request timeout            | Yes   |
 
 ### Error Response Format
+
 ```typescript
 interface ErrorResponse {
   success: false;
@@ -1324,7 +1401,7 @@ interface ErrorResponse {
     retry_after?: number; // seconds
   };
   autonomous_context?: {
-    action_performed: "error";
+    action_performed: 'error';
     recommendation: string;
     reasoning?: string;
   };
@@ -1332,45 +1409,47 @@ interface ErrorResponse {
 
 // Common Error Codes
 const ERROR_CODES = {
-  VALIDATION_ERROR: "Invalid request parameters or schema",
-  INVALID_API_KEY: "API key is invalid or expired",
-  RATE_LIMITED: "Too many requests, try again later",
-  QUOTA_EXCEEDED: "Monthly quota exceeded",
-  DATABASE_ERROR: "Database operation failed",
-  EMBEDDING_SERVICE_ERROR: "Embedding generation service unavailable",
-  CHUNKING_ERROR: "Content chunking failed",
-  SEMANTIC_SEARCH_DISABLED: "Semantic search not available",
-  INVALID_SCOPE: "Scope configuration is invalid",
-  PERMISSION_DENIED: "Insufficient permissions for operation",
-  TIMEOUT_ERROR: "Operation timed out",
-  INTERNAL_ERROR: "Internal server error"
+  VALIDATION_ERROR: 'Invalid request parameters or schema',
+  INVALID_API_KEY: 'API key is invalid or expired',
+  RATE_LIMITED: 'Too many requests, try again later',
+  QUOTA_EXCEEDED: 'Monthly quota exceeded',
+  DATABASE_ERROR: 'Database operation failed',
+  EMBEDDING_SERVICE_ERROR: 'Embedding generation service unavailable',
+  CHUNKING_ERROR: 'Content chunking failed',
+  SEMANTIC_SEARCH_DISABLED: 'Semantic search not available',
+  INVALID_SCOPE: 'Scope configuration is invalid',
+  PERMISSION_DENIED: 'Insufficient permissions for operation',
+  TIMEOUT_ERROR: 'Operation timed out',
+  INTERNAL_ERROR: 'Internal server error',
 } as const;
 ```
 
 ### Authentication & Authorization
 
 #### API Key Authentication
+
 ```typescript
 // Header Format
-Authorization: Bearer <api_key>
+Authorization: Bearer<api_key>;
 
 // API Key Types
 enum ApiKeyType {
-  READ_ONLY = "read_only",      // Can only search/find
-  READ_WRITE = "read_write",    // Can search and store
-  ADMIN = "admin"              // Full access including configuration
+  READ_ONLY = 'read_only', // Can only search/find
+  READ_WRITE = 'read_write', // Can search and store
+  ADMIN = 'admin', // Full access including configuration
 }
 
 // API Key Scope Restrictions
 interface ApiKeyScope {
-  allowed_scopes?: Scope[];     // Restrict to specific orgs/projects
+  allowed_scopes?: Scope[]; // Restrict to specific orgs/projects
   allowed_types?: KnowledgeType[]; // Restrict to specific knowledge types
-  rate_limit?: RateLimit;       // Custom rate limits
-  expiry?: string;             // API key expiration
+  rate_limit?: RateLimit; // Custom rate limits
+  expiry?: string; // API key expiration
 }
 ```
 
 #### Rate Limiting
+
 ```typescript
 interface RateLimit {
   requests_per_minute: number;  // Default: 60
@@ -1392,50 +1471,56 @@ X-RateLimit-Retry-After: 30
 ## Usage Examples
 
 ### Complete Store Example
+
 ```typescript
 // Store multiple items with different types
 const result = await memory_store({
   items: [
     {
-      kind: "entity",
-      content: "User profile for John Doe",
-      scope: { org: "acme", project: "user-management", branch: "main" },
+      kind: 'entity',
+      content: 'User profile for John Doe',
+      scope: { org: 'acme', project: 'user-management', branch: 'main' },
       data: {
-        name: "John Doe",
-        email: "john@acme.com",
-        role: "developer"
-      }
+        name: 'John Doe',
+        email: 'john@acme.com',
+        role: 'developer',
+      },
     },
     {
-      kind: "decision",
-      content: "Use PostgreSQL as primary database",
-      scope: { org: "acme", project: "infrastructure", branch: "main" },
+      kind: 'decision',
+      content: 'Use PostgreSQL as primary database',
+      scope: { org: 'acme', project: 'infrastructure', branch: 'main' },
       data: {
-        title: "Database Selection Decision",
-        status: "accepted",
-        component: "Data Layer",
-        alternatives: ["MySQL", "MongoDB"],
-        impact: "High",
-        implementation_date: "2025-10-01"
+        title: 'Database Selection Decision',
+        status: 'accepted',
+        component: 'Data Layer',
+        alternatives: ['MySQL', 'MongoDB'],
+        impact: 'High',
+        implementation_date: '2025-10-01',
       },
       metadata: {
-        author: "architect@acme.com",
-        approved_by: "cto@acme.com"
-      }
+        author: 'architect@acme.com',
+        approved_by: 'cto@acme.com',
+      },
     },
     {
-      kind: "section",
-      content: "Very long technical documentation that will be semantically chunked automatically..." + "Long content repeated to exceed 3600 characters for demonstration of semantic chunking capabilities",
-      scope: { org: "acme", project: "docs", branch: "main" },
-      ttl_policy: "90d"
-    }
-  ]
+      kind: 'section',
+      content:
+        'Very long technical documentation that will be semantically chunked automatically...' +
+        'Long content repeated to exceed 3600 characters for demonstration of semantic chunking capabilities',
+      scope: { org: 'acme', project: 'docs', branch: 'main' },
+      ttl_policy: '90d',
+    },
+  ],
 });
 
-console.log(`Stored ${result.summary.stored} items, skipped ${result.summary.skipped_dedupe} duplicates`);
+console.log(
+  `Stored ${result.summary.stored} items, skipped ${result.summary.skipped_dedupe} duplicates`
+);
 ```
 
 ### Complete Search Example
+
 ```typescript
 // Advanced search with multiple features
 const searchResult = await memory_find({
@@ -1460,6 +1545,7 @@ searchResult.hits.forEach((hit, index) => {
 ```
 
 ### Batch Processing Example
+
 ```typescript
 // Process large batch with error handling
 const batchSize = 50;
@@ -1490,53 +1576,67 @@ for (let i = 0; i < allItems.length; i += batchSize) {
 ## Integration Examples
 
 ### MCP Tool Integration
+
 ```typescript
 // In your MCP server implementation
-app.tool('memory_store', {
-  description: 'Store knowledge items in Cortex Memory',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        items: { $ref: '#/definitions/KnowledgeItem' }
-      }
+app.tool(
+  'memory_store',
+  {
+    description: 'Store knowledge items in Cortex Memory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: { $ref: '#/definitions/KnowledgeItem' },
+        },
+      },
+      required: ['items'],
     },
-    required: ['items']
+  },
+  async (args) => {
+    const result = await memory_store(args);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Stored ${result.summary.stored} items successfully. ${result.summary.skipped_dedupe} duplicates skipped.`,
+        },
+      ],
+    };
   }
-}, async (args) => {
-  const result = await memory_store(args);
-  return {
-    content: [{
-      type: 'text',
-      text: `Stored ${result.summary.stored} items successfully. ${result.summary.skipped_dedupe} duplicates skipped.`
-    }]
-  };
-});
+);
 
-app.tool('memory_find', {
-  description: 'Search knowledge items in Cortex Memory',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      query: { type: 'string' },
-      mode: { type: 'string', enum: ['auto', 'fast', 'deep'] },
-      limit: { type: 'number' }
+app.tool(
+  'memory_find',
+  {
+    description: 'Search knowledge items in Cortex Memory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string' },
+        mode: { type: 'string', enum: ['auto', 'fast', 'deep'] },
+        limit: { type: 'number' },
+      },
+      required: ['query'],
     },
-    required: ['query']
+  },
+  async (args) => {
+    const result = await memory_find(args);
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Found ${result.total} results for "${args.query}":\n${result.hits.map((hit) => `- ${hit.kind}: ${hit.data.title || hit.content.substring(0, 100)}`).join('\n')}`,
+        },
+      ],
+    };
   }
-}, async (args) => {
-  const result = await memory_find(args);
-  return {
-    content: [{
-      type: 'text',
-      text: `Found ${result.total} results for "${args.query}":\n${result.hits.map(hit => `- ${hit.kind}: ${hit.data.title || hit.content.substring(0, 100)}`).join('\n')}`
-    }]
-  };
-});
+);
 ```
 
 ### Direct API Integration
+
 ```typescript
 // Direct integration without MCP wrapper
 import { MemoryStoreOrchestratorQdrant } from './src/services/orchestrators/memory-store-orchestrator-qdrant.js';
@@ -1548,9 +1648,9 @@ const storeResult = await store.storeItems(items);
 
 // Find items
 const findResult = await store.findItems({
-  query: "search query",
-  mode: "auto",
-  scope: { project: "my-project" }
+  query: 'search query',
+  mode: 'auto',
+  scope: { project: 'my-project' },
 });
 ```
 
@@ -1559,6 +1659,7 @@ const findResult = await store.findItems({
 ## Best Practices
 
 ### Store Operations
+
 1. **Batch Processing**: Store multiple items in single requests for efficiency
 2. **Scope Management**: Use consistent scope naming conventions
 3. **Content Quality**: Provide meaningful content for better semantic analysis
@@ -1566,6 +1667,7 @@ const findResult = await store.findItems({
 5. **TTL Management**: Set appropriate TTL policies for different content types
 
 ### Search Operations
+
 1. **Query Optimization**: Use specific queries rather than broad searches
 2. **Scope Filtering**: Limit searches to relevant scopes for performance
 3. **Type Filtering**: Specify knowledge types when known
@@ -1573,6 +1675,7 @@ const findResult = await store.findItems({
 5. **Expansion Control**: Use graph expansion judiciously for complex queries
 
 ### Performance Optimization
+
 1. **Semantic Chunking**: Let long content benefit from semantic analysis
 2. **Caching**: Leverage built-in caching for repeated operations
 3. **Batch Size**: Optimize batch sizes for your use case (10-100 items)
@@ -1586,6 +1689,7 @@ const findResult = await store.findItems({
 ### System Requirements
 
 #### Minimum Requirements
+
 - **CPU**: 2 cores, 2.4 GHz
 - **Memory**: 4 GB RAM
 - **Storage**: 20 GB SSD
@@ -1593,6 +1697,7 @@ const findResult = await store.findItems({
 - **OS**: Linux (Ubuntu 20.04+, CentOS 8+), macOS 10.15+, Windows 10+
 
 #### Recommended Requirements
+
 - **CPU**: 4 cores, 3.0 GHz
 - **Memory**: 8 GB RAM
 - **Storage**: 50 GB SSD
@@ -1600,6 +1705,7 @@ const findResult = await store.findItems({
 - **OS**: Linux (Ubuntu 22.04 LTS)
 
 #### Production Requirements (High Throughput)
+
 - **CPU**: 8 cores, 3.2 GHz
 - **Memory**: 16 GB RAM
 - **Storage**: 100 GB NVMe SSD
@@ -1610,6 +1716,7 @@ const findResult = await store.findItems({
 ### Prerequisites
 
 #### Required Services
+
 ```bash
 # Vector Database
 Qdrant v1.7.0+
@@ -1621,6 +1728,7 @@ OpenAI API or Cohere API or Local embedding service
 ```
 
 #### Node.js Environment
+
 ```bash
 # Required Node.js version
 Node.js >= 18.0.0
@@ -1634,6 +1742,7 @@ npm >= 10.0.0
 ### Installation Methods
 
 #### Method 1: Direct Installation
+
 ```bash
 # Clone repository
 git clone https://github.com/your-org/mcp-cortex.git
@@ -1656,6 +1765,7 @@ npm start
 ```
 
 #### Method 2: Docker Installation
+
 ```bash
 # Pull image
 docker pull cortex-memory/mcp-cortex:latest
@@ -1673,6 +1783,7 @@ docker run -d \
 ```
 
 #### Method 3: Docker Compose (Recommended)
+
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -1681,7 +1792,7 @@ services:
   cortex-memory:
     image: cortex-memory/mcp-cortex:latest
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - NODE_ENV=production
       - QDRANT_URL=http://qdrant:6333
@@ -1691,7 +1802,7 @@ services:
       - qdrant
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -1699,7 +1810,7 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     ports:
-      - "6333:6333"
+      - '6333:6333'
     environment:
       - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
     volumes:
@@ -1709,8 +1820,8 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
@@ -1726,6 +1837,7 @@ volumes:
 ### Production Deployment
 
 #### Deployment Architecture
+
 ```
 Internet
     |
@@ -1743,6 +1855,7 @@ Internet
 #### Scaling Configuration
 
 #### Horizontal Scaling
+
 ```yaml
 # docker-compose.prod.yml
 version: '3.8'
@@ -1773,6 +1886,7 @@ services:
 ```
 
 #### Nginx Load Balancer Configuration
+
 ```nginx
 # nginx-lb.conf
 events {
@@ -1816,6 +1930,7 @@ http {
 ### Database Setup & Management
 
 #### Qdrant Production Setup
+
 ```bash
 # Single node setup
 docker run -d \
@@ -1840,6 +1955,7 @@ docker run -d \
 ```
 
 #### Database Migration
+
 ```bash
 # Create collections with production schema
 curl -X PUT "http://localhost:6333/collections/knowledge_items" \
@@ -1872,6 +1988,7 @@ curl -X PUT "http://localhost:6333/collections/knowledge_items/index" \
 ### Monitoring & Observability
 
 #### Health Endpoints
+
 ```typescript
 // GET /health
 {
@@ -1904,6 +2021,7 @@ cortex_memory_embedding_cache_size 847
 ```
 
 #### Monitoring Stack (Docker Compose)
+
 ```yaml
 # monitoring.yml
 version: '3.8'
@@ -1912,7 +2030,7 @@ services:
   prometheus:
     image: prom/prometheus:latest
     ports:
-      - "9090:9090"
+      - '9090:9090'
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
@@ -1920,7 +2038,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - "3001:3000"
+      - '3001:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
@@ -1930,7 +2048,7 @@ services:
   node-exporter:
     image: prom/node-exporter:latest
     ports:
-      - "9100:9100"
+      - '9100:9100'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -1942,6 +2060,7 @@ volumes:
 ```
 
 #### Key Metrics to Monitor
+
 ```typescript
 // Performance Metrics
 - Request throughput (requests/second)
@@ -1968,6 +2087,7 @@ volumes:
 ### Backup & Disaster Recovery
 
 #### Database Backup Strategy
+
 ```bash
 #!/bin/bash
 # backup.sh
@@ -1997,6 +2117,7 @@ echo "Backup completed: $BACKUP_DIR/$SNAPSHOT_NAME.snapshot.gz"
 ```
 
 #### Automated Backup with Cron
+
 ```bash
 # Add to crontab
 # Daily backup at 2 AM
@@ -2007,6 +2128,7 @@ echo "Backup completed: $BACKUP_DIR/$SNAPSHOT_NAME.snapshot.gz"
 ```
 
 #### Disaster Recovery Procedure
+
 ```bash
 #!/bin/bash
 # restore.sh
@@ -2043,6 +2165,7 @@ echo "Restore completed from: $SNAPSHOT_FILE"
 ### Security Hardening
 
 #### Network Security
+
 ```bash
 # Firewall configuration
 ufw allow 22/tcp    # SSH
@@ -2057,6 +2180,7 @@ docker network connect cortex-network qdrant
 ```
 
 #### SSL/TLS Configuration
+
 ```nginx
 # nginx-ssl.conf
 server {
@@ -2080,6 +2204,7 @@ server {
 ```
 
 #### Environment Security
+
 ```bash
 # Secure environment variables
 export QDRANT_API_KEY=$(openssl rand -hex 32)
@@ -2095,6 +2220,7 @@ chmod 755 scripts/
 ### Performance Optimization
 
 #### Production Tuning Parameters
+
 ```json
 {
   "performance": {
@@ -2138,43 +2264,48 @@ chmod 755 scripts/
 ### Error Code Reference
 
 #### Database Errors (500-599)
-| Code | Message | Cause | Solution |
-|------|---------|-------|----------|
-| `DATABASE_CONNECTION_FAILED` | Unable to connect to Qdrant | Network issues, wrong URL/API key | Check QDRANT_URL, QDRANT_API_KEY, network connectivity |
-| `DATABASE_TIMEOUT` | Query timeout exceeded | Large queries, slow database | Increase timeout, optimize queries, check DB performance |
-| `COLLECTION_NOT_FOUND` | Collection does not exist | First-time setup, collection deleted | Run database setup, verify collection name |
-| `INVALID_VECTOR_SIZE` | Vector dimension mismatch | Wrong embedding model | Check embedding model compatibility with collection |
-| `STORAGE_FULL` | Disk space exhausted | Too much data, no cleanup | Clean up old data, add storage, enable TTL cleanup |
+
+| Code                         | Message                     | Cause                                | Solution                                                 |
+| ---------------------------- | --------------------------- | ------------------------------------ | -------------------------------------------------------- |
+| `DATABASE_CONNECTION_FAILED` | Unable to connect to Qdrant | Network issues, wrong URL/API key    | Check QDRANT_URL, QDRANT_API_KEY, network connectivity   |
+| `DATABASE_TIMEOUT`           | Query timeout exceeded      | Large queries, slow database         | Increase timeout, optimize queries, check DB performance |
+| `COLLECTION_NOT_FOUND`       | Collection does not exist   | First-time setup, collection deleted | Run database setup, verify collection name               |
+| `INVALID_VECTOR_SIZE`        | Vector dimension mismatch   | Wrong embedding model                | Check embedding model compatibility with collection      |
+| `STORAGE_FULL`               | Disk space exhausted        | Too much data, no cleanup            | Clean up old data, add storage, enable TTL cleanup       |
 
 #### Embedding Service Errors (400-499)
-| Code | Message | Cause | Solution |
-|------|---------|-------|----------|
-| `EMBEDDING_SERVICE_UNAVAILABLE` | Cannot reach embedding service | Service down, network issues | Check service status, network connectivity |
-| `INVALID_API_KEY` | Embedding API key invalid | Expired/incorrect API key | Update API key, check subscription status |
-| `RATE_LIMIT_EXCEEDED` | Embedding rate limit hit | Too many requests | Implement rate limiting, use batch processing |
-| `INVALID_TEXT_LENGTH` | Text too long/short for embedding | Content length validation error | Check text length limits, chunk content appropriately |
-| `EMBEDDING_GENERATION_FAILED` | Failed to generate embeddings | Service error, invalid content | Check content format, retry with exponential backoff |
+
+| Code                            | Message                           | Cause                           | Solution                                              |
+| ------------------------------- | --------------------------------- | ------------------------------- | ----------------------------------------------------- |
+| `EMBEDDING_SERVICE_UNAVAILABLE` | Cannot reach embedding service    | Service down, network issues    | Check service status, network connectivity            |
+| `INVALID_API_KEY`               | Embedding API key invalid         | Expired/incorrect API key       | Update API key, check subscription status             |
+| `RATE_LIMIT_EXCEEDED`           | Embedding rate limit hit          | Too many requests               | Implement rate limiting, use batch processing         |
+| `INVALID_TEXT_LENGTH`           | Text too long/short for embedding | Content length validation error | Check text length limits, chunk content appropriately |
+| `EMBEDDING_GENERATION_FAILED`   | Failed to generate embeddings     | Service error, invalid content  | Check content format, retry with exponential backoff  |
 
 #### Authentication Errors (401-403)
-| Code | Message | Cause | Solution |
-|------|---------|-------|----------|
-| `UNAUTHORIZED` | Invalid or missing API key | No authentication, wrong key | Provide valid API key in Authorization header |
-| `FORBIDDEN` | Insufficient permissions | API key lacks required scope | Update API key permissions, check scope restrictions |
-| `TOKEN_EXPIRED` | JWT token has expired | Token timeout | Refresh token, implement token renewal |
-| `INVALID_CREDENTIALS` | Malformed authentication | Invalid format, encoding error | Check authentication format, use proper encoding |
+
+| Code                  | Message                    | Cause                          | Solution                                             |
+| --------------------- | -------------------------- | ------------------------------ | ---------------------------------------------------- |
+| `UNAUTHORIZED`        | Invalid or missing API key | No authentication, wrong key   | Provide valid API key in Authorization header        |
+| `FORBIDDEN`           | Insufficient permissions   | API key lacks required scope   | Update API key permissions, check scope restrictions |
+| `TOKEN_EXPIRED`       | JWT token has expired      | Token timeout                  | Refresh token, implement token renewal               |
+| `INVALID_CREDENTIALS` | Malformed authentication   | Invalid format, encoding error | Check authentication format, use proper encoding     |
 
 #### Validation Errors (400-422)
-| Code | Message | Cause | Solution |
-|------|---------|-------|----------|
-| `INVALID_KNOWLEDGE_TYPE` | Unsupported knowledge type | Typo, custom type not registered | Check supported types, register custom type |
-| `MISSING_REQUIRED_FIELD` | Required field missing | Incomplete request data | Add missing required fields |
-| `INVALID_SCOPE_FORMAT` | Malformed scope object | Wrong scope structure | Use proper scope format: `{org, project, branch}` |
-| `CONTENT_TOO_LARGE` | Content exceeds size limit | Very large content input | Use chunking, reduce content size |
-| `INVALID_TTL_FORMAT` | TTL policy not recognized | Wrong TTL string format | Use supported policies: 1d,7d,30d,90d,permanent |
+
+| Code                     | Message                    | Cause                            | Solution                                          |
+| ------------------------ | -------------------------- | -------------------------------- | ------------------------------------------------- |
+| `INVALID_KNOWLEDGE_TYPE` | Unsupported knowledge type | Typo, custom type not registered | Check supported types, register custom type       |
+| `MISSING_REQUIRED_FIELD` | Required field missing     | Incomplete request data          | Add missing required fields                       |
+| `INVALID_SCOPE_FORMAT`   | Malformed scope object     | Wrong scope structure            | Use proper scope format: `{org, project, branch}` |
+| `CONTENT_TOO_LARGE`      | Content exceeds size limit | Very large content input         | Use chunking, reduce content size                 |
+| `INVALID_TTL_FORMAT`     | TTL policy not recognized  | Wrong TTL string format          | Use supported policies: 1d,7d,30d,90d,permanent   |
 
 ### Diagnostic Tools & Commands
 
 #### Health Check Endpoints
+
 ```bash
 # Basic health check
 curl -f http://localhost:3000/health
@@ -2193,6 +2324,7 @@ curl -f http://localhost:3000/metrics
 ```
 
 #### Database Diagnostics
+
 ```bash
 # Check Qdrant status
 curl http://localhost:6333/health
@@ -2217,6 +2349,7 @@ curl -X POST "http://localhost:6333/collections/knowledge_items/search" \
 ```
 
 #### Service Debugging
+
 ```bash
 # Check service logs
 docker logs cortex-memory
@@ -2237,19 +2370,23 @@ docker exec cortex-memory df -h
 ### Common Failure Scenarios & Solutions
 
 #### Scenario 1: Embedding Service Failures (CURRENT ISSUE)
+
 **Symptoms:**
+
 - Tests timing out after 60 seconds
 - Error: `EMBEDDING_GENERATION_FAILED` with `INVALID_EMBEDDING_RESPONSE`
 - Multiple repeated embedding failures in logs
 - Semantic chunking tests failing
 
 **Current Status (2025-10-31):**
+
 - Test environment: Embedding service returning invalid responses
 - Semantic chunking implemented but failing due to embedding issues
 - Traditional chunking working as fallback
 - Production: Feature functional with proper embedding configuration
 
 **Diagnostic Steps:**
+
 ```bash
 # Check test environment embedding service
 npm run test tests/unit/chunk-reassembly-simple.test.ts
@@ -2265,18 +2402,21 @@ curl -X POST "https://api.openai.com/v1/embeddings" \
 ```
 
 **Immediate Solutions:**
+
 1. **Disable semantic chunking in tests:**
+
    ```bash
    ENABLE_SEMANTIC_CHUNKING=false
    ```
 
 2. **Use mock embedding service for testing:**
+
    ```typescript
    // In test setup
    const mockEmbeddingService = {
      generateEmbedding: async (text: string) => ({
-       vector: new Array(1536).fill(0.1)
-     })
+       vector: new Array(1536).fill(0.1),
+     }),
    };
    ```
 
@@ -2288,13 +2428,16 @@ curl -X POST "https://api.openai.com/v1/embeddings" \
    ```
 
 **Production Solutions:**
+
 1. **Increase timeout settings:**
+
    ```bash
    OPENAI_TIMEOUT=60000
    REQUEST_TIMEOUT=60000
    ```
 
 2. **Implement retry logic:**
+
    ```typescript
    const embedWithRetry = async (text: string, retries = 3) => {
      for (let i = 0; i < retries; i++) {
@@ -2315,12 +2458,15 @@ curl -X POST "https://api.openai.com/v1/embeddings" \
    ```
 
 #### Scenario 2: Database Connection Issues
+
 **Symptoms:**
+
 - Health check failing
 - Error: `DATABASE_CONNECTION_FAILED`
 - Intermittent service failures
 
 **Diagnostic Steps:**
+
 ```bash
 # Test database connectivity
 curl -H "api-key: $QDRANT_API_KEY" \
@@ -2340,13 +2486,16 @@ docker network inspect cortex-network
 ```
 
 **Solutions:**
+
 1. **Verify database configuration:**
+
    ```bash
    QDRANT_URL=http://qdrant:6333  # Use service name in Docker
    QDRANT_API_KEY=your_correct_key
    ```
 
 2. **Restart services:**
+
    ```bash
    docker-compose restart qdrant
    docker-compose restart cortex-memory
@@ -2359,12 +2508,15 @@ docker network inspect cortex-network
    ```
 
 #### Scenario 3: Memory Leaks / High Memory Usage
+
 **Symptoms:**
+
 - Gradual memory increase
 - Container OOM kills
 - Slow performance over time
 
 **Diagnostic Steps:**
+
 ```bash
 # Monitor memory usage
 docker stats cortex-memory --no-stream
@@ -2378,7 +2530,9 @@ docker exec cortex-memory node --inspect=0.0.0.0:9229 app.js
 ```
 
 **Solutions:**
+
 1. **Configure caching limits:**
+
    ```json
    {
      "caching": {
@@ -2395,6 +2549,7 @@ docker exec cortex-memory node --inspect=0.0.0.0:9229 app.js
    ```
 
 2. **Enable garbage collection:**
+
    ```bash
    NODE_OPTIONS="--max-old-space-size=2048 --expose-gc"
    ```
@@ -2414,12 +2569,15 @@ docker exec cortex-memory node --inspect=0.0.0.0:9229 app.js
    ```
 
 #### Scenario 4: Search Performance Degradation
+
 **Symptoms:**
+
 - Search queries becoming slower
 - Timeout errors on complex searches
 - Poor relevance in results
 
 **Diagnostic Steps:**
+
 ```bash
 # Test search performance
 time curl -X POST "http://localhost:3000/api/v1/memory/find" \
@@ -2435,7 +2593,9 @@ curl -s http://localhost:3000/metrics | grep search
 ```
 
 **Solutions:**
+
 1. **Optimize search parameters:**
+
    ```json
    {
      "search": {
@@ -2450,6 +2610,7 @@ curl -s http://localhost:3000/metrics | grep search
    ```
 
 2. **Database optimization:**
+
    ```bash
    # Update collection configuration
    curl -X PATCH "http://localhost:6333/collections/knowledge_items" \
@@ -2474,6 +2635,7 @@ curl -s http://localhost:3000/metrics | grep search
 ### Advanced Debugging Techniques
 
 #### Enable Debug Logging
+
 ```bash
 # Enable comprehensive debug logging
 DEBUG=cortex:*
@@ -2487,6 +2649,7 @@ DEBUG=cortex:performance,cortex:metrics
 ```
 
 #### Memory Profiling
+
 ```bash
 # Start with heap profiling
 NODE_OPTIONS="--inspect=0.0.0.0:9229 --heap-prof"
@@ -2504,6 +2667,7 @@ chrome://inspect
 ```
 
 #### Database Query Analysis
+
 ```bash
 # Enable query logging
 QDRANT__LOG_LEVEL=debug
@@ -2519,6 +2683,7 @@ curl -H "api-key: $QDRANT_API_KEY" \
 ```
 
 #### Network Diagnostics
+
 ```bash
 # Test service connectivity
 docker exec cortex-memory ping qdrant
@@ -2535,6 +2700,7 @@ docker exec cortex-memory tcpdump -i any port 6333
 ### Performance Tuning Guide
 
 #### Memory Optimization
+
 ```json
 {
   "performance": {
@@ -2553,6 +2719,7 @@ docker exec cortex-memory tcpdump -i any port 6333
 ```
 
 #### Database Tuning
+
 ```json
 {
   "database": {
@@ -2576,54 +2743,57 @@ docker exec cortex-memory tcpdump -i any port 6333
 ```
 
 #### Caching Strategy
+
 ```typescript
 // Multi-level caching
 const cacheStrategy = {
   l1: {
-    type: "memory",
+    type: 'memory',
     size: 100,
-    ttl: 60000 // 1 minute
+    ttl: 60000, // 1 minute
   },
   l2: {
-    type: "redis",
+    type: 'redis',
     size: 10000,
-    ttl: 3600000 // 1 hour
+    ttl: 3600000, // 1 hour
   },
   l3: {
-    type: "database",
-    persistent: true
-  }
+    type: 'database',
+    persistent: true,
+  },
 };
 ```
 
 ### Monitoring & Alerting Setup
 
 #### Prometheus Alerts
+
 ```yaml
 # prometheus-alerts.yml
 groups:
-- name: cortex-memory
-  rules:
-  - alert: HighErrorRate
-    expr: rate(cortex_memory_requests_total{status=~"5.."}[5m]) > 0.1
-    for: 2m
-    annotations:
-      summary: "High error rate detected"
+  - name: cortex-memory
+    rules:
+      - alert: HighErrorRate
+        expr: rate(cortex_memory_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        annotations:
+          summary: 'High error rate detected'
 
-  - alert: HighLatency
-    expr: histogram_quantile(0.95, cortex_memory_request_duration_seconds) > 2
-    for: 5m
-    annotations:
-      summary: "High latency detected"
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, cortex_memory_request_duration_seconds) > 2
+        for: 5m
+        annotations:
+          summary: 'High latency detected'
 
-  - alert: DatabaseConnectionFailed
-    expr: up{job="cortex-memory"} == 0
-    for: 1m
-    annotations:
-      summary: "Database connection failed"
+      - alert: DatabaseConnectionFailed
+        expr: up{job="cortex-memory"} == 0
+        for: 1m
+        annotations:
+          summary: 'Database connection failed'
 ```
 
 #### Grafana Dashboard
+
 ```json
 {
   "dashboard": {
@@ -2664,6 +2834,7 @@ groups:
 ### Log Analysis Patterns
 
 #### Common Log Patterns
+
 ```bash
 # Extract error patterns
 grep -i error /var/log/cortex-memory.log | tail -20
@@ -2682,24 +2853,26 @@ grep "database" /var/log/cortex-memory.log | \
 ```
 
 #### Log Aggregation Setup
+
 ```yaml
 # filebeat.yml
 filebeat.inputs:
-- type: log
-  paths:
-    - /var/log/cortex-memory/*.log
-  fields:
-    service: cortex-memory
-    environment: production
+  - type: log
+    paths:
+      - /var/log/cortex-memory/*.log
+    fields:
+      service: cortex-memory
+      environment: production
 
 output.elasticsearch:
-  hosts: ["elasticsearch:9200"]
-  index: "cortex-memory-%{+yyyy.MM.dd}"
+  hosts: ['elasticsearch:9200']
+  index: 'cortex-memory-%{+yyyy.MM.dd}'
 ```
 
 ### Emergency Procedures
 
 #### Service Recovery
+
 ```bash
 #!/bin/bash
 # emergency-recovery.sh
@@ -2730,6 +2903,7 @@ echo "Emergency recovery completed"
 ```
 
 #### Data Recovery
+
 ```bash
 #!/bin/bash
 # data-recovery.sh
@@ -2770,6 +2944,7 @@ This comprehensive troubleshooting guide provides systematic approaches to diagn
 ### Current Issues (2025-11-01)
 
 #### 1. Code Quality Issues
+
 - **Status**: ⚠️ ACTIVE ISSUE
 - **Impact**: 170 linting problems (17 errors, 153 warnings) blocking quality gates
 - **Affected Components**: Multiple middleware, monitoring, and service files
@@ -2781,12 +2956,14 @@ This comprehensive troubleshooting guide provides systematic approaches to diagn
 - **Production Impact**: Code quality gates failing, potential runtime errors
 
 #### 2. Test Environment Embedding Failures (RESOLVED)
+
 - **Status**: ✅ RESOLVED
 - **Previous Impact**: Semantic chunking tests were failing with `INVALID_EMBEDDING_RESPONSE`
 - **Resolution**: Tests now use traditional chunking fallback; semantic features configurable
 - **Production Impact**: None (production uses different configuration)
 
 #### 3. Semantic Chunking Availability
+
 - **Status**: ✅ IMPLEMENTED with dependency
 - **Requirement**: Functional embedding service (OpenAI/Cohere/Local)
 - **Fallback**: Automatic degradation to traditional chunking
@@ -2794,15 +2971,15 @@ This comprehensive troubleshooting guide provides systematic approaches to diagn
 
 ### Implementation Status Summary
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| **Core Chunking** | ✅ Complete | 1200 char target, 200 char overlap |
-| **Semantic Analysis** | ✅ Complete | Sentence-level boundary detection |
-| **Embedding Service Integration** | ✅ Complete | Multiple providers supported |
-| **Fallback Mechanisms** | ✅ Complete | Graceful degradation |
-| **Code Quality** | ⚠️ BLOCKING | 170 linting issues need resolution |
-| **Test Coverage** | ✅ Functional | Tests use traditional chunking fallback |
-| **Documentation** | ✅ Complete | This document |
+| Feature                           | Status        | Notes                                   |
+| --------------------------------- | ------------- | --------------------------------------- |
+| **Core Chunking**                 | ✅ Complete   | 1200 char target, 200 char overlap      |
+| **Semantic Analysis**             | ✅ Complete   | Sentence-level boundary detection       |
+| **Embedding Service Integration** | ✅ Complete   | Multiple providers supported            |
+| **Fallback Mechanisms**           | ✅ Complete   | Graceful degradation                    |
+| **Code Quality**                  | ⚠️ BLOCKING   | 170 linting issues need resolution      |
+| **Test Coverage**                 | ✅ Functional | Tests use traditional chunking fallback |
+| **Documentation**                 | ✅ Complete   | This document                           |
 
 ### Resolution Timeline
 

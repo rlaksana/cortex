@@ -694,5 +694,6 @@ const COLLECTION_CONFIGS: CollectionConfig[] = [
 export const qdrantSchemaManager = new QdrantSchemaManager();
 
 // Export types and configurations
-export { CollectionConfig, COLLECTION_CONFIGS };
+export type { CollectionConfig };
+export { COLLECTION_CONFIGS };
 export { QdrantSchemaManager };

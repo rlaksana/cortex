@@ -77,7 +77,10 @@ export class ValidationTestHelper {
 
       const result = await memoryStore([invalidItem]);
       this.assert(result.errors.length > 0, 'Invalid data should be rejected');
-      this.assert(result.errors[0].error_code === 'VALIDATION_FAILED', 'Should return validation error');
+      this.assert(
+        result.errors[0].error_code === 'VALIDATION_FAILED',
+        'Should return validation error'
+      );
     });
 
     await this.runValidationTest('invalid_invalid_knowledge_type', async () => {
@@ -131,7 +134,10 @@ export class ValidationTestHelper {
 
       const updateResult = await memoryStore([updateItem]);
       this.assert(updateResult.errors.length > 0, 'Modifying accepted decision should be blocked');
-      this.assert(updateResult.errors[0].error_code === 'IMMUTABLE_ENTITY', 'Should return immutability error');
+      this.assert(
+        updateResult.errors[0].error_code === 'IMMUTABLE_ENTITY',
+        'Should return immutability error'
+      );
     });
 
     // Test scope validation
@@ -384,10 +390,7 @@ export class ValidationTestHelper {
   /**
    * Run a single validation test
    */
-  private async runValidationTest(
-    testName: string,
-    testFn: () => Promise<void>
-  ): Promise<void> {
+  private async runValidationTest(testName: string, testFn: () => Promise<void>): Promise<void> {
     try {
       await testFn();
       this.results.push({ testName, passed: true });
@@ -417,7 +420,7 @@ export class ValidationTestHelper {
     console.log('='.repeat(40));
 
     const total = this.results.length;
-    const passed = this.results.filter(r => r.passed).length;
+    const passed = this.results.filter((r) => r.passed).length;
     const failed = total - passed;
 
     console.log(`Total Tests: ${total}`);
@@ -427,7 +430,7 @@ export class ValidationTestHelper {
 
     if (failed > 0) {
       console.log('\n❌ Failed Tests:');
-      for (const result of this.results.filter(r => !r.passed)) {
+      for (const result of this.results.filter((r) => !r.passed)) {
         console.log(`  ${result.testName}: ${result.error?.message}`);
       }
     }
@@ -453,6 +456,6 @@ export class ValidationTestHelper {
    * Check if all validation tests passed
    */
   allTestsPassed(): boolean {
-    return this.results.every(r => r.passed);
+    return this.results.every((r) => r.passed);
   }
 }

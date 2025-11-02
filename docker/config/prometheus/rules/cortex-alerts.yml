@@ -14,8 +14,8 @@ groups:
           severity: critical
           service: postgresql
         annotations:
-          summary: "PostgreSQL is down"
-          description: "PostgreSQL database has been down for more than 1 minute"
+          summary: 'PostgreSQL is down'
+          description: 'PostgreSQL database has been down for more than 1 minute'
 
       - alert: PostgreSQLConnectionsHigh
         expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
@@ -24,8 +24,8 @@ groups:
           severity: warning
           service: postgresql
         annotations:
-          summary: "PostgreSQL connections high"
-          description: "PostgreSQL has more than 80% connections used: {{ $value | humanizePercentage }}"
+          summary: 'PostgreSQL connections high'
+          description: 'PostgreSQL has more than 80% connections used: {{ $value | humanizePercentage }}'
 
       - alert: PostgreSQLSlowQueries
         expr: rate(pg_stat_database_tup_returned[5m]) < 10
@@ -34,8 +34,8 @@ groups:
           severity: warning
           service: postgresql
         annotations:
-          summary: "PostgreSQL slow queries detected"
-          description: "PostgreSQL query performance is degraded"
+          summary: 'PostgreSQL slow queries detected'
+          description: 'PostgreSQL query performance is degraded'
 
       - alert: PostgreSQLDiskSpaceHigh
         expr: pg_database_size_bytes / (1024 * 1024 * 1024) > 80
@@ -44,8 +44,8 @@ groups:
           severity: warning
           service: postgresql
         annotations:
-          summary: "PostgreSQL disk space high"
-          description: "PostgreSQL database size is {{ $value | humanize1024 }}GB"
+          summary: 'PostgreSQL disk space high'
+          description: 'PostgreSQL database size is {{ $value | humanize1024 }}GB'
 
       - alert: PostgreSQLReplicationLag
         expr: pg_replication_lag_seconds > 30
@@ -54,8 +54,8 @@ groups:
           severity: warning
           service: postgresql
         annotations:
-          summary: "PostgreSQL replication lag"
-          description: "PostgreSQL replication lag is {{ $value }} seconds"
+          summary: 'PostgreSQL replication lag'
+          description: 'PostgreSQL replication lag is {{ $value }} seconds'
 
   # Qdrant Vector Database Alerts
   - name: qdrant
@@ -67,8 +67,8 @@ groups:
           severity: critical
           service: qdrant
         annotations:
-          summary: "Qdrant is down"
-          description: "Qdrant vector database has been down for more than 1 minute"
+          summary: 'Qdrant is down'
+          description: 'Qdrant vector database has been down for more than 1 minute'
 
       - alert: QdrantHighMemoryUsage
         expr: qdrant_memory_usage_bytes / qdrant_memory_limit_bytes > 0.85
@@ -77,8 +77,8 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Qdrant memory usage high"
-          description: "Qdrant memory usage is {{ $value | humanizePercentage }}"
+          summary: 'Qdrant memory usage high'
+          description: 'Qdrant memory usage is {{ $value | humanizePercentage }}'
 
       - alert: QdrantHighCpuUsage
         expr: rate(qdrant_cpu_usage_seconds_total[5m]) > 0.8
@@ -87,8 +87,8 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Qdrant CPU usage high"
-          description: "Qdrant CPU usage is {{ $value | humanizePercentage }}"
+          summary: 'Qdrant CPU usage high'
+          description: 'Qdrant CPU usage is {{ $value | humanizePercentage }}'
 
       - alert: QdrantSearchLatencyHigh
         expr: histogram_quantile(0.95, rate(qdrant_search_duration_seconds_bucket[5m])) > 0.5
@@ -97,8 +97,8 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Qdrant search latency high"
-          description: "Qdrant 95th percentile search latency is {{ $value }}s"
+          summary: 'Qdrant search latency high'
+          description: 'Qdrant 95th percentile search latency is {{ $value }}s'
 
       - alert: QdrantIndexingLatencyHigh
         expr: histogram_quantile(0.95, rate(qdrant_indexing_duration_seconds_bucket[5m])) > 2.0
@@ -107,8 +107,8 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Qdrant indexing latency high"
-          description: "Qdrant 95th percentile indexing latency is {{ $value }}s"
+          summary: 'Qdrant indexing latency high'
+          description: 'Qdrant 95th percentile indexing latency is {{ $value }}s'
 
       - alert: QdrantDiskSpaceHigh
         expr: qdrant_disk_usage_bytes / qdrant_disk_limit_bytes > 0.85
@@ -117,8 +117,8 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Qdrant disk space high"
-          description: "Qdrant disk usage is {{ $value | humanizePercentage }}"
+          summary: 'Qdrant disk space high'
+          description: 'Qdrant disk usage is {{ $value | humanizePercentage }}'
 
   # Cortex Application Alerts
   - name: cortex-app
@@ -130,8 +130,8 @@ groups:
           severity: critical
           service: cortex-app
         annotations:
-          summary: "Cortex application is down"
-          description: "Cortex MCP application has been down for more than 1 minute"
+          summary: 'Cortex application is down'
+          description: 'Cortex MCP application has been down for more than 1 minute'
 
       - alert: CortexHighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
@@ -140,8 +140,8 @@ groups:
           severity: warning
           service: cortex-app
         annotations:
-          summary: "Cortex error rate high"
-          description: "Cortex error rate is {{ $value | humanizePercentage }}"
+          summary: 'Cortex error rate high'
+          description: 'Cortex error rate is {{ $value | humanizePercentage }}'
 
       - alert: CortexHighResponseTime
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1.0
@@ -150,8 +150,8 @@ groups:
           severity: warning
           service: cortex-app
         annotations:
-          summary: "Cortex response time high"
-          description: "Cortex 95th percentile response time is {{ $value }}s"
+          summary: 'Cortex response time high'
+          description: 'Cortex 95th percentile response time is {{ $value }}s'
 
       - alert: CortexMemoryUsageHigh
         expr: process_resident_memory_bytes / process_virtual_memory_max_bytes > 0.85
@@ -160,8 +160,8 @@ groups:
           severity: warning
           service: cortex-app
         annotations:
-          summary: "Cortex memory usage high"
-          description: "Cortex memory usage is {{ $value | humanizePercentage }}"
+          summary: 'Cortex memory usage high'
+          description: 'Cortex memory usage is {{ $value | humanizePercentage }}'
 
       - alert: CortexCpuUsageHigh
         expr: rate(process_cpu_seconds_total[5m]) > 0.8
@@ -170,8 +170,8 @@ groups:
           severity: warning
           service: cortex-app
         annotations:
-          summary: "Cortex CPU usage high"
-          description: "Cortex CPU usage is {{ $value | humanizePercentage }}"
+          summary: 'Cortex CPU usage high'
+          description: 'Cortex CPU usage is {{ $value | humanizePercentage }}'
 
   # Database Connectivity Alerts
   - name: database-connectivity
@@ -183,8 +183,8 @@ groups:
           severity: critical
           service: database-connectivity
         annotations:
-          summary: "Database connection failure"
-          description: "Cortex application is experiencing database connection failures"
+          summary: 'Database connection failure'
+          description: 'Cortex application is experiencing database connection failures'
 
       - alert: VectorDatabaseConnectionFailure
         expr: cortex_qdrant_connection_errors_total > 0
@@ -193,8 +193,8 @@ groups:
           severity: critical
           service: database-connectivity
         annotations:
-          summary: "Vector database connection failure"
-          description: "Cortex application is experiencing Qdrant connection failures"
+          summary: 'Vector database connection failure'
+          description: 'Cortex application is experiencing Qdrant connection failures'
 
   # Redis Cache Alerts
   - name: redis
@@ -206,8 +206,8 @@ groups:
           severity: warning
           service: redis
         annotations:
-          summary: "Redis is down"
-          description: "Redis cache has been down for more than 1 minute"
+          summary: 'Redis is down'
+          description: 'Redis cache has been down for more than 1 minute'
 
       - alert: RedisMemoryHigh
         expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
@@ -216,8 +216,8 @@ groups:
           severity: warning
           service: redis
         annotations:
-          summary: "Redis memory usage high"
-          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+          summary: 'Redis memory usage high'
+          description: 'Redis memory usage is {{ $value | humanizePercentage }}'
 
       - alert: RedisConnectionCountHigh
         expr: redis_connected_clients > 80
@@ -226,8 +226,8 @@ groups:
           severity: warning
           service: redis
         annotations:
-          summary: "Redis connections high"
-          description: "Redis has {{ $value }} connected clients"
+          summary: 'Redis connections high'
+          description: 'Redis has {{ $value }} connected clients'
 
   # Infrastructure Alerts
   - name: infrastructure
@@ -239,8 +239,8 @@ groups:
           severity: warning
           service: infrastructure
         annotations:
-          summary: "Node disk space high"
-          description: "Node {{ $labels.instance }} disk usage is {{ $value | humanizePercentage }}"
+          summary: 'Node disk space high'
+          description: 'Node {{ $labels.instance }} disk usage is {{ $value | humanizePercentage }}'
 
       - alert: NodeMemoryHigh
         expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.85
@@ -249,8 +249,8 @@ groups:
           severity: warning
           service: infrastructure
         annotations:
-          summary: "Node memory high"
-          description: "Node {{ $labels.instance }} memory usage is {{ $value | humanizePercentage }}"
+          summary: 'Node memory high'
+          description: 'Node {{ $labels.instance }} memory usage is {{ $value | humanizePercentage }}'
 
       - alert: NodeCpuHigh
         expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
@@ -259,8 +259,8 @@ groups:
           severity: warning
           service: infrastructure
         annotations:
-          summary: "Node CPU high"
-          description: "Node {{ $labels.instance }} CPU usage is {{ $value }}%"
+          summary: 'Node CPU high'
+          description: 'Node {{ $labels.instance }} CPU usage is {{ $value }}%'
 
   # Load Balancer Alerts
   - name: load-balancer
@@ -272,8 +272,8 @@ groups:
           severity: warning
           service: nginx
         annotations:
-          summary: "Nginx response time high"
-          description: "Nginx 95th percentile response time is {{ $value }}s"
+          summary: 'Nginx response time high'
+          description: 'Nginx 95th percentile response time is {{ $value }}s'
 
       - alert: NginxHighErrorRate
         expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
@@ -282,8 +282,8 @@ groups:
           severity: warning
           service: nginx
         annotations:
-          summary: "Nginx error rate high"
-          description: "Nginx error rate is {{ $value | humanizePercentage }}"
+          summary: 'Nginx error rate high'
+          description: 'Nginx error rate is {{ $value | humanizePercentage }}'
 
   # Business Logic Alerts
   - name: business-logic
@@ -295,8 +295,8 @@ groups:
           severity: warning
           service: business-logic
         annotations:
-          summary: "Knowledge storage rate low"
-          description: "Knowledge storage rate is {{ $value }} per second"
+          summary: 'Knowledge storage rate low'
+          description: 'Knowledge storage rate is {{ $value }} per second'
 
       - alert: SearchLatencyHigh
         expr: histogram_quantile(0.95, rate(cortex_search_duration_seconds_bucket[5m])) > 2.0
@@ -305,8 +305,8 @@ groups:
           severity: warning
           service: business-logic
         annotations:
-          summary: "Search latency high"
-          description: "95th percentile search latency is {{ $value }}s"
+          summary: 'Search latency high'
+          description: '95th percentile search latency is {{ $value }}s'
 
       - alert: EmbeddingGenerationRateLow
         expr: rate(cortex_embeddings_generated_total[5m]) < 0.05
@@ -315,8 +315,8 @@ groups:
           severity: warning
           service: business-logic
         annotations:
-          summary: "Embedding generation rate low"
-          description: "Embedding generation rate is {{ $value }} per second"
+          summary: 'Embedding generation rate low'
+          description: 'Embedding generation rate is {{ $value }} per second'
 
   # System Health Alerts
   - name: system-health
@@ -328,8 +328,8 @@ groups:
           severity: critical
           service: system-health
         annotations:
-          summary: "Service health degraded"
-          description: "One or more critical services are down"
+          summary: 'Service health degraded'
+          description: 'One or more critical services are down'
 
       - alert: SystemCapacityHigh
         expr: avg(rate(container_cpu_usage_seconds_total[5m])) > 0.8
@@ -338,5 +338,5 @@ groups:
           severity: warning
           service: system-health
         annotations:
-          summary: "System capacity high"
-          description: "System average CPU usage is {{ $value | humanizePercentage }}"
+          summary: 'System capacity high'
+          description: 'System average CPU usage is {{ $value | humanizePercentage }}'

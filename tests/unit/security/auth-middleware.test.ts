@@ -6,10 +6,13 @@ import {
   afterEach,
   vi,
   type MockedFunction,
-  type MockedObject
+  type MockedObject,
 } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
-import { AuthMiddleware, type AuthenticatedRequest } from '../../../src/middleware/auth-middleware.js';
+import {
+  AuthMiddleware,
+  type AuthenticatedRequest,
+} from '../../../src/middleware/auth-middleware.js';
 import { AuthService } from '../../../src/services/auth/auth-service.js';
 import { AuditService } from '../../../src/services/audit/audit-service.js';
 import {
@@ -660,11 +663,7 @@ describe('AuthMiddleware', () => {
       await middleware(mockRequest, mockResponse, mockNext);
 
       // Assert
-      expect(mockAuthService.checkRateLimit).toHaveBeenCalledWith(
-        'user-123',
-        100,
-        3600000
-      );
+      expect(mockAuthService.checkRateLimit).toHaveBeenCalledWith('user-123', 100, 3600000);
       expect(mockResponse.status).toHaveBeenCalledWith(429);
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: expect.objectContaining({
@@ -719,11 +718,7 @@ describe('AuthMiddleware', () => {
       await middleware(mockRequest, mockResponse, mockNext);
 
       // Assert
-      expect(mockAuthService.checkRateLimit).toHaveBeenCalledWith(
-        'user-123',
-        1000,
-        3600000
-      );
+      expect(mockAuthService.checkRateLimit).toHaveBeenCalledWith('user-123', 1000, 3600000);
     });
 
     test('should handle rate limit service failures gracefully', async () => {
@@ -968,7 +963,7 @@ describe('AuthMiddleware', () => {
       const middleware = authMiddleware.authenticate();
 
       // Act
-      const promises = requests.map(req => middleware(req, mockResponse, mockNext));
+      const promises = requests.map((req) => middleware(req, mockResponse, mockNext));
       await Promise.all(promises);
 
       // Assert

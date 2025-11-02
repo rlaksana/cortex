@@ -102,22 +102,22 @@ describe('TTL Integration', () => {
 
   describe('TTL Policy by Knowledge Type', () => {
     const typeToPolicy: Record<string, ExpiryTimeLabel> = {
-      'pr_context': 'short',      // 24 hours
-      'todo': 'default',          // 30 days
-      'issue': 'default',         // 30 days
-      'change': 'default',        // 30 days
-      'entity': 'long',           // 90 days
-      'relation': 'long',         // 90 days
-      'observation': 'long',      // 90 days
-      'decision': 'long',         // 90 days
-      'section': 'long',          // 90 days
-      'runbook': 'default',       // 30 days
-      'release_note': 'default',  // 30 days
-      'ddl': 'permanent',         // Never expires
-      'incident': 'default',      // 30 days
-      'release': 'long',          // 90 days
-      'risk': 'default',          // 30 days
-      'assumption': 'default',    // 30 days
+      pr_context: 'short', // 24 hours
+      todo: 'default', // 30 days
+      issue: 'default', // 30 days
+      change: 'default', // 30 days
+      entity: 'long', // 90 days
+      relation: 'long', // 90 days
+      observation: 'long', // 90 days
+      decision: 'long', // 90 days
+      section: 'long', // 90 days
+      runbook: 'default', // 30 days
+      release_note: 'default', // 30 days
+      ddl: 'permanent', // Never expires
+      incident: 'default', // 30 days
+      release: 'long', // 90 days
+      risk: 'default', // 30 days
+      assumption: 'default', // 30 days
     };
 
     it.each(Object.entries(typeToPolicy))(
@@ -212,8 +212,6 @@ describe('TTL Integration', () => {
         },
       };
 
-      const { isExpired } = require('../../src/utils/expiry-utils.js');
-
       expect(isExpired(expiredItem)).toBe(true);
       expect(isExpired(validItem)).toBe(false);
     });
@@ -228,8 +226,6 @@ describe('TTL Integration', () => {
           expiry_at: '9999-12-31T23:59:59.999Z',
         },
       };
-
-      const { isExpired } = require('../../src/utils/expiry-utils.js');
 
       expect(isExpired(permanentItem)).toBe(false);
     });

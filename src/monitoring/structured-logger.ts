@@ -19,7 +19,7 @@ import { slowQueryLogger } from './slow-query-logger.js';
  */
 export enum SearchStrategy {
   HYBRID_CACHED = 'hybrid-cached',
-  ERROR = 'error'
+  ERROR = 'error',
 }
 
 /**
@@ -127,12 +127,15 @@ export class StructuredLogger {
     maxMetadataSize: 1024,
   };
 
-  private operationMetrics = new Map<string, {
-    count: number;
-    totalLatency: number;
-    errors: number;
-    lastUpdate: number;
-  }>();
+  private operationMetrics = new Map<
+    string,
+    {
+      count: number;
+      totalLatency: number;
+      errors: number;
+      lastUpdate: number;
+    }
+  >();
 
   private constructor() {}
 
@@ -176,17 +179,15 @@ export class StructuredLogger {
     const metadata: any = {};
     if (entry.strategy !== undefined) metadata.strategy = entry.strategy;
     if (entry.deduplication !== undefined) metadata.deduplication = entry.deduplication;
-    if (entry.result_metrics?.result_count !== undefined) metadata.result_count = entry.result_metrics.result_count;
-    if (entry.result_metrics?.duplicates_found !== undefined) metadata.duplicates_found = entry.result_metrics.duplicates_found;
-    if (entry.result_metrics?.cache_hit !== undefined) metadata.cache_hit = entry.result_metrics.cache_hit;
+    if (entry.result_metrics?.result_count !== undefined)
+      metadata.result_count = entry.result_metrics.result_count;
+    if (entry.result_metrics?.duplicates_found !== undefined)
+      metadata.duplicates_found = entry.result_metrics.duplicates_found;
+    if (entry.result_metrics?.cache_hit !== undefined)
+      metadata.cache_hit = entry.result_metrics.cache_hit;
     if (entry.ttl_info?.ttl_hours !== undefined) metadata.ttl_hours = entry.ttl_info.ttl_hours;
 
-    metricsService.recordOperation(
-      entry.operation,
-      entry.latency_ms,
-      entry.success,
-      metadata
-    );
+    metricsService.recordOperation(entry.operation, entry.latency_ms, entry.success, metadata);
 
     // Log with structured format
     this.logStructured(fullEntry);
@@ -415,11 +416,16 @@ export class StructuredLogger {
     }
   ): void {
     const convertedSystemHealth: any = {};
-    if (systemHealth.qdrantStatus !== undefined) convertedSystemHealth.qdrant_status = systemHealth.qdrantStatus;
-    if (systemHealth.databaseStatus !== undefined) convertedSystemHealth.database_status = systemHealth.databaseStatus;
-    if (systemHealth.embeddingServiceStatus !== undefined) convertedSystemHealth.embedding_service_status = systemHealth.embeddingServiceStatus;
-    if (systemHealth.memoryUsageMb !== undefined) convertedSystemHealth.memory_usage_mb = systemHealth.memoryUsageMb;
-    if (systemHealth.cpuUsagePercent !== undefined) convertedSystemHealth.cpu_usage_percent = systemHealth.cpuUsagePercent;
+    if (systemHealth.qdrantStatus !== undefined)
+      convertedSystemHealth.qdrant_status = systemHealth.qdrantStatus;
+    if (systemHealth.databaseStatus !== undefined)
+      convertedSystemHealth.database_status = systemHealth.databaseStatus;
+    if (systemHealth.embeddingServiceStatus !== undefined)
+      convertedSystemHealth.embedding_service_status = systemHealth.embeddingServiceStatus;
+    if (systemHealth.memoryUsageMb !== undefined)
+      convertedSystemHealth.memory_usage_mb = systemHealth.memoryUsageMb;
+    if (systemHealth.cpuUsagePercent !== undefined)
+      convertedSystemHealth.cpu_usage_percent = systemHealth.cpuUsagePercent;
 
     this.logOperation({
       operation: OperationType.SYSTEM,

@@ -25,20 +25,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('DDL Knowledge Type - Comprehensive Testing', () => {
@@ -56,21 +56,23 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_initial_schema',
-          ddl_text: 'CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);',
-          checksum: 'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+          ddl_text:
+            'CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);',
+          checksum:
+            'a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           applied_at: '2025-01-01T12:00:00Z',
-          description: 'Initial user table creation with basic fields'
+          description: 'Initial user table creation with basic fields',
         },
         tags: { environment: 'production', category: 'schema' },
         source: {
           actor: 'database-admin',
           tool: 'migration-tool',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -90,13 +92,15 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '002_add_indexes',
           ddl_text: 'CREATE INDEX idx_users_email ON users(email);',
-          checksum: createHash('sha256').update('CREATE INDEX idx_users_email ON users(email);').digest('hex')
-        }
+          checksum: createHash('sha256')
+            .update('CREATE INDEX idx_users_email ON users(email);')
+            .digest('hex'),
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -118,8 +122,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing migration_id
             ddl_text: 'CREATE TABLE test (id INT);',
-            checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex')
-          }
+            checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex'),
+          },
         },
         {
           kind: 'ddl' as const,
@@ -127,8 +131,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '001_test',
             // Missing ddl_text
-            checksum: createHash('sha256').update('').digest('hex')
-          }
+            checksum: createHash('sha256').update('').digest('hex'),
+          },
         },
         {
           kind: 'ddl' as const,
@@ -137,7 +141,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
             migration_id: '001_test',
             ddl_text: 'CREATE TABLE test (id INT);',
             // Missing checksum
-          }
+          },
         },
         {
           kind: 'ddl' as const,
@@ -145,8 +149,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '', // Empty migration_id
             ddl_text: 'CREATE TABLE test (id INT);',
-            checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex')
-          }
+            checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex'),
+          },
         },
         {
           kind: 'ddl' as const,
@@ -154,9 +158,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '001_test',
             ddl_text: '', // Empty ddl_text
-            checksum: createHash('sha256').update('').digest('hex')
-          }
-        }
+            checksum: createHash('sha256').update('').digest('hex'),
+          },
+        },
       ];
 
       invalidDDLs.forEach((ddl, index) => {
@@ -175,8 +179,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: 'x'.repeat(201), // Exceeds 200 character limit
           ddl_text: 'CREATE TABLE test (id INT);',
-          checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex')
-        }
+          checksum: createHash('sha256').update('CREATE TABLE test (id INT);').digest('hex'),
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -193,8 +197,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: '001_test',
           ddl_text: 'CREATE TABLE test (id INT);',
-          checksum: 'a1b2c3d4e5f6' // Too short (only 14 characters)
-        }
+          checksum: 'a1b2c3d4e5f6', // Too short (only 14 characters)
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -208,34 +212,35 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const ddls = [
         {
           migration_id: '001_create_table',
-          ddl_text: 'CREATE TABLE products (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, price DECIMAL(10,2));',
-          operation: 'CREATE TABLE'
+          ddl_text:
+            'CREATE TABLE products (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, price DECIMAL(10,2));',
+          operation: 'CREATE TABLE',
         },
         {
           migration_id: '002_alter_table',
           ddl_text: 'ALTER TABLE products ADD COLUMN description TEXT;',
-          operation: 'ALTER TABLE'
+          operation: 'ALTER TABLE',
         },
         {
           migration_id: '003_create_view',
-          ddl_text: 'CREATE VIEW active_users AS SELECT * FROM users WHERE status = \'active\';',
-          operation: 'CREATE VIEW'
+          ddl_text: "CREATE VIEW active_users AS SELECT * FROM users WHERE status = 'active';",
+          operation: 'CREATE VIEW',
         },
         {
           migration_id: '004_create_index',
           ddl_text: 'CREATE INDEX idx_products_price ON products(price);',
-          operation: 'CREATE INDEX'
+          operation: 'CREATE INDEX',
         },
         {
           migration_id: '005_drop_table',
           ddl_text: 'DROP TABLE old_products;',
-          operation: 'DROP TABLE'
+          operation: 'DROP TABLE',
         },
         {
           migration_id: '006_truncate_table',
           ddl_text: 'TRUNCATE TABLE temp_data;',
-          operation: 'TRUNCATE TABLE'
-        }
+          operation: 'TRUNCATE TABLE',
+        },
       ];
 
       ddls.forEach((ddlConfig) => {
@@ -245,8 +250,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: ddlConfig.migration_id,
             ddl_text: ddlConfig.ddl_text,
-            checksum: createHash('sha256').update(ddlConfig.ddl_text).digest('hex')
-          }
+            checksum: createHash('sha256').update(ddlConfig.ddl_text).digest('hex'),
+          },
         };
 
         const result = DDLSchema.safeParse(ddl);
@@ -283,8 +288,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           migration_id: '003_complex_order_schema',
           ddl_text: complexDDL,
           checksum: createHash('sha256').update(complexDDL).digest('hex'),
-          description: 'Complex order schema with table, indexes, and trigger'
-        }
+          description: 'Complex order schema with table, indexes, and trigger',
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -293,16 +298,18 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         expect(result.data.data.ddl_text).toContain('CREATE TABLE orders');
         expect(result.data.data.ddl_text).toContain('CREATE INDEX');
         expect(result.data.data.ddl_text).toContain('CREATE TRIGGER');
-        expect(result.data.data.description).toBe('Complex order schema with table, indexes, and trigger');
+        expect(result.data.data.description).toBe(
+          'Complex order schema with table, indexes, and trigger'
+        );
       }
     });
 
     it('should handle DDL with special characters and SQL keywords', () => {
       const ddlStatements = [
-        "CREATE TABLE \"user-roles\" (id SERIAL PRIMARY KEY, role_name VARCHAR(100) NOT NULL UNIQUE);",
-        "CREATE TABLE `config-settings` (key VARCHAR(255) PRIMARY KEY, value TEXT NOT NULL, \"type\" VARCHAR(50));",
-        "ALTER TABLE products ADD COLUMN CONSTRAINT chk_price_positive CHECK (price >= 0);",
-        "CREATE VIEW \"user-summary\" AS SELECT u.id, u.name, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id, u.name;"
+        'CREATE TABLE "user-roles" (id SERIAL PRIMARY KEY, role_name VARCHAR(100) NOT NULL UNIQUE);',
+        'CREATE TABLE `config-settings` (key VARCHAR(255) PRIMARY KEY, value TEXT NOT NULL, "type" VARCHAR(50));',
+        'ALTER TABLE products ADD COLUMN CONSTRAINT chk_price_positive CHECK (price >= 0);',
+        'CREATE VIEW "user-summary" AS SELECT u.id, u.name, COUNT(o.id) as order_count FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.id, u.name;',
       ];
 
       ddlStatements.forEach((ddlText, index) => {
@@ -312,8 +319,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: `00${index + 4}_special_chars`,
             ddl_text: ddlText,
-            checksum: createHash('sha256').update(ddlText).digest('hex')
-          }
+            checksum: createHash('sha256').update(ddlText).digest('hex'),
+          },
         };
 
         const result = DDLSchema.safeParse(ddl);
@@ -324,20 +331,21 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
 
   describe('DDL Storage Operations', () => {
     it('should store DDL successfully using memory_store pattern', async () => {
-      const ddlText = 'CREATE TABLE customers (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE);';
+      const ddlText =
+        'CREATE TABLE customers (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, email VARCHAR(255) UNIQUE);';
       const ddl = {
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_create_customers',
           ddl_text: ddlText,
           checksum: createHash('sha256').update(ddlText).digest('hex'),
-          description: 'Create customers table with basic information'
+          description: 'Create customers table with basic information',
         },
-        content: `DDL Migration: 001_create_customers - ${ddlText}` // Required for embedding generation
+        content: `DDL Migration: 001_create_customers - ${ddlText}`, // Required for embedding generation
       };
 
       const result = await db.storeItems([ddl]);
@@ -357,37 +365,42 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const ddls = [
         {
           migration_id: '001_create_users',
-          ddl_text: 'CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL);'
+          ddl_text:
+            'CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL);',
         },
         {
           migration_id: '002_create_posts',
-          ddl_text: 'CREATE TABLE posts (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), title VARCHAR(255) NOT NULL);'
+          ddl_text:
+            'CREATE TABLE posts (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), title VARCHAR(255) NOT NULL);',
         },
         {
           migration_id: '003_create_comments',
-          ddl_text: 'CREATE TABLE comments (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content TEXT NOT NULL);'
+          ddl_text:
+            'CREATE TABLE comments (id SERIAL PRIMARY KEY, post_id INTEGER REFERENCES posts(id), user_id INTEGER REFERENCES users(id), content TEXT NOT NULL);',
         },
         {
           migration_id: '004_add_foreign_keys',
-          ddl_text: 'ALTER TABLE posts ADD CONSTRAINT fk_posts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;'
+          ddl_text:
+            'ALTER TABLE posts ADD CONSTRAINT fk_posts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;',
         },
         {
           migration_id: '005_create_indexes',
-          ddl_text: 'CREATE INDEX idx_posts_user ON posts(user_id); CREATE INDEX idx_comments_post ON comments(post_id);'
-        }
+          ddl_text:
+            'CREATE INDEX idx_posts_user ON posts(user_id); CREATE INDEX idx_comments_post ON comments(post_id);',
+        },
       ].map((ddlConfig, index) => ({
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: ddlConfig.migration_id,
           ddl_text: ddlConfig.ddl_text,
           checksum: createHash('sha256').update(ddlConfig.ddl_text).digest('hex'),
-          description: `Migration ${index + 1}: ${ddlConfig.migration_id}`
+          description: `Migration ${index + 1}: ${ddlConfig.migration_id}`,
         },
-        content: `DDL Migration: ${ddlConfig.migration_id} - ${ddlConfig.ddl_text}`
+        content: `DDL Migration: ${ddlConfig.migration_id} - ${ddlConfig.ddl_text}`,
       }));
 
       const result = await db.storeItems(ddls);
@@ -412,9 +425,12 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '001_valid_table',
             ddl_text: 'CREATE TABLE valid_table (id INT PRIMARY KEY);',
-            checksum: createHash('sha256').update('CREATE TABLE valid_table (id INT PRIMARY KEY);').digest('hex')
+            checksum: createHash('sha256')
+              .update('CREATE TABLE valid_table (id INT PRIMARY KEY);')
+              .digest('hex'),
           },
-          content: 'DDL Migration: 001_valid_table - CREATE TABLE valid_table (id INT PRIMARY KEY);'
+          content:
+            'DDL Migration: 001_valid_table - CREATE TABLE valid_table (id INT PRIMARY KEY);',
         },
         {
           kind: 'ddl' as const,
@@ -422,9 +438,11 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing migration_id
             ddl_text: 'CREATE TABLE invalid_table (id INT);',
-            checksum: createHash('sha256').update('CREATE TABLE invalid_table (id INT);').digest('hex')
+            checksum: createHash('sha256')
+              .update('CREATE TABLE invalid_table (id INT);')
+              .digest('hex'),
           },
-          content: 'DDL Migration: invalid - Missing migration_id'
+          content: 'DDL Migration: invalid - Missing migration_id',
         },
         {
           kind: 'ddl' as const,
@@ -432,10 +450,12 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '002_valid_index',
             ddl_text: 'CREATE INDEX idx_valid ON valid_table(id);',
-            checksum: createHash('sha256').update('CREATE INDEX idx_valid ON valid_table(id);').digest('hex'),
-            description: 'Valid index creation'
+            checksum: createHash('sha256')
+              .update('CREATE INDEX idx_valid ON valid_table(id);')
+              .digest('hex'),
+            description: 'Valid index creation',
           },
-          content: 'DDL Migration: 002_valid_index - CREATE INDEX idx_valid ON valid_table(id);'
+          content: 'DDL Migration: 002_valid_index - CREATE INDEX idx_valid ON valid_table(id);',
         },
         {
           kind: 'ddl' as const,
@@ -443,10 +463,10 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '003_invalid_checksum',
             ddl_text: 'ALTER TABLE valid_table ADD COLUMN name VARCHAR(100);',
-            checksum: 'invalid_checksum_length' // Invalid checksum length
+            checksum: 'invalid_checksum_length', // Invalid checksum length
           },
-          content: 'DDL Migration: 003_invalid_checksum - Invalid checksum'
-        }
+          content: 'DDL Migration: 003_invalid_checksum - Invalid checksum',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -458,7 +478,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
     });
 
     it('should handle DDL with applied_at timestamp', async () => {
-      const ddlText = 'CREATE TABLE audit_log (id SERIAL PRIMARY KEY, action VARCHAR(100) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);';
+      const ddlText =
+        'CREATE TABLE audit_log (id SERIAL PRIMARY KEY, action VARCHAR(100) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);';
       const ddl = {
         kind: 'ddl' as const,
         scope: { project: 'test-project', branch: 'main' },
@@ -467,9 +488,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           ddl_text: ddlText,
           checksum: createHash('sha256').update(ddlText).digest('hex'),
           applied_at: '2025-01-15T10:30:00Z',
-          description: 'Create audit log table for tracking changes'
+          description: 'Create audit log table for tracking changes',
         },
-        content: `DDL Migration: 006_create_audit_log - ${ddlText}`
+        content: `DDL Migration: 006_create_audit_log - ${ddlText}`,
       };
 
       const result = await db.storeItems([ddl]);
@@ -491,12 +512,17 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
             kind: 'ddl',
             data: {
               migration_id: '001_create_users',
-              ddl_text: 'CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, email VARCHAR(255));',
-              checksum: createHash('sha256').update('CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, email VARCHAR(255));').digest('hex'),
-              applied_at: '2025-01-01T12:00:00Z'
+              ddl_text:
+                'CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, email VARCHAR(255));',
+              checksum: createHash('sha256')
+                .update(
+                  'CREATE TABLE users (id SERIAL PRIMARY KEY, username VARCHAR(100) UNIQUE NOT NULL, email VARCHAR(255));'
+                )
+                .digest('hex'),
+              applied_at: '2025-01-01T12:00:00Z',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'ddl-id-2',
@@ -505,13 +531,18 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
             kind: 'ddl',
             data: {
               migration_id: '002_add_user_indexes',
-              ddl_text: 'CREATE INDEX idx_users_username ON users(username); CREATE INDEX idx_users_email ON users(email);',
-              checksum: createHash('sha256').update('CREATE INDEX idx_users_username ON users(username); CREATE INDEX idx_users_email ON users(email);').digest('hex'),
-              description: 'Add indexes for user lookup optimization'
+              ddl_text:
+                'CREATE INDEX idx_users_username ON users(username); CREATE INDEX idx_users_email ON users(email);',
+              checksum: createHash('sha256')
+                .update(
+                  'CREATE INDEX idx_users_username ON users(username); CREATE INDEX idx_users_email ON users(email);'
+                )
+                .digest('hex'),
+              description: 'Add indexes for user lookup optimization',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -571,28 +602,34 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         kind: 'ddl' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_project_a_schema',
           ddl_text: 'CREATE TABLE project_a_table (id INT PRIMARY KEY);',
-          checksum: createHash('sha256').update('CREATE TABLE project_a_table (id INT PRIMARY KEY);').digest('hex')
+          checksum: createHash('sha256')
+            .update('CREATE TABLE project_a_table (id INT PRIMARY KEY);')
+            .digest('hex'),
         },
-        content: 'DDL Migration: 001_project_a_schema - CREATE TABLE project_a_table (id INT PRIMARY KEY);'
+        content:
+          'DDL Migration: 001_project_a_schema - CREATE TABLE project_a_table (id INT PRIMARY KEY);',
       };
 
       const ddlProjectB = {
         kind: 'ddl' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_project_b_schema',
           ddl_text: 'CREATE TABLE project_b_table (id INT PRIMARY KEY);',
-          checksum: createHash('sha256').update('CREATE TABLE project_b_table (id INT PRIMARY KEY);').digest('hex')
+          checksum: createHash('sha256')
+            .update('CREATE TABLE project_b_table (id INT PRIMARY KEY);')
+            .digest('hex'),
         },
-        content: 'DDL Migration: 001_project_b_schema - CREATE TABLE project_b_table (id INT PRIMARY KEY);'
+        content:
+          'DDL Migration: 001_project_b_schema - CREATE TABLE project_b_table (id INT PRIMARY KEY);',
       };
 
       // Store both DDL entries
@@ -613,41 +650,53 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           kind: 'ddl' as const,
           scope: {
             project: 'test-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             migration_id: '001_main_branch_schema',
             ddl_text: 'CREATE TABLE main_table (id INT PRIMARY KEY);',
-            checksum: createHash('sha256').update('CREATE TABLE main_table (id INT PRIMARY KEY);').digest('hex')
+            checksum: createHash('sha256')
+              .update('CREATE TABLE main_table (id INT PRIMARY KEY);')
+              .digest('hex'),
           },
-          content: 'DDL Migration: 001_main_branch_schema - CREATE TABLE main_table (id INT PRIMARY KEY);'
+          content:
+            'DDL Migration: 001_main_branch_schema - CREATE TABLE main_table (id INT PRIMARY KEY);',
         },
         {
           kind: 'ddl' as const,
           scope: {
             project: 'test-project',
-            branch: 'develop'
+            branch: 'develop',
           },
           data: {
             migration_id: '001_develop_branch_schema',
-            ddl_text: 'CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);',
-            checksum: createHash('sha256').update('CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);').digest('hex')
+            ddl_text:
+              'CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);',
+            checksum: createHash('sha256')
+              .update(
+                'CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);'
+              )
+              .digest('hex'),
           },
-          content: 'DDL Migration: 001_develop_branch_schema - CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);'
+          content:
+            'DDL Migration: 001_develop_branch_schema - CREATE TABLE develop_table (id INT PRIMARY KEY, new_feature BOOLEAN DEFAULT false);',
         },
         {
           kind: 'ddl' as const,
           scope: {
             project: 'test-project',
-            branch: 'feature/new-auth'
+            branch: 'feature/new-auth',
           },
           data: {
             migration_id: '001_feature_branch_schema',
             ddl_text: 'CREATE TABLE auth_table (id INT PRIMARY KEY, token VARCHAR(255) UNIQUE);',
-            checksum: createHash('sha256').update('CREATE TABLE auth_table (id INT PRIMARY KEY, token VARCHAR(255) UNIQUE);').digest('hex')
+            checksum: createHash('sha256')
+              .update('CREATE TABLE auth_table (id INT PRIMARY KEY, token VARCHAR(255) UNIQUE);')
+              .digest('hex'),
           },
-          content: 'DDL Migration: 001_feature_branch_schema - CREATE TABLE auth_table (id INT PRIMARY KEY, token VARCHAR(255) UNIQUE);'
-        }
+          content:
+            'DDL Migration: 001_feature_branch_schema - CREATE TABLE auth_table (id INT PRIMARY KEY, token VARCHAR(255) UNIQUE);',
+        },
       ];
 
       await db.storeItems(ddls);
@@ -683,9 +732,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           migration_id: '007_large_schema_migration',
           ddl_text: longDDL,
           checksum: createHash('sha256').update(longDDL).digest('hex'),
-          description: 'Large migration with multiple tables and many indexes'
+          description: 'Large migration with multiple tables and many indexes',
         },
-        content: `DDL Migration: 007_large_schema_migration - Large migration with multiple tables and indexes`
+        content: `DDL Migration: 007_large_schema_migration - Large migration with multiple tables and indexes`,
       };
 
       const result = await db.storeItems([ddl]);
@@ -722,9 +771,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           migration_id: '008_schema_with_comments',
           ddl_text: ddlWithComments,
           checksum: createHash('sha256').update(ddlWithComments).digest('hex'),
-          description: 'User tables creation with comprehensive comments'
+          description: 'User tables creation with comprehensive comments',
         },
-        content: `DDL Migration: 008_schema_with_comments - User tables with comments`
+        content: `DDL Migration: 008_schema_with_comments - User tables with comments`,
       };
 
       const result = await db.storeItems([ddl]);
@@ -778,9 +827,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           migration_id: '009_advanced_sql_constructs',
           ddl_text: specialDDL,
           checksum: createHash('sha256').update(specialDDL).digest('hex'),
-          description: 'Advanced DDL with constraints, enums, functions, and triggers'
+          description: 'Advanced DDL with constraints, enums, functions, and triggers',
         },
-        content: `DDL Migration: 009_advanced_sql_constructs - Advanced SQL constructs`
+        content: `DDL Migration: 009_advanced_sql_constructs - Advanced SQL constructs`,
       };
 
       const result = await db.storeItems([ddl]);
@@ -800,8 +849,10 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: '010_error_test',
           ddl_text: 'CREATE TABLE error_test (id INT PRIMARY KEY);',
-          checksum: createHash('sha256').update('CREATE TABLE error_test (id INT PRIMARY KEY);').digest('hex')
-        }
+          checksum: createHash('sha256')
+            .update('CREATE TABLE error_test (id INT PRIMARY KEY);')
+            .digest('hex'),
+        },
       };
 
       // Mock upsert to throw an error
@@ -838,9 +889,9 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           migration_id: '011_unicode_support',
           ddl_text: unicodeDDL,
           checksum: createHash('sha256').update(unicodeDDL).digest('hex'),
-          description: 'DDL with Unicode characters and international content'
+          description: 'DDL with Unicode characters and international content',
         },
-        content: `DDL Migration: 011_unicode_support - Unicode and international content`
+        content: `DDL Migration: 011_unicode_support - Unicode and international content`,
       };
 
       const result = await db.storeItems([ddl]);
@@ -858,20 +909,25 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_validation_test',
-          ddl_text: 'CREATE TABLE validation_test (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);',
-          checksum: createHash('sha256').update('CREATE TABLE validation_test (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);').digest('hex'),
-          description: 'Test DDL for knowledge system validation'
+          ddl_text:
+            'CREATE TABLE validation_test (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);',
+          checksum: createHash('sha256')
+            .update(
+              'CREATE TABLE validation_test (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL);'
+            )
+            .digest('hex'),
+          description: 'Test DDL for knowledge system validation',
         },
         tags: { environment: 'test', category: 'validation', critical: true },
         source: {
           actor: 'test-suite',
           tool: 'vitest',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = validateKnowledgeItem(ddl);
@@ -890,11 +946,13 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: '001_ttl_test',
           ddl_text: 'CREATE TABLE ttl_test (id INT PRIMARY KEY);',
-          checksum: createHash('sha256').update('CREATE TABLE ttl_test (id INT PRIMARY KEY);').digest('hex'),
-          description: 'Test DDL with TTL policy'
+          checksum: createHash('sha256')
+            .update('CREATE TABLE ttl_test (id INT PRIMARY KEY);')
+            .digest('hex'),
+          description: 'Test DDL with TTL policy',
         },
         ttl_policy: 'short' as const,
-        content: 'DDL Migration: 001_ttl_test - Test DDL with TTL policy'
+        content: 'DDL Migration: 001_ttl_test - Test DDL with TTL policy',
       };
 
       const result = await db.storeItems([ddl]);
@@ -912,11 +970,13 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: `00${index + 1}_ttl_${policy}`,
           ddl_text: `CREATE TABLE ttl_${policy}_test (id INT PRIMARY KEY);`,
-          checksum: createHash('sha256').update(`CREATE TABLE ttl_${policy}_test (id INT PRIMARY KEY);`).digest('hex'),
-          description: `Test DDL with ${policy} TTL policy`
+          checksum: createHash('sha256')
+            .update(`CREATE TABLE ttl_${policy}_test (id INT PRIMARY KEY);`)
+            .digest('hex'),
+          description: `Test DDL with ${policy} TTL policy`,
         },
         ttl_policy: policy,
-        content: `DDL Migration: 00${index + 1}_ttl_${policy} - TTL policy test`
+        content: `DDL Migration: 00${index + 1}_ttl_${policy} - TTL policy test`,
       }));
 
       const result = await db.storeItems(ddls);
@@ -933,14 +993,16 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         kind: 'ddl' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           migration_id: '001_complex_metadata',
           ddl_text: 'CREATE TABLE metadata_test (id SERIAL PRIMARY KEY, config JSONB NOT NULL);',
-          checksum: createHash('sha256').update('CREATE TABLE metadata_test (id SERIAL PRIMARY KEY, config JSONB NOT NULL);').digest('hex'),
+          checksum: createHash('sha256')
+            .update('CREATE TABLE metadata_test (id SERIAL PRIMARY KEY, config JSONB NOT NULL);')
+            .digest('hex'),
           description: 'Test DDL with complex metadata',
-          applied_at: '2025-01-01T12:00:00Z'
+          applied_at: '2025-01-01T12:00:00Z',
         },
         tags: {
           environment: 'production',
@@ -957,17 +1019,17 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           impact_assessment: {
             performance_impact: 'low',
             storage_impact: 'medium',
-            compatibility_impact: 'none'
-          }
+            compatibility_impact: 'none',
+          },
         },
         source: {
           actor: 'database-admin',
           tool: 'liquibase',
           timestamp: '2025-01-01T10:00:00Z',
           session_id: 'session-12345',
-          request_id: 'req-abcdef'
+          request_id: 'req-abcdef',
         },
-        content: 'DDL Migration: 001_complex_metadata - Complex metadata test'
+        content: 'DDL Migration: 001_complex_metadata - Complex metadata test',
       };
 
       const result = await db.storeItems([ddl]);
@@ -993,7 +1055,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         '004_create_user_preferences_view',
         '005_drop_deprecated_columns',
         '006_rename_user_to_account',
-        '007_create_audit_triggers'
+        '007_create_audit_triggers',
       ];
 
       validMigrationIds.forEach((migrationId) => {
@@ -1003,8 +1065,10 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: migrationId,
             ddl_text: 'CREATE TABLE test (id INT PRIMARY KEY);',
-            checksum: createHash('sha256').update('CREATE TABLE test (id INT PRIMARY KEY);').digest('hex')
-          }
+            checksum: createHash('sha256')
+              .update('CREATE TABLE test (id INT PRIMARY KEY);')
+              .digest('hex'),
+          },
         };
 
         const result = DDLSchema.safeParse(ddl);
@@ -1017,7 +1081,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
 
     it('should handle DDL content validation through checksums', () => {
       const ddlText = 'CREATE TABLE checksum_test (id SERIAL PRIMARY KEY, data TEXT);';
-      const incorrectChecksum = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+      const incorrectChecksum =
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
       const correctChecksum = createHash('sha256').update(ddlText).digest('hex');
 
       const ddlWithIncorrectChecksum = {
@@ -1026,8 +1091,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: '001_checksum_validation',
           ddl_text: ddlText,
-          checksum: incorrectChecksum
-        }
+          checksum: incorrectChecksum,
+        },
       };
 
       const ddlWithCorrectChecksum = {
@@ -1036,8 +1101,8 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         data: {
           migration_id: '001_checksum_validation',
           ddl_text: ddlText,
-          checksum: correctChecksum
-        }
+          checksum: correctChecksum,
+        },
       };
 
       // Both should be valid from schema perspective (content validation is business logic)
@@ -1056,7 +1121,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const validTimestamps = [
         '2025-01-01T00:00:00Z',
         '2025-12-31T23:59:59Z',
-        '2025-06-15T12:30:45.123Z'
+        '2025-06-15T12:30:45.123Z',
       ];
 
       validTimestamps.forEach((timestamp) => {
@@ -1066,9 +1131,11 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '001_timestamp_test',
             ddl_text: 'CREATE TABLE timestamp_test (id INT PRIMARY KEY);',
-            checksum: createHash('sha256').update('CREATE TABLE timestamp_test (id INT PRIMARY KEY);').digest('hex'),
-            applied_at: timestamp
-          }
+            checksum: createHash('sha256')
+              .update('CREATE TABLE timestamp_test (id INT PRIMARY KEY);')
+              .digest('hex'),
+            applied_at: timestamp,
+          },
         };
 
         const result = DDLSchema.safeParse(ddl);
@@ -1081,13 +1148,13 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
 
     it('should reject invalid applied_at timestamps', () => {
       const invalidTimestamps = [
-        '2025-01-01',           // Missing time
+        '2025-01-01', // Missing time
         '2025-01-01T25:00:00Z', // Invalid hour
         '2025-13-01T12:00:00Z', // Invalid month
         '2025-01-32T12:00:00Z', // Invalid day
-        'invalid-date-format',  // Completely invalid
-        '2025-01-01T12:00:00',  // Missing Z suffix
-        'January 1, 2025'       // Human-readable format
+        'invalid-date-format', // Completely invalid
+        '2025-01-01T12:00:00', // Missing Z suffix
+        'January 1, 2025', // Human-readable format
       ];
 
       invalidTimestamps.forEach((timestamp) => {
@@ -1097,9 +1164,11 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
           data: {
             migration_id: '001_invalid_timestamp',
             ddl_text: 'CREATE TABLE invalid_timestamp_test (id INT PRIMARY KEY);',
-            checksum: createHash('sha256').update('CREATE TABLE invalid_timestamp_test (id INT PRIMARY KEY);').digest('hex'),
-            applied_at: timestamp
-          }
+            checksum: createHash('sha256')
+              .update('CREATE TABLE invalid_timestamp_test (id INT PRIMARY KEY);')
+              .digest('hex'),
+            applied_at: timestamp,
+          },
         };
 
         const result = DDLSchema.safeParse(ddl);

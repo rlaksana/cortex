@@ -24,20 +24,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Runbook Knowledge Type - Comprehensive Testing', () => {
@@ -55,45 +55,46 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'authentication-service',
           title: 'Database Connection Pool Recovery',
-          description: 'Procedures for recovering database connection pool when connections are exhausted',
+          description:
+            'Procedures for recovering database connection pool when connections are exhausted',
           steps: [
             {
               step_number: 1,
               description: 'Check current connection pool status',
               command: 'kubectl logs -n auth deployment/auth-service | grep "connection pool"',
-              expected_outcome: 'Pool status should show active connections and available capacity'
+              expected_outcome: 'Pool status should show active connections and available capacity',
             },
             {
               step_number: 2,
               description: 'Scale up the service to force connection pool reset',
               command: 'kubectl scale deployment auth-service --replicas=3 -n auth',
-              expected_outcome: 'New pods should start with fresh connection pools'
+              expected_outcome: 'New pods should start with fresh connection pools',
             },
             {
               step_number: 3,
               description: 'Verify service health after scaling',
               command: 'kubectl get pods -n auth -l app=auth-service',
-              expected_outcome: 'All pods should be in Running state with ready containers'
-            }
+              expected_outcome: 'All pods should be in Running state with ready containers',
+            },
           ],
           triggers: [
             'Database connection timeout errors',
             'High latency on authentication endpoints',
-            'Connection pool exhaustion alerts'
+            'Connection pool exhaustion alerts',
           ],
-          last_verified_at: '2025-01-01T00:00:00Z'
+          last_verified_at: '2025-01-01T00:00:00Z',
         },
         tags: { critical: true, recovery: true },
         source: {
           actor: 'sre-lead',
           tool: 'incident-response',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -112,7 +113,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'api-gateway',
@@ -121,10 +122,10 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
             {
               step_number: 1,
               description: 'Restart the service',
-              command: 'systemctl restart api-gateway'
-            }
-          ]
-        }
+              command: 'systemctl restart api-gateway',
+            },
+          ],
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -146,8 +147,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing service
             title: 'Test runbook',
-            steps: [{ step_number: 1, description: 'Test step' }]
-          }
+            steps: [{ step_number: 1, description: 'Test step' }],
+          },
         },
         {
           kind: 'runbook' as const,
@@ -155,17 +156,17 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'test-service',
             // Missing title
-            steps: [{ step_number: 1, description: 'Test step' }]
-          }
+            steps: [{ step_number: 1, description: 'Test step' }],
+          },
         },
         {
           kind: 'runbook' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             service: 'test-service',
-            title: 'Test runbook'
+            title: 'Test runbook',
             // Missing steps
-          }
+          },
         },
         {
           kind: 'runbook' as const,
@@ -173,8 +174,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: '', // Empty service
             title: 'Test runbook',
-            steps: [{ step_number: 1, description: 'Test step' }]
-          }
+            steps: [{ step_number: 1, description: 'Test step' }],
+          },
         },
         {
           kind: 'runbook' as const,
@@ -182,9 +183,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'test-service',
             title: '', // Empty title
-            steps: [{ step_number: 1, description: 'Test step' }]
-          }
-        }
+            steps: [{ step_number: 1, description: 'Test step' }],
+          },
+        },
       ];
 
       invalidRunbooks.forEach((runbook, index) => {
@@ -203,8 +204,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'x'.repeat(201), // Exceeds 200 character limit
           title: 'Test runbook',
-          steps: [{ step_number: 1, description: 'Test step' }]
-        }
+          steps: [{ step_number: 1, description: 'Test step' }],
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -221,8 +222,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'test-service',
           title: 'x'.repeat(501), // Exceeds 500 character limit
-          steps: [{ step_number: 1, description: 'Test step' }]
-        }
+          steps: [{ step_number: 1, description: 'Test step' }],
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -239,8 +240,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'test-service',
           title: 'Test runbook',
-          steps: [] // Empty steps array
-        }
+          steps: [], // Empty steps array
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -258,20 +259,20 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           step_number: 1,
           description: 'Check service logs for errors',
           command: 'kubectl logs -f deployment/my-service --tail=100',
-          expected_outcome: 'No error messages in recent logs'
+          expected_outcome: 'No error messages in recent logs',
         },
         {
           step_number: 2,
           description: 'Verify service health endpoint',
           command: 'curl -f http://my-service/health',
-          expected_outcome: 'HTTP 200 response with healthy status'
+          expected_outcome: 'HTTP 200 response with healthy status',
         },
         {
           step_number: 3,
           description: 'Check database connectivity',
           command: 'kubectl exec -it deployment/my-service -- nc -zv database 5432',
-          expected_outcome: 'Connection to database port 5432 successful'
-        }
+          expected_outcome: 'Connection to database port 5432 successful',
+        },
       ];
 
       const runbook = {
@@ -280,8 +281,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'my-service',
           title: 'Service Health Check',
-          steps
-        }
+          steps,
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -301,9 +302,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const steps = [
         {
           step_number: 1,
-          description: 'Restart service'
+          description: 'Restart service',
           // command and expected_outcome are optional
-        }
+        },
       ];
 
       const runbook = {
@@ -312,8 +313,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'test-service',
           title: 'Simple restart',
-          steps
-        }
+          steps,
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -329,28 +330,28 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         {
           // Missing step_number
           description: 'Invalid step',
-          command: 'echo test'
+          command: 'echo test',
         },
         {
           step_number: 0, // Non-positive step number
           description: 'Invalid step number',
-          command: 'echo test'
+          command: 'echo test',
         },
         {
           step_number: -1, // Negative step number
           description: 'Invalid step number',
-          command: 'echo test'
+          command: 'echo test',
         },
         {
           step_number: 1,
           // Missing description
-          command: 'echo test'
+          command: 'echo test',
         },
         {
           step_number: 1,
           description: '', // Empty description
-          command: 'echo test'
-        }
+          command: 'echo test',
+        },
       ];
 
       invalidSteps.forEach((step, index) => {
@@ -360,8 +361,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'test-service',
             title: 'Invalid runbook',
-            steps: [step]
-          }
+            steps: [step],
+          },
         };
 
         const result = RunbookSchema.safeParse(runbook);
@@ -379,10 +380,10 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           steps: [
             {
               step_number: 1.5, // Not an integer
-              description: 'Invalid step number'
-            }
-          ]
-        }
+              description: 'Invalid step number',
+            },
+          ],
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -396,7 +397,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'payment-service',
@@ -407,17 +408,17 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
               step_number: 1,
               description: 'Check primary gateway status',
               command: 'curl -f https://primary-gateway.health/endpoint',
-              expected_outcome: 'Primary gateway responds with HTTP 200'
+              expected_outcome: 'Primary gateway responds with HTTP 200',
             },
             {
               step_number: 2,
               description: 'Update configuration to use backup gateway',
               command: 'kubectl edit configmap payment-config -n payments',
-              expected_outcome: 'Configuration updated to use backup gateway URL'
-            }
-          ]
+              expected_outcome: 'Configuration updated to use backup gateway URL',
+            },
+          ],
         },
-        content: 'Runbook: Payment Gateway Failover for payment-service with 2 steps'
+        content: 'Runbook: Payment Gateway Failover for payment-service with 2 steps',
       };
 
       const result = await db.storeItems([runbook]);
@@ -439,7 +440,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: `service-${i}`,
@@ -450,11 +451,11 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
               step_number: 1,
               description: `Check service-${i} status`,
               command: `kubectl get pods -l service=service-${i}`,
-              expected_outcome: `All service-${i} pods are running`
-            }
-          ]
+              expected_outcome: `All service-${i} pods are running`,
+            },
+          ],
         },
-        content: `Runbook: ${i} for service-${i} with status check procedures`
+        content: `Runbook: ${i} for service-${i} with status check procedures`,
       }));
 
       const result = await db.storeItems(runbooks);
@@ -472,9 +473,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'valid-service',
             title: 'Valid Runbook',
-            steps: [{ step_number: 1, description: 'Valid step' }]
+            steps: [{ step_number: 1, description: 'Valid step' }],
           },
-          content: 'Valid runbook content'
+          content: 'Valid runbook content',
         },
         {
           kind: 'runbook' as const,
@@ -482,9 +483,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing service
             title: 'Invalid Runbook',
-            steps: [{ step_number: 1, description: 'Invalid step' }]
+            steps: [{ step_number: 1, description: 'Invalid step' }],
           },
-          content: 'Invalid runbook content'
+          content: 'Invalid runbook content',
         },
         {
           kind: 'runbook' as const,
@@ -492,10 +493,10 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'another-valid-service',
             title: 'Another Valid Runbook',
-            steps: [{ step_number: 1, description: 'Another valid step' }]
+            steps: [{ step_number: 1, description: 'Another valid step' }],
           },
-          content: 'Another valid runbook content'
-        }
+          content: 'Another valid runbook content',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -523,14 +524,14 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
                   step_number: 1,
                   description: 'Check database connection pool',
                   command: 'kubectl logs -n database deployment/database-service',
-                  expected_outcome: 'Connection pool status available'
-                }
+                  expected_outcome: 'Connection pool status available',
+                },
               ],
               triggers: ['Database timeout errors'],
-              last_verified_at: '2025-01-01T00:00:00Z'
+              last_verified_at: '2025-01-01T00:00:00Z',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'runbook-id-2',
@@ -545,13 +546,13 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
                 {
                   step_number: 1,
                   description: 'Update rate limit configuration',
-                  command: 'kubectl edit configmap api-gateway-config'
-                }
-              ]
+                  command: 'kubectl edit configmap api-gateway-config',
+                },
+              ],
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -584,28 +585,28 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'web-service',
           title: 'Service Restart Procedure',
-          steps: [{ step_number: 1, description: 'Restart web service' }]
+          steps: [{ step_number: 1, description: 'Restart web service' }],
         },
-        content: 'Runbook: Service Restart for project-A'
+        content: 'Runbook: Service Restart for project-A',
       };
 
       const runbookProjectB = {
         kind: 'runbook' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'web-service',
           title: 'Service Restart Procedure',
-          steps: [{ step_number: 1, description: 'Restart web service' }]
+          steps: [{ step_number: 1, description: 'Restart web service' }],
         },
-        content: 'Runbook: Service Restart for project-B'
+        content: 'Runbook: Service Restart for project-B',
       };
 
       // Store both runbooks
@@ -626,28 +627,28 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           kind: 'runbook' as const,
           scope: {
             project: 'test-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             service: 'production-service',
             title: 'Production Recovery',
-            steps: [{ step_number: 1, description: 'Production recovery step' }]
+            steps: [{ step_number: 1, description: 'Production recovery step' }],
           },
-          content: 'Production recovery runbook'
+          content: 'Production recovery runbook',
         },
         {
           kind: 'runbook' as const,
           scope: {
             project: 'test-project',
-            branch: 'develop'
+            branch: 'develop',
           },
           data: {
             service: 'staging-service',
             title: 'Staging Recovery',
-            steps: [{ step_number: 1, description: 'Staging recovery step' }]
+            steps: [{ step_number: 1, description: 'Staging recovery step' }],
           },
-          content: 'Staging recovery runbook'
-        }
+          content: 'Staging recovery runbook',
+        },
       ];
 
       await db.storeItems(runbooks);
@@ -665,7 +666,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'microservices-platform',
@@ -675,35 +676,39 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
             {
               step_number: 1,
               description: 'Assess system impact and identify affected services',
-              command: 'kubectl get pods --all-namespaces | grep -E "(CrashLoopBackOff|Error|Pending)"',
-              expected_outcome: 'List of unhealthy services identified'
+              command:
+                'kubectl get pods --all-namespaces | grep -E "(CrashLoopBackOff|Error|Pending)"',
+              expected_outcome: 'List of unhealthy services identified',
             },
             {
               step_number: 2,
               description: 'Check dependencies and external service connectivity',
-              command: 'kubectl exec -it $(kubectl get pods -n monitoring -l app=service-mesh -o jsonpath=\'{.items[0].metadata.name}\') -- curl -s external-service.health/endpoint',
-              expected_outcome: 'External dependencies are accessible'
+              command:
+                "kubectl exec -it $(kubectl get pods -n monitoring -l app=service-mesh -o jsonpath='{.items[0].metadata.name}') -- curl -s external-service.health/endpoint",
+              expected_outcome: 'External dependencies are accessible',
             },
             {
               step_number: 3,
               description: 'Execute service-specific recovery in dependency order',
-              command: 'for service in database cache auth api-gateway; do kubectl rollout restart deployment/$service; sleep 30; done',
-              expected_outcome: 'All services restarted in correct order'
+              command:
+                'for service in database cache auth api-gateway; do kubectl rollout restart deployment/$service; sleep 30; done',
+              expected_outcome: 'All services restarted in correct order',
             },
             {
               step_number: 4,
               description: 'Verify system health and performance metrics',
-              command: 'kubectl top pods --all-namespaces && curl -s http://monitoring/grafana/api/health',
-              expected_outcome: 'System performance metrics within normal ranges'
-            }
+              command:
+                'kubectl top pods --all-namespaces && curl -s http://monitoring/grafana/api/health',
+              expected_outcome: 'System performance metrics within normal ranges',
+            },
           ],
           triggers: [
             'Multiple service failures detected',
             'System-wide performance degradation',
-            'Cascading failure events'
+            'Cascading failure events',
           ],
-          last_verified_at: '2025-01-15T10:30:00Z'
-        }
+          last_verified_at: '2025-01-15T10:30:00Z',
+        },
       };
 
       const result = await db.storeItems([complexRunbook]);
@@ -722,9 +727,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'user-auth-service',
             title: 'User Authentication Service (OAuth 2.0) Recovery',
-            steps: [{ step_number: 1, description: 'Test step with special chars: @#$%^&*()' }]
+            steps: [{ step_number: 1, description: 'Test step with special chars: @#$%^&*()' }],
           },
-          content: 'Runbook with special characters'
+          content: 'Runbook with special characters',
         },
         {
           kind: 'runbook' as const,
@@ -732,10 +737,10 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           data: {
             service: 'payment-gateway.v2',
             title: 'Payment Gateway v2.0 - SSL Certificate Renewal',
-            steps: [{ step_number: 1, description: 'Renew SSL certificates for *.example.com' }]
+            steps: [{ step_number: 1, description: 'Renew SSL certificates for *.example.com' }],
           },
-          content: 'SSL certificate renewal runbook'
-        }
+          content: 'SSL certificate renewal runbook',
+        },
       ];
 
       const result = await db.storeItems(runbooks);
@@ -751,8 +756,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'test-service',
           title: 'Test Runbook',
-          steps: [{ step_number: 1, description: 'Test step' }]
-        }
+          steps: [{ step_number: 1, description: 'Test step' }],
+        },
       };
 
       // Mock upsert to throw an error
@@ -766,9 +771,11 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
     });
 
     it('should handle runbooks with very long commands and descriptions', async () => {
-      const longCommand = 'kubectl exec -it deployment/complex-service -- bash -c "for i in {1..100}; do echo \'Processing item $i\'; curl -s -X POST https://api.example.com/process -H \'Content-Type: application/json\' -d \'{\\"id\\": \\"$i\\", \\"data\\": \\"complex processing data with lots of fields and nested objects\\"}\' | jq .status; sleep 1; done"';
+      const longCommand =
+        'kubectl exec -it deployment/complex-service -- bash -c "for i in {1..100}; do echo \'Processing item $i\'; curl -s -X POST https://api.example.com/process -H \'Content-Type: application/json\' -d \'{\\"id\\": \\"$i\\", \\"data\\": \\"complex processing data with lots of fields and nested objects\\"}\' | jq .status; sleep 1; done"';
 
-      const longDescription = 'This is a very detailed step that explains exactly what needs to be done, including all the context about why this step is necessary, what the expected outcomes should be, how to verify that the step completed successfully, and what to do if something goes wrong during the execution of this particular step in the runbook.';
+      const longDescription =
+        'This is a very detailed step that explains exactly what needs to be done, including all the context about why this step is necessary, what the expected outcomes should be, how to verify that the step completed successfully, and what to do if something goes wrong during the execution of this particular step in the runbook.';
 
       const runbook = {
         kind: 'runbook' as const,
@@ -781,10 +788,10 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
               step_number: 1,
               description: longDescription,
               command: longCommand,
-              expected_outcome: `${longDescription  } Expected outcome should match description.`
-            }
-          ]
-        }
+              expected_outcome: `${longDescription} Expected outcome should match description.`,
+            },
+          ],
+        },
       };
 
       const result = await db.storeItems([runbook]);
@@ -801,41 +808,44 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         kind: 'runbook' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           service: 'critical-business-service',
           title: 'Complete Service Outage Recovery',
-          description: 'Emergency procedures for recovering critical business service during major incidents',
+          description:
+            'Emergency procedures for recovering critical business service during major incidents',
           steps: [
             {
               step_number: 1,
               description: 'Declare incident and assemble response team',
-              command: 'slack-cli @incident-response "Critical service outage detected - immediate response required"',
-              expected_outcome: 'Incident response team acknowledged and assembled'
+              command:
+                'slack-cli @incident-response "Critical service outage detected - immediate response required"',
+              expected_outcome: 'Incident response team acknowledged and assembled',
             },
             {
               step_number: 2,
               description: 'Implement disaster recovery procedures',
-              command: './scripts/disaster-recovery.sh --service=critical-business-service --environment=production',
-              expected_outcome: 'Service recovered from disaster recovery site'
-            }
+              command:
+                './scripts/disaster-recovery.sh --service=critical-business-service --environment=production',
+              expected_outcome: 'Service recovered from disaster recovery site',
+            },
           ],
           triggers: ['Complete service outage', 'Major data corruption', 'Natural disaster'],
-          last_verified_at: '2025-01-01T12:00:00Z'
+          last_verified_at: '2025-01-01T12:00:00Z',
         },
         tags: {
           critical: true,
           disaster_recovery: true,
           emergency: true,
-          business_continuity: true
+          business_continuity: true,
         },
         source: {
           actor: 'disaster-recovery-lead',
           tool: 'incident-management-platform',
-          timestamp: '2025-01-01T12:00:00Z'
+          timestamp: '2025-01-01T12:00:00Z',
         },
-        ttl_policy: 'permanent' as const
+        ttl_policy: 'permanent' as const,
       };
 
       const result = validateKnowledgeItem(runbook);
@@ -854,9 +864,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'temporary-service',
           title: 'Temporary Service Recovery',
-          steps: [{ step_number: 1, description: 'Temporary recovery step' }]
+          steps: [{ step_number: 1, description: 'Temporary recovery step' }],
         },
-        ttl_policy: 'short' as const
+        ttl_policy: 'short' as const,
       };
 
       const result = await db.storeItems([runbook]);
@@ -871,7 +881,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          environment: 'production'
+          environment: 'production',
         },
         data: {
           service: 'monitoring-service',
@@ -881,29 +891,29 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
             {
               step_number: 1,
               description: 'Check Prometheus connectivity',
-              command: 'curl -s http://prometheus:9090/-/healthy'
+              command: 'curl -s http://prometheus:9090/-/healthy',
             },
             {
               step_number: 2,
               description: 'Restart Grafana if needed',
-              command: 'kubectl rollout restart deployment/grafana'
-            }
+              command: 'kubectl rollout restart deployment/grafana',
+            },
           ],
           triggers: ['Monitoring dashboard unavailable', 'Alert delivery failures'],
-          last_verified_at: '2025-01-10T15:30:00Z'
+          last_verified_at: '2025-01-10T15:30:00Z',
         },
         tags: {
           monitoring: true,
           observability: true,
           sre: true,
-          automated: true
+          automated: true,
         },
         source: {
           actor: 'platform-engineer',
           tool: 'runbook-generator',
-          timestamp: '2025-01-10T15:30:00Z'
+          timestamp: '2025-01-10T15:30:00Z',
         },
-        idempotency_key: 'monitoring-recovery-v1.2.3'
+        idempotency_key: 'monitoring-recovery-v1.2.3',
       };
 
       const result = validateKnowledgeItem(runbook);
@@ -925,8 +935,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           service: 'test-service',
           title: 'Test Runbook',
           steps: [{ step_number: 1, description: 'Test step' }],
-          last_verified_at: '2025-01-01T00:00:00Z'
-        }
+          last_verified_at: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -944,8 +954,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
           service: 'test-service',
           title: 'Test Runbook',
           steps: [{ step_number: 1, description: 'Test step' }],
-          last_verified_at: 'invalid-date' // Invalid datetime format
-        }
+          last_verified_at: 'invalid-date', // Invalid datetime format
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -959,9 +969,9 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
         data: {
           service: 'test-service',
           title: 'Test Runbook',
-          steps: [{ step_number: 1, description: 'Test step' }]
+          steps: [{ step_number: 1, description: 'Test step' }],
           // last_verified_at is optional
-        }
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);

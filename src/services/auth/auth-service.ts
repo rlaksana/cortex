@@ -1589,8 +1589,12 @@ async function getAuthConfig(): Promise<AuthServiceConfig> {
     ]);
 
     return {
-      jwt_secret: jwtSecret?.value || process.env.JWT_SECRET || 'default-secret-key-change-in-production',
-      jwt_refresh_secret: jwtRefreshSecret?.value || process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+      jwt_secret:
+        jwtSecret?.value || process.env.JWT_SECRET || 'default-secret-key-change-in-production',
+      jwt_refresh_secret:
+        jwtRefreshSecret?.value ||
+        process.env.JWT_REFRESH_SECRET ||
+        'default-refresh-secret-key-change-in-production',
       jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
       jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
       bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
@@ -1599,7 +1603,7 @@ async function getAuthConfig(): Promise<AuthServiceConfig> {
       max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
       rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
       ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
-        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH,
       }),
     };
   } catch (error) {
@@ -1608,7 +1612,8 @@ async function getAuthConfig(): Promise<AuthServiceConfig> {
     // Fallback to environment variables
     return {
       jwt_secret: process.env.JWT_SECRET || 'default-secret-key-change-in-production',
-      jwt_refresh_secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+      jwt_refresh_secret:
+        process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
       jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
       jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
       bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
@@ -1617,7 +1622,7 @@ async function getAuthConfig(): Promise<AuthServiceConfig> {
       max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
       rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
       ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
-        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+        token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH,
       }),
     };
   }
@@ -1638,7 +1643,8 @@ export async function getAuthService(): Promise<AuthService> {
 // Note: This will use environment fallback until the async version is called
 const defaultConfig: AuthServiceConfig = {
   jwt_secret: process.env.JWT_SECRET || 'default-secret-key-change-in-production',
-  jwt_refresh_secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
+  jwt_refresh_secret:
+    process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-key-change-in-production',
   jwt_expires_in: process.env.JWT_EXPIRES_IN || '1h',
   jwt_refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   bcrypt_rounds: parseInt(process.env.BCRYPT_ROUNDS || '12'),
@@ -1647,7 +1653,7 @@ const defaultConfig: AuthServiceConfig = {
   max_sessions_per_user: parseInt(process.env.MAX_SESSIONS_PER_USER || '5'),
   rate_limit_enabled: process.env.RATE_LIMIT_ENABLED !== 'false',
   ...(process.env.TOKEN_BLACKLIST_BACKUP_PATH && {
-    token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH
+    token_blacklist_backup_path: process.env.TOKEN_BLACKLIST_BACKUP_PATH,
   }),
 };
 

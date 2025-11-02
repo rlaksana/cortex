@@ -67,7 +67,7 @@ vi.mock('../../src/services/chunking/chunking-service.js', () => ({
     constructor() {
       // Mock constructor
     }
-    processItemsForStorage = vi.fn().mockImplementation(items => items); // Pass through unchanged
+    processItemsForStorage = vi.fn().mockImplementation((items) => items); // Pass through unchanged
     shouldChunkItem = vi.fn().mockReturnValue(false); // Don't chunk for these tests
   },
 }));
@@ -169,13 +169,17 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([criticalIncidentWithoutCommander]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        criticalIncidentWithoutCommander,
+      ]);
 
       // Assert
       expect(response.items).toHaveLength(1);
       expect(response.items[0].status).toBe('business_rule_blocked');
       expect(response.items[0].kind).toBe('incident');
-      expect(response.items[0].reason).toContain('Critical incidents require assignment of incident commander');
+      expect(response.items[0].reason).toContain(
+        'Critical incidents require assignment of incident commander'
+      );
       expect(response.summary.business_rule_blocked).toBe(1);
     });
 
@@ -193,13 +197,17 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([criticalRiskWithoutMitigation]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        criticalRiskWithoutMitigation,
+      ]);
 
       // Assert
       expect(response.items).toHaveLength(1);
       expect(response.items[0].status).toBe('business_rule_blocked');
       expect(response.items[0].kind).toBe('risk');
-      expect(response.items[0].reason).toContain('Critical risks must have documented mitigation strategies');
+      expect(response.items[0].reason).toContain(
+        'Critical risks must have documented mitigation strategies'
+      );
       expect(response.summary.business_rule_blocked).toBe(1);
     });
 
@@ -217,7 +225,9 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([todoWithCircularDependency]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        todoWithCircularDependency,
+      ]);
 
       // Assert
       expect(response.items).toHaveLength(1);
@@ -242,7 +252,9 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([ddlWithDuplicateMigrationId]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        ddlWithDuplicateMigrationId,
+      ]);
 
       // Assert
       expect(response.items).toHaveLength(1);
@@ -295,11 +307,11 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       expect(response.summary.total).toBe(4);
 
       // Valid items should be stored
-      const validItems = response.items.filter(item => item.status === 'stored');
+      const validItems = response.items.filter((item) => item.status === 'stored');
       expect(validItems).toHaveLength(2); // entity and observation
 
       // Invalid items should be business_rule_blocked
-      const blockedItems = response.items.filter(item => item.status === 'business_rule_blocked');
+      const blockedItems = response.items.filter((item) => item.status === 'business_rule_blocked');
       expect(blockedItems).toHaveLength(2); // decision and incident
 
       // Verify summary counts
@@ -335,7 +347,7 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       expect(response.summary.total).toBe(3);
 
       // All items should be business_rule_blocked
-      response.items.forEach(item => {
+      response.items.forEach((item) => {
         expect(item.status).toBe('business_rule_blocked');
         expect(item.reason).toBeDefined();
         expect(item.reason.length).toBeGreaterThan(0);
@@ -367,19 +379,21 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       ];
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems(itemsWithSpecificViolations);
+      const response: MemoryStoreResponse = await orchestrator.storeItems(
+        itemsWithSpecificViolations
+      );
 
       // Assert
       expect(response.items).toHaveLength(2);
 
       // Decision should have multiple errors
-      const decisionResult = response.items.find(item => item.kind === 'decision');
+      const decisionResult = response.items.find((item) => item.kind === 'decision');
       expect(decisionResult?.status).toBe('business_rule_blocked');
       expect(decisionResult?.reason).toContain('Decision requires a title');
       expect(decisionResult?.reason).toContain('Decision requires a rationale');
 
       // Todo should have multiple errors
-      const todoResult = response.items.find(item => item.kind === 'todo');
+      const todoResult = response.items.find((item) => item.kind === 'todo');
       expect(todoResult?.status).toBe('business_rule_blocked');
       expect(todoResult?.reason).toContain('Invalid todo status');
       expect(todoResult?.reason).toContain('Self-dependency detected');
@@ -413,7 +427,9 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([itemWithBusinessRuleViolation]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        itemWithBusinessRuleViolation,
+      ]);
 
       // Assert
       expect(response.items[0].status).toBe('business_rule_blocked');
@@ -438,7 +454,9 @@ describe('P5-T5.3: Business Rule Error Handling', () => {
       };
 
       // Act
-      const response: MemoryStoreResponse = await orchestrator.storeItems([itemWithWarningsAndErrors]);
+      const response: MemoryStoreResponse = await orchestrator.storeItems([
+        itemWithWarningsAndErrors,
+      ]);
 
       // Assert - Errors take precedence, should still be business_rule_blocked
       expect(response.items[0].status).toBe('business_rule_blocked');

@@ -70,10 +70,7 @@ export default defineConfig({
   hookTimeout: 10000,
 
   // Include patterns
-  include: [
-    'tests/**/*.test.ts',
-    'tests/**/*.spec.ts',
-  ],
+  include: ['tests/**/*.test.ts', 'tests/**/*.spec.ts'],
 
   // Exclude patterns
   exclude: [

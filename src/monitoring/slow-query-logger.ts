@@ -91,8 +91,8 @@ interface SlowQueryConfig {
     min_samples_for_trend: number;
     trend_window_hours: number;
     severity_multipliers: {
-      medium: number;  // 1.5x threshold
-      high: number;    // 2x threshold
+      medium: number; // 1.5x threshold
+      high: number; // 2x threshold
       critical: number; // 3x threshold
     };
   };
@@ -126,13 +126,13 @@ export class SlowQueryLogger extends EventEmitter {
 
     this.config = {
       thresholds: {
-        [OperationType.MEMORY_STORE]: 1000,    // 1 second
-        [OperationType.MEMORY_FIND]: 2000,     // 2 seconds
-        [OperationType.EMBEDDING]: 5000,       // 5 seconds
-        [OperationType.CHUNKING]: 3000,        // 3 seconds
-        [OperationType.DEDUPLICATION]: 1500,   // 1.5 seconds
-        [OperationType.DATABASE_HEALTH]: 500,  // 500ms
-        [OperationType.DATABASE_STATS]: 300,   // 300ms
+        [OperationType.MEMORY_STORE]: 1000, // 1 second
+        [OperationType.MEMORY_FIND]: 2000, // 2 seconds
+        [OperationType.EMBEDDING]: 5000, // 5 seconds
+        [OperationType.CHUNKING]: 3000, // 3 seconds
+        [OperationType.DEDUPLICATION]: 1500, // 1.5 seconds
+        [OperationType.DATABASE_HEALTH]: 500, // 500ms
+        [OperationType.DATABASE_STATS]: 300, // 300ms
       },
       analysis: {
         min_samples_for_trend: 10,
@@ -200,7 +200,7 @@ export class SlowQueryLogger extends EventEmitter {
           types: query.types || [],
           scope: query.scope || {},
           expand: query.expand || '',
-        }
+        },
       }),
       analysis: this.analyzeSlowQuery(operation, latencyMs, threshold, query),
       context,
@@ -226,9 +226,9 @@ export class SlowQueryLogger extends EventEmitter {
    * Get slow query trends for an operation
    */
   getSlowQueryTrends(operation: OperationType, hours: number = 24): SlowQueryTrend | null {
-    const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - hours * 60 * 60 * 1000;
     const operationQueries = this.slowQueries.filter(
-      q => q.operation === operation && q.timestamp > cutoffTime
+      (q) => q.operation === operation && q.timestamp > cutoffTime
     );
 
     if (operationQueries.length < this.config.analysis.min_samples_for_trend) {
@@ -243,10 +243,12 @@ export class SlowQueryLogger extends EventEmitter {
     const recentQueries = operationQueries.slice(-50);
     const olderQueries = operationQueries.slice(0, -50);
 
-    const recentAvgLatency = recentQueries.reduce((sum, q) => sum + q.latency_ms, 0) / recentQueries.length;
-    const olderAvgLatency = olderQueries.length > 0
-      ? olderQueries.reduce((sum, q) => sum + q.latency_ms, 0) / olderQueries.length
-      : recentAvgLatency;
+    const recentAvgLatency =
+      recentQueries.reduce((sum, q) => sum + q.latency_ms, 0) / recentQueries.length;
+    const olderAvgLatency =
+      olderQueries.length > 0
+        ? olderQueries.reduce((sum, q) => sum + q.latency_ms, 0) / olderQueries.length
+        : recentAvgLatency;
 
     let trendDirection: 'improving' | 'degrading' | 'stable' = 'stable';
     const changePercent = ((recentAvgLatency - olderAvgLatency) / olderAvgLatency) * 100;
@@ -260,8 +262,8 @@ export class SlowQueryLogger extends EventEmitter {
     // Analyze bottlenecks
     const bottleneckCounts = new Map<string, { count: number; totalImpact: number }>();
 
-    operationQueries.forEach(query => {
-      query.analysis.potential_bottlenecks.forEach(bottleneck => {
+    operationQueries.forEach((query) => {
+      query.analysis.potential_bottlenecks.forEach((bottleneck) => {
         const existing = bottleneckCounts.get(bottleneck) || { count: 0, totalImpact: 0 };
         existing.count++;
         existing.totalImpact += query.latency_ms - query.threshold_ms;
@@ -299,12 +301,10 @@ export class SlowQueryLogger extends EventEmitter {
     let queries = [...this.recentSlowQueries];
 
     if (operation) {
-      queries = queries.filter(q => q.operation === operation);
+      queries = queries.filter((q) => q.operation === operation);
     }
 
-    return queries
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, limit);
+    return queries.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
   }
 
   /**
@@ -313,20 +313,23 @@ export class SlowQueryLogger extends EventEmitter {
   getSlowQueryStats(hours: number = 24): {
     total_slow_queries: number;
     slow_query_rate: number;
-    operations: Record<OperationType, {
-      count: number;
-      avg_latency_ms: number;
-      max_latency_ms: number;
-      rate: number;
-    }>;
+    operations: Record<
+      OperationType,
+      {
+        count: number;
+        avg_latency_ms: number;
+        max_latency_ms: number;
+        rate: number;
+      }
+    >;
     top_bottlenecks: Array<{
       bottleneck: string;
       count: number;
       operations: OperationType[];
     }>;
   } {
-    const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
-    const recentQueries = this.slowQueries.filter(q => q.timestamp > cutoffTime);
+    const cutoffTime = Date.now() - hours * 60 * 60 * 1000;
+    const recentQueries = this.slowQueries.filter((q) => q.timestamp > cutoffTime);
 
     // Get total query count from performance collector
     const totalQueries = Object.values(OperationType).reduce((total, op) => {
@@ -338,22 +341,25 @@ export class SlowQueryLogger extends EventEmitter {
     const operationStats: Record<string, any> = {};
     const bottleneckCounts = new Map<string, { count: number; operations: Set<OperationType> }>();
 
-    Object.values(OperationType).forEach(operation => {
-      const opQueries = recentQueries.filter(q => q.operation === operation);
+    Object.values(OperationType).forEach((operation) => {
+      const opQueries = recentQueries.filter((q) => q.operation === operation);
       const summary = performanceCollector.getSummary(operation);
 
       if (opQueries.length > 0) {
         operationStats[operation] = {
           count: opQueries.length,
           avg_latency_ms: opQueries.reduce((sum, q) => sum + q.latency_ms, 0) / opQueries.length,
-          max_latency_ms: Math.max(...opQueries.map(q => q.latency_ms)),
+          max_latency_ms: Math.max(...opQueries.map((q) => q.latency_ms)),
           rate: summary ? (opQueries.length / summary.count) * 100 : 0,
         };
 
         // Track bottlenecks
-        opQueries.forEach(query => {
-          query.analysis.potential_bottlenecks.forEach(bottleneck => {
-            const existing = bottleneckCounts.get(bottleneck) || { count: 0, operations: new Set() };
+        opQueries.forEach((query) => {
+          query.analysis.potential_bottlenecks.forEach((bottleneck) => {
+            const existing = bottleneckCounts.get(bottleneck) || {
+              count: 0,
+              operations: new Set(),
+            };
             existing.count++;
             existing.operations.add(operation);
             bottleneckCounts.set(bottleneck, existing);
@@ -563,14 +569,14 @@ export class SlowQueryLogger extends EventEmitter {
   }
 
   private enforceRetentionLimits(): void {
-    const cutoffTime = Date.now() - (this.config.retention.keep_entries_hours * 60 * 60 * 1000);
+    const cutoffTime = Date.now() - this.config.retention.keep_entries_hours * 60 * 60 * 1000;
 
     // Remove old entries
-    this.slowQueries = this.slowQueries.filter(q => q.timestamp > cutoffTime);
+    this.slowQueries = this.slowQueries.filter((q) => q.timestamp > cutoffTime);
 
     // Enforce per-operation limits
     const operationCounts = new Map<OperationType, number>();
-    this.slowQueries = this.slowQueries.filter(query => {
+    this.slowQueries = this.slowQueries.filter((query) => {
       const count = operationCounts.get(query.operation) || 0;
       if (count >= this.config.retention.max_entries_per_operation) {
         return false;
@@ -584,7 +590,8 @@ export class SlowQueryLogger extends EventEmitter {
     for (const [key] of this.queryCounts.entries()) {
       const parts = key.split('_');
       const timestamp = parseInt(parts[parts.length - 1]);
-      if (now - timestamp > 300000) { // 5 minutes
+      if (now - timestamp > 300000) {
+        // 5 minutes
         this.queryCounts.delete(key);
       }
     }

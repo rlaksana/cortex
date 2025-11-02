@@ -6,7 +6,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
@@ -20,8 +20,8 @@ vi.mock('@qdrant/js-client-rest', () => ({
               payload: {
                 kind: 'entity',
                 content: 'Test search result',
-                metadata: { relevance: 'high' }
-              }
+                metadata: { relevance: 'high' },
+              },
             },
             {
               id: 'test-id-2',
@@ -29,9 +29,9 @@ vi.mock('@qdrant/js-client-rest', () => ({
               payload: {
                 kind: 'decision',
                 content: 'Related decision',
-                metadata: { relevance: 'medium' }
-              }
-            }
+                metadata: { relevance: 'medium' },
+              },
+            },
           ];
           // Respect the limit parameter
           const limit = params.limit || 10;
@@ -41,10 +41,10 @@ vi.mock('@qdrant/js-client-rest', () => ({
       });
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 2,
-        status: 'green'
+        status: 'green',
       });
     }
-  }
+  },
 }));
 
 describe('VectorDatabase - memory_find functionality', () => {
@@ -95,7 +95,7 @@ describe('VectorDatabase - memory_find functionality', () => {
     });
 
     test('should handle special characters in queries', async () => {
-      const specialQuery = '!@#$%^&*(){}[]|\:;\"\'<>,.?/';
+      const specialQuery = '!@#$%^&*(){}[]|:;"\'<>,.?/';
       const result = await db.searchItems(specialQuery, 10);
 
       expect(result.items).toHaveLength(2);
@@ -134,9 +134,9 @@ describe('VectorDatabase - memory_find functionality', () => {
     test('should filter results by knowledge type', async () => {
       // First test direct search results
       const result = await db.searchItems('test query', 10);
-      
+
       // Verify mock contains different types
-      const types = result.items.map(item => item.kind);
+      const types = result.items.map((item) => item.kind);
       expect(types).toContain('entity');
       expect(types).toContain('decision');
     });
@@ -145,14 +145,14 @@ describe('VectorDatabase - memory_find functionality', () => {
       // This would be tested in the actual implementation
       // For now, we verify the search structure supports scope
       const result = await db.searchItems('test query', 10);
-      
+
       expect(result.items).toBeDefined();
       expect(Array.isArray(result.items)).toBe(true);
     });
 
     test('should handle combined filtering', async () => {
       const result = await db.searchItems('test query', 5);
-      
+
       expect(result.items.length).toBeLessThanOrEqual(5);
       expect(result.total).toBeGreaterThanOrEqual(0);
     });
@@ -169,14 +169,14 @@ describe('VectorDatabase - memory_find functionality', () => {
     });
 
     test('should handle concurrent searches', async () => {
-      const promises = Array(5).fill(null).map(() => 
-        db.searchItems('test query', 10)
-      );
+      const promises = Array(5)
+        .fill(null)
+        .map(() => db.searchItems('test query', 10));
 
       const results = await Promise.all(promises);
-      
+
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.items).toBeDefined();
         expect(result.total).toBeGreaterThanOrEqual(0);
       });

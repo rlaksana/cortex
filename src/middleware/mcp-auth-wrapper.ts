@@ -62,10 +62,7 @@ export class MCPAuthWrapper {
     try {
       // Check if authentication is required
       if (requireAuth && !args.auth_token) {
-        throw new MCPAuthenticationError(
-          `Authentication token required for ${toolName}`,
-          toolName
-        );
+        throw new MCPAuthenticationError(`Authentication token required for ${toolName}`, toolName);
       }
 
       // Validate token and scopes if authentication is required
@@ -73,13 +70,16 @@ export class MCPAuthWrapper {
       if (requireAuth && args.auth_token) {
         authContext = await validateToolScope(args.auth_token, toolName, args);
 
-        logger.info({
-          toolName,
-          userId: authContext.user.id,
-          username: authContext.user.username,
-          role: authContext.user.role,
-          args: this.sanitizeArgs(args)
-        }, `Authenticated ${toolName} request`);
+        logger.info(
+          {
+            toolName,
+            userId: authContext.user.id,
+            username: authContext.user.username,
+            role: authContext.user.role,
+            args: this.sanitizeArgs(args),
+          },
+          `Authenticated ${toolName} request`
+        );
       }
 
       // Execute the actual handler
@@ -87,38 +87,46 @@ export class MCPAuthWrapper {
 
       // Log successful execution
       if (config.auditLogging !== false) {
-        logger.info({
-          toolName,
-          userId: authContext?.user.id,
-          executionTime: Date.now() - startTime,
-          success: true
-        }, `${toolName} completed successfully`);
+        logger.info(
+          {
+            toolName,
+            userId: authContext?.user.id,
+            executionTime: Date.now() - startTime,
+            success: true,
+          },
+          `${toolName} completed successfully`
+        );
       }
 
       return result;
-
-      } catch (error) {
+    } catch (error) {
       const executionTime = Date.now() - startTime;
 
       // Handle authentication errors specifically
       if (error instanceof MCPAuthenticationError) {
-        logger.warn({
-          toolName,
-          error: error.message,
-          userId: error._authContext?.user.id,
-          executionTime
-        }, `Authentication failed for ${toolName}`);
+        logger.warn(
+          {
+            toolName,
+            error: error.message,
+            userId: error._authContext?.user.id,
+            executionTime,
+          },
+          `Authentication failed for ${toolName}`
+        );
 
         throw error;
       }
 
       // Handle scope errors - use undefined since we don't have authContext in this catch block
       if (error instanceof Error && error.message.includes('Insufficient permissions')) {
-        logger.warn({
-          toolName,
-          error: error.message,
-          executionTime
-        }, `Scope validation failed for ${toolName}`);
+        logger.warn(
+          {
+            toolName,
+            error: error.message,
+            executionTime,
+          },
+          `Scope validation failed for ${toolName}`
+        );
 
         throw new MCPAuthenticationError(
           `Insufficient permissions for ${toolName}: ${error.message}`,
@@ -127,12 +135,15 @@ export class MCPAuthWrapper {
       }
 
       // Log other errors
-      logger.error({
-        toolName,
-        error: error instanceof Error ? error.message : String(error),
-        executionTime,
-        args: this.sanitizeArgs(args)
-      }, `${toolName} failed`);
+      logger.error(
+        {
+          toolName,
+          error: error instanceof Error ? error.message : String(error),
+          executionTime,
+          args: this.sanitizeArgs(args),
+        },
+        `${toolName} failed`
+      );
 
       throw error;
     }
@@ -149,7 +160,7 @@ export class MCPAuthWrapper {
         {
           toolName: 'memory_find',
           requireAuth: true,
-          auditLogging: true
+          auditLogging: true,
         },
         _originalHandler,
         args
@@ -168,7 +179,7 @@ export class MCPAuthWrapper {
         {
           toolName: 'memory_store',
           requireAuth: true,
-          auditLogging: true
+          auditLogging: true,
         },
         _originalHandler,
         args
@@ -187,7 +198,7 @@ export class MCPAuthWrapper {
         {
           toolName: 'database_health',
           requireAuth: true,
-          auditLogging: false // Health checks are less sensitive
+          auditLogging: false, // Health checks are less sensitive
         },
         _originalHandler,
         args
@@ -206,7 +217,7 @@ export class MCPAuthWrapper {
         {
           toolName: 'database_stats',
           requireAuth: true,
-          auditLogging: false
+          auditLogging: false,
         },
         _originalHandler,
         args
@@ -227,7 +238,7 @@ export class MCPAuthWrapper {
     delete sanitized.secret;
 
     // Truncate long strings
-    Object.keys(sanitized).forEach(key => {
+    Object.keys(sanitized).forEach((key) => {
       if (typeof sanitized[key] === 'string' && sanitized[key].length > 100) {
         sanitized[key] = `${sanitized[key].substring(0, 100)}...`;
       }
@@ -249,7 +260,7 @@ export class MCPAuthWrapper {
       id: authContext.user.id,
       username: authContext.user.username,
       role: authContext.user.role,
-      scopes: authContext.scopes
+      scopes: authContext.scopes,
     };
   }
 
@@ -269,10 +280,10 @@ export class MCPAuthWrapper {
       'api_key:manage',
       'system:manage',
       'audit:write',
-      'scope:manage'
+      'scope:manage',
     ];
 
-    return authContext.scopes.some(scope => adminScopes.includes(scope));
+    return authContext.scopes.some((scope) => adminScopes.includes(scope));
   }
 }
 

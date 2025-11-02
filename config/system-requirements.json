@@ -43,10 +43,7 @@
         "minimum_version": "5.1.0",
         "recommended_version": "7.2.0",
         "execution_policy": "RemoteSigned",
-        "modules": [
-          "Microsoft.PowerShell.Management",
-          "Microsoft.PowerShell.Utility"
-        ],
+        "modules": ["Microsoft.PowerShell.Management", "Microsoft.PowerShell.Utility"],
         "notes": "PowerShell 5.1+ required for installer scripts"
       },
 
@@ -125,11 +122,7 @@
       },
       "user_directories": {
         "required": true,
-        "paths": [
-          "%USERPROFILE%\\.docker",
-          "C:\\Program Files\\Docker",
-          "C:\\ProgramData\\Docker"
-        ],
+        "paths": ["%USERPROFILE%\\.docker", "C:\\Program Files\\Docker", "C:\\ProgramData\\Docker"],
         "notes": "Write access required for Docker configuration"
       }
     },
@@ -172,7 +165,9 @@
         "problem": "WSL2 not available",
         "symptom": "wsl command not found",
         "solution": "Enable WSL2 feature and install Ubuntu from Microsoft Store",
-        "commands": ["dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"]
+        "commands": [
+          "dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart"
+        ]
       },
       {
         "problem": "Virtualization disabled",

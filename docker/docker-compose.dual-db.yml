@@ -16,22 +16,23 @@ services:
       QDRANT__SERVICE__HTTP_PORT: 6333
       QDRANT__SERVICE__GRPC_PORT: 6334
       QDRANT__SERVICE__MAX_REQUEST_SIZE_MB: 256
-      QDRANT__SERVICE__CORS__ALLOW_ORIGIN: "*"
-      QDRANT__SERVICE__CORS__ALLOW_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
-      QDRANT__SERVICE__CORS__ALLOW_HEADERS: "*"
+      QDRANT__SERVICE__CORS__ALLOW_ORIGIN: '*'
+      QDRANT__SERVICE__CORS__ALLOW_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
+      QDRANT__SERVICE__CORS__ALLOW_HEADERS: '*'
       QDRANT__LOG_LEVEL: INFO
       QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS: 4
       QDRANT__STORAGE__PERFORMANCE__MAX_INDEXING_THREADS: 4
       QDRANT__SERVICE__TELEMETRY_DISABLED: true
     ports:
-      - "6333:6333"  # HTTP API
-      - "6334:6334"  # gRPC API
+      - '6333:6333' # HTTP API
+      - '6334:6334' # gRPC API
     volumes:
       - cortex_qdrant_data:/qdrant/storage
       - ./backups/qdrant:/backups
       - ./config/qdrant:/qdrant/config
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:6333/health || exit 1"]
+      test:
+        ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:6333/health || exit 1']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -55,12 +56,12 @@ services:
     container_name: cortex-redis
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - cortex_redis_data:/data
       - ./config/redis.conf:/usr/local/etc/redis/redis.conf
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 3s
       retries: 5
@@ -79,8 +80,8 @@ services:
     image: nginx:alpine
     container_name: cortex-nginx
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./config/nginx/conf.d:/etc/nginx/conf.d
@@ -104,7 +105,7 @@ services:
       - '--storage.tsdb.retention.time=15d'
       - '--web.enable-lifecycle'
     ports:
-      - "9090:9090"
+      - '9090:9090'
     volumes:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./config/prometheus/rules:/etc/prometheus/rules
@@ -124,9 +125,9 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: cortex_grafana_2025
       GF_USERS_ALLOW_SIGN_UP: false
-      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-simple-json-datasource"
+      GF_INSTALL_PLUGINS: 'grafana-clock-panel,grafana-simple-json-datasource'
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - grafana_data:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning
@@ -143,7 +144,7 @@ services:
   vector:
     image: timberio/vector:0.32.0-alpine
     container_name: cortex-vector
-    command: ["--config", "/etc/vector/vector.toml", "--watch-config"]
+    command: ['--config', '/etc/vector/vector.toml', '--watch-config']
     volumes:
       - ./config/vector/vector.toml:/etc/vector/vector.toml
       - ./logs:/var/log/app
@@ -188,4 +189,4 @@ networks:
         - subnet: 172.20.0.0/16
           gateway: 172.20.0.1
     labels:
-      - "cortex.network=qdrant-only"
+      - 'cortex.network=qdrant-only'

@@ -72,8 +72,8 @@ export class DatabaseTestHelper {
    * Clean up all test collections
    */
   static async cleanupAllTestCollections(): Promise<void> {
-    const cleanupPromises = Array.from(this.testCollections).map(
-      collectionName => this.cleanupTestCollection(collectionName)
+    const cleanupPromises = Array.from(this.testCollections).map((collectionName) =>
+      this.cleanupTestCollection(collectionName)
     );
     await Promise.allSettled(cleanupPromises);
     this.testCollections.clear();
@@ -84,9 +84,22 @@ export class DatabaseTestHelper {
    */
   private static async createKnowledgeCollections(client: QdrantClient): Promise<void> {
     const knowledgeTypes = [
-      'entity', 'relation', 'observation', 'section', 'runbook',
-      'change', 'issue', 'decision', 'todo', 'release_note',
-      'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
 
     for (const type of knowledgeTypes) {
@@ -150,7 +163,9 @@ export class DatabaseTestHelper {
       entity: [
         {
           id: 'test-entity-1',
-          vector: Array(1536).fill(0.1).map((_, i) => Math.sin(i)),
+          vector: Array(1536)
+            .fill(0.1)
+            .map((_, i) => Math.sin(i)),
           payload: {
             knowledge_type: 'entity',
             entity_type: 'test',
@@ -165,7 +180,9 @@ export class DatabaseTestHelper {
       relation: [
         {
           id: 'test-relation-1',
-          vector: Array(1536).fill(0.2).map((_, i) => Math.cos(i)),
+          vector: Array(1536)
+            .fill(0.2)
+            .map((_, i) => Math.cos(i)),
           payload: {
             knowledge_type: 'relation',
             relation_type: 'test_relation',
@@ -180,9 +197,7 @@ export class DatabaseTestHelper {
     };
 
     for (const [type, points] of Object.entries(testData)) {
-      const collectionName = Array.from(this.testCollections).find(
-        name => name.includes(type)
-      );
+      const collectionName = Array.from(this.testCollections).find((name) => name.includes(type));
 
       if (collectionName) {
         try {
@@ -209,7 +224,7 @@ export class DatabaseTestHelper {
   static async collectionExists(collectionName: string): Promise<boolean> {
     try {
       const collections = await qdrantConnectionManager.getClient().getCollections();
-      return collections.collections.some(c => c.name === collectionName);
+      return collections.collections.some((c) => c.name === collectionName);
     } catch {
       return false;
     }
@@ -224,9 +239,7 @@ export class DatabaseTestHelper {
         // Delete all points from the collection
         await qdrantConnectionManager.getClient().delete(collectionName, {
           filter: {
-            must: [
-              { key: 'test_id', match: { value: 'test-run-1' } }
-            ]
+            must: [{ key: 'test_id', match: { value: 'test-run-1' } }],
           },
         });
       } catch (error) {

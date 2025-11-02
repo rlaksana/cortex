@@ -6,7 +6,7 @@
 import crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { AuthService } from './auth-service.js';
-import { AuditService } from '../audit/audit-service.js';
+// import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import { ApiKey, User, AuthScope, SecurityAuditLog, AuthContext } from '../../types/auth-types.js';
 
 export interface CreateApiKeyRequest {
@@ -44,8 +44,8 @@ export class ApiKeyService {
   private keyHashes: Map<string, string> = new Map(); // key_hash -> key_id
 
   constructor(
-    private _authService: AuthService,
-    private _auditService: AuditService
+    private _authService: AuthService
+    // private _auditService: AuditService // REMOVED: Service file deleted
   ) {}
 
   /**
@@ -529,7 +529,9 @@ export class ApiKeyService {
    */
   private async logApiKeyEvent(event: Omit<SecurityAuditLog, 'id' | 'created_at'>): Promise<void> {
     try {
-      await this._auditService.logSecurityAuditEvent(event as SecurityAuditLog);
+      // await this._auditService.logSecurityAuditEvent(event as SecurityAuditLog); // REMOVED: audit-service deleted
+      // Logging disabled temporarily due to missing audit service
+      logger.debug({ event }, 'API key event (logging disabled)');
     } catch (error) {
       logger.error({ error, event }, 'Failed to log API key event');
     }

@@ -49,7 +49,7 @@ describe('Real Measurement Validation', () => {
         kind: 'observation',
         scope: { project: 'test-project', branch: 'main' },
         data: { content: largeContent },
-        content: largeContent
+        content: largeContent,
       });
 
       expect(chunkedItems.length).toBeGreaterThan(1);
@@ -88,7 +88,7 @@ describe('Real Measurement Validation', () => {
         kind: 'observation',
         scope: { project: 'test-project', branch: 'main' },
         data: { content: shortContent },
-        content: shortContent
+        content: shortContent,
       });
 
       expect(chunkedItems.length).toBe(1);
@@ -102,7 +102,7 @@ describe('Real Measurement Validation', () => {
         kind: 'observation',
         scope: { project: 'test-project', branch: 'main' },
         data: { content: 'This is pure English content for testing language detection.' },
-        content: 'This is pure English content for testing language detection.'
+        content: 'This is pure English content for testing language detection.',
       };
 
       const enhanced = languageService.enhanceItemWithLanguage(englishItem);
@@ -117,8 +117,10 @@ describe('Real Measurement Validation', () => {
       const indonesianItem = {
         kind: 'observation',
         scope: { project: 'test-project', branch: 'main' },
-        data: { content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.' },
-        content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.'
+        data: {
+          content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.',
+        },
+        content: 'Sistem ini digunakan untuk mengelola data dengan Bahasa Indonesia murni.',
       };
 
       const enhanced = languageService.enhanceItemWithLanguage(indonesianItem);
@@ -133,8 +135,12 @@ describe('Real Measurement Validation', () => {
       const mixedItem = {
         kind: 'observation',
         scope: { project: 'test-project', branch: 'main' },
-        data: { content: 'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.' },
-        content: 'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.'
+        data: {
+          content:
+            'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.',
+        },
+        content:
+          'Mixed content: Sistem ini digunakan untuk manage user data dengan menggunakan application.',
       };
 
       const enhanced = languageService.enhanceItemWithLanguage(mixedItem);
@@ -153,7 +159,7 @@ describe('Real Measurement Validation', () => {
         data: { content: 'Test content', title: 'Test Title', tags: ['tag1'] },
         content: 'Test content',
         metadata: { source: 'test' },
-        created_at: '2025-01-31T04:30:00Z'
+        created_at: '2025-01-31T04:30:00Z',
       };
 
       const enhanced = languageService.enhanceItemWithLanguage(itemWithAllFields);
@@ -178,11 +184,11 @@ describe('Real Measurement Validation', () => {
           data: {
             is_chunk: false,
             total_chunks: 3,
-            title: 'Large Document Analysis'
+            title: 'Large Document Analysis',
           },
           created_at: '2025-01-31T04:30:00Z',
           confidence_score: 0.95,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1-1',
@@ -194,11 +200,11 @@ describe('Real Measurement Validation', () => {
             chunk_index: 0,
             total_chunks: 3,
             content: 'First part of the document content...',
-            title: 'Section 1'
+            title: 'Section 1',
           },
           created_at: '2025-01-31T04:30:00Z',
           confidence_score: 0.92,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1-2',
@@ -210,12 +216,12 @@ describe('Real Measurement Validation', () => {
             chunk_index: 1,
             total_chunks: 3,
             content: 'Second part with Indonesian text: Sistem ini digunakan untuk...',
-            title: 'Section 2'
+            title: 'Section 2',
           },
           created_at: '2025-01-31T04:30:00Z',
           confidence_score: 0.88,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const groupedResults = groupingService.groupAndSortResults(mockSearchResults);
@@ -230,7 +236,7 @@ describe('Real Measurement Validation', () => {
       expect(reconstructed.parent_id).toBe('parent-1');
       expect(reconstructed.total_chunks).toBe(3);
       expect(reconstructed.found_chunks).toBe(2);
-      expect(reconstructed.completeness_ratio).toBe(2/3); // 2 out of 3 chunks found
+      expect(reconstructed.completeness_ratio).toBe(2 / 3); // 2 out of 3 chunks found
       expect(reconstructed.content).toContain('First part of the document content');
       expect(reconstructed.content).toContain('Sistem ini digunakan untuk');
       expect(reconstructed.confidence_score).toBeGreaterThan(0.9);
@@ -244,12 +250,12 @@ describe('Real Measurement Validation', () => {
           scope: { project: 'test-project', branch: 'main' },
           data: {
             title: 'Regular Decision',
-            component: 'auth-service'
+            component: 'auth-service',
           },
           created_at: '2025-01-31T04:30:00Z',
           confidence_score: 0.75,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       const groupedResults = groupingService.groupAndSortResults(regularResults);
@@ -279,13 +285,13 @@ describe('Real Measurement Validation', () => {
       // Validate store metrics
       expect(storeMetrics.total_stores).toBe(3);
       expect(storeMetrics.truncated_stores).toBe(1);
-      expect(storeMetrics.truncation_ratio).toBe(1/3);
+      expect(storeMetrics.truncation_ratio).toBe(1 / 3);
       expect(storeMetrics.avg_truncated_loss).toBe(2000);
 
       // Validate find metrics
       expect(findMetrics.total_queries).toBe(3);
       expect(findMetrics.zero_result_queries).toBe(1);
-      expect(findMetrics.zero_result_ratio).toBe(1/3);
+      expect(findMetrics.zero_result_ratio).toBe(1 / 3);
       expect(findMetrics.avg_returned_count).toBe((5 + 0 + 3) / 3);
       expect(findMetrics.avg_top_score).toBe((0.92 + 0.0 + 0.78) / 3);
 
@@ -301,7 +307,13 @@ describe('Real Measurement Validation', () => {
     it('should generate comprehensive telemetry report', () => {
       // Add some test data
       telemetry.logStoreAttempt(true, 12000, 8000, 'observation', 'test-project:main');
-      telemetry.logFindAttempt('comprehensive test query', 'test-project:main', 8, 0.95, 'semantic');
+      telemetry.logFindAttempt(
+        'comprehensive test query',
+        'test-project:main',
+        8,
+        0.95,
+        'semantic'
+      );
 
       const report = telemetry.exportLogs();
 
@@ -315,7 +327,7 @@ describe('Real Measurement Validation', () => {
       const insights = {
         truncation_issues: report.summary.store.truncation_ratio > 0.1,
         search_quality: report.summary.find.zero_result_ratio > 0.3,
-        scope_utilization: Object.keys(report.summary.scope_analysis).length > 1
+        scope_utilization: Object.keys(report.summary.scope_analysis).length > 1,
       };
 
       expect(insights.truncation_issues).toBe(true); // 100% truncation rate
@@ -342,7 +354,7 @@ describe('Real Measurement Validation', () => {
         kind: 'observation',
         scope: { project: 'integration-test', branch: 'main' },
         data: { content: largeContent },
-        content: largeContent
+        content: largeContent,
       });
 
       expect(chunkedItems.length).toBeGreaterThan(1);
@@ -350,7 +362,7 @@ describe('Real Measurement Validation', () => {
       // Step 3: Apply language enhancement to all chunks
       const enhancedChunks = languageService.enhanceItemsWithLanguage(chunkedItems);
 
-      enhancedChunks.forEach(chunk => {
+      enhancedChunks.forEach((chunk) => {
         expect(chunk.data.detected_lang).toBeDefined();
         expect(chunk.data.lang_confidence).toBeGreaterThan(0);
       });
@@ -358,8 +370,8 @@ describe('Real Measurement Validation', () => {
       // Step 4: Simulate search results with chunked content
       const searchResults = enhancedChunks.slice(0, 3).map((chunk, index) => ({
         ...chunk,
-        confidence_score: 0.9 - (index * 0.1),
-        match_type: 'semantic'
+        confidence_score: 0.9 - index * 0.1,
+        match_type: 'semantic',
       }));
 
       // Step 5: Group and reconstruct results
@@ -378,7 +390,13 @@ describe('Real Measurement Validation', () => {
         );
       });
 
-      telemetry.logFindAttempt('end-to-end test query', 'integration-test:main', searchResults.length, 0.9, 'semantic');
+      telemetry.logFindAttempt(
+        'end-to-end test query',
+        'integration-test:main',
+        searchResults.length,
+        0.9,
+        'semantic'
+      );
 
       // Step 7: Validate final telemetry report
       const finalReport = telemetry.exportLogs();
@@ -392,7 +410,9 @@ describe('Real Measurement Validation', () => {
       console.log(`📊 Processed ${enhancedChunks.length} chunks`);
       console.log(`🌍 Language detection applied to all chunks`);
       console.log(`🔗 Results grouped into ${groupedResults.length} groups`);
-      console.log(`📈 Telemetry captured ${finalReport.summary.store.total_stores} stores and ${finalReport.summary.find.total_queries} queries`);
+      console.log(
+        `📈 Telemetry captured ${finalReport.summary.store.total_stores} stores and ${finalReport.summary.find.total_queries} queries`
+      );
     });
   });
 });

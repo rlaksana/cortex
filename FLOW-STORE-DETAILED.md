@@ -7,6 +7,7 @@ Proses `store` dalam Cortex Memory MCP Server adalah alur komprehensif untuk men
 ## 1. Entry Point: MCP Tool Call
 
 ### 1.1. Client Request
+
 ```typescript
 memory_store({
   items: [
@@ -25,6 +26,7 @@ memory_store({
 ```
 
 ### 1.2. MCP Server Handler (`handleMemoryStore`)
+
 **Location:** `src/index.ts:881-1042`
 
 ```typescript
@@ -43,7 +45,7 @@ async function handleMemoryStore(args: { items: any[] }) {
     scope: { batchId },
     metadata: {
       item_count: args.items.length,
-      item_types: args.items.map(item => item?.kind).filter(Boolean),
+      item_types: args.items.map((item) => item?.kind).filter(Boolean),
       source: 'mcp_tool',
     },
   });
@@ -53,6 +55,7 @@ async function handleMemoryStore(args: { items: any[] }) {
 ## 2. Input Validation Layer
 
 ### 2.1. MCP Format Validation (`validateMcpInputFormat`)
+
 **Location:** `src/utils/mcp-transform.ts`
 
 ```typescript
@@ -74,6 +77,7 @@ if (!mcpValidation.valid) {
 ```
 
 ### 2.2. Validasi yang Dilakukan:
+
 - ✅ `kind` harus salah satu dari 16 jenis yang didukung
 - ✅ `content` harus string dan tidak kosong
 - ✅ `scope` validasi (org, project, branch format)
@@ -83,6 +87,7 @@ if (!mcpValidation.valid) {
 ## 3. Input Transformation Layer
 
 ### 3.1. MCP to Internal Format (`transformMcpInputToKnowledgeItems`)
+
 **Location:** `src/utils/mcp-transform.ts`
 
 ```typescript
@@ -91,6 +96,7 @@ const transformedItems = transformMcpInputToKnowledgeItems(args.items);
 ```
 
 ### 3.2. Transformasi yang Dilakukan:
+
 - 🔄 Konversi field names ke internal format
 - 🔄 Normalisasi scope defaults
 - 🔄 Metadata enrichment
@@ -100,6 +106,7 @@ const transformedItems = transformMcpInputToKnowledgeItems(args.items);
 ## 4. Memory Store Orchestrator
 
 ### 4.1. Orchestrator Entry Point (`memoryStoreOrchestrator.storeItems`)
+
 **Location:** `src/services/orchestrators/memory-store-orchestrator-qdrant.ts:112-280`
 
 ```typescript
@@ -124,6 +131,7 @@ async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
 ## 5. Comprehensive Validation Layer
 
 ### 5.1. Service Layer Validation (`validationService.validateStoreInput`)
+
 **Location:** `src/services/validation/validation-service.ts`
 
 ```typescript
@@ -135,6 +143,7 @@ if (!validation.valid) {
 ```
 
 ### 5.2. Validasi yang Dilakukan:
+
 - 🔍 **Business Rules Validation**:
   - ADR Immutability Check untuk jenis `decision`
   - Spec Write Lock Check untuk jenis `ddl`
@@ -151,19 +160,24 @@ if (!validation.valid) {
 ## 6. Chunking Layer (Phase 6 Enhancement)
 
 ### 6.1. Intelligent Chunking (`chunkingService.processItemsForStorage`)
+
 **Location:** `src/services/chunking/chunking-service.ts`
 
 ```typescript
 // Step 2: Apply chunking to all items (replaces 8k truncation)
 const chunkedItems = this.chunkingService.processItemsForStorage(validItems);
-logger.info({
-  original_count: validItems.length,
-  chunked_count: chunkedItems.length,
-  expansion_ratio: chunkedItems.length / validItems.length,
-}, 'Applied chunking to replace truncation');
+logger.info(
+  {
+    original_count: validItems.length,
+    chunked_count: chunkedItems.length,
+    expansion_ratio: chunkedItems.length / validItems.length,
+  },
+  'Applied chunking to replace truncation'
+);
 ```
 
 ### 6.2. Chunking Process:
+
 - 📄 **Content Analysis**:
   - Identify logical break points
   - Semantic boundary detection
@@ -179,6 +193,7 @@ logger.info({
   - Semantic coherence validation
 
 ### 6.3. Implementation Status:
+
 - ✅ **Basic Chunking**: Content size-based chunking implemented
 - ⚠️ **Semantic Chunking**: Basic length-based, not truly semantic yet
 - ❌ **Parent/Child Relationships**: Child chunks track parent but no reassembly in find
@@ -188,6 +203,7 @@ logger.info({
 ## 7. Per-Item Processing Loop
 
 ### 7.1. Individual Item Processing
+
 ```typescript
 // Step 3: Process each chunked item
 for (let index = 0; index < chunkedItems.length; index++) {
@@ -204,8 +220,7 @@ for (let index = 0; index < chunkedItems.length; index++) {
 
     // Log successful operation
     await auditService.logStoreOperation(
-      result.status === 'deleted' ? 'delete' :
-      result.status === 'updated' ? 'update' : 'create',
+      result.status === 'deleted' ? 'delete' : result.status === 'updated' ? 'update' : 'create',
       item.kind,
       result.id,
       item.scope,
@@ -221,6 +236,7 @@ for (let index = 0; index < chunkedItems.length; index++) {
 ## 8. Duplicate Detection Layer
 
 ### 8.1. Comprehensive Duplicate Detection (`detectDuplicates`)
+
 **Location:** `src/services/orchestrators/memory-store-orchestrator-qdrant.ts`
 
 ```typescript
@@ -268,18 +284,21 @@ async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
 ### 8.2. Duplicate Detection Methods:
 
 #### Content Hash Detection:
+
 1. **Hash Generation**: SHA-256 hash dari content + metadata
 2. **Database Query**: Cari existing item dengan hash sama
 3. **Scope Matching**: Filter berdasarkan scope yang sama
 4. **Result**: Exact match detection
 
 #### Semantic Similarity Detection:
+
 1. **Embedding Generation**: Convert content ke vector embedding
 2. **Vector Search**: Cari similar items dalam Qdrant
 3. **Threshold Check**: Compare dengan threshold 85%
 4. **Best Match**: Pilih item dengan similarity tertinggi
 
 ### 8.3. Implementation Status:
+
 - ✅ **Content Hash Detection**: Fully implemented with explicit reasons
 - ✅ **Semantic Similarity Detection**: Implemented with 85% threshold
 - ✅ **Explicit Reasons**: DuplicateDetectionResult includes reason field
@@ -290,6 +309,7 @@ async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
 ## 9. Item Processing Layer
 
 ### 9.1. Individual Item Processing (`processItem`)
+
 ```typescript
 async processItem(
   item: KnowledgeItem,
@@ -323,6 +343,7 @@ async processItem(
 ## 10. Database Storage Layer
 
 ### 10.1. Qdrant Vector Storage
+
 **Location:** `src/db/qdrant-client.ts`
 
 ```typescript
@@ -360,6 +381,7 @@ async store(item: KnowledgeItem): Promise<StoreResult> {
 ```
 
 ### 10.2. Storage Process:
+
 1. **Embedding Generation**: Convert content ke vector using OpenAI embeddings
 2. **Point Creation**: Prepare Qdrant point dengan payload lengkap
 3. **TTL Calculation**: Hitung expiry time berdasarkan jenis item
@@ -369,6 +391,7 @@ async store(item: KnowledgeItem): Promise<StoreResult> {
 ## 11. TTL & Expiry Management
 
 ### 11.1. TTL Policy Application
+
 **Location:** `src/utils/tl-utils.ts`
 
 ```typescript
@@ -396,12 +419,14 @@ function getDefaultTTLPolicy(kind: string): TTLPolicy {
 ```
 
 ### 11.2. TTL Application Rules:
+
 - 🕐 **Short TTL** (30 days): pr_context
 - 🕐 **Default TTL** (90 days): Most items (todo, issue, change, etc.)
 - 🕐 **Long TTL** (365 days): entity, relation, observation, decision, section
 - 🕐 **Permanent TTL** (∞): No items currently permanent
 
 ### 11.3. Implementation Status:
+
 - ✅ **TTL Calculation**: Policy-based TTL calculation implemented
 - ✅ **Expiry Worker**: Scheduled cleanup worker implemented
 - ⚠️ **Qdrant TTL Integration**: TTL calculated but not persisted to Qdrant payload
@@ -411,6 +436,7 @@ function getDefaultTTLPolicy(kind: string): TTLPolicy {
 ## 12. Response Generation
 
 ### 12.1. Response Format Creation
+
 ```typescript
 // Create enhanced response format
 const itemResults: ItemResult[] = stored.map((result, index) => {
@@ -445,6 +471,7 @@ const itemResults: ItemResult[] = stored.map((result, index) => {
 ```
 
 ### 12.2. Summary Calculation
+
 ```typescript
 const summary: BatchSummary = {
   stored: storedCount,
@@ -458,6 +485,7 @@ const summary: BatchSummary = {
 ## 13. Autonomous Context Generation
 
 ### 13.1. Context Generation (`generateAutonomousContext`)
+
 ```typescript
 async generateAutonomousContext(stored: StoreResult[], errors: StoreError[]): Promise<AutonomousContext> {
   return {
@@ -482,6 +510,7 @@ async generateAutonomousContext(stored: StoreResult[], errors: StoreError[]): Pr
 ## 14. Audit & Telemetry Layer
 
 ### 14.1. Comprehensive Audit Logging
+
 ```typescript
 // Log batch operation
 await auditService.logBatchOperation(
@@ -496,6 +525,7 @@ await auditService.logBatchOperation(
 ```
 
 ### 14.2. System Metrics Update
+
 ```typescript
 // Update system metrics
 const { systemMetricsService } = await import('./services/metrics/system-metrics.js');
@@ -513,36 +543,45 @@ systemMetricsService.updateMetrics({
 ## 15. Final Response
 
 ### 15.1. MCP Response Format
+
 ```typescript
 return {
-  content: [{
-    type: 'text',
-    text: JSON.stringify({
-      success,
-      stored: response.stored.length,
-      stored_items: response.stored,
-      errors: response.errors,
-      summary: response.summary,
-      autonomous_context: response.autonomous_context,
-      total: args.items.length,
-      audit_metadata: {
-        batch_id: batchId,
-        duration_ms: duration,
-        audit_logged: true,
-      },
-    }, null, 2),
-  }],
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify(
+        {
+          success,
+          stored: response.stored.length,
+          stored_items: response.stored,
+          errors: response.errors,
+          summary: response.summary,
+          autonomous_context: response.autonomous_context,
+          total: args.items.length,
+          audit_metadata: {
+            batch_id: batchId,
+            duration_ms: duration,
+            audit_logged: true,
+          },
+        },
+        null,
+        2
+      ),
+    },
+  ],
 };
 ```
 
 ## 16. Error Handling
 
 ### 16.1. Error Categories
+
 1. **Validation Errors**: Input format atau business rule violations
 2. **Processing Errors**: Database connection, embedding generation
 3. **System Errors: Memory**, network, atau resource exhaustion
 
 ### 16.2. Error Response Format
+
 ```typescript
 {
   success: false,
@@ -570,6 +609,7 @@ return {
 ## Flow Summary
 
 ### Complete Flow Steps:
+
 1. ✅ **MCP Tool Call** → Client memanggil `memory_store`
 2. ✅ **Basic Validation** → Format array checking
 3. ✅ **Audit Log Start** → Log operasi dimulai
@@ -586,6 +626,7 @@ return {
 14. ✅ **Final Response** → Kembalikan response ke client
 
 ### Key Features:
+
 - 🔍 **Comprehensive Validation**: Multi-layer validation dengan business rules
 - 🧠 **Intelligent Chunking**: Replace 8k truncation dengan semantic chunking
 - 🔄 **Advanced Deduplication**: Content hash + semantic similarity detection
@@ -597,17 +638,20 @@ return {
 ## Known Gaps & Implementation Status (2025-10-31)
 
 ### ⚠️ Partially Implemented Features:
+
 1. **Semantic Chunking**: Currently length-based, not truly semantic
 2. **Chunk Reassembly**: Find pipeline doesn't stitch chunks back together
 3. **TTL Integration**: Calculated but not persisted to Qdrant
 4. **Dedupe Rules**: Time-based rules not clearly documented
 
 ### ❌ Missing Features:
+
 1. **Parent/Child Graph Navigation**: No chunk relationship navigation
 2. **TTL Automatic Purging**: Worker exists but expiry data not stored
 3. **MCP Schema Enforcement**: Basic validation but not strict schema
 
 ### 📋 Action Items:
+
 - Implement semantic boundary detection for chunking
 - Add chunk reassembly in find pipeline
 - Wire TTL calculation to Qdrant payload
@@ -616,6 +660,7 @@ return {
 - Create integration tests for all features
 
 ### 🎯 Production Readiness:
+
 - **Core Functionality**: ✅ Working (store/find items)
 - **Advanced Features**: ⚠️ Partial (chunking, TTL, dedupe)
 - **Enterprise Features**: ❌ Missing (strict validation, comprehensive testing)

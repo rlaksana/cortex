@@ -10,15 +10,7 @@
  * - Advanced Security Features (API keys, File uploads, etc.)
  */
 
-import {
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  type MockedFunction
-} from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import { SecurityMiddleware, SecurityConfig } from '../../../src/middleware/security-middleware';
 import { logger } from '../../../src/utils/logger';
@@ -141,8 +133,14 @@ describe('SecurityMiddleware', () => {
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Referrer-Policy',
+        'strict-origin-when-cross-origin'
+      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Permissions-Policy',
+        'geolocation=(), microphone=(), camera=()'
+      );
       expect(mockResponse.removeHeader).toHaveBeenCalledWith('X-Powered-By');
       expect(mockNext).toHaveBeenCalled();
     });
@@ -155,7 +153,10 @@ describe('SecurityMiddleware', () => {
       security(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Permissions-Policy',
+        'geolocation=(), microphone=(), camera=()'
+      );
     });
 
     test('should enforce Strict Transport Security', () => {
@@ -187,7 +188,9 @@ describe('SecurityMiddleware', () => {
   describe('Input Validation and Sanitization', () => {
     test('should validate request body with Zod schema', () => {
       // Arrange
-      const schema = { safeParse: vi.fn().mockReturnValue({ success: true, data: { name: 'test' } }) };
+      const schema = {
+        safeParse: vi.fn().mockReturnValue({ success: true, data: { name: 'test' } }),
+      };
       const validate = securityMiddleware.validateInput(schema as any, 'body');
 
       mockRequest.body = { name: 'test', invalid: '<script>alert("xss")</script>' };
@@ -196,16 +199,21 @@ describe('SecurityMiddleware', () => {
       validate(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(schema.safeParse).toHaveBeenCalledWith({ name: 'test', invalid: '<script>alert("xss")</script>' });
+      expect(schema.safeParse).toHaveBeenCalledWith({
+        name: 'test',
+        invalid: '<script>alert("xss")</script>',
+      });
       expect(mockNext).toHaveBeenCalled();
     });
 
     test('should reject invalid request body', () => {
       // Arrange
       const validationError = {
-        issues: [{ path: ['email'], message: 'Invalid email format', received: 'invalid-email' }]
+        issues: [{ path: ['email'], message: 'Invalid email format', received: 'invalid-email' }],
       };
-      const schema = { safeParse: vi.fn().mockReturnValue({ success: false, error: validationError }) };
+      const schema = {
+        safeParse: vi.fn().mockReturnValue({ success: false, error: validationError }),
+      };
       const validate = securityMiddleware.validateInput(schema as any, 'body');
 
       mockRequest.body = { email: 'invalid-email' };
@@ -217,11 +225,13 @@ describe('SecurityMiddleware', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(400);
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: 'Validation failed',
-        errors: [{
-          field: 'email',
-          message: 'Invalid email format',
-          value: 'invalid-email'
-        }]
+        errors: [
+          {
+            field: 'email',
+            message: 'Invalid email format',
+            value: 'invalid-email',
+          },
+        ],
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -259,7 +269,7 @@ describe('SecurityMiddleware', () => {
     test('should detect and prevent SQL injection attempts', () => {
       // Arrange
       const preventSQL = securityMiddleware.preventSQLInjection();
-      mockRequest.body = { query: "SELECT * FROM users WHERE id = 1; DROP TABLE users;" };
+      mockRequest.body = { query: 'SELECT * FROM users WHERE id = 1; DROP TABLE users;' };
       mockRequest.query = {};
       mockRequest.params = {};
 
@@ -306,11 +316,11 @@ describe('SecurityMiddleware', () => {
       mockRequest.body = {
         user: {
           name: '<script>alert("xss")</script>',
-          email: 'test@example.com'
+          email: 'test@example.com',
         },
         metadata: {
-          description: 'javascript:alert("xss")'
-        }
+          description: 'javascript:alert("xss")',
+        },
       };
 
       // Act
@@ -343,7 +353,7 @@ describe('SecurityMiddleware', () => {
       const rateLimit = securityMiddleware.rateLimit({
         windowMs: 60000, // 1 minute
         max: 5,
-        message: 'Too many requests'
+        message: 'Too many requests',
       });
 
       // Act - Make multiple requests
@@ -362,7 +372,7 @@ describe('SecurityMiddleware', () => {
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: 'Too many requests',
         message: 'Too many requests',
-        retryAfter: 60
+        retryAfter: 60,
       });
     });
 
@@ -375,7 +385,10 @@ describe('SecurityMiddleware', () => {
 
       // Assert
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 100);
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-RateLimit-Remaining', expect.any(Number));
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'X-RateLimit-Remaining',
+        expect.any(Number)
+      );
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-RateLimit-Reset', expect.any(Number));
     });
 
@@ -386,7 +399,7 @@ describe('SecurityMiddleware', () => {
       // Simulate rate limit exceeded by manually setting count
       (securityMiddleware as any).requestCounts.set('192.168.1.100:/api/test', {
         count: 101,
-        resetTime: Date.now() + 15 * 60 * 1000
+        resetTime: Date.now() + 15 * 60 * 1000,
       });
 
       // Act
@@ -399,7 +412,7 @@ describe('SecurityMiddleware', () => {
         expect.objectContaining({
           ip: '192.168.1.100',
           path: '/api/test',
-          limit: 100
+          limit: 100,
         }),
         'Rate limit exceeded'
       );
@@ -409,7 +422,7 @@ describe('SecurityMiddleware', () => {
       // Arrange
       const customConfig: SecurityConfig = {
         rateLimitWindowMs: 30000, // 30 seconds
-        rateLimitMax: 10
+        rateLimitMax: 10,
       };
       const customMiddleware = new SecurityMiddleware(customConfig);
       const security = customMiddleware.security();
@@ -432,7 +445,10 @@ describe('SecurityMiddleware', () => {
       security(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'http://localhost:3000');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        'http://localhost:3000'
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -445,7 +461,10 @@ describe('SecurityMiddleware', () => {
       security(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Access-Control-Allow-Origin', 'https://malicious-site.com');
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        'https://malicious-site.com'
+      );
       expect(mockNext).toHaveBeenCalled();
     });
 
@@ -459,10 +478,22 @@ describe('SecurityMiddleware', () => {
       security(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Origin', 'http://localhost:3000');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Allow-Credentials', 'true');
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        'http://localhost:3000'
+      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-API-Key'
+      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith(
+        'Access-Control-Allow-Credentials',
+        'true'
+      );
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Access-Control-Max-Age', '86400');
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.end).toHaveBeenCalled();
@@ -479,7 +510,10 @@ describe('SecurityMiddleware', () => {
       security(mockRequest as Request, mockResponse as Response, mockNext);
 
       // Assert
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Access-Control-Allow-Origin', expect.any(String));
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        expect.any(String)
+      );
       expect(mockNext).toHaveBeenCalled();
     });
   });
@@ -523,7 +557,7 @@ describe('SecurityMiddleware', () => {
       securityMiddleware.blockIP('192.168.1.200');
       (securityMiddleware as any).requestCounts.set('192.168.1.100:/api/test', {
         count: 5,
-        resetTime: Date.now() + 15 * 60 * 1000
+        resetTime: Date.now() + 15 * 60 * 1000,
       });
 
       // Act
@@ -539,7 +573,7 @@ describe('SecurityMiddleware', () => {
     test('should log security events appropriately', () => {
       // Arrange
       const preventSQL = securityMiddleware.preventSQLInjection();
-      mockRequest.body = { query: "DROP TABLE users" };
+      mockRequest.body = { query: 'DROP TABLE users' };
 
       // Act
       preventSQL(mockRequest as Request, mockResponse as Response, mockNext);
@@ -579,7 +613,7 @@ describe('SecurityMiddleware', () => {
     test('should accept valid API key format', () => {
       // Arrange
       const secureAPIKey = securityMiddleware.secureAPIKey();
-      const validAPIKey = `ck_${  'a'.repeat(29)}`; // 32 chars total with ck_ prefix
+      const validAPIKey = `ck_${'a'.repeat(29)}`; // 32 chars total with ck_ prefix
       mockRequest.headers = { 'x-api-key': validAPIKey };
 
       // Act
@@ -673,13 +707,23 @@ describe('SecurityMiddleware', () => {
 
       // Assert
       expect(mockNext).toHaveBeenCalled();
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('X-Content-Type-Options', expect.any(String));
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Access-Control-Allow-Origin', expect.any(String));
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
+        'X-Content-Type-Options',
+        expect.any(String)
+      );
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
+        'Access-Control-Allow-Origin',
+        expect.any(String)
+      );
     });
 
     test('should handle validation middleware errors gracefully', () => {
       // Arrange
-      const schema = { safeParse: vi.fn().mockImplementation(() => { throw new Error('Schema error'); }) };
+      const schema = {
+        safeParse: vi.fn().mockImplementation(() => {
+          throw new Error('Schema error');
+        }),
+      };
       const validate = securityMiddleware.validateInput(schema as any, 'body');
 
       // Act
@@ -701,7 +745,7 @@ describe('SecurityMiddleware', () => {
       // Add expired entry
       (securityMiddleware as any).requestCounts.set(expiredKey, {
         count: 5,
-        resetTime: Date.now() - 1000 // Expired
+        resetTime: Date.now() - 1000, // Expired
       });
 
       // Act
@@ -723,11 +767,13 @@ describe('SecurityMiddleware', () => {
       }));
 
       // Act
-      await Promise.all(requests.map(req => {
-        return new Promise<void>((resolve) => {
-          security(req as Request, mockResponse as Response, () => resolve());
-        });
-      }));
+      await Promise.all(
+        requests.map((req) => {
+          return new Promise<void>((resolve) => {
+            security(req as Request, mockResponse as Response, () => resolve());
+          });
+        })
+      );
 
       // Assert
       expect((securityMiddleware as any).requestCounts.size).toBe(10);

@@ -4,10 +4,7 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Import our fixed logger
 import { logger } from './dist/utils/logger.js';
@@ -31,13 +28,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           message: {
             type: 'string',
-            description: 'Message to log'
-          }
+            description: 'Message to log',
+          },
         },
-        required: ['message']
-      }
-    }
-  ]
+        required: ['message'],
+      },
+    },
+  ],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -55,10 +52,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         logger.error({ test: true }, `Error message: ${message}`);
 
         return {
-          content: [{
-            type: 'text',
-            text: `Logger test completed! Check stderr for log messages. Message: ${message}`
-          }]
+          content: [
+            {
+              type: 'text',
+              text: `Logger test completed! Check stderr for log messages. Message: ${message}`,
+            },
+          ],
         };
       }
 
@@ -66,20 +65,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
-    logger.error({
-      tool: name,
-      error: error instanceof Error ? error.message : String(error)
-    }, 'Tool execution error');
+    logger.error(
+      {
+        tool: name,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Tool execution error'
+    );
 
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }],
-      isError: true
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
+      isError: true,
     };
   }
 });

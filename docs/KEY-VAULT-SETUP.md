@@ -85,11 +85,11 @@ const keyId = await keyVault.storeKey({
 
 ```typescript
 interface KeyVaultConfig {
-  masterKeyEnv?: string;          // Environment variable containing master key
-  fallbackToEnv?: boolean;        // Fall back to environment variables if vault key missing
-  enableAccessLogging?: boolean;  // Enable access logging and audit trails
-  encryptionAlgorithm?: string;   // Encryption algorithm (default: 'aes-256-gcm')
-  keyDerivationRounds?: number;   // Key derivation rounds (default: 32768)
+  masterKeyEnv?: string; // Environment variable containing master key
+  fallbackToEnv?: boolean; // Fall back to environment variables if vault key missing
+  enableAccessLogging?: boolean; // Enable access logging and audit trails
+  encryptionAlgorithm?: string; // Encryption algorithm (default: 'aes-256-gcm')
+  keyDerivationRounds?: number; // Key derivation rounds (default: 32768)
 }
 ```
 
@@ -210,29 +210,29 @@ spec:
   template:
     spec:
       containers:
-      - name: cortex
-        image: cortex-server:latest
-        env:
-        - name: KEY_VAULT_MASTER_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: key-vault-master-key
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: openai-api-key
-        - name: QDRANT_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: qdrant-api-key
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: jwt-secret
+        - name: cortex
+          image: cortex-server:latest
+          env:
+            - name: KEY_VAULT_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: key-vault-master-key
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: openai-api-key
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: qdrant-api-key
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: jwt-secret
 ```
 
 ## Security Best Practices

@@ -19,7 +19,7 @@ import type {
   DeepSearchResult,
   SearchQuery,
   SearchResult,
-  MemoryFindResponse
+  MemoryFindResponse,
 } from '../../../src/types/core-interfaces';
 
 // Mock dependencies
@@ -28,12 +28,12 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 vi.mock('../../../src/services/embeddings/embedding-service', () => ({
@@ -42,7 +42,7 @@ vi.mock('../../../src/services/embeddings/embedding-service', () => ({
     generateBatchEmbeddings: vi.fn().mockResolvedValue([
       [0.1, 0.2, 0.3, 0.4, 0.5],
       [0.2, 0.3, 0.4, 0.5, 0.6],
-      [0.3, 0.4, 0.5, 0.6, 0.7]
+      [0.3, 0.4, 0.5, 0.6, 0.7],
     ]),
     calculateSimilarity: vi.fn().mockImplementation((vec1, vec2) => {
       // Simple cosine similarity mock
@@ -50,37 +50,33 @@ vi.mock('../../../src/services/embeddings/embedding-service', () => ({
       const mag1 = Math.sqrt(vec1.reduce((sum, val) => sum + val * val, 0));
       const mag2 = Math.sqrt(vec2.reduce((sum, val) => sum + val * val, 0));
       return dot / (mag1 * mag2);
-    })
-  }))
+    }),
+  })),
 }));
 
 vi.mock('../../../src/services/similarity/similarity-service', () => ({
   SimilarityService: vi.fn().mockImplementation(() => ({
     calculateTextSimilarity: vi.fn().mockResolvedValue(0.75),
     calculateSemanticSimilarity: vi.fn().mockResolvedValue(0.85),
-    calculateHybridSimilarity: vi.fn().mockResolvedValue(0.80)
-  }))
+    calculateHybridSimilarity: vi.fn().mockResolvedValue(0.8),
+  })),
 }));
 
 vi.mock('../../../src/services/graph-traversal', () => ({
   GraphTraversalService: vi.fn().mockImplementation(() => ({
     findRelatedEntities: vi.fn().mockResolvedValue([
       { id: 'related-1', kind: 'entity', distance: 1 },
-      { id: 'related-2', kind: 'relation', distance: 2 }
+      { id: 'related-2', kind: 'relation', distance: 2 },
     ]),
     traverseKnowledgeGraph: vi.fn().mockResolvedValue({
       nodes: [
         { id: 'node-1', type: 'entity', properties: { name: 'Test Entity' } },
-        { id: 'node-2', type: 'decision', properties: { title: 'Test Decision' } }
+        { id: 'node-2', type: 'decision', properties: { title: 'Test Decision' } },
       ],
-      edges: [
-        { source: 'node-1', target: 'node-2', type: 'relates_to', weight: 0.8 }
-      ]
+      edges: [{ source: 'node-1', target: 'node-2', type: 'relates_to', weight: 0.8 }],
     }),
-    findShortestPath: vi.fn().mockResolvedValue([
-      'node-1', 'node-2', 'node-3'
-    ])
-  }))
+    findShortestPath: vi.fn().mockResolvedValue(['node-1', 'node-2', 'node-3']),
+  })),
 }));
 
 // Mock Qdrant client with comprehensive collection support
@@ -89,82 +85,82 @@ const mockQdrantClient = {
   section: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   adrDecision: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   issueLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   todoLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   runbook: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   changeLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   releaseNote: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   ddlHistory: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   prContext: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeEntity: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeRelation: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeObservation: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   incidentLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   releaseLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   riskLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   assumptionLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   // Vector search methods
   search: vi.fn(),
@@ -172,7 +168,7 @@ const mockQdrantClient = {
   createCollection: vi.fn(),
   deleteCollection: vi.fn(),
   getCollection: vi.fn(),
-  upsertBatch: vi.fn()
+  upsertBatch: vi.fn(),
 };
 
 // Mock embedding and similarity services
@@ -181,36 +177,36 @@ const mockEmbeddingService = {
   generateBatchEmbeddings: vi.fn().mockResolvedValue([
     [0.1, 0.2, 0.3, 0.4, 0.5],
     [0.2, 0.3, 0.4, 0.5, 0.6],
-    [0.3, 0.4, 0.5, 0.6, 0.7]
+    [0.3, 0.4, 0.5, 0.6, 0.7],
   ]),
-  calculateSimilarity: vi.fn().mockImplementation((vec1, vec2) => 0.85)
+  calculateSimilarity: vi.fn().mockImplementation((vec1, vec2) => 0.85),
 };
 
 const mockSimilarityService = {
   calculateTextSimilarity: vi.fn().mockResolvedValue(0.75),
   calculateSemanticSimilarity: vi.fn().mockResolvedValue(0.85),
-  calculateHybridSimilarity: vi.fn().mockResolvedValue(0.80)
+  calculateHybridSimilarity: vi.fn().mockResolvedValue(0.8),
 };
 
 const mockGraphTraversalService = {
   findRelatedEntities: vi.fn().mockResolvedValue([
     { id: 'related-1', kind: 'entity', distance: 1 },
-    { id: 'related-2', kind: 'relation', distance: 2 }
+    { id: 'related-2', kind: 'relation', distance: 2 },
   ]),
   traverseKnowledgeGraph: vi.fn().mockResolvedValue({
     nodes: [
       { id: 'node-1', type: 'entity', properties: { name: 'Test Entity' } },
-      { id: 'node-2', type: 'decision', properties: { title: 'Test Decision' } }
+      { id: 'node-2', type: 'decision', properties: { title: 'Test Decision' } },
     ],
-    edges: [
-      { source: 'node-1', target: 'node-2', type: 'relates_to', weight: 0.8 }
-    ]
+    edges: [{ source: 'node-1', target: 'node-2', type: 'relates_to', weight: 0.8 }],
   }),
-  findShortestPath: vi.fn().mockResolvedValue(['node-1', 'node-2', 'node-3'])
+  findShortestPath: vi.fn().mockResolvedValue(['node-1', 'node-2', 'node-3']),
 };
 
 // Import after mocking to get mocked instances
-const { deepSearch, calculateSimilarity } = await import('../../../src/services/search/deep-search');
+const { deepSearch, calculateSimilarity } = await import(
+  '../../../src/services/search/deep-search'
+);
 
 describe('Deep Search Service - Comprehensive Advanced Search Functionality', () => {
   beforeEach(() => {
@@ -231,9 +227,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         payload: {
           kind: 'entity',
           data: { title: 'Vector Search Result', content: 'Matching content' },
-          tags: { project: 'test' }
-        }
-      }
+          tags: { project: 'test' },
+        },
+      },
     ]);
   });
 
@@ -257,11 +253,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             data: {
               title: 'User Authentication System',
               content: 'Comprehensive security implementation with OAuth 2.0',
-              description: 'Secure user authentication mechanisms'
+              description: 'Secure user authentication mechanisms',
             },
             tags: { project: 'security', org: 'company' },
-            created_at: new Date('2024-01-15').toISOString()
-          }
+            created_at: new Date('2024-01-15').toISOString(),
+          },
         },
         {
           id: 'semantic-2',
@@ -271,12 +267,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             data: {
               title: 'Authentication Architecture Decision',
               content: 'Decision to implement JWT-based authentication',
-              rationale: 'Chosen for scalability and security'
+              rationale: 'Chosen for scalability and security',
             },
             tags: { project: 'backend', org: 'company' },
-            created_at: new Date('2024-02-01').toISOString()
-          }
-        }
+            created_at: new Date('2024-02-01').toISOString(),
+          },
+        },
       ]);
 
       const results = await deepSearch(query, searchTypes, 10, 0.7);
@@ -290,15 +286,15 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         snippet: expect.stringContaining('security implementation'),
         metadata: expect.objectContaining({
           project: 'security',
-          org: 'company'
-        })
+          org: 'company',
+        }),
       });
 
       expect(mockQdrantClient.search).toHaveBeenCalledWith(
         expect.objectContaining({
           vector: expect.any(Array),
           limit: 10,
-          score_threshold: 0.7
+          score_threshold: 0.7,
         })
       );
     });
@@ -314,11 +310,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           kind: 'entity',
           data: {
             title: 'PostgreSQL Performance Guide',
-            content: 'Database optimization techniques and best practices'
+            content: 'Database optimization techniques and best practices',
           },
           tags: { project: 'database' },
-          created_at: new Date('2024-01-01')
-        }
+          created_at: new Date('2024-01-01'),
+        },
       ]);
 
       mockQdrantClient.search.mockResolvedValue([
@@ -329,10 +325,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'decision',
             data: {
               title: 'Database Architecture Decision',
-              content: 'Choosing PostgreSQL for performance requirements'
-            }
-          }
-        }
+              content: 'Choosing PostgreSQL for performance requirements',
+            },
+          },
+        },
       ]);
 
       const results = await deepSearch(query, searchTypes, 15, 0.6);
@@ -340,8 +336,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBeGreaterThan(0);
 
       // Should contain both keyword and semantic matches
-      const keywordMatch = results.find(r => r.id === 'keyword-1');
-      const semanticMatch = results.find(r => r.id === 'semantic-1');
+      const keywordMatch = results.find((r) => r.id === 'keyword-1');
+      const semanticMatch = results.find((r) => r.id === 'semantic-1');
 
       expect(keywordMatch || semanticMatch).toBeTruthy();
     });
@@ -364,10 +360,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               kind: 'issue',
               data: {
                 title: 'Authentication System Issues',
-                content: 'Problems with user login and authorization flows'
-              }
-            }
-          }
+                content: 'Problems with user login and authorization flows',
+              },
+            },
+          },
         ]);
       });
 
@@ -389,25 +385,31 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           score: 0.95,
           payload: {
             kind: 'entity',
-            data: { title: 'Microservices Architecture Patterns', content: 'Design patterns for distributed systems' }
-          }
+            data: {
+              title: 'Microservices Architecture Patterns',
+              content: 'Design patterns for distributed systems',
+            },
+          },
         },
         {
           id: 'medium-similarity',
           score: 0.75, // Below threshold
           payload: {
             kind: 'decision',
-            data: { title: 'System Architecture Decision', content: 'General architecture choices' }
-          }
+            data: {
+              title: 'System Architecture Decision',
+              content: 'General architecture choices',
+            },
+          },
         },
         {
           id: 'low-similarity',
           score: 0.45, // Below threshold
           payload: {
             kind: 'observation',
-            data: { title: 'System Performance', content: 'Performance metrics and monitoring' }
-          }
-        }
+            data: { title: 'System Performance', content: 'Performance metrics and monitoring' },
+          },
+        },
       ]);
 
       const results = await deepSearch(query, searchTypes, 20, minSimilarity);
@@ -426,23 +428,23 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         {
           query: 'how to implement user authentication',
           intent: 'procedural',
-          expectedTypes: ['runbook', 'section', 'decision']
+          expectedTypes: ['runbook', 'section', 'decision'],
         },
         {
           query: 'authentication system vulnerabilities',
           intent: 'problem-solving',
-          expectedTypes: ['issue', 'risk', 'incident']
+          expectedTypes: ['issue', 'risk', 'incident'],
         },
         {
           query: 'authentication architecture decisions',
           intent: 'informational',
-          expectedTypes: ['decision', 'entity', 'observation']
+          expectedTypes: ['decision', 'entity', 'observation'],
         },
         {
           query: 'security audit checklist',
           intent: 'procedural',
-          expectedTypes: ['runbook', 'todo', 'section']
-        }
+          expectedTypes: ['runbook', 'todo', 'section'],
+        },
       ];
 
       for (const testCase of testCases) {
@@ -450,8 +452,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
 
         // Results should be filtered based on recognized intent
         if (results.length > 0) {
-          const uniqueTypes = [...new Set(results.map(r => r.kind))];
-          expect(uniqueTypes.some(type => testCase.expectedTypes.includes(type))).toBe(true);
+          const uniqueTypes = [...new Set(results.map((r) => r.kind))];
+          expect(uniqueTypes.some((type) => testCase.expectedTypes.includes(type))).toBe(true);
         }
       }
     });
@@ -467,9 +469,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'runbook',
             data: {
               title: 'Kubernetes Canary Deployment Strategy',
-              content: 'Step-by-step guide for implementing canary releases in K8s clusters'
-            }
-          }
+              content: 'Step-by-step guide for implementing canary releases in K8s clusters',
+            },
+          },
         },
         {
           id: 'domain-2',
@@ -478,10 +480,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'decision',
             data: {
               title: 'Deployment Strategy Decision',
-              content: 'Choosing between blue-green, canary, and rolling deployments'
-            }
-          }
-        }
+              content: 'Choosing between blue-green, canary, and rolling deployments',
+            },
+          },
+        },
       ]);
 
       const results = await deepSearch(query, ['runbook', 'decision'], 10, 0.7);
@@ -489,10 +491,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBeGreaterThan(0);
 
       // Should understand K8s = Kubernetes and handle deployment terminology
-      const hasK8sContent = results.some(r =>
-        r.snippet.includes('Kubernetes') ||
-        r.snippet.includes('deployment') ||
-        r.snippet.includes('canary')
+      const hasK8sContent = results.some(
+        (r) =>
+          r.snippet.includes('Kubernetes') ||
+          r.snippet.includes('deployment') ||
+          r.snippet.includes('canary')
       );
       expect(hasK8sContent).toBe(true);
     });
@@ -509,10 +512,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'entity',
             data: {
               title: 'User Service Implementation',
-              content: 'Microservice handling user operations and authentication'
+              content: 'Microservice handling user operations and authentication',
             },
-            tags: { project: 'backend', domain: 'microservices' }
-          }
+            tags: { project: 'backend', domain: 'microservices' },
+          },
         },
         {
           id: 'customer-service',
@@ -521,11 +524,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'process',
             data: {
               title: 'Customer Service Workflow',
-              content: 'Process for handling customer support tickets and inquiries'
+              content: 'Process for handling customer support tickets and inquiries',
             },
-            tags: { project: 'support', domain: 'customer-service' }
-          }
-        }
+            tags: { project: 'support', domain: 'customer-service' },
+          },
+        },
       ]);
 
       const results = await deepSearch(query, ['entity', 'process'], 15, 0.6);
@@ -533,7 +536,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBeGreaterThan(1);
 
       // Should provide context for different interpretations
-      const contexts = results.map(r => r.metadata?.domain).filter(Boolean);
+      const contexts = results.map((r) => r.metadata?.domain).filter(Boolean);
       expect(contexts.length).toBeGreaterThan(1);
     });
 
@@ -542,16 +545,21 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         'recent security issues',
         'upcoming deployment tasks',
         'previous architecture decisions',
-        'current performance problems'
+        'current performance problems',
       ];
 
       for (const query of queries) {
-        const results = await deepSearch(query, ['issue', 'todo', 'decision', 'observation'], 10, 0.5);
+        const results = await deepSearch(
+          query,
+          ['issue', 'todo', 'decision', 'observation'],
+          10,
+          0.5
+        );
 
         // Should apply temporal filtering based on query language
         if (results.length > 0) {
           // Each result should have appropriate temporal context
-          results.forEach(result => {
+          results.forEach((result) => {
             expect(result.metadata).toBeDefined();
             if (result.metadata?.created_at) {
               const createdAt = new Date(result.metadata.created_at);
@@ -572,7 +580,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       mockGraphTraversalService.findRelatedEntities.mockResolvedValue([
         { id: 'auth-entity', kind: 'entity', distance: 1, relationship: 'implements' },
         { id: 'security-policy', kind: 'entity', distance: 2, relationship: 'constrained_by' },
-        { id: 'login-issue', kind: 'issue', distance: 1, relationship: 'addresses' }
+        { id: 'login-issue', kind: 'issue', distance: 1, relationship: 'addresses' },
       ]);
 
       const results = await deepSearch(query, ['entity', 'issue'], 15, 0.6);
@@ -580,12 +588,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBeGreaterThan(0);
 
       // Should include related entities in results
-      const hasRelatedContent = results.some(r =>
-        r.metadata?.relatedEntities || r.metadata?.graphDistance
+      const hasRelatedContent = results.some(
+        (r) => r.metadata?.relatedEntities || r.metadata?.graphDistance
       );
 
       if (hasRelatedContent) {
-        const relatedResult = results.find(r => r.metadata?.relatedEntities);
+        const relatedResult = results.find((r) => r.metadata?.relatedEntities);
         expect(relatedResult?.metadata?.relatedEntities).toBeDefined();
       }
     });
@@ -602,8 +610,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             properties: {
               name: 'Payment Service',
               kind: 'service',
-              technology: 'Node.js'
-            }
+              technology: 'Node.js',
+            },
           },
           {
             id: 'payment-gateway',
@@ -611,32 +619,32 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             properties: {
               name: 'Payment Gateway Integration',
               kind: 'integration',
-              provider: 'Stripe'
-            }
+              provider: 'Stripe',
+            },
           },
           {
             id: 'payment-decision',
             type: 'decision',
             properties: {
               title: 'Payment Gateway Decision',
-              rationale: 'Chose Stripe for reliability and features'
-            }
-          }
+              rationale: 'Chose Stripe for reliability and features',
+            },
+          },
         ],
         edges: [
           {
             source: 'payment-service',
             target: 'payment-gateway',
             type: 'uses',
-            weight: 0.9
+            weight: 0.9,
           },
           {
             source: 'payment-gateway',
             target: 'payment-decision',
             type: 'influenced_by',
-            weight: 0.8
-          }
-        ]
+            weight: 0.8,
+          },
+        ],
       });
 
       const results = await deepSearch(query, ['entity', 'decision'], 20, 0.5);
@@ -644,7 +652,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBeGreaterThan(0);
 
       // Results should include graph context
-      const graphEnhancedResult = results.find(r => r.metadata?.graphContext);
+      const graphEnhancedResult = results.find((r) => r.metadata?.graphContext);
       if (graphEnhancedResult) {
         expect(graphEnhancedResult.metadata.graphContext).toHaveProperty('nodes');
         expect(graphEnhancedResult.metadata.graphContext).toHaveProperty('edges');
@@ -664,10 +672,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             data: {
               title: 'User Service',
               content: 'Backend microservice for user management',
-              type: 'microservice'
+              type: 'microservice',
             },
-            tags: { project: 'backend', domain: 'microservices' }
-          }
+            tags: { project: 'backend', domain: 'microservices' },
+          },
         },
         {
           id: 'user-service-frontend',
@@ -677,11 +685,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             data: {
               title: 'User Service',
               content: 'Frontend service for user interface',
-              type: 'component'
+              type: 'component',
             },
-            tags: { project: 'frontend', domain: 'ui' }
-          }
-        }
+            tags: { project: 'frontend', domain: 'ui' },
+          },
+        },
       ]);
 
       // Mock graph relationships for disambiguation
@@ -689,12 +697,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         if (entityId === 'user-service-backend') {
           return Promise.resolve([
             { id: 'auth-service', kind: 'entity', relationship: 'depends_on' },
-            { id: 'database', kind: 'entity', relationship: 'connects_to' }
+            { id: 'database', kind: 'entity', relationship: 'connects_to' },
           ]);
         } else if (entityId === 'user-service-frontend') {
           return Promise.resolve([
             { id: 'ui-components', kind: 'entity', relationship: 'uses' },
-            { id: 'api-client', kind: 'entity', relationship: 'communicates_with' }
+            { id: 'api-client', kind: 'entity', relationship: 'communicates_with' },
           ]);
         }
         return Promise.resolve([]);
@@ -705,7 +713,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results).toHaveLength(2);
 
       // Each result should include disambiguation context
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.metadata).toBeDefined();
         expect(result.metadata?.project).toBeDefined();
         expect(result.metadata?.domain).toBeDefined();
@@ -727,8 +735,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           payload: {
             kind: 'entity',
             data: { title: 'Security Service', content: 'Central security implementation' },
-            graphCentrality: 0.95 // High centrality
-          }
+            graphCentrality: 0.95, // High centrality
+          },
         },
         {
           id: 'peripheral-security-entity',
@@ -736,9 +744,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           payload: {
             kind: 'entity',
             data: { title: 'Security Component', content: 'Peripheral security feature' },
-            graphCentrality: 0.45 // Low centrality
-          }
-        }
+            graphCentrality: 0.45, // Low centrality
+          },
+        },
       ]);
 
       const results = await deepSearch(query, ['entity'], 10, 0.7);
@@ -762,18 +770,18 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         scope: {
           project: 'backend',
           branch: 'main',
-          org: 'company'
+          org: 'company',
         },
         dateRange: {
           from: new Date('2024-01-01'),
-          to: new Date('2024-12-31')
+          to: new Date('2024-12-31'),
         },
         tags: ['performance', 'optimization'],
         confidence: { min: 0.7, max: 1.0 },
         metadata: {
           author: 'team-lead',
-          priority: ['high', 'critical']
-        }
+          priority: ['high', 'critical'],
+        },
       };
 
       // Mock filtered results
@@ -785,26 +793,20 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'observation',
             data: {
               title: 'Performance Metrics Analysis',
-              content: 'Analysis of system performance metrics and optimization opportunities'
+              content: 'Analysis of system performance metrics and optimization opportunities',
             },
             tags: { project: 'backend', branch: 'main', org: 'company' },
             created_at: '2024-06-15',
             metadata: {
               author: 'team-lead',
               priority: 'high',
-              tags: ['performance', 'optimization']
-            }
-          }
-        }
+              tags: ['performance', 'optimization'],
+            },
+          },
+        },
       ]);
 
-      const results = await deepSearch(
-        query,
-        filters.types,
-        20,
-        filters.confidence.min,
-        filters
-      );
+      const results = await deepSearch(query, filters.types, 20, filters.confidence.min, filters);
 
       expect(results.length).toBeGreaterThan(0);
 
@@ -827,8 +829,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'issue',
             data: { title: 'Database Connection Timeout', content: 'Connection pool exhaustion' },
             tags: { project: 'backend', severity: 'high' },
-            created_at: '2024-03-15'
-          }
+            created_at: '2024-03-15',
+          },
         },
         {
           id: 'suggestion-2',
@@ -837,8 +839,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'decision',
             data: { title: 'Database Provider Decision', content: 'Choosing PostgreSQL' },
             tags: { project: 'database', team: 'backend' },
-            created_at: '2024-02-10'
-          }
+            created_at: '2024-02-10',
+          },
         },
         {
           id: 'suggestion-3',
@@ -847,9 +849,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'runbook',
             data: { title: 'Database Setup Guide', content: 'Step-by-step database configuration' },
             tags: { project: 'devops', category: 'infrastructure' },
-            created_at: '2024-01-20'
-          }
-        }
+            created_at: '2024-01-20',
+          },
+        },
       ]);
 
       const results = await deepSearch(query, ['issue', 'decision', 'runbook'], 25, 0.6);
@@ -857,11 +859,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results.length).toBe(3);
 
       // Analyze results to extract filter suggestions
-      const projects = [...new Set(results.map(r => r.metadata?.project).filter(Boolean))];
-      const kinds = [...new Set(results.map(r => r.kind))];
+      const projects = [...new Set(results.map((r) => r.metadata?.project).filter(Boolean))];
+      const kinds = [...new Set(results.map((r) => r.kind))];
       const timeRange = {
-        earliest: Math.min(...results.map(r => new Date(r.metadata?.created_at || 0).getTime())),
-        latest: Math.max(...results.map(r => new Date(r.metadata?.created_at || 0).getTime()))
+        earliest: Math.min(...results.map((r) => new Date(r.metadata?.created_at || 0).getTime())),
+        latest: Math.max(...results.map((r) => new Date(r.metadata?.created_at || 0).getTime())),
       };
 
       expect(projects.length).toBeGreaterThan(1);
@@ -876,7 +878,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         scope: { project: 'large-project' },
         dateRange: { from: new Date('2020-01-01'), to: new Date('2024-12-31') },
         tags: ['architecture', 'system'],
-        metadata: { status: 'approved' }
+        metadata: { status: 'approved' },
       };
 
       const startTime = Date.now();
@@ -898,9 +900,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             score: 0.91,
             payload: {
               kind: 'decision',
-              data: { title: 'System Architecture Decision', content: 'High-level system design' }
-            }
-          }
+              data: { title: 'System Architecture Decision', content: 'High-level system design' },
+            },
+          },
         ]);
       });
 
@@ -917,7 +919,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         { query: 'recent issues', timeFilter: 'last_30_days' },
         { query: 'upcoming tasks', timeFilter: 'next_7_days' },
         { query: 'historical decisions', timeFilter: 'last_year' },
-        { query: 'current quarter observations', timeFilter: 'this_quarter' }
+        { query: 'current quarter observations', timeFilter: 'this_quarter' },
       ];
 
       for (const testCase of testCases) {
@@ -933,7 +935,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         );
 
         if (results.length > 0) {
-          results.forEach(result => {
+          results.forEach((result) => {
             const resultDate = new Date(result.metadata?.created_at || 0);
 
             // Verify temporal filtering based on the time filter
@@ -944,9 +946,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 );
                 break;
               case 'next_7_days':
-                expect(resultDate.getTime()).toBeLessThanOrEqual(
-                  new Date('2024-06-22').getTime()
-                );
+                expect(resultDate.getTime()).toBeLessThanOrEqual(new Date('2024-06-22').getTime());
                 break;
               case 'last_year':
                 expect(resultDate.getTime()).toBeGreaterThanOrEqual(
@@ -975,15 +975,15 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       // Mock large result set
       const largeResults = Array.from({ length: largeResultCount }, (_, i) => ({
         id: `large-scale-${i}`,
-        score: 0.9 - (i * 0.01), // Decreasing scores
+        score: 0.9 - i * 0.01, // Decreasing scores
         payload: {
           kind: 'observation',
           data: {
             title: `Performance Metric ${i}`,
-            content: `System performance observation number ${i}`
+            content: `System performance observation number ${i}`,
           },
-          created_at: new Date(2024, 0, (i % 30) + 1).toISOString()
-        }
+          created_at: new Date(2024, 0, (i % 30) + 1).toISOString(),
+        },
       }));
 
       mockQdrantClient.search.mockResolvedValue(largeResults);
@@ -1007,21 +1007,41 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
 
       // Mock distributed search across different collections
       const collectionResults = {
-        'entity': [
-          { id: 'dist-entity-1', score: 0.91, payload: { kind: 'entity', data: { title: 'Entity Result' } } }
+        entity: [
+          {
+            id: 'dist-entity-1',
+            score: 0.91,
+            payload: { kind: 'entity', data: { title: 'Entity Result' } },
+          },
         ],
-        'decision': [
-          { id: 'dist-decision-1', score: 0.88, payload: { kind: 'decision', data: { title: 'Decision Result' } } }
+        decision: [
+          {
+            id: 'dist-decision-1',
+            score: 0.88,
+            payload: { kind: 'decision', data: { title: 'Decision Result' } },
+          },
         ],
-        'issue': [
-          { id: 'dist-issue-1', score: 0.85, payload: { kind: 'issue', data: { title: 'Issue Result' } } }
+        issue: [
+          {
+            id: 'dist-issue-1',
+            score: 0.85,
+            payload: { kind: 'issue', data: { title: 'Issue Result' } },
+          },
         ],
-        'observation': [
-          { id: 'dist-obs-1', score: 0.87, payload: { kind: 'observation', data: { title: 'Observation Result' } } }
+        observation: [
+          {
+            id: 'dist-obs-1',
+            score: 0.87,
+            payload: { kind: 'observation', data: { title: 'Observation Result' } },
+          },
         ],
-        'runbook': [
-          { id: 'dist-runbook-1', score: 0.83, payload: { kind: 'runbook', data: { title: 'Runbook Result' } } }
-        ]
+        runbook: [
+          {
+            id: 'dist-runbook-1',
+            score: 0.83,
+            payload: { kind: 'runbook', data: { title: 'Runbook Result' } },
+          },
+        ],
       };
 
       // Simulate parallel distributed search
@@ -1033,9 +1053,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       const startTime = Date.now();
 
       // Execute distributed search across multiple types
-      const searchPromises = searchTypes.map(type =>
-        deepSearch(query, [type], 10, 0.7)
-      );
+      const searchPromises = searchTypes.map((type) => deepSearch(query, [type], 10, 0.7));
 
       const distributedResults = await Promise.all(searchPromises);
       const duration = Date.now() - startTime;
@@ -1048,7 +1066,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(allResults.length).toBeGreaterThan(0);
 
       // Results should be properly scored across distributed sources
-      allResults.forEach(result => {
+      allResults.forEach((result) => {
         expect(result.score).toBeGreaterThan(0);
         expect(result.id).toBeDefined();
       });
@@ -1065,9 +1083,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           score: 0.92,
           payload: {
             kind: 'entity',
-            data: { title: 'Cached Search Result', content: 'This should be cached' }
-          }
-        }
+            data: { title: 'Cached Search Result', content: 'This should be cached' },
+          },
+        },
       ]);
 
       const startTime1 = Date.now();
@@ -1093,7 +1111,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       const queries = [
         'simple query',
         'complex query with multiple terms and filters',
-        'very complex query with lots of conditions and parameters and requirements'
+        'very complex query with lots of conditions and parameters and requirements',
       ];
 
       const performanceMetrics = [];
@@ -1107,9 +1125,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             score: 0.8,
             payload: {
               kind: 'observation',
-              data: { title: 'Performance Test Result', content: query }
-            }
-          }
+              data: { title: 'Performance Test Result', content: query },
+            },
+          },
         ]);
 
         const results = await deepSearch(query, ['observation'], 10, 0.5);
@@ -1119,21 +1137,21 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           query,
           duration,
           resultCount: results.length,
-          complexity: query.length
+          complexity: query.length,
         });
 
         expect(results.length).toBeGreaterThan(0);
       }
 
       // Analyze performance metrics
-      performanceMetrics.forEach(metric => {
+      performanceMetrics.forEach((metric) => {
         expect(metric.duration).toBeLessThan(2000); // All queries should complete within 2 seconds
         expect(metric.resultCount).toBeGreaterThan(0);
       });
 
       // More complex queries might take longer but should still be reasonable
-      const simpleQuery = performanceMetrics.find(m => m.complexity < 20);
-      const complexQuery = performanceMetrics.find(m => m.complexity > 50);
+      const simpleQuery = performanceMetrics.find((m) => m.complexity < 20);
+      const complexQuery = performanceMetrics.find((m) => m.complexity > 50);
 
       if (simpleQuery && complexQuery) {
         expect(complexQuery.duration).toBeLessThan(simpleQuery.duration * 3);
@@ -1152,14 +1170,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
 
         return Array.from({ length: endIdx - startIdx }, (_, i) => ({
           id: `paginated-${startIdx + i}`,
-          score: 0.9 - ((startIdx + i) * 0.001),
+          score: 0.9 - (startIdx + i) * 0.001,
           payload: {
             kind: 'entity',
             data: {
               title: `Paginated Result ${startIdx + i}`,
-              content: `Content for result ${startIdx + i}`
-            }
-          }
+              content: `Content for result ${startIdx + i}`,
+            },
+          },
         }));
       };
 
@@ -1174,13 +1192,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       let hasMore = true;
 
       while (hasMore) {
-        const results = await deepSearch(
-          query,
-          ['entity'],
+        const results = await deepSearch(query, ['entity'], pageSize, 0.5, {
+          page: currentPage,
           pageSize,
-          0.5,
-          { page: currentPage, pageSize }
-        );
+        });
 
         allResults.push(...results);
         hasMore = results.length === pageSize;
@@ -1194,7 +1209,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(allResults.length).toBeLessThanOrEqual(totalResults);
 
       // Verify pagination integrity
-      const resultIds = allResults.map(r => r.id);
+      const resultIds = allResults.map((r) => r.id);
       const uniqueIds = [...new Set(resultIds)];
       expect(uniqueIds.length).toBe(resultIds.length); // No duplicates
     });
@@ -1208,7 +1223,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         'database performance optimization',
         'security policies and procedures',
         'system architecture decisions',
-        'deployment automation'
+        'deployment automation',
       ];
 
       const analyticsData = [];
@@ -1222,9 +1237,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             score: 0.85 + Math.random() * 0.1,
             payload: {
               kind: query.includes('decision') ? 'decision' : 'observation',
-              data: { title: `Result for ${query}`, content: 'Analytics test content' }
-            }
-          }
+              data: { title: `Result for ${query}`, content: 'Analytics test content' },
+            },
+          },
         ]);
 
         const results = await deepSearch(query, ['decision', 'observation'], 10, 0.7);
@@ -1235,14 +1250,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           resultCount: results.length,
           duration: searchDuration,
           avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       }
 
       // Verify analytics data collection
       expect(analyticsData).toHaveLength(searchQueries.length);
 
-      analyticsData.forEach(data => {
+      analyticsData.forEach((data) => {
         expect(data.query).toBeTruthy();
         expect(data.resultCount).toBeGreaterThan(0);
         expect(data.duration).toBeGreaterThan(0);
@@ -1251,8 +1266,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       });
 
       // Analyze patterns
-      const avgDuration = analyticsData.reduce((sum, d) => sum + d.duration, 0) / analyticsData.length;
-      const avgResults = analyticsData.reduce((sum, d) => sum + d.resultCount, 0) / analyticsData.length;
+      const avgDuration =
+        analyticsData.reduce((sum, d) => sum + d.duration, 0) / analyticsData.length;
+      const avgResults =
+        analyticsData.reduce((sum, d) => sum + d.resultCount, 0) / analyticsData.length;
 
       expect(avgDuration).toBeLessThan(2000); // Average should be reasonable
       expect(avgResults).toBeGreaterThan(0);
@@ -1264,7 +1281,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         { query: 'authentication system problems', pattern: 'problem-solving' },
         { query: 'best authentication practices', pattern: 'best-practices' },
         { query: 'authentication vs authorization', pattern: 'comparison' },
-        { query: 'authentication security checklist', pattern: 'checklist' }
+        { query: 'authentication security checklist', pattern: 'checklist' },
       ];
 
       const patternResults = [];
@@ -1280,33 +1297,35 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         patternResults.push({
           query: testCase.query,
           expectedPattern: testCase.pattern,
-          resultTypes: results.map(r => r.kind),
+          resultTypes: results.map((r) => r.kind),
           resultCount: results.length,
-          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length
+          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length,
         });
       }
 
       // Verify pattern recognition
-      patternResults.forEach(result => {
+      patternResults.forEach((result) => {
         expect(result.resultCount).toBeGreaterThan(0);
         expect(result.avgScore).toBeGreaterThan(0);
 
         // Results should align with expected patterns
         switch (result.expectedPattern) {
           case 'procedural':
-            expect(result.resultTypes.some(t => ['runbook', 'section'].includes(t))).toBe(true);
+            expect(result.resultTypes.some((t) => ['runbook', 'section'].includes(t))).toBe(true);
             break;
           case 'problem-solving':
-            expect(result.resultTypes.some(t => ['issue', 'incident'].includes(t))).toBe(true);
+            expect(result.resultTypes.some((t) => ['issue', 'incident'].includes(t))).toBe(true);
             break;
           case 'best-practices':
-            expect(result.resultTypes.some(t => ['decision', 'section'].includes(t))).toBe(true);
+            expect(result.resultTypes.some((t) => ['decision', 'section'].includes(t))).toBe(true);
             break;
           case 'comparison':
-            expect(result.resultTypes.some(t => ['decision', 'observation'].includes(t))).toBe(true);
+            expect(result.resultTypes.some((t) => ['decision', 'observation'].includes(t))).toBe(
+              true
+            );
             break;
           case 'checklist':
-            expect(result.resultTypes.some(t => ['runbook', 'todo'].includes(t))).toBe(true);
+            expect(result.resultTypes.some((t) => ['runbook', 'todo'].includes(t))).toBe(true);
             break;
         }
       });
@@ -1318,23 +1337,23 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         {
           query: 'very broad generic term with lots of results',
           expectedIssue: 'too_many_results',
-          suggestion: 'use_specific_terms_or_filters'
+          suggestion: 'use_specific_terms_or_filters',
         },
         {
           query: 'super specific technical jargon that nobody uses',
           expectedIssue: 'too_few_results',
-          suggestion: 'broaden_search_terms'
+          suggestion: 'broaden_search_terms',
         },
         {
           query: 'common words like system data process',
           expectedIssue: 'ambiguous_terms',
-          suggestion: 'use_exact_phrases_or_context'
+          suggestion: 'use_exact_phrases_or_context',
         },
         {
           query: 'query with lots of special characters and formatting',
           expectedIssue: 'syntax_issues',
-          suggestion: 'simplify_query_syntax'
-        }
+          suggestion: 'simplify_query_syntax',
+        },
       ];
 
       const optimizationSuggestions = [];
@@ -1348,7 +1367,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           suggestion = 'Consider using more specific terms or adding filters to narrow results';
         } else if (results.length === 0) {
           suggestion = 'Try broadening search terms or checking spelling';
-        } else if (results.every(r => r.score < 0.6)) {
+        } else if (results.every((r) => r.score < 0.6)) {
           suggestion = 'Results have low relevance, consider rephrasing the query';
         } else {
           suggestion = 'Query appears well-optimized';
@@ -1357,13 +1376,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         optimizationSuggestions.push({
           query: scenario.query,
           resultCount: results.length,
-          avgScore: results.length > 0 ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
-          suggestion
+          avgScore:
+            results.length > 0 ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
+          suggestion,
         });
       }
 
       // Verify optimization suggestions
-      optimizationSuggestions.forEach(suggestion => {
+      optimizationSuggestions.forEach((suggestion) => {
         expect(suggestion.suggestion).toBeTruthy();
         expect(suggestion.suggestion.length).toBeGreaterThan(0);
 
@@ -1372,8 +1392,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       });
 
       // At least some suggestions should be provided
-      const actionableSuggestions = optimizationSuggestions.filter(s =>
-        s.suggestion !== 'Query appears well-optimized'
+      const actionableSuggestions = optimizationSuggestions.filter(
+        (s) => s.suggestion !== 'Query appears well-optimized'
       );
       expect(actionableSuggestions.length).toBeGreaterThan(0);
     });
@@ -1388,8 +1408,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       const userFeedback = [
         { resultId: initialResults[0]?.id, feedback: 'relevant', rating: 5 },
         { resultId: initialResults[1]?.id, feedback: 'partially_relevant', rating: 3 },
-        { resultId: initialResults[2]?.id, feedback: 'not_relevant', rating: 1 }
-      ].filter(f => f.resultId);
+        { resultId: initialResults[2]?.id, feedback: 'not_relevant', rating: 1 },
+      ].filter((f) => f.resultId);
 
       // Second search with feedback integration
       mockQdrantClient.search.mockResolvedValue([
@@ -1400,9 +1420,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'runbook',
             data: {
               title: 'ML Model Deployment Guide',
-              content: 'Comprehensive guide for deploying machine learning models'
-            }
-          }
+              content: 'Comprehensive guide for deploying machine learning models',
+            },
+          },
         },
         {
           id: 'improved-result-2',
@@ -1411,27 +1431,25 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'decision',
             data: {
               title: 'Model Deployment Architecture Decision',
-              content: 'Architectural decisions for ML model deployment'
-            }
-          }
-        }
+              content: 'Architectural decisions for ML model deployment',
+            },
+          },
+        },
       ]);
 
-      const improvedResults = await deepSearch(
-        query,
-        ['entity', 'decision', 'runbook'],
-        15,
-        0.7,
-        { userFeedback }
-      );
+      const improvedResults = await deepSearch(query, ['entity', 'decision', 'runbook'], 15, 0.7, {
+        userFeedback,
+      });
 
       expect(improvedResults.length).toBeGreaterThan(0);
 
       // Improved results should have higher average scores
-      const initialAvgScore = initialResults.length > 0
-        ? initialResults.reduce((sum, r) => sum + r.score, 0) / initialResults.length
-        : 0;
-      const improvedAvgScore = improvedResults.reduce((sum, r) => sum + r.score, 0) / improvedResults.length;
+      const initialAvgScore =
+        initialResults.length > 0
+          ? initialResults.reduce((sum, r) => sum + r.score, 0) / initialResults.length
+          : 0;
+      const improvedAvgScore =
+        improvedResults.reduce((sum, r) => sum + r.score, 0) / improvedResults.length;
 
       expect(improvedAvgScore).toBeGreaterThanOrEqual(initialAvgScore);
     });
@@ -1453,9 +1471,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               title: 'Cloud Migration Strategy Decision',
               content: 'Comprehensive strategy for migrating to cloud infrastructure',
               tags: ['migration', 'cloud', 'strategy'],
-              recency: 'recent'
-            }
-          }
+              recency: 'recent',
+            },
+          },
         },
         {
           id: 'medium-relevance',
@@ -1466,9 +1484,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               title: 'Cloud Infrastructure Notes',
               content: 'General notes about cloud services and migration considerations',
               tags: ['cloud', 'infrastructure'],
-              recency: 'older'
-            }
-          }
+              recency: 'older',
+            },
+          },
         },
         {
           id: 'low-relevance',
@@ -1479,10 +1497,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               title: 'System Documentation',
               content: 'General system documentation with brief mention of cloud services',
               tags: ['documentation'],
-              recency: 'very_old'
-            }
-          }
-        }
+              recency: 'very_old',
+            },
+          },
+        },
       ]);
 
       const results = await deepSearch(query, ['decision', 'observation', 'entity'], 15, 0.5);
@@ -1506,18 +1524,18 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         {
           id: 'backend-developer',
           preferences: { technologies: ['Node.js', 'Express'], project: 'backend-api' },
-          role: 'backend_developer'
+          role: 'backend_developer',
         },
         {
           id: 'frontend-developer',
           preferences: { technologies: ['React', 'TypeScript'], project: 'frontend-app' },
-          role: 'frontend_developer'
+          role: 'frontend_developer',
         },
         {
           id: 'devops-engineer',
           preferences: { technologies: ['Docker', 'Kubernetes'], project: 'infrastructure' },
-          role: 'devops_engineer'
-        }
+          role: 'devops_engineer',
+        },
       ];
 
       const personalizedResults = [];
@@ -1533,39 +1551,35 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 title: `${context.preferences.technologies[0]} API Development Guide`,
                 content: `API development using ${context.preferences.technologies.join(' and ')}`,
                 tags: context.preferences.technologies,
-                target_role: context.role
-              }
-            }
-          }
+                target_role: context.role,
+              },
+            },
+          },
         ]);
 
-        const results = await deepSearch(
-          query,
-          ['entity', 'runbook'],
-          10,
-          0.6,
-          { userContext: context }
-        );
+        const results = await deepSearch(query, ['entity', 'runbook'], 10, 0.6, {
+          userContext: context,
+        });
 
         personalizedResults.push({
           context: context.id,
           results,
-          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length
+          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length,
         });
       }
 
       // Each user should get personalized results
-      personalizedResults.forEach(result => {
+      personalizedResults.forEach((result) => {
         expect(result.results.length).toBeGreaterThan(0);
         expect(result.avgScore).toBeGreaterThan(0.8); // High relevance due to personalization
 
-        const context = userContexts.find(c => c.id === result.context);
+        const context = userContexts.find((c) => c.id === result.context);
         expect(context).toBeTruthy();
 
         // Results should match user preferences
-        result.results.forEach(searchResult => {
-          const hasPreferredTech = context.preferences.technologies.some(tech =>
-            searchResult.title.includes(tech) || searchResult.snippet.includes(tech)
+        result.results.forEach((searchResult) => {
+          const hasPreferredTech = context.preferences.technologies.some(
+            (tech) => searchResult.title.includes(tech) || searchResult.snippet.includes(tech)
           );
           expect(hasPreferredTech).toBe(true);
         });
@@ -1585,10 +1599,10 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'observation',
             data: {
               title: 'Latest Security Update',
-              content: 'Recent security patch and vulnerability fixes'
+              content: 'Recent security patch and vulnerability fixes',
             },
-            created_at: new Date('2024-06-10').toISOString() // Recent
-          }
+            created_at: new Date('2024-06-10').toISOString(), // Recent
+          },
         },
         {
           id: 'older-security',
@@ -1597,34 +1611,31 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'decision',
             data: {
               title: 'Security Policy Update',
-              content: 'Security policy revisions and updates'
+              content: 'Security policy revisions and updates',
             },
-            created_at: new Date('2024-01-15').toISOString() // Older
-          }
+            created_at: new Date('2024-01-15').toISOString(), // Older
+          },
         },
         {
           id: 'very-old-security',
-          score: 0.90,
+          score: 0.9,
           payload: {
             kind: 'runbook',
             data: {
               title: 'Historical Security Procedures',
-              content: 'Old security procedures and guidelines'
+              content: 'Old security procedures and guidelines',
             },
-            created_at: new Date('2023-06-15').toISOString() // Very old
-          }
-        }
+            created_at: new Date('2023-06-15').toISOString(), // Very old
+          },
+        },
       ];
 
       mockQdrantClient.search.mockResolvedValue(timeBasedResults);
 
-      const results = await deepSearch(
-        query,
-        ['observation', 'decision', 'runbook'],
-        10,
-        0.5,
-        { currentDate: currentDate.toISOString(), boostRecent: true }
-      );
+      const results = await deepSearch(query, ['observation', 'decision', 'runbook'], 10, 0.5, {
+        currentDate: currentDate.toISOString(),
+        boostRecent: true,
+      });
 
       expect(results.length).toBe(3);
 
@@ -1632,7 +1643,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       expect(results[0].id).toBe('recent-security');
 
       // Results should include temporal relevance information
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.metadata).toBeDefined();
         expect(result.metadata?.created_at).toBeTruthy();
 
@@ -1651,7 +1662,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       const collaborativeSignals = [
         { itemId: 'perf-guide', relevanceScore: 0.92, similarUserInteractions: 45 },
         { itemId: 'perf-tool', relevanceScore: 0.87, similarUserInteractions: 32 },
-        { itemId: 'perf-case-study', relevanceScore: 0.79, similarUserInteractions: 18 }
+        { itemId: 'perf-case-study', relevanceScore: 0.79, similarUserInteractions: 18 },
       ];
 
       mockQdrantClient.search.mockResolvedValue([
@@ -1662,9 +1673,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'runbook',
             data: {
               title: 'Performance Optimization Guide',
-              content: 'Comprehensive guide to system performance optimization'
-            }
-          }
+              content: 'Comprehensive guide to system performance optimization',
+            },
+          },
         },
         {
           id: 'perf-tool',
@@ -1673,36 +1684,32 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             kind: 'entity',
             data: {
               title: 'Performance Monitoring Tool',
-              content: 'Tool for monitoring and optimizing system performance'
-            }
-          }
+              content: 'Tool for monitoring and optimizing system performance',
+            },
+          },
         },
         {
           id: 'perf-case-study',
-          score: 0.80, // Base score
+          score: 0.8, // Base score
           payload: {
             kind: 'observation',
             data: {
               title: 'Performance Optimization Case Study',
-              content: 'Real-world case study of performance improvements'
-            }
-          }
-        }
+              content: 'Real-world case study of performance improvements',
+            },
+          },
+        },
       ]);
 
-      const results = await deepSearch(
-        query,
-        ['runbook', 'entity', 'observation'],
-        10,
-        0.5,
-        { collaborativeFiltering: true }
-      );
+      const results = await deepSearch(query, ['runbook', 'entity', 'observation'], 10, 0.5, {
+        collaborativeFiltering: true,
+      });
 
       expect(results.length).toBe(3);
 
       // Results should be boosted based on collaborative signals
-      collaborativeSignals.forEach(signal => {
-        const result = results.find(r => r.id === signal.itemId);
+      collaborativeSignals.forEach((signal) => {
+        const result = results.find((r) => r.id === signal.itemId);
         if (result) {
           // Final score should be influenced by collaborative filtering
           expect(result.score).toBeGreaterThan(0);
@@ -1720,7 +1727,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
 
       // Mock results from different domains
       const domainResults = {
-        'backend': [
+        backend: [
           {
             id: 'backend-user-service',
             score: 0.91,
@@ -1730,12 +1737,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 title: 'User Management Service',
                 content: 'Backend service for user authentication and authorization',
                 domain: 'backend',
-                technology: 'Node.js'
-              }
-            }
-          }
+                technology: 'Node.js',
+              },
+            },
+          },
         ],
-        'frontend': [
+        frontend: [
           {
             id: 'frontend-user-ui',
             score: 0.86,
@@ -1745,12 +1752,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 title: 'User Management Interface',
                 content: 'Frontend components for user management operations',
                 domain: 'frontend',
-                technology: 'React'
-              }
-            }
-          }
+                technology: 'React',
+              },
+            },
+          },
         ],
-        'database': [
+        database: [
           {
             id: 'database-user-schema',
             score: 0.84,
@@ -1760,12 +1767,12 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 title: 'User Database Schema',
                 content: 'Database schema definition for user management',
                 domain: 'database',
-                technology: 'PostgreSQL'
-              }
-            }
-          }
+                technology: 'PostgreSQL',
+              },
+            },
+          },
         ],
-        'security': [
+        security: [
           {
             id: 'security-user-policies',
             score: 0.88,
@@ -1775,11 +1782,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 title: 'User Security Policies',
                 content: 'Security policies and procedures for user management',
                 domain: 'security',
-                technology: 'OAuth 2.0'
-              }
-            }
-          }
-        ]
+                technology: 'OAuth 2.0',
+              },
+            },
+          },
+        ],
       };
 
       // Mock federated search across domains
@@ -1788,22 +1795,19 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         return Promise.resolve(domainResults[domain] || []);
       });
 
-      const results = await deepSearch(
-        query,
-        ['entity', 'ddl', 'decision'],
-        20,
-        0.7,
-        { domains: ['backend', 'frontend', 'database', 'security'], crossDomain: true }
-      );
+      const results = await deepSearch(query, ['entity', 'ddl', 'decision'], 20, 0.7, {
+        domains: ['backend', 'frontend', 'database', 'security'],
+        crossDomain: true,
+      });
 
       expect(results.length).toBeGreaterThan(0);
 
       // Should include results from multiple domains
-      const uniqueDomains = [...new Set(results.map(r => r.metadata?.domain).filter(Boolean))];
+      const uniqueDomains = [...new Set(results.map((r) => r.metadata?.domain).filter(Boolean))];
       expect(uniqueDomains.length).toBeGreaterThan(1);
 
       // Results should maintain domain context
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.metadata?.domain).toBeTruthy();
         expect(result.metadata?.technology).toBeTruthy();
       });
@@ -1814,7 +1818,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
 
       // Mock different data sources
       const dataSources = {
-        'knowledge_base': [
+        knowledge_base: [
           {
             id: 'kb-deployment-guide',
             score: 0.93,
@@ -1822,14 +1826,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               kind: 'runbook',
               data: {
                 title: 'Deployment Automation Guide',
-                content: 'Step-by-step guide for automated deployments'
+                content: 'Step-by-step guide for automated deployments',
               },
               source: 'knowledge_base',
-              confidence: 'high'
-            }
-          }
+              confidence: 'high',
+            },
+          },
         ],
-        'documentation': [
+        documentation: [
           {
             id: 'doc-deployment-api',
             score: 0.87,
@@ -1837,14 +1841,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               kind: 'section',
               data: {
                 title: 'Deployment API Documentation',
-                content: 'API documentation for deployment service'
+                content: 'API documentation for deployment service',
               },
               source: 'documentation',
-              confidence: 'medium'
-            }
-          }
+              confidence: 'medium',
+            },
+          },
         ],
-        'code_repository': [
+        code_repository: [
           {
             id: 'repo-deployment-scripts',
             score: 0.85,
@@ -1852,14 +1856,14 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               kind: 'entity',
               data: {
                 title: 'Deployment Scripts',
-                content: 'Automation scripts for CI/CD deployment'
+                content: 'Automation scripts for CI/CD deployment',
               },
               source: 'code_repository',
-              confidence: 'high'
-            }
-          }
+              confidence: 'high',
+            },
+          },
         ],
-        'issue_tracker': [
+        issue_tracker: [
           {
             id: 'issue-deployment-problems',
             score: 0.79,
@@ -1867,13 +1871,13 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               kind: 'issue',
               data: {
                 title: 'Deployment Automation Issues',
-                content: 'Common problems and solutions for deployment automation'
+                content: 'Common problems and solutions for deployment automation',
               },
               source: 'issue_tracker',
-              confidence: 'low'
-            }
-          }
-        ]
+              confidence: 'low',
+            },
+          },
+        ],
       };
 
       mockQdrantClient.search.mockImplementation((params) => {
@@ -1881,31 +1885,27 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         return Promise.resolve(dataSources[source] || []);
       });
 
-      const results = await deepSearch(
-        query,
-        ['runbook', 'section', 'entity', 'issue'],
-        25,
-        0.6,
-        {
-          dataSources: ['knowledge_base', 'documentation', 'code_repository', 'issue_tracker'],
-          federated: true,
-          boostBySource: true
-        }
-      );
+      const results = await deepSearch(query, ['runbook', 'section', 'entity', 'issue'], 25, 0.6, {
+        dataSources: ['knowledge_base', 'documentation', 'code_repository', 'issue_tracker'],
+        federated: true,
+        boostBySource: true,
+      });
 
       expect(results.length).toBeGreaterThan(0);
 
       // Should include results from multiple sources
-      const uniqueSources = [...new Set(results.map(r => r.metadata?.source).filter(Boolean))];
+      const uniqueSources = [...new Set(results.map((r) => r.metadata?.source).filter(Boolean))];
       expect(uniqueSources.length).toBeGreaterThan(1);
 
       // Higher confidence sources should be boosted
-      const highConfidenceResults = results.filter(r => r.metadata?.confidence === 'high');
-      const lowConfidenceResults = results.filter(r => r.metadata?.confidence === 'low');
+      const highConfidenceResults = results.filter((r) => r.metadata?.confidence === 'high');
+      const lowConfidenceResults = results.filter((r) => r.metadata?.confidence === 'low');
 
       if (highConfidenceResults.length > 0 && lowConfidenceResults.length > 0) {
-        const highConfidenceAvgScore = highConfidenceResults.reduce((sum, r) => sum + r.score, 0) / highConfidenceResults.length;
-        const lowConfidenceAvgScore = lowConfidenceResults.reduce((sum, r) => sum + r.score, 0) / lowConfidenceResults.length;
+        const highConfidenceAvgScore =
+          highConfidenceResults.reduce((sum, r) => sum + r.score, 0) / highConfidenceResults.length;
+        const lowConfidenceAvgScore =
+          lowConfidenceResults.reduce((sum, r) => sum + r.score, 0) / lowConfidenceResults.length;
 
         expect(highConfidenceAvgScore).toBeGreaterThan(lowConfidenceAvgScore);
       }
@@ -1925,11 +1925,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               title: 'Prometheus Monitoring Setup',
               content: 'Configuration guide for Prometheus monitoring',
               format: 'markdown',
-              language: 'en'
+              language: 'en',
             },
             source: 'documentation',
-            last_updated: '2024-05-15'
-          }
+            last_updated: '2024-05-15',
+          },
         },
         {
           id: 'grafana-dashboard',
@@ -1940,11 +1940,11 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               name: 'Grafana Dashboard',
               description: 'JSON configuration for Grafana dashboard',
               format: 'json',
-              language: 'json'
+              language: 'json',
             },
             source: 'code_repository',
-            last_updated: '2024-06-01'
-          }
+            last_updated: '2024-06-01',
+          },
         },
         {
           id: 'alerting-rules',
@@ -1955,28 +1955,25 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               title: 'Alerting Strategy Decision',
               rationale: 'Decision on alerting rules and notification channels',
               format: 'text',
-              language: 'en'
+              language: 'en',
             },
             source: 'meeting_notes',
-            last_updated: '2024-04-20'
-          }
-        }
+            last_updated: '2024-04-20',
+          },
+        },
       ];
 
       mockQdrantClient.search.mockResolvedValue(heterogeneousResults);
 
-      const results = await deepSearch(
-        query,
-        ['runbook', 'entity', 'decision'],
-        15,
-        0.7,
-        { harmonizeResults: true, normalizeScores: true }
-      );
+      const results = await deepSearch(query, ['runbook', 'entity', 'decision'], 15, 0.7, {
+        harmonizeResults: true,
+        normalizeScores: true,
+      });
 
       expect(results.length).toBe(3);
 
       // Results should be harmonized with consistent structure
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.id).toBeTruthy();
         expect(result.title).toBeTruthy();
         expect(result.snippet).toBeTruthy();
@@ -1991,7 +1988,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       });
 
       // Scores should be normalized
-      const scores = results.map(r => r.score);
+      const scores = results.map((r) => r.score);
       const maxScore = Math.max(...scores);
       const minScore = Math.min(...scores);
 
@@ -2010,7 +2007,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         { type: 'connection_timeout', error: new Error('Connection timeout') },
         { type: 'service_unavailable', error: new Error('Service unavailable') },
         { type: 'rate_limit_exceeded', error: new Error('Rate limit exceeded') },
-        { type: 'invalid_response', error: new Error('Invalid response format') }
+        { type: 'invalid_response', error: new Error('Invalid response format') },
       ];
 
       for (const scenario of errorScenarios) {
@@ -2037,20 +2034,17 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           kind: 'entity',
           data: {
             title: 'Fallback Search Result',
-            content: 'Result from fallback search mechanism'
+            content: 'Result from fallback search mechanism',
           },
           tags: { project: 'test' },
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
-      const results = await deepSearch(
-        query,
-        ['entity'],
-        10,
-        0.7,
-        { enableFallback: true, fallbackTimeout: 5000 }
-      );
+      const results = await deepSearch(query, ['entity'], 10, 0.7, {
+        enableFallback: true,
+        fallbackTimeout: 5000,
+      });
 
       expect(results.length).toBeGreaterThan(0);
       expect(results[0].id).toBe('fallback-result');
@@ -2074,9 +2068,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               score: 0.9,
               payload: {
                 kind: 'entity',
-                data: { title: 'Entity Result', content: 'Successful entity search' }
-              }
-            }
+                data: { title: 'Entity Result', content: 'Successful entity search' },
+              },
+            },
           ]);
         } else if (collectionName === 'decision') {
           return Promise.reject(new Error('Decision search failed'));
@@ -2087,26 +2081,28 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               score: 0.85,
               payload: {
                 kind: 'issue',
-                data: { title: 'Issue Result', content: 'Successful issue search' }
-              }
-            }
+                data: { title: 'Issue Result', content: 'Successful issue search' },
+              },
+            },
           ]);
         }
       });
 
-      const results = await deepSearch(query, searchTypes, 15, 0.7, { partialFailureHandling: true });
+      const results = await deepSearch(query, searchTypes, 15, 0.7, {
+        partialFailureHandling: true,
+      });
 
       // Should return successful results despite partial failures
       expect(results.length).toBeGreaterThan(0);
 
-      const entityResult = results.find(r => r.kind === 'entity');
-      const issueResult = results.find(r => r.kind === 'issue');
+      const entityResult = results.find((r) => r.kind === 'entity');
+      const issueResult = results.find((r) => r.kind === 'issue');
 
       expect(entityResult).toBeTruthy();
       expect(issueResult).toBeTruthy();
 
       // Should include error metadata for failed searches
-      expect(results.some(r => r.metadata?.searchErrors)).toBe(true);
+      expect(results.some((r) => r.metadata?.searchErrors)).toBe(true);
     });
 
     it('should implement search timeout handling', async () => {
@@ -2122,9 +2118,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
                 score: 0.8,
                 payload: {
                   kind: 'entity',
-                  data: { title: 'Slow Response', content: 'This response took too long' }
-                }
-              }
+                  data: { title: 'Slow Response', content: 'This response took too long' },
+                },
+              },
             ]);
           }, 3000); // 3 second delay
         });
@@ -2163,8 +2159,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             maxResults: 10,
             minSimilarity: 0.7,
             boostRecent: false,
-            enablePersonalization: false
-          }
+            enablePersonalization: false,
+          },
         },
         {
           name: 'high_precision',
@@ -2172,8 +2168,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             maxResults: 5,
             minSimilarity: 0.9,
             boostRecent: true,
-            enablePersonalization: false
-          }
+            enablePersonalization: false,
+          },
         },
         {
           name: 'high_recall',
@@ -2181,9 +2177,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
             maxResults: 50,
             minSimilarity: 0.5,
             boostRecent: false,
-            enablePersonalization: true
-          }
-        }
+            enablePersonalization: true,
+          },
+        },
       ];
 
       mockQdrantClient.search.mockResolvedValue([
@@ -2192,9 +2188,9 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           score: 0.85,
           payload: {
             kind: 'entity',
-            data: { title: 'Configuration Test', content: 'Testing search configurations' }
-          }
-        }
+            data: { title: 'Configuration Test', content: 'Testing search configurations' },
+          },
+        },
       ]);
 
       const configResults = [];
@@ -2211,13 +2207,13 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         configResults.push({
           config: searchConfig.name,
           resultCount: results.length,
-          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length
+          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length,
         });
       }
 
       // Verify different configurations produce different behaviors
-      const highPrecision = configResults.find(r => r.config === 'high_precision');
-      const highRecall = configResults.find(r => r.config === 'high_recall');
+      const highPrecision = configResults.find((r) => r.config === 'high_precision');
+      const highRecall = configResults.find((r) => r.config === 'high_recall');
 
       if (highPrecision && highRecall) {
         // High precision should have fewer results but higher minimum scores
@@ -2234,24 +2230,48 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         {
           name: 'tfidf',
           results: [
-            { id: 'tfidf-1', score: 0.82, payload: { kind: 'entity', data: { title: 'TF-IDF Result 1' } } },
-            { id: 'tfidf-2', score: 0.78, payload: { kind: 'entity', data: { title: 'TF-IDF Result 2' } } }
-          ]
+            {
+              id: 'tfidf-1',
+              score: 0.82,
+              payload: { kind: 'entity', data: { title: 'TF-IDF Result 1' } },
+            },
+            {
+              id: 'tfidf-2',
+              score: 0.78,
+              payload: { kind: 'entity', data: { title: 'TF-IDF Result 2' } },
+            },
+          ],
         },
         {
           name: 'bm25',
           results: [
-            { id: 'bm25-1', score: 0.91, payload: { kind: 'entity', data: { title: 'BM25 Result 1' } } },
-            { id: 'bm25-2', score: 0.85, payload: { kind: 'entity', data: { title: 'BM25 Result 2' } } }
-          ]
+            {
+              id: 'bm25-1',
+              score: 0.91,
+              payload: { kind: 'entity', data: { title: 'BM25 Result 1' } },
+            },
+            {
+              id: 'bm25-2',
+              score: 0.85,
+              payload: { kind: 'entity', data: { title: 'BM25 Result 2' } },
+            },
+          ],
         },
         {
           name: 'semantic',
           results: [
-            { id: 'semantic-1', score: 0.88, payload: { kind: 'entity', data: { title: 'Semantic Result 1' } } },
-            { id: 'semantic-2', score: 0.84, payload: { kind: 'entity', data: { title: 'Semantic Result 2' } } }
-          ]
-        }
+            {
+              id: 'semantic-1',
+              score: 0.88,
+              payload: { kind: 'entity', data: { title: 'Semantic Result 1' } },
+            },
+            {
+              id: 'semantic-2',
+              score: 0.84,
+              payload: { kind: 'entity', data: { title: 'Semantic Result 2' } },
+            },
+          ],
+        },
       ];
 
       const algorithmResults = [];
@@ -2259,26 +2279,22 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       for (const algorithm of rankingAlgorithms) {
         mockQdrantClient.search.mockResolvedValueOnce(algorithm.results);
 
-        const results = await deepSearch(
-          query,
-          ['entity'],
-          10,
-          0.5,
-          { rankingAlgorithm: algorithm.name }
-        );
+        const results = await deepSearch(query, ['entity'], 10, 0.5, {
+          rankingAlgorithm: algorithm.name,
+        });
 
         algorithmResults.push({
           algorithm: algorithm.name,
           results,
           topScore: results.length > 0 ? results[0].score : 0,
-          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length
+          avgScore: results.reduce((sum, r) => sum + r.score, 0) / results.length,
         });
       }
 
       // Different algorithms should produce different ranking scores
-      const tfidfResults = algorithmResults.find(r => r.algorithm === 'tfidf');
-      const bm25Results = algorithmResults.find(r => r.algorithm === 'bm25');
-      const semanticResults = algorithmResults.find(r => r.algorithm === 'semantic');
+      const tfidfResults = algorithmResults.find((r) => r.algorithm === 'tfidf');
+      const bm25Results = algorithmResults.find((r) => r.algorithm === 'bm25');
+      const semanticResults = algorithmResults.find((r) => r.algorithm === 'semantic');
 
       expect(tfidfResults).toBeTruthy();
       expect(bm25Results).toBeTruthy();
@@ -2303,50 +2319,51 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
               content: 'This is a test result for formatting functionality',
               author: 'Test Author',
               created_at: '2024-06-15',
-              tags: ['test', 'formatting']
-            }
-          }
-        }
+              tags: ['test', 'formatting'],
+            },
+          },
+        },
       ]);
 
       const formattingOptions = [
         {
           name: 'minimal',
-          options: { includeMetadata: false, truncateContent: true, maxContentLength: 100 }
+          options: { includeMetadata: false, truncateContent: true, maxContentLength: 100 },
         },
         {
           name: 'detailed',
-          options: { includeMetadata: true, truncateContent: false, includeHighlights: true }
+          options: { includeMetadata: true, truncateContent: false, includeHighlights: true },
         },
         {
           name: 'summary',
-          options: { includeMetadata: true, truncateContent: true, maxContentLength: 200, includeSummary: true }
-        }
+          options: {
+            includeMetadata: true,
+            truncateContent: true,
+            maxContentLength: 200,
+            includeSummary: true,
+          },
+        },
       ];
 
       const formattedResults = [];
 
       for (const formatting of formattingOptions) {
-        const results = await deepSearch(
-          query,
-          ['entity'],
-          10,
-          0.5,
-          { formatting: formatting.options }
-        );
+        const results = await deepSearch(query, ['entity'], 10, 0.5, {
+          formatting: formatting.options,
+        });
 
         formattedResults.push({
           format: formatting.name,
           results,
           hasMetadata: results[0]?.metadata !== undefined,
-          contentLength: results[0]?.snippet?.length || 0
+          contentLength: results[0]?.snippet?.length || 0,
         });
       }
 
       // Verify different formatting options
-      const minimalFormat = formattedResults.find(r => r.format === 'minimal');
-      const detailedFormat = formattedResults.find(r => r.format === 'detailed');
-      const summaryFormat = formattedResults.find(r => r.format === 'summary');
+      const minimalFormat = formattedResults.find((r) => r.format === 'minimal');
+      const detailedFormat = formattedResults.find((r) => r.format === 'detailed');
+      const summaryFormat = formattedResults.find((r) => r.format === 'summary');
 
       if (minimalFormat && detailedFormat) {
         // Detailed format should have more metadata
@@ -2393,7 +2410,7 @@ describe('Similarity Calculation Functions', () => {
       { text1: 'test', text2: '' },
       { text1: '', text2: '' },
       { text1: 'a', text2: 'b' },
-      { text1: 'very long text with many words and phrases', text2: 'completely different text' }
+      { text1: 'very long text with many words and phrases', text2: 'completely different text' },
     ];
 
     for (const testCase of edgeCases) {
@@ -2415,11 +2432,11 @@ describe('Similarity Calculation Functions', () => {
       calculateSimilarity(text1, text2),
       calculateSimilarity(text1, text2),
       calculateSimilarity(text1, text2),
-      calculateSimilarity(text1, text2)
+      calculateSimilarity(text1, text2),
     ]);
 
     // All calculations should produce the same result
-    similarities.forEach(similarity => {
+    similarities.forEach((similarity) => {
       expect(similarity).toBe(similarities[0]);
     });
   });

@@ -21,7 +21,7 @@ import {
   afterEach,
   vi,
   type MockedFunction,
-  type MockedObject
+  type MockedObject,
 } from 'vitest';
 
 // Import service-related interfaces from core types
@@ -43,25 +43,21 @@ import type {
   StoreResult,
   StoreError,
   SearchResult,
-  SearchQuery
+  SearchQuery,
+
+  // Knowledge item types
+  KnowledgeItem,
+  AutonomousContext,
 } from '../../src/types/core-interfaces';
 
 // Import workflow service types
 import type {
   ServiceTask,
-  ServiceConfig as WorkflowServiceConfig
+  ServiceConfig as WorkflowServiceConfig,
 } from '../../src/types/workflow-interfaces';
 
 // Import logging service integration types
-import type {
-  LogServiceIntegration
-} from '../../src/types/logging-interfaces';
-
-// Import knowledge item types
-import type {
-  KnowledgeItem,
-  AutonomousContext
-} from '../../src/types/core-interfaces';
+import type { LogServiceIntegration } from '../../src/types/logging-interfaces';
 
 // Test data factory for creating service interfaces
 const createMockServiceInterfaces = () => ({
@@ -71,40 +67,40 @@ const createMockServiceInterfaces = () => ({
     update: vi.fn(),
     delete: vi.fn(),
     findById: vi.fn(),
-    findSimilar: vi.fn()
+    findSimilar: vi.fn(),
   } as unknown as KnowledgeRepository,
 
   // Mock search service implementation
   mockSearchService: {
     search: vi.fn(),
-    validateQuery: vi.fn()
+    validateQuery: vi.fn(),
   } as unknown as SearchService,
 
   // Mock validation service implementation
   mockValidationService: {
     validateStoreInput: vi.fn(),
     validateFindInput: vi.fn(),
-    validateKnowledgeItem: vi.fn()
+    validateKnowledgeItem: vi.fn(),
   } as unknown as ValidationService,
 
   // Mock deduplication service implementation
   mockDeduplicationService: {
     checkDuplicates: vi.fn(),
-    removeDuplicates: vi.fn()
+    removeDuplicates: vi.fn(),
   } as unknown as DeduplicationService,
 
   // Mock similarity service implementation
   mockSimilarityService: {
     findSimilar: vi.fn(),
-    calculateSimilarity: vi.fn()
+    calculateSimilarity: vi.fn(),
   } as unknown as SimilarityService,
 
   // Mock audit service implementation
   mockAuditService: {
     logOperation: vi.fn(),
     logAccess: vi.fn(),
-    logError: vi.fn()
-  } as unknown as AuditService
+    logError: vi.fn(),
+  } as unknown as AuditService,
 });
 
 // Test data factory for service configurations
@@ -120,12 +116,12 @@ const createServiceConfigurations = () => ({
     retryConfig: {
       maxAttempts: 3,
       backoffStrategy: 'exponential',
-      baseDelay: 1000
+      baseDelay: 1000,
     },
     authentication: {
       type: 'bearer' as const,
-      credentials: { token: 'test-token' }
-    }
+      credentials: { token: 'test-token' },
+    },
   } as ServiceConfig,
 
   // Workflow service configuration
@@ -134,8 +130,8 @@ const createServiceConfigurations = () => ({
     endpoint: 'https://workflow.test.com/api',
     method: 'POST' as const,
     payload: { workflowId: 'test-workflow' },
-    headers: { 'Authorization': 'Bearer token123' },
-    timeout: 10000
+    headers: { Authorization: 'Bearer token123' },
+    timeout: 10000,
   } as WorkflowServiceConfig,
 
   // Logging service integration
@@ -146,18 +142,18 @@ const createServiceConfigurations = () => ({
       version: '1.0.0',
       environment: 'test',
       region: 'us-west-2',
-      deployment: 'blue-green'
+      deployment: 'blue-green',
     },
     endpoints: {
       health: '/health',
       metrics: '/metrics',
-      logs: '/logs'
+      logs: '/logs',
     },
     authentication: {
       type: 'jwt' as const,
-      credentials: { jwt: 'test-jwt-token' }
-    }
-  } as LogServiceIntegration
+      credentials: { jwt: 'test-jwt-token' },
+    },
+  } as LogServiceIntegration,
 });
 
 // Test data factory for service communication types
@@ -169,9 +165,9 @@ const createServiceCommunicationData = () => ({
         kind: 'entity',
         content: 'Test entity content',
         scope: { project: 'test-project', branch: 'main' },
-        data: { name: 'Test Entity', type: 'test' }
-      }
-    ]
+        data: { name: 'Test Entity', type: 'test' },
+      },
+    ],
   } as MemoryStoreRequest,
 
   // Find request
@@ -180,7 +176,7 @@ const createServiceCommunicationData = () => ({
     scope: { project: 'test-project', branch: 'main' },
     types: ['entity', 'observation'],
     mode: 'auto' as const,
-    limit: 10
+    limit: 10,
   } as MemoryFindRequest,
 
   // Store response
@@ -190,8 +186,8 @@ const createServiceCommunicationData = () => ({
         id: 'item-123',
         status: 'inserted' as const,
         kind: 'entity',
-        created_at: '2025-01-15T10:00:00Z'
-      }
+        created_at: '2025-01-15T10:00:00Z',
+      },
     ],
     errors: [],
     autonomous_context: {
@@ -201,8 +197,8 @@ const createServiceCommunicationData = () => ({
       contradictions_detected: false,
       recommendation: 'Item successfully stored',
       reasoning: 'No duplicates found',
-      user_message_suggestion: 'Entity created successfully'
-    }
+      user_message_suggestion: 'Entity created successfully',
+    },
   } as MemoryStoreResponse,
 
   // Find response
@@ -216,8 +212,8 @@ const createServiceCommunicationData = () => ({
         created_at: '2025-01-14T15:30:00Z',
         confidence_score: 0.95,
         match_type: 'semantic' as const,
-        highlight: ['Found <em>Entity</em>']
-      }
+        highlight: ['Found <em>Entity</em>'],
+      },
     ],
     items: [],
     total_count: 1,
@@ -226,8 +222,8 @@ const createServiceCommunicationData = () => ({
       search_mode_used: 'semantic',
       results_found: 1,
       confidence_average: 0.95,
-      user_message_suggestion: 'Found 1 matching entity'
-    }
+      user_message_suggestion: 'Found 1 matching entity',
+    },
   } as MemoryFindResponse,
 
   // Service task
@@ -246,9 +242,9 @@ const createServiceCommunicationData = () => ({
       endpoint: 'https://api.test.com/execute',
       method: 'POST' as const,
       payload: { taskId: 'task-789' },
-      timeout: 30000
-    }
-  } as ServiceTask
+      timeout: 30000,
+    },
+  } as ServiceTask,
 });
 
 describe('Service Type Contracts', () => {
@@ -342,7 +338,7 @@ describe('Service Type Contracts', () => {
       const testItem: KnowledgeItem = {
         kind: 'entity',
         scope: { project: 'test' },
-        data: { name: 'Test' }
+        data: { name: 'Test' },
       };
 
       // Mock successful lifecycle operations
@@ -350,16 +346,18 @@ describe('Service Type Contracts', () => {
         id: 'test-id',
         status: 'inserted',
         kind: 'entity',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       });
 
-      (repository.findById as MockedFunction<typeof repository.findById>).mockResolvedValue(testItem);
+      (repository.findById as MockedFunction<typeof repository.findById>).mockResolvedValue(
+        testItem
+      );
 
       (repository.update as MockedFunction<typeof repository.update>).mockResolvedValue({
         id: 'test-id',
         status: 'updated',
         kind: 'entity',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       });
 
       (repository.delete as MockedFunction<typeof repository.delete>).mockResolvedValue(true);
@@ -409,7 +407,7 @@ describe('Service Type Contracts', () => {
 
       if (findRequest.types) {
         expect(findRequest.types).toBeInstanceOf(Array);
-        findRequest.types.forEach(type => {
+        findRequest.types.forEach((type) => {
           expect(type).toBeTypeOf('string');
         });
       }
@@ -433,7 +431,7 @@ describe('Service Type Contracts', () => {
       expect(storeResponse.autonomous_context).toBeTypeOf('object');
 
       // Validate stored items
-      storeResponse.stored.forEach(result => {
+      storeResponse.stored.forEach((result) => {
         expect(result).toHaveProperty('id');
         expect(result).toHaveProperty('status');
         expect(result).toHaveProperty('kind');
@@ -442,7 +440,7 @@ describe('Service Type Contracts', () => {
       });
 
       // Validate errors
-      storeResponse.errors.forEach(error => {
+      storeResponse.errors.forEach((error) => {
         expect(error).toHaveProperty('index');
         expect(error).toHaveProperty('error_code');
         expect(error).toHaveProperty('message');
@@ -469,7 +467,7 @@ describe('Service Type Contracts', () => {
         message: 'Invalid input data',
         field: 'content',
         stack: 'Error: Invalid input data\n    at validateContent',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       // Validate error structure
@@ -504,7 +502,7 @@ describe('Service Type Contracts', () => {
       expect(Object.keys(services)).toHaveLength(6);
 
       // Verify each service implements its interface correctly
-      Object.values(services).forEach(service => {
+      Object.values(services).forEach((service) => {
         expect(typeof service).toBe('object');
         expect(service).not.toBeNull();
       });
@@ -525,7 +523,7 @@ describe('Service Type Contracts', () => {
 
         list(): string[] {
           return Array.from(this.services.keys());
-        }
+        },
       };
 
       // Test registry operations
@@ -559,21 +557,21 @@ describe('Service Type Contracts', () => {
             name: 'database',
             status: 'pass',
             message: 'Database connection successful',
-            duration: 45
+            duration: 45,
           },
           {
             name: 'memory',
             status: 'pass',
             message: 'Memory usage within limits',
-            duration: 12
+            duration: 12,
           },
           {
             name: 'external_api',
             status: 'warn',
             message: 'External API responding slowly',
-            duration: 1250
-          }
-        ]
+            duration: 1250,
+          },
+        ],
       };
 
       // Validate health check structure
@@ -582,7 +580,7 @@ describe('Service Type Contracts', () => {
       expect(() => new Date(mockHealthCheck.timestamp)).not.toThrow();
       expect(mockHealthCheck.checks).toBeInstanceOf(Array);
 
-      mockHealthCheck.checks.forEach(check => {
+      mockHealthCheck.checks.forEach((check) => {
         expect(['pass', 'fail', 'warn']).toContain(check.status);
         expect(check.name).toBeTypeOf('string');
         expect(check.name.length).toBeGreaterThan(0);
@@ -623,7 +621,7 @@ describe('Service Type Contracts', () => {
             protocol: 'http',
             health: 'healthy',
             lastSeen: new Date().toISOString(),
-            metadata: { version: '1.2.3', region: 'us-west-2' }
+            metadata: { version: '1.2.3', region: 'us-west-2' },
           },
           {
             id: 'user-service-2',
@@ -631,18 +629,20 @@ describe('Service Type Contracts', () => {
             port: 8080,
             protocol: 'http',
             health: 'healthy',
-            lastSeen: new Date().toISOString()
-          }
+            lastSeen: new Date().toISOString(),
+          },
         ],
-        loadBalancing: 'round_robin'
+        loadBalancing: 'round_robin',
       };
 
       // Validate service discovery structure
       expect(mockServiceDiscovery.serviceName).toBeTypeOf('string');
       expect(mockServiceDiscovery.instances).toBeInstanceOf(Array);
-      expect(['round_robin', 'random', 'least_connections']).toContain(mockServiceDiscovery.loadBalancing);
+      expect(['round_robin', 'random', 'least_connections']).toContain(
+        mockServiceDiscovery.loadBalancing
+      );
 
-      mockServiceDiscovery.instances.forEach(instance => {
+      mockServiceDiscovery.instances.forEach((instance) => {
         expect(instance.id).toBeTypeOf('string');
         expect(instance.host).toBeTypeOf('string');
         expect(instance.port).toBeGreaterThan(0);
@@ -673,25 +673,25 @@ describe('Service Type Contracts', () => {
           unit: 'milliseconds',
           timestamp: new Date().toISOString(),
           tags: { service: 'search', endpoint: '/api/search' },
-          dimensions: { percentile: 'p95' }
+          dimensions: { percentile: 'p95' },
         },
         {
           name: 'throughput',
           value: 1250,
           unit: 'requests_per_second',
           timestamp: new Date().toISOString(),
-          tags: { service: 'search', endpoint: '/api/search' }
+          tags: { service: 'search', endpoint: '/api/search' },
         },
         {
           name: 'error_rate',
           value: 0.02,
           unit: 'percentage',
           timestamp: new Date().toISOString(),
-          tags: { service: 'search', error_type: 'validation' }
-        }
+          tags: { service: 'search', error_type: 'validation' },
+        },
       ];
 
-      metrics.forEach(metric => {
+      metrics.forEach((metric) => {
         expect(metric.name).toBeTypeOf('string');
         expect(metric.value).toBeTypeOf('number');
         expect(metric.unit).toBeTypeOf('string');
@@ -700,7 +700,7 @@ describe('Service Type Contracts', () => {
 
         if (metric.tags) {
           expect(metric.tags).toBeTypeOf('object');
-          Object.values(metric.tags).forEach(value => {
+          Object.values(metric.tags).forEach((value) => {
             expect(value).toBeTypeOf('string');
           });
         }
@@ -745,40 +745,40 @@ describe('Service Type Contracts', () => {
             target: 99.9,
             unit: 'percentage',
             comparison: 'gte',
-            description: 'Service must be available 99.9% of the time'
+            description: 'Service must be available 99.9% of the time',
           },
           {
             name: 'response_time_p95',
             target: 500,
             unit: 'milliseconds',
             comparison: 'lte',
-            description: '95th percentile response time must be under 500ms'
+            description: '95th percentile response time must be under 500ms',
           },
           {
             name: 'error_rate',
             target: 0.1,
             unit: 'percentage',
             comparison: 'lte',
-            description: 'Error rate must not exceed 0.1%'
-          }
+            description: 'Error rate must not exceed 0.1%',
+          },
         ],
         penalties: [
           {
             threshold: 99.5,
             penalty: 'service_credit_10_percent',
-            description: '10% service credit for availability below 99.5%'
+            description: '10% service credit for availability below 99.5%',
           },
           {
             threshold: 99.0,
             penalty: 'service_credit_25_percent',
-            description: '25% service credit for availability below 99.0%'
-          }
+            description: '25% service credit for availability below 99.0%',
+          },
         ],
         effectivePeriod: {
           start: '2025-01-01T00:00:00Z',
-          end: '2025-12-31T23:59:59Z'
+          end: '2025-12-31T23:59:59Z',
         },
-        status: 'active'
+        status: 'active',
       };
 
       // Validate SLA contract structure
@@ -787,7 +787,7 @@ describe('Service Type Contracts', () => {
       expect(slaContract.version).toBeTypeOf('string');
       expect(['active', 'inactive', 'breached']).toContain(slaContract.status);
 
-      slaContract.metrics.forEach(metric => {
+      slaContract.metrics.forEach((metric) => {
         expect(metric.name).toBeTypeOf('string');
         expect(metric.target).toBeTypeOf('number');
         expect(metric.unit).toBeTypeOf('string');
@@ -795,7 +795,7 @@ describe('Service Type Contracts', () => {
         expect(metric.description).toBeTypeOf('string');
       });
 
-      slaContract.penalties.forEach(penalty => {
+      slaContract.penalties.forEach((penalty) => {
         expect(penalty.threshold).toBeTypeOf('number');
         expect(penalty.penalty).toBeTypeOf('string');
         expect(penalty.description).toBeTypeOf('string');
@@ -849,8 +849,8 @@ describe('Service Type Contracts', () => {
             config: {
               chartType: 'line',
               timeRange: '1h',
-              aggregation: 'avg'
-            }
+              aggregation: 'avg',
+            },
           },
           {
             id: 'widget-error-rate',
@@ -860,22 +860,22 @@ describe('Service Type Contracts', () => {
             refreshInterval: 10,
             config: {
               thresholds: { warning: 0.05, critical: 0.1 },
-              unit: 'percentage'
-            }
-          }
+              unit: 'percentage',
+            },
+          },
         ],
         layout: {
           columns: 12,
           rows: 8,
           widgets: [
             { widgetId: 'widget-response-time', x: 0, y: 0, width: 8, height: 4 },
-            { widgetId: 'widget-error-rate', x: 8, y: 0, width: 4, height: 4 }
-          ]
+            { widgetId: 'widget-error-rate', x: 8, y: 0, width: 4, height: 4 },
+          ],
         },
         permissions: {
           view: ['team-a', 'team-b'],
-          edit: ['team-a']
-        }
+          edit: ['team-a'],
+        },
       };
 
       // Validate dashboard structure
@@ -884,7 +884,7 @@ describe('Service Type Contracts', () => {
       expect(dashboard.description).toBeTypeOf('string');
       expect(dashboard.widgets).toBeInstanceOf(Array);
 
-      dashboard.widgets.forEach(widget => {
+      dashboard.widgets.forEach((widget) => {
         expect(['metric', 'chart', 'table', 'alert']).toContain(widget.type);
         expect(widget.title).toBeTypeOf('string');
         expect(widget.query).toBeTypeOf('string');
@@ -896,7 +896,7 @@ describe('Service Type Contracts', () => {
       expect(dashboard.layout.rows).toBeGreaterThan(0);
       expect(dashboard.layout.widgets).toBeInstanceOf(Array);
 
-      dashboard.layout.widgets.forEach(layout => {
+      dashboard.layout.widgets.forEach((layout) => {
         expect(layout.widgetId).toBeTypeOf('string');
         expect(layout.x).toBeGreaterThanOrEqual(0);
         expect(layout.y).toBeGreaterThanOrEqual(0);
@@ -938,20 +938,20 @@ describe('Service Type Contracts', () => {
           threshold: 0.05,
           operator: '>',
           evaluationInterval: 30,
-          forDuration: 120
+          forDuration: 120,
         },
         annotations: {
           summary: 'Error rate is above 5%',
           description: 'The error rate has exceeded the 5% threshold for the past 2 minutes',
-          runbook_url: 'https://docs.company.com/runbooks/high-error-rate'
+          runbook_url: 'https://docs.company.com/runbooks/high-error-rate',
         },
         labels: {
           service: 'user-service',
           environment: 'production',
-          team: 'platform'
+          team: 'platform',
         },
         startsAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
 
       // Validate alert structure
@@ -969,11 +969,11 @@ describe('Service Type Contracts', () => {
       expect(alert.annotations).toBeTypeOf('object');
       expect(alert.labels).toBeTypeOf('object');
 
-      Object.values(alert.annotations).forEach(value => {
+      Object.values(alert.annotations).forEach((value) => {
         expect(value).toBeTypeOf('string');
       });
 
-      Object.values(alert.labels).forEach(value => {
+      Object.values(alert.labels).forEach((value) => {
         expect(value).toBeTypeOf('string');
       });
 
@@ -1018,15 +1018,15 @@ describe('Service Type Contracts', () => {
           issuer: 'https://auth.company.com',
           audience: 'api.company.com',
           algorithms: ['RS256'],
-          publicKey: '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----'
+          publicKey: '-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----',
         },
         validation: {
           required: true,
           allowAnonymous: false,
           refreshEnabled: true,
           maxTokenAge: 3600,
-          clockSkewTolerance: 30
-        }
+          clockSkewTolerance: 30,
+        },
       };
 
       // Validate authentication contract
@@ -1080,12 +1080,12 @@ describe('Service Type Contracts', () => {
             value: {
               start: '09:00',
               end: '17:00',
-              timezone: 'America/New_York'
-            }
-          }
+              timezone: 'America/New_York',
+            },
+          },
         ],
         priority: 100,
-        enabled: true
+        enabled: true,
       };
 
       // Validate authorization policy
@@ -1103,8 +1103,10 @@ describe('Service Type Contracts', () => {
       expect(policy.resources.length).toBeGreaterThan(0);
 
       if (policy.conditions) {
-        policy.conditions.forEach(condition => {
-          expect(['equals', 'not_equals', 'in', 'not_in', 'contains', 'matches']).toContain(condition.operator);
+        policy.conditions.forEach((condition) => {
+          expect(['equals', 'not_equals', 'in', 'not_in', 'contains', 'matches']).toContain(
+            condition.operator
+          );
           expect(condition.field).toBeTypeOf('string');
           expect(condition.value).toBeDefined();
         });
@@ -1162,7 +1164,7 @@ describe('Service Type Contracts', () => {
           method: 'jwt',
           timestamp: new Date().toISOString(),
           expiresAt: new Date(Date.now() + 3600000).toISOString(),
-          trustLevel: 'high'
+          trustLevel: 'high',
         },
         authorization: {
           policies: ['policy-user-access', 'policy-data-read'],
@@ -1171,9 +1173,9 @@ describe('Service Type Contracts', () => {
               policyId: 'policy-user-access',
               effect: 'allow',
               reason: 'User has required roles',
-              timestamp: new Date().toISOString()
-            }
-          ]
+              timestamp: new Date().toISOString(),
+            },
+          ],
         },
         metadata: {
           ipAddress: '192.168.1.100',
@@ -1181,13 +1183,13 @@ describe('Service Type Contracts', () => {
           location: {
             country: 'US',
             region: 'CA',
-            city: 'San Francisco'
+            city: 'San Francisco',
           },
           device: {
             type: 'desktop',
-            trusted: true
-          }
-        }
+            trusted: true,
+          },
+        },
       };
 
       // Validate security context
@@ -1202,7 +1204,7 @@ describe('Service Type Contracts', () => {
         expect(() => new Date(securityContext.authentication.expiresAt)).not.toThrow();
       }
 
-      securityContext.authorization.decisions.forEach(decision => {
+      securityContext.authorization.decisions.forEach((decision) => {
         expect(['allow', 'deny']).toContain(decision.effect);
         expect(decision.policyId).toBeTypeOf('string');
         expect(decision.reason).toBeTypeOf('string');
@@ -1214,7 +1216,9 @@ describe('Service Type Contracts', () => {
       }
 
       if (securityContext.metadata.device) {
-        expect(['desktop', 'mobile', 'tablet', 'server', 'iot']).toContain(securityContext.metadata.device.type);
+        expect(['desktop', 'mobile', 'tablet', 'server', 'iot']).toContain(
+          securityContext.metadata.device.type
+        );
         expect(securityContext.metadata.device.trusted).toBeTypeOf('boolean');
       }
     });
@@ -1256,32 +1260,34 @@ describe('Service Type Contracts', () => {
         event: {
           type: 'user_login',
           action: 'authenticate',
-          outcome: 'success'
+          outcome: 'success',
         },
         actor: {
           userId: 'user-67890',
           sessionId: 'sess-abc123',
           ipAddress: '192.168.1.100',
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
         resource: {
           type: 'authentication_service',
-          operation: 'login'
+          operation: 'login',
         },
         details: {
           method: 'password',
           mfaVerified: true,
-          loginTime: new Date().toISOString()
+          loginTime: new Date().toISOString(),
         },
         correlationId: 'req-12345',
-        tags: ['authentication', 'login', 'success']
+        tags: ['authentication', 'login', 'success'],
       };
 
       // Validate audit log structure
       expect(auditLog.id).toBeTypeOf('string');
       expect(() => new Date(auditLog.timestamp)).not.toThrow();
       expect(['info', 'warn', 'error', 'debug']).toContain(auditLog.level);
-      expect(['authentication', 'authorization', 'data_access', 'system', 'security']).toContain(auditLog.category);
+      expect(['authentication', 'authorization', 'data_access', 'system', 'security']).toContain(
+        auditLog.category
+      );
 
       expect(auditLog.event.type).toBeTypeOf('string');
       expect(auditLog.event.action).toBeTypeOf('string');
@@ -1297,7 +1303,7 @@ describe('Service Type Contracts', () => {
 
       if (auditLog.tags) {
         expect(auditLog.tags).toBeInstanceOf(Array);
-        auditLog.tags.forEach(tag => {
+        auditLog.tags.forEach((tag) => {
           expect(tag).toBeTypeOf('string');
         });
       }
@@ -1340,7 +1346,7 @@ describe('Service Type Contracts', () => {
           apiCompatibility: true,
           dataFormatCompatibility: true,
           protocolCompatibility: true,
-          authenticationCompatibility: false
+          authenticationCompatibility: false,
         },
         issues: [
           {
@@ -1348,14 +1354,15 @@ describe('Service Type Contracts', () => {
             category: 'auth',
             description: 'Auth service requires OAuth2 but user service uses JWT',
             impact: 'medium',
-            resolution: 'Update user service to support OAuth2 or configure auth service to accept JWT'
-          }
+            resolution:
+              'Update user service to support OAuth2 or configure auth service to accept JWT',
+          },
         ],
         recommendations: [
           'Implement OAuth2 support in user service',
           'Update authentication middleware',
-          'Test end-to-end authentication flow'
-        ]
+          'Test end-to-end authentication flow',
+        ],
       };
 
       // Validate compatibility structure
@@ -1371,7 +1378,7 @@ describe('Service Type Contracts', () => {
       expect(typeof compatibility.testResults.protocolCompatibility).toBe('boolean');
       expect(typeof compatibility.testResults.authenticationCompatibility).toBe('boolean');
 
-      compatibility.issues.forEach(issue => {
+      compatibility.issues.forEach((issue) => {
         expect(['error', 'warning', 'info']).toContain(issue.type);
         expect(['api', 'data', 'protocol', 'auth', 'performance']).toContain(issue.category);
         expect(issue.description).toBeTypeOf('string');
@@ -1383,7 +1390,7 @@ describe('Service Type Contracts', () => {
       });
 
       expect(compatibility.recommendations).toBeInstanceOf(Array);
-      compatibility.recommendations.forEach(rec => {
+      compatibility.recommendations.forEach((rec) => {
         expect(rec).toBeTypeOf('string');
       });
     });
@@ -1424,14 +1431,14 @@ describe('Service Type Contracts', () => {
               {
                 description: 'Removed deprecated endpoint /search/legacy',
                 impact: 'medium',
-                migrationPath: 'Use /search/v2 endpoint instead'
-              }
+                migrationPath: 'Use /search/v2 endpoint instead',
+              },
             ],
             compatibilityMatrix: {
               '2.5.0': 'partial',
               '2.0.0': 'partial',
-              '1.0.0': 'none'
-            }
+              '1.0.0': 'none',
+            },
           },
           {
             version: '2.5.0',
@@ -1442,9 +1449,9 @@ describe('Service Type Contracts', () => {
             breakingChanges: [],
             compatibilityMatrix: {
               '2.0.0': 'full',
-              '1.0.0': 'partial'
-            }
-          }
+              '1.0.0': 'partial',
+            },
+          },
         ],
         migrationPaths: [
           {
@@ -1454,19 +1461,19 @@ describe('Service Type Contracts', () => {
               'Update API client to use new endpoints',
               'Modify search query format',
               'Update error handling logic',
-              'Test integration thoroughly'
+              'Test integration thoroughly',
             ],
             estimatedEffort: 'medium',
-            prerequisites: ['Node.js >= 18', 'Updated client library']
-          }
-        ]
+            prerequisites: ['Node.js >= 18', 'Updated client library'],
+          },
+        ],
       };
 
       // Validate version compatibility
       expect(versionCompatibility.service).toBeTypeOf('string');
       expect(versionCompatibility.versions).toBeInstanceOf(Array);
 
-      versionCompatibility.versions.forEach(version => {
+      versionCompatibility.versions.forEach((version) => {
         expect(version.version).toBeTypeOf('string');
         expect(['supported', 'deprecated', 'unsupported']).toContain(version.status);
         expect(() => new Date(version.releaseDate)).not.toThrow();
@@ -1479,17 +1486,17 @@ describe('Service Type Contracts', () => {
           expect(() => new Date(version.endOfLifeDate)).not.toThrow();
         }
 
-        version.breakingChanges.forEach(change => {
+        version.breakingChanges.forEach((change) => {
           expect(change.description).toBeTypeOf('string');
           expect(['high', 'medium', 'low']).toContain(change.impact);
         });
 
-        Object.values(version.compatibilityMatrix).forEach(compat => {
+        Object.values(version.compatibilityMatrix).forEach((compat) => {
           expect(['full', 'partial', 'none']).toContain(compat);
         });
       });
 
-      versionCompatibility.migrationPaths.forEach(path => {
+      versionCompatibility.migrationPaths.forEach((path) => {
         expect(path.from).toBeTypeOf('string');
         expect(path.to).toBeTypeOf('string');
         expect(path.steps).toBeInstanceOf(Array);
@@ -1579,7 +1586,7 @@ describe('Service Type Contracts', () => {
                 type: 'automated',
                 estimatedDuration: 1800,
                 dependencies: [],
-                rollbackStep: 'step-restore-backup'
+                rollbackStep: 'step-restore-backup',
               },
               {
                 id: 'step-verify-backup',
@@ -1587,22 +1594,22 @@ describe('Service Type Contracts', () => {
                 description: 'Verify that backup is complete and valid',
                 type: 'scripted',
                 estimatedDuration: 300,
-                dependencies: ['step-backup']
-              }
+                dependencies: ['step-backup'],
+              },
             ],
             validationRules: [
               {
                 name: 'Backup exists',
                 condition: 'backup_file_exists',
-                expected: true
+                expected: true,
               },
               {
                 name: 'Backup size check',
                 condition: 'backup_size > expected_minimum',
-                expected: '100GB'
-              }
-            ]
-          }
+                expected: '100GB',
+              },
+            ],
+          },
         ],
         rollback: {
           enabled: true,
@@ -1610,13 +1617,13 @@ describe('Service Type Contracts', () => {
           triggers: [
             {
               condition: 'phase_failure_rate > 50%',
-              action: 'initiate_rollback'
+              action: 'initiate_rollback',
             },
             {
               condition: 'data_corruption_detected',
-              action: 'immediate_rollback'
-            }
-          ]
+              action: 'immediate_rollback',
+            },
+          ],
         },
         schedule: {
           plannedStart: '2025-02-01T02:00:00Z',
@@ -1624,29 +1631,29 @@ describe('Service Type Contracts', () => {
           maintenanceWindow: {
             start: '2025-02-01T02:00:00Z',
             end: '2025-02-01T06:00:00Z',
-            timezone: 'UTC'
-          }
+            timezone: 'UTC',
+          },
         },
         riskAssessment: {
           level: 'medium',
           factors: [
             'Data migration complexity',
             'API compatibility changes',
-            'Performance impact during migration'
+            'Performance impact during migration',
           ],
           mitigations: [
             {
               risk: 'Data loss',
               mitigation: 'Multiple backup strategies',
-              implemented: false
+              implemented: false,
             },
             {
               risk: 'Service downtime',
               mitigation: 'Blue-green deployment strategy',
-              implemented: false
-            }
-          ]
-        }
+              implemented: false,
+            },
+          ],
+        },
       };
 
       // Validate migration contract
@@ -1655,14 +1662,16 @@ describe('Service Type Contracts', () => {
       expect(migration.description).toBeTypeOf('string');
       expect(migration.sourceVersion).toBeTypeOf('string');
       expect(migration.targetVersion).toBeTypeOf('string');
-      expect(['planned', 'in_progress', 'completed', 'failed', 'rolled_back']).toContain(migration.status);
+      expect(['planned', 'in_progress', 'completed', 'failed', 'rolled_back']).toContain(
+        migration.status
+      );
 
-      migration.phases.forEach(phase => {
+      migration.phases.forEach((phase) => {
         expect(phase.id).toBeTypeOf('string');
         expect(phase.name).toBeTypeOf('string');
         expect(['pending', 'in_progress', 'completed', 'failed']).toContain(phase.status);
 
-        phase.steps.forEach(step => {
+        phase.steps.forEach((step) => {
           expect(step.id).toBeTypeOf('string');
           expect(step.name).toBeTypeOf('string');
           expect(['manual', 'automated', 'scripted']).toContain(step.type);
@@ -1677,7 +1686,7 @@ describe('Service Type Contracts', () => {
           }
         });
 
-        phase.validationRules.forEach(rule => {
+        phase.validationRules.forEach((rule) => {
           expect(rule.name).toBeTypeOf('string');
           expect(rule.condition).toBeTypeOf('string');
           expect(rule.expected).toBeDefined();
@@ -1714,7 +1723,13 @@ describe('Service Type Contracts', () => {
             id: string;
             name: string;
             description: string;
-            type: 'unit' | 'integration' | 'end_to_end' | 'performance' | 'security' | 'compatibility';
+            type:
+              | 'unit'
+              | 'integration'
+              | 'end_to_end'
+              | 'performance'
+              | 'security'
+              | 'compatibility';
             setup: {
               prerequisites: string[];
               dataSetup: string[];
@@ -1734,7 +1749,12 @@ describe('Service Type Contracts', () => {
               timeout: number;
             };
             assertions: Array<{
-              type: 'status_code' | 'response_body' | 'response_header' | 'response_time' | 'custom';
+              type:
+                | 'status_code'
+                | 'response_body'
+                | 'response_header'
+                | 'response_time'
+                | 'custom';
               condition: string;
               expected: any;
               description: string;
@@ -1775,7 +1795,7 @@ describe('Service Type Contracts', () => {
         targetService: {
           name: 'search-service',
           version: '3.0.0',
-          endpoint: 'https://search-api.test.com'
+          endpoint: 'https://search-api.test.com',
         },
         testCategories: [
           {
@@ -1790,7 +1810,7 @@ describe('Service Type Contracts', () => {
                 setup: {
                   prerequisites: ['Search service running', 'Test data indexed'],
                   dataSetup: ['Load test documents into search index'],
-                  environment: 'test'
+                  environment: 'test',
                 },
                 execution: {
                   method: 'POST',
@@ -1798,52 +1818,52 @@ describe('Service Type Contracts', () => {
                   payload: {
                     query: 'test search',
                     limit: 10,
-                    filters: {}
+                    filters: {},
                   },
                   headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer test-token'
+                    Authorization: 'Bearer test-token',
                   },
                   expectedResponse: {
                     statusCode: 200,
-                    responseTime: 1000
+                    responseTime: 1000,
                   },
-                  timeout: 5000
+                  timeout: 5000,
                 },
                 assertions: [
                   {
                     type: 'status_code',
                     condition: 'equals',
                     expected: 200,
-                    description: 'Should return 200 status code'
+                    description: 'Should return 200 status code',
                   },
                   {
                     type: 'response_body',
                     condition: 'has_property',
                     expected: 'results',
-                    description: 'Response should contain results array'
+                    description: 'Response should contain results array',
                   },
                   {
                     type: 'response_time',
                     condition: 'less_than',
                     expected: 1000,
-                    description: 'Response time should be under 1 second'
-                  }
+                    description: 'Response time should be under 1 second',
+                  },
                 ],
                 cleanup: {
                   dataCleanup: [],
-                  stateReset: ['Clear search cache']
-                }
-              }
-            ]
-          }
+                  stateReset: ['Clear search cache'],
+                },
+              },
+            ],
+          },
         ],
         executionConfig: {
           parallel: true,
           maxConcurrency: 5,
           retryAttempts: 2,
           timeout: 30000,
-          environment: 'test'
+          environment: 'test',
         },
         reporting: {
           formats: ['json', 'html', 'junit'],
@@ -1851,27 +1871,27 @@ describe('Service Type Contracts', () => {
             {
               name: 'test_execution_time',
               type: 'histogram',
-              description: 'Time taken to execute each test'
+              description: 'Time taken to execute each test',
             },
             {
               name: 'test_success_rate',
               type: 'gauge',
-              description: 'Percentage of successful tests'
-            }
+              description: 'Percentage of successful tests',
+            },
           ],
           notifications: [
             {
               type: 'email',
               destination: 'team-test@company.com',
-              triggers: ['failure']
+              triggers: ['failure'],
             },
             {
               type: 'slack',
               destination: '#test-results',
-              triggers: ['success', 'failure']
-            }
-          ]
-        }
+              triggers: ['success', 'failure'],
+            },
+          ],
+        },
       };
 
       // Validate test suite structure
@@ -1884,16 +1904,23 @@ describe('Service Type Contracts', () => {
       expect(testSuite.targetService.version).toBeTypeOf('string');
       expect(testSuite.targetService.endpoint).toBeTypeOf('string');
 
-      testSuite.testCategories.forEach(category => {
+      testSuite.testCategories.forEach((category) => {
         expect(category.name).toBeTypeOf('string');
         expect(category.description).toBeTypeOf('string');
         expect(category.tests).toBeInstanceOf(Array);
 
-        category.tests.forEach(test => {
+        category.tests.forEach((test) => {
           expect(test.id).toBeTypeOf('string');
           expect(test.name).toBeTypeOf('string');
           expect(test.description).toBeTypeOf('string');
-          expect(['unit', 'integration', 'end_to_end', 'performance', 'security', 'compatibility']).toContain(test.type);
+          expect([
+            'unit',
+            'integration',
+            'end_to_end',
+            'performance',
+            'security',
+            'compatibility',
+          ]).toContain(test.type);
 
           expect(test.setup.prerequisites).toBeInstanceOf(Array);
           expect(test.setup.dataSetup).toBeInstanceOf(Array);
@@ -1910,8 +1937,14 @@ describe('Service Type Contracts', () => {
           expect(test.execution.expectedResponse.statusCode).toBeGreaterThanOrEqual(100);
           expect(test.execution.expectedResponse.statusCode).toBeLessThan(600);
 
-          test.assertions.forEach(assertion => {
-            expect(['status_code', 'response_body', 'response_header', 'response_time', 'custom']).toContain(assertion.type);
+          test.assertions.forEach((assertion) => {
+            expect([
+              'status_code',
+              'response_body',
+              'response_header',
+              'response_time',
+              'custom',
+            ]).toContain(assertion.type);
             expect(assertion.condition).toBeTypeOf('string');
             expect(assertion.description).toBeTypeOf('string');
           });
@@ -1928,23 +1961,23 @@ describe('Service Type Contracts', () => {
       expect(testSuite.executionConfig.environment).toBeTypeOf('string');
 
       expect(testSuite.reporting.formats).toBeInstanceOf(Array);
-      testSuite.reporting.formats.forEach(format => {
+      testSuite.reporting.formats.forEach((format) => {
         expect(['json', 'junit', 'html', 'markdown']).toContain(format);
       });
 
       expect(testSuite.reporting.metrics).toBeInstanceOf(Array);
-      testSuite.reporting.metrics.forEach(metric => {
+      testSuite.reporting.metrics.forEach((metric) => {
         expect(metric.name).toBeTypeOf('string');
         expect(['counter', 'gauge', 'histogram']).toContain(metric.type);
         expect(metric.description).toBeTypeOf('string');
       });
 
       expect(testSuite.reporting.notifications).toBeInstanceOf(Array);
-      testSuite.reporting.notifications.forEach(notification => {
+      testSuite.reporting.notifications.forEach((notification) => {
         expect(['email', 'slack', 'webhook']).toContain(notification.type);
         expect(notification.destination).toBeTypeOf('string');
         expect(notification.triggers).toBeInstanceOf(Array);
-        notification.triggers.forEach(trigger => {
+        notification.triggers.forEach((trigger) => {
           expect(['success', 'failure', 'always']).toContain(trigger);
         });
       });
@@ -1962,7 +1995,7 @@ describe('Service Type Contracts', () => {
         kind: 'entity',
         content: 'Integration test entity',
         scope: { project: 'integration-test', branch: 'main' },
-        data: { name: 'Test Entity', type: 'integration' }
+        data: { name: 'Test Entity', type: 'integration' },
       };
 
       const searchQuery: SearchQuery = {
@@ -1970,42 +2003,45 @@ describe('Service Type Contracts', () => {
         scope: { project: 'integration-test' },
         types: ['entity'],
         mode: 'auto',
-        limit: 10
+        limit: 10,
       };
 
       // Mock service responses
-      (validationService.validateKnowledgeItem as MockedFunction<typeof validationService.validateKnowledgeItem>)
-        .mockResolvedValue({ valid: true, errors: [] });
+      (
+        validationService.validateKnowledgeItem as MockedFunction<
+          typeof validationService.validateKnowledgeItem
+        >
+      ).mockResolvedValue({ valid: true, errors: [] });
 
-      (repository.store as MockedFunction<typeof repository.store>)
-        .mockResolvedValue({
-          id: 'integration-test-id',
-          status: 'inserted',
-          kind: 'entity',
-          created_at: new Date().toISOString()
-        });
+      (repository.store as MockedFunction<typeof repository.store>).mockResolvedValue({
+        id: 'integration-test-id',
+        status: 'inserted',
+        kind: 'entity',
+        created_at: new Date().toISOString(),
+      });
 
-      (searchService.search as MockedFunction<typeof searchService.search>)
-        .mockResolvedValue({
-          results: [{
+      (searchService.search as MockedFunction<typeof searchService.search>).mockResolvedValue({
+        results: [
+          {
             id: 'integration-test-id',
             kind: 'entity',
             scope: testItem.scope,
             data: testItem.data,
             created_at: new Date().toISOString(),
             confidence_score: 1.0,
-            match_type: 'exact' as const
-          }],
-          items: [],
-          total_count: 1,
-          total: 1,
-          autonomous_context: {
-            search_mode_used: 'exact',
-            results_found: 1,
-            confidence_average: 1.0,
-            user_message_suggestion: 'Found exact match'
-          }
-        });
+            match_type: 'exact' as const,
+          },
+        ],
+        items: [],
+        total_count: 1,
+        total: 1,
+        autonomous_context: {
+          search_mode_used: 'exact',
+          results_found: 1,
+          confidence_average: 1.0,
+          user_message_suggestion: 'Found exact match',
+        },
+      });
 
       // Execute workflow
       const validationResult = await validationService.validateKnowledgeItem(testItem);
@@ -2028,20 +2064,24 @@ describe('Service Type Contracts', () => {
 
       const invalidItem = {
         // Missing required properties
-        kind: 'entity'
+        kind: 'entity',
         // scope and data are missing
       } as any;
 
       // Mock validation failure
-      (validationService.validateKnowledgeItem as MockedFunction<typeof validationService.validateKnowledgeItem>)
-        .mockResolvedValue({
-          valid: false,
-          errors: ['Missing required property: scope', 'Missing required property: data']
-        });
+      (
+        validationService.validateKnowledgeItem as MockedFunction<
+          typeof validationService.validateKnowledgeItem
+        >
+      ).mockResolvedValue({
+        valid: false,
+        errors: ['Missing required property: scope', 'Missing required property: data'],
+      });
 
       // Mock repository error
-      (repository.store as MockedFunction<typeof repository.store>)
-        .mockRejectedValue(new Error('Invalid knowledge item: missing required fields'));
+      (repository.store as MockedFunction<typeof repository.store>).mockRejectedValue(
+        new Error('Invalid knowledge item: missing required fields')
+      );
 
       // Test validation failure
       const validationResult = await validationService.validateKnowledgeItem(invalidItem);
@@ -2057,10 +2097,10 @@ describe('Service Type Contracts', () => {
       const validConfigs = [
         serviceConfigs.basicServiceConfig,
         serviceConfigs.workflowServiceConfig,
-        serviceConfigs.loggingServiceIntegration
+        serviceConfigs.loggingServiceIntegration,
       ];
 
-      validConfigs.forEach(config => {
+      validConfigs.forEach((config) => {
         expect(config).toBeDefined();
         expect(typeof config).toBe('object');
       });

@@ -21,9 +21,9 @@ async function testMemoryStoreOrchestrator() {
           component: 'test-component',
           status: 'proposed',
           title: 'Test ADR',
-          rationale: 'This is a test ADR for validation'
-        }
-      }
+          rationale: 'This is a test ADR for validation',
+        },
+      },
     ]);
 
     console.log('✅ Test 1 passed - Basic storage works');
@@ -47,9 +47,9 @@ async function testMemoryStoreOrchestrator() {
           component: 'test-component',
           status: 'proposed', // Can modify proposed decisions
           title: 'Updated Test ADR',
-          rationale: 'This is an updated test ADR'
-        }
-      }
+          rationale: 'This is an updated test ADR',
+        },
+      },
     ]);
 
     console.log('✅ Test 2 passed - Business rule validation works');
@@ -70,8 +70,8 @@ async function testMemoryStoreOrchestrator() {
           todo_type: 'task',
           text: 'Test todo item',
           status: 'open',
-          priority: 'medium'
-        }
+          priority: 'medium',
+        },
       },
       {
         kind: 'risk',
@@ -83,8 +83,8 @@ async function testMemoryStoreOrchestrator() {
           probability: 'possible',
           impact_description: 'Test impact description',
           validation_status: 'active',
-          mitigation_strategies: ['Test mitigation']
-        }
+          mitigation_strategies: ['Test mitigation'],
+        },
       },
       {
         kind: 'entity',
@@ -92,9 +92,9 @@ async function testMemoryStoreOrchestrator() {
         data: {
           entity_type: 'user',
           name: 'test-user',
-          data: { email: 'test@example.com' }
-        }
-      }
+          data: { email: 'test@example.com' },
+        },
+      },
     ]);
 
     console.log('✅ Test 3 passed - Multiple knowledge types work');
@@ -118,9 +118,9 @@ async function testMemoryStoreOrchestrator() {
         data: {
           service: 'test-service',
           steps: [], // Empty steps - should fail validation
-          title: 'Invalid runbook'
-        }
-      }
+          title: 'Invalid runbook',
+        },
+      },
     ]);
 
     console.log('❌ Test 4 failed - Should have thrown validation error');

@@ -14,7 +14,7 @@ import { computeContentHash } from '../../../src/utils/hash';
 
 // Setup global performance mock
 (global as any).performance = {
-  now: () => Date.now()
+  now: () => Date.now(),
 };
 
 describe('Hashing Utilities', () => {
@@ -198,7 +198,7 @@ describe('Hashing Utilities', () => {
         'content A ', // Different trailing space (should be same after normalization)
       ];
 
-      const hashes = contents.map(content => computeContentHash(content));
+      const hashes = contents.map((content) => computeContentHash(content));
 
       expect(hashes[0]).not.toBe(hashes[1]); // Different content should produce different hashes
       expect(hashes[0]).toBe(hashes[2]); // Same after case normalization
@@ -211,7 +211,7 @@ describe('Hashing Utilities', () => {
       const hashes = Array.from({ length: 100 }, () => computeContentHash(content));
 
       // All hashes should be identical
-      expect(hashes.every(hash => hash === hashes[0])).toBe(true);
+      expect(hashes.every((hash) => hash === hashes[0])).toBe(true);
     });
 
     it('should have avalanche effect (small changes produce different hashes)', () => {
@@ -238,7 +238,7 @@ describe('Hashing Utilities', () => {
     it('should handle hash collision resistance', () => {
       // Generate many different strings and check for collisions
       const strings = Array.from({ length: 1000 }, (_, i) => `test string ${i}`);
-      const hashes = strings.map(str => computeContentHash(str));
+      const hashes = strings.map((str) => computeContentHash(str));
       const uniqueHashes = new Set(hashes);
 
       expect(uniqueHashes.size).toBe(hashes.length); // No collisions
@@ -271,9 +271,9 @@ describe('Hashing Utilities', () => {
       ];
 
       const baseHash = computeContentHash(content);
-      const variationHashes = variations.map(v => computeContentHash(v));
+      const variationHashes = variations.map((v) => computeContentHash(v));
 
-      variationHashes.forEach(hash => {
+      variationHashes.forEach((hash) => {
         expect(hash).toBe(baseHash);
       });
     });
@@ -291,19 +291,19 @@ describe('Hashing Utilities', () => {
       ];
 
       const baseHash = computeContentHash(content);
-      const variationHashes = variations.map(v => computeContentHash(v));
+      const variationHashes = variations.map((v) => computeContentHash(v));
 
-      variationHashes.forEach(hash => {
+      variationHashes.forEach((hash) => {
         expect(hash).toBe(baseHash);
       });
     });
 
     it('should handle empty results after normalization', () => {
       const inputs = ['   ', '\t', '\n', '\r', ' \t\n\r ', '\n\t\r\n\t '];
-      const hashes = inputs.map(input => computeContentHash(input));
+      const hashes = inputs.map((input) => computeContentHash(input));
 
       // All should produce the same hash as empty string
-      hashes.forEach(hash => {
+      hashes.forEach((hash) => {
         expect(hash).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
       });
     });
@@ -319,17 +319,9 @@ describe('Hashing Utilities', () => {
     });
 
     it('should handle non-string input gracefully', () => {
-      const nonStringInputs = [
-        123,
-        true,
-        false,
-        [],
-        {},
-        Symbol('test'),
-        () => 'function',
-      ];
+      const nonStringInputs = [123, true, false, [], {}, Symbol('test'), () => 'function'];
 
-      nonStringInputs.forEach(input => {
+      nonStringInputs.forEach((input) => {
         expect(() => computeContentHash(input as any)).not.toThrow();
       });
     });
@@ -386,11 +378,11 @@ describe('Hashing Utilities', () => {
       const contents = Array.from({ length: 1000 }, (_, i) => `Content string number ${i}`);
 
       const startTime = performance.now();
-      const hashes = contents.map(content => computeContentHash(content));
+      const hashes = contents.map((content) => computeContentHash(content));
       const endTime = performance.now();
 
       expect(hashes).toHaveLength(1000);
-      expect(hashes.every(hash => hash.match(/^[a-f0-9]{64}$/))).toBe(true);
+      expect(hashes.every((hash) => hash.match(/^[a-f0-9]{64}$/))).toBe(true);
       expect(endTime - startTime).toBeLessThan(1000); // Should complete in under 1 second
     });
 
@@ -511,7 +503,7 @@ function example()    {
     });
 
     it('should handle user input normalization', () => {
-      const userInput1 = '  User\'s SEARCH query   ';
+      const userInput1 = "  User's SEARCH query   ";
       const userInput2 = "user's search query";
       const userInput3 = "USER'S SEARCH QUERY";
 
@@ -564,10 +556,10 @@ function example()    {
 
     it('should produce consistent output format', () => {
       const contents = Array.from({ length: 100 }, (_, i) => `Test content ${i}`);
-      const hashes = contents.map(content => computeContentHash(content));
+      const hashes = contents.map((content) => computeContentHash(content));
 
       // All hashes should be exactly 64 hexadecimal characters
-      hashes.forEach(hash => {
+      hashes.forEach((hash) => {
         expect(hash).toMatch(/^[a-f0-9]{64}$/);
         expect(hash.length).toBe(64);
       });
@@ -579,11 +571,11 @@ function example()    {
         'aaaaaaaaaa',
         'aaaaaaaaab',
         'baaaaaaaaa',
-        `${'a'.repeat(50)  }b`,
-        `${'a'.repeat(49)  }ba`,
+        `${'a'.repeat(50)}b`,
+        `${'a'.repeat(49)}ba`,
       ];
 
-      const hashes = testCases.map(content => computeContentHash(content));
+      const hashes = testCases.map((content) => computeContentHash(content));
 
       // All hashes should be different
       const uniqueHashes = new Set(hashes);

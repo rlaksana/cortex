@@ -15,37 +15,37 @@ import {
   type BusinessValidator,
   type ValidationContext,
   ValidationSeverity,
-  ValidationMode
+  ValidationMode,
 } from '../../../src/services/validation/validation-service';
 
 import {
   SchemaValidator,
   type ValidationOptions,
-  type ValidationError as SchemaValidationError
+  type ValidationError as SchemaValidationError,
 } from '../../../src/utils/validation/schema-validator';
 
 import {
   InputSanitizer,
   type SanitizationOptions,
-  type SanitizationResult
+  type SanitizationResult,
 } from '../../../src/utils/validation/input-sanitizer';
 
 import {
   BusinessRuleValidator,
   type RuleDefinition,
-  type RuleContext
+  type RuleContext,
 } from '../../../src/utils/validation/business-rule-validator';
 
 import {
   ValidationCache,
   type CacheOptions,
-  type CacheEntry
+  type CacheEntry,
 } from '../../../src/utils/validation/validation-cache';
 
 import {
   ValidationReporter,
   type ErrorReport,
-  type ReportingOptions
+  type ReportingOptions,
 } from '../../../src/utils/validation/validation-reporter';
 
 // Mock implementations
@@ -59,7 +59,7 @@ const mockValidationService = {
   createValidator: vi.fn(),
   registerValidator: vi.fn(),
   clearCache: vi.fn(),
-  getValidationStats: vi.fn()
+  getValidationStats: vi.fn(),
 } as any;
 
 const mockSchemaValidator: any = {
@@ -67,7 +67,7 @@ const mockSchemaValidator: any = {
   compile: vi.fn(),
   addFormat: vi.fn(),
   removeFormat: vi.fn(),
-  getFormats: vi.fn()
+  getFormats: vi.fn(),
 } as any;
 
 const mockInputSanitizer: any = {
@@ -75,7 +75,7 @@ const mockInputSanitizer: any = {
   sanitizeBatch: vi.fn(),
   validateSanitized: vi.fn(),
   addSanitizationRule: vi.fn(),
-  removeSanitizationRule: vi.fn()
+  removeSanitizationRule: vi.fn(),
 } as any;
 
 const mockBusinessRuleValidator: any = {
@@ -83,7 +83,7 @@ const mockBusinessRuleValidator: any = {
   addRule: vi.fn(),
   removeRule: vi.fn(),
   getRules: vi.fn(),
-  validateWithContext: vi.fn()
+  validateWithContext: vi.fn(),
 } as any;
 
 const mockValidationCache: any = {
@@ -93,7 +93,7 @@ const mockValidationCache: any = {
   clear: vi.fn(),
   has: vi.fn(),
   getStats: vi.fn(),
-  cleanup: vi.fn()
+  cleanup: vi.fn(),
 } as any;
 
 const mockValidationReporter: any = {
@@ -102,7 +102,7 @@ const mockValidationReporter: any = {
   aggregateErrors: vi.fn(),
   createReport: vi.fn(),
   exportReport: vi.fn(),
-  clearErrors: vi.fn()
+  clearErrors: vi.fn(),
 } as any;
 
 describe('Schema Validation', () => {
@@ -116,16 +116,16 @@ describe('Schema Validation', () => {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          age: { type: 'number', minimum: 0 }
+          age: { type: 'number', minimum: 0 },
         },
-        required: ['name']
+        required: ['name'],
       };
 
       const data = { name: 'John', age: 30 };
       const expectedResult: ValidationResult = {
         valid: true,
         errors: [],
-        data
+        data,
       };
 
       mockValidationService.validateSchema.mockResolvedValue(expectedResult);
@@ -141,21 +141,23 @@ describe('Schema Validation', () => {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          age: { type: 'number', minimum: 0 }
+          age: { type: 'number', minimum: 0 },
         },
-        required: ['name', 'age']
+        required: ['name', 'age'],
       };
 
       const data = { name: 'John' }; // Missing required age
       const expectedResult: ValidationResult = {
         valid: false,
-        errors: [{
-          field: 'age',
-          message: 'Required field',
-          code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR
-        }],
-        data
+        errors: [
+          {
+            field: 'age',
+            message: 'Required field',
+            code: 'REQUIRED',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data,
       };
 
       mockValidationService.validateSchema.mockResolvedValue(expectedResult);
@@ -177,34 +179,36 @@ describe('Schema Validation', () => {
               profile: {
                 type: 'object',
                 properties: {
-                  email: { type: 'string', format: 'email' }
+                  email: { type: 'string', format: 'email' },
                 },
-                required: ['email']
-              }
+                required: ['email'],
+              },
             },
-            required: ['profile']
-          }
+            required: ['profile'],
+          },
         },
-        required: ['user']
+        required: ['user'],
       };
 
       const data = {
         user: {
           profile: {
-            email: 'invalid-email'
-          }
-        }
+            email: 'invalid-email',
+          },
+        },
       };
 
       const expectedResult: ValidationResult = {
         valid: false,
-        errors: [{
-          field: 'user.profile.email',
-          message: 'Invalid email format',
-          code: 'FORMAT',
-          severity: ValidationSeverity.ERROR
-        }],
-        data
+        errors: [
+          {
+            field: 'user.profile.email',
+            message: 'Invalid email format',
+            code: 'FORMAT',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data,
       };
 
       mockValidationService.validateSchema.mockResolvedValue(expectedResult);
@@ -222,27 +226,29 @@ describe('Schema Validation', () => {
           type: 'object',
           properties: {
             id: { type: 'number' },
-            name: { type: 'string' }
+            name: { type: 'string' },
           },
-          required: ['id', 'name']
-        }
+          required: ['id', 'name'],
+        },
       };
 
       const data = [
         { id: 1, name: 'Item 1' },
         { id: 2, name: 'Item 2' },
-        { id: 3 } // Missing name
+        { id: 3 }, // Missing name
       ];
 
       const expectedResult: ValidationResult = {
         valid: false,
-        errors: [{
-          field: '[2].name',
-          message: 'Required field',
-          code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR
-        }],
-        data
+        errors: [
+          {
+            field: '[2].name',
+            message: 'Required field',
+            code: 'REQUIRED',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data,
       };
 
       mockValidationService.validateSchema.mockResolvedValue(expectedResult);
@@ -260,7 +266,7 @@ describe('Schema Validation', () => {
 
       mockSchemaValidator.validate.mockReturnValue({
         valid: true,
-        errors: []
+        errors: [],
       });
 
       const result = mockSchemaValidator.validate('test string', schema);
@@ -275,7 +281,7 @@ describe('Schema Validation', () => {
       mockSchemaValidator.validate.mockReturnValue({
         valid: true,
         errors: [],
-        data: 42
+        data: 42,
       });
 
       const result = mockSchemaValidator.validate('42', schema);
@@ -286,15 +292,12 @@ describe('Schema Validation', () => {
 
     it('should validate union types', () => {
       const schema: ValidationSchema = {
-        anyOf: [
-          { type: 'string' },
-          { type: 'number' }
-        ]
+        anyOf: [{ type: 'string' }, { type: 'number' }],
       };
 
       mockSchemaValidator.validate.mockReturnValue({
         valid: true,
-        errors: []
+        errors: [],
       });
 
       const result = mockSchemaValidator.validate(42, schema);
@@ -305,12 +308,12 @@ describe('Schema Validation', () => {
     it('should handle custom formats', () => {
       const schema: ValidationSchema = {
         type: 'string',
-        format: 'custom-date'
+        format: 'custom-date',
       };
 
       mockSchemaValidator.validate.mockReturnValue({
         valid: true,
-        errors: []
+        errors: [],
       });
 
       mockSchemaValidator.addFormat('custom-date', (value: string) => {
@@ -330,20 +333,22 @@ describe('Schema Validation', () => {
         validator: (value: any) => {
           return typeof value === 'string' && value.length >= 3;
         },
-        message: 'String must be at least 3 characters long'
+        message: 'String must be at least 3 characters long',
       };
 
       const data = { name: 'Jo' }; // Too short
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: false,
-        errors: [{
-          field: 'name',
-          message: customRule.message,
-          code: 'CUSTOM_VALIDATION',
-          severity: ValidationSeverity.ERROR
-        }],
-        data
+        errors: [
+          {
+            field: 'name',
+            message: customRule.message,
+            code: 'CUSTOM_VALIDATION',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data,
       });
 
       const result = await mockValidationService.validateSchema(data, {}, [customRule]);
@@ -357,10 +362,10 @@ describe('Schema Validation', () => {
         name: 'asyncRule',
         validator: async (value: any) => {
           // Simulate async check
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return value && value.exists;
         },
-        message: 'Resource must exist'
+        message: 'Resource must exist',
       };
 
       const data = { id: 1, exists: true };
@@ -368,7 +373,7 @@ describe('Schema Validation', () => {
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data
+        data,
       });
 
       const result = await mockValidationService.validateSchema(data, {}, [asyncRule]);
@@ -382,14 +387,14 @@ describe('Schema Validation', () => {
           name: 'rule1',
           validator: (value: any) => value.step1,
           message: 'Step 1 failed',
-          dependsOn: []
+          dependsOn: [],
         },
         {
           name: 'rule2',
           validator: (value: any) => value.step2,
           message: 'Step 2 failed',
-          dependsOn: ['rule1']
-        }
+          dependsOn: ['rule1'],
+        },
       ];
 
       const data = { step1: true, step2: true };
@@ -397,7 +402,7 @@ describe('Schema Validation', () => {
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data
+        data,
       });
 
       const result = await mockValidationService.validateSchema(data, {}, rules);
@@ -413,26 +418,26 @@ describe('Schema Validation', () => {
           field: 'name',
           message: 'Name is required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR
+          severity: ValidationSeverity.ERROR,
         },
         {
           field: 'email',
           message: 'Invalid email format',
           code: 'FORMAT',
-          severity: ValidationSeverity.WARNING
-        }
+          severity: ValidationSeverity.WARNING,
+        },
       ];
 
       mockValidationReporter.formatErrors.mockReturnValue({
         formattedErrors: [
           'ERROR: name - Name is required',
-          'WARNING: email - Invalid email format'
+          'WARNING: email - Invalid email format',
         ],
         summary: {
           total: 2,
           errors: 1,
-          warnings: 1
-        }
+          warnings: 1,
+        },
       });
 
       const result = mockValidationReporter.formatErrors(errors);
@@ -451,19 +456,19 @@ describe('Schema Validation', () => {
         context: {
           schemaPath: 'properties.user.properties.address.properties.zip',
           value: 'invalid',
-          allowedValues: ['12345', '12345-6789']
-        }
+          allowedValues: ['12345', '12345-6789'],
+        },
       };
 
       mockValidationReporter.formatErrors.mockReturnValue({
         formattedErrors: [
-          'ERROR: user.address.zip - Invalid ZIP code (Value: "invalid", Expected: ZIP format)'
+          'ERROR: user.address.zip - Invalid ZIP code (Value: "invalid", Expected: ZIP format)',
         ],
         summary: {
           total: 1,
           errors: 1,
-          warnings: 0
-        }
+          warnings: 0,
+        },
       });
 
       const result = mockValidationReporter.formatErrors([error]);
@@ -484,14 +489,14 @@ describe('Input Sanitization', () => {
       const input = '<script>alert("xss")</script><p>Safe content</p>';
       const options: SanitizationOptions = {
         allowedTags: ['p'],
-        allowedAttributes: {}
+        allowedAttributes: {},
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: '<p>Safe content</p>',
         changed: true,
         removed: ['script'],
-        warnings: []
+        warnings: [],
       });
 
       const result = mockInputSanitizer.sanitize(input, options);
@@ -505,14 +510,14 @@ describe('Input Sanitization', () => {
       const input = "'; DROP TABLE users; --";
       const options: SanitizationOptions = {
         type: 'sql',
-        escapeQuotes: true
+        escapeQuotes: true,
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: "\\'\\'; DROP TABLE users; --",
         changed: true,
         removed: [],
-        warnings: ['SQL injection attempt detected']
+        warnings: ['SQL injection attempt detected'],
       });
 
       const result = mockInputSanitizer.sanitize(input, options);
@@ -525,19 +530,24 @@ describe('Input Sanitization', () => {
       const inputs = [
         '<script>alert("xss")</script>',
         '<p>Safe content</p>',
-        "'; DROP TABLE users; --"
+        "'; DROP TABLE users; --",
       ];
 
       const options: SanitizationOptions = {
         allowedTags: ['p'],
         allowedAttributes: {},
-        escapeQuotes: true
+        escapeQuotes: true,
       };
 
       mockInputSanitizer.sanitizeBatch.mockReturnValue([
         { sanitized: '', changed: true, removed: ['script'], warnings: [] },
         { sanitized: '<p>Safe content</p>', changed: false, removed: [], warnings: [] },
-        { sanitized: "\\'\\'; DROP TABLE users; --", changed: true, removed: [], warnings: ['SQL injection attempt detected'] }
+        {
+          sanitized: "\\'\\'; DROP TABLE users; --",
+          changed: true,
+          removed: [],
+          warnings: ['SQL injection attempt detected'],
+        },
       ]);
 
       const results = mockInputSanitizer.sanitizeBatch(inputs, options);
@@ -551,14 +561,14 @@ describe('Input Sanitization', () => {
       const input = '<p>This is <strong>safe</strong> content</p>';
       const options: SanitizationOptions = {
         allowedTags: ['p', 'strong'],
-        allowedAttributes: {}
+        allowedAttributes: {},
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: input,
         changed: false,
         removed: [],
-        warnings: []
+        warnings: [],
       });
 
       const result = mockInputSanitizer.sanitize(input, options);
@@ -574,25 +584,25 @@ describe('Input Sanitization', () => {
         '<script>alert("xss")</script>',
         '<img src="x" onerror="alert(\'xss\')">',
         '<a href="javascript:alert(\'xss\')">Click me</a>',
-        '<div onclick="alert(\'xss\')">Click</div>'
+        '<div onclick="alert(\'xss\')">Click</div>',
       ];
 
       const options: SanitizationOptions = {
         xssProtection: true,
         removeEventHandlers: true,
-        removeJavascriptProtocols: true
+        removeJavascriptProtocols: true,
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: '',
         changed: true,
         removed: ['script', 'img', 'a', 'div'],
-        warnings: xssInputs.map(input => `XSS attempt detected: ${input.substring(0, 20)}...`)
+        warnings: xssInputs.map((input) => `XSS attempt detected: ${input.substring(0, 20)}...`),
       });
 
-      xssInputs.forEach(input => {
+      xssInputs.forEach((input) => {
         const result = mockInputSanitizer.sanitize(input, options);
-        expect(result.warnings.some(w => w.includes('XSS attempt'))).toBe(true);
+        expect(result.warnings.some((w) => w.includes('XSS attempt'))).toBe(true);
       });
     });
 
@@ -601,14 +611,14 @@ describe('Input Sanitization', () => {
       const options: SanitizationOptions = {
         allowedTags: ['a'],
         allowedAttributes: { href: true, title: true },
-        xssProtection: true
+        xssProtection: true,
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: input,
         changed: false,
         removed: [],
-        warnings: []
+        warnings: [],
       });
 
       const result = mockInputSanitizer.sanitize(input, options);
@@ -623,25 +633,27 @@ describe('Input Sanitization', () => {
       const sqlInjectionPatterns = [
         "'; DROP TABLE users; --",
         "' OR '1'='1",
-        "UNION SELECT * FROM passwords",
-        "'; EXEC xp_cmdshell('dir'); --"
+        'UNION SELECT * FROM passwords',
+        "'; EXEC xp_cmdshell('dir'); --",
       ];
 
       const options: SanitizationOptions = {
         type: 'sql',
-        sqlInjectionProtection: true
+        sqlInjectionProtection: true,
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: '',
         changed: true,
         removed: [],
-        warnings: sqlInjectionPatterns.map(pattern => `SQL injection attempt detected: ${pattern}`)
+        warnings: sqlInjectionPatterns.map(
+          (pattern) => `SQL injection attempt detected: ${pattern}`
+        ),
       });
 
-      sqlInjectionPatterns.forEach(pattern => {
+      sqlInjectionPatterns.forEach((pattern) => {
         const result = mockInputSanitizer.sanitize(pattern, options);
-        expect(result.warnings.some(w => w.includes('SQL injection attempt'))).toBe(true);
+        expect(result.warnings.some((w) => w.includes('SQL injection attempt'))).toBe(true);
       });
     });
 
@@ -649,14 +661,14 @@ describe('Input Sanitization', () => {
       const input = "O'Reilly";
       const options: SanitizationOptions = {
         type: 'sql',
-        escapeQuotes: true
+        escapeQuotes: true,
       };
 
       mockInputSanitizer.sanitize.mockReturnValue({
         sanitized: "O''Reilly",
         changed: true,
         removed: [],
-        warnings: []
+        warnings: [],
       });
 
       const result = mockInputSanitizer.sanitize(input, options);
@@ -667,45 +679,31 @@ describe('Input Sanitization', () => {
 
   describe('Input Format Validation', () => {
     it('should validate email formats', () => {
-      const validEmails = [
-        'user@example.com',
-        'user.name@example.co.uk',
-        'user+tag@example.org'
-      ];
+      const validEmails = ['user@example.com', 'user.name@example.co.uk', 'user+tag@example.org'];
 
-      const invalidEmails = [
-        'invalid-email',
-        '@example.com',
-        'user@',
-        'user..name@example.com'
-      ];
+      const invalidEmails = ['invalid-email', '@example.com', 'user@', 'user..name@example.com'];
 
       mockInputSanitizer.validateSanitized.mockReturnValue(true);
 
-      validEmails.forEach(email => {
+      validEmails.forEach((email) => {
         const result = mockInputSanitizer.validateSanitized(email, { type: 'email' });
         expect(result).toBe(true);
       });
 
       mockInputSanitizer.validateSanitized.mockReturnValue(false);
 
-      invalidEmails.forEach(email => {
+      invalidEmails.forEach((email) => {
         const result = mockInputSanitizer.validateSanitized(email, { type: 'email' });
         expect(result).toBe(false);
       });
     });
 
     it('should validate phone number formats', () => {
-      const validPhones = [
-        '+1-555-123-4567',
-        '(555) 123-4567',
-        '555.123.4567',
-        '5551234567'
-      ];
+      const validPhones = ['+1-555-123-4567', '(555) 123-4567', '555.123.4567', '5551234567'];
 
       mockInputSanitizer.validateSanitized.mockReturnValue(true);
 
-      validPhones.forEach(phone => {
+      validPhones.forEach((phone) => {
         const result = mockInputSanitizer.validateSanitized(phone, { type: 'phone' });
         expect(result).toBe(true);
       });
@@ -716,12 +714,12 @@ describe('Input Sanitization', () => {
         'https://example.com',
         'http://example.com/path',
         'https://example.com:8080/path?query=value',
-        'ftp://example.com/file.txt'
+        'ftp://example.com/file.txt',
       ];
 
       mockInputSanitizer.validateSanitized.mockReturnValue(true);
 
-      validUrls.forEach(url => {
+      validUrls.forEach((url) => {
         const result = mockInputSanitizer.validateSanitized(url, { type: 'url' });
         expect(result).toBe(true);
       });
@@ -739,22 +737,20 @@ describe('Business Rule Validation', () => {
       const rule: RuleDefinition = {
         name: 'entityType',
         validate: (data: any, context: RuleContext) => {
-          return data.type === 'entity' &&
-                 data.name &&
-                 data.properties;
+          return data.type === 'entity' && data.name && data.properties;
         },
-        message: 'Entity must have type, name, and properties'
+        message: 'Entity must have type, name, and properties',
       };
 
       const validData = {
         type: 'entity',
         name: 'User',
-        properties: { name: 'string', age: 'number' }
+        properties: { name: 'string', age: 'number' },
       };
 
       const invalidData = {
         type: 'entity',
-        name: 'User'
+        name: 'User',
         // Missing properties
       };
 
@@ -769,19 +765,16 @@ describe('Business Rule Validation', () => {
       const rule: RuleDefinition = {
         name: 'relationType',
         validate: (data: any, context: RuleContext) => {
-          return data.type === 'relation' &&
-                 data.source &&
-                 data.target &&
-                 data.relationType;
+          return data.type === 'relation' && data.source && data.target && data.relationType;
         },
-        message: 'Relation must have source, target, and relationType'
+        message: 'Relation must have source, target, and relationType',
       };
 
       const validData = {
         type: 'relation',
         source: 'user1',
         target: 'user2',
-        relationType: 'knows'
+        relationType: 'knows',
       };
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -792,17 +785,15 @@ describe('Business Rule Validation', () => {
       const rule: RuleDefinition = {
         name: 'observationType',
         validate: (data: any, context: RuleContext) => {
-          return data.type === 'observation' &&
-                 data.content &&
-                 data.timestamp;
+          return data.type === 'observation' && data.content && data.timestamp;
         },
-        message: 'Observation must have content and timestamp'
+        message: 'Observation must have content and timestamp',
       };
 
       const validData = {
         type: 'observation',
         content: 'User logged in',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -820,17 +811,17 @@ describe('Business Rule Validation', () => {
           }
           return true; // Password is optional
         },
-        message: 'Password and confirmation must match'
+        message: 'Password and confirmation must match',
       };
 
       const validData = {
         password: 'secret123',
-        passwordConfirmation: 'secret123'
+        passwordConfirmation: 'secret123',
       };
 
       const invalidData = {
         password: 'secret123',
-        passwordConfirmation: 'different'
+        passwordConfirmation: 'different',
       };
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -849,24 +840,24 @@ describe('Business Rule Validation', () => {
           }
           return true;
         },
-        message: 'Employees must have company and employeeId'
+        message: 'Employees must have company and employeeId',
       };
 
       const validEmployee = {
         type: 'employee',
         company: 'Acme Corp',
-        employeeId: 'EMP123'
+        employeeId: 'EMP123',
       };
 
       const validContractor = {
         type: 'contractor',
-        company: 'Acme Corp'
+        company: 'Acme Corp',
         // employeeId not required for contractors
       };
 
       const invalidEmployee = {
         type: 'employee',
-        company: 'Acme Corp'
+        company: 'Acme Corp',
         // Missing employeeId
       };
 
@@ -888,7 +879,7 @@ describe('Business Rule Validation', () => {
           validate: (data: any, context: RuleContext) => {
             return data.age >= 0 && data.age <= 150;
           },
-          message: 'Age must be between 0 and 150'
+          message: 'Age must be between 0 and 150',
         },
         {
           name: 'studentIdValidation',
@@ -896,20 +887,20 @@ describe('Business Rule Validation', () => {
           validate: (data: any, context: RuleContext) => {
             return data.studentId && /^STU\d{6}$/.test(data.studentId);
           },
-          message: 'Students must have a valid student ID'
-        }
+          message: 'Students must have a valid student ID',
+        },
       ];
 
       const validStudent = {
         type: 'student',
         age: 20,
-        studentId: 'STU123456'
+        studentId: 'STU123456',
       };
 
       const invalidStudent = {
         type: 'student',
         age: -5,
-        studentId: 'INVALID'
+        studentId: 'INVALID',
       };
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -923,8 +914,10 @@ describe('Business Rule Validation', () => {
       const rule: RuleDefinition = {
         name: 'complexValidation',
         condition: (data: any) => {
-          return (data.type === 'premium' && data.subscription) ||
-                 (data.type === 'trial' && data.trialEnds);
+          return (
+            (data.type === 'premium' && data.subscription) ||
+            (data.type === 'trial' && data.trialEnds)
+          );
         },
         validate: (data: any, context: RuleContext) => {
           if (data.type === 'premium') {
@@ -934,17 +927,17 @@ describe('Business Rule Validation', () => {
           }
           return false;
         },
-        message: 'Account type validation failed'
+        message: 'Account type validation failed',
       };
 
       const validPremium = {
         type: 'premium',
-        subscription: { active: true }
+        subscription: { active: true },
       };
 
       const validTrial = {
         type: 'trial',
-        trialEnds: new Date(Date.now() + 86400000).toISOString() // Tomorrow
+        trialEnds: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
       };
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -960,25 +953,23 @@ describe('Business Rule Validation', () => {
         validate: (data: any, context: ValidationContext) => {
           // Custom business logic
           if (data.accountType === 'business') {
-            return data.businessRegistration &&
-                   data.taxId &&
-                   data.contactEmail;
+            return data.businessRegistration && data.taxId && data.contactEmail;
           }
           return true;
         },
-        message: 'Business accounts must have registration, tax ID, and contact email'
+        message: 'Business accounts must have registration, tax ID, and contact email',
       };
 
       const validBusiness = {
         accountType: 'business',
         businessRegistration: 'REG123',
         taxId: 'TAX456',
-        contactEmail: 'contact@business.com'
+        contactEmail: 'contact@business.com',
       };
 
       const invalidBusiness = {
         accountType: 'business',
-        businessRegistration: 'REG123'
+        businessRegistration: 'REG123',
         // Missing taxId and contactEmail
       };
 
@@ -986,7 +977,7 @@ describe('Business Rule Validation', () => {
       mockValidationService.validateBusinessRules.mockResolvedValue({
         valid: true,
         errors: [],
-        data: validBusiness
+        data: validBusiness,
       });
 
       const validator = mockValidationService.createValidator(customValidator);
@@ -994,16 +985,20 @@ describe('Business Rule Validation', () => {
 
       mockValidationService.validateBusinessRules.mockResolvedValue({
         valid: false,
-        errors: [{
-          field: 'taxId',
-          message: 'Tax ID is required for business accounts',
-          code: 'BUSINESS_RULE',
-          severity: ValidationSeverity.ERROR
-        }],
-        data: invalidBusiness
+        errors: [
+          {
+            field: 'taxId',
+            message: 'Tax ID is required for business accounts',
+            code: 'BUSINESS_RULE',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data: invalidBusiness,
       });
 
-      const result = mockValidationService.validateBusinessRules(invalidBusiness, [customValidator]);
+      const result = mockValidationService.validateBusinessRules(invalidBusiness, [
+        customValidator,
+      ]);
       expect(result.valid).toBe(false);
     });
 
@@ -1012,7 +1007,7 @@ describe('Business Rule Validation', () => {
         name: 'asyncBusinessRule',
         validate: async (data: any, context: ValidationContext) => {
           // Simulate async validation (e.g., API call)
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
 
           // Check if user exists in external system
           if (data.email) {
@@ -1020,18 +1015,18 @@ describe('Business Rule Validation', () => {
           }
           return false;
         },
-        message: 'User must exist in external system'
+        message: 'User must exist in external system',
       };
 
       const data = {
         email: 'user@example.com',
-        name: 'Test User'
+        name: 'Test User',
       };
 
       mockValidationService.validateBusinessRules.mockResolvedValue({
         valid: true,
         errors: [],
-        data
+        data,
       });
 
       const result = await mockValidationService.validateBusinessRules(data, [asyncValidator]);
@@ -1051,7 +1046,7 @@ describe('Performance Validation', () => {
       const largeDataset = Array.from({ length: 10000 }, (_, i) => ({
         id: i + 1,
         name: `Item ${i + 1}`,
-        value: Math.random() * 100
+        value: Math.random() * 100,
       }));
 
       const schema: ValidationSchema = {
@@ -1061,10 +1056,10 @@ describe('Performance Validation', () => {
           properties: {
             id: { type: 'number' },
             name: { type: 'string' },
-            value: { type: 'number', minimum: 0 }
+            value: { type: 'number', minimum: 0 },
           },
-          required: ['id', 'name', 'value']
-        }
+          required: ['id', 'name', 'value'],
+        },
       };
 
       const startTime = Date.now();
@@ -1072,7 +1067,7 @@ describe('Performance Validation', () => {
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: largeDataset
+        data: largeDataset,
       });
 
       const result = await mockValidationService.validateSchema(largeDataset, schema);
@@ -1088,7 +1083,7 @@ describe('Performance Validation', () => {
       const repeatedData = Array.from({ length: 1000 }, () => ({
         type: 'user',
         email: 'user@example.com',
-        status: 'active'
+        status: 'active',
       }));
 
       const schema: ValidationSchema = {
@@ -1098,16 +1093,16 @@ describe('Performance Validation', () => {
           properties: {
             type: { type: 'string', enum: ['user', 'admin'] },
             email: { type: 'string', format: 'email' },
-            status: { type: 'string', enum: ['active', 'inactive'] }
+            status: { type: 'string', enum: ['active', 'inactive'] },
           },
-          required: ['type', 'email', 'status']
-        }
+          required: ['type', 'email', 'status'],
+        },
       };
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: repeatedData
+        data: repeatedData,
       });
 
       const result = await mockValidationService.validateSchema(repeatedData, schema);
@@ -1121,74 +1116,78 @@ describe('Performance Validation', () => {
       const items = [
         { name: 'Item 1', value: 10 },
         { name: 'Item 2', value: 20 },
-        { name: 'Item 3', value: 30 }
+        { name: 'Item 3', value: 30 },
       ];
 
       const schema: ValidationSchema = {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          value: { type: 'number', minimum: 0 }
+          value: { type: 'number', minimum: 0 },
         },
-        required: ['name', 'value']
+        required: ['name', 'value'],
       };
 
       mockValidationService.batchValidate.mockResolvedValue([
         { valid: true, errors: [], data: items[0] },
         { valid: true, errors: [], data: items[1] },
-        { valid: true, errors: [], data: items[2] }
+        { valid: true, errors: [], data: items[2] },
       ]);
 
       const results = await mockValidationService.batchValidate(items, schema);
 
       expect(results).toHaveLength(3);
-      expect(results.every(r => r.valid)).toBe(true);
+      expect(results.every((r) => r.valid)).toBe(true);
     });
 
     it('should handle batch validation with mixed results', async () => {
       const items = [
-        { name: 'Item 1', value: 10 },  // Valid
-        { name: 'Item 2' },              // Missing value
-        { value: 30 },                   // Missing name
-        { name: 'Item 4', value: -5 }    // Invalid value
+        { name: 'Item 1', value: 10 }, // Valid
+        { name: 'Item 2' }, // Missing value
+        { value: 30 }, // Missing name
+        { name: 'Item 4', value: -5 }, // Invalid value
       ];
 
       const schema: ValidationSchema = {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          value: { type: 'number', minimum: 0 }
+          value: { type: 'number', minimum: 0 },
         },
-        required: ['name', 'value']
+        required: ['name', 'value'],
       };
 
       mockValidationService.batchValidate.mockResolvedValue([
         { valid: true, errors: [], data: items[0] },
         { valid: false, errors: [{ field: 'value', message: 'Required field' }], data: items[1] },
         { valid: false, errors: [{ field: 'name', message: 'Required field' }], data: items[2] },
-        { valid: false, errors: [{ field: 'value', message: 'Value must be >= 0' }], data: items[3] }
+        {
+          valid: false,
+          errors: [{ field: 'value', message: 'Value must be >= 0' }],
+          data: items[3],
+        },
       ]);
 
       const results = await mockValidationService.batchValidate(items, schema);
 
       expect(results).toHaveLength(3);
-      expect(results.filter(r => r.valid)).toHaveLength(1);
-      expect(results.filter(r => !r.valid)).toHaveLength(3);
+      expect(results.filter((r) => r.valid)).toHaveLength(1);
+      expect(results.filter((r) => !r.valid)).toHaveLength(3);
     });
 
     it('should support batch validation with progress tracking', async () => {
       const items = Array.from({ length: 100 }, (_, i) => ({
         id: i + 1,
-        name: `Item ${i + 1}`
+        name: `Item ${i + 1}`,
       }));
 
       const schema: ValidationSchema = {
         type: 'object',
         properties: {
           id: { type: 'number' },
-          name: { type: 'string' }
+          name: { type: 'string' },
         },
-        required: ['id', 'name']
+        required: ['id', 'name'],
       };
 
       const progressCallback = vi.fn();
@@ -1205,7 +1204,7 @@ describe('Performance Validation', () => {
       });
 
       const results = await mockValidationService.batchValidate(items, schema, {
-        onProgress: progressCallback
+        onProgress: progressCallback,
       });
 
       expect(results).toHaveLength(100);
@@ -1221,16 +1220,16 @@ describe('Performance Validation', () => {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          email: { type: 'string', format: 'email' }
+          email: { type: 'string', format: 'email' },
         },
-        required: ['name', 'email']
+        required: ['name', 'email'],
       };
 
       const cacheKey = `validation_${JSON.stringify(data)}_${JSON.stringify(schema)}`;
       const cachedResult: ValidationResult = {
         valid: true,
         errors: [],
-        data
+        data,
       };
 
       // First validation - not cached
@@ -1264,7 +1263,7 @@ describe('Performance Validation', () => {
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data
+        data,
       });
       mockValidationCache.set.mockResolvedValue(undefined);
 
@@ -1272,7 +1271,9 @@ describe('Performance Validation', () => {
 
       expect(result.valid).toBe(true);
       expect(mockValidationCache.get).toHaveBeenCalledWith(cacheKey);
-      expect(mockValidationCache.set).toHaveBeenCalledWith(cacheKey, expect.any(Object), { ttl: 300000 }); // 5 minutes
+      expect(mockValidationCache.set).toHaveBeenCalledWith(cacheKey, expect.any(Object), {
+        ttl: 300000,
+      }); // 5 minutes
     });
 
     it('should handle cache size limits', async () => {
@@ -1281,7 +1282,7 @@ describe('Performance Validation', () => {
         maxSize: 1000,
         hitRate: 0.85,
         hits: 850,
-        misses: 150
+        misses: 150,
       };
 
       mockValidationCache.getStats.mockResolvedValue(cacheStats);
@@ -1306,15 +1307,15 @@ describe('Performance Validation', () => {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          age: { type: 'number' }
-        }
+          age: { type: 'number' },
+        },
       };
 
       mockSchemaValidator.compile.mockReturnValue({
         validate: vi.fn().mockReturnValue({
           valid: true,
-          errors: []
-        })
+          errors: [],
+        }),
       });
 
       const compiledValidator = mockSchemaValidator.compile(schema);
@@ -1332,14 +1333,14 @@ describe('Performance Validation', () => {
           name: 'expensiveRule',
           validator: () => true,
           cost: 100,
-          message: 'Expensive validation'
+          message: 'Expensive validation',
         },
         {
           name: 'cheapRule',
           validator: () => false,
           cost: 1,
-          message: 'Cheap validation'
-        }
+          message: 'Cheap validation',
+        },
       ];
 
       const data = { test: 'value' };
@@ -1347,8 +1348,15 @@ describe('Performance Validation', () => {
       // Cheap rule should run first and fail early
       mockValidationService.validateSchema.mockResolvedValue({
         valid: false,
-        errors: [{ field: 'test', message: 'Cheap validation', code: 'CHEAP_RULE', severity: ValidationSeverity.ERROR }],
-        data
+        errors: [
+          {
+            field: 'test',
+            message: 'Cheap validation',
+            code: 'CHEAP_RULE',
+            severity: ValidationSeverity.ERROR,
+          },
+        ],
+        data,
       });
 
       const result = await mockValidationService.validateSchema(data, {}, rules);
@@ -1367,30 +1375,50 @@ describe('Error Reporting', () => {
   describe('Validation Error Aggregation', () => {
     it('should aggregate errors from multiple validations', () => {
       const errors = [
-        { field: 'name', message: 'Name is required', code: 'REQUIRED', severity: ValidationSeverity.ERROR },
-        { field: 'email', message: 'Invalid email format', code: 'FORMAT', severity: ValidationSeverity.ERROR },
-        { field: 'age', message: 'Age must be positive', code: 'MINIMUM', severity: ValidationSeverity.WARNING },
-        { field: 'password', message: 'Password too weak', code: 'STRENGTH', severity: ValidationSeverity.WARNING }
+        {
+          field: 'name',
+          message: 'Name is required',
+          code: 'REQUIRED',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'email',
+          message: 'Invalid email format',
+          code: 'FORMAT',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'age',
+          message: 'Age must be positive',
+          code: 'MINIMUM',
+          severity: ValidationSeverity.WARNING,
+        },
+        {
+          field: 'password',
+          message: 'Password too weak',
+          code: 'STRENGTH',
+          severity: ValidationSeverity.WARNING,
+        },
       ];
 
       mockValidationReporter.aggregateErrors.mockReturnValue({
         totalErrors: 4,
         errorsBySeverity: {
           [ValidationSeverity.ERROR]: 2,
-          [ValidationSeverity.WARNING]: 2
+          [ValidationSeverity.WARNING]: 2,
         },
         errorsByField: {
           name: ['Name is required'],
           email: ['Invalid email format'],
           age: ['Age must be positive'],
-          password: ['Password too weak']
+          password: ['Password too weak'],
         },
         errorsByCode: {
           REQUIRED: 1,
           FORMAT: 1,
           MINIMUM: 1,
-          STRENGTH: 1
-        }
+          STRENGTH: 1,
+        },
       });
 
       const aggregation = mockValidationReporter.aggregateErrors(errors);
@@ -1402,10 +1430,30 @@ describe('Error Reporting', () => {
 
     it('should deduplicate similar errors', () => {
       const errors = [
-        { field: 'name', message: 'Name is required', code: 'REQUIRED', severity: ValidationSeverity.ERROR },
-        { field: 'name', message: 'Name is required', code: 'REQUIRED', severity: ValidationSeverity.ERROR },
-        { field: 'email', message: 'Invalid email format', code: 'FORMAT', severity: ValidationSeverity.ERROR },
-        { field: 'email', message: 'Invalid email format', code: 'FORMAT', severity: ValidationSeverity.ERROR }
+        {
+          field: 'name',
+          message: 'Name is required',
+          code: 'REQUIRED',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'name',
+          message: 'Name is required',
+          code: 'REQUIRED',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'email',
+          message: 'Invalid email format',
+          code: 'FORMAT',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'email',
+          message: 'Invalid email format',
+          code: 'FORMAT',
+          severity: ValidationSeverity.ERROR,
+        },
       ];
 
       mockValidationReporter.aggregateErrors.mockReturnValue({
@@ -1413,9 +1461,21 @@ describe('Error Reporting', () => {
         uniqueErrors: 2,
         duplicates: 2,
         deduplicatedErrors: [
-          { field: 'name', message: 'Name is required', code: 'REQUIRED', severity: ValidationSeverity.ERROR, count: 2 },
-          { field: 'email', message: 'Invalid email format', code: 'FORMAT', severity: ValidationSeverity.ERROR, count: 2 }
-        ]
+          {
+            field: 'name',
+            message: 'Name is required',
+            code: 'REQUIRED',
+            severity: ValidationSeverity.ERROR,
+            count: 2,
+          },
+          {
+            field: 'email',
+            message: 'Invalid email format',
+            code: 'FORMAT',
+            severity: ValidationSeverity.ERROR,
+            count: 2,
+          },
+        ],
       });
 
       const aggregation = mockValidationReporter.aggregateErrors(errors);
@@ -1431,20 +1491,20 @@ describe('Error Reporting', () => {
       const errors = [
         { field: 'user.profile.email', message: 'Invalid format', code: 'FORMAT' },
         { field: 'order.items[0].quantity', message: 'Must be positive', code: 'MINIMUM' },
-        { field: 'payment.card.expiry', message: 'Expired card', code: 'EXPIRED' }
+        { field: 'payment.card.expiry', message: 'Expired card', code: 'EXPIRED' },
       ];
 
       mockValidationReporter.formatErrors.mockReturnValue({
         formattedErrors: [
           'The email address in your profile is not valid. Please enter a valid email address.',
           'The quantity for the first item in your order must be a positive number.',
-          'Your payment card has expired. Please update your payment information.'
+          'Your payment card has expired. Please update your payment information.',
         ],
         suggestions: [
           'Check that your email includes an @ symbol and domain name.',
           'Enter a quantity of 1 or more.',
-          'Add a new payment card with a future expiration date.'
-        ]
+          'Add a new payment card with a future expiration date.',
+        ],
       });
 
       const formatted = mockValidationReporter.formatErrors(errors);
@@ -1455,18 +1515,16 @@ describe('Error Reporting', () => {
     });
 
     it('should adapt messages based on user context', () => {
-      const errors = [
-        { field: 'api_key', message: 'Invalid format', code: 'FORMAT' }
-      ];
+      const errors = [{ field: 'api_key', message: 'Invalid format', code: 'FORMAT' }];
 
       const developerContext = {
         userType: 'developer',
-        technicalLevel: 'high'
+        technicalLevel: 'high',
       };
 
       const endUserContext = {
         userType: 'enduser',
-        technicalLevel: 'low'
+        technicalLevel: 'low',
       };
 
       mockValidationReporter.formatErrors
@@ -1474,16 +1532,22 @@ describe('Error Reporting', () => {
           formattedErrors: ['API key format invalid. Expected: 32-character hexadecimal string.'],
           technicalDetails: {
             expectedPattern: '/^[a-f0-9]{32}$/',
-            examples: ['a1b2c3d4e5f6789012345678901234ab']
-          }
+            examples: ['a1b2c3d4e5f6789012345678901234ab'],
+          },
         })
         .mockReturnValueOnce({
-          formattedErrors: ['There was a problem with your API key. Please contact support for assistance.'],
-          nextSteps: ['Contact our support team', 'Check your account settings']
+          formattedErrors: [
+            'There was a problem with your API key. Please contact support for assistance.',
+          ],
+          nextSteps: ['Contact our support team', 'Check your account settings'],
         });
 
-      const developerFormatted = mockValidationReporter.formatErrors(errors, { context: developerContext });
-      const endUserFormatted = mockValidationReporter.formatErrors(errors, { context: endUserContext });
+      const developerFormatted = mockValidationReporter.formatErrors(errors, {
+        context: developerContext,
+      });
+      const endUserFormatted = mockValidationReporter.formatErrors(errors, {
+        context: endUserContext,
+      });
 
       expect(developerFormatted.formattedErrors[0]).toContain('hexadecimal');
       expect(endUserFormatted.formattedErrors[0]).toContain('contact support');
@@ -1498,12 +1562,10 @@ describe('Error Reporting', () => {
         timestamp: new Date().toISOString(),
         requestPath: '/api/users/register',
         userAgent: 'Mozilla/5.0...',
-        ipAddress: '192.168.1.1'
+        ipAddress: '192.168.1.1',
       };
 
-      const errors = [
-        { field: 'email', message: 'Already exists', code: 'DUPLICATE' }
-      ];
+      const errors = [{ field: 'email', message: 'Already exists', code: 'DUPLICATE' }];
 
       mockValidationReporter.createReport.mockReturnValue({
         id: 'report_123',
@@ -1514,8 +1576,8 @@ describe('Error Reporting', () => {
         actionTaken: 'registration_blocked',
         metadata: {
           validationDuration: 45,
-          schemaVersion: '1.2.0'
-        }
+          schemaVersion: '1.2.0',
+        },
       });
 
       const report = mockValidationReporter.createReport(errors, context);
@@ -1531,14 +1593,14 @@ describe('Error Reporting', () => {
           field: 'custom',
           message: 'Custom validation failed',
           code: 'CUSTOM',
-          stack: 'Error: Custom validation failed\n    at CustomValidator.validate'
-        }
+          stack: 'Error: Custom validation failed\n    at CustomValidator.validate',
+        },
       ];
 
       const developmentOptions = {
         environment: 'development',
         includeStackTraces: true,
-        includeInternalErrors: true
+        includeInternalErrors: true,
       };
 
       mockValidationReporter.createReport.mockReturnValue({
@@ -1547,8 +1609,8 @@ describe('Error Reporting', () => {
         debugInfo: {
           stackTraces: [errors[0].stack],
           internalState: { validatorCache: { size: 10 } },
-          performanceMetrics: { validationTime: 23 }
-        }
+          performanceMetrics: { validationTime: 23 },
+        },
       });
 
       const report = mockValidationReporter.createReport(errors, {}, developmentOptions);
@@ -1561,33 +1623,40 @@ describe('Error Reporting', () => {
   describe('Error Export and Integration', () => {
     it('should export errors in multiple formats', () => {
       const errors = [
-        { field: 'name', message: 'Required', code: 'REQUIRED', severity: ValidationSeverity.ERROR },
-        { field: 'email', message: 'Invalid format', code: 'FORMAT', severity: ValidationSeverity.WARNING }
+        {
+          field: 'name',
+          message: 'Required',
+          code: 'REQUIRED',
+          severity: ValidationSeverity.ERROR,
+        },
+        {
+          field: 'email',
+          message: 'Invalid format',
+          code: 'FORMAT',
+          severity: ValidationSeverity.WARNING,
+        },
       ];
 
       // JSON export
-      mockValidationReporter.exportReport
-        .mockReturnValueOnce({
-          format: 'json',
-          data: JSON.stringify({ errors, timestamp: new Date().toISOString() }),
-          filename: 'validation-errors.json'
-        });
+      mockValidationReporter.exportReport.mockReturnValueOnce({
+        format: 'json',
+        data: JSON.stringify({ errors, timestamp: new Date().toISOString() }),
+        filename: 'validation-errors.json',
+      });
 
       // CSV export
-      mockValidationReporter.exportReport
-        .mockReturnValueOnce({
-          format: 'csv',
-          data: 'field,message,code,severity\nname,Required,REQUIRED,error\nemail,Invalid format,FORMAT,warning',
-          filename: 'validation-errors.csv'
-        });
+      mockValidationReporter.exportReport.mockReturnValueOnce({
+        format: 'csv',
+        data: 'field,message,code,severity\nname,Required,REQUIRED,error\nemail,Invalid format,FORMAT,warning',
+        filename: 'validation-errors.csv',
+      });
 
       // HTML export
-      mockValidationReporter.exportReport
-        .mockReturnValueOnce({
-          format: 'html',
-          data: '<html><body><h1>Validation Errors</h1><table>...</table></body></html>',
-          filename: 'validation-errors.html'
-        });
+      mockValidationReporter.exportReport.mockReturnValueOnce({
+        format: 'html',
+        data: '<html><body><h1>Validation Errors</h1><table>...</table></body></html>',
+        filename: 'validation-errors.html',
+      });
 
       const jsonExport = mockValidationReporter.exportReport(errors, 'json');
       const csvExport = mockValidationReporter.exportReport(errors, 'csv');
@@ -1603,14 +1672,19 @@ describe('Error Reporting', () => {
 
     it('should integrate with external monitoring systems', () => {
       const errors = [
-        { field: 'payment', message: 'Payment processing failed', code: 'PAYMENT_ERROR', severity: ValidationSeverity.ERROR }
+        {
+          field: 'payment',
+          message: 'Payment processing failed',
+          code: 'PAYMENT_ERROR',
+          severity: ValidationSeverity.ERROR,
+        },
       ];
 
       const monitoringConfig = {
         enabled: true,
         systems: ['sentry', 'datadog', 'rollbar'],
         alertThreshold: { errors: 5, warnings: 10 },
-        customTags: { service: 'validation', environment: 'production' }
+        customTags: { service: 'validation', environment: 'production' },
       };
 
       mockValidationReporter.createReport.mockReturnValue({
@@ -1623,12 +1697,16 @@ describe('Error Reporting', () => {
           metrics: {
             errorCount: 1,
             warningCount: 0,
-            criticality: 'medium'
-          }
-        }
+            criticality: 'medium',
+          },
+        },
       });
 
-      const report = mockValidationReporter.createReport(errors, {}, { monitoring: monitoringConfig });
+      const report = mockValidationReporter.createReport(
+        errors,
+        {},
+        { monitoring: monitoringConfig }
+      );
 
       expect(report.monitoring.sent).toBe(true);
       expect(report.monitoring.systems).toEqual(monitoringConfig.systems);
@@ -1650,40 +1728,48 @@ describe('Integration and Extensibility', () => {
         endpoint: 'https://api.payment.com',
         apiKey: 'sk_test_123',
         timeout: 30000,
-        retries: 3
+        retries: 3,
       };
 
       const integrationRules: BusinessValidator[] = [
         {
           name: 'endpointValidation',
           validate: (config: any) => {
-            return config.endpoint &&
-                   config.endpoint.startsWith('https://') &&
-                   config.endpoint.includes('api.');
+            return (
+              config.endpoint &&
+              config.endpoint.startsWith('https://') &&
+              config.endpoint.includes('api.')
+            );
           },
-          message: 'Endpoint must be a valid HTTPS API URL'
+          message: 'Endpoint must be a valid HTTPS API URL',
         },
         {
           name: 'apiKeyValidation',
           validate: (config: any) => {
-            return config.apiKey &&
-                   config.apiKey.length >= 20 &&
-                   config.apiKey.startsWith('sk_test_');
+            return (
+              config.apiKey && config.apiKey.length >= 20 && config.apiKey.startsWith('sk_test_')
+            );
           },
-          message: 'API key must be valid test key format'
-        }
+          message: 'API key must be valid test key format',
+        },
       ];
 
       mockValidationService.validateBusinessRules.mockResolvedValue({
         valid: true,
         errors: [],
-        data: serviceConfig
+        data: serviceConfig,
       });
 
-      const result = await mockValidationService.validateBusinessRules(serviceConfig, integrationRules);
+      const result = await mockValidationService.validateBusinessRules(
+        serviceConfig,
+        integrationRules
+      );
 
       expect(result.valid).toBe(true);
-      expect(mockValidationService.validateBusinessRules).toHaveBeenCalledWith(serviceConfig, integrationRules);
+      expect(mockValidationService.validateBusinessRules).toHaveBeenCalledWith(
+        serviceConfig,
+        integrationRules
+      );
     });
 
     it('should validate service dependencies', async () => {
@@ -1691,18 +1777,18 @@ describe('Integration and Extensibility', () => {
         database: {
           host: 'localhost',
           port: 5432,
-          ssl: true
+          ssl: true,
         },
         cache: {
           host: 'localhost',
           port: 6379,
-          cluster: false
+          cluster: false,
         },
         messageQueue: {
           host: 'localhost',
           port: 5672,
-          vhost: '/'
-        }
+          vhost: '/',
+        },
       };
 
       const dependencyRules: RuleDefinition[] = [
@@ -1711,15 +1797,15 @@ describe('Integration and Extensibility', () => {
           validate: (deps: any) => {
             return deps.database.port > 0 && deps.database.port < 65536;
           },
-          message: 'Database port must be valid'
+          message: 'Database port must be valid',
         },
         {
           name: 'cacheConnection',
           validate: (deps: any) => {
             return deps.cache.port > 0 && deps.cache.port < 65536;
           },
-          message: 'Cache port must be valid'
-        }
+          message: 'Cache port must be valid',
+        },
       ];
 
       mockBusinessRuleValidator.validate.mockReturnValue(true);
@@ -1737,7 +1823,7 @@ describe('Integration and Extensibility', () => {
         validator: (value: string) => {
           return /^\+?[\d\s-()]+$/.test(value) && value.replace(/\D/g, '').length >= 10;
         },
-        message: 'Phone number must be valid'
+        message: 'Phone number must be valid',
       };
 
       mockValidationService.registerValidator.mockReturnValue(true);
@@ -1745,7 +1831,10 @@ describe('Integration and Extensibility', () => {
       const registered = mockValidationService.registerValidator('phoneNumber', customValidator);
 
       expect(registered).toBe(true);
-      expect(mockValidationService.registerValidator).toHaveBeenCalledWith('phoneNumber', customValidator);
+      expect(mockValidationService.registerValidator).toHaveBeenCalledWith(
+        'phoneNumber',
+        customValidator
+      );
     });
 
     it('should handle validator namespace and versioning', () => {
@@ -1755,7 +1844,7 @@ describe('Integration and Extensibility', () => {
         validator: (value: string) => {
           return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
         },
-        message: 'Email must be valid format'
+        message: 'Email must be valid format',
       };
 
       mockValidationService.registerValidator.mockReturnValue(true);
@@ -1763,7 +1852,10 @@ describe('Integration and Extensibility', () => {
       const registered = mockValidationService.registerValidator('email:v2', namespacedValidator);
 
       expect(registered).toBe(true);
-      expect(mockValidationService.registerValidator).toHaveBeenCalledWith('email:v2', namespacedValidator);
+      expect(mockValidationService.registerValidator).toHaveBeenCalledWith(
+        'email:v2',
+        namespacedValidator
+      );
     });
 
     it('should support validator deprecation and migration', () => {
@@ -1774,12 +1866,14 @@ describe('Integration and Extensibility', () => {
         removedIn: '2.0.0',
         migrationTo: 'newZipCodeValidator',
         validator: (value: string) => /^\d{5}$/.test(value),
-        message: 'ZIP code must be 5 digits'
+        message: 'ZIP code must be 5 digits',
       };
 
       mockValidationService.registerValidator.mockImplementation((name, validator) => {
         if (validator.deprecated) {
-          console.warn(`Validator ${name} is deprecated and will be removed in ${validator.removedIn}`);
+          console.warn(
+            `Validator ${name} is deprecated and will be removed in ${validator.removedIn}`
+          );
         }
         return true;
       });
@@ -1789,9 +1883,7 @@ describe('Integration and Extensibility', () => {
       const registered = mockValidationService.registerValidator('oldZipCode', deprecatedValidator);
 
       expect(registered).toBe(true);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('oldZipCode is deprecated')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('oldZipCode is deprecated'));
 
       consoleSpy.mockRestore();
     });
@@ -1804,37 +1896,37 @@ describe('Integration and Extensibility', () => {
           {
             name: 'inputSanitization',
             validators: ['xssProtection', 'sqlInjectionProtection'],
-            parallel: false
+            parallel: false,
           },
           {
             name: 'schemaValidation',
             validators: ['jsonSchema', 'typeValidation'],
-            parallel: false
+            parallel: false,
           },
           {
             name: 'businessRules',
             validators: ['userPermissions', 'dataIntegrity'],
-            parallel: true
-          }
-        ]
+            parallel: true,
+          },
+        ],
       };
 
       const data = {
         userInput: '<script>alert("xss")</script>',
         email: 'user@example.com',
-        role: 'admin'
+        role: 'admin',
       };
 
       const pipelineResults = [
         { stage: 'inputSanitization', valid: true, duration: 5 },
         { stage: 'schemaValidation', valid: true, duration: 12 },
-        { stage: 'businessRules', valid: true, duration: 8 }
+        { stage: 'businessRules', valid: true, duration: 8 },
       ];
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: { ...data, userInput: 'alert("xss")' } // Sanitized
+        data: { ...data, userInput: 'alert("xss")' }, // Sanitized
       });
 
       const result = await mockValidationService.validateSchema(data, {});
@@ -1849,19 +1941,19 @@ describe('Integration and Extensibility', () => {
           {
             name: 'basicValidation',
             always: true,
-            validators: ['requiredFields', 'basicTypes']
+            validators: ['requiredFields', 'basicTypes'],
           },
           {
             name: 'adminValidation',
             condition: (data: any) => data.role === 'admin',
-            validators: ['adminPermissions', 'securityChecks']
+            validators: ['adminPermissions', 'securityChecks'],
           },
           {
             name: 'paymentValidation',
             condition: (data: any) => data.paymentRequired,
-            validators: ['paymentMethod', 'billingAddress']
-          }
-        ]
+            validators: ['paymentMethod', 'billingAddress'],
+          },
+        ],
       };
 
       const adminData = { role: 'admin', name: 'Admin User' };
@@ -1885,16 +1977,16 @@ describe('Integration and Extensibility', () => {
         body: {
           name: 'John Doe',
           email: 'john@example.com',
-          age: 30
+          age: 30,
         },
         headers: {
-          'content-type': 'application/json'
-        }
+          'content-type': 'application/json',
+        },
       };
 
       const mockResponse = {
         status: vi.fn().mockReturnThis(),
-        json: vi.fn()
+        json: vi.fn(),
       };
 
       const mockNext = vi.fn();
@@ -1904,15 +1996,15 @@ describe('Integration and Extensibility', () => {
         properties: {
           name: { type: 'string' },
           email: { type: 'string', format: 'email' },
-          age: { type: 'number', minimum: 0 }
+          age: { type: 'number', minimum: 0 },
         },
-        required: ['name', 'email']
+        required: ['name', 'email'],
       };
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: mockRequest.body
+        data: mockRequest.body,
       });
 
       // Simulate middleware function
@@ -1946,8 +2038,8 @@ describe('Integration and Extensibility', () => {
           title: 'New Post',
           content: 'This is a new post content',
           tags: ['javascript', 'validation'],
-          published: true
-        }
+          published: true,
+        },
       };
 
       const graphqlValidationSchema = {
@@ -1958,24 +2050,27 @@ describe('Integration and Extensibility', () => {
           tags: {
             type: 'array',
             items: { type: 'string' },
-            maxItems: 5
+            maxItems: 5,
           },
-          published: { type: 'boolean' }
+          published: { type: 'boolean' },
         },
-        required: ['title', 'content']
+        required: ['title', 'content'],
       };
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: graphqlArgs.input
+        data: graphqlArgs.input,
       });
 
-      const result = mockValidationService.validateSchema(graphqlArgs.input, graphqlValidationSchema);
+      const result = mockValidationService.validateSchema(
+        graphqlArgs.input,
+        graphqlValidationSchema
+      );
 
       expect(result).resolves.toMatchObject({
         valid: true,
-        data: graphqlArgs.input
+        data: graphqlArgs.input,
       });
     });
 
@@ -1986,8 +2081,8 @@ describe('Integration and Extensibility', () => {
         timestamp: new Date().toISOString(),
         payload: {
           name: 'New User',
-          email: 'newuser@example.com'
-        }
+          email: 'newuser@example.com',
+        },
       };
 
       const eventSchema = {
@@ -1996,21 +2091,23 @@ describe('Integration and Extensibility', () => {
           eventType: { type: 'string', enum: ['user.created', 'user.updated', 'user.deleted'] },
           userId: { type: 'string', pattern: '^user[0-9]+$' },
           timestamp: { type: 'string', format: 'date-time' },
-          payload: { type: 'object' }
+          payload: { type: 'object' },
         },
-        required: ['eventType', 'userId', 'timestamp', 'payload']
+        required: ['eventType', 'userId', 'timestamp', 'payload'],
       };
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: eventData
+        data: eventData,
       });
 
       const eventValidationMiddleware = async (event: any) => {
         const result = await mockValidationService.validateSchema(event, eventSchema);
         if (!result.valid) {
-          throw new Error(`Event validation failed: ${result.errors.map(e => e.message).join(', ')}`);
+          throw new Error(
+            `Event validation failed: ${result.errors.map((e) => e.message).join(', ')}`
+          );
         }
         return result.data;
       };
@@ -2031,14 +2128,14 @@ describe('Integration and Extensibility', () => {
             validate: (value: string) => {
               return /^\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}$/.test(value);
             },
-            message: 'Credit card number is invalid'
+            message: 'Credit card number is invalid',
           },
           ssn: {
             validate: (value: string) => {
               return /^\d{3}-\d{2}-\d{4}$/.test(value);
             },
-            message: 'SSN format is invalid'
-          }
+            message: 'SSN format is invalid',
+          },
         },
         hooks: {
           beforeValidation: (data: any) => {
@@ -2046,8 +2143,8 @@ describe('Integration and Extensibility', () => {
           },
           afterValidation: (result: ValidationResult) => {
             console.log(`Validation completed with ${result.errors.length} errors`);
-          }
-        }
+          },
+        },
       };
 
       mockValidationService.registerValidator.mockImplementation((name, validator) => {
@@ -2070,44 +2167,48 @@ describe('Integration and Extensibility', () => {
           {
             name: 'streetValidator',
             validate: (value: string) => value && value.length > 5,
-            message: 'Street address is required'
+            message: 'Street address is required',
           },
           {
             name: 'cityValidator',
             validate: (value: string) => value && /^[a-zA-Z\s]+$/.test(value),
-            message: 'City must contain only letters'
+            message: 'City must contain only letters',
           },
           {
             name: 'zipValidator',
             validate: (value: string) => /^\d{5}(-\d{4})?$/.test(value),
-            message: 'ZIP code format is invalid'
-          }
+            message: 'ZIP code format is invalid',
+          },
         ],
         composer: (results: any[]) => {
           return {
-            valid: results.every(r => r.valid),
-            errors: results.flatMap(r => r.errors)
+            valid: results.every((r) => r.valid),
+            errors: results.flatMap((r) => r.errors),
           };
-        }
+        },
       };
 
       const address = {
         street: '123 Main St',
         city: 'Anytown',
-        zip: '12345'
+        zip: '12345',
       };
 
       mockValidationService.validateSchema.mockResolvedValue({
         valid: true,
         errors: [],
-        data: address
+        data: address,
       });
 
-      const result = mockValidationService.validateSchema(address, {}, composedValidator.validators);
+      const result = mockValidationService.validateSchema(
+        address,
+        {},
+        composedValidator.validators
+      );
 
       expect(result).resolves.toMatchObject({
         valid: true,
-        data: address
+        data: address,
       });
     });
   });

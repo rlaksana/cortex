@@ -55,13 +55,13 @@ class MockRegistry {
    * Clear all mocks but keep them registered
    */
   clearAllMocks(): void {
-    this.mocks.forEach(mock => {
+    this.mocks.forEach((mock) => {
       if (mock && typeof mock.mockClear === 'function') {
         mock.mockClear();
       }
     });
 
-    this.modules.forEach(mock => {
+    this.modules.forEach((mock) => {
       if (mock && typeof mock.mockClear === 'function') {
         mock.mockClear();
       }
@@ -72,13 +72,13 @@ class MockRegistry {
    * Reset all mocks to their original state
    */
   resetAllMocks(): void {
-    this.mocks.forEach(mock => {
+    this.mocks.forEach((mock) => {
       if (mock && typeof mock.mockReset === 'function') {
         mock.mockReset();
       }
     });
 
-    this.modules.forEach(mock => {
+    this.modules.forEach((mock) => {
       if (mock && typeof mock.mockReset === 'function') {
         mock.mockReset();
       }
@@ -89,13 +89,13 @@ class MockRegistry {
    * Restore all mocks to their original implementations
    */
   restoreAllMocks(): void {
-    this.mocks.forEach(mock => {
+    this.mocks.forEach((mock) => {
       if (mock && typeof mock.mockRestore === 'function') {
         mock.mockRestore();
       }
     });
 
-    this.modules.forEach(mock => {
+    this.modules.forEach((mock) => {
       if (mock && typeof mock.mockRestore === 'function') {
         mock.mockRestore();
       }
@@ -190,7 +190,7 @@ export class MockManager {
   ): MockedFunction<() => Promise<T>> {
     const mock = vi.fn(() => {
       if (delay > 0) {
-        return new Promise(resolve => setTimeout(() => resolve(value), delay));
+        return new Promise((resolve) => setTimeout(() => resolve(value), delay));
       }
       return Promise.resolve(value);
     });
@@ -379,11 +379,7 @@ export class MockManager {
   /**
    * Verify mock was called with specific arguments
    */
-  static verifyMockCall(
-    mock: MockedFunction,
-    args: any[],
-    callIndex: number = 0
-  ): boolean {
+  static verifyMockCall(mock: MockedFunction, args: any[], callIndex: number = 0): boolean {
     if (!mock.mock.calls[callIndex]) {
       return false;
     }
@@ -435,51 +431,54 @@ export const CommonMocks = {
   /**
    * Qdrant client mock
    */
-  qdrantClient: () => MockManager.createObject('qdrantClient', {
-    getCollections: vi.fn().mockResolvedValue({
-      collections: [{ name: 'test-collection' }]
+  qdrantClient: () =>
+    MockManager.createObject('qdrantClient', {
+      getCollections: vi.fn().mockResolvedValue({
+        collections: [{ name: 'test-collection' }],
+      }),
+      createCollection: vi.fn().mockResolvedValue(undefined),
+      deleteCollection: vi.fn().mockResolvedValue(undefined),
+      upsert: vi.fn().mockResolvedValue({ status: 'completed' }),
+      search: vi.fn().mockResolvedValue([]),
+      getCollection: vi.fn().mockResolvedValue({
+        points_count: 0,
+        status: 'green',
+      }),
+      delete: vi.fn().mockResolvedValue({ status: 'completed' }),
+      scroll: vi.fn().mockResolvedValue({ points: [], next_page_offset: null }),
+      count: vi.fn().mockResolvedValue({ count: 0 }),
+      healthCheck: vi.fn().mockResolvedValue(true),
     }),
-    createCollection: vi.fn().mockResolvedValue(undefined),
-    deleteCollection: vi.fn().mockResolvedValue(undefined),
-    upsert: vi.fn().mockResolvedValue({ status: 'completed' }),
-    search: vi.fn().mockResolvedValue([]),
-    getCollection: vi.fn().mockResolvedValue({
-      points_count: 0,
-      status: 'green'
-    }),
-    delete: vi.fn().mockResolvedValue({ status: 'completed' }),
-    scroll: vi.fn().mockResolvedValue({ points: [], next_page_offset: null }),
-    count: vi.fn().mockResolvedValue({ count: 0 }),
-    healthCheck: vi.fn().mockResolvedValue(true),
-  }),
 
   /**
    * Authentication service mock
    */
-  authService: () => MockManager.createObject('authService', {
-    hashPassword: vi.fn().mockResolvedValue('hashed-password'),
-    comparePassword: vi.fn().mockResolvedValue(true),
-    generateToken: vi.fn().mockReturnValue('mock-jwt-token'),
-    verifyToken: vi.fn().mockResolvedValue({ userId: 'test-user', role: 'user' }),
-    refreshToken: vi.fn().mockReturnValue('mock-refresh-token'),
-    invalidateToken: vi.fn().mockResolvedValue(true),
-    createSession: vi.fn().mockResolvedValue({ sessionId: 'test-session' }),
-    validateSession: vi.fn().mockResolvedValue(true),
-    destroySession: vi.fn().mockResolvedValue(true),
-  }),
+  authService: () =>
+    MockManager.createObject('authService', {
+      hashPassword: vi.fn().mockResolvedValue('hashed-password'),
+      comparePassword: vi.fn().mockResolvedValue(true),
+      generateToken: vi.fn().mockReturnValue('mock-jwt-token'),
+      verifyToken: vi.fn().mockResolvedValue({ userId: 'test-user', role: 'user' }),
+      refreshToken: vi.fn().mockReturnValue('mock-refresh-token'),
+      invalidateToken: vi.fn().mockResolvedValue(true),
+      createSession: vi.fn().mockResolvedValue({ sessionId: 'test-session' }),
+      validateSession: vi.fn().mockResolvedValue(true),
+      destroySession: vi.fn().mockResolvedValue(true),
+    }),
 
   /**
    * Embedding service mock
    */
-  embeddingService: () => MockManager.createObject('embeddingService', {
-    generateEmbedding: vi.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]),
-    generateBatchEmbeddings: vi.fn().mockResolvedValue([
-      [0.1, 0.2, 0.3, 0.4, 0.5],
-      [0.6, 0.7, 0.8, 0.9, 1.0]
-    ]),
-    calculateSimilarity: vi.fn().mockReturnValue(0.85),
-    findMostSimilar: vi.fn().mockResolvedValue({ id: 'test-item', score: 0.9 }),
-  }),
+  embeddingService: () =>
+    MockManager.createObject('embeddingService', {
+      generateEmbedding: vi.fn().mockResolvedValue([0.1, 0.2, 0.3, 0.4, 0.5]),
+      generateBatchEmbeddings: vi.fn().mockResolvedValue([
+        [0.1, 0.2, 0.3, 0.4, 0.5],
+        [0.6, 0.7, 0.8, 0.9, 1.0],
+      ]),
+      calculateSimilarity: vi.fn().mockReturnValue(0.85),
+      findMostSimilar: vi.fn().mockResolvedValue({ id: 'test-item', score: 0.9 }),
+    }),
 
   /**
    * Logger mock

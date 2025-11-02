@@ -14,7 +14,7 @@ import { SecurityUtils, type SecurityConfig } from '../../../src/utils/security'
 // Mock dependencies
 vi.mock('bcryptjs', () => ({
   hash: vi.fn(),
-  compare: vi.fn()
+  compare: vi.fn(),
 }));
 
 vi.mock('../../../src/utils/logger', () => ({
@@ -22,8 +22,8 @@ vi.mock('../../../src/utils/logger', () => ({
     error: vi.fn(),
     warn: vi.fn(),
     info: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 import bcrypt from 'bcryptjs';
@@ -74,7 +74,7 @@ class MockEncryptionUtils {
     return crypto.generateKeyPairSync('rsa', {
       modulusLength: keySize,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
-      privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
   }
 
@@ -83,21 +83,23 @@ class MockEncryptionUtils {
       {
         key: publicKey,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256'
+        oaepHash: 'sha256',
       },
       Buffer.from(data)
     );
   }
 
   static decryptRSA(encryptedData: Buffer, privateKey: string): string {
-    return crypto.privateDecrypt(
-      {
-        key: privateKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-        oaepHash: 'sha256'
-      },
-      encryptedData
-    ).toString('utf8');
+    return crypto
+      .privateDecrypt(
+        {
+          key: privateKey,
+          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          oaepHash: 'sha256',
+        },
+        encryptedData
+      )
+      .toString('utf8');
   }
 
   // Hash Generation and Validation
@@ -105,7 +107,11 @@ class MockEncryptionUtils {
     return crypto.createHash(algorithm).update(data).digest('hex');
   }
 
-  static generateHMAC(data: string, secret: string, algorithm: string = this.HASH_ALGORITHM): string {
+  static generateHMAC(
+    data: string,
+    secret: string,
+    algorithm: string = this.HASH_ALGORITHM
+  ): string {
     return crypto.createHmac(algorithm, secret).update(data).digest('hex');
   }
 
@@ -114,7 +120,12 @@ class MockEncryptionUtils {
     return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(computedHash));
   }
 
-  static verifyHMAC(data: string, hmac: string, secret: string, algorithm: string = this.HASH_ALGORITHM): boolean {
+  static verifyHMAC(
+    data: string,
+    hmac: string,
+    secret: string,
+    algorithm: string = this.HASH_ALGORITHM
+  ): boolean {
     const computedHMAC = this.generateHMAC(data, secret, algorithm);
     return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHMAC));
   }
@@ -166,12 +177,20 @@ class MockEncryptionUtils {
   }
 
   // Performance and Batch Operations
-  static async encryptBatch(dataArray: string[], key: Buffer): Promise<Array<{ encrypted: Buffer; iv: Buffer; tag: Buffer }>> {
-    return Promise.all(dataArray.map(data => this.encryptAES(data, key)));
+  static async encryptBatch(
+    dataArray: string[],
+    key: Buffer
+  ): Promise<Array<{ encrypted: Buffer; iv: Buffer; tag: Buffer }>> {
+    return Promise.all(dataArray.map((data) => this.encryptAES(data, key)));
   }
 
-  static async decryptBatch(encryptedDataArray: Array<{ encrypted: Buffer; iv: Buffer; tag: Buffer }>, key: Buffer): Promise<string[]> {
-    return Promise.all(encryptedDataArray.map(({ encrypted, iv, tag }) => this.decryptAES(encrypted, key, iv, tag)));
+  static async decryptBatch(
+    encryptedDataArray: Array<{ encrypted: Buffer; iv: Buffer; tag: Buffer }>,
+    key: Buffer
+  ): Promise<string[]> {
+    return Promise.all(
+      encryptedDataArray.map(({ encrypted, iv, tag }) => this.decryptAES(encrypted, key, iv, tag))
+    );
   }
 
   // Compliance and Security
@@ -186,7 +205,7 @@ class MockEncryptionUtils {
       'aes-256-cbc': 32,
       'aes-128-gcm': 16,
       'aes-128-cbc': 16,
-      'rsa': 256 // For 2048-bit RSA
+      rsa: 256, // For 2048-bit RSA
     };
 
     const minLength = minKeyLengths[algorithm.toLowerCase()];
@@ -213,7 +232,7 @@ describe('Encryption Operations', () => {
       session_timeout_ms: 3600000,
       secure_cookie: true,
       rate_limit_window_ms: 900000,
-      rate_limit_max_requests: 100
+      rate_limit_max_requests: 100,
     };
 
     mockSecurityUtils = {
@@ -248,7 +267,7 @@ describe('Encryption Operations', () => {
       isValidIP: vi.fn(),
       isPrivateIP: vi.fn(),
       extractIPFromRequest: vi.fn(),
-      getSecurityMetrics: vi.fn()
+      getSecurityMetrics: vi.fn(),
     } as any;
   });
 
@@ -525,7 +544,11 @@ describe('Encryption Operations', () => {
       const keyPair = MockEncryptionUtils.generateRSAKeyPair(2048);
 
       const signature = MockEncryptionUtils.signData(originalData, keyPair.privateKey);
-      const isValid = MockEncryptionUtils.verifySignature(modifiedData, signature, keyPair.publicKey);
+      const isValid = MockEncryptionUtils.verifySignature(
+        modifiedData,
+        signature,
+        keyPair.publicKey
+      );
 
       expect(isValid).toBe(false);
     });
@@ -633,7 +656,9 @@ describe('Encryption Operations', () => {
       const sensitiveData = 'User social security number: 123-45-6789';
       const key = 'a'.repeat(64); // 256-bit key in hex
 
-      mockSecurityUtils.encryptSensitiveData.mockReturnValue('encrypted:1234567890abcdef:encrypteddata');
+      mockSecurityUtils.encryptSensitiveData.mockReturnValue(
+        'encrypted:1234567890abcdef:encrypteddata'
+      );
       mockSecurityUtils.decryptSensitiveData.mockReturnValue(sensitiveData);
 
       const encrypted = mockSecurityUtils.encryptSensitiveData(sensitiveData, key);
@@ -692,12 +717,13 @@ describe('Encryption Operations', () => {
       const maskPII = (data: string, type: string): string => {
         switch (type) {
           case 'ssn':
-            return `***-**-${  data.slice(-4)}`;
+            return `***-**-${data.slice(-4)}`;
           case 'creditcard':
-            return `****-****-****-${  data.slice(-4)}`;
-          case 'email':
+            return `****-****-****-${data.slice(-4)}`;
+          case 'email': {
             const [username, domain] = data.split('@');
-            return `${username.slice(0, 2)  }***@${  domain}`;
+            return `${username.slice(0, 2)}***@${domain}`;
+          }
           default:
             return data;
         }
@@ -726,7 +752,10 @@ describe('Encryption Operations', () => {
     });
 
     it('should handle memory-efficient encryption of large datasets', async () => {
-      const largeDataArray = Array.from({ length: 1000 }, (_, i) => `Large data item ${i} with additional content`);
+      const largeDataArray = Array.from(
+        { length: 1000 },
+        (_, i) => `Large data item ${i} with additional content`
+      );
       const key = MockEncryptionUtils.generateAESKey();
 
       // Process in chunks to manage memory
@@ -791,11 +820,11 @@ describe('Encryption Operations', () => {
       const fipsAlgorithms = ['aes-256-gcm', 'aes-256-cbc', 'sha256', 'sha512', 'rsa-oaep'];
       const nonFipsAlgorithms = ['des', 'rc4', 'md5', 'sha1'];
 
-      fipsAlgorithms.forEach(algo => {
+      fipsAlgorithms.forEach((algo) => {
         expect(MockEncryptionUtils.isSecureAlgorithm(algo)).toBe(true);
       });
 
-      nonFipsAlgorithms.forEach(algo => {
+      nonFipsAlgorithms.forEach((algo) => {
         expect(MockEncryptionUtils.isSecureAlgorithm(algo)).toBe(false);
       });
     });
@@ -807,7 +836,7 @@ describe('Encryption Operations', () => {
         auditLog.push({
           operation,
           timestamp: new Date(),
-          metadata
+          metadata,
         });
       };
 
@@ -820,7 +849,7 @@ describe('Encryption Operations', () => {
       expect(auditLog[1].operation).toBe('decrypt');
       expect(auditLog[2].operation).toBe('sign');
 
-      auditLog.forEach(entry => {
+      auditLog.forEach((entry) => {
         expect(entry.timestamp).toBeInstanceOf(Date);
         expect(entry.metadata).toBeDefined();
       });
@@ -831,18 +860,18 @@ describe('Encryption Operations', () => {
         pciDss: {
           requiresStrongCryptography: true,
           requiresSecureKeyManagement: true,
-          requiresAuditLogging: true
+          requiresAuditLogging: true,
         },
         gdpr: {
           requiresDataEncryption: true,
           requiresDataPortability: true,
-          requiresRightToBeForgotten: true
+          requiresRightToBeForgotten: true,
         },
         hipaa: {
           requiresEncryptionAtRest: true,
           requiresEncryptionInTransit: true,
-          requiresAccessControls: true
-        }
+          requiresAccessControls: true,
+        },
       };
 
       Object.entries(complianceChecks).forEach(([standard, requirements]) => {
@@ -859,7 +888,7 @@ describe('Encryption Operations', () => {
         // In a real implementation, this would generate an X.509 certificate
         return {
           cert: '-----BEGIN CERTIFICATE-----\nMOCK_CERTIFICATE_DATA\n-----END CERTIFICATE-----',
-          key: keyPair.privateKey
+          key: keyPair.privateKey,
         };
       };
 
@@ -878,19 +907,22 @@ describe('Encryption Operations', () => {
       (bcrypt.hash as any).mockResolvedValue(hashedPassword);
       (bcrypt.compare as any).mockResolvedValue(true);
 
-      mockSecurityUtils.hashPassword(password).then(result => {
+      mockSecurityUtils.hashPassword(password).then((result) => {
         expect(result).toBe(hashedPassword);
         expect(bcrypt.hash).toHaveBeenCalledWith(password, 12);
       });
 
-      mockSecurityUtils.verifyPassword(password, hashedPassword).then(result => {
+      mockSecurityUtils.verifyPassword(password, hashedPassword).then((result) => {
         expect(result).toBe(true);
         expect(bcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
       });
     });
 
     it('should generate secure API keys', () => {
-      const { keyId, key } = { keyId: 'ck_1234567890abcdef', key: 'ck_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890' };
+      const { keyId, key } = {
+        keyId: 'ck_1234567890abcdef',
+        key: 'ck_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+      };
 
       mockSecurityUtils.generateApiKey.mockReturnValue({ keyId, key });
 
@@ -925,7 +957,7 @@ describe('Encryption Operations', () => {
         'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Content-Security-Policy': "default-src 'self'",
-        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
       };
 
       mockSecurityUtils.getSecurityHeaders.mockReturnValue(securityHeaders);
@@ -941,7 +973,7 @@ describe('Encryption Operations', () => {
       const auditEntry = {
         action: 'encryption_operation',
         details: { algorithm: 'aes-256-gcm', dataSize: 1024 },
-        severity: 'medium' as const
+        severity: 'medium' as const,
       };
 
       mockSecurityUtils.auditLog.mockImplementation((action, details, severity) => {
@@ -961,13 +993,13 @@ describe('Encryption Operations', () => {
         name: 'John Doe',
         ssn: '123-45-6789',
         creditCard: '4532-1234-5678-9012',
-        email: 'john@example.com'
+        email: 'john@example.com',
       };
 
       // Mock database encryption
       const encryptRecordFields = (record: any, fieldsToEncrypt: string[], key: string) => {
         const encrypted = { ...record };
-        fieldsToEncrypt.forEach(field => {
+        fieldsToEncrypt.forEach((field) => {
           if (encrypted[field]) {
             encrypted[field] = `encrypted:${encrypted[field]}`;
           }
@@ -1062,8 +1094,9 @@ describe('Encryption Operations', () => {
 
     it('should handle memory pressure during large operations', async () => {
       const key = MockEncryptionUtils.generateAESKey();
-      const largeDataSets = Array.from({ length: 10 }, (_, i) =>
-        'A'.repeat(100000) // 100KB each
+      const largeDataSets = Array.from(
+        { length: 10 },
+        (_, i) => 'A'.repeat(100000) // 100KB each
       );
 
       // Process sequentially to avoid memory spikes
@@ -1100,7 +1133,7 @@ describe('Security Integration Tests', () => {
       session_timeout_ms: 3600000,
       secure_cookie: true,
       rate_limit_window_ms: 900000,
-      rate_limit_max_requests: 100
+      rate_limit_max_requests: 100,
     };
 
     securityUtils = new SecurityUtils(securityConfig);
@@ -1115,11 +1148,18 @@ describe('Security Integration Tests', () => {
       const dataKey = MockEncryptionUtils.generateAESKey();
 
       // 3. Encrypt data key with master key
-      const { encrypted: encryptedDataKey, iv: keyIV } = MockEncryptionUtils.encryptKey(dataKey, masterKey);
+      const { encrypted: encryptedDataKey, iv: keyIV } = MockEncryptionUtils.encryptKey(
+        dataKey,
+        masterKey
+      );
 
       // 4. Encrypt sensitive data
       const sensitiveData = 'Patient medical record: John Doe, Age 45, Condition: Hypertension';
-      const { encrypted: encryptedData, iv: dataIV, tag } = MockEncryptionUtils.encryptAES(sensitiveData, dataKey);
+      const {
+        encrypted: encryptedData,
+        iv: dataIV,
+        tag,
+      } = MockEncryptionUtils.encryptAES(sensitiveData, dataKey);
 
       // 5. Store encrypted components (simulating database storage)
       const storedData = {
@@ -1127,7 +1167,7 @@ describe('Security Integration Tests', () => {
         keyIV: keyIV.toString('base64'),
         encryptedData: encryptedData.toString('base64'),
         dataIV: dataIV.toString('base64'),
-        tag: tag.toString('base64')
+        tag: tag.toString('base64'),
       };
 
       // 6. Retrieval and decryption workflow
@@ -1154,14 +1194,24 @@ describe('Security Integration Tests', () => {
 
       // 2. Encrypt data with old key
       const dataKey = MockEncryptionUtils.generateAESKey();
-      const { encrypted: encryptedDataKey, iv } = MockEncryptionUtils.encryptKey(dataKey, oldMasterKey);
+      const { encrypted: encryptedDataKey, iv } = MockEncryptionUtils.encryptKey(
+        dataKey,
+        oldMasterKey
+      );
 
       // 3. Decrypt with old key and re-encrypt with new key
       const decryptedDataKey = MockEncryptionUtils.decryptKey(encryptedDataKey, oldMasterKey, iv);
-      const { encrypted: newEncryptedDataKey, iv: newIV } = MockEncryptionUtils.encryptKey(decryptedDataKey, newMasterKey);
+      const { encrypted: newEncryptedDataKey, iv: newIV } = MockEncryptionUtils.encryptKey(
+        decryptedDataKey,
+        newMasterKey
+      );
 
       // 4. Verify new encryption works
-      const retrievedDataKey = MockEncryptionUtils.decryptKey(newEncryptedDataKey, newMasterKey, newIV);
+      const retrievedDataKey = MockEncryptionUtils.decryptKey(
+        newEncryptedDataKey,
+        newMasterKey,
+        newIV
+      );
 
       expect(retrievedDataKey.equals(dataKey)).toBe(true);
       expect(!encryptedDataKey.equals(newEncryptedDataKey)).toBe(true);
@@ -1174,17 +1224,27 @@ describe('Security Integration Tests', () => {
 
       // Layer 1: Application-level encryption
       const appKey = MockEncryptionUtils.generateAESKey();
-      const { encrypted: appEncrypted, iv: appIV, tag: appTag } = MockEncryptionUtils.encryptAES(sensitiveData, appKey);
+      const {
+        encrypted: appEncrypted,
+        iv: appIV,
+        tag: appTag,
+      } = MockEncryptionUtils.encryptAES(sensitiveData, appKey);
 
       // Layer 2: Transport encryption (simulated)
       const transportKey = MockEncryptionUtils.generateAESKey();
-      const { encrypted: transportEncrypted, iv: transportIV, tag: transportTag } =
-        MockEncryptionUtils.encryptAES(appEncrypted.toString('base64'), transportKey);
+      const {
+        encrypted: transportEncrypted,
+        iv: transportIV,
+        tag: transportTag,
+      } = MockEncryptionUtils.encryptAES(appEncrypted.toString('base64'), transportKey);
 
       // Layer 3: Database field encryption (simulated)
       const dbKey = MockEncryptionUtils.generateAESKey();
-      const { encrypted: dbEncrypted, iv: dbIV, tag: dbTag } =
-        MockEncryptionUtils.encryptAES(transportEncrypted.toString('base64'), dbKey);
+      const {
+        encrypted: dbEncrypted,
+        iv: dbIV,
+        tag: dbTag,
+      } = MockEncryptionUtils.encryptAES(transportEncrypted.toString('base64'), dbKey);
 
       // Reverse the process
       const transportDecrypted = MockEncryptionUtils.decryptAES(dbEncrypted, dbKey, dbIV, dbTag);

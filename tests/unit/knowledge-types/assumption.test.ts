@@ -16,30 +16,27 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { VectorDatabase } from '../../../src/index';
-import {
-  AssumptionSchema,
-  validateKnowledgeItem
-} from '../../../src/schemas/knowledge-types';
+import { AssumptionSchema, validateKnowledgeItem } from '../../../src/schemas/knowledge-types';
 
 // Mock Qdrant client - reusing pattern from memory-store.test.ts
 vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Assumption Knowledge Type - Comprehensive Testing', () => {
@@ -57,32 +54,35 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         kind: 'assumption' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Database can handle 10,000 concurrent connections',
-          description: 'The PostgreSQL database configuration is optimized to handle peak load of 10,000 concurrent user connections without performance degradation.',
+          description:
+            'The PostgreSQL database configuration is optimized to handle peak load of 10,000 concurrent user connections without performance degradation.',
           category: 'technical' as const,
           validation_status: 'assumed' as const,
-          impact_if_invalid: 'System will experience database connection timeouts during peak traffic, resulting in user-facing errors and potential revenue loss.',
+          impact_if_invalid:
+            'System will experience database connection timeouts during peak traffic, resulting in user-facing errors and potential revenue loss.',
           validation_criteria: [
             'Load testing with 10,000 concurrent connections',
             'Monitor connection pool utilization under load',
-            'Verify response times remain < 100ms at peak load'
+            'Verify response times remain < 100ms at peak load',
           ],
           validation_date: '2025-01-15T10:30:00Z',
           owner: 'database-team',
           related_assumptions: ['550e8400-e29b-41d4-a716-446655440001'],
           dependencies: ['postgresql-connection-pooling', 'load-balancer-configuration'],
-          monitoring_approach: 'Database connection pool metrics via Prometheus + Grafana dashboard',
-          review_frequency: 'monthly' as const
+          monitoring_approach:
+            'Database connection pool metrics via Prometheus + Grafana dashboard',
+          review_frequency: 'monthly' as const,
         },
         tags: { database: true, performance: true, scalability: true },
         source: {
           actor: 'database-architect',
           tool: 'assumption-tracking',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -102,15 +102,16 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         kind: 'assumption' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Market demand for mobile app features',
           description: 'Users are willing to pay premium for advanced mobile application features.',
           category: 'business' as const,
           validation_status: 'needs_validation' as const,
-          impact_if_invalid: 'Development resources may be wasted on features that users do not value or want to purchase.'
-        }
+          impact_if_invalid:
+            'Development resources may be wasted on features that users do not value or want to purchase.',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -133,8 +134,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'Test description',
             category: 'technical',
             validation_status: 'assumed',
-            impact_if_invalid: 'Test impact'
-          }
+            impact_if_invalid: 'Test impact',
+          },
         },
         {
           kind: 'assumption' as const,
@@ -144,8 +145,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             // Missing description
             category: 'technical',
             validation_status: 'assumed',
-            impact_if_invalid: 'Test impact'
-          }
+            impact_if_invalid: 'Test impact',
+          },
         },
         {
           kind: 'assumption' as const,
@@ -155,8 +156,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'Test description',
             // Missing category
             validation_status: 'assumed',
-            impact_if_invalid: 'Test impact'
-          }
+            impact_if_invalid: 'Test impact',
+          },
         },
         {
           kind: 'assumption' as const,
@@ -166,8 +167,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'Test description',
             category: 'technical',
             // Missing validation_status
-            impact_if_invalid: 'Test impact'
-          }
+            impact_if_invalid: 'Test impact',
+          },
         },
         {
           kind: 'assumption' as const,
@@ -176,10 +177,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             title: 'Test title',
             description: 'Test description',
             category: 'technical',
-            validation_status: 'assumed'
+            validation_status: 'assumed',
             // Missing impact_if_invalid
-          }
-        }
+          },
+        },
       ];
 
       invalidAssumptions.forEach((assumption, index) => {
@@ -200,8 +201,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description',
           category: 'invalid_category' as any, // Invalid category
           validation_status: 'assumed',
-          impact_if_invalid: 'Test impact'
-        }
+          impact_if_invalid: 'Test impact',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -220,8 +221,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description',
           category: 'technical',
           validation_status: 'invalid_status' as any, // Invalid validation status
-          impact_if_invalid: 'Test impact'
-        }
+          impact_if_invalid: 'Test impact',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -240,8 +241,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description',
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: 'Test impact'
-        }
+          impact_if_invalid: 'Test impact',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -260,8 +261,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description',
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: 'Test impact'
-        }
+          impact_if_invalid: 'Test impact',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -280,8 +281,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: '', // Empty description
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: 'Test impact'
-        }
+          impact_if_invalid: 'Test impact',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -300,8 +301,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description',
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: '' // Empty impact
-        }
+          impact_if_invalid: '', // Empty impact
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -315,7 +316,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
   describe('Assumption Category Validation', () => {
     it('should validate all assumption categories', async () => {
       const categories: Array<'technical' | 'business' | 'user' | 'market' | 'resource'> = [
-        'technical', 'business', 'user', 'market', 'resource'
+        'technical',
+        'business',
+        'user',
+        'market',
+        'resource',
       ];
 
       const assumptions = categories.map((category, index) => ({
@@ -326,13 +331,13 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: `Description for ${category} assumption.`,
           category,
           validation_status: 'assumed' as const,
-          impact_if_invalid: `Impact if ${category} assumption is invalid.`
+          impact_if_invalid: `Impact if ${category} assumption is invalid.`,
         },
-        content: `Assumption: ${category} - Assumption for ${category} category`
+        content: `Assumption: ${category} - Assumption for ${category} category`,
       }));
 
       const results = await Promise.all(
-        assumptions.map(assumption => db.storeItems([assumption]))
+        assumptions.map((assumption) => db.storeItems([assumption]))
       );
 
       results.forEach((result, index) => {
@@ -349,26 +354,28 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Kubernetes cluster auto-scaling handles burst traffic',
-          description: 'The Kubernetes cluster auto-scaling configuration will automatically scale pods based on CPU/memory metrics during traffic bursts.',
+          description:
+            'The Kubernetes cluster auto-scaling configuration will automatically scale pods based on CPU/memory metrics during traffic bursts.',
           category: 'technical' as const,
           validation_status: 'validated' as const,
-          impact_if_invalid: 'System will become unresponsive during traffic spikes, causing service degradation and potential outage.',
+          impact_if_invalid:
+            'System will become unresponsive during traffic spikes, causing service degradation and potential outage.',
           validation_criteria: [
             'Chaos engineering tests with sudden traffic spikes',
             'Monitor pod scaling latency and success rate',
             'Verify resource requests/limits are properly configured',
-            'Test cluster resource limits under maximum load'
+            'Test cluster resource limits under maximum load',
           ],
           validation_date: '2025-01-20T14:00:00Z',
           owner: 'platform-engineering',
           dependencies: [
             'kubernetes-hpa-configuration',
             'metrics-server-setup',
-            'pod-resource-limits'
+            'pod-resource-limits',
           ],
           monitoring_approach: 'Prometheus alerts for pod scaling events and resource utilization',
-          review_frequency: 'quarterly' as const
-        }
+          review_frequency: 'quarterly' as const,
+        },
       };
 
       const result = AssumptionSchema.safeParse(technicalAssumption);
@@ -388,19 +395,21 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Enterprise customers will pay for SSO integration',
-          description: 'Enterprise customers are willing to pay premium pricing for single sign-on (SSO) integration with their existing identity providers.',
+          description:
+            'Enterprise customers are willing to pay premium pricing for single sign-on (SSO) integration with their existing identity providers.',
           category: 'business' as const,
           validation_status: 'needs_validation' as const,
-          impact_if_invalid: 'Development effort spent on SSO integration may not generate expected revenue, affecting ROI and product strategy.',
+          impact_if_invalid:
+            'Development effort spent on SSO integration may not generate expected revenue, affecting ROI and product strategy.',
           validation_criteria: [
             'Customer surveys on SSO feature priority',
             'Competitive analysis of SSO pricing models',
-            'Sales team feedback on deal impact'
+            'Sales team feedback on deal impact',
           ],
           owner: 'product-management',
           monitoring_approach: 'Track SSO feature adoption and revenue metrics',
-          review_frequency: 'monthly' as const
-        }
+          review_frequency: 'monthly' as const,
+        },
       };
 
       const result = AssumptionSchema.safeParse(businessAssumption);
@@ -418,18 +427,21 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Users prefer dark mode for extended usage sessions',
-          description: 'Users spending more than 30 minutes in the application prefer dark mode interface to reduce eye strain.',
+          description:
+            'Users spending more than 30 minutes in the application prefer dark mode interface to reduce eye strain.',
           category: 'user' as const,
           validation_status: 'assumed' as const,
-          impact_if_invalid: 'Development effort on dark mode may not improve user retention or satisfaction as expected.',
+          impact_if_invalid:
+            'Development effort on dark mode may not improve user retention or satisfaction as expected.',
           validation_criteria: [
             'A/B testing on user session duration with light/dark themes',
             'User preference tracking and feedback collection',
-            'Analyze usage patterns of power users'
+            'Analyze usage patterns of power users',
           ],
-          monitoring_approach: 'User analytics dashboard tracking theme preferences and session duration',
-          review_frequency: 'as_needed' as const
-        }
+          monitoring_approach:
+            'User analytics dashboard tracking theme preferences and session duration',
+          review_frequency: 'as_needed' as const,
+        },
       };
 
       const result = AssumptionSchema.safeParse(userAssumption);
@@ -444,7 +456,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
   describe('Assumption Validation Status Lifecycle', () => {
     it('should handle all validation status values', async () => {
       const statuses: Array<'validated' | 'assumed' | 'invalidated' | 'needs_validation'> = [
-        'validated', 'assumed', 'invalidated', 'needs_validation'
+        'validated',
+        'assumed',
+        'invalidated',
+        'needs_validation',
       ];
 
       const assumptions = statuses.map((validation_status, index) => ({
@@ -455,13 +470,13 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: `Description for ${validation_status} assumption.`,
           category: 'technical',
           validation_status,
-          impact_if_invalid: `Impact if ${validation_status} assumption is invalid.`
+          impact_if_invalid: `Impact if ${validation_status} assumption is invalid.`,
         },
-        content: `Assumption: ${validation_status} - Assumption with status ${validation_status}`
+        content: `Assumption: ${validation_status} - Assumption with status ${validation_status}`,
       }));
 
       const results = await Promise.all(
-        assumptions.map(assumption => db.storeItems([assumption]))
+        assumptions.map((assumption) => db.storeItems([assumption]))
       );
 
       results.forEach((result, index) => {
@@ -482,8 +497,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           category: 'technical',
           validation_status: 'validated',
           impact_if_invalid: 'Test impact',
-          validation_date: 'invalid-date-format' // Invalid date format
-        }
+          validation_date: 'invalid-date-format', // Invalid date format
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithInvalidDate);
@@ -503,8 +518,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           category: 'technical',
           validation_status: 'validated',
           impact_if_invalid: 'Test impact',
-          validation_date: '2025-01-15T10:30:00Z' // Valid ISO datetime
-        }
+          validation_date: '2025-01-15T10:30:00Z', // Valid ISO datetime
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithValidDate);
@@ -523,8 +538,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'API endpoints will respond in under 200ms for 95% of requests.',
           category: 'technical',
           validation_status: 'assumed' as const,
-          impact_if_invalid: 'Poor user experience and potential SLA violations.'
-        }
+          impact_if_invalid: 'Poor user experience and potential SLA violations.',
+        },
       };
 
       const validatedAssumption = {
@@ -538,11 +553,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           impact_if_invalid: 'Poor user experience and potential SLA violations.',
           validation_criteria: [
             'Load testing confirms 95th percentile < 200ms',
-            'Production monitoring shows consistent performance'
+            'Production monitoring shows consistent performance',
           ],
           validation_date: '2025-01-25T16:45:00Z',
-          owner: 'api-team'
-        }
+          owner: 'api-team',
+        },
       };
 
       const assumedResult = AssumptionSchema.safeParse(assumedAssumption);
@@ -565,28 +580,32 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         kind: 'assumption' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Third-party payment gateway reliability',
-          description: 'The payment gateway provider maintains 99.9% uptime and can handle our peak transaction volume.',
+          description:
+            'The payment gateway provider maintains 99.9% uptime and can handle our peak transaction volume.',
           category: 'resource' as const,
           validation_status: 'validated' as const,
-          impact_if_invalid: 'Payment processing failures will result in lost revenue and customer trust issues.',
+          impact_if_invalid:
+            'Payment processing failures will result in lost revenue and customer trust issues.',
           validation_criteria: [
             'Review provider SLA and uptime guarantees',
             'Test transaction processing under peak load',
             'Verify failover and redundancy mechanisms',
             'Check customer support response times',
-            'Validate security compliance certifications'
+            'Validate security compliance certifications',
           ],
           validation_date: '2025-01-10T09:00:00Z',
           owner: 'finance-operations',
           dependencies: ['payment-gateway-integration', 'transaction-monitoring'],
-          monitoring_approach: 'Real-time payment success rate monitoring and provider SLA tracking',
-          review_frequency: 'weekly' as const
+          monitoring_approach:
+            'Real-time payment success rate monitoring and provider SLA tracking',
+          review_frequency: 'weekly' as const,
         },
-        content: 'Assumption: Third-party payment gateway reliability - Payment gateway maintains 99.9% uptime and handles peak transaction volume'
+        content:
+          'Assumption: Third-party payment gateway reliability - Payment gateway maintains 99.9% uptime and handles peak transaction volume',
       };
 
       const result = await db.storeItems([assumption]);
@@ -613,42 +632,50 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'User acquisition will maintain 20% month-over-month growth.',
             category: 'market' as const,
             validation_status: 'assumed' as const,
-            impact_if_invalid: 'Infrastructure planning and resource allocation may be misaligned with actual growth.'
+            impact_if_invalid:
+              'Infrastructure planning and resource allocation may be misaligned with actual growth.',
           },
-          content: 'Assumption: User base grows 20% monthly - User acquisition maintains 20% month-over-month growth'
+          content:
+            'Assumption: User base grows 20% monthly - User acquisition maintains 20% month-over-month growth',
         },
         {
           kind: 'assumption' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             title: 'Development team can maintain velocity',
-            description: 'Development team can sustain current sprint velocity with current resources.',
+            description:
+              'Development team can sustain current sprint velocity with current resources.',
             category: 'resource' as const,
             validation_status: 'needs_validation' as const,
-            impact_if_invalid: 'Project timelines may be missed, requiring re-planning and additional resources.',
+            impact_if_invalid:
+              'Project timelines may be missed, requiring re-planning and additional resources.',
             owner: 'engineering-manager',
-            review_frequency: 'monthly' as const
+            review_frequency: 'monthly' as const,
           },
-          content: 'Assumption: Development team can maintain velocity - Development team can sustain current sprint velocity'
+          content:
+            'Assumption: Development team can maintain velocity - Development team can sustain current sprint velocity',
         },
         {
           kind: 'assumption' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             title: 'Security model meets compliance requirements',
-            description: 'Current security architecture satisfies GDPR and SOC 2 compliance requirements.',
+            description:
+              'Current security architecture satisfies GDPR and SOC 2 compliance requirements.',
             category: 'technical' as const,
             validation_status: 'validated' as const,
-            impact_if_invalid: 'Non-compliance could result in fines and loss of enterprise customers.',
+            impact_if_invalid:
+              'Non-compliance could result in fines and loss of enterprise customers.',
             validation_criteria: [
               'Third-party security audit',
               'Penetration testing results',
-              'Compliance documentation review'
+              'Compliance documentation review',
             ],
-            validation_date: '2024-12-15T00:00:00Z'
+            validation_date: '2024-12-15T00:00:00Z',
           },
-          content: 'Assumption: Security model meets compliance requirements - Security architecture satisfies GDPR and SOC 2'
-        }
+          content:
+            'Assumption: Security model meets compliance requirements - Security architecture satisfies GDPR and SOC 2',
+        },
       ];
 
       const result = await db.storeItems(assumptions);
@@ -673,9 +700,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'This is a valid technical assumption.',
             category: 'technical' as const,
             validation_status: 'assumed' as const,
-            impact_if_invalid: 'Valid impact description.'
+            impact_if_invalid: 'Valid impact description.',
           },
-          content: 'Assumption: Valid technical assumption - This is a valid technical assumption'
+          content: 'Assumption: Valid technical assumption - This is a valid technical assumption',
         },
         {
           kind: 'assumption' as const,
@@ -685,9 +712,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             description: 'This assumption is missing required fields.',
             category: 'invalid_category' as any, // Invalid category
             validation_status: 'assumed' as const,
-            impact_if_invalid: 'Impact description.'
+            impact_if_invalid: 'Impact description.',
           },
-          content: 'Assumption: Invalid assumption - This assumption is missing required fields'
+          content: 'Assumption: Invalid assumption - This assumption is missing required fields',
         },
         {
           kind: 'assumption' as const,
@@ -698,10 +725,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
             category: 'business' as const,
             validation_status: 'needs_validation' as const,
             impact_if_invalid: 'Another valid impact description.',
-            owner: 'product-team'
+            owner: 'product-team',
           },
-          content: 'Assumption: Another valid assumption - This is another valid assumption'
-        }
+          content: 'Assumption: Another valid assumption - This is another valid assumption',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -727,10 +754,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
               validation_status: 'validated',
               impact_if_invalid: 'System will experience timeouts during peak traffic.',
               validation_date: '2025-01-15T10:30:00Z',
-              owner: 'database-team'
+              owner: 'database-team',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'assumption-id-2',
@@ -743,11 +770,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
               category: 'business',
               validation_status: 'needs_validation',
               impact_if_invalid: 'Development effort may not generate expected revenue.',
-              owner: 'product-management'
+              owner: 'product-management',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -789,7 +816,7 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       mockQdrant.search.mockResolvedValue([
         {
           id: 'assumption-id-3',
-          score: 0.90,
+          score: 0.9,
           payload: {
             kind: 'assumption',
             data: {
@@ -797,11 +824,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
               description: 'API endpoints respond within acceptable time limits.',
               category: 'technical',
               validation_status: 'assumed',
-              impact_if_invalid: 'Poor user experience and SLA violations.'
+              impact_if_invalid: 'Poor user experience and SLA violations.',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
 
       const result = await db.searchItems('assumed validation status');
@@ -821,9 +848,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'This assumption is specific to Project Alpha.',
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: 'Impact on Project Alpha.'
+          impact_if_invalid: 'Impact on Project Alpha.',
         },
-        content: 'Assumption: Project Alpha specific assumption - This assumption is specific to Project Alpha'
+        content:
+          'Assumption: Project Alpha specific assumption - This assumption is specific to Project Alpha',
       };
 
       const anotherProjectAssumption = {
@@ -834,9 +862,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'This assumption is specific to Project Beta.',
           category: 'business',
           validation_status: 'needs_validation',
-          impact_if_invalid: 'Impact on Project Beta.'
+          impact_if_invalid: 'Impact on Project Beta.',
         },
-        content: 'Assumption: Project Beta specific assumption - This assumption is specific to Project Beta'
+        content:
+          'Assumption: Project Beta specific assumption - This assumption is specific to Project Beta',
       };
 
       const result = await db.storeItems([projectAssumption, anotherProjectAssumption]);
@@ -858,9 +887,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Assumption valid for main branch.',
           category: 'technical',
           validation_status: 'validated',
-          impact_if_invalid: 'Main branch impact.'
+          impact_if_invalid: 'Main branch impact.',
         },
-        content: 'Assumption: Main branch assumption - Assumption valid for main branch'
+        content: 'Assumption: Main branch assumption - Assumption valid for main branch',
       };
 
       const featureBranchAssumption = {
@@ -871,9 +900,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Assumption specific to feature branch.',
           category: 'user',
           validation_status: 'assumed',
-          impact_if_invalid: 'Feature branch impact.'
+          impact_if_invalid: 'Feature branch impact.',
         },
-        content: 'Assumption: Feature branch assumption - Assumption specific to feature branch'
+        content: 'Assumption: Feature branch assumption - Assumption specific to feature branch',
       };
 
       const result = await db.storeItems([mainBranchAssumption, featureBranchAssumption]);
@@ -901,17 +930,19 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           related_assumptions: [
             '550e8400-e29b-41d4-a716-446655440001',
             '550e8400-e29b-41d4-a716-446655440002',
-            '550e8400-e29b-41d4-a716-446655440003'
+            '550e8400-e29b-41d4-a716-446655440003',
           ],
-          dependencies: ['oauth-provider-scaling', 'session-storage-scaling']
-        }
+          dependencies: ['oauth-provider-scaling', 'session-storage-scaling'],
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithRelations);
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.data.related_assumptions).toHaveLength(3);
-        expect(result.data.data.related_assumptions[0]).toBe('550e8400-e29b-41d4-a716-446655440001');
+        expect(result.data.data.related_assumptions[0]).toBe(
+          '550e8400-e29b-41d4-a716-446655440001'
+        );
         expect(result.data.data.dependencies).toHaveLength(2);
       }
     });
@@ -926,8 +957,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           category: 'technical',
           validation_status: 'assumed',
           impact_if_invalid: 'Test impact.',
-          related_assumptions: ['invalid-uuid-format'] // Invalid UUID
-        }
+          related_assumptions: ['invalid-uuid-format'], // Invalid UUID
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithInvalidUUID);
@@ -948,8 +979,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           validation_status: 'needs_validation',
           impact_if_invalid: 'Independent impact.',
           related_assumptions: [], // Empty array is valid
-          dependencies: [] // Empty array is valid
-        }
+          dependencies: [], // Empty array is valid
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithEmptyArrays);
@@ -964,7 +995,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
   describe('Assumption Monitoring and Review Frequency', () => {
     it('should validate all review frequency options', async () => {
       const reviewFrequencies: Array<'daily' | 'weekly' | 'monthly' | 'quarterly' | 'as_needed'> = [
-        'daily', 'weekly', 'monthly', 'quarterly', 'as_needed'
+        'daily',
+        'weekly',
+        'monthly',
+        'quarterly',
+        'as_needed',
       ];
 
       const assumptions = reviewFrequencies.map((review_frequency, index) => ({
@@ -977,13 +1012,13 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           validation_status: 'assumed',
           impact_if_invalid: 'Impact description.',
           monitoring_approach: `Monitoring approach for ${review_frequency} review.`,
-          review_frequency
+          review_frequency,
         },
-        content: `Assumption: ${review_frequency} review - Assumption with ${review_frequency} review`
+        content: `Assumption: ${review_frequency} review - Assumption with ${review_frequency} review`,
       }));
 
       const results = await Promise.all(
-        assumptions.map(assumption => db.storeItems([assumption]))
+        assumptions.map((assumption) => db.storeItems([assumption]))
       );
 
       results.forEach((result, index) => {
@@ -1003,17 +1038,19 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'External API rate limits can handle our projected traffic volume.',
           category: 'resource',
           validation_status: 'validated',
-          impact_if_invalid: 'API rate limiting will cause service disruptions and poor user experience.',
+          impact_if_invalid:
+            'API rate limiting will cause service disruptions and poor user experience.',
           validation_criteria: [
             'API provider rate limit documentation review',
             'Load testing against rate limits',
-            'Monitor API usage patterns in production'
+            'Monitor API usage patterns in production',
           ],
           validation_date: '2025-01-18T11:30:00Z',
           owner: 'integration-team',
-          monitoring_approach: 'Prometheus alerts tracking API request rates, response times, and rate limit breach events. Weekly usage reports and quarterly provider contract reviews.',
-          review_frequency: 'weekly'
-        }
+          monitoring_approach:
+            'Prometheus alerts tracking API request rates, response times, and rate limit breach events. Weekly usage reports and quarterly provider contract reviews.',
+          review_frequency: 'weekly',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithMonitoring);
@@ -1035,8 +1072,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           category: 'technical',
           validation_status: 'assumed',
           impact_if_invalid: 'Test impact.',
-          review_frequency: 'invalid_frequency' as any // Invalid review frequency
-        }
+          review_frequency: 'invalid_frequency' as any, // Invalid review frequency
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumptionWithInvalidFrequency);
@@ -1053,31 +1090,33 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         kind: 'assumption' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Cloud provider regional availability',
-          description: 'Cloud provider maintains service availability across all required geographic regions.',
+          description:
+            'Cloud provider maintains service availability across all required geographic regions.',
           category: 'resource',
           validation_status: 'validated',
-          impact_if_invalid: 'Service availability issues in specific regions will affect customer base.',
+          impact_if_invalid:
+            'Service availability issues in specific regions will affect customer base.',
           validation_criteria: [
             'Review cloud provider SLA documentation',
             'Test failover between regions',
-            'Verify compliance with data residency requirements'
+            'Verify compliance with data residency requirements',
           ],
           validation_date: '2025-01-22T08:00:00Z',
           owner: 'infrastructure-team',
           monitoring_approach: 'Multi-region health checks and uptime monitoring',
-          review_frequency: 'monthly'
+          review_frequency: 'monthly',
         },
         tags: { infrastructure: true, compliance: true, availability: true },
         source: {
           actor: 'cloud-architect',
           tool: 'assumption-workflow',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'long' as const
+        ttl_policy: 'long' as const,
       };
 
       const result = validateKnowledgeItem(assumption);
@@ -1095,23 +1134,26 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Machine learning model accuracy remains stable over time',
-          description: 'ML model performance metrics (accuracy, precision, recall) remain within acceptable ranges as data distribution evolves.',
+          description:
+            'ML model performance metrics (accuracy, precision, recall) remain within acceptable ranges as data distribution evolves.',
           category: 'technical',
           validation_status: 'needs_validation',
-          impact_if_invalid: 'Model degradation will lead to poor predictions and business decisions without detection.',
+          impact_if_invalid:
+            'Model degradation will lead to poor predictions and business decisions without detection.',
           validation_criteria: [
             'Weekly performance metric tracking (accuracy > 85%, precision > 80%, recall > 75%)',
             'Monthly model retraining with fresh data',
             'Quarterly model performance audit against business KPIs',
             'Continuous monitoring for data drift and concept drift',
             'A/B testing against baseline model for major deployments',
-            'Annual complete model validation and redevelopment if needed'
+            'Annual complete model validation and redevelopment if needed',
           ],
           owner: 'ml-engineering-team',
           dependencies: ['model-training-pipeline', 'feature-store', 'monitoring-infrastructure'],
-          monitoring_approach: 'Real-time model performance dashboard with automated alerts for metric degradation',
-          review_frequency: 'weekly'
-        }
+          monitoring_approach:
+            'Real-time model performance dashboard with automated alerts for metric degradation',
+          review_frequency: 'weekly',
+        },
       };
 
       const result = AssumptionSchema.safeParse(complexAssumption);
@@ -1134,9 +1176,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           description: 'Test description.',
           category: 'technical',
           validation_status: 'assumed',
-          impact_if_invalid: 'Test impact.'
+          impact_if_invalid: 'Test impact.',
         },
-        content: 'Assumption: Test assumption - Test description'
+        content: 'Assumption: Test assumption - Test description',
       };
 
       // Mock upsert to throw an error
@@ -1155,21 +1197,24 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'API rate limiting (429 responses) < 0.1% of total requests',
-          description: 'Rate limiting configuration ensures that less than 0.1% of API requests receive HTTP 429 (Too Many Requests) responses, even during peak traffic periods & DDoS protection events.',
+          description:
+            'Rate limiting configuration ensures that less than 0.1% of API requests receive HTTP 429 (Too Many Requests) responses, even during peak traffic periods & DDoS protection events.',
           category: 'technical',
           validation_status: 'validated',
-          impact_if_invalid: 'High rate of 429 responses will degrade user experience & indicate insufficient infrastructure capacity.',
+          impact_if_invalid:
+            'High rate of 429 responses will degrade user experience & indicate insufficient infrastructure capacity.',
           validation_criteria: [
             'Load testing with 10x normal traffic',
             'Monitor 429 response rates via API Gateway metrics',
-            'Verify rate limiting rules are properly configured'
+            'Verify rate limiting rules are properly configured',
           ],
           validation_date: '2025-01-25T14:20:00Z',
           owner: 'api-platform-team',
           monitoring_approach: 'CloudWatch alarms for 429 response rate > 0.1%',
-          review_frequency: 'daily'
+          review_frequency: 'daily',
         },
-        content: 'Assumption: API rate limiting (429 responses) < 0.1% - Rate limiting ensures < 0.1% of API requests receive 429 responses'
+        content:
+          'Assumption: API rate limiting (429 responses) < 0.1% - Rate limiting ensures < 0.1% of API requests receive 429 responses',
       };
 
       const result = await db.storeItems([assumption]);
@@ -1189,8 +1234,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
           category: 'user',
           validation_status: 'assumed',
           impact_if_invalid: 'Simple impact.',
-          monitoring_approach: 'Basic monitoring' // Minimal but valid
-        }
+          monitoring_approach: 'Basic monitoring', // Minimal but valid
+        },
       };
 
       const result = AssumptionSchema.safeParse(minimalAssumption);
@@ -1206,19 +1251,20 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Legacy browser support is not required',
-          description: 'Users have migrated to modern browsers, making Internet Explorer support unnecessary.',
+          description:
+            'Users have migrated to modern browsers, making Internet Explorer support unnecessary.',
           category: 'user',
           validation_status: 'invalidated' as const,
           impact_if_invalid: 'Continuing to support legacy browsers wastes development resources.',
           validation_criteria: [
             'Browser usage analytics showing < 1% IE traffic',
-            'Customer feedback confirming modern browser usage'
+            'Customer feedback confirming modern browser usage',
           ],
           validation_date: '2025-01-30T16:00:00Z',
           owner: 'frontend-team',
           monitoring_approach: 'Monthly browser usage analytics review',
-          review_frequency: 'monthly'
-        }
+          review_frequency: 'monthly',
+        },
       };
 
       const result = AssumptionSchema.safeParse(invalidatedAssumption);

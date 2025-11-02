@@ -39,7 +39,7 @@ import type {
   LogRetentionConfig,
   LogStreamingConfig,
   LogAnalyticsConfig,
-  LogSecurityConfig
+  LogSecurityConfig,
 } from '../../../src/types/logging-interfaces';
 
 // Mock external dependencies
@@ -50,13 +50,13 @@ vi.mock('../../../src/utils/logger', () => {
     error: vi.fn(),
     debug: vi.fn(),
     fatal: vi.fn(),
-    child: vi.fn(() => mockLogger)
+    child: vi.fn(() => mockLogger),
   };
 
   return {
     logger: mockLogger,
     createRequestLogger: vi.fn(() => mockLogger),
-    createChildLogger: vi.fn(() => mockLogger)
+    createChildLogger: vi.fn(() => mockLogger),
   };
 });
 
@@ -67,12 +67,12 @@ vi.mock('fs/promises', () => ({
   mkdir: vi.fn().mockResolvedValue(undefined),
   readdir: vi.fn(),
   stat: vi.fn(),
-  unlink: vi.fn()
+  unlink: vi.fn(),
 }));
 
 vi.mock('zlib', () => ({
   gzip: vi.fn((data, callback) => callback(null, Buffer.from('compressed'))),
-  gunzip: vi.fn((data, callback) => callback(null, Buffer.from('decompressed')))
+  gunzip: vi.fn((data, callback) => callback(null, Buffer.from('decompressed'))),
 }));
 
 describe('LoggingService - Comprehensive Logging Functionality', () => {
@@ -97,37 +97,37 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         directory: './logs',
         maxSize: '100MB',
         maxFiles: 10,
-        compression: true
+        compression: true,
       },
       retention: {
         defaultDays: 30,
         errorDays: 90,
         auditDays: 2555,
-        cleanupInterval: '1h'
+        cleanupInterval: '1h',
       },
       streaming: {
         enabled: true,
         bufferSize: 1000,
         flushInterval: 5000,
-        retryAttempts: 3
+        retryAttempts: 3,
       },
       analytics: {
         enabled: true,
         metricsInterval: 60000,
-        aggregationWindow: 300000
+        aggregationWindow: 300000,
       },
       security: {
         masking: {
           enabled: true,
           patterns: ['password', 'token', 'secret', 'key'],
-          replacement: '[REDACTED]'
+          replacement: '[REDACTED]',
         },
         accessControl: {
           enabled: true,
           roles: ['admin', 'auditor', 'user'],
-          defaultRole: 'user'
-        }
-      }
+          defaultRole: 'user',
+        },
+      },
     });
   });
 
@@ -144,10 +144,10 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         context: {
           userId: 'user-123',
           action: 'login',
-          ip: '192.168.1.100'
+          ip: '192.168.1.100',
         },
         correlationId: 'corr-abc-123',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       await loggingService.writeLog(logData);
@@ -156,7 +156,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         expect.objectContaining({
           userId: 'user-123',
           action: 'login',
-          ip: '192.168.1.100'
+          ip: '192.168.1.100',
         }),
         'User authentication successful'
       );
@@ -169,7 +169,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         await loggingService.writeLog({
           level,
           message: `Test ${level} message`,
-          context: { test: true }
+          context: { test: true },
         });
       }
 
@@ -185,7 +185,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const variables = {
         userId: 'user-456',
         action: 'update',
-        resourceId: 'doc-789'
+        resourceId: 'doc-789',
       };
 
       const renderedMessage = loggingService.renderTemplate(template, variables);
@@ -198,13 +198,13 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
 
       loggingService.setCorrelationContext(correlationId, {
         service: 'auth-service',
-        version: '1.2.3'
+        version: '1.2.3',
       });
 
       await loggingService.writeLog({
         level: 'info',
         message: 'Processing request',
-        context: { endpoint: '/api/auth' }
+        context: { endpoint: '/api/auth' },
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -212,7 +212,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           correlation_id: correlationId,
           service: 'auth-service',
           version: '1.2.3',
-          endpoint: '/api/auth'
+          endpoint: '/api/auth',
         }),
         'Processing request'
       );
@@ -222,7 +222,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const invalidLogEntry = {
         level: 'invalid' as LogLevel,
         message: '',
-        context: null
+        context: null,
       };
 
       const result1 = await loggingService.writeLog(invalidLogEntry);
@@ -232,7 +232,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const result2 = await loggingService.writeLog({
         level: 'info',
         message: '',
-        context: {}
+        context: {},
       });
       expect(result2.success).toBe(false);
       expect(result2.error).toContain('Invalid log entry: message is required');
@@ -246,7 +246,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         level: 'info',
         message: 'Test log entry',
         context: { test: true },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       await loggingService.storeLog(logEntry);
@@ -280,7 +280,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         defaultDays: 30,
         errorDays: 90,
         auditDays: 2555,
-        cleanupInterval: '1h'
+        cleanupInterval: '1h',
       };
 
       loggingService.configureRetention(retentionConfig);
@@ -295,11 +295,11 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const logs = Array.from({ length: logCount }, (_, i) => ({
         level: 'info' as LogLevel,
         message: `High volume test log ${i}`,
-        context: { batch: 'high-volume-test' }
+        context: { batch: 'high-volume-test' },
       }));
 
       const startTime = Date.now();
-      await Promise.all(logs.map(log => loggingService.writeLog(log)));
+      await Promise.all(logs.map((log) => loggingService.writeLog(log)));
       const duration = Date.now() - startTime;
 
       expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
@@ -314,14 +314,14 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         level: ['error', 'fatal'],
         timeRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-01-31')
+          end: new Date('2024-01-31'),
         },
         context: {
           userId: 'user-123',
-          service: 'auth-service'
+          service: 'auth-service',
         },
         limit: 100,
-        offset: 0
+        offset: 0,
       };
 
       const searchResult = await loggingService.searchLogs(queryOptions);
@@ -336,29 +336,32 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         levels: ['error', 'warn'],
         timeRange: {
           start: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-          end: new Date()
+          end: new Date(),
         },
         contextFilters: {
           service: ['auth-service', 'api-gateway'],
-          userId: ['user-123', 'user-456']
+          userId: ['user-123', 'user-456'],
         },
-        messagePattern: /authentication.*failed/i
+        messagePattern: /authentication.*failed/i,
       };
 
       const filteredLogs = await loggingService.filterLogs(filters);
 
-      expect(filteredLogs.every(log =>
-        ['error', 'warn'].includes(log.level) &&
-        log.context?.service &&
-        ['auth-service', 'api-gateway'].includes(log.context.service as string)
-      )).toBe(true);
+      expect(
+        filteredLogs.every(
+          (log) =>
+            ['error', 'warn'].includes(log.level) &&
+            log.context?.service &&
+            ['auth-service', 'api-gateway'].includes(log.context.service as string)
+        )
+      ).toBe(true);
     });
 
     it('should aggregate and summarize log data', async () => {
       const aggregationOptions = {
         groupBy: ['level', 'service'],
         timeWindow: '1h',
-        metrics: ['count', 'avg_duration', 'error_rate']
+        metrics: ['count', 'avg_duration', 'error_rate'],
       };
 
       const aggregation = await loggingService.aggregateLogs(aggregationOptions);
@@ -374,14 +377,14 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         bufferSize: 1000,
         flushInterval: 5000,
         retryAttempts: 3,
-        subscribers: ['websocket', 'event-stream']
+        subscribers: ['websocket', 'event-stream'],
       };
 
       loggingService.configureStreaming(streamingConfig);
 
       const stream = loggingService.createLogStream({
         level: ['error', 'warn'],
-        realTime: true
+        realTime: true,
       });
 
       // Test streaming capabilities
@@ -401,7 +404,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           loggingService.writeLog({
             level: 'info',
             message: `Throughput test log ${i}`,
-            context: { test: 'throughput' }
+            context: { test: 'throughput' },
           })
         );
 
@@ -420,7 +423,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const bufferConfig = {
         maxSize: 500,
         flushInterval: 1000,
-        compressionEnabled: true
+        compressionEnabled: true,
       };
 
       loggingService.configureBuffering(bufferConfig);
@@ -430,7 +433,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         await loggingService.writeLog({
           level: 'info',
           message: `Buffer test ${i}`,
-          context: { buffer: 'test' }
+          context: { buffer: 'test' },
         });
       }
 
@@ -448,7 +451,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           loggingService.writeLogAsync({
             level: 'info',
             message: `Async queue test ${i}`,
-            context: { queue: 'test' }
+            context: { queue: 'test' },
           })
         );
       }
@@ -464,7 +467,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const batchLogs = Array.from({ length: 100 }, (_, i) => ({
         level: 'info' as LogLevel,
         message: `Batch log ${i}`,
-        context: { batch: 'test' }
+        context: { batch: 'test' },
       }));
 
       const batchResult = await loggingService.writeBatchLogs(batchLogs);
@@ -483,8 +486,8 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         correlationId: 'corr-integration-123',
         metadata: {
           version: '1.0.0',
-          environment: 'production'
-        }
+          environment: 'production',
+        },
       };
 
       await loggingService.integrateWithService(serviceIntegration);
@@ -492,7 +495,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const integrationLog = {
         level: 'info' as LogLevel,
         message: 'Service integration successful',
-        context: { service: 'auth-service' }
+        context: { service: 'auth-service' },
       };
 
       await loggingService.writeLog(integrationLog);
@@ -500,7 +503,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.objectContaining({
           service: 'auth-service',
-          correlation_id: 'corr-integration-123'
+          correlation_id: 'corr-integration-123',
         }),
         'Service integration successful'
       );
@@ -511,7 +514,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         enabled: true,
         metricsInterval: 60000,
         aggregationWindow: 300000,
-        metrics: ['log_volume', 'error_rate', 'response_time', 'throughput']
+        metrics: ['log_volume', 'error_rate', 'response_time', 'throughput'],
       };
 
       loggingService.configureAnalytics(analyticsConfig);
@@ -529,9 +532,9 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         thresholds: {
           errorRate: 0.05, // 5% error rate threshold
           logVolume: 10000, // 10k logs/minute threshold
-          responseTime: 5000 // 5 second response time threshold
+          responseTime: 5000, // 5 second response time threshold
         },
-        channels: ['email', 'slack', 'webhook']
+        channels: ['email', 'slack', 'webhook'],
       };
 
       loggingService.configureAlerting(alertingConfig);
@@ -541,7 +544,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         await loggingService.writeLog({
           level: i < 10 ? 'error' : 'info',
           message: `Alert test log ${i}`,
-          context: { alert: 'test' }
+          context: { alert: 'test' },
         });
       }
 
@@ -551,7 +554,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
 
     it('should provide health monitoring status', async () => {
       // Small delay to ensure uptime > 0
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const healthStatus = await loggingService.getHealthStatus();
 
@@ -575,8 +578,8 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           password: 'super-secret-password',
           apiToken: 'sk-test-1234567890',
           creditCard: '4111-1111-1111-1111',
-          ssn: '123-45-6789'
-        }
+          ssn: '123-45-6789',
+        },
       };
 
       await loggingService.writeLog(sensitiveData);
@@ -587,7 +590,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           password: '[REDACTED]',
           apiToken: '[REDACTED]',
           creditCard: '[REDACTED]',
-          ssn: '[REDACTED]'
+          ssn: '[REDACTED]',
         }),
         'User login attempt'
       );
@@ -598,22 +601,22 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         masking: {
           enabled: true,
           patterns: ['password', 'token', 'secret'],
-          replacement: '[REDACTED]'
+          replacement: '[REDACTED]',
         },
         accessControl: {
           enabled: true,
           roles: {
             admin: ['read', 'write', 'delete', 'audit'],
             auditor: ['read', 'audit'],
-            user: ['read']
+            user: ['read'],
           },
-          defaultRole: 'user'
+          defaultRole: 'user',
         },
         encryption: {
           enabled: true,
           algorithm: 'AES-256-GCM',
-          keyRotationDays: 90
-        }
+          keyRotationDays: 90,
+        },
       };
 
       loggingService.configureSecurity(securityConfig);
@@ -636,14 +639,14 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           resource: 'user-profile-123',
           changes: {
             old_values: { status: 'inactive' },
-            new_values: { status: 'active' }
+            new_values: { status: 'active' },
           },
           compliance: {
             regulation: 'GDPR',
             data_category: 'personal_data',
-            retention_days: 2555
-          }
-        }
+            retention_days: 2555,
+          },
+        },
       };
 
       await loggingService.writeLog(auditLog);
@@ -655,8 +658,8 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           resource: 'user-profile-123',
           compliance: expect.objectContaining({
             regulation: 'GDPR',
-            data_category: 'personal_data'
-          })
+            data_category: 'personal_data',
+          }),
         }),
         'Data modification event'
       );
@@ -667,13 +670,14 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         regulation: 'GDPR',
         dateRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-01-31')
+          end: new Date('2024-01-31'),
         },
         dataCategories: ['personal_data', 'sensitive_data'],
-        format: 'json'
+        format: 'json',
       };
 
-      const complianceReport = await loggingService.generateComplianceReport(complianceReportOptions);
+      const complianceReport =
+        await loggingService.generateComplianceReport(complianceReportOptions);
 
       expect(complianceReport.regulation).toBe('GDPR');
       expect(complianceReport.period).toBeDefined();
@@ -693,8 +697,8 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
           attempt_count: 5,
           time_window: '5m',
           severity: 'medium',
-          mitigation: 'rate_limiting_applied'
-        }
+          mitigation: 'rate_limiting_applied',
+        },
       };
 
       await loggingService.writeLog(securityEvent);
@@ -703,7 +707,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         expect.objectContaining({
           threat_type: 'brute_force_attempt',
           source_ip: '192.168.1.100',
-          severity: 'medium'
+          severity: 'medium',
         }),
         'Potential security threat detected'
       );
@@ -719,15 +723,15 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
         { level: null },
         { level: 'info', message: '' },
         { level: 'invalid', message: 'test' },
-        { level: 'info', message: 'test', context: 'invalid' }
+        { level: 'info', message: 'test', context: 'invalid' },
       ];
 
       const results = await Promise.allSettled(
-        malformedEntries.map(entry => loggingService.writeLog(entry as any))
+        malformedEntries.map((entry) => loggingService.writeLog(entry as any))
       );
 
       // All should either succeed (if recoverable) or fail gracefully
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.status).toBe('fulfilled');
       });
     });
@@ -738,7 +742,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const logEntry = {
         level: 'info' as LogLevel,
         message: 'Test during error condition',
-        context: { test: 'error-recovery' }
+        context: { test: 'error-recovery' },
       };
 
       // Should not throw and should retry or use fallback
@@ -752,7 +756,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const logEntry = {
         level: 'info' as LogLevel,
         message: 'Circular reference test',
-        context: { circular: circularObject }
+        context: { circular: circularObject },
       };
 
       await expect(loggingService.writeLog(logEntry)).resolves.not.toThrow();
@@ -764,7 +768,7 @@ describe('LoggingService - Comprehensive Logging Functionality', () => {
       const logEntry = {
         level: 'info' as LogLevel,
         message: largeMessage,
-        context: { size: 'large' }
+        context: { size: 'large' },
       };
 
       await loggingService.writeLog(logEntry);

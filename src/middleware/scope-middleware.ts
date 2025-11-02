@@ -8,7 +8,12 @@
 
 import { logger } from '../utils/logger.js';
 import { authService } from '../services/auth/auth-service.js';
-import { AuthScope, RESOURCE_SCOPE_MAPPING, type AuthContext, type AuthenticatedRequest } from '../types/auth-types.js';
+import {
+  AuthScope,
+  RESOURCE_SCOPE_MAPPING,
+  type AuthContext,
+  type AuthenticatedRequest,
+} from '../types/auth-types.js';
 
 /**
  * Scope enforcement middleware for MCP tools
@@ -95,41 +100,51 @@ export class ScopeMiddleware {
       }
 
       // Log successful authorization
-      logger.info({
-        userId: authContext.user.id,
-        username: authContext.user.username,
-        role: authContext.user.role,
-        resource,
-        action,
-        scopes: authContext.scopes,
-        requiredScopes
-      }, 'Scope validation passed');
+      logger.info(
+        {
+          userId: authContext.user.id,
+          username: authContext.user.username,
+          role: authContext.user.role,
+          resource,
+          action,
+          scopes: authContext.scopes,
+          requiredScopes,
+        },
+        'Scope validation passed'
+      );
 
       return authContext;
-
     } catch (error) {
       if (error instanceof ScopeError) {
-        logger.warn({
-          error: error.message,
-          requiredScopes: error.requiredScopes,
-          userScopes: error.userScopes,
-          resource: error.resource,
-          action: error.action,
-          authToken: `${authToken.substring(0, 8)}...` // Log partial token for debugging
-        }, 'Scope validation failed');
+        logger.warn(
+          {
+            error: error.message,
+            requiredScopes: error.requiredScopes,
+            userScopes: error.userScopes,
+            resource: error.resource,
+            action: error.action,
+            authToken: `${authToken.substring(0, 8)}...`, // Log partial token for debugging
+          },
+          'Scope validation failed'
+        );
 
         throw error;
       }
 
       // Log authentication failure
-      logger.error({
-        error: error instanceof Error ? error.message : String(error),
-        resource,
-        action,
-        authToken: `${authToken.substring(0, 8)}...`
-      }, 'Authentication failed during scope validation');
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : String(error),
+          resource,
+          action,
+          authToken: `${authToken.substring(0, 8)}...`,
+        },
+        'Authentication failed during scope validation'
+      );
 
-      throw new Error(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -147,34 +162,34 @@ export class ScopeMiddleware {
 
     // Default scope mappings
     const defaultMappings: Record<string, Record<string, AuthScope[]>> = {
-      'memory_store': {
-        'write': [AuthScope._MEMORY_WRITE],
-        'read': [AuthScope._MEMORY_READ],
-        'delete': [AuthScope._MEMORY_DELETE],
-        'manage': [AuthScope._MEMORY_WRITE, AuthScope._MEMORY_DELETE]
+      memory_store: {
+        write: [AuthScope._MEMORY_WRITE],
+        read: [AuthScope._MEMORY_READ],
+        delete: [AuthScope._MEMORY_DELETE],
+        manage: [AuthScope._MEMORY_WRITE, AuthScope._MEMORY_DELETE],
       },
-      'memory_find': {
-        'read': [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
-        'advanced': [AuthScope._SEARCH_ADVANCED],
-        'deep': [AuthScope._SEARCH_DEEP],
-        'manage': [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED]
+      memory_find: {
+        read: [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC],
+        advanced: [AuthScope._SEARCH_ADVANCED],
+        deep: [AuthScope._SEARCH_DEEP],
+        manage: [AuthScope._MEMORY_READ, AuthScope._SEARCH_ADVANCED],
       },
-      'database_health': {
-        'read': [AuthScope._SYSTEM_READ],
-        'manage': [AuthScope._SYSTEM_MANAGE]
+      database_health: {
+        read: [AuthScope._SYSTEM_READ],
+        manage: [AuthScope._SYSTEM_MANAGE],
       },
-      'database_stats': {
-        'read': [AuthScope._SYSTEM_READ],
-        'manage': [AuthScope._SYSTEM_MANAGE]
+      database_stats: {
+        read: [AuthScope._SYSTEM_READ],
+        manage: [AuthScope._SYSTEM_MANAGE],
       },
-      'telemetry_report': {
-        'read': [AuthScope._SYSTEM_READ],
-        'manage': [AuthScope._SYSTEM_MANAGE]
+      telemetry_report: {
+        read: [AuthScope._SYSTEM_READ],
+        manage: [AuthScope._SYSTEM_MANAGE],
       },
-      'system_metrics': {
-        'read': [AuthScope._SYSTEM_READ],
-        'manage': [AuthScope._SYSTEM_MANAGE]
-      }
+      system_metrics: {
+        read: [AuthScope._SYSTEM_READ],
+        manage: [AuthScope._SYSTEM_MANAGE],
+      },
     };
 
     return defaultMappings[resource]?.[action] || [];
@@ -196,7 +211,7 @@ export class ScopeMiddleware {
     }
 
     // Default scope check: user must have ANY of the required scopes (not ALL)
-    return requiredScopes.some(scope => userScopes.includes(scope));
+    return requiredScopes.some((scope) => userScopes.includes(scope));
   }
 
   /**
@@ -212,7 +227,7 @@ export class ScopeMiddleware {
     const expand = context?.expand || 'none';
 
     // Basic read scope required for all searches
-    const hasBasicRead = userScopes.some(scope =>
+    const hasBasicRead = userScopes.some((scope) =>
       [AuthScope._MEMORY_READ, AuthScope._SEARCH_BASIC].includes(scope)
     );
 
@@ -225,8 +240,11 @@ export class ScopeMiddleware {
       return false;
     }
 
-    if (mode === 'auto' && !userScopes.includes(AuthScope._SEARCH_ADVANCED) &&
-        !userScopes.includes(AuthScope._SEARCH_DEEP)) {
+    if (
+      mode === 'auto' &&
+      !userScopes.includes(AuthScope._SEARCH_ADVANCED) &&
+      !userScopes.includes(AuthScope._SEARCH_DEEP)
+    ) {
       // Auto mode requires at least advanced search capability
       return false;
     }
@@ -251,13 +269,12 @@ export class ScopeMiddleware {
     resource: string,
     action: 'read' | 'write' | 'delete' | 'manage'
   ): Promise<AuthenticatedRequest & { data: T }> {
-    return this.validateScope(authToken, resource, action, data)
-      .then(authContext => ({
-        auth: authContext,
-        timestamp: Date.now(),
-        data,
-        idempotency_key: data.idempotency_key || this.generateIdempotencyKey()
-      }));
+    return this.validateScope(authToken, resource, action, data).then((authContext) => ({
+      auth: authContext,
+      timestamp: Date.now(),
+      data,
+      idempotency_key: data.idempotency_key || this.generateIdempotencyKey(),
+    }));
   }
 
   /**
@@ -279,7 +296,7 @@ export class ScopeMiddleware {
       AuthScope._USER_MANAGE,
       AuthScope._API_KEY_MANAGE,
       AuthScope._SYSTEM_MANAGE,
-      AuthScope._AUDIT_WRITE
+      AuthScope._AUDIT_WRITE,
     ].includes(scope);
   }
 
@@ -294,7 +311,7 @@ export class ScopeMiddleware {
       AuthScope._AUDIT_READ,
       AuthScope._SEARCH_BASIC,
       AuthScope._SEARCH_ADVANCED,
-      AuthScope._SEARCH_DEEP
+      AuthScope._SEARCH_DEEP,
     ].includes(scope);
   }
 
@@ -307,7 +324,7 @@ export class ScopeMiddleware {
       AuthScope._API_KEY_MANAGE,
       AuthScope._SYSTEM_MANAGE,
       AuthScope._AUDIT_WRITE,
-      AuthScope._SCOPE_MANAGE
+      AuthScope._SCOPE_MANAGE,
     ].includes(scope);
   }
 }
@@ -326,12 +343,12 @@ export async function validateToolScope(
 ): Promise<AuthContext> {
   // Map tool names to resources and actions
   const toolMappings: Record<string, { resource: string; action: string }> = {
-    'memory_store': { resource: 'memory_store', action: 'write' },
-    'memory_find': { resource: 'memory_find', action: 'read' },
-    'database_health': { resource: 'database_health', action: 'read' },
-    'database_stats': { resource: 'database_stats', action: 'read' },
-    'telemetry_report': { resource: 'telemetry_report', action: 'read' },
-    'system_metrics': { resource: 'system_metrics', action: 'read' }
+    memory_store: { resource: 'memory_store', action: 'write' },
+    memory_find: { resource: 'memory_find', action: 'read' },
+    database_health: { resource: 'database_health', action: 'read' },
+    database_stats: { resource: 'database_stats', action: 'read' },
+    telemetry_report: { resource: 'telemetry_report', action: 'read' },
+    system_metrics: { resource: 'system_metrics', action: 'read' },
   };
 
   const mapping = toolMappings[toolName];
@@ -344,7 +361,7 @@ export async function validateToolScope(
     mode: args.mode,
     expand: args.expand,
     types: args.types,
-    limit: args.limit
+    limit: args.limit,
   };
 
   return await scopeMiddleware.validateScope(

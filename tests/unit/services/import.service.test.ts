@@ -204,11 +204,11 @@ describe('Import Service - Core Import Operations', () => {
 
       const fieldMapping = {
         'Knowledge Type': 'kind',
-        'Name': 'data.name',
-        'Description': 'content',
-        'Project': 'scope.project',
-        'Type': 'data.type',
-        'Rationale': 'data.rationale',
+        Name: 'data.name',
+        Description: 'content',
+        Project: 'scope.project',
+        Type: 'data.type',
+        Rationale: 'data.rationale',
       };
 
       const transformedData = [
@@ -359,9 +359,9 @@ describe('Import Service - Core Import Operations', () => {
         csvData: [
           {
             'Knowledge Type': 'decision',
-            'Name': 'CSV Decision',
-            'Project': 'test-project',
-            'Rationale': 'CSV rationale',
+            Name: 'CSV Decision',
+            Project: 'test-project',
+            Rationale: 'CSV rationale',
           },
         ],
         xmlData: {
@@ -421,7 +421,7 @@ describe('Import Service - Core Import Operations', () => {
       // Assert
       expect(result).toEqual(expectedResponse);
       expect(result.stored).toHaveLength(3);
-      expect(result.stored.map(s => s.kind)).toEqual(['entity', 'decision', 'observation']);
+      expect(result.stored.map((s) => s.kind)).toEqual(['entity', 'decision', 'observation']);
     });
   });
 
@@ -777,7 +777,7 @@ describe('Import Service - Core Import Operations', () => {
 
       // Assert
       expect(result.stored).toHaveLength(3);
-      expect(result.stored.map(s => s.status)).toEqual(['inserted', 'updated', 'deleted']);
+      expect(result.stored.map((s) => s.status)).toEqual(['inserted', 'updated', 'deleted']);
       expect(result.autonomous_context.action_performed).toBe('delta');
     });
   });
@@ -1138,7 +1138,7 @@ describe('Import Service - Core Import Operations', () => {
       // Assert
       expect(result.stored).toHaveLength(0);
       expect(result.errors).toHaveLength(2);
-      expect(result.errors.every(e => e.error_code === 'TYPE_VALIDATION_ERROR')).toBe(true);
+      expect(result.errors.every((e) => e.error_code === 'TYPE_VALIDATION_ERROR')).toBe(true);
     });
   });
 
@@ -1651,37 +1651,37 @@ describe('Import Service - Field Mapping and Transformation', () => {
       // Arrange
       const sourceData = [
         {
-          'Category': 'person',
-          'Name': 'John Doe',
-          'Age': '30',
-          'Department': 'Engineering',
+          Category: 'person',
+          Name: 'John Doe',
+          Age: '30',
+          Department: 'Engineering',
         },
         {
-          'Category': 'company',
-          'Name': 'Tech Corp',
-          'Revenue': '1000000',
-          'Industry': 'Technology',
+          Category: 'company',
+          Name: 'Tech Corp',
+          Revenue: '1000000',
+          Industry: 'Technology',
         },
       ];
 
       const conditionalMapping = {
         // Conditional mapping based on Category
-        'Name': 'data.name',
-        'Age': {
+        Name: 'data.name',
+        Age: {
           condition: { field: 'Category', value: 'person' },
           target: 'data.age',
           type: 'number',
         },
-        'Department': {
+        Department: {
           condition: { field: 'Category', value: 'person' },
           target: 'data.department',
         },
-        'Revenue': {
+        Revenue: {
           condition: { field: 'Category', value: 'company' },
           target: 'data.revenue',
           type: 'number',
         },
-        'Industry': {
+        Industry: {
           condition: { field: 'Category', value: 'company' },
           target: 'data.industry',
         },
@@ -1865,20 +1865,20 @@ describe('Import Service - Field Mapping and Transformation', () => {
       // Arrange
       const rawData = [
         {
-          'name': 'raw entity',
-          'description': 'THIS IS UPPERCASE DESCRIPTION',
-          'tags': 'tag1, tag2, tag3',
-          'status': '  active  ',
-          'confidence': '0.85',
+          name: 'raw entity',
+          description: 'THIS IS UPPERCASE DESCRIPTION',
+          tags: 'tag1, tag2, tag3',
+          status: '  active  ',
+          confidence: '0.85',
         },
       ];
 
       const transformationRules = {
-        'name': (value: string) => value.charAt(0).toUpperCase() + value.slice(1), // Title case
-        'description': (value: string) => value.toLowerCase(), // Lowercase
-        'tags': (value: string) => value.split(',').map((tag: string) => tag.trim()), // Array
-        'status': (value: string) => value.trim(), // Trim whitespace
-        'confidence': (value: string) => parseFloat(value), // Parse float
+        name: (value: string) => value.charAt(0).toUpperCase() + value.slice(1), // Title case
+        description: (value: string) => value.toLowerCase(), // Lowercase
+        tags: (value: string) => value.split(',').map((tag: string) => tag.trim()), // Array
+        status: (value: string) => value.trim(), // Trim whitespace
+        confidence: (value: string) => parseFloat(value), // Parse float
       };
 
       const expectedResponse: MemoryStoreResponse = {
@@ -1925,27 +1925,27 @@ describe('Import Service - Field Mapping and Transformation', () => {
       // Arrange
       const chainedData = [
         {
-          'phone': '(555) 123-4567',
-          'email': '  USER@EXAMPLE.COM  ',
-          'url': 'example.com',
-          'date': '2025-01-15',
+          phone: '(555) 123-4567',
+          email: '  USER@EXAMPLE.COM  ',
+          url: 'example.com',
+          date: '2025-01-15',
         },
       ];
 
       const chainedTransformations = {
-        'phone': [
+        phone: [
           (value: string) => value.replace(/[^\d]/g, ''), // Remove non-digits
           (value: string) => value.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3'), // Format
         ],
-        'email': [
+        email: [
           (value: string) => value.trim(), // Trim whitespace
           (value: string) => value.toLowerCase(), // Lowercase
         ],
-        'url': [
-          (value: string) => value.startsWith('http') ? value : `https://${value}`, // Add protocol
+        url: [
+          (value: string) => (value.startsWith('http') ? value : `https://${value}`), // Add protocol
           (value: string) => value.replace(/\/$/, ''), // Remove trailing slash
         ],
-        'date': [
+        date: [
           (value: string) => new Date(value).toISOString(), // Convert to ISO
         ],
       };
@@ -2011,8 +2011,11 @@ describe('Import Service - Field Mapping and Transformation', () => {
       const enrichmentRules = {
         'data.tag_count': (item: any) => item.data.tags.length,
         'data.category': (item: any) => 'service',
-        'data.age_days': (item: any) => Math.floor((Date.now() - new Date(item.data.created_date).getTime()) / (1000 * 60 * 60 * 24)),
-        'data.complexity': (item: any) => item.data.tags.length > 2 ? 'high' : 'medium',
+        'data.age_days': (item: any) =>
+          Math.floor(
+            (Date.now() - new Date(item.data.created_date).getTime()) / (1000 * 60 * 60 * 24)
+          ),
+        'data.complexity': (item: any) => (item.data.tags.length > 2 ? 'high' : 'medium'),
         'metadata.processed_at': () => new Date().toISOString(),
         'metadata.enrichment_version': '1.0',
       };
@@ -2230,7 +2233,7 @@ describe('Import Service - Error Handling and Recovery', () => {
       // Assert
       expect(result.stored).toHaveLength(1);
       expect(result.errors).toHaveLength(4);
-      expect(result.errors.every(e => e.error_code && e.message && e.timestamp)).toBe(true);
+      expect(result.errors.every((e) => e.error_code && e.message && e.timestamp)).toBe(true);
     });
 
     it('should categorize errors by severity and type', async () => {
@@ -2329,8 +2332,8 @@ describe('Import Service - Error Handling and Recovery', () => {
       // Assert
       expect(result.stored).toHaveLength(1);
       expect(result.errors).toHaveLength(3);
-      expect(result.errors.some(e => e.category === 'schema')).toBe(true);
-      expect(result.errors.some(e => e.category === 'type')).toBe(true);
+      expect(result.errors.some((e) => e.category === 'schema')).toBe(true);
+      expect(result.errors.some((e) => e.category === 'type')).toBe(true);
     });
   });
 
@@ -2761,7 +2764,7 @@ describe('Import Service - Error Handling and Recovery', () => {
       expect(result.repairedItems).toBe(3);
       expect(result.unrepairedItems).toBe(1);
       expect(result.repairDetails).toHaveLength(3);
-      expect(result.repairDetails.every(detail => detail.success)).toBe(true);
+      expect(result.repairDetails.every((detail) => detail.success)).toBe(true);
     });
   });
 });
@@ -3217,7 +3220,7 @@ describe('Import Service - Performance and Scalability', () => {
 
       // Assert
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.stored).toHaveLength(200);
         expect(result.errors).toHaveLength(0);
         expect(result.autonomous_context.performance.concurrencyLevel).toBe(5);
@@ -3292,7 +3295,7 @@ describe('Import Service - Performance and Scalability', () => {
 
       // Assert
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.stored).toHaveLength(1000);
         expect(result.autonomous_context.performance.resourceContentionEvents).toBeGreaterThan(0);
         expect(result.autonomous_context.performance.resourceUtilization).toBeLessThan(1.0);
@@ -3397,7 +3400,7 @@ describe('Import Service - Integration with Knowledge System', () => {
 
       // Assert
       expect(result.stored).toHaveLength(3);
-      expect(result.stored.map(s => s.kind)).toEqual(['decision', 'issue', 'relation']);
+      expect(result.stored.map((s) => s.kind)).toEqual(['decision', 'issue', 'relation']);
       expect(result.autonomous_context.classification.totalClassified).toBe(3);
     });
 
@@ -3441,7 +3444,7 @@ describe('Import Service - Integration with Knowledge System', () => {
               observation: 0.75,
               issue: 0.65,
               decision: 0.45,
-              todo: 0.60,
+              todo: 0.6,
             },
             selectedType: 'observation',
             ambiguityReason: 'Content lacks clear decision markers or issue indicators',
@@ -3484,7 +3487,11 @@ describe('Import Service - Integration with Knowledge System', () => {
           kind: 'entity',
           content: 'Authentication service',
           scope: { project: 'test-project' },
-          data: { name: 'Auth Service', type: 'service', provides: ['authentication', 'authorization'] },
+          data: {
+            name: 'Auth Service',
+            type: 'service',
+            provides: ['authentication', 'authorization'],
+          },
         },
         {
           kind: 'entity',
@@ -3569,8 +3576,8 @@ describe('Import Service - Integration with Knowledge System', () => {
 
       // Assert
       expect(result.stored).toHaveLength(6);
-      expect(result.stored.filter(s => s.kind === 'entity')).toHaveLength(3);
-      expect(result.stored.filter(s => s.kind === 'relation')).toHaveLength(3);
+      expect(result.stored.filter((s) => s.kind === 'entity')).toHaveLength(3);
+      expect(result.stored.filter((s) => s.kind === 'relation')).toHaveLength(3);
       expect(result.autonomous_context.relationships.totalReconstructed).toBe(3);
     });
 
@@ -3995,13 +4002,13 @@ describe('Import Service - Integration with Knowledge System', () => {
             hierarchyLevels: ['org', 'division', 'department', 'project', 'team'],
             scopeHierarchy: {
               'company-name': {
-                'technology': {
-                  'platform': {
+                technology: {
+                  platform: {
                     'identity-platform': {
                       'auth-team': 1,
                     },
                   },
-                  'payments': {
+                  payments: {
                     'payment-system': {
                       'payments-team': 1,
                     },

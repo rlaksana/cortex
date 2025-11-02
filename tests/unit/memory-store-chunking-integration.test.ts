@@ -10,7 +10,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
   describe('Large Content Chunking for Section, Runbook, and Incident Types', () => {
     const generateLargeContent = (charCount: number): string => {
       const paragraphs = [];
-      const baseParagraph = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
+      const baseParagraph =
+        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. ' +
         'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ' +
         'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris ' +
         'nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in ' +
@@ -39,8 +40,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           data: {
             title: 'Large Architecture Documentation',
             heading: 'Architecture Overview',
-            body_text: largeSectionContent
-          }
+            body_text: largeSectionContent,
+          },
         };
 
         const response = await orchestrator.storeItems([sectionItem]);
@@ -49,14 +50,14 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         // Expected behavior after implementation:
         expect(response.items).toHaveLength(greaterThan(1)); // Should have parent + children
 
-        const parentItem = response.items.find(item =>
-          !item.reason?.includes('chunk') && item.status === 'stored'
+        const parentItem = response.items.find(
+          (item) => !item.reason?.includes('chunk') && item.status === 'stored'
         );
         expect(parentItem).toBeDefined();
         expect(parentItem?.kind).toBe('section');
 
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== parentItem?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== parentItem?.id
         );
         expect(childItems.length).toBeGreaterThan(0);
         expect(childItems.length).toBeLessThan(15); // Reasonable number of chunks
@@ -89,8 +90,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           metadata: {
             title: 'Small Documentation',
             heading: 'Overview',
-            tags: { component: 'docs' }
-          }
+            tags: { component: 'docs' },
+          },
         };
 
         const response = await orchestrator.storeItems([sectionItem]);
@@ -110,7 +111,7 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           description: generateLargeContent(200), // Each step is 200 chars
           command: `echo "Step ${i + 1} completed"`,
           expected_output: `Step ${i + 1} executed successfully`,
-          troubleshooting_notes: generateLargeContent(100)
+          troubleshooting_notes: generateLargeContent(100),
         }));
 
         const largeRunbookContent = JSON.stringify(largeRunbookSteps, null, 2);
@@ -125,8 +126,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             steps: largeRunbookSteps,
             category: 'disaster_recovery',
             severity: 'critical',
-            estimated_duration: '4 hours'
-          }
+            estimated_duration: '4 hours',
+          },
         };
 
         const response = await orchestrator.storeItems([runbookItem]);
@@ -135,14 +136,14 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         // Expected behavior after implementation:
         expect(response.items).toHaveLength(greaterThan(1)); // Should have parent + children
 
-        const parentItem = response.items.find(item =>
-          !item.reason?.includes('chunk') && item.status === 'stored'
+        const parentItem = response.items.find(
+          (item) => !item.reason?.includes('chunk') && item.status === 'stored'
         );
         expect(parentItem).toBeDefined();
         expect(parentItem?.kind).toBe('runbook');
 
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== parentItem?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== parentItem?.id
         );
         expect(childItems.length).toBeGreaterThan(0);
         expect(childItems.length).toBeLessThan(10); // Reasonable number of chunks
@@ -179,17 +180,17 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             severity: 'critical',
             estimated_duration: '2 hours',
             prerequisites: ['Admin access', 'Monitoring tools'],
-            related_documents: ['INC-001', 'RUNBOOK-002']
-          }
+            related_documents: ['INC-001', 'RUNBOOK-002'],
+          },
         };
 
         const response = await orchestrator.storeItems([runbookItem]);
 
-        const parentItem = response.items.find(item =>
-          !item.reason?.includes('chunk') && item.status === 'stored'
+        const parentItem = response.items.find(
+          (item) => !item.reason?.includes('chunk') && item.status === 'stored'
         );
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== parentItem?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== parentItem?.id
         );
 
         // Verify metadata is preserved in all chunks
@@ -216,7 +217,7 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           timestamp: new Date(Date.now() - (100 - i) * 60000).toISOString(),
           event: `Timeline event ${i + 1}: ${generateLargeContent(50)}`,
           severity: i % 10 === 0 ? 'high' : 'medium',
-          source: 'monitoring'
+          source: 'monitoring',
         }));
 
         const incidentItem = {
@@ -235,8 +236,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             root_cause_analysis: generateLargeContent(2000),
             mitigation_steps: generateLargeContent(1500),
             incident_commander: 'john.doe@company.com',
-            stakeholders: ['engineering@company.com', 'support@company.com']
-          }
+            stakeholders: ['engineering@company.com', 'support@company.com'],
+          },
         };
 
         const response = await orchestrator.storeItems([incidentItem]);
@@ -245,14 +246,14 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         // Expected behavior after implementation:
         expect(response.items).toHaveLength(greaterThan(1)); // Should have parent + children
 
-        const parentItem = response.items.find(item =>
-          !item.reason?.includes('chunk') && item.status === 'stored'
+        const parentItem = response.items.find(
+          (item) => !item.reason?.includes('chunk') && item.status === 'stored'
         );
         expect(parentItem).toBeDefined();
         expect(parentItem?.kind).toBe('incident');
 
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== parentItem?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== parentItem?.id
         );
         expect(childItems.length).toBeGreaterThan(0);
 
@@ -283,17 +284,17 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             resolution_status: 'investigating',
             description: largeIncidentContent,
             incident_commander: 'security@company.com',
-            affected_systems: ['auth-service', 'user-database']
-          }
+            affected_systems: ['auth-service', 'user-database'],
+          },
         };
 
         const response = await orchestrator.storeItems([incidentItem]);
 
-        const parentItem = response.items.find(item =>
-          !item.reason?.includes('chunk') && item.status === 'stored'
+        const parentItem = response.items.find(
+          (item) => !item.reason?.includes('chunk') && item.status === 'stored'
         );
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== parentItem?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== parentItem?.id
         );
 
         // Critical incident fields should be preserved
@@ -326,8 +327,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             status: 'accepted',
             component: 'api-gateway',
             rationale: largeDecisionContent,
-            alternatives_considered: ['Option A', 'Option B', 'Option C']
-          }
+            alternatives_considered: ['Option A', 'Option B', 'Option C'],
+          },
         };
 
         const response = await orchestrator.storeItems([decisionItem]);
@@ -349,8 +350,8 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
             title: 'System Performance Observation',
             content: largeObservationContent,
             category: 'performance',
-            metrics: { cpu_usage: '85%', memory_usage: '78%' }
-          }
+            metrics: { cpu_usage: '85%', memory_usage: '78%' },
+          },
         };
 
         const response = await orchestrator.storeItems([observationItem]);
@@ -372,19 +373,19 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           scope: { project: 'test-project', branch: 'main' },
           metadata: {
             title: 'Large Documentation',
-            heading: 'Overview'
-          }
+            heading: 'Overview',
+          },
         };
 
         const response = await orchestrator.storeItems([sectionItem]);
 
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== response.items[0]?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== response.items[0]?.id
         );
 
         // Test should fail until chunking is implemented
         if (childItems.length > 0) {
-          childItems.forEach(child => {
+          childItems.forEach((child) => {
             const contentLength = (child.content || '').length;
             // Each chunk should be roughly the target size (allowing 50% variance)
             expect(contentLength).toBeGreaterThan(CHUNKING_TARGET_SIZE * 0.5);
@@ -405,14 +406,14 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           scope: { project: 'test-project', branch: 'main' },
           metadata: {
             title: 'Continuity Test Document',
-            heading: 'Test Content'
-          }
+            heading: 'Test Content',
+          },
         };
 
         const response = await orchestrator.storeItems([sectionItem]);
 
-        const childItems = response.items.filter(item =>
-          item.reason?.includes('chunk') || item.id !== response.items[0]?.id
+        const childItems = response.items.filter(
+          (item) => item.reason?.includes('chunk') || item.id !== response.items[0]?.id
         );
 
         if (childItems.length > 1) {
@@ -456,6 +457,6 @@ function calculateOverlap(text1: string, text2: string): number {
 function greaterThan(value: number) {
   return {
     asymmetricMatch: (actual: number) => actual > value,
-    toString: () => `> ${value}`
+    toString: () => `> ${value}`,
   };
 }

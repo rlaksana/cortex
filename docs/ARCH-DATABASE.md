@@ -7,18 +7,22 @@ This document describes the comprehensive refactoring of the Cortex MCP database
 ## Problems Addressed
 
 ### 1. Interface-Implementation Mismatch
+
 - **Before**: `UnifiedDatabaseLayer` had 1000+ lines mixing PostgreSQL and Qdrant operations
 - **After**: Clear separation with dedicated interfaces (`IPostgreSQLAdapter`, `IVectorAdapter`)
 
 ### 2. Monolithic Classes
+
 - **Before**: Single class handling connection management, CRUD, search, UUID generation, query analysis
 - **After**: Focused adapters with single responsibilities
 
 ### 3. Type Safety Issues
+
 - **Before**: Extensive use of `any` types, inconsistent method signatures
 - **After**: Full TypeScript typing with proper interfaces and generic types
 
 ### 4. SOLID Violations
+
 - **Before**: Violated Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion principles
 - **After**: Clean architecture following all SOLID principles
 
@@ -43,6 +47,7 @@ This document describes the comprehensive refactoring of the Cortex MCP database
 ### 1. Interfaces
 
 #### IPostgreSQLAdapter
+
 ```typescript
 interface IPostgreSQLAdapter {
   // Lifecycle
@@ -65,6 +70,7 @@ interface IPostgreSQLAdapter {
 ```
 
 #### IVectorAdapter
+
 ```typescript
 interface IVectorAdapter {
   // Lifecycle
@@ -81,13 +87,18 @@ interface IVectorAdapter {
 
   // Vector Operations
   generateEmbedding(content: string): Promise<number[]>;
-  findSimilar(item: KnowledgeItem, threshold?: number, options?: SearchOptions): Promise<SearchResult[]>;
+  findSimilar(
+    item: KnowledgeItem,
+    threshold?: number,
+    options?: SearchOptions
+  ): Promise<SearchResult[]>;
 }
 ```
 
 ### 2. Adapters
 
 #### PostgreSQLAdapter
+
 - Handles all PostgreSQL-specific operations
 - Implements full-text search with tsvector/tsquery
 - UUID generation (v4 and v7)
@@ -96,6 +107,7 @@ interface IVectorAdapter {
 - Array operations
 
 #### QdrantAdapter
+
 - Focuses only on vector operations
 - Semantic search and similarity
 - Embedding generation
@@ -105,6 +117,7 @@ interface IVectorAdapter {
 ### 3. Factory Pattern
 
 #### DatabaseFactory
+
 ```typescript
 class DatabaseFactory implements IDatabaseFactory {
   async create(config: DatabaseFactoryConfig): Promise<DatabaseAdapters>;
@@ -118,6 +131,7 @@ class DatabaseFactory implements IDatabaseFactory {
 ### 4. Unified Facade
 
 #### UnifiedDatabaseLayer
+
 - Thin facade that delegates to appropriate adapters
 - Maintains backward compatibility
 - Handles routing of operations to correct adapter
@@ -128,22 +142,25 @@ class DatabaseFactory implements IDatabaseFactory {
 ### Step 1: Update Imports
 
 **Before:**
+
 ```typescript
 import { UnifiedDatabaseLayer, database } from './db/unified-database-layer.js';
 ```
 
 **After:**
+
 ```typescript
 import {
   UnifiedDatabaseLayer,
   createUnifiedDatabaseLayer,
-  createDatabaseFromEnvironment
+  createDatabaseFromEnvironment,
 } from './db/index.js';
 ```
 
 ### Step 2: Update Configuration
 
 **Before:**
+
 ```typescript
 const db = new UnifiedDatabaseLayer({
   postgresConnectionString: process.env.DATABASE_URL,
@@ -153,6 +170,7 @@ const db = new UnifiedDatabaseLayer({
 ```
 
 **After:**
+
 ```typescript
 // Option 1: Use environment defaults
 const db = await createDatabaseFromEnvironment();
@@ -163,25 +181,27 @@ const db = createUnifiedDatabaseLayer({
   postgres: {
     connectionString: process.env.DATABASE_URL,
     maxConnections: 10,
-    logQueries: false
+    logQueries: false,
   },
   qdrant: {
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_API_KEY,
-    vectorSize: 1536
-  }
+    vectorSize: 1536,
+  },
 });
 ```
 
 ### Step 3: Update Usage Patterns
 
 **Before:**
+
 ```typescript
 await db.initialize();
 const results = await db.fullTextSearch({ query: 'example', max_results: 10 });
 ```
 
 **After:**
+
 ```typescript
 await db.initialize();
 const results = await db.fullTextSearch({ query: 'example', max_results: 10 });
@@ -196,14 +216,14 @@ import { createPostgreSQLAdapter, createVectorAdapter } from './db/index.js';
 // Direct PostgreSQL usage
 const postgres = await createPostgreSQLAdapter({
   postgresConnectionString: process.env.DATABASE_URL,
-  logQueries: true
+  logQueries: true,
 });
 
 // Direct vector usage
 const vector = await createVectorAdapter({
   url: process.env.QDRANT_URL,
   apiKey: process.env.QDRANT_API_KEY,
-  vectorSize: 1536
+  vectorSize: 1536,
 });
 ```
 
@@ -233,13 +253,18 @@ LOG_LEVEL=debug
 ## Testing the Migration
 
 ### 1. Validate Configuration
+
 ```typescript
 import { validateDatabaseConfig } from './db/index.js';
 
 const validation = await validateDatabaseConfig({
   type: 'hybrid',
-  postgres: { /* config */ },
-  qdrant: { /* config */ }
+  postgres: {
+    /* config */
+  },
+  qdrant: {
+    /* config */
+  },
 });
 
 if (!validation.valid) {
@@ -248,6 +273,7 @@ if (!validation.valid) {
 ```
 
 ### 2. Test Connectivity
+
 ```typescript
 import { testDatabaseConnectivity } from './db/index.js';
 
@@ -257,6 +283,7 @@ console.log('Qdrant:', connectivity.qdrant);
 ```
 
 ### 3. Check Capabilities
+
 ```typescript
 import { getDatabaseCapabilities } from './db/index.js';
 
@@ -267,16 +294,19 @@ console.log('Supported operations:', capabilities.supportedOperations);
 ## Performance Improvements
 
 ### 1. Connection Pooling
+
 - Separate connection pools for each adapter
 - Configurable pool sizes and timeouts
 - Health monitoring and automatic recovery
 
 ### 2. Batch Operations
+
 - Improved batch processing for large datasets
 - Parallel processing where possible
 - Memory-efficient streaming for large results
 
 ### 3. Caching
+
 - Built-in caching for frequently accessed data
 - Configurable cache TTL and size limits
 - Cache invalidation strategies
@@ -284,22 +314,24 @@ console.log('Supported operations:', capabilities.supportedOperations);
 ## Error Handling
 
 ### New Error Types
+
 ```typescript
 // Factory errors
-DatabaseFactoryError
-ConfigurationError
-AdapterCreationError
-UnsupportedDatabaseError
+DatabaseFactoryError;
+ConfigurationError;
+AdapterCreationError;
+UnsupportedDatabaseError;
 
 // Database errors
-DatabaseError
-ConnectionError
-ValidationError
-NotFoundError
-DuplicateError
+DatabaseError;
+ConnectionError;
+ValidationError;
+NotFoundError;
+DuplicateError;
 ```
 
 ### Error Recovery
+
 - Automatic retry with exponential backoff
 - Graceful degradation when adapters fail
 - Circuit breaker pattern for fault tolerance
@@ -307,6 +339,7 @@ DuplicateError
 ## Monitoring and Observability
 
 ### Health Checks
+
 ```typescript
 // Health monitoring
 await db.healthCheck();
@@ -318,6 +351,7 @@ console.log('Query latency:', health.queryLatency);
 ```
 
 ### Performance Metrics
+
 ```typescript
 // Get performance statistics
 const stats = await db.getStatistics();
@@ -338,21 +372,25 @@ The new architecture maintains full backward compatibility:
 ## Best Practices
 
 ### 1. Configuration Management
+
 - Use environment variables for sensitive data
 - Validate configuration at startup
 - Use the factory pattern for adapter creation
 
 ### 2. Error Handling
+
 - Always wrap database operations in try-catch
 - Use specific error types for proper handling
 - Implement retry logic for transient failures
 
 ### 3. Performance
+
 - Use appropriate batch sizes for bulk operations
 - Monitor connection pool usage
 - Implement caching for frequently accessed data
 
 ### 4. Testing
+
 - Test with real database connections
 - Mock adapters for unit tests
 - Test error scenarios and recovery
@@ -379,11 +417,12 @@ The new architecture maintains full backward compatibility:
 ### Debug Mode
 
 Enable debug logging:
+
 ```typescript
 const db = createUnifiedDatabaseLayer({
   type: 'hybrid',
   postgres: { logQueries: true },
-  qdrant: { logQueries: true }
+  qdrant: { logQueries: true },
 });
 ```
 

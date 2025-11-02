@@ -158,7 +158,7 @@ async function setupMockQdrant(): Promise<any> {
     upsert: vi.fn().mockImplementation((collectionName: string, points: any[]) => {
       const collection = mockCollections.get(collectionName);
       if (collection) {
-        points.forEach(point => {
+        points.forEach((point) => {
           collection.points.push(point);
         });
       }

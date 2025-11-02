@@ -6,7 +6,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getKeyVaultService, KeyVaultService } from '../../src/services/security/key-vault-service.js';
+import {
+  getKeyVaultService,
+  KeyVaultService,
+} from '../../src/services/security/key-vault-service.js';
 
 describe('Key Vault Integration', () => {
   let keyVault: KeyVaultService;
@@ -42,7 +45,7 @@ describe('Key Vault Integration', () => {
       expect(keys.length).toBeGreaterThan(0);
 
       // Check structure of returned keys
-      keys.forEach(key => {
+      keys.forEach((key) => {
         expect(key).toHaveProperty('id');
         expect(key).toHaveProperty('name');
         expect(key).toHaveProperty('type');

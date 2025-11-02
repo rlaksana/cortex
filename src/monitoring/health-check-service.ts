@@ -226,9 +226,9 @@ export class HealthCheckService extends EventEmitter {
       system_metrics: systemMetrics,
       summary: {
         total_components: components.length,
-        healthy_components: components.filter(c => c.status === 'healthy').length,
-        degraded_components: components.filter(c => c.status === 'degraded').length,
-        unhealthy_components: components.filter(c => c.status === 'unhealthy').length,
+        healthy_components: components.filter((c) => c.status === 'healthy').length,
+        degraded_components: components.filter((c) => c.status === 'degraded').length,
+        unhealthy_components: components.filter((c) => c.status === 'unhealthy').length,
       },
     };
 
@@ -252,7 +252,8 @@ export class HealthCheckService extends EventEmitter {
     const health = await this.performHealthCheck();
 
     const isReady = this.config.readiness_checks.allow_degraded_readiness
-      ? health.summary.healthy_components + health.summary.degraded_components >= this.config.readiness_checks.min_healthy_components
+      ? health.summary.healthy_components + health.summary.degraded_components >=
+        this.config.readiness_checks.min_healthy_components
       : health.summary.healthy_components >= this.config.readiness_checks.min_healthy_components;
 
     return {
@@ -489,12 +490,14 @@ export class HealthCheckService extends EventEmitter {
         component,
         status,
         latency_ms: latency,
-        details: embeddingSummary ? {
-          average_latency_ms: embeddingSummary.averageDuration,
-          p95_latency_ms: embeddingSummary.p95,
-          error_rate_percent: 100 - embeddingSummary.successRate,
-          request_count: embeddingSummary.count,
-        } : undefined,
+        details: embeddingSummary
+          ? {
+              average_latency_ms: embeddingSummary.averageDuration,
+              p95_latency_ms: embeddingSummary.p95,
+              error_rate_percent: 100 - embeddingSummary.successRate,
+              request_count: embeddingSummary.count,
+            }
+          : undefined,
         timestamp: Date.now(),
       };
 
@@ -624,8 +627,8 @@ export class HealthCheckService extends EventEmitter {
   }
 
   private calculateOverallStatus(components: ComponentHealth[]): HealthStatus {
-    const unhealthyCount = components.filter(c => c.status === 'unhealthy').length;
-    const degradedCount = components.filter(c => c.status === 'degraded').length;
+    const unhealthyCount = components.filter((c) => c.status === 'unhealthy').length;
+    const degradedCount = components.filter((c) => c.status === 'degraded').length;
 
     if (unhealthyCount > 0) {
       return 'unhealthy';

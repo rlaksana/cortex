@@ -58,11 +58,14 @@ export interface RetryWorkerStats {
   averageRetryTime: number;
   circuitBreakerTrips: number;
   deadLetterQueueSize: number;
-  operationTypeStats: Record<string, {
-    total: number;
-    successful: number;
-    failed: number;
-  }>;
+  operationTypeStats: Record<
+    string,
+    {
+      total: number;
+      successful: number;
+      failed: number;
+    }
+  >;
 }
 
 export interface RetryResult {
@@ -178,7 +181,9 @@ export class RetryWorkerService extends EventEmitter {
   /**
    * Add operation to retry queue
    */
-  async addRetryOperation(operation: Omit<RetryOperation, 'id' | 'attempts' | 'delay' | 'nextRetryAt' | 'createdAt'>): Promise<string> {
+  async addRetryOperation(
+    operation: Omit<RetryOperation, 'id' | 'attempts' | 'delay' | 'nextRetryAt' | 'createdAt'>
+  ): Promise<string> {
     if (!this.config.enabled) {
       throw new Error('Retry worker is disabled');
     }
@@ -214,12 +219,15 @@ export class RetryWorkerService extends EventEmitter {
     this.stats.totalOperations++;
     this.stats.operationTypeStats[operation.type].total++;
 
-    logger.debug({
-      operationId: id,
-      type: operation.type,
-      priority: operation.priority,
-      maxAttempts: operation.maxAttempts,
-    }, 'Added operation to retry queue');
+    logger.debug(
+      {
+        operationId: id,
+        type: operation.type,
+        priority: operation.priority,
+        maxAttempts: operation.maxAttempts,
+      },
+      'Added operation to retry queue'
+    );
 
     this.emit('operation_queued', retryOperation);
     return id;
@@ -248,7 +256,10 @@ export class RetryWorkerService extends EventEmitter {
 
     // Find operations ready for retry
     for (const [_type, queue] of this.retryQueues.entries()) {
-      while (queue.length > 0 && operationsToProcess.length < this.config.maxConcurrentRetries - this.processing.size) {
+      while (
+        queue.length > 0 &&
+        operationsToProcess.length < this.config.maxConcurrentRetries - this.processing.size
+      ) {
         const operation = queue[0];
         if (operation.nextRetryAt <= now) {
           operationsToProcess.push(operation);
@@ -260,7 +271,7 @@ export class RetryWorkerService extends EventEmitter {
     }
 
     // Process operations concurrently
-    const promises = operationsToProcess.map(operation => this.processOperation(operation));
+    const promises = operationsToProcess.map((operation) => this.processOperation(operation));
 
     try {
       await Promise.allSettled(promises);
@@ -277,12 +288,15 @@ export class RetryWorkerService extends EventEmitter {
     this.processing.add(operation.id);
 
     try {
-      logger.debug({
-        operationId: operation.id,
-        type: operation.type,
-        attempt: operation.attempts + 1,
-        maxAttempts: operation.maxAttempts,
-      }, 'Processing retry operation');
+      logger.debug(
+        {
+          operationId: operation.id,
+          type: operation.type,
+          attempt: operation.attempts + 1,
+          maxAttempts: operation.maxAttempts,
+        },
+        'Processing retry operation'
+      );
 
       const result = await this.executeOperation(operation);
       const processingTime = Date.now() - startTime;
@@ -292,22 +306,28 @@ export class RetryWorkerService extends EventEmitter {
       } else {
         this.handleFailure(operation, result, processingTime);
       }
-
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      logger.error({
-        error,
-        operationId: operation.id,
-        processingTime,
-      }, 'Unexpected error processing retry operation');
+      logger.error(
+        {
+          error,
+          operationId: operation.id,
+          processingTime,
+        },
+        'Unexpected error processing retry operation'
+      );
 
-      this.handleFailure(operation, {
-        success: false,
-        operationId: operation.id,
-        attempts: operation.attempts + 1,
-        totalTime: processingTime,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, processingTime);
+      this.handleFailure(
+        operation,
+        {
+          success: false,
+          operationId: operation.id,
+          attempts: operation.attempts + 1,
+          totalTime: processingTime,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        processingTime
+      );
     } finally {
       this.processing.delete(operation.id);
     }
@@ -408,17 +428,24 @@ export class RetryWorkerService extends EventEmitter {
   /**
    * Handle successful operation
    */
-  private handleSuccess(operation: RetryOperation, result: RetryResult, processingTime: number): void {
+  private handleSuccess(
+    operation: RetryOperation,
+    result: RetryResult,
+    processingTime: number
+  ): void {
     this.stats.successfulRetries++;
     this.stats.operationTypeStats[operation.type].successful++;
     this.updateAverageRetryTime(processingTime);
 
-    logger.info({
-      operationId: operation.id,
-      type: operation.type,
-      attempts: operation.attempts + 1,
-      processingTime,
-    }, 'Retry operation succeeded');
+    logger.info(
+      {
+        operationId: operation.id,
+        type: operation.type,
+        attempts: operation.attempts + 1,
+        processingTime,
+      },
+      'Retry operation succeeded'
+    );
 
     this.emit('operation_succeeded', { operation, result });
   }
@@ -426,7 +453,11 @@ export class RetryWorkerService extends EventEmitter {
   /**
    * Handle failed operation
    */
-  private handleFailure(operation: RetryOperation, result: RetryResult, processingTime: number): void {
+  private handleFailure(
+    operation: RetryOperation,
+    result: RetryResult,
+    processingTime: number
+  ): void {
     this.stats.failedRetries++;
     this.stats.operationTypeStats[operation.type].failed++;
     this.updateAverageRetryTime(processingTime);
@@ -461,13 +492,16 @@ export class RetryWorkerService extends EventEmitter {
       const queue = this.getOrCreateQueue(operation.type);
       queue.push(operation);
 
-      logger.debug({
-        operationId: operation.id,
-        type: operation.type,
-        attempt: newAttemptCount,
-        nextDelay,
-        nextRetryAt: new Date(operation.nextRetryAt).toISOString(),
-      }, 'Operation will be retried');
+      logger.debug(
+        {
+          operationId: operation.id,
+          type: operation.type,
+          attempt: newAttemptCount,
+          nextDelay,
+          nextRetryAt: new Date(operation.nextRetryAt).toISOString(),
+        },
+        'Operation will be retried'
+      );
 
       this.emit('operation_failed_retry_scheduled', { operation, result });
     } else {
@@ -476,13 +510,16 @@ export class RetryWorkerService extends EventEmitter {
         this.moveToDeadLetterQueue(operation, result);
       }
 
-      logger.error({
-        operationId: operation.id,
-        type: operation.type,
-        attempts: newAttemptCount,
-        maxAttempts: operation.maxAttempts,
-        finalError: result.error,
-      }, 'Operation failed after max retry attempts');
+      logger.error(
+        {
+          operationId: operation.id,
+          type: operation.type,
+          attempts: newAttemptCount,
+          maxAttempts: operation.maxAttempts,
+          finalError: result.error,
+        },
+        'Operation failed after max retry attempts'
+      );
 
       this.emit('operation_failed_permanently', { operation, result });
     }
@@ -500,12 +537,15 @@ export class RetryWorkerService extends EventEmitter {
     this.deadLetterQueue.push(operation);
     this.stats.deadLetterQueueSize = this.deadLetterQueue.length;
 
-    logger.warn({
-      operationId: operation.id,
-      type: operation.type,
-      attempts: operation.attempts,
-      deadLetterQueueSize: this.deadLetterQueue.length,
-    }, 'Operation moved to dead letter queue');
+    logger.warn(
+      {
+        operationId: operation.id,
+        type: operation.type,
+        attempts: operation.attempts,
+        deadLetterQueueSize: this.deadLetterQueue.length,
+      },
+      'Operation moved to dead letter queue'
+    );
   }
 
   /**
@@ -516,11 +556,14 @@ export class RetryWorkerService extends EventEmitter {
     this.circuitBreakerState.openedAt = Date.now();
     this.stats.circuitBreakerTrips++;
 
-    logger.warn({
-      failureCount: this.circuitBreakerState.failureCount,
-      threshold: this.config.circuitBreakerThreshold,
-      timeout: this.config.circuitBreakerTimeout,
-    }, 'Circuit breaker tripped');
+    logger.warn(
+      {
+        failureCount: this.circuitBreakerState.failureCount,
+        threshold: this.config.circuitBreakerThreshold,
+        timeout: this.config.circuitBreakerTimeout,
+      },
+      'Circuit breaker tripped'
+    );
 
     this.emit('circuit_breaker_tripped');
   }
@@ -572,18 +615,21 @@ export class RetryWorkerService extends EventEmitter {
   /**
    * Get queue information
    */
-  getQueueInfo(): Record<string, {
-    size: number;
-    processing: number;
-    nextRetryAt?: Date;
-  }> {
+  getQueueInfo(): Record<
+    string,
+    {
+      size: number;
+      processing: number;
+      nextRetryAt?: Date;
+    }
+  > {
     const queueInfo: Record<string, any> = {};
 
     for (const [type, queue] of this.retryQueues.entries()) {
       queueInfo[type] = {
         size: queue.length,
-        processing: Array.from(this.processing).filter(id =>
-          this.retryQueues.get(type)?.some(op => op.id === id)
+        processing: Array.from(this.processing).filter((id) =>
+          this.retryQueues.get(type)?.some((op) => op.id === id)
         ).length,
         nextRetryAt: queue.length > 0 ? new Date(queue[0].nextRetryAt) : undefined,
       };

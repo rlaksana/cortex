@@ -13,20 +13,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
@@ -47,9 +47,9 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           metadata: {
             entity_type: 'component',
             name: 'Auth Service',
-            data: { description: 'Handles authentication' }
+            data: { description: 'Handles authentication' },
           },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'entity',
@@ -57,9 +57,9 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           metadata: {
             entity_type: 'component',
             name: 'Auth Service',
-            data: { description: 'Handles authentication' }
+            data: { description: 'Handles authentication' },
           },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'decision',
@@ -67,19 +67,19 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           metadata: {
             title: 'Test Decision',
             component: 'auth',
-            rationale: 'Testing duplicate detection'
+            rationale: 'Testing duplicate detection',
           },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'issue',
           content: 'Regular content that should not be duplicate',
           metadata: {
             title: 'Regular Issue',
-            description: 'This should be stored normally'
+            description: 'This should be stored normally',
           },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       // Act: Store the items
@@ -94,19 +94,19 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
       expect(result.items).toHaveLength(4);
 
       // Check that deduplication is working
-      const skippedItems = result.items.filter(item => item.status === 'skipped_dedupe');
-      const storedItems = result.items.filter(item => item.status === 'stored');
+      const skippedItems = result.items.filter((item) => item.status === 'skipped_dedupe');
+      const storedItems = result.items.filter((item) => item.status === 'stored');
 
       // Should have 2 skipped_dedupe items (the ones with hardcoded patterns)
       expect(skippedItems).toHaveLength(2);
       expect(storedItems).toHaveLength(2);
 
       // Verify skipped_dedupe items have correct format
-      skippedItems.forEach(item => {
+      skippedItems.forEach((item) => {
         expect(item).toMatchObject({
           status: 'skipped_dedupe',
           reason: 'Duplicate content',
-          existing_id: 'existing-item-id'
+          existing_id: 'existing-item-id',
         });
         expect(item).toHaveProperty('input_index');
         expect(item).toHaveProperty('kind');
@@ -118,7 +118,7 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
         stored: 2,
         skipped_dedupe: 2,
         business_rule_blocked: 0,
-        total: 4
+        total: 4,
       });
 
       // Verify autonomous context reflects deduplication
@@ -128,7 +128,7 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
         duplicates_found: 2,
         contradictions_detected: false,
         reasoning: expect.stringContaining('enhanced response format'),
-        user_message_suggestion: expect.stringContaining('✅ Processed 4 items')
+        user_message_suggestion: expect.stringContaining('✅ Processed 4 items'),
       });
     });
 
@@ -139,20 +139,20 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           kind: 'entity',
           content: 'First unique item',
           metadata: { entity_type: 'service', name: 'Service 1' },
-          scope: { project: 'test' }
+          scope: { project: 'test' },
         },
         {
           kind: 'entity',
           content: 'Duplicate content 1', // Hardcoded pattern
           metadata: { entity_type: 'service', name: 'Service 2' },
-          scope: { project: 'test' }
+          scope: { project: 'test' },
         },
         {
           kind: 'entity',
           content: 'Second unique item',
           metadata: { entity_type: 'service', name: 'Service 3' },
-          scope: { project: 'test' }
-        }
+          scope: { project: 'test' },
+        },
       ];
 
       // Act
@@ -162,9 +162,9 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
       expect(result.items).toHaveLength(3);
 
       // Check input_index mapping
-      const item0 = result.items.find(item => item.input_index === 0);
-      const item1 = result.items.find(item => item.input_index === 1);
-      const item2 = result.items.find(item => item.input_index === 2);
+      const item0 = result.items.find((item) => item.input_index === 0);
+      const item1 = result.items.find((item) => item.input_index === 1);
+      const item2 = result.items.find((item) => item.input_index === 2);
 
       expect(item0).toBeTruthy();
       expect(item1).toBeTruthy();
@@ -187,14 +187,14 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           kind: 'entity',
           content: 'Unique item',
           metadata: { entity_type: 'component' },
-          scope: { project: 'test' }
+          scope: { project: 'test' },
         },
         {
           kind: 'decision',
           content: 'Use OAuth 2.0 for authentication', // Duplicate
           metadata: { title: 'OAuth Decision' },
-          scope: { project: 'test' }
-        }
+          scope: { project: 'test' },
+        },
       ];
 
       // Act
@@ -205,11 +205,11 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
         stored: 1,
         skipped_dedupe: 1,
         business_rule_blocked: 0,
-        total: 2
+        total: 2,
       });
 
       // Items array should reflect the same counts
-      const statuses = result.items.map(item => item.status);
+      const statuses = result.items.map((item) => item.status);
       expect(statuses).toContain('stored');
       expect(statuses).toContain('skipped_dedupe');
       expect(statuses).toHaveLength(2);
@@ -224,8 +224,8 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
           kind: 'issue',
           content: 'duplicate-content analysis',
           metadata: { title: 'Duplicate Issue' },
-          scope: { project: 'test' }
-        }
+          scope: { project: 'test' },
+        },
       ];
 
       // Act
@@ -241,7 +241,7 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
         kind: 'issue',
         content: 'duplicate-content analysis',
         reason: 'Duplicate content',
-        existing_id: 'existing-item-id'
+        existing_id: 'existing-item-id',
       });
 
       // Summary should reflect single skipped item
@@ -249,7 +249,7 @@ describe('P1-T1.2: Comprehensive Deduplication Status Verification', () => {
         stored: 0,
         skipped_dedupe: 1,
         business_rule_blocked: 0,
-        total: 1
+        total: 1,
       });
 
       // Autonomous context should reflect skipped action

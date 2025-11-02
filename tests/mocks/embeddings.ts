@@ -33,7 +33,7 @@ export const mockEmbeddingService = {
 
   // Batch embedding generation
   generateBatchEmbeddings: vi.fn().mockImplementation(async (texts: string[]) => {
-    const embeddings = texts.map(text => {
+    const embeddings = texts.map((text) => {
       const hash = text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       return Array.from({ length: 1536 }, (_, i) => {
         const seed = hash + i;
@@ -173,14 +173,16 @@ export const mockEmbeddingProvider = {
   }),
 
   // Error handling
-  simulateError: vi.fn().mockImplementation((errorType: 'rate_limit' | 'timeout' | 'invalid_request') => {
-    const errors = {
-      rate_limit: { error: 'Rate limit exceeded', code: 'rate_limit_exceeded' },
-      timeout: { error: 'Request timeout', code: 'timeout' },
-      invalid_request: { error: 'Invalid request', code: 'invalid_request' },
-    };
-    throw new Error(errors[errorType].error);
-  }),
+  simulateError: vi
+    .fn()
+    .mockImplementation((errorType: 'rate_limit' | 'timeout' | 'invalid_request') => {
+      const errors = {
+        rate_limit: { error: 'Rate limit exceeded', code: 'rate_limit_exceeded' },
+        timeout: { error: 'Request timeout', code: 'timeout' },
+        invalid_request: { error: 'Invalid request', code: 'invalid_request' },
+      };
+      throw new Error(errors[errorType].error);
+    }),
 };
 
 // Test utilities for embedding testing
@@ -189,7 +191,10 @@ export const embeddingTestHelpers = {
    * Create sample text for testing
    */
   createSampleTexts: (count: number = 5) => {
-    return Array.from({ length: count }, (_, index) => `Sample text ${index + 1} for embedding testing`);
+    return Array.from(
+      { length: count },
+      (_, index) => `Sample text ${index + 1} for embedding testing`
+    );
   },
 
   /**
@@ -232,13 +237,15 @@ export const embeddingTestHelpers = {
         const noise = (Math.random() - 0.5) * 2 * (1 - similarity);
         return Math.max(0, Math.min(1, value + noise));
       });
-      embeddings.push(Promise.resolve({
-        vector: variation,
-        dimensions: 1536,
-        model: 'mock-text-embedding-ada-002',
-        usage: { prompt_tokens: 10, total_tokens: 10 },
-        created_at: new Date().toISOString(),
-      }));
+      embeddings.push(
+        Promise.resolve({
+          vector: variation,
+          dimensions: 1536,
+          model: 'mock-text-embedding-ada-002',
+          usage: { prompt_tokens: 10, total_tokens: 10 },
+          created_at: new Date().toISOString(),
+        })
+      );
     }
 
     return Promise.all(embeddings);
@@ -260,12 +267,12 @@ export const embeddingTestHelpers = {
    * Reset embedding mocks
    */
   resetEmbeddingMocks: () => {
-    Object.values(mockEmbeddingService).forEach(method => {
+    Object.values(mockEmbeddingService).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }
     });
-    Object.values(mockEmbeddingProvider).forEach(method => {
+    Object.values(mockEmbeddingProvider).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }

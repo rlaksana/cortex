@@ -5,7 +5,9 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Now import the module without mocking first
-const { deepSearch, calculateSimilarity } = await import('../../../src/services/search/deep-search');
+const { deepSearch, calculateSimilarity } = await import(
+  '../../../src/services/search/deep-search'
+);
 
 describe('Deep Search Service - Simple Tests', () => {
   it('should import functions correctly', () => {

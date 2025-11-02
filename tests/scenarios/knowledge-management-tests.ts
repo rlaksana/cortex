@@ -4,9 +4,7 @@
  * Comprehensive test scenarios for all knowledge management operations
  */
 
-import type { TestScenario, TestContext } from '../framework/test-setup';
-import { TestAssertions } from '../framework/test-setup';
-import { memoryStore, memoryFind, softDelete } from '../../src/services/index';
+import { type TestScenario, type TestContext, TestAssertions, memoryFind, memoryStore, softDelete } from '../framework/test-setup';
 
 /**
  * Test scenario for basic knowledge CRUD operations
@@ -35,7 +33,11 @@ export const basicKnowledgeManagement: TestScenario = {
           types: ['section'],
         });
         TestAssertions.assert(findResult.hits.length >= 1, 'Should find stored section');
-        TestAssertions.assertEquals(findResult.hits[0].title, 'Test Section for CRUD', 'Should find correct title');
+        TestAssertions.assertEquals(
+          findResult.hits[0].title,
+          'Test Section for CRUD',
+          'Should find correct title'
+        );
       },
     },
 
@@ -80,7 +82,11 @@ export const basicKnowledgeManagement: TestScenario = {
 
         const updateResult = await memoryStore([updateItem]);
         TestAssertions.assert(updateResult.errors.length === 0, 'Update should succeed');
-        TestAssertions.assertEquals(updateResult.stored[0].status, 'updated', 'Should indicate update');
+        TestAssertions.assertEquals(
+          updateResult.stored[0].status,
+          'updated',
+          'Should indicate update'
+        );
 
         // Verify the update
         const findResult = await memoryFind({
@@ -127,7 +133,8 @@ export const basicKnowledgeManagement: TestScenario = {
  */
 export const advancedSearchFunctionality: TestScenario = {
   name: 'Advanced Search Functionality',
-  description: 'Test advanced search features including query enhancement, graph traversal, and pagination',
+  description:
+    'Test advanced search features including query enhancement, graph traversal, and pagination',
   tests: [
     {
       name: 'Query enhancement and auto-correction',
@@ -172,7 +179,7 @@ export const advancedSearchFunctionality: TestScenario = {
 
         TestAssertions.assert(result.hits.length > 0, 'Should find results across types');
 
-        const foundTypes = new Set(result.hits.map(h => h.kind));
+        const foundTypes = new Set(result.hits.map((h) => h.kind));
         TestAssertions.assert(foundTypes.size > 1, 'Should find multiple knowledge types');
       },
     },
@@ -200,7 +207,11 @@ export const advancedSearchFunctionality: TestScenario = {
 
         // Verify scope filtering
         for (const hit of result.hits) {
-          TestAssertions.assertEquals(hit.scope?.project, 'project-a', 'Should respect project scope');
+          TestAssertions.assertEquals(
+            hit.scope?.project,
+            'project-a',
+            'Should respect project scope'
+          );
         }
       },
     },
@@ -283,10 +294,16 @@ export const similarityAndDeduplication: TestScenario = {
         const result2 = await memoryStore([item]);
 
         TestAssertions.assert(result1.stored.length === 1, 'First store should succeed');
-        TestAssertions.assert(result1.autonomous_context.duplicates_found === 0, 'No duplicates on first store');
+        TestAssertions.assert(
+          result1.autonomous_context.duplicates_found === 0,
+          'No duplicates on first store'
+        );
 
         TestAssertions.assert(result2.stored.length === 0, 'Second store should be skipped');
-        TestAssertions.assert(result2.autonomous_context.duplicates_found > 0, 'Should detect duplicate');
+        TestAssertions.assert(
+          result2.autonomous_context.duplicates_found > 0,
+          'Should detect duplicate'
+        );
       },
     },
 
@@ -307,7 +324,10 @@ export const similarityAndDeduplication: TestScenario = {
         await memoryStore([item1]);
         const result2 = await memoryStore([item2]);
 
-        TestAssertions.assert(result2.autonomous_context.similar_items_checked > 0, 'Should check for similar items');
+        TestAssertions.assert(
+          result2.autonomous_context.similar_items_checked > 0,
+          'Should check for similar items'
+        );
         // Depending on similarity threshold, might suggest update or skip
       },
     },
@@ -334,7 +354,11 @@ export const similarityAndDeduplication: TestScenario = {
 
         const updateResult = await memoryStore([similarItem]);
         TestAssertions.assert(updateResult.stored.length === 1, 'Should update existing item');
-        TestAssertions.assertEquals(updateResult.stored[0].status, 'updated', 'Should indicate update');
+        TestAssertions.assertEquals(
+          updateResult.stored[0].status,
+          'updated',
+          'Should indicate update'
+        );
       },
     },
   ],
@@ -369,8 +393,14 @@ export const immutabilityAndBusinessRules: TestScenario = {
         });
 
         const modifyResult = await memoryStore([modification]);
-        TestAssertions.assert(modifyResult.errors.length > 0, 'Should reject modification of accepted decision');
-        TestAssertions.assert(modifyResult.errors[0].error_code === 'IMMUTABLE_ENTITY', 'Should return immutability error');
+        TestAssertions.assert(
+          modifyResult.errors.length > 0,
+          'Should reject modification of accepted decision'
+        );
+        TestAssertions.assert(
+          modifyResult.errors[0].error_code === 'IMMUTABLE_ENTITY',
+          'Should return immutability error'
+        );
       },
     },
 
@@ -394,7 +424,10 @@ export const immutabilityAndBusinessRules: TestScenario = {
         });
 
         const modifyResult = await memoryStore([modification]);
-        TestAssertions.assert(modifyResult.errors.length > 0, 'Should reject modification of approved section');
+        TestAssertions.assert(
+          modifyResult.errors.length > 0,
+          'Should reject modification of approved section'
+        );
       },
     },
 
@@ -454,10 +487,14 @@ export const performanceAndScalability: TestScenario = {
         const { performanceHelper } = context;
 
         const batchSize = 50;
-        const { metrics } = await performanceHelper.measureOperation('batch_store', async () => {
-          const items = context.dataFactory.createMixedBatch(batchSize);
-          return memoryStore(items);
-        }, { itemCount: batchSize });
+        const { metrics } = await performanceHelper.measureOperation(
+          'batch_store',
+          async () => {
+            const items = context.dataFactory.createMixedBatch(batchSize);
+            return memoryStore(items);
+          },
+          { itemCount: batchSize }
+        );
 
         TestAssertions.assertPerformance(metrics.duration, 500, 'batch_store');
       },
@@ -474,13 +511,16 @@ export const performanceAndScalability: TestScenario = {
         const items = context.dataFactory.createMixedBatch(100);
         await memoryStore(items);
 
-        const { metrics } = await performanceHelper.measureOperation('search_operation', async () => {
-          return memoryFind({
-            query: 'test',
-            types: ['section', 'decision'],
-            top_k: 20,
-          });
-        });
+        const { metrics } = await performanceHelper.measureOperation(
+          'search_operation',
+          async () => {
+            return memoryFind({
+              query: 'test',
+              types: ['section', 'decision'],
+              top_k: 20,
+            });
+          }
+        );
 
         TestAssertions.assertPerformance(metrics.duration, 200, 'search_operation');
       },

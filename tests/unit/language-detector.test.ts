@@ -9,19 +9,22 @@ describe('LanguageDetector', () => {
 
   describe('detectLanguage', () => {
     it('should detect Indonesian text', () => {
-      const indonesianText = 'Sistem ini digunakan untuk mengelola data pengguna dengan menggunakan aplikasi yang telah dibuat';
+      const indonesianText =
+        'Sistem ini digunakan untuk mengelola data pengguna dengan menggunakan aplikasi yang telah dibuat';
       const result = detector.detectLanguage(indonesianText);
       expect(result).toBe('id');
     });
 
     it('should detect English text', () => {
-      const englishText = 'This system is used to manage user data using the application that has been created';
+      const englishText =
+        'This system is used to manage user data using the application that has been created';
       const result = detector.detectLanguage(englishText);
       expect(result).toBe('en');
     });
 
     it('should detect mixed language text', () => {
-      const mixedText = 'Sistem ini digunakan untuk manage user data dengan menggunakan application yang telah dibuat';
+      const mixedText =
+        'Sistem ini digunakan untuk manage user data dengan menggunakan application yang telah dibuat';
       const result = detector.detectLanguage(mixedText);
       expect(result).toBe('mixed');
     });
@@ -51,7 +54,7 @@ describe('LanguageDetector', () => {
         'This system is used to manage information',
         'Aplikasi ini menggunakan user interface yang baik',
         'The application provides good user experience',
-        'Process data menggunakan sistem yang telah dibuat'
+        'Process data menggunakan sistem yang telah dibuat',
       ];
 
       const distribution = detector.analyzeLanguageDistribution(texts);
@@ -70,7 +73,8 @@ describe('LanguageDetector', () => {
 
   describe('getLanguageConfidence', () => {
     it('should provide confidence for Indonesian detection', () => {
-      const indonesianText = 'Sistem ini digunakan untuk mengelola data pengguna dengan proses yang baik';
+      const indonesianText =
+        'Sistem ini digunakan untuk mengelola data pengguna dengan proses yang baik';
       const result = detector.getLanguageConfidence(indonesianText);
 
       expect(result.language).toBe('id');
@@ -90,7 +94,8 @@ describe('LanguageDetector', () => {
     });
 
     it('should provide confidence for mixed language', () => {
-      const mixedText = 'Sistem ini digunakan untuk manage user data dengan proses yang telah been created';
+      const mixedText =
+        'Sistem ini digunakan untuk manage user data dengan proses yang telah been created';
       const result = detector.getLanguageConfidence(mixedText);
 
       expect(result.language).toBe('mixed');

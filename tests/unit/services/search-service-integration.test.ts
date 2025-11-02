@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { searchService } from '../../../src/services/search/search-service';
 import type { SearchQuery } from '../../../src/types/core-interfaces';
+import { graphExpansionService } from '../../../src/services/search/graph-expansion-service';
 
 // Mock the graph expansion service
 vi.mock('../../../src/services/search/graph-expansion-service', () => ({
@@ -28,7 +29,7 @@ vi.mock('../../../src/services/search/query-parser', () => ({
         terms: ['test'],
         quotedPhrases: [],
         excludedTerms: [],
-      }
+      },
     }),
   },
 }));
@@ -90,11 +91,10 @@ describe('SearchService Graph Expansion Integration', () => {
   let mockGraphExpansionService: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
-    // Get the mocked graph expansion service
-    const { graphExpansionService } = require('../../../src/services/search/graph-expansion-service');
-    mockGraphExpansionService = graphExpansionService;
+    // Use the mocked graph expansion service
+    mockGraphExpansionService = vi.mocked(graphExpansionService);
   });
 
   describe('Integration with Search Modes', () => {
@@ -108,8 +108,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       const mockExpandedResults = [
@@ -121,8 +121,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Related Issue' },
           created_at: '2024-01-02T00:00:00Z',
           confidence_score: 0.72, // 0.9 * 0.8
-          match_type: 'graph'
-        }
+          match_type: 'graph',
+        },
       ];
 
       // Mock the graph expansion service
@@ -133,15 +133,15 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 1,
           neighborsLimited: false,
-          executionTime: 50
-        }
+          executionTime: 50,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'fast',
         expand: 'relations',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -153,7 +153,7 @@ describe('SearchService Graph Expansion Integration', () => {
         expect.objectContaining({
           query: 'test query',
           expand: 'relations',
-          mode: 'fast'
+          mode: 'fast',
         })
       );
 
@@ -162,7 +162,7 @@ describe('SearchService Graph Expansion Integration', () => {
       expect(result.executionTime).toBeGreaterThan(50); // Should include expansion time
 
       // Verify that expanded results are included
-      const graphResults = result.results.filter(r => r.match_type === 'graph');
+      const graphResults = result.results.filter((r) => r.match_type === 'graph');
       expect(graphResults).toHaveLength(1);
       expect(graphResults[0].id).toBe('expanded-id-1');
     });
@@ -177,8 +177,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'hybrid'
-        }
+          match_type: 'hybrid',
+        },
       ];
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -188,14 +188,14 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 0,
           neighborsLimited: false,
-          executionTime: 30
-        }
+          executionTime: 30,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'auto',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act
@@ -217,8 +217,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -228,14 +228,14 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'none',
           neighborsFound: 0,
           neighborsLimited: false,
-          executionTime: 20
-        }
+          executionTime: 20,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'deep',
-        expand: 'none' // No expansion
+        expand: 'none', // No expansion
       };
 
       // Act
@@ -258,8 +258,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       for (const expandValue of validExpandValues) {
@@ -271,14 +271,14 @@ describe('SearchService Graph Expansion Integration', () => {
             expansionType: expandValue,
             neighborsFound: expandValue === 'none' ? 0 : 1,
             neighborsLimited: false,
-            executionTime: 25
-          }
+            executionTime: 25,
+          },
         });
 
         const query: SearchQuery = {
           query: 'test query',
           mode: 'auto',
-          expand: expandValue as any
+          expand: expandValue as any,
         };
 
         // Act
@@ -306,8 +306,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -317,13 +317,13 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'none',
           neighborsFound: 0,
           neighborsLimited: false,
-          executionTime: 10
-        }
+          executionTime: 10,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
-        mode: 'auto'
+        mode: 'auto',
         // No expand parameter specified
       };
 
@@ -349,8 +349,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       const expansionTime = 150; // 150ms for expansion
@@ -361,14 +361,14 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 1,
           neighborsLimited: false,
-          executionTime: expansionTime
-        }
+          executionTime: expansionTime,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'fast',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act
@@ -390,8 +390,8 @@ describe('SearchService Graph Expansion Integration', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'keyword'
-        }
+          match_type: 'keyword',
+        },
       ];
 
       // Mock expansion service to throw error
@@ -402,7 +402,7 @@ describe('SearchService Graph Expansion Integration', () => {
       const query: SearchQuery = {
         query: 'test query',
         mode: 'auto',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act
@@ -424,8 +424,8 @@ describe('SearchService Graph Expansion Integration', () => {
         scope: { project: 'test', branch: 'main' },
         data: { title: `Test Decision ${i}` },
         created_at: '2024-01-01T00:00:00Z',
-        confidence_score: 0.9 - (i * 0.01),
-        match_type: 'keyword' as const
+        confidence_score: 0.9 - i * 0.01,
+        match_type: 'keyword' as const,
       }));
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -435,15 +435,15 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 5,
           neighborsLimited: false,
-          executionTime: 50
-        }
+          executionTime: 50,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'fast',
         expand: 'relations',
-        limit: 100 // Large limit, but fast mode should cap it
+        limit: 100, // Large limit, but fast mode should cap it
       };
 
       // Act
@@ -462,8 +462,8 @@ describe('SearchService Graph Expansion Integration', () => {
         scope: { project: 'test', branch: 'main' },
         data: { title: `Test Decision ${i}` },
         created_at: '2024-01-01T00:00:00Z',
-        confidence_score: 0.9 - (i * 0.01),
-        match_type: 'hybrid' as const
+        confidence_score: 0.9 - i * 0.01,
+        match_type: 'hybrid' as const,
       }));
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -473,15 +473,15 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 10,
           neighborsLimited: false,
-          executionTime: 75
-        }
+          executionTime: 75,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'auto',
         expand: 'relations',
-        limit: 100
+        limit: 100,
       };
 
       // Act
@@ -500,8 +500,8 @@ describe('SearchService Graph Expansion Integration', () => {
         scope: { project: 'test', branch: 'main' },
         data: { title: `Test Decision ${i}` },
         created_at: '2024-01-01T00:00:00Z',
-        confidence_score: 0.9 - (i * 0.01),
-        match_type: 'semantic' as const
+        confidence_score: 0.9 - i * 0.01,
+        match_type: 'semantic' as const,
       }));
 
       mockGraphExpansionService.expandResults.mockResolvedValue({
@@ -511,15 +511,15 @@ describe('SearchService Graph Expansion Integration', () => {
           expansionType: 'relations',
           neighborsFound: 20,
           neighborsLimited: false,
-          executionTime: 100
-        }
+          executionTime: 100,
+        },
       });
 
       const query: SearchQuery = {
         query: 'test query',
         mode: 'deep',
         expand: 'relations',
-        limit: 150
+        limit: 150,
       };
 
       // Act

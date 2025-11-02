@@ -18,7 +18,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { EmbeddingService, EmbeddingConfig, EmbeddingRequest, BatchEmbeddingRequest } from '../../../src/services/embeddings/embedding-service';
+import {
+  EmbeddingService,
+  EmbeddingConfig,
+  EmbeddingRequest,
+  BatchEmbeddingRequest,
+} from '../../../src/services/embeddings/embedding-service';
 import { ValidationError, DatabaseError } from '../../../src/db/database-interface';
 import { OpenAI } from 'openai';
 
@@ -45,8 +50,8 @@ vi.mock('openai', () => ({
               embedding: Array.from({ length: 1536 }, (_, i) => Math.sin(i) * 0.1),
               usage: {
                 prompt_tokens: Math.ceil(inputs[0].length / 4),
-                total_tokens: Math.ceil(inputs[0].length / 4)
-              }
+                total_tokens: Math.ceil(inputs[0].length / 4),
+              },
             };
           } else {
             // Batch embedding - return array of data
@@ -54,18 +59,18 @@ vi.mock('openai', () => ({
               data: inputs.map((_, index) => ({
                 embedding: Array.from({ length: 1536 }, (_, i) => Math.sin(i + index) * 0.1),
                 index,
-                object: 'embedding'
+                object: 'embedding',
               })),
               usage: {
                 prompt_tokens: inputs.reduce((sum, text) => sum + Math.ceil(text.length / 4), 0),
-                total_tokens: inputs.reduce((sum, text) => sum + Math.ceil(text.length / 4), 0)
-              }
+                total_tokens: inputs.reduce((sum, text) => sum + Math.ceil(text.length / 4), 0),
+              },
             };
           }
-        })
+        }),
       };
     }
-  }
+  },
 }));
 
 // Mock logger
@@ -74,8 +79,8 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 describe('Embedding Generation - Comprehensive Testing', () => {
@@ -92,7 +97,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       cacheEnabled: true,
       cacheTTL: 3600000,
       cacheMaxSize: 1000,
-      timeout: 30000
+      timeout: 30000,
     };
 
     embeddingService = new EmbeddingService(mockConfig);
@@ -109,7 +114,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'Tab\t\tseparated\ttext',
         'Newline\nseparated\ntext',
         'Mixed   \t\n  whitespace',
-        '   Leading and trailing   '
+        '   Leading and trailing   ',
       ];
 
       const expected = [
@@ -117,7 +122,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'Tab separated text',
         'Newline separated text',
         'Mixed whitespace',
-        'Leading and trailing'
+        'Leading and trailing',
       ];
 
       for (let i = 0; i < texts.length; i++) {
@@ -134,7 +139,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         { input: ' ', expectedProcessed: 'empty' },
         { input: '\t\n', expectedProcessed: 'empty' },
         { input: 'a', expectedProcessed: 'a' },
-        { input: ' ', expectedProcessed: 'empty' }
+        { input: ' ', expectedProcessed: 'empty' },
       ];
 
       for (const testCase of testCases) {
@@ -159,7 +164,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'Café résumé naïve façade',
         '🚀 Rocket emoji 🌟 Star ⚡ Lightning',
         'Mathematical: ∑∏∫∆∇∂',
-        'Code: function() { return true; }'
+        'Code: function() { return true; }',
       ];
 
       for (const text of specialTexts) {
@@ -182,11 +187,11 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'مرحبا بالعالم في العربية',
         'नमस्ते दुनिया in Hindi',
         'Olá mundo em português',
-        'Guten Tag auf Deutsch'
+        'Guten Tag auf Deutsch',
       ];
 
       const results = await embeddingService.generateBatchEmbeddings({
-        texts: languages
+        texts: languages,
       });
 
       expect(results).toHaveLength(10);
@@ -198,11 +203,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     });
 
     it('should handle right-to-left languages', async () => {
-      const rtlTexts = [
-        'مرحبا بالعالم',
-        'שלום עולם',
-        'עולם עברית'
-      ];
+      const rtlTexts = ['مرحبا بالعالم', 'שלום עולם', 'עולם עברית'];
 
       for (const text of rtlTexts) {
         const result = await embeddingService.generateEmbedding(text);
@@ -222,13 +223,17 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
   describe('Vector Dimension Validation', () => {
     it('should generate vectors with consistent dimensions', async () => {
-      const texts = ['short', 'medium length text', 'this is a much longer text with many words to test'];
+      const texts = [
+        'short',
+        'medium length text',
+        'this is a much longer text with many words to test',
+      ];
 
       const results = await embeddingService.generateBatchEmbeddings({ texts });
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.vector).toHaveLength(1536);
-        expect(result.vector.every(val => typeof val === 'number' && !isNaN(val))).toBe(true);
+        expect(result.vector.every((val) => typeof val === 'number' && !isNaN(val))).toBe(true);
       });
     });
 
@@ -241,12 +246,12 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         [1, 2, Infinity],
         null,
         undefined,
-        'not an array'
+        'not an array',
       ];
 
       expect(EmbeddingService.validateEmbedding(validVector)).toBe(true);
 
-      invalidVectors.forEach(vector => {
+      invalidVectors.forEach((vector) => {
         expect(EmbeddingService.validateEmbedding(vector as any)).toBe(false);
       });
     });
@@ -313,7 +318,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
     it('should handle single item in batch request', async () => {
       const result = await embeddingService.generateBatchEmbeddings({
-        texts: ['single text']
+        texts: ['single text'],
       });
 
       expect(result).toHaveLength(1);
@@ -331,7 +336,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
       const results = await embeddingService.generateBatchEmbeddings({
         texts,
-        metadata
+        metadata,
       });
 
       expect(results).toHaveLength(2);
@@ -342,11 +347,11 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     it('should handle large batches by splitting appropriately', async () => {
       const largeBatch = Array.from({ length: 25 }, (_, i) => `text item ${i}`);
       const results = await embeddingService.generateBatchEmbeddings({
-        texts: largeBatch
+        texts: largeBatch,
       });
 
       expect(results).toHaveLength(25);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.vector).toHaveLength(1536);
       });
     });
@@ -371,11 +376,11 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
       // First batch - should miss cache
       const results1 = await embeddingService.generateBatchEmbeddings({ texts });
-      results1.forEach(result => expect(result.cached).toBe(false));
+      results1.forEach((result) => expect(result.cached).toBe(false));
 
       // Second batch - should hit cache
       const results2 = await embeddingService.generateBatchEmbeddings({ texts });
-      results2.forEach(result => expect(result.cached).toBe(true));
+      results2.forEach((result) => expect(result.cached).toBe(true));
     });
 
     it('should handle partial cache hits in batch', async () => {
@@ -399,7 +404,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       expect(result1.cached).toBe(false);
 
       // Wait for TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const result2 = await shortTTLService.generateEmbedding(text);
       expect(result2.cached).toBe(false);
@@ -436,14 +441,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
   describe('Content Validation and Filtering', () => {
     it('should validate input text types', async () => {
-      const validInputs = [
-        'normal string',
-        '',
-        '   ',
-        '\t\n',
-        'a',
-        '🚀 emoji text'
-      ];
+      const validInputs = ['normal string', '', '   ', '\t\n', 'a', '🚀 emoji text'];
 
       for (const input of validInputs) {
         const result = await embeddingService.generateEmbedding(input);
@@ -459,14 +457,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     });
 
     it('should reject non-string inputs', async () => {
-      const invalidInputs = [
-        null,
-        undefined,
-        123,
-        {},
-        [],
-        true
-      ];
+      const invalidInputs = [null, undefined, 123, {}, [], true];
 
       for (const input of invalidInputs) {
         await expect(embeddingService.generateEmbedding(input as any)).rejects.toThrow();
@@ -492,8 +483,8 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'HTML: <div class="test">content</div>',
         'JSON: {"key": "value", "array": [1,2,3]}',
         'SQL: SELECT * FROM users WHERE active = true',
-        'Regex: \d{3}-\d{3}-\d{4}',
-        'Math: E = mc²'
+        'Regex: \\d{3}-\\d{3}-\\d{4}',
+        'Math: E = mc²',
       ];
 
       for (const content of specialContent) {
@@ -577,10 +568,10 @@ describe('Embedding Generation - Comprehensive Testing', () => {
             }
             return {
               embedding: Array.from({ length: 1536 }, () => 0.1),
-              usage: { prompt_tokens: 10, total_tokens: 10 }
+              usage: { prompt_tokens: 10, total_tokens: 10 },
             };
-          })
-        }
+          }),
+        },
       };
 
       (retryService as any).openai = mockOpenAI;
@@ -596,8 +587,8 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
       const mockOpenAI = {
         embeddings: {
-          create: vi.fn().mockRejectedValue(quotaError)
-        }
+          create: vi.fn().mockRejectedValue(quotaError),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
@@ -611,13 +602,15 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
       const mockOpenAI = {
         embeddings: {
-          create: vi.fn().mockRejectedValue(invalidError)
-        }
+          create: vi.fn().mockRejectedValue(invalidError),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
 
-      await expect(embeddingService.generateEmbedding('invalid test')).rejects.toThrow(DatabaseError);
+      await expect(embeddingService.generateEmbedding('invalid test')).rejects.toThrow(
+        DatabaseError
+      );
     });
 
     it('should handle network timeouts gracefully', async () => {
@@ -626,22 +619,25 @@ describe('Embedding Generation - Comprehensive Testing', () => {
 
       const mockOpenAI = {
         embeddings: {
-          create: vi.fn().mockRejectedValue(timeoutError)
-        }
+          create: vi.fn().mockRejectedValue(timeoutError),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
 
-      await expect(embeddingService.generateEmbedding('timeout test')).rejects.toThrow(DatabaseError);
+      await expect(embeddingService.generateEmbedding('timeout test')).rejects.toThrow(
+        DatabaseError
+      );
     });
   });
 
   describe('Integration with Knowledge Types', () => {
     it('should handle entity content extraction', async () => {
-      const entityContent = 'Entity: User named John Doe with email john@example.com and role developer';
+      const entityContent =
+        'Entity: User named John Doe with email john@example.com and role developer';
       const result = await embeddingService.generateEmbedding({
         text: entityContent,
-        metadata: { type: 'entity', entity_id: 'user_123' }
+        metadata: { type: 'entity', entity_id: 'user_123' },
       });
 
       expect(result.vector).toHaveLength(1536);
@@ -650,10 +646,11 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     });
 
     it('should handle decision content extraction', async () => {
-      const decisionContent = 'Decision: Implement OAuth 2.0 for authentication instead of basic auth';
+      const decisionContent =
+        'Decision: Implement OAuth 2.0 for authentication instead of basic auth';
       const result = await embeddingService.generateEmbedding({
         text: decisionContent,
-        metadata: { type: 'decision', priority: 'high' }
+        metadata: { type: 'decision', priority: 'high' },
       });
 
       expect(result.vector).toHaveLength(1536);
@@ -665,7 +662,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const issueContent = 'Issue: Database connection pool exhaustion causing service degradation';
       const result = await embeddingService.generateEmbedding({
         text: issueContent,
-        metadata: { type: 'issue', severity: 'critical' }
+        metadata: { type: 'issue', severity: 'critical' },
       });
 
       expect(result.vector).toHaveLength(1536);
@@ -674,10 +671,11 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     });
 
     it('should handle observation content extraction', async () => {
-      const observationContent = 'Observation: User engagement increased by 25% after implementing new features';
+      const observationContent =
+        'Observation: User engagement increased by 25% after implementing new features';
       const result = await embeddingService.generateEmbedding({
         text: observationContent,
-        metadata: { type: 'observation', metric_type: 'engagement' }
+        metadata: { type: 'observation', metric_type: 'engagement' },
       });
 
       expect(result.vector).toHaveLength(1536);
@@ -689,15 +687,15 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const knowledgeItems = [
         { text: 'Entity: Project Phoenix', metadata: { type: 'entity' } },
         { text: 'Decision: Use microservices architecture', metadata: { type: 'decision' } },
-        { text: 'Issue: Memory leak in caching service', metadata: { type: 'issue' } }
+        { text: 'Issue: Memory leak in caching service', metadata: { type: 'issue' } },
       ];
 
-      const texts = knowledgeItems.map(item => item.text);
-      const metadata = knowledgeItems.map(item => item.metadata);
+      const texts = knowledgeItems.map((item) => item.text);
+      const metadata = knowledgeItems.map((item) => item.metadata);
 
       const results = await embeddingService.generateBatchEmbeddings({
         texts,
-        metadata
+        metadata,
       });
 
       expect(results).toHaveLength(3);
@@ -711,19 +709,16 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const contextualTexts = [
         'User Authentication: Implement OAuth 2.0 with refresh tokens',
         'Database Schema: Users table with email, password_hash, created_at fields',
-        'API Endpoint: POST /api/auth/login with email and password parameters'
+        'API Endpoint: POST /api/auth/login with email and password parameters',
       ];
 
       const results = await embeddingService.generateBatchEmbeddings({
         texts: contextualTexts,
-        metadata: contextualTexts.map((_, i) => ({ context: `section_${i}` }))
+        metadata: contextualTexts.map((_, i) => ({ context: `section_${i}` })),
       });
 
       // Verify embeddings are different (indicating context is preserved)
-      const similarity = EmbeddingService.calculateSimilarity(
-        results[0].vector,
-        results[1].vector
-      );
+      const similarity = EmbeddingService.calculateSimilarity(results[0].vector, results[1].vector);
 
       expect(similarity).toBeLessThan(0.99); // Should not be identical
       expect(similarity).toBeGreaterThan(0); // Should have some similarity
@@ -761,7 +756,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
         'Текст на русском языке',
         'العربية النص',
         '한국어 텍스트',
-        '🏳️‍🌈👨‍👩‍👧‍👦'
+        '🏳️‍🌈👨‍👩‍👧‍👦',
       ];
 
       for (const text of unicodeTexts) {
@@ -775,9 +770,9 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const mockOpenAI = {
         embeddings: {
           create: vi.fn().mockResolvedValue({
-            data: [{ embedding: null }] // Malformed response
-          })
-        }
+            data: [{ embedding: null }], // Malformed response
+          }),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
@@ -789,9 +784,9 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const mockOpenAI = {
         embeddings: {
           create: vi.fn().mockResolvedValue({
-            data: [{}] // Missing embedding field
-          })
-        }
+            data: [{}], // Missing embedding field
+          }),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
@@ -803,13 +798,13 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const texts = [
         'valid text 1',
         '   ', // Valid (will be normalized)
-        'valid text 2'
+        'valid text 2',
       ];
 
       const results = await embeddingService.generateBatchEmbeddings({ texts });
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.vector).toHaveLength(1536);
       });
     });
@@ -818,7 +813,7 @@ describe('Embedding Generation - Comprehensive Testing', () => {
       const invalidConfig = {
         apiKey: '',
         model: 'invalid-model',
-        batchSize: -1
+        batchSize: -1,
       };
 
       // Should create service even with invalid config
@@ -839,8 +834,8 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     it('should handle health check failures', async () => {
       const mockOpenAI = {
         embeddings: {
-          create: vi.fn().mockRejectedValue(new Error('Service unavailable'))
-        }
+          create: vi.fn().mockRejectedValue(new Error('Service unavailable')),
+        },
       };
 
       (embeddingService as any).openai = mockOpenAI;
@@ -898,10 +893,10 @@ describe('Embedding Generation - Comprehensive Testing', () => {
     it('should find most similar vectors', () => {
       const queryVector = [1, 0, 0];
       const candidates = [
-        [1, 0, 0],    // Perfect match
+        [1, 0, 0], // Perfect match
         [0.9, 0.1, 0], // Close match
-        [0, 1, 0],    // No match
-        [-1, 0, 0]    // Opposite
+        [0, 1, 0], // No match
+        [-1, 0, 0], // Opposite
       ];
 
       const similar = EmbeddingService.findMostSimilar(queryVector, candidates, 2, 0.5);

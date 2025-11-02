@@ -28,12 +28,17 @@ export interface RateLimitConfig {
   window_seconds: number;
 
   // Custom limits per operation
-  operation_limits?: Partial<Record<OperationType, {
-    burst_capacity: number;
-    refill_rate_per_second: number;
-    window_limit: number;
-    window_seconds: number;
-  }>>;
+  operation_limits?: Partial<
+    Record<
+      OperationType,
+      {
+        burst_capacity: number;
+        refill_rate_per_second: number;
+        window_limit: number;
+        window_seconds: number;
+      }
+    >
+  >;
 }
 
 /**
@@ -395,9 +400,10 @@ export class RateLimitService extends EventEmitter {
     }
 
     const recent_violations = this.violations.filter(
-      v => v.entity_id === entityId &&
-           v.entity_type === entityType &&
-           Date.now() - v.timestamp < 3600000 // Last hour
+      (v) =>
+        v.entity_id === entityId &&
+        v.entity_type === entityType &&
+        Date.now() - v.timestamp < 3600000 // Last hour
     );
 
     return {
@@ -422,9 +428,10 @@ export class RateLimitService extends EventEmitter {
   } {
     return {
       ...this.metrics,
-      block_rate: this.metrics.total_checks > 0
-        ? (this.metrics.blocked_requests / this.metrics.total_checks) * 100
-        : 0,
+      block_rate:
+        this.metrics.total_checks > 0
+          ? (this.metrics.blocked_requests / this.metrics.total_checks) * 100
+          : 0,
       violations_by_entity: Object.fromEntries(this.metrics.violations_by_entity),
       violations_by_operation: Object.fromEntries(this.metrics.violations_by_operation),
       active_entities: this.entityTiers.size,
@@ -451,7 +458,7 @@ export class RateLimitService extends EventEmitter {
 
     // Remove violations
     this.violations = this.violations.filter(
-      v => !(v.entity_id === entityId && v.entity_type === entityType)
+      (v) => !(v.entity_id === entityId && v.entity_type === entityType)
     );
 
     logger.info(
@@ -548,7 +555,8 @@ export class RateLimitService extends EventEmitter {
     return {
       allowed,
       tokens_available: bucket.tokens,
-      next_refill_seconds: bucket.refill_rate > 0 ? Math.ceil((capacity - bucket.tokens) / bucket.refill_rate) : 0,
+      next_refill_seconds:
+        bucket.refill_rate > 0 ? Math.ceil((capacity - bucket.tokens) / bucket.refill_rate) : 0,
     };
   }
 
@@ -575,10 +583,10 @@ export class RateLimitService extends EventEmitter {
     }
 
     const now = Date.now();
-    const windowStart = now - (windowSeconds * 1000);
+    const windowStart = now - windowSeconds * 1000;
 
     // Remove old requests from window
-    window.requests = window.requests.filter(timestamp => timestamp > windowStart);
+    window.requests = window.requests.filter((timestamp) => timestamp > windowStart);
 
     // Check if request is allowed
     const currentCount = window.requests.length;
@@ -620,9 +628,11 @@ export class RateLimitService extends EventEmitter {
       return 5; // 5 seconds for token refill
     } else {
       // Calculate when sliding window will have space
-      const oldestRequest = Math.min(...this.violations
-        .filter(v => v.entity_id === violation.entity_id && v.timestamp > Date.now() - 3600000)
-        .map(v => v.timestamp));
+      const oldestRequest = Math.min(
+        ...this.violations
+          .filter((v) => v.entity_id === violation.entity_id && v.timestamp > Date.now() - 3600000)
+          .map((v) => v.timestamp)
+      );
 
       return Math.max(1, Math.ceil((oldestRequest + 3600000 - Date.now()) / 1000));
     }
@@ -635,13 +645,12 @@ export class RateLimitService extends EventEmitter {
 
       // Clean sliding windows
       for (const [_key, window] of this.slidingWindows) {
-        const windowStart = now - (window.window_seconds * 1000);
-        window.requests = window.requests.filter(timestamp => timestamp > windowStart);
+        const windowStart = now - window.window_seconds * 1000;
+        window.requests = window.requests.filter((timestamp) => timestamp > windowStart);
       }
 
       // Clean old violations (keep last 24 hours)
-      this.violations = this.violations.filter(v => now - v.timestamp < 86400000);
-
+      this.violations = this.violations.filter((v) => now - v.timestamp < 86400000);
     }, 60000); // Every minute
 
     // Emit metrics periodically

@@ -7,6 +7,7 @@ Proses `find` dalam Cortex Memory MCP Server adalah alur pencarian yang canggih 
 ## 1. Entry Point: MCP Tool Call
 
 ### 1.1. Client Request
+
 ```typescript
 memory_find({
   query: "Query pencarian",
@@ -23,6 +24,7 @@ memory_find({
 ```
 
 ### 1.2. MCP Server Handler (`handleMemoryFind`)
+
 **Location:** `src/index.ts:1044-1220`
 
 ```typescript
@@ -49,6 +51,7 @@ async function handleMemoryFind(args: {
 ## 2. Default Scope Application (Phase 6 Enhancement)
 
 ### 2.1. P6-T6.3: Default Org Scope
+
 ```typescript
 // P6-T6.3: Apply default org scope when memory_find called without scope
 let effectiveScope = args.scope;
@@ -59,11 +62,13 @@ if (!effectiveScope && env.CORTEX_ORG) {
 ```
 
 ### 2.2. Scope Logic:
+
 - 🎯 **Explicit Scope**: Gunakan scope yang diberikan oleh client
 - 🎯 **Default Scope**: Gunakan `CORTEX_ORG` environment variable jika tidak ada scope
 - 🎯 **No Scope**: Jika tidak ada explicit scope dan tidak ada CORTEX_ORG, cari di semua data
 
 ### 2.3. Implementation Status:
+
 - ✅ **Default Scope Logic**: CORTEX_ORG default scope implemented
 - ✅ **Audit Logging**: Default scope application logged
 - ⚠️ **Scope Isolation**: Basic filtering implemented, but comprehensive testing needed
@@ -72,6 +77,7 @@ if (!effectiveScope && env.CORTEX_ORG) {
 ## 3. Search Audit Logging
 
 ### 3.1. Search Start Logging
+
 ```typescript
 // T8.1: Log search start
 await auditService.logOperation('memory_find_start', {
@@ -95,12 +101,14 @@ await auditService.logOperation('memory_find_start', {
 ## 4. Database Initialization Check
 
 ### 4.1. Ensure Database Ready
+
 ```typescript
 // Ensure database is initialized before processing
 await ensureDatabaseInitialized();
 ```
 
 ### 4.2. Database Check Process:
+
 - 🔗 **Connection Check**: Verifikasi koneksi ke Qdrant
 - 📦 **Collection Check**: Pastikan collection sudah ada
 - 🚀 **Health Check**: Verifikasi database health status
@@ -109,6 +117,7 @@ await ensureDatabaseInitialized();
 ## 5. Search Query Preparation
 
 ### 5.1. Search Query Construction
+
 ```typescript
 // P3-T3.1: Use SearchService instead of direct vectorDB.searchItems call
 // P4-T4.2: Include expand parameter for graph expansion
@@ -134,6 +143,7 @@ if (args.types && args.types.length > 0) {
 ```
 
 ### 5.2. Query Parameter Processing:
+
 - 🔍 **Query Text**: Query pencarian yang akan diproses
 - 📊 **Limit**: Maximum jumlah hasil (default 10)
 - 🏷️ **Types**: Filter berdasarkan jenis knowledge item
@@ -144,6 +154,7 @@ if (args.types && args.types.length > 0) {
 ## 6. Search Service Processing
 
 ### 6.1. Search Service Entry Point (`searchService.searchByMode`)
+
 **Location:** `src/services/search/search-service.ts`
 
 ```typescript
@@ -154,18 +165,21 @@ const searchResult = await searchService.searchByMode(searchQuery);
 ### 6.2. Search Mode Selection:
 
 #### Fast Mode:
+
 - ⚡ **Keyword-based search**: Exact matching prioritized
 - ⚡ **Cache lookup**: Priority on cached results
 - ⚡ **Minimal processing**: Focus on speed
 - ⚡ **Use cases**: Real-time suggestions, autocomplete
 
 #### Auto Mode (Default):
+
 - 🤖 **Hybrid approach**: Semantic + keyword search
 - 🤖 **Confidence scoring**: Multi-factor relevance calculation
 - 🤖 **Fallback strategy**: Graceful degradation
 - 🤖 **Use cases**: General purpose search
 
 #### Deep Mode:
+
 - 🔬 **Comprehensive search**: Multiple strategies combined
 - 🔬 **Graph expansion**: Include related items
 - 🔬 **Context analysis**: Deep semantic understanding
@@ -174,6 +188,7 @@ const searchResult = await searchService.searchByMode(searchQuery);
 ## 7. Search Query Parsing
 
 ### 7.1. Query Analysis (`queryParser.parse`)
+
 **Location:** `src/services/search/query-parser.ts`
 
 ```typescript
@@ -210,6 +225,7 @@ async parseQuery(query: string): Promise<ParsedQuery> {
 ```
 
 ### 7.2. Query Processing Steps:
+
 - 🧹 **Text Cleaning**: Remove special characters, normalize
 - 🌍 **Language Detection**: Identify query language (EN/ID/etc)
 - 🔑 **Keyword Extraction**: Extract important terms
@@ -220,6 +236,7 @@ async parseQuery(query: string): Promise<ParsedQuery> {
 ## 8. Search Strategy Selection
 
 ### 8.1. Strategy Selection Logic
+
 ```typescript
 private selectSearchStrategy(parsedQuery: ParsedQuery, mode: SearchMode): SearchStrategy {
   switch (mode) {
@@ -237,18 +254,21 @@ private selectSearchStrategy(parsedQuery: ParsedQuery, mode: SearchMode): Search
 ### 8.2. Strategy Types:
 
 #### Semantic Search Strategy:
+
 - 🧠 **Vector Search**: Use OpenAI embeddings
 - 🧠 **Similarity Matching**: Cosine similarity calculation
 - 🧠 **Context Understanding**: Semantic meaning analysis
 - 🧠 **Use cases**: Concept-based searches, synonyms
 
 #### Keyword Search Strategy:
+
 - 🔤 **Text Matching**: Exact string matching
 - 🔤 **Wildcard Support**: Partial matching with wildcards
 - 🔤 **Case Insensitive**: Case-insensitive matching
 - 🔤 **Use cases**: Specific term searches, code identifiers
 
 #### Hybrid Search Strategy:
+
 - 🔄 **Combined Approach**: Semantic + keyword fusion
 - 🔄 **Score Blending**: Weighted combination of scores
 - 🔄 **Best of Both**: Semantic understanding + precision
@@ -257,6 +277,7 @@ private selectSearchStrategy(parsedQuery: ParsedQuery, mode: SearchMode): Search
 ## 9. Cache Layer
 
 ### 9.1. Search Cache Lookup
+
 ```typescript
 // Create cache key based on query parameters
 const cacheKey = this.createCacheKey(parsedQuery, query);
@@ -265,21 +286,25 @@ const cacheKey = this.createCacheKey(parsedQuery, query);
 const cachedResults = this.searchCache.get(cacheKey);
 if (cachedResults) {
   const duration = Date.now() - startTime;
-  logger.info({
-    query: query.query,
-    resultCount: cachedResults.length,
-    fromCache: true,
-    duration
-  }, 'Search served from cache');
+  logger.info(
+    {
+      query: query.query,
+      resultCount: cachedResults.length,
+      fromCache: true,
+      duration,
+    },
+    'Search served from cache'
+  );
 
   return {
     results: cachedResults,
-    totalCount: cachedResults.length
+    totalCount: cachedResults.length,
   };
 }
 ```
 
 ### 9.2. Cache Strategy:
+
 - 💾 **LRU Cache**: Least Recently Used eviction
 - 💾 **Cache Key**: Hash dari query parameters
 - 💾 **TTL**: Cache expiration policy
@@ -288,6 +313,7 @@ if (cachedResults) {
 ## 10. Vector Search Execution
 
 ### 10.1. Semantic Search Implementation
+
 ```typescript
 async performSemanticSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promise<SearchResult[]> {
   // 1. Generate query embedding
@@ -314,6 +340,7 @@ async performSemanticSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promi
 ```
 
 ### 10.2. Vector Search Process:
+
 - 🔢 **Embedding Generation**: Convert query ke vector space
 - 🎯 **Filter Building**: Build Qdrant filter untuk scope & types
 - 🔍 **Vector Search**: Semantic similarity search
@@ -323,6 +350,7 @@ async performSemanticSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promi
 ## 11. Keyword Search Execution
 
 ### 11.1. Text-based Search
+
 ```typescript
 async performKeywordSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promise<SearchResult[]> {
   // 1. Build keyword query
@@ -344,6 +372,7 @@ async performKeywordSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promis
 ```
 
 ### 11.2. Keyword Search Features:
+
 - 🔤 **Exact Matching**: Prioritizes exact keyword matches
 - 🔄 **Fuzzy Matching**: Handle typos and variations
 - 📍 **Position Scoring**: Higher score for early matches
@@ -352,6 +381,7 @@ async performKeywordSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promis
 ## 12. Hybrid Search Execution
 
 ### 12.1. Multi-strategy Fusion
+
 ```typescript
 async performHybridSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promise<SearchResult[]> {
   // 1. Execute semantic search
@@ -374,6 +404,7 @@ async performHybridSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promise
 ```
 
 ### 12.2. Fusion Strategy:
+
 - 🔄 **Result Merging**: Combine results from multiple strategies
 - 🔄 **Deduplication**: Remove duplicate items
 - 🔄 **Score Blending**: Weighted combination of different scores
@@ -382,6 +413,7 @@ async performHybridSearch(parsedQuery: ParsedQuery, query: SearchQuery): Promise
 ## 13. Result Enhancement
 
 ### 13.1. Score Boosting Application
+
 ```typescript
 private applyBoostingFactors(results: SearchResult[], parsedQuery: ParsedQuery, query: SearchQuery): EnhancedSearchResult[] {
   return results.map(result => {
@@ -431,6 +463,7 @@ private applyBoostingFactors(results: SearchResult[], parsedQuery: ParsedQuery, 
 ```
 
 ### 13.2. Boosting Factors:
+
 - 🎯 **Exact Match**: 1.5x boost untuk exact query matches
 - 📝 **Title Match**: 1.3x boost untuk title/heading matches
 - 🏷️ **Kind Match**: 1.2x boost untuk requested types
@@ -440,6 +473,7 @@ private applyBoostingFactors(results: SearchResult[], parsedQuery: ParsedQuery, 
 ## 14. Graph Expansion (P4-T4.2)
 
 ### 14.1. Graph Expansion Service
+
 **Location:** `src/services/search/graph-expansion-service.ts`
 
 ```typescript
@@ -478,6 +512,7 @@ async expandResults(results: SearchResult[], expandType: string, originalQuery: 
 ```
 
 ### 14.2. Expansion Types:
+
 - 🔗 **Relations**: Cari items yang berhubungan langsung
 - ⬆️ **Parents**: Cari parent items dalam graph hierarchy
 - ⬇️ **Children**: Cari child items dalam graph hierarchy
@@ -486,18 +521,19 @@ async expandResults(results: SearchResult[], expandType: string, originalQuery: 
 ## 15. Post-Search Filtering
 
 ### 15.1. Additional Filtering
+
 ```typescript
 // Additional filtering (in case SearchService doesn't fully respect filters)
 let items = searchResult.results;
 
 // Filter by types if specified
 if (args.types && args.types.length > 0) {
-  items = items.filter(item => args.types!.includes(item.kind));
+  items = items.filter((item) => args.types!.includes(item.kind));
 }
 
 // Filter by scope if specified
 if (args.scope) {
-  items = items.filter(item => {
+  items = items.filter((item) => {
     if (!item.scope) return false;
     if (args.scope.project && item.scope.project !== args.scope.project) return false;
     if (args.scope.branch && item.scope.branch !== args.scope.branch) return false;
@@ -508,6 +544,7 @@ if (args.scope) {
 ```
 
 ### 15.2. Filtering Logic:
+
 - 🏷️ **Type Filtering**: Filter berdasarkan jenis knowledge item
 - 🎯 **Scope Filtering**: Filter berdasarkan organisasi/project/branch
 - 📊 **Score Filtering**: Filter berdasarkan confidence threshold
@@ -516,16 +553,17 @@ if (args.scope) {
 ## 16. Result Statistics
 
 ### 16.1. Confidence Calculation
+
 ```typescript
 // Calculate average confidence
-const averageConfidence = items.length > 0
-  ? items.reduce((sum, item) => sum + item.confidence_score, 0) / items.length
-  : 0;
+const averageConfidence =
+  items.length > 0 ? items.reduce((sum, item) => sum + item.confidence_score, 0) / items.length : 0;
 
 const duration = Date.now() - startTime;
 ```
 
 ### 16.2. Statistics Calculated:
+
 - 📊 **Result Count**: Jumlah total hasil
 - 📈 **Average Confidence**: Rata-rata confidence score
 - ⏱️ **Execution Time**: Total waktu eksekusi
@@ -535,6 +573,7 @@ const duration = Date.now() - startTime;
 ## 17. Search Completion Logging
 
 ### 17.1. Comprehensive Audit Logging
+
 ```typescript
 // T8.1: Log search completion with detailed metrics
 await auditService.logOperation('memory_find_complete', {
@@ -549,7 +588,7 @@ await auditService.logOperation('memory_find_complete', {
     results_found: items.length,
     average_confidence: averageConfidence,
     execution_time: searchResult.executionTime,
-    item_types_found: [...new Set(items.map(item => item.kind))],
+    item_types_found: [...new Set(items.map((item) => item.kind))],
     scope_filtering: !!args.scope,
     type_filtering: !!(args.types && args.types.length > 0),
     mcp_tool: true,
@@ -560,6 +599,7 @@ await auditService.logOperation('memory_find_complete', {
 ## 18. System Metrics Update
 
 ### 18.1. Performance Metrics
+
 ```typescript
 // P8-T8.3: Update system metrics for find operation
 const { systemMetricsService } = await import('./services/metrics/system-metrics.js');
@@ -575,6 +615,7 @@ systemMetricsService.updateMetrics({
 ```
 
 ### 18.2. Metrics Tracked:
+
 - ⚡ **Performance**: Execution time per operation
 - 🎯 **Success Rate**: Search success vs failure
 - 📊 **Result Distribution**: Results per type/strategy
@@ -583,28 +624,36 @@ systemMetricsService.updateMetrics({
 ## 19. Final Response Construction
 
 ### 19.1. MCP Response Format
+
 ```typescript
 return {
-  content: [{
-    type: 'text',
-    text: JSON.stringify({
-      query: args.query,
-      strategy: searchResult.strategy || 'hybrid',
-      confidence: averageConfidence,
-      total: items.length,
-      executionTime: searchResult.executionTime,
-      items,  // Enhanced search results
-      audit_metadata: {
-        search_id: searchId,
-        duration_ms: duration,
-        audit_logged: true,
-      },
-    }, null, 2),
-  }],
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify(
+        {
+          query: args.query,
+          strategy: searchResult.strategy || 'hybrid',
+          confidence: averageConfidence,
+          total: items.length,
+          executionTime: searchResult.executionTime,
+          items, // Enhanced search results
+          audit_metadata: {
+            search_id: searchId,
+            duration_ms: duration,
+            audit_logged: true,
+          },
+        },
+        null,
+        2
+      ),
+    },
+  ],
 };
 ```
 
 ### 19.2. Response Structure:
+
 - 🔍 **Query**: Original search query
 - 🎯 **Strategy**: Search strategy yang digunakan
 - 📊 **Confidence**: Average confidence score
@@ -616,12 +665,14 @@ return {
 ## 20. Error Handling
 
 ### 20.1. Error Categories
+
 1. **Query Errors**: Invalid query format, empty queries
 2. **Database Errors**: Connection issues, search failures
 3. **Processing Errors**: Embedding generation, indexing issues
 4. **System Errors**: Memory, network, resource exhaustion
 
 ### 20.2. Error Response Format
+
 ```typescript
 // Error handling with comprehensive logging
 try {
@@ -654,10 +705,11 @@ try {
 ## 21. Search Result Structure
 
 ### 21.1. Individual Result Item
+
 ```typescript
 interface SearchResult {
   id: string;
-  kind: string;  // 16 supported types
+  kind: string; // 16 supported types
   content: string;
   metadata?: Record<string, any>;
   scope?: {
@@ -665,7 +717,7 @@ interface SearchResult {
     project?: string;
     branch?: string;
   };
-  confidence_score: number;  // 0.0 - 1.0
+  confidence_score: number; // 0.0 - 1.0
   created_at: string;
   updated_at: string;
   content_hash: string;
@@ -686,12 +738,14 @@ interface SearchResult {
 ## 22. Search Optimization Features
 
 ### 22.1. Performance Optimizations
+
 - 💾 **Multi-level Caching**: Query cache + result cache
 - 🚀 **Async Processing**: Parallel search execution
 - 📊 **Query Optimization**: Efficient query planning
 - 🔄 **Result Streaming**: Streaming large result sets
 
 ### 22.2. Relevance Optimizations
+
 - 🎯 **Contextual Scoring**: Multi-factor relevance calculation
 - 🔄 **Dynamic Boosting**: Adaptive boosting factors
 - 📈 **Learning Algorithms**: Machine learning relevance improvement
@@ -700,6 +754,7 @@ interface SearchResult {
 ## Flow Summary
 
 ### Complete Flow Steps:
+
 1. ✅ **MCP Tool Call** → Client memanggil `memory_find`
 2. ✅ **Query Validation** → Validasi query parameters
 3. ✅ **Default Scope** → Apply CORTEX_ORG jika tidak ada scope
@@ -719,6 +774,7 @@ interface SearchResult {
 17. ✅ **Final Response** → Return formatted results
 
 ### Key Features:
+
 - 🧠 **Multi-Strategy Search**: Semantic, keyword, dan hybrid approaches
 - 🎯 **Intelligent Query Parsing**: Language detection, entity recognition
 - 📊 **Advanced Scoring**: Multi-factor relevance calculation
@@ -729,6 +785,7 @@ interface SearchResult {
 - 🛡️ **Error Resilience**: Comprehensive error handling
 
 ### Search Modes Comparison:
+
 - **Fast Mode**: ⚡ Speed prioritized, cache-first, exact matching
 - **Auto Mode**: 🤖 Balanced approach, hybrid search, general purpose
 - **Deep Mode**: 🔬 Comprehensive search, graph expansion, full analysis
@@ -736,16 +793,19 @@ interface SearchResult {
 ## Known Gaps & Implementation Status (2025-10-31)
 
 ### ⚠️ Partially Implemented Features:
+
 1. **Chunk Reassembly**: Find doesn't stitch chunked content back together
 2. **Scope Isolation**: Basic filtering but needs comprehensive testing
 3. **Graph Expansion**: Related item search but limited parent/child support
 
 ### ❌ Missing Features:
+
 1. **Chunk Context Reconstruction**: No semantic context restoration for chunks
 2. **Advanced Filtering**: Missing complex query combinations
 3. **Result Caching**: Cache mentioned but not fully implemented
 
 ### 📋 Action Items:
+
 - Implement chunk context reassembly in find pipeline
 - Add comprehensive scope isolation tests
 - Enhance parent/child relationship navigation
@@ -754,6 +814,7 @@ interface SearchResult {
 - Create search performance benchmarks
 
 ### 🎯 Production Readiness:
+
 - **Core Search**: ✅ Working (semantic + keyword search)
 - **Advanced Features**: ⚠️ Partial (graph expansion, filtering)
 - **Performance Features**: ❌ Missing (caching, optimization)

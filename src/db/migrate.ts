@@ -572,18 +572,20 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         }
         case 'status': {
           const status = await qdrantMigrationManager.status();
-          console.log('Migration Status:');
-          console.log(`Available: ${status.available.length}`);
-          console.log(`Applied: ${status.applied.length}`);
-          console.log(`Pending: ${status.pending.length}`);
+          // Use logger instead of console.log
+          logger.info('Migration Status', {
+            available: status.available.length,
+            applied: status.applied.length,
+            pending: status.pending.length
+          });
           break;
         }
         case 'dry-run':
           await qdrantMigrationManager.migrate({ dryRun: true });
           break;
         default:
-          console.error('Unknown command:', command);
-          console.log('Available commands: up, down, status, dry-run');
+          logger.error('Unknown command', { command });
+          logger.info('Available commands: up, down, status, dry-run');
           process.exit(1);
       }
     } catch (error) {

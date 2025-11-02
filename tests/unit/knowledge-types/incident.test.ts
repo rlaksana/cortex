@@ -21,20 +21,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Incident Knowledge Type - Comprehensive Testing', () => {
@@ -52,7 +52,7 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           id: '550e8400-e29b-41d4-a716-446655440000',
@@ -63,37 +63,38 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             {
               timestamp: '2025-01-01T10:00:00Z',
               event: 'Database connection failures detected',
-              actor: 'monitoring-system'
+              actor: 'monitoring-system',
             },
             {
               timestamp: '2025-01-01T10:05:00Z',
               event: 'Incident declared, incident commander assigned',
-              actor: 'on-call-engineer'
+              actor: 'on-call-engineer',
             },
             {
               timestamp: '2025-01-01T10:15:00Z',
               event: 'Root cause identified: connection pool exhaustion',
-              actor: 'senior-engineer'
-            }
+              actor: 'senior-engineer',
+            },
           ],
-          root_cause_analysis: 'Connection pool exhaustion due to memory leak in database driver. The driver was not properly releasing connections under high load, causing gradual depletion of available connections.',
+          root_cause_analysis:
+            'Connection pool exhaustion due to memory leak in database driver. The driver was not properly releasing connections under high load, causing gradual depletion of available connections.',
           resolution_status: 'resolved' as const,
           affected_services: ['user-service', 'order-service', 'payment-service'],
           business_impact: 'Estimated $50,000 revenue loss per hour during outage',
           recovery_actions: [
             'Restarted database connection pool',
             'Applied hotfix to connection management code',
-            'Increased monitoring alerts for connection pool metrics'
+            'Increased monitoring alerts for connection pool metrics',
           ],
           follow_up_required: true,
-          incident_commander: 'jane.doe@company.com'
+          incident_commander: 'jane.doe@company.com',
         },
         tags: { severity: 'critical', outage: true, database: true },
         source: {
           actor: 'incident-response-team',
           tool: 'incident-management-system',
-          timestamp: '2025-01-01T11:30:00Z'
-        }
+          timestamp: '2025-01-01T11:30:00Z',
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -114,14 +115,14 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Minor performance degradation',
           severity: 'low' as const,
           impact: 'Users experiencing slightly slower response times',
-          resolution_status: 'open' as const
-        }
+          resolution_status: 'open' as const,
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -146,8 +147,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             // Missing title
             severity: 'high',
             impact: 'Test impact',
-            resolution_status: 'open'
-          }
+            resolution_status: 'open',
+          },
         },
         {
           kind: 'incident' as const,
@@ -156,8 +157,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Test incident',
             // Missing severity
             impact: 'Test impact',
-            resolution_status: 'open'
-          }
+            resolution_status: 'open',
+          },
         },
         {
           kind: 'incident' as const,
@@ -166,8 +167,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Test incident',
             severity: 'medium',
             // Missing impact
-            resolution_status: 'investigating'
-          }
+            resolution_status: 'investigating',
+          },
         },
         {
           kind: 'incident' as const,
@@ -175,10 +176,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Test incident',
             severity: 'low',
-            impact: 'Test impact'
+            impact: 'Test impact',
             // Missing resolution_status
-          }
-        }
+          },
+        },
       ];
 
       invalidIncidents.forEach((incident, index) => {
@@ -198,8 +199,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Test incident',
           severity: 'urgent' as any, // Invalid severity
           impact: 'Test impact',
-          resolution_status: 'open'
-        }
+          resolution_status: 'open',
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -217,8 +218,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Test incident',
           severity: 'high',
           impact: 'Test impact',
-          resolution_status: 'fixed' as any // Invalid status
-        }
+          resolution_status: 'fixed' as any, // Invalid status
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -236,8 +237,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'x'.repeat(501), // Exceeds 500 character limit
           severity: 'medium',
           impact: 'Test impact',
-          resolution_status: 'open'
-        }
+          resolution_status: 'open',
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -260,23 +261,21 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             {
               timestamp: '2025-01-01T10:00:00Z',
               event: 'Incident detected',
-              actor: 'monitoring'
+              actor: 'monitoring',
             },
             {
               // Missing required timestamp
               event: 'Invalid timeline entry',
-              actor: 'system'
-            }
-          ]
-        }
+              actor: 'system',
+            },
+          ],
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues.some(issue =>
-          issue.path.includes('timestamp')
-        )).toBe(true);
+        expect(result.error.issues.some((issue) => issue.path.includes('timestamp'))).toBe(true);
       }
     });
 
@@ -293,10 +292,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             {
               timestamp: 'invalid-datetime', // Invalid datetime format
               event: 'Test event',
-              actor: 'test'
-            }
-          ]
-        }
+              actor: 'test',
+            },
+          ],
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -313,16 +312,16 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'API gateway timeout errors',
           severity: 'high',
           impact: 'Users unable to complete transactions',
           resolution_status: 'investigating',
-          affected_services: ['api-gateway', 'payment-service']
+          affected_services: ['api-gateway', 'payment-service'],
         },
-        content: 'Incident: API gateway timeout errors affecting payment processing' // Required for embedding generation
+        content: 'Incident: API gateway timeout errors affecting payment processing', // Required for embedding generation
       };
 
       const result = await db.storeItems([incident]);
@@ -348,9 +347,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Critical database outage',
             severity: 'critical' as const,
             impact: 'Complete service failure',
-            resolution_status: 'open'
+            resolution_status: 'open',
           },
-          content: 'Critical incident: database outage'
+          content: 'Critical incident: database outage',
         },
         {
           kind: 'incident' as const,
@@ -359,9 +358,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Minor UI glitch',
             severity: 'low' as const,
             impact: 'Cosmetic issue on dashboard',
-            resolution_status: 'resolved'
+            resolution_status: 'resolved',
           },
-          content: 'Low severity incident: UI glitch'
+          content: 'Low severity incident: UI glitch',
         },
         {
           kind: 'incident' as const,
@@ -370,10 +369,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Performance degradation',
             severity: 'medium' as const,
             impact: 'Slower response times',
-            resolution_status: 'investigating'
+            resolution_status: 'investigating',
           },
-          content: 'Medium severity incident: performance issues'
-        }
+          content: 'Medium severity incident: performance issues',
+        },
       ];
 
       const result = await db.storeItems(incidents);
@@ -397,9 +396,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Valid incident',
             severity: 'high',
             impact: 'Valid impact description',
-            resolution_status: 'open'
+            resolution_status: 'open',
           },
-          content: 'Valid incident content'
+          content: 'Valid incident content',
         },
         {
           kind: 'incident' as const,
@@ -408,9 +407,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             // Missing title
             severity: 'medium',
             impact: 'Invalid incident',
-            resolution_status: 'investigating'
+            resolution_status: 'investigating',
           },
-          content: 'Invalid incident content'
+          content: 'Invalid incident content',
         },
         {
           kind: 'incident' as const,
@@ -419,10 +418,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             title: 'Another valid incident',
             severity: 'low',
             impact: 'Another valid impact',
-            resolution_status: 'resolved'
+            resolution_status: 'resolved',
           },
-          content: 'Another valid incident content'
-        }
+          content: 'Another valid incident content',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -446,10 +445,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
               severity: 'critical',
               impact: 'Complete service outage',
               resolution_status: 'resolved',
-              affected_services: ['user-service', 'order-service']
+              affected_services: ['user-service', 'order-service'],
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'incident-id-2',
@@ -461,11 +460,11 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
               severity: 'medium',
               impact: 'Some users experiencing throttling',
               resolution_status: 'investigating',
-              affected_services: ['api-gateway']
+              affected_services: ['api-gateway'],
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -505,7 +504,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
   describe('Incident Severity and Status Lifecycle', () => {
     it('should handle all valid severity levels', async () => {
       const severities: Array<'critical' | 'high' | 'medium' | 'low'> = [
-        'critical', 'high', 'medium', 'low'
+        'critical',
+        'high',
+        'medium',
+        'low',
       ];
 
       const incidents = severities.map((severity, index) => ({
@@ -515,14 +517,12 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: `Incident with ${severity} severity`,
           severity,
           impact: `Impact for ${severity} severity incident`,
-          resolution_status: 'open' as const
+          resolution_status: 'open' as const,
         },
-        content: `Incident: ${severity} severity`
+        content: `Incident: ${severity} severity`,
       }));
 
-      const results = await Promise.all(
-        incidents.map(incident => db.storeItems([incident]))
-      );
+      const results = await Promise.all(incidents.map((incident) => db.storeItems([incident])));
 
       results.forEach((result, index) => {
         expect(result.stored).toHaveLength(1);
@@ -534,7 +534,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
 
     it('should handle all valid resolution statuses', async () => {
       const statuses: Array<'open' | 'investigating' | 'resolved' | 'closed'> = [
-        'open', 'investigating', 'resolved', 'closed'
+        'open',
+        'investigating',
+        'resolved',
+        'closed',
       ];
 
       const incidents = statuses.map((resolution_status, index) => ({
@@ -544,14 +547,12 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: `Incident with status ${resolution_status}`,
           severity: 'medium' as const,
           impact: 'Test impact',
-          resolution_status
+          resolution_status,
         },
-        content: `Incident: status ${resolution_status}`
+        content: `Incident: status ${resolution_status}`,
       }));
 
-      const results = await Promise.all(
-        incidents.map(incident => db.storeItems([incident]))
-      );
+      const results = await Promise.all(incidents.map((incident) => db.storeItems([incident])));
 
       results.forEach((result, index) => {
         expect(result.stored).toHaveLength(1);
@@ -576,43 +577,43 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             {
               timestamp: '2025-01-01T08:00:00Z',
               event: 'Initial alerts triggered for high error rates',
-              actor: 'monitoring-system'
+              actor: 'monitoring-system',
             },
             {
               timestamp: '2025-01-01T08:05:00Z',
               event: 'On-call engineer acknowledges alert',
-              actor: 'on-call-engineer'
+              actor: 'on-call-engineer',
             },
             {
               timestamp: '2025-01-01T08:15:00Z',
               event: 'Incident declared, war room activated',
-              actor: 'incident-commander'
+              actor: 'incident-commander',
             },
             {
               timestamp: '2025-01-01T08:30:00Z',
               event: 'Root cause identified in authentication service',
-              actor: 'senior-engineer'
+              actor: 'senior-engineer',
             },
             {
               timestamp: '2025-01-01T09:00:00Z',
               event: 'Fix deployed and verified',
-              actor: 'deployment-team'
+              actor: 'deployment-team',
             },
             {
               timestamp: '2025-01-01T09:15:00Z',
               event: 'Service restored to normal operation',
-              actor: 'incident-commander'
-            }
+              actor: 'incident-commander',
+            },
           ],
           root_cause_analysis: 'Authentication service memory leak causing cascade failures',
           recovery_actions: [
             'Restarted authentication service',
             'Applied memory leak patch',
             'Added additional monitoring',
-            'Updated capacity planning'
-          ]
+            'Updated capacity planning',
+          ],
         },
-        content: 'Complex incident with detailed timeline and recovery actions'
+        content: 'Complex incident with detailed timeline and recovery actions',
       };
 
       const result = await db.storeItems([incidentWithTimeline]);
@@ -631,9 +632,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Simple incident without timeline',
           severity: 'low',
           impact: 'Minor issue with quick resolution',
-          resolution_status: 'resolved'
+          resolution_status: 'resolved',
         },
-        content: 'Simple incident without timeline tracking'
+        content: 'Simple incident without timeline tracking',
       };
 
       const result = IncidentSchema.safeParse(incidentWithoutTimeline);
@@ -652,8 +653,8 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           severity: 'medium',
           impact: 'Issue still being investigated',
           resolution_status: 'investigating',
-          recovery_actions: [] // Empty array is valid
-        }
+          recovery_actions: [], // Empty array is valid
+        },
       };
 
       const result = IncidentSchema.safeParse(incidentWithEmptyRecovery);
@@ -670,30 +671,30 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Critical incident in Project A',
           severity: 'critical',
           impact: 'Project A services down',
-          resolution_status: 'open'
+          resolution_status: 'open',
         },
-        content: 'Critical incident for Project A'
+        content: 'Critical incident for Project A',
       };
 
       const incidentProjectB = {
         kind: 'incident' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Minor incident in Project B',
           severity: 'low',
           impact: 'Project B has minor issues',
-          resolution_status: 'resolved'
+          resolution_status: 'resolved',
         },
-        content: 'Minor incident for Project B'
+        content: 'Minor incident for Project B',
       };
 
       // Store both incidents
@@ -708,35 +709,35 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Production incident',
           severity: 'high',
           impact: 'Production environment affected',
-          resolution_status: 'investigating'
+          resolution_status: 'investigating',
         },
-        content: 'Production incident on main branch'
+        content: 'Production incident on main branch',
       };
 
       const incidentDev = {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'develop'
+          branch: 'develop',
         },
         data: {
           title: 'Development environment issue',
           severity: 'low',
           impact: 'Dev environment problems',
-          resolution_status: 'resolved'
+          resolution_status: 'resolved',
         },
-        content: 'Development incident on develop branch'
+        content: 'Development incident on develop branch',
       };
 
       const results = await Promise.all([
         db.storeItems([incidentMain]),
-        db.storeItems([incidentDev])
+        db.storeItems([incidentDev]),
       ]);
 
       expect(results[0].stored[0].scope.branch).toBe('main');
@@ -753,9 +754,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Test incident',
           severity: 'medium',
           impact: 'Test impact',
-          resolution_status: 'open'
+          resolution_status: 'open',
         },
-        content: 'Test incident content'
+        content: 'Test incident content',
       };
 
       // Mock upsert to throw an error
@@ -775,10 +776,11 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'HTTP 503 Service Unavailable: API Gateway Timeout (ERR_CONNECTION_TIMED_OUT)',
           severity: 'high',
-          impact: 'Users cannot complete checkout process due to payment gateway SSL certificate expiration (SSL_CERT_HAS_EXPIRED)',
-          resolution_status: 'investigating'
+          impact:
+            'Users cannot complete checkout process due to payment gateway SSL certificate expiration (SSL_CERT_HAS_EXPIRED)',
+          resolution_status: 'investigating',
         },
-        content: 'Incident with special characters and error codes'
+        content: 'Incident with special characters and error codes',
       };
 
       const result = await db.storeItems([incident]);
@@ -797,9 +799,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Incident with very long impact description',
           severity: 'medium',
           impact: longImpactText,
-          resolution_status: 'open'
+          resolution_status: 'open',
         },
-        content: `Incident: ${longImpactText.substring(0, 50)}...`
+        content: `Incident: ${longImpactText.substring(0, 50)}...`,
       };
 
       const result = await db.storeItems([incident]);
@@ -824,10 +826,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
             'payment-service',
             'notification-service',
             'inventory-service',
-            'analytics-service'
-          ]
+            'analytics-service',
+          ],
         },
-        content: 'Multi-service incident affecting many services'
+        content: 'Multi-service incident affecting many services',
       };
 
       const result = await db.storeItems([incident]);
@@ -844,7 +846,7 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
         kind: 'incident' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Security incident: unauthorized access attempt',
@@ -852,15 +854,15 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           impact: 'Potential data breach detected',
           resolution_status: 'investigating',
           incident_commander: 'security-team-lead@company.com',
-          follow_up_required: true
+          follow_up_required: true,
         },
         tags: { security: true, high_severity: true, investigation: true },
         source: {
           actor: 'security-operations-center',
           tool: 'security-monitoring',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'extended' as const
+        ttl_policy: 'extended' as const,
       };
 
       const result = validateKnowledgeItem(incident);
@@ -880,10 +882,10 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'Temporary service degradation',
           severity: 'low',
           impact: 'Minor performance issues during maintenance',
-          resolution_status: 'resolved'
+          resolution_status: 'resolved',
         },
         ttl_policy: 'short' as const,
-        content: 'Temporary incident with short TTL'
+        content: 'Temporary incident with short TTL',
       };
 
       const result = await db.storeItems([incident]);
@@ -900,18 +902,19 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
           title: 'E-commerce platform checkout failure',
           severity: 'critical',
           impact: 'Users unable to complete purchases, complete revenue loss',
-          business_impact: 'Estimated revenue loss: $25,000/hour. Customer trust impact: High. Potential churn rate increase: 15%. SLA breach penalties: $10,000.',
+          business_impact:
+            'Estimated revenue loss: $25,000/hour. Customer trust impact: High. Potential churn rate increase: 15%. SLA breach penalties: $10,000.',
           resolution_status: 'resolved',
           recovery_actions: [
             'Fixed payment gateway integration',
             'Implemented circuit breaker pattern',
             'Added real-time monitoring for checkout flow',
-            'Established backup payment provider'
+            'Established backup payment provider',
           ],
           follow_up_required: true,
-          incident_commander: 'ecommerce-ops-lead@company.com'
+          incident_commander: 'ecommerce-ops-lead@company.com',
         },
-        content: 'Critical e-commerce incident with comprehensive business impact analysis'
+        content: 'Critical e-commerce incident with comprehensive business impact analysis',
       };
 
       const result = await db.storeItems([incidentWithBusinessImpact]);

@@ -1,4 +1,5 @@
 # Complete Flow Documentation - Cortex Memory MCP Server
+
 ## Store & Find Operations - Detailed Implementation Flow
 
 **Last Updated**: 2025-10-31
@@ -40,6 +41,7 @@ memory_store({
 ```
 
 ### 2. MCP Handler: `handleMemoryStore`
+
 **Location**: `src/index.ts:881-1042`
 
 ```typescript
@@ -58,7 +60,7 @@ async function handleMemoryStore(args: { items: any[] }) {
     scope: { batchId },
     metadata: {
       item_count: args.items.length,
-      item_types: args.items.map(item => item?.kind).filter(Boolean),
+      item_types: args.items.map((item) => item?.kind).filter(Boolean),
       source: 'mcp_tool',
     },
   });
@@ -68,6 +70,7 @@ async function handleMemoryStore(args: { items: any[] }) {
 ### 3. Input Validation & Transformation
 
 #### 3.1 MCP Format Validation
+
 **Location**: `src/utils/mcp-transform.ts`
 
 ```typescript
@@ -89,6 +92,7 @@ if (!mcpValidation.valid) {
 ```
 
 **Validations Performed**:
+
 - ✅ `kind` validation (16 supported types)
 - ✅ `content` validation (string, non-empty)
 - ✅ `scope` validation (org, project, branch format)
@@ -96,12 +100,14 @@ if (!mcpValidation.valid) {
 - ✅ Required field validation per knowledge type
 
 #### 3.2 Input Transformation
+
 ```typescript
 // Transform MCP input to internal KnowledgeItem format
 const transformedItems = transformMcpInputToKnowledgeItems(args.items);
 ```
 
 **Transformations Applied**:
+
 - 🔄 Field name normalization
 - 🔄 Scope defaults application
 - 🔄 Metadata enrichment
@@ -111,6 +117,7 @@ const transformedItems = transformMcpInputToKnowledgeItems(args.items);
 ### 4. Memory Store Orchestrator
 
 #### 4.1 Orchestrator Entry Point
+
 **Location**: `src/services/orchestrators/memory-store-orchestrator-qdrant.ts:112-280`
 
 ```typescript
@@ -133,6 +140,7 @@ async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
 ```
 
 #### 4.2 Service Layer Validation
+
 **Location**: `src/services/validation/validation-service.ts`
 
 ```typescript
@@ -144,6 +152,7 @@ if (!validation.valid) {
 ```
 
 **Validation Categories**:
+
 - 🔍 **Business Rules**:
   - ADR Immutability Check (decision records)
   - Spec Write Lock Check (DDL changes)
@@ -160,6 +169,7 @@ if (!validation.valid) {
 ### 5. Enhanced Semantic Chunking
 
 #### 5.1 Chunking Service Initialization
+
 **Location**: `src/services/chunking/chunking-service.ts`
 
 ```typescript
@@ -181,18 +191,21 @@ constructor(chunkSize?: number, overlapSize?: number, embeddingService?: Embeddi
 ```
 
 #### 5.2 Intelligent Chunking Process
+
 ```typescript
 // Step 2: Apply enhanced chunking to all items
 const chunkedItems = await this.chunkingService.processItemsForStorage(validItems);
 ```
 
 **Chunking Logic**:
+
 1. **Type-Based Filtering**: Only chunk `['section', 'runbook', 'incident']` types
 2. **Length Threshold**: Apply to content > 2400 characters
 3. **Semantic Analysis**: For content > 3600 characters, use semantic boundaries
 4. **Traditional Fallback**: Use natural break points for shorter content
 
 #### 5.3 Semantic Boundary Detection
+
 **Location**: `src/services/chunking/semantic-analyzer.ts`
 
 ```typescript
@@ -218,11 +231,13 @@ async analyzeSemanticBoundaries(content: string): Promise<SemanticAnalysisResult
 ```
 
 **Boundary Detection Types**:
+
 - 🚀 **Strong Boundary**: Similarity < 30% (definite topic change)
 - 🟡 **Medium Boundary**: Similarity 30-50% (likely topic shift)
 - 🟢 **Weak Boundary**: Similarity 50-70% (possible boundary)
 
 #### 5.4 Chunk Creation with Semantic Intelligence
+
 ```typescript
 private createChunksFromBoundaries(content: string, analysis: SemanticAnalysisResult): string[] {
   const chunks: string[] = [];
@@ -287,8 +302,7 @@ for (let index = 0; index < chunkedItems.length; index++) {
 
     // 📊 Log successful operation
     await auditService.logStoreOperation(
-      result.status === 'deleted' ? 'delete' :
-      result.status === 'updated' ? 'update' : 'create',
+      result.status === 'deleted' ? 'delete' : result.status === 'updated' ? 'update' : 'create',
       item.kind,
       result.id,
       item.scope,
@@ -302,7 +316,7 @@ for (let index = 0; index < chunkedItems.length; index++) {
       index,
       error_code: 'STORAGE_ERROR',
       message: error.message,
-      details: { item_kind: item.kind, item_id: item.id }
+      details: { item_kind: item.kind, item_id: item.id },
     };
     errors.push(storeError);
   }
@@ -312,6 +326,7 @@ for (let index = 0; index < chunkedItems.length; index++) {
 ### 7. Advanced Duplicate Detection
 
 #### 7.1 Comprehensive Duplicate Detection
+
 **Location**: `src/services/orchestrators/memory-store-orchestrator-qdrant.ts`
 
 ```typescript
@@ -357,6 +372,7 @@ async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
 ```
 
 #### 7.2 Deduplication Rules
+
 - **Same Kind + Same Scope**: Strict deduplication
 - **Different Kind**: No deduplication (different knowledge types)
 - **Time-Based Rules**: Consider recency (7-day window)
@@ -365,6 +381,7 @@ async detectDuplicates(item: KnowledgeItem): Promise<DuplicateDetectionResult> {
 ### 8. Database Storage with Qdrant
 
 #### 8.1 Vector Storage Process
+
 **Location**: `src/db/qdrant-client.ts`
 
 ```typescript
@@ -409,30 +426,35 @@ async store(item: KnowledgeItem): Promise<StoreResult> {
 ### 9. TTL & Expiry Management
 
 #### 9.1 TTL Policy Application
+
 **Location**: `src/utils/tl-utils.ts`
 
 ```typescript
 const TTL_DURATIONS = {
-  short: 30 * 24 * 60 * 60 * 1000,    // 30 days
-  default: 90 * 24 * 60 * 60 * 1000,  // 90 days
-  long: 365 * 24 * 60 * 60 * 1000,   // 365 days
-  permanent: Infinity,                 // No expiration
+  short: 30 * 24 * 60 * 60 * 1000, // 30 days
+  default: 90 * 24 * 60 * 60 * 1000, // 90 days
+  long: 365 * 24 * 60 * 60 * 1000, // 365 days
+  permanent: Infinity, // No expiration
 };
 
 function getDefaultTTLPolicy(kind: string): TTLPolicy {
   switch (kind) {
-    case 'pr_context': return 'short';      // 30 days
+    case 'pr_context':
+      return 'short'; // 30 days
     case 'entity':
     case 'relation':
     case 'observation':
     case 'decision':
-    case 'section': return 'long';          // 365 days
-    default: return 'default';             // 90 days
+    case 'section':
+      return 'long'; // 365 days
+    default:
+      return 'default'; // 90 days
   }
 }
 ```
 
 #### 9.2 TTL Application Rules
+
 - 🕐 **Short TTL** (30 days): `pr_context`
 - 🕐 **Default TTL** (90 days): `todo`, `issue`, `change`, `runbook`, `release_note`, `incident`, `risk`, `assumption`
 - 🕐 **Long TTL** (365 days): `entity`, `relation`, `observation`, `decision`, `section`, `release`
@@ -441,6 +463,7 @@ function getDefaultTTLPolicy(kind: string): TTLPolicy {
 ### 10. Response Generation & Analytics
 
 #### 10.1 Enhanced Response Format
+
 ```typescript
 const itemResults: ItemResult[] = stored.map((result, index) => {
   const duplicateResult = duplicateResults[index];
@@ -474,6 +497,7 @@ const itemResults: ItemResult[] = stored.map((result, index) => {
 ```
 
 #### 10.2 Batch Summary
+
 ```typescript
 const summary: BatchSummary = {
   stored: storedCount,
@@ -485,22 +509,23 @@ const summary: BatchSummary = {
 ```
 
 #### 10.3 Autonomous Context Generation
+
 ```typescript
 const autonomousContext: AutonomousContext = {
   operations_summary: {
     total_items: stored.length + errors.length,
-    successful_stores: stored.filter(s => s.status === 'stored').length,
-    duplicates_skipped: stored.filter(s => s.status === 'skipped_dedupe').length,
+    successful_stores: stored.filter((s) => s.status === 'stored').length,
+    duplicates_skipped: stored.filter((s) => s.status === 'skipped_dedupe').length,
     validation_errors: errors.length,
-    business_rule_blocks: errors.filter(e => e.error_code === 'business_rule_blocked').length
+    business_rule_blocks: errors.filter((e) => e.error_code === 'business_rule_blocked').length,
   },
   duplicate_detection_stats: this.duplicateDetectionStats,
   knowledge_graph_changes: this.analyzeGraphChanges(stored),
   performance_metrics: {
     total_duration: Date.now() - startTime,
     average_item_duration: (Date.now() - startTime) / (stored.length + errors.length),
-    chunking_efficiency: this.calculateChunkingEfficiency()
-  }
+    chunking_efficiency: this.calculateChunkingEfficiency(),
+  },
 };
 ```
 
@@ -508,23 +533,29 @@ const autonomousContext: AutonomousContext = {
 
 ```typescript
 return {
-  content: [{
-    type: 'text',
-    text: JSON.stringify({
-      success,
-      stored: response.stored.length,
-      stored_items: response.stored,
-      errors: response.errors,
-      summary: response.summary,
-      autonomous_context: response.autonomous_context,
-      total: args.items.length,
-      audit_metadata: {
-        batch_id: batchId,
-        duration_ms: duration,
-        audit_logged: true,
-      },
-    }, null, 2),
-  }],
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify(
+        {
+          success,
+          stored: response.stored.length,
+          stored_items: response.stored,
+          errors: response.errors,
+          summary: response.summary,
+          autonomous_context: response.autonomous_context,
+          total: args.items.length,
+          audit_metadata: {
+            batch_id: batchId,
+            duration_ms: duration,
+            audit_logged: true,
+          },
+        },
+        null,
+        2
+      ),
+    },
+  ],
 };
 ```
 
@@ -551,6 +582,7 @@ memory_find({
 ```
 
 ### 2. MCP Handler: `handleMemoryFind`
+
 **Location**: `src/index.ts`
 
 ```typescript
@@ -578,6 +610,7 @@ async function handleMemoryFind(args: any) {
 ### 3. Find Orchestrator
 
 #### 3.1 Orchestrator Entry Point
+
 **Location**: `src/services/orchestrators/memory-find-orchestrator-qdrant.ts`
 
 ```typescript
@@ -603,6 +636,7 @@ async findItems(query: string, options: FindOptions = {}): Promise<MemoryFindRes
 ### 4. Search Mode Selection
 
 #### 4.1 Mode-Based Search Strategy
+
 ```typescript
 switch (mode) {
   case 'fast':
@@ -623,6 +657,7 @@ switch (mode) {
 ```
 
 #### 4.2 Fast Search (Keyword Matching)
+
 ```typescript
 private async performFastSearch(query: string, options: FindOptions): Promise<MemoryFindResponse> {
   // Use Qdrant's text search capabilities
@@ -653,6 +688,7 @@ private async performFastSearch(query: string, options: FindOptions): Promise<Me
 ```
 
 #### 4.3 Auto Search (Hybrid Approach)
+
 ```typescript
 private async performAutoSearch(query: string, options: FindOptions): Promise<MemoryFindResponse> {
   // Step 1: Generate query embedding
@@ -714,6 +750,7 @@ private async performAutoSearch(query: string, options: FindOptions): Promise<Me
 ```
 
 #### 4.4 Deep Search (Comprehensive with Graph Expansion)
+
 ```typescript
 private async performDeepSearch(query: string, options: FindOptions): Promise<MemoryFindResponse> {
   // Step 1: Perform auto search as base
@@ -748,6 +785,7 @@ private async performDeepSearch(query: string, options: FindOptions): Promise<Me
 ### 5. Chunk Reassembly Process
 
 #### 5.1 Chunk Detection and Grouping
+
 ```typescript
 private async reassembleChunks(searchResults: SearchResult[]): Promise<SearchResult[]> {
   // Step 1: Group chunks by parent_id
@@ -799,6 +837,7 @@ private async reassembleChunks(searchResults: SearchResult[]): Promise<SearchRes
 ```
 
 #### 5.2 Quality Assurance for Reassembly
+
 ```typescript
 private validateReassembledContent(reassembledResult: SearchResult): boolean {
   const content = reassembledResult.payload.content;
@@ -821,6 +860,7 @@ private validateReassembledContent(reassembledResult: SearchResult): boolean {
 ### 6. Graph Expansion
 
 #### 6.1 Related Entity Discovery
+
 ```typescript
 private async expandGraphResults(items: KnowledgeItem[], expansionType: string): Promise<KnowledgeItem[]> {
   const expandedItems = new Set(items);
@@ -860,6 +900,7 @@ private async expandGraphResults(items: KnowledgeItem[], expansionType: string):
 ```
 
 #### 6.2 Relationship Traversal
+
 ```typescript
 private async findRelatedRelations(entity: KnowledgeItem): Promise<KnowledgeItem[]> {
   // Find relations where this entity is source or target
@@ -917,6 +958,7 @@ private async findRelatedRelations(entity: KnowledgeItem): Promise<KnowledgeItem
 ### 7. Result Ranking and Filtering
 
 #### 7.1 Multi-Factor Scoring
+
 ```typescript
 private async rerankResults(query: string, items: KnowledgeItem[]): Promise<KnowledgeItem[]> {
   const queryEmbedding = await this.embeddingService.generateEmbedding(query);
@@ -955,6 +997,7 @@ private async rerankResults(query: string, items: KnowledgeItem[]): Promise<Know
 ```
 
 #### 7.2 Keyword Scoring
+
 ```typescript
 private calculateKeywordScore(query: string, item: KnowledgeItem): number {
   const queryTerms = query.toLowerCase().split(/\s+/);
@@ -974,6 +1017,7 @@ private calculateKeywordScore(query: string, item: KnowledgeItem): number {
 ```
 
 #### 7.3 Recency Scoring
+
 ```typescript
 private calculateRecencyScore(item: KnowledgeItem): number {
   if (!item.created_at) return 0.5; // Default score for items without timestamp
@@ -990,9 +1034,10 @@ private calculateRecencyScore(item: KnowledgeItem): number {
 ### 8. Final Response Assembly
 
 #### 8.1 Response Format
+
 ```typescript
 const response: MemoryFindResponse = {
-  items: finalItems.map(item => ({
+  items: finalItems.map((item) => ({
     id: item.id,
     kind: item.kind,
     content: item.content,
@@ -1001,7 +1046,7 @@ const response: MemoryFindResponse = {
     created_at: item.created_at,
     updated_at: item.updated_at,
     _searchScore: item._searchScore,
-    _isReassembled: item._isReassembled || false
+    _isReassembled: item._isReassembled || false,
   })),
   query_metadata: {
     mode: searchMode,
@@ -1012,28 +1057,35 @@ const response: MemoryFindResponse = {
     semantic_threshold: modeConfig.semanticThreshold,
     chunks_reassembled: reassemblyStats.chunksReassembled,
     graph_expansion: options.expand,
-    expansion_stats: expansionStats
-  }
+    expansion_stats: expansionStats,
+  },
 };
 ```
 
 #### 8.2 MCP Response
+
 ```typescript
 return {
-  content: [{
-    type: 'text',
-    text: JSON.stringify({
-      success: true,
-      items: response.items,
-      total: response.items.length,
-      query_metadata: response.query_metadata,
-      audit_metadata: {
-        query_id: `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        duration_ms: Date.now() - startTime,
-        audit_logged: true,
-      },
-    }, null, 2),
-  }],
+  content: [
+    {
+      type: 'text',
+      text: JSON.stringify(
+        {
+          success: true,
+          items: response.items,
+          total: response.items.length,
+          query_metadata: response.query_metadata,
+          audit_metadata: {
+            query_id: `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            duration_ms: Date.now() - startTime,
+            audit_logged: true,
+          },
+        },
+        null,
+        2
+      ),
+    },
+  ],
 };
 ```
 
@@ -1079,50 +1131,53 @@ return {
 ## 🔧 Configuration & Tuning
 
 ### Semantic Chunking Configuration
+
 ```typescript
 const semanticConfig = {
-  strong_boundary_threshold: 0.3,  // Very low similarity = strong boundary
-  medium_boundary_threshold: 0.5,  // Low similarity = medium boundary
-  weak_boundary_threshold: 0.7,    // Medium similarity = weak boundary
-  window_size: 3,                  // Analyze 3 sentences before/after
-  min_chunk_sentences: 2,          // At least 2 sentences per chunk
-  max_chunk_sentences: 15,         // No more than 15 sentences per chunk
+  strong_boundary_threshold: 0.3, // Very low similarity = strong boundary
+  medium_boundary_threshold: 0.5, // Low similarity = medium boundary
+  weak_boundary_threshold: 0.7, // Medium similarity = weak boundary
+  window_size: 3, // Analyze 3 sentences before/after
+  min_chunk_sentences: 2, // At least 2 sentences per chunk
+  max_chunk_sentences: 15, // No more than 15 sentences per chunk
   enable_caching: true,
-  cache_ttl: 3600000,             // 1 hour
+  cache_ttl: 3600000, // 1 hour
 };
 ```
 
 ### Search Mode Tuning
+
 ```typescript
 const searchModes = {
   fast: {
     semanticThreshold: 0.8,
     limit: 20,
-    enableExpansion: false
+    enableExpansion: false,
   },
   auto: {
     semanticThreshold: 0.6,
     limit: 10,
-    enableExpansion: false
+    enableExpansion: false,
   },
   deep: {
     semanticThreshold: 0.5,
     limit: 10,
-    enableExpansion: true
-  }
+    enableExpansion: true,
+  },
 };
 ```
 
 ### TTL Policies
+
 ```typescript
 const ttlPolicies = {
-  pr_context: 'short',      // 30 days
-  entity: 'long',           // 90 days
-  relation: 'long',         // 90 days
-  observation: 'long',      // 90 days
-  decision: 'long',         // 90 days
-  section: 'long',          // 90 days
-  default: 'default'        // 90 days for all others
+  pr_context: 'short', // 30 days
+  entity: 'long', // 90 days
+  relation: 'long', // 90 days
+  observation: 'long', // 90 days
+  decision: 'long', // 90 days
+  section: 'long', // 90 days
+  default: 'default', // 90 days for all others
 };
 ```
 
@@ -1131,18 +1186,21 @@ const ttlPolicies = {
 ## 🚀 Next Steps & Roadmap
 
 ### Phase 1: Complete Core Features
+
 1. ✅ Semantic chunking implementation
 2. 🔄 TTL persistence and automatic purge
 3. 🔄 Enhanced dedupe rule documentation
 4. 🔄 Default scope testing
 
 ### Phase 2: Advanced Features
+
 1. 📋 True semantic chunking (beyond length-based)
 2. 📋 Advanced graph traversal algorithms
 3. 📋 Real-time collaboration features
 4. 📋 Advanced analytics and insights
 
 ### Phase 3: Enterprise Features
+
 1. 📋 Comprehensive MCP schema validation
 2. 📋 Multi-tenant isolation
 3. 📋 Advanced audit and compliance
@@ -1150,4 +1208,4 @@ const ttlPolicies = {
 
 ---
 
-*This documentation represents the current state of the Cortex Memory MCP Server implementation. Features marked as "completed" are fully functional and tested. Features marked as "in progress" are partially implemented and may have limitations.*
+_This documentation represents the current state of the Cortex Memory MCP Server implementation. Features marked as "completed" are fully functional and tested. Features marked as "in progress" are partially implemented and may have limitations._

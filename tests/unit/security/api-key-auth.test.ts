@@ -3,15 +3,7 @@
  * Tests API key management, validation, authentication flows, authorization, and security features
  */
 
-import {
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  type MockedFunction
-} from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { ApiKeyService } from '../../../src/services/auth/api-key-service.js';
 import {
   UserRole,
@@ -20,7 +12,7 @@ import {
   User,
   AuthContext,
   SecurityAuditLog,
-  DEFAULT_ROLE_PERMISSIONS
+  DEFAULT_ROLE_PERMISSIONS,
 } from '../../../src/types/auth-types.js';
 
 // Mock dependencies
@@ -30,8 +22,16 @@ vi.mock('../../../src/utils/logger.js', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     debug: vi.fn(),
-  }
+  },
 }));
+
+// Create mockLogger instance for tests
+const mockLogger = {
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+};
 
 // Mock crypto with proper default export
 let uuidCounter = 1;
@@ -59,24 +59,27 @@ vi.mock('../../../src/services/auth/auth-service.js', () => ({
   AuthService: vi.fn().mockImplementation(() => ({
     generateApiKey: vi.fn(() => ({
       keyId: `ck_test_${String(keyIdCounter++).padStart(22, '0')}`,
-      key: `ck_test_${String(keyIdCounter).padStart(22, '0')}abcdef`
+      key: `ck_test_${String(keyIdCounter).padStart(22, '0')}abcdef`,
     })),
     hashApiKey: vi.fn(() => Promise.resolve(`hashed-api-key-${hashCounter++}`)),
     verifyApiKey: vi.fn(() => Promise.resolve(true)),
     getUserMaxScopes: vi.fn(() => Object.values(AuthScope)),
-  }))
+  })),
 }));
 
 // Mock AuditService
 vi.mock('../../../src/services/audit/audit-service.js', () => ({
   AuditService: vi.fn().mockImplementation(() => ({
     logSecurityAuditEvent: vi.fn(() => Promise.resolve()),
-  }))
+  })),
 }));
 
 // Get mock instances for use in tests
 const mockAuthService = {
-  generateApiKey: vi.fn(() => ({ keyId: 'ck_test_1234567890123456789012', key: 'ck_test_1234567890123456789012abcdef' })),
+  generateApiKey: vi.fn(() => ({
+    keyId: 'ck_test_1234567890123456789012',
+    key: 'ck_test_1234567890123456789012abcdef',
+  })),
   hashApiKey: vi.fn(() => Promise.resolve('hashed-api-key')),
   verifyApiKey: vi.fn(() => Promise.resolve(true)),
   getUserMaxScopes: vi.fn(() => Object.values(AuthScope)),
@@ -99,6 +102,9 @@ describe('ApiKeyService', () => {
     keyIdCounter = 1;
     hashCounter = 1;
 
+    // Clear mock logger
+    Object.values(mockLogger).forEach((method) => method.mockClear());
+
     // Setup default mock behavior - user has access to all scopes
     mockAuthService.getUserMaxScopes.mockReturnValue(Object.values(AuthScope));
 
@@ -115,10 +121,7 @@ describe('ApiKeyService', () => {
     };
 
     // Create service instance with mocked dependencies
-    apiKeyService = new ApiKeyService(
-      mockAuthService as any,
-      mockAuditService as any
-    );
+    apiKeyService = new ApiKeyService(mockAuthService as any, mockAuditService as any);
   });
 
   afterEach(() => {
@@ -331,8 +334,14 @@ describe('ApiKeyService', () => {
   describe('API Key Lifecycle Management', () => {
     test('should list all API keys for user', async () => {
       // Arrange
-      await apiKeyService.createApiKey(testUser, { name: 'Key 1', scopes: [AuthScope._MEMORY_READ] });
-      await apiKeyService.createApiKey(testUser, { name: 'Key 2', scopes: [AuthScope._MEMORY_WRITE] });
+      await apiKeyService.createApiKey(testUser, {
+        name: 'Key 1',
+        scopes: [AuthScope._MEMORY_READ],
+      });
+      await apiKeyService.createApiKey(testUser, {
+        name: 'Key 2',
+        scopes: [AuthScope._MEMORY_WRITE],
+      });
 
       // Act
       const keys = await apiKeyService.listApiKeys(testUser);
@@ -376,7 +385,11 @@ describe('ApiKeyService', () => {
       const context = { ip_address: '192.168.1.100', user_agent: 'Test-Client' };
 
       // Act
-      const revoked = await apiKeyService.revokeApiKey(testUser, createResult.key_info.key_id, context);
+      const revoked = await apiKeyService.revokeApiKey(
+        testUser,
+        createResult.key_info.key_id,
+        context
+      );
 
       // Assert
       expect(revoked).toBe(true);
@@ -406,7 +419,11 @@ describe('ApiKeyService', () => {
       };
 
       // Act
-      const updated = await apiKeyService.updateApiKey(testUser, createResult.key_info.key_id, updates);
+      const updated = await apiKeyService.updateApiKey(
+        testUser,
+        createResult.key_info.key_id,
+        updates
+      );
 
       // Assert
       expect(updated).toBeDefined();
@@ -427,8 +444,9 @@ describe('ApiKeyService', () => {
       };
 
       // Act & Assert
-      await expect(apiKeyService.updateApiKey(testUser, createResult.key_info.key_id, updates))
-        .rejects.toThrow('User not allowed to assign scopes: system:manage');
+      await expect(
+        apiKeyService.updateApiKey(testUser, createResult.key_info.key_id, updates)
+      ).rejects.toThrow('User not allowed to assign scopes: system:manage');
     });
   });
 
@@ -467,8 +485,9 @@ describe('ApiKeyService', () => {
       const context = { ip_address: '192.168.1.100', user_agent: 'Test-Client' };
 
       // Act & Assert
-      expect(() => apiKeyService.createAuthContextFromApiKey(invalidValidation as any, context))
-        .toThrow('Invalid API key validation result');
+      expect(() =>
+        apiKeyService.createAuthContextFromApiKey(invalidValidation as any, context)
+      ).toThrow('Invalid API key validation result');
     });
 
     test('should enforce scope-based access control', async () => {
@@ -483,16 +502,20 @@ describe('ApiKeyService', () => {
 
       // Act & Assert
       // Should allow read scopes
-      await expect(apiKeyService.createApiKey(readOnlyUser, {
-        name: 'Read Key',
-        scopes: [AuthScope._MEMORY_READ, AuthScope._KNOWLEDGE_READ],
-      })).resolves.toBeDefined();
+      await expect(
+        apiKeyService.createApiKey(readOnlyUser, {
+          name: 'Read Key',
+          scopes: [AuthScope._MEMORY_READ, AuthScope._KNOWLEDGE_READ],
+        })
+      ).resolves.toBeDefined();
 
       // Should reject admin scopes
-      await expect(apiKeyService.createApiKey(readOnlyUser, {
-        name: 'Admin Key',
-        scopes: [AuthScope._SYSTEM_MANAGE],
-      })).rejects.toThrow('User not allowed to create API key with scopes: system:manage');
+      await expect(
+        apiKeyService.createApiKey(readOnlyUser, {
+          name: 'Admin Key',
+          scopes: [AuthScope._SYSTEM_MANAGE],
+        })
+      ).rejects.toThrow('User not allowed to create API key with scopes: system:manage');
     });
   });
 
@@ -550,7 +573,10 @@ describe('ApiKeyService', () => {
         { ip_address: '203.0.113.1', user_agent: 'Client-B' }, // Different IP
       ];
 
-      await apiKeyService.createApiKey(testUser, { name: 'Multi-IP Key', scopes: [AuthScope._MEMORY_READ] });
+      await apiKeyService.createApiKey(testUser, {
+        name: 'Multi-IP Key',
+        scopes: [AuthScope._MEMORY_READ],
+      });
 
       // Act - validate from different IPs
       for (const context of contexts) {
@@ -576,13 +602,19 @@ describe('ApiKeyService', () => {
   describe('Usage Statistics and Monitoring', () => {
     test('should provide comprehensive usage statistics', async () => {
       // Arrange
-      await apiKeyService.createApiKey(testUser, { name: 'Active Key', scopes: [AuthScope._MEMORY_READ] });
+      await apiKeyService.createApiKey(testUser, {
+        name: 'Active Key',
+        scopes: [AuthScope._MEMORY_READ],
+      });
       await apiKeyService.createApiKey(testUser, {
         name: 'Expired Key',
         scopes: [AuthScope._MEMORY_WRITE],
         expires_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       });
-      await apiKeyService.createApiKey(testUser, { name: 'Another Key', scopes: [AuthScope._KNOWLEDGE_READ] });
+      await apiKeyService.createApiKey(testUser, {
+        name: 'Another Key',
+        scopes: [AuthScope._KNOWLEDGE_READ],
+      });
 
       // Act
       const stats = await apiKeyService.getApiKeyUsageStats(testUser);
@@ -688,26 +720,26 @@ describe('ApiKeyService', () => {
 
       // Assert
       expect(cleanedCount).toBe(2);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        { count: 2 },
-        'Cleaned up expired API keys'
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith({ count: 2 }, 'Cleaned up expired API keys');
     });
 
     test('should handle cleanup errors gracefully', async () => {
       // Arrange - mock an error during cleanup
       const originalKeys = apiKeyService['apiKeys'];
       apiKeyService['apiKeys'] = new Map([
-        ['test-key', {
-          id: 'test',
-          key_id: 'test',
-          key_hash: 'test',
-          user_id: 'user',
-          name: 'Test',
-          scopes: [],
-          is_active: false,
-          created_at: 'invalid-date', // This will cause an error
-        }],
+        [
+          'test-key',
+          {
+            id: 'test',
+            key_id: 'test',
+            key_hash: 'test',
+            user_id: 'user',
+            name: 'Test',
+            scopes: [],
+            is_active: false,
+            created_at: 'invalid-date', // This will cause an error
+          },
+        ],
       ]) as any;
 
       // Act & Assert - should not throw
@@ -735,7 +767,7 @@ describe('ApiKeyService', () => {
 
       // Assert
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.valid).toBe(true);
       });
     });
@@ -789,7 +821,7 @@ describe('ApiKeyService', () => {
       // Assert
       expect(results).toHaveLength(validationCount);
       expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.valid).toBe(true);
       });
     });
@@ -885,13 +917,13 @@ describe('ApiKeyService', () => {
       for (const request of invalidRequests) {
         // Act & Assert
         if (request === null || request === undefined) {
-          await expect(apiKeyService.createApiKey(testUser, request as any))
-            .rejects.toThrow();
+          await expect(apiKeyService.createApiKey(testUser, request as any)).rejects.toThrow();
         } else if ((request as any).scopes?.includes('invalid-scope')) {
           // This should be handled by scope validation
           mockAuthService.getUserMaxScopes.mockReturnValue([]);
-          await expect(apiKeyService.createApiKey(testUser, request))
-            .rejects.toThrow('User not allowed to create API key with scopes: invalid-scope');
+          await expect(apiKeyService.createApiKey(testUser, request)).rejects.toThrow(
+            'User not allowed to create API key with scopes: invalid-scope'
+          );
         }
       }
     });
@@ -901,10 +933,12 @@ describe('ApiKeyService', () => {
       mockAuthService.hashApiKey.mockRejectedValue(new Error('Hashing service unavailable'));
 
       // Act & Assert
-      await expect(apiKeyService.createApiKey(testUser, {
-        name: 'Failure Test Key',
-        scopes: [AuthScope._MEMORY_READ],
-      })).rejects.toThrow('Hashing service unavailable');
+      await expect(
+        apiKeyService.createApiKey(testUser, {
+          name: 'Failure Test Key',
+          scopes: [AuthScope._MEMORY_READ],
+        })
+      ).rejects.toThrow('Hashing service unavailable');
     });
 
     test('should validate user status before operations', async () => {
@@ -917,10 +951,12 @@ describe('ApiKeyService', () => {
       // Act & Assert - should handle inactive user appropriately
       // Note: The current implementation doesn't explicitly check user.is_active,
       // but this test ensures the behavior if that validation is added
-      await expect(apiKeyService.createApiKey(inactiveUser, {
-        name: 'Inactive User Key',
-        scopes: [AuthScope._MEMORY_READ],
-      })).resolves.toBeDefined(); // Current behavior
+      await expect(
+        apiKeyService.createApiKey(inactiveUser, {
+          name: 'Inactive User Key',
+          scopes: [AuthScope._MEMORY_READ],
+        })
+      ).resolves.toBeDefined(); // Current behavior
     });
 
     test('should handle extremely long key names and descriptions', async () => {
@@ -958,7 +994,7 @@ describe('ApiKeyService', () => {
 
       // Assert
       expect(generatedKeys.size).toBe(keyCount); // All keys should be unique
-      generatedKeys.forEach(key => {
+      generatedKeys.forEach((key) => {
         expect(key).toMatch(/^ck_/);
         expect(key.length).toBeGreaterThan(30);
       });
@@ -979,7 +1015,10 @@ describe('ApiKeyService', () => {
 
       // Act
       for (const context of contexts) {
-        const result = await apiKeyService.validateApiKey('ck_test_1234567890123456789012abcdef', context);
+        const result = await apiKeyService.validateApiKey(
+          'ck_test_1234567890123456789012abcdef',
+          context
+        );
         expect(result.valid).toBe(true);
       }
 
@@ -998,15 +1037,19 @@ describe('ApiKeyService', () => {
       );
 
       // Act & Assert
-      await expect(apiKeyService.createApiKey(serviceUser, {
-        name: 'Service Key',
-        scopes: [AuthScope._MEMORY_WRITE, AuthScope._KNOWLEDGE_WRITE],
-      })).resolves.toBeDefined();
+      await expect(
+        apiKeyService.createApiKey(serviceUser, {
+          name: 'Service Key',
+          scopes: [AuthScope._MEMORY_WRITE, AuthScope._KNOWLEDGE_WRITE],
+        })
+      ).resolves.toBeDefined();
 
-      await expect(apiKeyService.createApiKey(serviceUser, {
-        name: 'Invalid Service Key',
-        scopes: [AuthScope._USER_MANAGE], // Service accounts shouldn't manage users
-      })).rejects.toThrow('User not allowed to create API key with scopes: user:manage');
+      await expect(
+        apiKeyService.createApiKey(serviceUser, {
+          name: 'Invalid Service Key',
+          scopes: [AuthScope._USER_MANAGE], // Service accounts shouldn't manage users
+        })
+      ).rejects.toThrow('User not allowed to create API key with scopes: user:manage');
     });
   });
 });

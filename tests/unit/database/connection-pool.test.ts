@@ -15,7 +15,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { QdrantConnectionManager, type QdrantConfig, type ConnectionStats } from '../../../src/db/pool';
+import {
+  QdrantConnectionManager,
+  type QdrantConfig,
+  type ConnectionStats,
+} from '../../../src/db/pool';
 
 // Mock connection wrapper for pool testing
 class MockConnection {
@@ -82,7 +86,7 @@ const { mockQdrantClient } = vi.hoisted(() => {
     delete: vi.fn(),
     scroll: vi.fn(),
     createSnapshot: vi.fn(),
-    close: vi.fn()
+    close: vi.fn(),
   };
   return { mockQdrantClient };
 });
@@ -93,7 +97,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
       this.config = config;
       return mockQdrantClient;
     }
-  }
+  },
 }));
 
 describe.skip('Database Connection Pool - Architectural Mismatch', () => {
@@ -111,7 +115,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       maxRetries: 3,
       retryDelay: 1000,
       acquireTimeout: 3000,
-      connectionFactory: createMockConnection
+      connectionFactory: createMockConnection,
     };
 
     // Reset all mocks
@@ -120,7 +124,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
     // Mock successful health checks by default
     mockQdrantClient.healthCheck.mockResolvedValue(true);
     mockQdrantClient.getCollections.mockResolvedValue({
-      collections: [{ name: 'test-collection' }]
+      collections: [{ name: 'test-collection' }],
     });
 
     pool = new QdrantConnectionManager(poolConfig);
@@ -160,7 +164,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
         new DatabaseConnectionPool({
           ...poolConfig,
           minConnections: 5,
-          maxConnections: 3
+          maxConnections: 3,
         });
       }).toThrow('minConnections cannot be greater than maxConnections');
     });
@@ -170,7 +174,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
         ...poolConfig,
         connectionFactory: () => {
           throw new Error('Connection creation failed');
-        }
+        },
       });
 
       await expect(faultyPool.initialize()).rejects.toThrow('Connection creation failed');
@@ -204,7 +208,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
         ...poolConfig,
         acquireTimeout: 100,
         connectionTimeout: 1000,
-        idleTimeout: 5000
+        idleTimeout: 5000,
       });
 
       await customPool.initialize();
@@ -260,7 +264,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       expect(stats.totalConnections).toBe(poolConfig.minConnections - 1);
 
       // Pool should create new connection to maintain minimum
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       const updatedStats = pool.getStats();
       expect(updatedStats.totalConnections).toBe(poolConfig.minConnections);
     });
@@ -313,10 +317,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
 
       // Create concurrent acquire/release operations
       for (let i = 0; i < 20; i++) {
-        operations.push(
-          pool.acquire()
-            .then(connection => pool.release(connection))
-        );
+        operations.push(pool.acquire().then((connection) => pool.release(connection)));
       }
 
       await Promise.all(operations);
@@ -377,16 +378,17 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       // Create many concurrent operations
       for (let i = 0; i < 50; i++) {
         promises.push(
-          pool.acquire()
-            .then(async connection => {
+          pool
+            .acquire()
+            .then(async (connection) => {
               await connection.execute(async () => {
                 // Simulate database operation
-                await new Promise(resolve => setTimeout(resolve, 10));
+                await new Promise((resolve) => setTimeout(resolve, 10));
                 return `result_${i}`;
               });
               return connection;
             })
-            .then(connection => pool.release(connection))
+            .then((connection) => pool.release(connection))
         );
       }
 
@@ -404,10 +406,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       // Perform burst of operations
       const burst = [];
       for (let i = 0; i < 10; i++) {
-        burst.push(
-          pool.acquire()
-            .then(conn => pool.release(conn))
-        );
+        burst.push(pool.acquire().then((conn) => pool.release(conn)));
       }
       await Promise.all(burst);
 
@@ -426,10 +425,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
 
         const operations = [];
         for (let i = 0; i < 20; i++) {
-          operations.push(
-            pool.acquire()
-              .then(conn => pool.release(conn))
-          );
+          operations.push(pool.acquire().then((conn) => pool.release(conn)));
         }
         await Promise.all(operations);
 
@@ -458,7 +454,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
             throw new Error(`Connection failure ${faultyPool.connectionFailures}`);
           }
           return createMockConnection();
-        }
+        },
       });
 
       // Should recover and initialize successfully
@@ -498,10 +494,10 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
         ...poolConfig,
         acquireTimeout: 100,
         connectionFactory: () => {
-          return new Promise(resolve => {
+          return new Promise((resolve) => {
             setTimeout(() => resolve(createMockConnection()), 200);
           });
-        }
+        },
       });
 
       await slowPool.initialize();
@@ -521,7 +517,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       await pool.release(connection);
 
       // Pool should detect and remove dead connection
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const stats = pool.getStats();
       expect(stats.deadConnections).toBe(0); // Should be cleaned up
@@ -533,14 +529,10 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       // Simulate network error during operation
       const faultyOperation = vi.fn().mockRejectedValue(new Error('Network interrupted'));
 
-      await expect(
-        connection.execute(faultyOperation)
-      ).rejects.toThrow('Network interrupted');
+      await expect(connection.execute(faultyOperation)).rejects.toThrow('Network interrupted');
 
       // Connection should still be usable after error
-      await expect(
-        connection.execute(async () => 'recovery test')
-      ).resolves.toBe('recovery test');
+      await expect(connection.execute(async () => 'recovery test')).resolves.toBe('recovery test');
 
       await pool.release(connection);
     });
@@ -549,7 +541,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const retryPool = new DatabaseConnectionPool({
         ...poolConfig,
         maxRetries: 3,
-        retryDelay: 10
+        retryDelay: 10,
       });
 
       await retryPool.initialize();
@@ -622,7 +614,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const acquireTime = Date.now() - startTime;
 
       await connection.execute(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         return 'performance test';
       });
 
@@ -709,14 +701,14 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       // Mock vector operations
       const mockVectorOperation = vi.fn().mockResolvedValue({
         ids: ['vector_1', 'vector_2'],
-        status: 'success'
+        status: 'success',
       });
 
       const result = await connection.execute(mockVectorOperation);
 
       expect(result).toEqual({
         ids: ['vector_1', 'vector_2'],
-        status: 'success'
+        status: 'success',
       });
       expect(mockVectorOperation).toHaveBeenCalledTimes(1);
 
@@ -758,14 +750,14 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const batchItems = [
         { id: '1', data: 'item1' },
         { id: '2', data: 'item2' },
-        { id: '3', data: 'item3' }
+        { id: '3', data: 'item3' },
       ];
 
       const mockBatchOperation = vi.fn().mockResolvedValue({
         processed: 3,
         successful: 3,
         failed: 0,
-        results: batchItems
+        results: batchItems,
       });
 
       const result = await connection.execute(() => mockBatchOperation(batchItems));
@@ -783,9 +775,9 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const dbError = new Error('Database constraint violation');
       const mockFailingOperation = vi.fn().mockRejectedValue(dbError);
 
-      await expect(
-        connection.execute(mockFailingOperation)
-      ).rejects.toThrow('Database constraint violation');
+      await expect(connection.execute(mockFailingOperation)).rejects.toThrow(
+        'Database constraint violation'
+      );
 
       // Pool should remain healthy after operation error
       const stats = pool.getStats();
@@ -855,7 +847,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const zeroMinPool = new DatabaseConnectionPool({
         ...poolConfig,
         minConnections: 0,
-        maxConnections: 5
+        maxConnections: 5,
       });
 
       await zeroMinPool.initialize();
@@ -875,7 +867,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const singlePool = new DatabaseConnectionPool({
         ...poolConfig,
         minConnections: 1,
-        maxConnections: 1
+        maxConnections: 1,
       });
 
       await singlePool.initialize();
@@ -915,7 +907,7 @@ describe.skip('Database Connection Pool - Architectural Mismatch', () => {
       const connection = await pool.acquire();
       await connection.execute(async () => {
         // Simulate processing large dataset
-        return largeDataset.map(item => item.toUpperCase());
+        return largeDataset.map((item) => item.toUpperCase());
       });
       await pool.release(connection);
 

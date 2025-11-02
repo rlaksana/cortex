@@ -26,8 +26,8 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/audit', () => ({
@@ -41,8 +41,8 @@ vi.mock('../../../src/db/audit', () => ({
     getRecentActivity: vi.fn(),
     getStatistics: vi.fn(),
     cleanup: vi.fn(),
-    configureFilter: vi.fn()
-  }
+    configureFilter: vi.fn(),
+  },
 }));
 
 describe('AuditService - Comprehensive Audit Functionality', () => {
@@ -65,7 +65,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         resource: 'knowledge-entity',
         resourceId: 'entity-456',
         scope: { project: 'test-project', org: 'test-org' },
-        metadata: { action: 'create', component: 'user-service' }
+        metadata: { action: 'create', component: 'user-service' },
       };
 
       await auditService.logOperation('entity_creation', operationData);
@@ -89,8 +89,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         metadata: {
           old_values: { status: 'draft' },
           new_values: { status: 'approved' },
-          change_reason: 'review_complete'
-        }
+          change_reason: 'review_complete',
+        },
       };
 
       await auditService.logOperation('data_modification', structuredData);
@@ -122,8 +122,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         metadata: {
           checksum: 'sha256:abc123...',
           previous_hash: 'sha256:def456...',
-          verification_method: 'cryptographic_hash'
-        }
+          verification_method: 'cryptographic_hash',
+        },
       };
 
       await auditService.logOperation('integrity_check', integrityCheckData);
@@ -143,14 +143,12 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         userId: `user-${i}`,
         resource: 'bulk-resource',
         resourceId: `resource-${i}`,
-        metadata: { batch_id: 'batch-123', index: i }
+        metadata: { batch_id: 'batch-123', index: i },
       }));
 
       // Process all operations (batch size is 10, so this should trigger 2 flushes)
       await Promise.all(
-        bulkOperations.map((op, i) =>
-          auditService.logOperation(`bulk_operation_${i}`, op)
-        )
+        bulkOperations.map((op, i) => auditService.logOperation(`bulk_operation_${i}`, op))
       );
       await auditService.flush(); // Final flush
 
@@ -169,9 +167,9 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           system_resources: {
             memory_mb: 2048,
             cpu_cores: 4,
-            disk_gb: 100
-          }
-        }
+            disk_gb: 100,
+          },
+        },
       };
 
       await auditService.logOperation('system_startup', systemEvent);
@@ -196,8 +194,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           session_id: 'session-789',
           ip_address: '192.168.1.100',
           authentication_strength: 'high',
-          mfa_verified: true
-        }
+          mfa_verified: true,
+        },
       };
 
       await auditService.logOperation('user_authentication', userAction);
@@ -221,16 +219,16 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           old_data: {
             title: 'Old Title',
             status: 'draft',
-            content: 'Original content'
+            content: 'Original content',
           },
           new_data: {
             title: 'Updated Title',
             status: 'published',
-            content: 'Updated content with changes'
+            content: 'Updated content with changes',
           },
           changed_fields: ['title', 'status', 'content'],
-          change_reason: 'content_review_complete'
-        }
+          change_reason: 'content_review_complete',
+        },
       };
 
       await auditService.logOperation('data_modification', dataModification);
@@ -256,8 +254,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           attempted_methods: ['password', 'token', 'api_key'],
           failure_count: 50,
           blocked_by: 'rate_limiter',
-          threat_level: 'high'
-        }
+          threat_level: 'high',
+        },
       };
 
       await auditService.logOperation('security_incident', securityEvent);
@@ -285,8 +283,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           status_code: 200,
           api_key_id: 'key-456',
           rate_limit_remaining: 95,
-          request_id: 'req-789'
-        }
+          request_id: 'req-789',
+        },
       };
 
       await auditService.logOperation('api_access', apiAccess);
@@ -315,8 +313,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           legal_basis: 'user_consent',
           retention_period_days: 365,
           data_processor: 'cortex_system',
-          response_deadline: '30_days'
-        }
+          response_deadline: '30_days',
+        },
       };
 
       await auditService.logOperation('gdpr_compliance', gdprEvent);
@@ -343,8 +341,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           audit_period: 'Q4_2024',
           review_status: 'in_progress',
           findings_count: 0,
-          material_weaknesses: false
-        }
+          material_weaknesses: false,
+        },
       };
 
       await auditService.logOperation('sox_compliance', soxEvent);
@@ -366,14 +364,14 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           data_access: 5000,
           data_modification: 2000,
           security_events: 100,
-          system_events: 2900
+          system_events: 2900,
         },
         complianceMetrics: {
           gdpr_requests_processed: 50,
           data_breach_incidents: 2,
           audit_trail_completeness: 99.8,
-          retention_policy_compliance: 100
-        }
+          retention_policy_compliance: 100,
+        },
       };
 
       vi.mocked(auditLogger.getStatistics).mockResolvedValue(mockComplianceData);
@@ -400,8 +398,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           lawful_basis: 'legitimate_interest',
           data_purposes: ['analytics', 'improvement'],
           withdrawal_mechanism: 'account_settings',
-          consent_expiry: '2025-01-01'
-        }
+          consent_expiry: '2025-01-01',
+        },
       };
 
       await auditService.logOperation('privacy_compliance', privacyEvent);
@@ -428,8 +426,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           evidence_type: 'audit_log_review',
           review_period: 'quarterly',
           exceptions: 0,
-          remediation_required: false
-        }
+          remediation_required: false,
+        },
       };
 
       await auditService.logOperation('security_compliance', securityComplianceEvent);
@@ -458,7 +456,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           changed_by: 'user-456',
           tags: { project: 'test-project' },
           metadata: { access_reason: 'user_query' },
-          changed_at: new Date('2024-01-15T10:30:00Z')
+          changed_at: new Date('2024-01-15T10:30:00Z'),
         },
         {
           id: 'audit-2',
@@ -469,13 +467,13 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           changed_by: 'user-456',
           tags: { project: 'test-project' },
           metadata: { change_reason: 'approval' },
-          changed_at: new Date('2024-01-15T11:00:00Z')
-        }
+          changed_at: new Date('2024-01-15T11:00:00Z'),
+        },
       ];
 
       vi.mocked(auditLogger.queryEvents).mockResolvedValue({
         events: mockQueryResults,
-        total: mockQueryResults.length
+        total: mockQueryResults.length,
       });
 
       const queryOptions: AuditQueryOptions = {
@@ -484,7 +482,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         endDate: new Date('2024-01-31'),
         limit: 50,
         orderBy: 'changed_at',
-        orderDirection: 'DESC'
+        orderDirection: 'DESC',
       };
 
       const result = await auditLogger.queryEvents(queryOptions);
@@ -495,7 +493,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
       expect(result.events[0]).toMatchObject({
         eventType: 'data_access',
         changed_by: 'user-456',
-        table_name: 'knowledge_entity'
+        table_name: 'knowledge_entity',
       });
     });
 
@@ -505,33 +503,33 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           total_auditable_events: 50000,
           critical_events: 125,
           high_risk_events: 890,
-          compliance_score: 98.5
+          compliance_score: 98.5,
         },
         breakdown: {
           by_type: {
             authentication_events: 15000,
             data_access_events: 20000,
             data_modification_events: 10000,
-            security_events: 5000
+            security_events: 5000,
           },
           by_risk_level: {
             critical: 125,
             high: 890,
             medium: 2500,
-            low: 46485
-          }
+            low: 46485,
+          },
         },
         trends: {
           monthly_growth: 12.5,
           security_incident_trend: 'decreasing',
-          compliance_adherence: 'improving'
-        }
+          compliance_adherence: 'improving',
+        },
       };
 
       await auditService.logOperation('compliance_report_generation', {
         metadata: complianceReportData,
         resource: 'compliance_dashboard',
-        scope: { report_type: 'monthly_compliance', period: '2024-01' }
+        scope: { report_type: 'monthly_compliance', period: '2024-01' },
       });
       await auditService.flush();
 
@@ -550,26 +548,26 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           active_sessions: 150,
           failed_logins_last_hour: 3,
           data_access_requests_last_hour: 45,
-          system_health_score: 99.2
+          system_health_score: 99.2,
         },
         compliance_status: {
           gdpr_compliance: 100,
           sox_compliance: 98.5,
           iso27001_compliance: 97.8,
-          data_retention_compliance: 100
+          data_retention_compliance: 100,
         },
         security_posture: {
           threat_level: 'low',
           blocked_attempts_today: 12,
           vulnerabilities_identified: 2,
-          security_patches_pending: 1
-        }
+          security_patches_pending: 1,
+        },
       };
 
       await auditService.logOperation('dashboard_analytics_update', {
         metadata: dashboardAnalytics,
         resource: 'compliance_dashboard',
-        scope: { dashboard_type: 'executive_overview', refresh_interval: '5_minutes' }
+        scope: { dashboard_type: 'executive_overview', refresh_interval: '5_minutes' },
       });
       await auditService.flush();
 
@@ -592,8 +590,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           risk_assessment: 'medium',
           automated_response: 'alert_security_team',
           false_positive_probability: 0.15,
-          requires_human_review: true
-        }
+          requires_human_review: true,
+        },
       };
 
       await auditService.logOperation('security_anomaly', anomalyDetectionEvent);
@@ -620,8 +618,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           block_number: 12345,
           merkle_root: '0x789ghi...',
           signature_valid: true,
-          consensus_verification: 'passed'
-        }
+          consensus_verification: 'passed',
+        },
       };
 
       await auditService.logOperation('integrity_protection', tamperProtectionEvent);
@@ -645,8 +643,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           public_key_fingerprint: 'SHA256:fingerprint123',
           verification_timestamp: new Date().toISOString(),
           signature_valid: true,
-          certificate_chain_valid: true
-        }
+          certificate_chain_valid: true,
+        },
       };
 
       await auditService.logOperation('cryptographic_security', cryptographicEvent);
@@ -672,8 +670,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           permissions_verified: ['audit_read', 'compliance_view'],
           access_reason: 'quarterly_audit',
           access_duration_minutes: 60,
-          auto_logout_enabled: true
-        }
+          auto_logout_enabled: true,
+        },
       };
 
       await auditService.logOperation('access_control_verification', accessControlEvent);
@@ -698,8 +696,8 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           access_logging: 'enabled',
           integrity_checks: 'continuous',
           data_classification: 'confidential',
-          retention_enforced: true
-        }
+          retention_enforced: true,
+        },
       };
 
       await auditService.logOperation('storage_security', secureStorageEvent);
@@ -746,11 +744,11 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           service_sequence: [
             { service: 'auth_service', timestamp: '2024-01-15T10:00:00Z', action: 'authenticate' },
             { service: 'memory_store', timestamp: '2024-01-15T10:00:05Z', action: 'store_data' },
-            { service: 'search_service', timestamp: '2024-01-15T10:00:10Z', action: 'query_index' }
+            { service: 'search_service', timestamp: '2024-01-15T10:00:10Z', action: 'query_index' },
           ],
           total_duration_ms: 15000,
-          success: true
-        }
+          success: true,
+        },
       };
 
       await auditService.logOperation('service_correlation', crossServiceCorrelation);
@@ -779,9 +777,9 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           rate_limit_info: {
             limit: 1000,
             remaining: 950,
-            reset_time: '2024-01-15T11:00:00Z'
-          }
-        }
+            reset_time: '2024-01-15T11:00:00Z',
+          },
+        },
       };
 
       await auditService.logOperation('api_access', apiAuditEvent);
@@ -807,13 +805,13 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           search_parameters: {
             limit: 10,
             score_threshold: 0.7,
-            include_metadata: true
+            include_metadata: true,
           },
           result_count: 8,
           execution_time_ms: 45,
           database_load: { cpu_usage: 25, memory_usage: 60 },
-          index_used: 'hnsw_index'
-        }
+          index_used: 'hnsw_index',
+        },
       };
 
       await auditService.logOperation('database_access', databaseAuditEvent);
@@ -838,7 +836,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         method: 'jwt' as const,
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        scopes: ['read', 'write', 'admin']
+        scopes: ['read', 'write', 'admin'],
       };
 
       await auditService.logAuthSuccess(
@@ -867,7 +865,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         reason: 'invalid_credentials',
         userId: 'user-456',
         sessionId: 'session-789',
-        apiKeyId: 'key-123'
+        apiKeyId: 'key-123',
       };
 
       await auditService.logAuthFailure(
@@ -897,7 +895,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         requiredScopes: ['admin', 'user_management'],
         userScopes: ['read', 'write'],
         ipAddress: '192.168.1.150',
-        userAgent: 'Mozilla/5.0...'
+        userAgent: 'Mozilla/5.0...',
       };
 
       await auditService.logPermissionDenied(
@@ -929,10 +927,10 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
           access_frequency: 'abnormal_high',
           geo_location_anomaly: true,
           device_fingerprint_mismatch: true,
-          time_of_day_anomaly: true
+          time_of_day_anomaly: true,
         },
         ipAddress: 'suspicious-ip-address',
-        userAgent: 'Unusual User Agent String'
+        userAgent: 'Unusual User Agent String',
       };
 
       await auditService.logSuspiciousActivity(
@@ -962,7 +960,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
         windowMs: 60000,
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0...',
-        userId: 'user-456'
+        userId: 'user-456',
       };
 
       await auditService.logRateLimitExceeded(
@@ -1035,7 +1033,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
 
       const errorData = {
         userId: 'user-123',
-        resource: 'test_resource'
+        resource: 'test_resource',
       };
 
       // Should not throw error even if audit logging fails
@@ -1049,7 +1047,7 @@ describe('AuditService - Comprehensive Audit Functionality', () => {
       const errorContext = {
         operation: 'error_context_test',
         userId: 'user-456',
-        resource: 'error_resource'
+        resource: 'error_resource',
       };
 
       await auditService.logError(testError, errorContext);

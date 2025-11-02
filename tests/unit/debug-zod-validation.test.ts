@@ -3,7 +3,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateMcpInputFormat, transformMcpInputToKnowledgeItems } from '../../src/utils/mcp-transform.js';
+import {
+  validateMcpInputFormat,
+  transformMcpInputToKnowledgeItems,
+} from '../../src/utils/mcp-transform.js';
 import { validateKnowledgeItems } from '../../src/schemas/enhanced-validation.js';
 
 describe('Debug Zod Validation', () => {
@@ -12,7 +15,7 @@ describe('Debug Zod Validation', () => {
       kind: 'relation',
       scope: {
         project: 'test-relation-storage',
-        branch: 'main'
+        branch: 'main',
       },
       data: {
         from_entity_type: 'entity',
@@ -20,8 +23,8 @@ describe('Debug Zod Validation', () => {
         to_entity_type: 'entity',
         to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
         relation_type: 'relates_to',
-        metadata: { strength: 0.8 }
-      }
+        metadata: { strength: 0.8 },
+      },
     };
 
     console.log('Original item:', JSON.stringify(relationItem, null, 2));

@@ -14,7 +14,7 @@ console.log('Testing MCP Cortex Server...\n');
 // Start the MCP server
 const server = spawn('node', [path.join(__dirname, 'dist', 'index.js')], {
   stdio: ['pipe', 'pipe', 'pipe'], // pipe stdin, stdout, stderr
-  env: { ...process.env, MCP_TRANSPORT: 'stdio' }
+  env: { ...process.env, MCP_TRANSPORT: 'stdio' },
 });
 
 let stdoutBuffer = '';
@@ -40,22 +40,22 @@ setTimeout(() => {
 
   // Send a proper JSON-RPC initialize request
   const initRequest = {
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     id: 1,
-    method: "initialize",
+    method: 'initialize',
     params: {
-      protocolVersion: "2024-11-05",
+      protocolVersion: '2024-11-05',
       capabilities: {
         roots: {
-          listChanged: true
+          listChanged: true,
         },
-        sampling: {}
+        sampling: {},
       },
       clientInfo: {
-        name: "test-client",
-        version: "1.0.0"
-      }
-    }
+        name: 'test-client',
+        version: '1.0.0',
+      },
+    },
   };
 
   server.stdin.write(JSON.stringify(initRequest) + '\n');
@@ -65,10 +65,10 @@ setTimeout(() => {
     console.log('\n--- Sending Tools List Request ---');
 
     const toolsRequest = {
-      jsonrpc: "2.0",
+      jsonrpc: '2.0',
       id: 2,
-      method: "tools/list",
-      params: {}
+      method: 'tools/list',
+      params: {},
     };
 
     server.stdin.write(JSON.stringify(toolsRequest) + '\n');

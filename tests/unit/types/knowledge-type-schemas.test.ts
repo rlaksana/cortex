@@ -43,7 +43,7 @@ import {
   validateKnowledgeItem,
   safeValidateKnowledgeItem,
   violatesADRImmutability,
-  violatesSpecWriteLock
+  violatesSpecWriteLock,
 } from '../../../src/schemas/knowledge-types';
 import type {
   KnowledgeItem,
@@ -62,7 +62,7 @@ import type {
   IncidentItem,
   ReleaseItem,
   RiskItem,
-  AssumptionItem
+  AssumptionItem,
 } from '../../../src/schemas/knowledge-types';
 
 // Mock Qdrant client - reusing established pattern
@@ -70,20 +70,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue({ status: 'ok' });
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
@@ -113,7 +113,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         IncidentSchema,
         ReleaseSchema,
         RiskSchema,
-        AssumptionSchema
+        AssumptionSchema,
       ];
 
       expect(schemas).toHaveLength(16);
@@ -127,11 +127,24 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const unionOptions = KnowledgeItemSchema.options;
       expect(unionOptions).toHaveLength(16);
 
-      const kinds = unionOptions.map(option => option._def.shape().kind._def.value);
+      const kinds = unionOptions.map((option) => option._def.shape().kind._def.value);
       const expectedKinds = [
-        'section', 'runbook', 'change', 'issue', 'decision', 'todo',
-        'release_note', 'ddl', 'pr_context', 'entity', 'relation',
-        'observation', 'incident', 'release', 'risk', 'assumption'
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'entity',
+        'relation',
+        'observation',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       expect(kinds.sort()).toEqual(expectedKinds.sort());
@@ -143,7 +156,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         org: 'test-org',
         project: 'test-project',
         branch: 'main',
-        environment: 'development'
+        environment: 'development',
       };
       const scopeResult = ScopeSchema.safeParse(validScope);
       expect(scopeResult.success).toBe(true);
@@ -152,14 +165,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const validSource = {
         actor: 'test-actor',
         tool: 'test-tool',
-        timestamp: '2025-01-01T00:00:00Z'
+        timestamp: '2025-01-01T00:00:00Z',
       };
       const sourceResult = SourceSchema.safeParse(validSource);
       expect(sourceResult.success).toBe(true);
 
       // Test TTL Policy schema
       const validTTLPolicies = ['default', 'short', 'long', 'permanent'] as const;
-      validTTLPolicies.forEach(policy => {
+      validTTLPolicies.forEach((policy) => {
         const ttlResult = TTLPolicySchema.safeParse(policy);
         expect(ttlResult.success).toBe(true);
       });
@@ -171,14 +184,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         { project: '', branch: 'main' }, // Empty project
         { project: 'test', branch: '' }, // Empty branch
         { project: 'test' }, // Missing branch
-        { branch: 'main' } // Missing project
+        { branch: 'main' }, // Missing project
       ];
 
-      invalidScopes.forEach(invalidScope => {
+      invalidScopes.forEach((invalidScope) => {
         const testItem = {
           kind: 'entity' as const,
           scope: invalidScope,
-          data: { entity_type: 'test', name: 'test', data: {} }
+          data: { entity_type: 'test', name: 'test', data: {} },
         };
         const result = EntitySchema.safeParse(testItem);
         expect(result.success).toBe(false);
@@ -197,10 +210,10 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           heading: 'System Architecture',
           body_md: '# Architecture\n\nThis is the architecture section.',
           document_id: '550e8400-e29b-41d4-a716-446655440001',
-          citation_count: 5
+          citation_count: 5,
         },
         tags: { approved: false },
-        source: { actor: 'architect', tool: 'docs-system' }
+        source: { actor: 'architect', tool: 'docs-system' },
       };
 
       const result = SectionSchema.safeParse(section);
@@ -218,15 +231,17 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         scope: { project: 'test', branch: 'main' },
         data: {
           title: 'Test Section',
-          heading: 'Test'
+          heading: 'Test',
           // Missing both body_md and body_text
-        }
+        },
       };
 
       const result = SectionSchema.safeParse(sectionWithoutBody);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('Either body_md or body_text must be provided');
+        expect(result.error.issues[0].message).toContain(
+          'Either body_md or body_text must be provided'
+        );
       }
     });
 
@@ -237,8 +252,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           title: 'Simple Section',
           heading: 'Simple',
-          body_text: 'This is a simple section with plain text content.'
-        }
+          body_text: 'This is a simple section with plain text content.',
+        },
       };
 
       const result = SectionSchema.safeParse(sectionWithBodyText);
@@ -256,13 +271,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'auth-system',
           status: 'accepted',
           title: 'Use OAuth 2.0 for Authentication',
-          rationale: 'OAuth 2.0 provides industry-standard security with token-based authentication.',
+          rationale:
+            'OAuth 2.0 provides industry-standard security with token-based authentication.',
           alternatives_considered: ['Basic Auth', 'JWT-only', 'Custom session'],
           consequences: 'Requires token management infrastructure.',
-          supersedes: '550e8400-e29b-41d4-a716-446655440001'
+          supersedes: '550e8400-e29b-41d4-a716-446655440001',
         },
         tags: { security: true, architecture: true },
-        source: { actor: 'tech-lead', timestamp: '2025-01-01T00:00:00Z' }
+        source: { actor: 'tech-lead', timestamp: '2025-01-01T00:00:00Z' },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -270,8 +286,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
     });
 
     it('should enforce valid decision status values', () => {
-      const validStatuses = ['proposed', 'accepted', 'rejected', 'deprecated', 'superseded'] as const;
-      validStatuses.forEach(status => {
+      const validStatuses = [
+        'proposed',
+        'accepted',
+        'rejected',
+        'deprecated',
+        'superseded',
+      ] as const;
+      validStatuses.forEach((status) => {
         const decision = {
           kind: 'decision' as const,
           scope: { project: 'test', branch: 'main' },
@@ -279,8 +301,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             component: 'test',
             status,
             title: 'Test Decision',
-            rationale: 'Test rationale'
-          }
+            rationale: 'Test rationale',
+          },
         };
         const result = DecisionSchema.safeParse(decision);
         expect(result.success).toBe(true);
@@ -299,10 +321,10 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           data: {
             email: 'john@example.com',
             preferences: { theme: 'dark', language: 'en' },
-            metadata: { lastLogin: '2025-01-01', roles: ['developer', 'admin'] }
-          }
+            metadata: { lastLogin: '2025-01-01', roles: ['developer', 'admin'] },
+          },
         },
-        tags: { verified: true }
+        tags: { verified: true },
       };
 
       const result = EntitySchema.safeParse(entity);
@@ -311,7 +333,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         expect(result.data.data.data).toEqual({
           email: 'john@example.com',
           preferences: { theme: 'dark', language: 'en' },
-          metadata: { lastLogin: '2025-01-01', roles: ['developer', 'admin'] }
+          metadata: { lastLogin: '2025-01-01', roles: ['developer', 'admin'] },
         });
       }
     });
@@ -323,8 +345,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           entity_type: 'organization',
           name: 'Test Org',
-          data: {}
-        }
+          data: {},
+        },
       };
 
       const result = EntitySchema.safeParse(minimalEntity);
@@ -343,8 +365,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           to_entity_type: 'issue',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
           relation_type: 'resolves',
-          metadata: { confidence: 0.95, weight: 1.0, since: '2025-01-01' }
-        }
+          metadata: { confidence: 0.95, weight: 1.0, since: '2025-01-01' },
+        },
       };
 
       const result = RelationSchema.safeParse(relation);
@@ -360,8 +382,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           from_entity_id: 'invalid-uuid',
           to_entity_type: 'issue',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-          relation_type: 'resolves'
-        }
+          relation_type: 'resolves',
+        },
       };
 
       const result = RelationSchema.safeParse(invalidRelation);
@@ -382,8 +404,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
           observation: 'Implementation status: completed',
           observation_type: 'status',
-          metadata: { source: 'automated-check', confidence: 0.9 }
-        }
+          metadata: { source: 'automated-check', confidence: 0.9 },
+        },
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -397,8 +419,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'Simple observation note'
-        }
+          observation: 'Simple observation note',
+        },
       };
 
       const result = ObservationSchema.safeParse(minimalObservation);
@@ -420,23 +442,23 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
               step_number: 1,
               description: 'Stop application connections',
               command: 'docker-compose stop app',
-              expected_outcome: 'Application containers stopped'
+              expected_outcome: 'Application containers stopped',
             },
             {
               step_number: 2,
               description: 'Create database backup',
               command: 'pg_dump -U postgres dbname > backup.sql',
-              expected_outcome: 'Backup file created successfully'
+              expected_outcome: 'Backup file created successfully',
             },
             {
               step_number: 3,
               description: 'Restart application',
-              command: 'docker-compose start app'
-            }
+              command: 'docker-compose start app',
+            },
           ],
           triggers: ['scheduled', 'manual'],
-          last_verified_at: '2025-01-01T00:00:00Z'
-        }
+          last_verified_at: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = RunbookSchema.safeParse(runbook);
@@ -454,8 +476,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           service: 'test-service',
           title: 'Test Runbook',
-          steps: [] // Empty steps array
-        }
+          steps: [], // Empty steps array
+        },
       };
 
       const result = RunbookSchema.safeParse(runbookWithoutSteps);
@@ -478,9 +500,9 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           details: 'Implemented JWT-based authentication with refresh tokens',
           affected_files: ['src/auth/jwt.ts', 'src/api/auth.ts'],
           author: 'developer@example.com',
-          commit_sha: 'abc123def456'
+          commit_sha: 'abc123def456',
         },
-        tags: { feature: true, security: true }
+        tags: { feature: true, security: true },
       };
 
       const result = ChangeSchema.safeParse(change);
@@ -489,19 +511,24 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce valid change types', () => {
       const validChangeTypes = [
-        'feature_add', 'feature_modify', 'feature_remove', 'bugfix',
-        'refactor', 'config_change', 'dependency_update'
+        'feature_add',
+        'feature_modify',
+        'feature_remove',
+        'bugfix',
+        'refactor',
+        'config_change',
+        'dependency_update',
       ] as const;
 
-      validChangeTypes.forEach(changeType => {
+      validChangeTypes.forEach((changeType) => {
         const change = {
           kind: 'change' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             change_type: changeType,
             subject_ref: 'test-123',
-            summary: 'Test change'
-          }
+            summary: 'Test change',
+          },
         };
         const result = ChangeSchema.safeParse(change);
         expect(result.success).toBe(true);
@@ -522,8 +549,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           description: 'Users cannot log in with valid credentials',
           assignee: 'developer@example.com',
           labels: ['bug', 'authentication', 'high-priority'],
-          url: 'https://github.com/repo/issues/123'
-        }
+          url: 'https://github.com/repo/issues/123',
+        },
       };
 
       const result = IssueSchema.safeParse(issue);
@@ -532,7 +559,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce valid issue status values', () => {
       const validStatuses = ['open', 'in_progress', 'resolved', 'closed', 'wont_fix'] as const;
-      validStatuses.forEach(status => {
+      validStatuses.forEach((status) => {
         const issue = {
           kind: 'issue' as const,
           scope: { project: 'test', branch: 'main' },
@@ -540,8 +567,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             tracker: 'jira',
             external_id: 'PROJ-123',
             title: 'Test Issue',
-            status
-          }
+            status,
+          },
         };
         const result = IssueSchema.safeParse(issue);
         expect(result.success).toBe(true);
@@ -561,8 +588,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           status: 'in_progress',
           priority: 'high',
           assignee: 'frontend-developer@example.com',
-          due_date: '2025-02-01T00:00:00Z'
-        }
+          due_date: '2025-02-01T00:00:00Z',
+        },
       };
 
       const result = TodoSchema.safeParse(todo);
@@ -577,8 +604,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           scope: 'task',
           todo_type: 'task',
           text: 'Simple task',
-          status: 'open'
-        }
+          status: 'open',
+        },
       };
 
       const result = TodoSchema.safeParse(minimalTodo);
@@ -597,21 +624,19 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           summary: 'Major feature release with improved performance and security',
           breaking_changes: [
             'Removed deprecated authentication endpoints',
-            'Updated database schema for user profiles'
+            'Updated database schema for user profiles',
           ],
           new_features: [
             'Added two-factor authentication',
             'Implemented real-time notifications',
-            'Enhanced dashboard with analytics'
+            'Enhanced dashboard with analytics',
           ],
           bug_fixes: [
             'Fixed memory leak in background processes',
-            'Resolved login issue on mobile devices'
+            'Resolved login issue on mobile devices',
           ],
-          deprecations: [
-            'Legacy API v1 endpoints will be removed in v3.0'
-          ]
-        }
+          deprecations: ['Legacy API v1 endpoints will be removed in v3.0'],
+        },
       };
 
       const result = ReleaseNoteSchema.safeParse(releaseNote);
@@ -620,15 +645,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should require valid version format', () => {
       const invalidVersions = ['', ' '.repeat(101)]; // Empty and too long versions
-      invalidVersions.forEach(version => {
+      invalidVersions.forEach((version) => {
         const releaseNote = {
           kind: 'release_note' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             version,
             release_date: '2025-01-01T00:00:00Z',
-            summary: 'Test release'
-          }
+            summary: 'Test release',
+          },
         };
         const result = ReleaseNoteSchema.safeParse(releaseNote);
         expect(result.success).toBe(false);
@@ -643,11 +668,12 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           migration_id: '001_initial_schema',
-          ddl_text: 'CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL);',
+          ddl_text:
+            'CREATE TABLE users (id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL);',
           checksum: 'a'.repeat(64), // Valid SHA-256 hash
           applied_at: '2025-01-01T00:00:00Z',
-          description: 'Create initial users table with email field'
-        }
+          description: 'Create initial users table with email field',
+        },
       };
 
       const result = DDLSchema.safeParse(ddl);
@@ -656,15 +682,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce checksum length requirements', () => {
       const invalidChecksums = ['short', 'a'.repeat(63), 'a'.repeat(65)];
-      invalidChecksums.forEach(checksum => {
+      invalidChecksums.forEach((checksum) => {
         const ddl = {
           kind: 'ddl' as const,
           scope: { project: 'test', branch: 'main' },
           data: {
             migration_id: 'test_migration',
             ddl_text: 'CREATE TABLE test (id INT);',
-            checksum
-          }
+            checksum,
+          },
         };
         const result = DDLSchema.safeParse(ddl);
         expect(result.success).toBe(false);
@@ -685,8 +711,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           status: 'open',
           base_branch: 'main',
           head_branch: 'feature/auth',
-          expires_at: '2025-02-01T00:00:00Z'
-        }
+          expires_at: '2025-02-01T00:00:00Z',
+        },
       };
 
       const result = PRContextSchema.safeParse(prContext);
@@ -695,7 +721,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce valid PR status values', () => {
       const validStatuses = ['open', 'merged', 'closed', 'draft'] as const;
-      validStatuses.forEach(status => {
+      validStatuses.forEach((status) => {
         const prContext = {
           kind: 'pr_context' as const,
           scope: { project: 'test', branch: 'main' },
@@ -705,8 +731,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             author: 'test@example.com',
             status,
             base_branch: 'main',
-            head_branch: 'feature'
-          }
+            head_branch: 'feature',
+          },
         };
         const result = PRContextSchema.safeParse(prContext);
         expect(result.success).toBe(true);
@@ -727,17 +753,17 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             {
               timestamp: '2025-01-01T10:00:00Z',
               event: 'Increased error rates detected',
-              actor: 'monitoring-system'
+              actor: 'monitoring-system',
             },
             {
               timestamp: '2025-01-01T10:05:00Z',
-              event: 'Database connection pool at 100% capacity'
+              event: 'Database connection pool at 100% capacity',
             },
             {
               timestamp: '2025-01-01T10:15:00Z',
               event: 'Emergency restart of application services',
-              actor: 'ops-team'
-            }
+              actor: 'ops-team',
+            },
           ],
           root_cause_analysis: 'Memory leak in database connection handling code',
           resolution_status: 'resolved',
@@ -746,11 +772,11 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           recovery_actions: [
             'Restarted application services',
             'Implemented connection pool monitoring',
-            'Scheduled code review for database layer'
+            'Scheduled code review for database layer',
           ],
           follow_up_required: true,
-          incident_commander: 'ops-lead@example.com'
-        }
+          incident_commander: 'ops-lead@example.com',
+        },
       };
 
       const result = IncidentSchema.safeParse(incident);
@@ -759,7 +785,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce valid severity levels', () => {
       const validSeverities = ['critical', 'high', 'medium', 'low'] as const;
-      validSeverities.forEach(severity => {
+      validSeverities.forEach((severity) => {
         const incident = {
           kind: 'incident' as const,
           scope: { project: 'test', branch: 'main' },
@@ -767,8 +793,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             title: 'Test incident',
             severity,
             impact: 'Test impact',
-            resolution_status: 'open'
-          }
+            resolution_status: 'open',
+          },
         };
         const result = IncidentSchema.safeParse(incident);
         expect(result.success).toBe(true);
@@ -791,19 +817,20 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           included_changes: [
             'Added authentication endpoints',
             'Updated dashboard UI',
-            'Fixed memory leak in caching layer'
+            'Fixed memory leak in caching layer',
           ],
           deployment_strategy: 'Blue-green deployment with instant rollback',
           rollback_plan: 'Switch traffic back to previous version using load balancer',
           testing_status: 'All automated tests passed, manual QA completed',
           approvers: ['tech-lead@example.com', 'qa-lead@example.com'],
-          release_notes: 'This release includes major security improvements and performance enhancements.',
+          release_notes:
+            'This release includes major security improvements and performance enhancements.',
           post_release_actions: [
             'Monitor error rates for 24 hours',
             'Verify user authentication flow',
-            'Check dashboard performance metrics'
-          ]
-        }
+            'Check dashboard performance metrics',
+          ],
+        },
       };
 
       const result = ReleaseSchema.safeParse(release);
@@ -812,7 +839,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce valid release types', () => {
       const validReleaseTypes = ['major', 'minor', 'patch', 'hotfix'] as const;
-      validReleaseTypes.forEach(releaseType => {
+      validReleaseTypes.forEach((releaseType) => {
         const release = {
           kind: 'release' as const,
           scope: { project: 'test', branch: 'main' },
@@ -820,8 +847,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             version: '1.0.0',
             release_type: releaseType,
             scope: 'Test release scope',
-            status: 'planned'
-          }
+            status: 'planned',
+          },
         };
         const result = ReleaseSchema.safeParse(release);
         expect(result.success).toBe(true);
@@ -839,33 +866,35 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           category: 'technical',
           risk_level: 'high',
           probability: 'likely',
-          impact_description: 'If Auth0 service goes down, all user authentication will fail, completely blocking access to the application',
+          impact_description:
+            'If Auth0 service goes down, all user authentication will fail, completely blocking access to the application',
           trigger_events: [
             'Auth0 service outage',
             'API key expiration',
             'Rate limiting exceeded',
-            'Service deprecation'
+            'Service deprecation',
           ],
           mitigation_strategies: [
             'Implement fallback authentication mechanism',
             'Cache user sessions with extended TTL',
             'Monitor Auth0 service health',
-            'Prepare migration plan to alternative provider'
+            'Prepare migration plan to alternative provider',
           ],
           owner: 'security-team@example.com',
           review_date: '2025-02-01T00:00:00Z',
           status: 'active',
           related_decisions: [
             '550e8400-e29b-41d4-a716-446655440001',
-            '550e8400-e29b-41d4-a716-446655440002'
+            '550e8400-e29b-41d4-a716-446655440002',
           ],
           monitoring_indicators: [
             'Auth0 API response time',
             'Authentication success rate',
-            'Service availability metrics'
+            'Service availability metrics',
           ],
-          contingency_plans: 'Switch to local authentication mode using cached credentials while service is restored'
-        }
+          contingency_plans:
+            'Switch to local authentication mode using cached credentials while service is restored',
+        },
       };
 
       const result = RiskSchema.safeParse(risk);
@@ -873,13 +902,25 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
     });
 
     it('should enforce valid risk categories and levels', () => {
-      const validCategories = ['technical', 'business', 'operational', 'security', 'compliance'] as const;
+      const validCategories = [
+        'technical',
+        'business',
+        'operational',
+        'security',
+        'compliance',
+      ] as const;
       const validLevels = ['critical', 'high', 'medium', 'low'] as const;
-      const validProbabilities = ['very_likely', 'likely', 'possible', 'unlikely', 'very_unlikely'] as const;
+      const validProbabilities = [
+        'very_likely',
+        'likely',
+        'possible',
+        'unlikely',
+        'very_unlikely',
+      ] as const;
 
-      validCategories.forEach(category => {
-        validLevels.forEach(level => {
-          validProbabilities.forEach(probability => {
+      validCategories.forEach((category) => {
+        validLevels.forEach((level) => {
+          validProbabilities.forEach((probability) => {
             const risk = {
               kind: 'risk' as const,
               scope: { project: 'test', branch: 'main' },
@@ -889,8 +930,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
                 risk_level: level,
                 probability,
                 impact_description: 'Test impact',
-                status: 'active' as const
-              }
+                status: 'active' as const,
+              },
             };
             const result = RiskSchema.safeParse(risk);
             expect(result.success).toBe(true);
@@ -907,25 +948,27 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'User base will grow 50% year-over-year',
-          description: 'Based on market analysis and current growth trends, we expect the user base to increase by 50% annually',
+          description:
+            'Based on market analysis and current growth trends, we expect the user base to increase by 50% annually',
           category: 'business',
           validation_status: 'assumed',
-          impact_if_invalid: 'Infrastructure capacity planning will be inadequate, leading to performance issues and increased costs',
+          impact_if_invalid:
+            'Infrastructure capacity planning will be inadequate, leading to performance issues and increased costs',
           validation_criteria: [
             'Monthly active user growth > 4%',
             'Customer acquisition cost remains stable',
-            'Market conditions remain favorable'
+            'Market conditions remain favorable',
           ],
           validation_date: '2025-01-01T00:00:00Z',
           owner: 'product-manager@example.com',
           related_assumptions: [
             '550e8400-e29b-41d4-a716-446655440001',
-            '550e8400-e29b-41d4-a716-446655440002'
+            '550e8400-e29b-41d4-a716-446655440002',
           ],
           dependencies: ['Market growth rate', 'Competitive landscape', 'Economic stability'],
           monitoring_approach: 'Track MAU growth, CAC, and market trends quarterly',
-          review_frequency: 'quarterly'
-        }
+          review_frequency: 'quarterly',
+        },
       };
 
       const result = AssumptionSchema.safeParse(assumption);
@@ -936,8 +979,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const validCategories = ['technical', 'business', 'user', 'market', 'resource'] as const;
       const validStatuses = ['validated', 'assumed', 'invalidated', 'needs_validation'] as const;
 
-      validCategories.forEach(category => {
-        validStatuses.forEach(status => {
+      validCategories.forEach((category) => {
+        validStatuses.forEach((status) => {
           const assumption = {
             kind: 'assumption' as const,
             scope: { project: 'test', branch: 'main' },
@@ -946,8 +989,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
               description: 'Test description',
               category,
               validation_status: status,
-              impact_if_invalid: 'Test impact'
-            }
+              impact_if_invalid: 'Test impact',
+            },
           };
           const result = AssumptionSchema.safeParse(assumption);
           expect(result.success).toBe(true);
@@ -965,8 +1008,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'auth',
           status: 'accepted',
           title: 'Use OAuth 2.0',
-          rationale: 'Industry standard'
-        }
+          rationale: 'Industry standard',
+        },
       };
 
       const issue = {
@@ -976,8 +1019,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           tracker: 'github',
           external_id: 'GH-123',
           title: 'Fix auth bug',
-          status: 'open'
-        }
+          status: 'open',
+        },
       };
 
       const relation = {
@@ -988,8 +1031,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
           to_entity_type: 'issue',
           to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-          relation_type: 'resolves'
-        }
+          relation_type: 'resolves',
+        },
       };
 
       const decisionResult = DecisionSchema.safeParse(decision);
@@ -1008,8 +1051,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           entity_type: 'user',
           name: 'test_user',
-          data: { status: 'active' }
-        }
+          data: { status: 'active' },
+        },
       };
 
       const observation = {
@@ -1019,8 +1062,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
           observation: 'User status changed to active',
-          observation_type: 'status'
-        }
+          observation_type: 'status',
+        },
       };
 
       const entityResult = EntitySchema.safeParse(entity);
@@ -1039,8 +1082,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'auth',
           status: 'accepted',
           title: 'Use OAuth 2.0',
-          rationale: 'Industry standard'
-        }
+          rationale: 'Industry standard',
+        },
       };
 
       const decisionResult = DecisionSchema.safeParse(decision);
@@ -1060,15 +1103,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         data: {
           entity_type: 'test',
           name: `entity-${i}`,
-          data: { index: i }
-        }
+          data: { index: i },
+        },
       }));
 
       const startTime = Date.now();
-      const results = items.map(item => EntitySchema.safeParse(item));
+      const results = items.map((item) => EntitySchema.safeParse(item));
       const endTime = Date.now();
 
-      const validResults = results.filter(r => r.success);
+      const validResults = results.filter((r) => r.success);
       expect(validResults).toHaveLength(100);
       expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
     });
@@ -1087,14 +1130,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
                 structure: {
                   with: {
                     many: {
-                      levels: 'of data'
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      levels: 'of data',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       };
 
       const startTime = Date.now();
@@ -1113,8 +1156,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'test',
           status: 'proposed',
           title: 'Test Decision',
-          rationale: 'Test rationale'
-        }
+          rationale: 'Test rationale',
+        },
       };
 
       // First validation
@@ -1139,7 +1182,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         { kind: 'invalid_type' },
         { kind: 'decision' }, // Missing data and scope
         { kind: 'decision', scope: {} }, // Missing data
-        { kind: 'decision', data: {} } // Missing scope
+        { kind: 'decision', data: {} }, // Missing scope
       ];
 
       malformedInputs.forEach((input, index) => {
@@ -1159,20 +1202,20 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: '',
           status: 'invalid_status',
           title: '',
-          rationale: ''
-        }
+          rationale: '',
+        },
       };
 
       const result = DecisionSchema.safeParse(invalidDecision);
       expect(result.success).toBe(false);
       if (!result.success) {
-        const errorMessages = result.error.issues.map(issue => issue.message);
-        expect(errorMessages.some(msg => msg.includes('project'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('branch'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('component'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('Invalid enum'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('title'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('rationale'))).toBe(true);
+        const errorMessages = result.error.issues.map((issue) => issue.message);
+        expect(errorMessages.some((msg) => msg.includes('project'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('branch'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('component'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('Invalid enum'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('title'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('rationale'))).toBe(true);
       }
     });
 
@@ -1185,9 +1228,9 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           entity_type: 'circular',
           name: 'test',
           data: {
-            self: null as any
-          }
-        }
+            self: null as any,
+          },
+        },
       };
 
       // Create circular reference
@@ -1206,8 +1249,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'user-interface',
           status: 'proposed',
           title: 'Implement 🌐 Internationalization with UTF-8 support',
-          rationale: 'Support for 中文, العربية, русский, español, and other languages'
-        }
+          rationale: 'Support for 中文, العربية, русский, español, and other languages',
+        },
       };
 
       const result = DecisionSchema.safeParse(unicodeDecision);
@@ -1223,8 +1266,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'test',
           status: 'proposed',
           title: longText, // Will be rejected due to length limit
-          rationale: 'Valid rationale'
-        }
+          rationale: 'Valid rationale',
+        },
       };
 
       const result = DecisionSchema.safeParse(decisionWithLongFields);
@@ -1245,8 +1288,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             component: 'auth',
             status: 'accepted',
             title: 'Use OAuth 2.0',
-            rationale: 'Industry standard'
-          }
+            rationale: 'Industry standard',
+          },
         },
         {
           kind: 'entity' as const,
@@ -1254,8 +1297,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           data: {
             entity_type: 'user',
             name: 'test_user',
-            data: { role: 'admin' }
-          }
+            data: { role: 'admin' },
+          },
         },
         {
           kind: 'relation' as const,
@@ -1265,15 +1308,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
             to_entity_type: 'entity',
             to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'affects'
-          }
-        }
+            relation_type: 'affects',
+          },
+        },
       ];
 
       const schemas = [DecisionSchema, EntitySchema, RelationSchema];
       const results = testItems.map((item, index) => schemas[index].safeParse(item));
 
-      expect(results.every(r => r.success)).toBe(true);
+      expect(results.every((r) => r.success)).toBe(true);
     });
 
     it('should maintain schema consistency across knowledge types', () => {
@@ -1285,8 +1328,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
             component: 'auth',
             status: 'accepted',
             title: 'Use OAuth 2.0',
-            rationale: 'Industry standard'
-          }
+            rationale: 'Industry standard',
+          },
         },
         {
           kind: 'entity' as const,
@@ -1294,15 +1337,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           data: {
             entity_type: 'user',
             name: 'test_user',
-            data: { role: 'admin' }
-          }
-        }
+            data: { role: 'admin' },
+          },
+        },
       ];
 
       // Validate against the discriminated union
-      const results = testItems.map(item => KnowledgeItemSchema.safeParse(item));
+      const results = testItems.map((item) => KnowledgeItemSchema.safeParse(item));
 
-      expect(results.every(r => r.success)).toBe(true);
+      expect(results.every((r) => r.success)).toBe(true);
       expect(results[0].data?.kind).toBe('decision');
       expect(results[1].data?.kind).toBe('entity');
     });
@@ -1314,8 +1357,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           scope: { project: 'test', branch: 'main' },
           data: {
             // Missing required fields
-            component: 'test'
-          }
+            component: 'test',
+          },
         },
         {
           kind: 'entity' as const,
@@ -1323,16 +1366,16 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           data: {
             entity_type: 'test',
             name: 'test',
-            data: {}
-          }
-        }
+            data: {},
+          },
+        },
       ];
 
       const schemas = [DecisionSchema, EntitySchema];
       const results = invalidItems.map((item, index) => schemas[index].safeParse(item));
 
       expect(results[0].success).toBe(false); // Invalid decision
-      expect(results[1].success).toBe(true);  // Valid entity
+      expect(results[1].success).toBe(true); // Valid entity
       expect(results[0].error?.issues).toBeDefined();
     });
   });
@@ -1349,9 +1392,9 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           data: {
             // Legacy fields
             username: 'olduser',
-            created_date: '2025-01-01'
-          }
-        }
+            created_date: '2025-01-01',
+          },
+        },
         // Note: created_at and legacy_flag would be handled by the database layer,
         // not by the schema validation
       };
@@ -1379,11 +1422,11 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           alternatives_considered: ['Option 1', 'Option 2'],
           consequences: 'Test consequences',
           // Optional UUID field for updates
-          id: '550e8400-e29b-41d4-a716-446655440000'
+          id: '550e8400-e29b-41d4-a716-446655440000',
         },
         // Optional metadata fields
         tags: { v2: true },
-        source: { actor: 'system', timestamp: '2025-01-01T00:00:00Z' }
+        source: { actor: 'system', timestamp: '2025-01-01T00:00:00Z' },
       };
 
       const result = DecisionSchema.safeParse(versionedData);
@@ -1402,15 +1445,15 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           status: 'in_progress',
           // API-specific fields
           assignee: 'api-service@example.com',
-          due_date: '2025-01-31T23:59:59Z'
+          due_date: '2025-01-31T23:59:59Z',
         },
         // API metadata
         source: {
           actor: 'api-client',
           tool: 'rest-api',
-          timestamp: '2025-01-01T12:00:00Z'
+          timestamp: '2025-01-01T12:00:00Z',
         },
-        ttl_policy: 'short' as const
+        ttl_policy: 'short' as const,
       };
 
       const validationResult = TodoSchema.safeParse(apiRequest);
@@ -1434,8 +1477,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'test',
           status: 'proposed',
           title: 'Test Decision',
-          rationale: 'Test rationale'
-        }
+          rationale: 'Test rationale',
+        },
       };
 
       const result = validateKnowledgeItem(validItem);
@@ -1451,8 +1494,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'test',
           status: 'invalid_status' as any,
           title: 'Test',
-          rationale: 'Test'
-        }
+          rationale: 'Test',
+        },
       };
 
       const result = safeValidateKnowledgeItem(invalidItem);
@@ -1471,16 +1514,16 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'auth',
           status: 'accepted',
           title: 'Use OAuth 2.0',
-          rationale: 'Industry standard'
-        }
+          rationale: 'Industry standard',
+        },
       };
 
       const updateAttempt = {
         ...existingDecision,
         data: {
           ...existingDecision.data,
-          title: 'Modified Title' // This should violate immutability
-        }
+          title: 'Modified Title', // This should violate immutability
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existingDecision, updateAttempt);
@@ -1495,17 +1538,17 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           title: 'API Documentation',
           heading: 'API',
           body_md: '# API Documentation\n\nContent here...',
-          citation_count: 3
+          citation_count: 3,
         },
-        tags: { approved: true } // This makes the section write-locked
+        tags: { approved: true }, // This makes the section write-locked
       };
 
       const modificationAttempt = {
         ...approvedSection,
         data: {
           ...approvedSection.data,
-          body_md: '# Modified API Documentation\n\nModified content...' // Should violate write-lock
-        }
+          body_md: '# Modified API Documentation\n\nModified content...', // Should violate write-lock
+        },
       };
 
       const violatesWriteLock = violatesSpecWriteLock(approvedSection, modificationAttempt);
@@ -1522,8 +1565,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           component: 'auth',
           status: 'accepted',
           title: 'Use OAuth 2.0',
-          rationale: 'Industry standard security protocol'
-        }
+          rationale: 'Industry standard security protocol',
+        },
       };
 
       // Test content changes - should violate immutability
@@ -1531,26 +1574,24 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         { title: 'Changed Title' },
         { rationale: 'Changed Rationale' },
         { component: 'changed-component' },
-        { alternatives_considered: ['New Alternative'] }
+        { alternatives_considered: ['New Alternative'] },
       ];
 
-      contentChanges.forEach(change => {
+      contentChanges.forEach((change) => {
         const modifiedADR = {
           ...acceptedADR,
-          data: { ...acceptedADR.data, ...change }
+          data: { ...acceptedADR.data, ...change },
         };
         expect(violatesADRImmutability(acceptedADR, modifiedADR)).toBe(true);
       });
 
       // Test metadata changes - should not violate immutability
-      const metadataChanges = [
-        { supersedes: '550e8400-e29b-41d4-a716-446655440000' }
-      ];
+      const metadataChanges = [{ supersedes: '550e8400-e29b-41d4-a716-446655440000' }];
 
-      metadataChanges.forEach(change => {
+      metadataChanges.forEach((change) => {
         const modifiedADR = {
           ...acceptedADR,
-          data: { ...acceptedADR.data, ...change }
+          data: { ...acceptedADR.data, ...change },
         };
         expect(violatesADRImmutability(acceptedADR, modifiedADR)).toBe(false);
       });
@@ -1564,22 +1605,22 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
           title: 'Architecture Guide',
           heading: 'Architecture',
           body_md: '# Architecture\n\nContent...',
-          citation_count: 5
+          citation_count: 5,
         },
-        tags: { approved: true }
+        tags: { approved: true },
       };
 
       // Test content changes - should violate write-lock
       const contentChanges = [
         { body_md: '# Modified Architecture\n\nNew content...' },
         { body_text: 'Plain text content' },
-        { title: 'Modified Title' }
+        { title: 'Modified Title' },
       ];
 
-      contentChanges.forEach(change => {
+      contentChanges.forEach((change) => {
         const modifiedSection = {
           ...approvedSection,
-          data: { ...approvedSection.data, ...change }
+          data: { ...approvedSection.data, ...change },
         };
         expect(violatesSpecWriteLock(approvedSection, modifiedSection)).toBe(true);
       });
@@ -1587,14 +1628,14 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       // Test metadata changes - should not violate write-lock
       const metadataChanges = [
         { citation_count: 10 },
-        { tags: { approved: true, reviewed: true } }
+        { tags: { approved: true, reviewed: true } },
       ];
 
-      metadataChanges.forEach(change => {
+      metadataChanges.forEach((change) => {
         const modifiedSection = {
           ...approvedSection,
           data: { ...approvedSection.data, ...change },
-          tags: { ...approvedSection.tags, ...change.tags }
+          tags: { ...approvedSection.tags, ...change.tags },
         };
         expect(violatesSpecWriteLock(approvedSection, modifiedSection)).toBe(false);
       });
@@ -1618,7 +1659,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         { kind: 'incident' as const, schema: IncidentSchema },
         { kind: 'release' as const, schema: ReleaseSchema },
         { kind: 'risk' as const, schema: RiskSchema },
-        { kind: 'assumption' as const, schema: AssumptionSchema }
+        { kind: 'assumption' as const, schema: AssumptionSchema },
       ];
 
       testItems.forEach(({ kind, schema }) => {
@@ -1629,7 +1670,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         const sampleItem = {
           kind,
           scope: { project: 'test', branch: 'main' },
-          data: {} // Will be invalid but tests kind discrimination
+          data: {}, // Will be invalid but tests kind discrimination
         };
 
         const result = KnowledgeItemSchema.safeParse(sampleItem);

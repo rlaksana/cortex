@@ -223,7 +223,7 @@ describe('SimilarityService', () => {
       const item = {
         kind: 'entity',
         data: { title: 'User Authentication' },
-        scope: { project: 'test' }
+        scope: { project: 'test' },
       };
 
       const results = await service.findSimilar(item, 0.5);
@@ -256,10 +256,12 @@ describe('Memory Store API', () => {
     const response = await request(app)
       .post('/api/memory/store')
       .send({
-        items: [{
-          kind: 'entity',
-          data: { title: 'Test Entity' }
-        }]
+        items: [
+          {
+            kind: 'entity',
+            data: { title: 'Test Entity' },
+          },
+        ],
       });
 
     expect(response.status).toBe(200);
@@ -392,10 +394,8 @@ const results = await qdrant.search({
   query: 'authentication security',
   limit: 50,
   filter: {
-    must: [
-      { key: "kind", match: { value: "entity" }}
-    ]
-  }
+    must: [{ key: 'kind', match: { value: 'entity' } }],
+  },
 });
 
 // Metadata filtering
@@ -403,16 +403,16 @@ const entities = await qdrant.search({
   vector: embedding,
   filter: {
     must: [
-      { key: "scope.project", match: { value: "my-project" }},
-      { key: "data.status", match: { value: "active" }}
-    ]
-  }
+      { key: 'scope.project', match: { value: 'my-project' } },
+      { key: 'data.status', match: { value: 'active' } },
+    ],
+  },
 });
 
 // Similarity search
 const similar = await qdrant.findSimilar({
-  id: "existing-vector-id",
-  limit: 10
+  id: 'existing-vector-id',
+  limit: 10,
 });
 ```
 
@@ -433,19 +433,23 @@ const router = Router();
 // Validation middleware
 const validateCustomRequest = [
   body('name').notEmpty().withMessage('Name is required'),
-  body('type').isIn(['type1', 'type2']).withMessage('Invalid type')
+  body('type').isIn(['type1', 'type2']).withMessage('Invalid type'),
 ];
 
 // Route handler
-router.post('/custom', validateCustomRequest, handleErrors(async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
+router.post(
+  '/custom',
+  validateCustomRequest,
+  handleErrors(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-  const result = await customService.process(req.body);
-  res.json(result);
-}));
+    const result = await customService.process(req.body);
+    res.json(result);
+  })
+);
 
 export default router;
 ```
@@ -471,17 +475,12 @@ export const handleErrors = (fn: Function) => {
   };
 };
 
-export const errorHandler = (
-  error: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const errorHandler = (error: Error, req: Request, res: Response, next: NextFunction) => {
   if (error instanceof AppError) {
     return res.status(error.statusCode).json({
       error: error.errorCode,
       message: error.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -490,7 +489,7 @@ export const errorHandler = (
   res.status(500).json({
     error: 'INTERNAL_ERROR',
     message: 'An unexpected error occurred',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 };
 ```
@@ -503,32 +502,49 @@ import { z } from 'zod';
 
 export const KnowledgeItemSchema = z.object({
   kind: z.enum([
-    'entity', 'relation', 'observation', 'section', 'runbook',
-    'change', 'issue', 'decision', 'todo', 'release_note',
-    'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+    'entity',
+    'relation',
+    'observation',
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
   ]),
   data: z.record(z.any()),
-  scope: z.object({
-    project: z.string().optional(),
-    branch: z.string().optional(),
-    org: z.string().optional()
-  }).optional()
+  scope: z
+    .object({
+      project: z.string().optional(),
+      branch: z.string().optional(),
+      org: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const MemoryStoreRequestSchema = z.object({
-  items: z.array(KnowledgeItemSchema).min(1)
+  items: z.array(KnowledgeItemSchema).min(1),
 });
 
 export const MemoryFindRequestSchema = z.object({
   query: z.string().min(1),
-  scope: z.object({
-    project: z.string().optional(),
-    branch: z.string().optional(),
-    org: z.string().optional()
-  }).optional(),
+  scope: z
+    .object({
+      project: z.string().optional(),
+      branch: z.string().optional(),
+      org: z.string().optional(),
+    })
+    .optional(),
   types: z.array(z.string()).optional(),
   mode: z.enum(['auto', 'fast', 'deep']).optional(),
-  limit: z.number().int().positive().max(100).optional()
+  limit: z.number().int().positive().max(100).optional(),
 });
 ```
 
@@ -556,7 +572,7 @@ export class Environment {
 
   private validateRequired(): void {
     const required = ['QDRANT_URL'];
-    const missing = required.filter(key => !this.config[key]);
+    const missing = required.filter((key) => !this.config[key]);
 
     if (missing.length > 0) {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -573,7 +589,7 @@ export class Environment {
       url: this.config.QDRANT_URL!,
       apiKey: this.config.QDRANT_API_KEY,
       timeout: parseInt(this.config.QDRANT_TIMEOUT || '30000'),
-      maxConnections: parseInt(this.config.QDRANT_MAX_CONNECTIONS || '10')
+      maxConnections: parseInt(this.config.QDRANT_MAX_CONNECTIONS || '10'),
     };
   }
 
@@ -597,7 +613,7 @@ const env = Environment.getInstance();
 
 export const DatabaseConfig = {
   // NO POSTGRESQL CONFIG - QDRANT ONLY
-  qdrant: env.getQdrantConfig()
+  qdrant: env.getQdrantConfig(),
 };
 
 export const SearchConfig = {
@@ -605,7 +621,7 @@ export const SearchConfig = {
   maxLimit: parseInt(process.env.SEARCH_MAX_LIMIT || '100'),
   similarityThreshold: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.7'),
   enableCache: process.env.ENABLE_CACHE === 'true',
-  cacheTTL: parseInt(process.env.CACHE_TTL || '3600')
+  cacheTTL: parseInt(process.env.CACHE_TTL || '3600'),
 };
 ```
 

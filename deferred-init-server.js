@@ -4,10 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Simple stub server that defers complex initialization
-const server = new Server(
-  { name: 'cortex', version: '1.0.0' },
-  { capabilities: { tools: {} } }
-);
+const server = new Server({ name: 'cortex', version: '1.0.0' }, { capabilities: { tools: {} } });
 
 // Basic auth service stub
 const authService = {
@@ -23,12 +20,12 @@ const authService = {
     access_token: 'new-access-token',
     refresh_token: 'new-refresh-token',
     token_type: 'Bearer',
-    expires_in: 900
+    expires_in: 900,
   }),
   revokeToken: (_tokenId) => {},
   revokeSession: (_sessionId) => {},
   createSession: (_user, _ip, _userAgent) => ({ id: 'session-id' }),
-  getUserScopes: (_user) => ['memory:read', 'memory:write', 'search:basic']
+  getUserScopes: (_user) => ['memory:read', 'memory:write', 'search:basic'],
 };
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -41,15 +38,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           items: {
             type: 'array',
-            items: { type: 'object' }
+            items: { type: 'object' },
           },
           auth_token: {
             type: 'string',
-            description: 'Authentication token (use "test-token")'
-          }
+            description: 'Authentication token (use "test-token")',
+          },
         },
-        required: ['items', 'auth_token']
-      }
+        required: ['items', 'auth_token'],
+      },
     },
     {
       name: 'memory_find',
@@ -60,11 +57,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           query: { type: 'string' },
           auth_token: {
             type: 'string',
-            description: 'Authentication token (use "test-token")'
-          }
+            description: 'Authentication token (use "test-token")',
+          },
         },
-        required: ['query', 'auth_token']
-      }
+        required: ['query', 'auth_token'],
+      },
     },
     {
       name: 'auth_login',
@@ -73,12 +70,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object',
         properties: {
           username: { type: 'string' },
-          password: { type: 'string' }
+          password: { type: 'string' },
         },
-        required: ['username', 'password']
-      }
-    }
-  ]
+        required: ['username', 'password'],
+      },
+    },
+  ],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -100,15 +97,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              items: items,
-              stored_count: items.length,
-              message: 'Memory items stored successfully (simplified version)',
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  items: items,
+                  stored_count: items.length,
+                  message: 'Memory items stored successfully (simplified version)',
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
       }
 
@@ -125,15 +128,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              query: query,
-              hits: [],
-              message: 'Search completed (simplified version)',
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  query: query,
+                  hits: [],
+                  message: 'Search completed (simplified version)',
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
       }
 
@@ -144,7 +153,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const mockUser = {
             id: 'admin-user-id',
             username: 'admin',
-            role: 'admin'
+            role: 'admin',
           };
 
           const session = authService.createSession(mockUser, 'mcp-client', 'mcp-client');
@@ -153,22 +162,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           const refreshToken = authService.generateRefreshToken(mockUser, session.id);
 
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                access_token: accessToken,
-                refresh_token: refreshToken,
-                token_type: 'Bearer',
-                expires_in: 900,
-                scope: scopes,
-                user: {
-                  id: mockUser.id,
-                  username: mockUser.username,
-                  role: mockUser.role
-                },
-                message: 'Authentication successful (simplified version)'
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                    token_type: 'Bearer',
+                    expires_in: 900,
+                    scope: scopes,
+                    user: {
+                      id: mockUser.id,
+                      username: mockUser.username,
+                      role: mockUser.role,
+                    },
+                    message: 'Authentication successful (simplified version)',
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
         } else {
           throw new Error('Invalid username or password');
@@ -180,14 +195,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   } catch (error) {
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }],
-      isError: true
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
+      isError: true,
     };
   }
 });

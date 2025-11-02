@@ -17,10 +17,7 @@ console.log = originalConsoleLog;
 loadEnv();
 
 // Create server immediately without blocking operations
-const server = new Server(
-  { name: 'cortex', version: '1.0.0' },
-  { capabilities: { tools: {} } }
-);
+const server = new Server({ name: 'cortex', version: '1.0.0' }, { capabilities: { tools: {} } });
 
 // Services will be initialized lazily
 let services: any = null;
@@ -45,7 +42,7 @@ async function getServices() {
       api_key_length: authConfig.API_KEY_LENGTH,
       session_timeout_hours: authConfig.SESSION_TIMEOUT_HOURS,
       max_sessions_per_user: authConfig.MAX_SESSIONS_PER_USER,
-      rate_limit_enabled: authConfig.RATE_LIMIT_ENABLED
+      rate_limit_enabled: authConfig.RATE_LIMIT_ENABLED,
     });
 
     const authorizationService = new AuthorizationService();
@@ -58,7 +55,7 @@ async function getServices() {
       authorizationService,
       auditService,
       apiKeyService,
-      authHelper
+      authHelper,
     };
 
     logger.info('Services initialized successfully');
@@ -76,15 +73,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           items: {
             type: 'array',
-            items: { type: 'object' }
+            items: { type: 'object' },
           },
           auth_token: {
             type: 'string',
-            description: 'JWT authentication token or API key'
-          }
+            description: 'JWT authentication token or API key',
+          },
         },
-        required: ['items', 'auth_token']
-      }
+        required: ['items', 'auth_token'],
+      },
     },
     {
       name: 'memory_find',
@@ -98,25 +95,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             properties: {
               project: { type: 'string' },
               branch: { type: 'string' },
-              org: { type: 'string' }
-            }
+              org: { type: 'string' },
+            },
           },
           types: {
             type: 'array',
-            items: { type: 'string' }
+            items: { type: 'string' },
           },
           mode: {
             type: 'string',
-            enum: ['auto', 'fast', 'deep']
+            enum: ['auto', 'fast', 'deep'],
           },
           limit: { type: 'number' },
           auth_token: {
             type: 'string',
-            description: 'JWT authentication token or API key'
-          }
+            description: 'JWT authentication token or API key',
+          },
         },
-        required: ['query', 'auth_token']
-      }
+        required: ['query', 'auth_token'],
+      },
     },
     {
       name: 'auth_login',
@@ -125,10 +122,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object',
         properties: {
           username: { type: 'string' },
-          password: { type: 'string' }
+          password: { type: 'string' },
         },
-        required: ['username', 'password']
-      }
+        required: ['username', 'password'],
+      },
     },
     {
       name: 'auth_refresh',
@@ -136,10 +133,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object',
         properties: {
-          refresh_token: { type: 'string' }
+          refresh_token: { type: 'string' },
         },
-        required: ['refresh_token']
-      }
+        required: ['refresh_token'],
+      },
     },
     {
       name: 'auth_logout',
@@ -147,10 +144,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       inputSchema: {
         type: 'object',
         properties: {
-          auth_token: { type: 'string' }
+          auth_token: { type: 'string' },
         },
-        required: ['auth_token']
-      }
+        required: ['auth_token'],
+      },
     },
     {
       name: 'api_key_create',
@@ -162,15 +159,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           name: { type: 'string' },
           scopes: {
             type: 'array',
-            items: { type: 'string' }
+            items: { type: 'string' },
           },
           expires_at: { type: 'string' },
-          description: { type: 'string' }
+          description: { type: 'string' },
         },
-        required: ['auth_token', 'name', 'scopes']
-      }
-    }
-  ]
+        required: ['auth_token', 'name', 'scopes'],
+      },
+    },
+  ],
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
@@ -188,41 +185,62 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
         }
         const requestInfo = {
           ip_address: 'mcp-client',
-          user_agent: 'mcp-client'
+          user_agent: 'mcp-client',
         };
         const { auth, user } = await svc.authHelper.extractAuthContext(auth_token, requestInfo);
         // Check authorization
         const accessDecision = await svc.authHelper.checkAccess(auth, 'memory_store', 'write');
         if (!accessDecision.allowed) {
-          await svc.auditService.logPermissionDenied(user.id, 'memory_store', 'write', accessDecision.required_scopes, auth.scopes, requestInfo.ip_address, requestInfo.user_agent);
+          await svc.auditService.logPermissionDenied(
+            user.id,
+            'memory_store',
+            'write',
+            accessDecision.required_scopes,
+            auth.scopes,
+            requestInfo.ip_address,
+            requestInfo.user_agent
+          );
           throw new Error(`Access denied: ${accessDecision.reason}`);
         }
         // Log the operation
-        await svc.auditService.logStoreOperation('create', 'knowledge_items', 'batch', {}, user.id, true);
+        await svc.auditService.logStoreOperation(
+          'create',
+          'knowledge_items',
+          'batch',
+          {},
+          user.id,
+          true
+        );
         // For now, return stub response with authentication context
         return {
-          content: [{
+          content: [
+            {
               type: 'text',
-              text: JSON.stringify({
-                items: [],
-                stored_count: items.length,
-                authentication: {
-                  user_id: user.id,
-                  username: user.username,
-                  role: user.role,
-                  scopes: auth.scopes
+              text: JSON.stringify(
+                {
+                  items: [],
+                  stored_count: items.length,
+                  authentication: {
+                    user_id: user.id,
+                    username: user.username,
+                    role: user.role,
+                    scopes: auth.scopes,
+                  },
+                  autonomous_context: {
+                    strategy_used: 'authenticated',
+                    mode_executed: 'fast',
+                    confidence: 'high',
+                    total_results: 0,
+                    avg_score: 0,
+                    fallback_attempted: false,
+                    user_message_suggestion: 'Memory items stored successfully with authentication',
+                  },
                 },
-                autonomous_context: {
-                  strategy_used: 'authenticated',
-                  mode_executed: 'fast',
-                  confidence: 'high',
-                  total_results: 0,
-                  avg_score: 0,
-                  fallback_attempted: false,
-                  user_message_suggestion: 'Memory items stored successfully with authentication'
-                }
-              }, null, 2)
-            }]
+                null,
+                2
+              ),
+            },
+          ],
         };
       }
 
@@ -238,33 +256,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
             role: UserRole.ADMIN,
             is_active: true,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           };
           const session = svc.authService.createSession(mockUser, 'mcp-client', 'mcp-client');
           const scopes = svc.authService.getUserScopes(mockUser);
           const accessToken = svc.authService.generateAccessToken(mockUser, session.id, scopes);
           const refreshToken = svc.authService.generateRefreshToken(mockUser, session.id);
-          await svc.auditService.logAuthSuccess(mockUser.id, session.id, 'jwt', 'mcp-client', 'mcp-client', scopes);
+          await svc.auditService.logAuthSuccess(
+            mockUser.id,
+            session.id,
+            'jwt',
+            'mcp-client',
+            'mcp-client',
+            scopes
+          );
           return {
-            content: [{
+            content: [
+              {
                 type: 'text',
-                text: JSON.stringify({
-                  access_token: accessToken,
-                  refresh_token: refreshToken,
-                  token_type: 'Bearer',
-                  expires_in: 900, // 15 minutes
-                  scope: scopes,
-                  user: {
-                    id: mockUser.id,
-                    username: mockUser.username,
-                    role: mockUser.role
-                  }
-                }, null, 2)
-              }]
+                text: JSON.stringify(
+                  {
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                    token_type: 'Bearer',
+                    expires_in: 900, // 15 minutes
+                    scope: scopes,
+                    user: {
+                      id: mockUser.id,
+                      username: mockUser.username,
+                      role: mockUser.role,
+                    },
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
-        }
-        else {
-          await svc.auditService.logAuthFailure('mcp-client', 'mcp-client', 'Invalid credentials', undefined, undefined, undefined);
+        } else {
+          await svc.auditService.logAuthFailure(
+            'mcp-client',
+            'mcp-client',
+            'Invalid credentials',
+            undefined,
+            undefined,
+            undefined
+          );
           throw new Error('Invalid username or password');
         }
       }
@@ -273,20 +310,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (error) {
-    logger.error({
-      tool: name,
-      error: error instanceof Error ? error.message : String(error)
-    }, 'Tool execution error');
+    logger.error(
+      {
+        tool: name,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Tool execution error'
+    );
 
     return {
-      content: [{
+      content: [
+        {
           type: 'text',
-          text: JSON.stringify({
-            error: error instanceof Error ? error.message : String(error),
-            timestamp: new Date().toISOString()
-          }, null, 2)
-        }],
-      isError: true
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : String(error),
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
+      isError: true,
     };
   }
 });

@@ -13,7 +13,12 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
-import { LRUCache, CacheFactory, type CacheOptions, type CacheStats } from '../../../src/utils/lru-cache.js';
+import {
+  LRUCache,
+  CacheFactory,
+  type CacheOptions,
+  type CacheStats,
+} from '../../../src/utils/lru-cache.js';
 
 // Mock timers for TTL testing
 vi.useFakeTimers();
@@ -409,7 +414,7 @@ describe('Performance Caching', () => {
       const randomKeys = Array.from({ length: 20 }, (_, i) => `random${i}`);
 
       // Add popular keys
-      popularKeys.forEach(key => cache.set(key, `value-${key}`));
+      popularKeys.forEach((key) => cache.set(key, `value-${key}`));
 
       // Simulate mixed access pattern
       for (let i = 0; i < 100; i++) {
@@ -447,7 +452,7 @@ describe('Performance Caching', () => {
         { key: 'xlarge', size: 1000 },
       ];
 
-      items.forEach(item => {
+      items.forEach((item) => {
         cache.set(item.key, 'x'.repeat(item.size));
       });
 
@@ -541,10 +546,10 @@ describe('Performance Caching', () => {
       const keysToGet = Array.from({ length: 100 }, (_, i) => `key${i * 5}`);
 
       const startTime = Date.now();
-      const results = keysToGet.map(key => cache.get(key));
+      const results = keysToGet.map((key) => cache.get(key));
       const endTime = Date.now();
 
-      expect(results.every(result => result !== undefined)).toBe(true);
+      expect(results.every((result) => result !== undefined)).toBe(true);
       expect(endTime - startTime).toBeLessThan(50); // Very fast access
 
       cache.destroy();
@@ -608,7 +613,7 @@ describe('Distributed Caching Concepts', () => {
       const results = await Promise.all(operations);
 
       // All operations should complete successfully
-      expect(results.every(result => result !== undefined)).toBe(true);
+      expect(results.every((result) => result !== undefined)).toBe(true);
       expect(cache.getStats().itemCount).toBe(50);
 
       cache.destroy();
@@ -731,7 +736,7 @@ describe('Cache Analytics', () => {
         () => cache.get('key1'), // hit
       ];
 
-      operations.forEach(op => op());
+      operations.forEach((op) => op());
 
       const stats = cache.getStats();
 
@@ -761,7 +766,7 @@ describe('Cache Analytics', () => {
         { key: 'xlarge', size: 2000 },
       ];
 
-      memoryTests.forEach(test => {
+      memoryTests.forEach((test) => {
         cache.set(test.key, 'x'.repeat(test.size));
 
         const stats = cache.getStats();
@@ -856,7 +861,10 @@ describe('Service Integration Patterns', () => {
       const searchQueries = [
         { query: 'test search', results: ['result1', 'result2', 'result3'] },
         { query: 'another query', results: ['result4', 'result5'] },
-        { query: 'complex search with filters', results: ['result6', 'result7', 'result8', 'result9'] },
+        {
+          query: 'complex search with filters',
+          results: ['result6', 'result7', 'result8', 'result9'],
+        },
       ];
 
       // Cache search results

@@ -18,7 +18,7 @@ describe('ResultGroupingService', () => {
           data: { is_chunk: false, total_chunks: 3 },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1-1',
@@ -29,11 +29,11 @@ describe('ResultGroupingService', () => {
             parent_id: 'parent-1',
             chunk_index: 0,
             total_chunks: 3,
-            content: 'First chunk content'
+            content: 'First chunk content',
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.85,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1-2',
@@ -44,12 +44,12 @@ describe('ResultGroupingService', () => {
             parent_id: 'parent-1',
             chunk_index: 1,
             total_chunks: 3,
-            content: 'Second chunk content'
+            content: 'Second chunk content',
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.8,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const grouped = service.groupResultsByParent(searchResults);
@@ -71,7 +71,7 @@ describe('ResultGroupingService', () => {
           data: { title: 'Regular item' },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.7,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'regular-2',
@@ -80,8 +80,8 @@ describe('ResultGroupingService', () => {
           data: { name: 'Another item' },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.6,
-          match_type: 'fuzzy'
-        }
+          match_type: 'fuzzy',
+        },
       ];
 
       const grouped = service.groupResultsByParent(searchResults);
@@ -103,7 +103,7 @@ describe('ResultGroupingService', () => {
           data: { is_chunk: false, total_chunks: 3 },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-2', // Second chunk but first in array
@@ -113,11 +113,11 @@ describe('ResultGroupingService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 1,
-            total_chunks: 3
+            total_chunks: 3,
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.8,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1', // First chunk but second in array
@@ -127,12 +127,12 @@ describe('ResultGroupingService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 0,
-            total_chunks: 3
+            total_chunks: 3,
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.85,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const grouped = service.groupResultsByParent(searchResults);
@@ -159,7 +159,7 @@ describe('ResultGroupingService', () => {
             kind: 'observation',
             scope: { project: 'test' },
             created_at: '2025-01-01T00:00:00Z',
-            match_type: 'semantic'
+            match_type: 'semantic',
           },
           {
             id: 'chunk-2',
@@ -170,9 +170,9 @@ describe('ResultGroupingService', () => {
             kind: 'observation',
             scope: { project: 'test' },
             created_at: '2025-01-01T00:00:00Z',
-            match_type: 'semantic'
-          }
-        ]
+            match_type: 'semantic',
+          },
+        ],
       };
 
       const reconstructed = service.reconstructGroupedContent(groupedResult);
@@ -188,7 +188,7 @@ describe('ResultGroupingService', () => {
         parent_id: 'regular-1',
         parent_score: 0.7,
         is_single_item: true,
-        chunks: []
+        chunks: [],
       };
 
       const reconstructed = service.reconstructGroupedContent(singleItemResult);
@@ -209,7 +209,7 @@ describe('ResultGroupingService', () => {
           data: { title: 'Lower score parent' },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.6,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'parent-1',
@@ -218,7 +218,7 @@ describe('ResultGroupingService', () => {
           data: { is_chunk: false, total_chunks: 2 },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
+          match_type: 'semantic',
         },
         {
           id: 'chunk-1-1',
@@ -228,12 +228,12 @@ describe('ResultGroupingService', () => {
             is_chunk: true,
             parent_id: 'parent-1',
             chunk_index: 0,
-            total_chunks: 2
+            total_chunks: 2,
           },
           created_at: '2025-01-01T00:00:00Z',
           confidence_score: 0.85,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const grouped = service.groupAndSortResults(searchResults);
@@ -251,7 +251,7 @@ describe('ResultGroupingService', () => {
         { id: 'chunk-1-1', data: { is_chunk: true, parent_id: 'parent-1' } },
         { id: 'chunk-1-2', data: { is_chunk: true, parent_id: 'parent-1' } },
         { id: 'regular-1', data: { title: 'Regular' } },
-        { id: 'regular-2', data: { name: 'Another' } }
+        { id: 'regular-2', data: { name: 'Another' } },
       ];
 
       const stats = service.calculateGroupingStats(searchResults);

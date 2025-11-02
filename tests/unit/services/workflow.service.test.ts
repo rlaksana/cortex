@@ -53,7 +53,7 @@ import type {
   TriggerType,
   ActionType,
   NotificationType,
-  IntegrationType
+  IntegrationType,
 } from '../../../src/types/workflow-interfaces';
 
 // Mock dependencies
@@ -62,34 +62,34 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 vi.mock('../../../src/services/orchestrators/memory-find-orchestrator', () => ({
   MemoryFindOrchestrator: vi.fn().mockImplementation(() => ({
-    find: vi.fn()
-  }))
+    find: vi.fn(),
+  })),
 }));
 
 vi.mock('../../../src/services/notifications/notification.service', () => ({
   notificationService: {
     sendNotification: vi.fn(),
     sendBulkNotifications: vi.fn(),
-    getNotificationHistory: vi.fn()
-  }
+    getNotificationHistory: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/services/audit/audit-service', () => ({
   auditService: {
     logEvent: vi.fn(),
     getEventHistory: vi.fn(),
-    auditWorkflow: vi.fn()
-  }
+    auditWorkflow: vi.fn(),
+  },
 }));
 
 // Mock Qdrant client with comprehensive workflow data
@@ -100,7 +100,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowExecution: {
     create: vi.fn(),
@@ -108,7 +108,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowTask: {
     create: vi.fn(),
@@ -116,7 +116,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowTemplate: {
     create: vi.fn(),
@@ -124,7 +124,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowVersion: {
     create: vi.fn(),
@@ -132,7 +132,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowAnalytics: {
     create: vi.fn(),
@@ -140,7 +140,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowMetrics: {
     create: vi.fn(),
@@ -148,7 +148,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowEvent: {
     create: vi.fn(),
@@ -156,7 +156,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowNotification: {
     create: vi.fn(),
@@ -164,7 +164,7 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   workflowIntegration: {
     create: vi.fn(),
@@ -172,9 +172,9 @@ const mockQdrantClient = {
     findMany: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
-  $transaction: vi.fn()
+  $transaction: vi.fn(),
 };
 
 // Mock service data
@@ -195,8 +195,8 @@ const mockWorkflowTemplates: WorkflowTemplate[] = [
         dependencies: [],
         config: {
           deadline: 24,
-          autoReminder: true
-        }
+          autoReminder: true,
+        },
       },
       {
         id: 'task-2',
@@ -207,15 +207,15 @@ const mockWorkflowTemplates: WorkflowTemplate[] = [
         dependencies: ['task-1'],
         config: {
           requiredApprovals: 1,
-          autoReminder: true
-        }
-      }
+          autoReminder: true,
+        },
+      },
     ],
     metadata: {
       created_by: 'system',
       created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    }
+      updated_at: '2024-01-01T00:00:00Z',
+    },
   },
   {
     id: 'template-2',
@@ -232,8 +232,8 @@ const mockWorkflowTemplates: WorkflowTemplate[] = [
         dependencies: [],
         config: {
           service: 'monitoring',
-          action: 'detect'
-        }
+          action: 'detect',
+        },
       },
       {
         id: 'task-4',
@@ -246,24 +246,24 @@ const mockWorkflowTemplates: WorkflowTemplate[] = [
               id: 'task-4a',
               name: 'Technical Analysis',
               type: 'service',
-              config: { service: 'technical' }
+              config: { service: 'technical' },
             },
             {
               id: 'task-4b',
               name: 'Impact Assessment',
               type: 'human',
-              config: { assignee: 'analyst@example.com' }
-            }
-          ]
-        }
-      }
+              config: { assignee: 'analyst@example.com' },
+            },
+          ],
+        },
+      },
     ],
     metadata: {
       created_by: 'system',
       created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z'
-    }
-  }
+      updated_at: '2024-01-01T00:00:00Z',
+    },
+  },
 ];
 
 const mockWorkflowExecutions: WorkflowExecution[] = [
@@ -275,7 +275,7 @@ const mockWorkflowExecutions: WorkflowExecution[] = [
     currentTask: 'task-1',
     context: {
       documentId: 'doc-123',
-      requestor: 'user@example.com'
+      requestor: 'user@example.com',
     },
     tasks: [
       {
@@ -283,13 +283,13 @@ const mockWorkflowExecutions: WorkflowExecution[] = [
         taskId: 'task-1',
         status: 'pending',
         assignee: 'reviewer@example.com',
-        startedAt: '2024-01-01T10:00:00Z'
-      }
+        startedAt: '2024-01-01T10:00:00Z',
+      },
     ],
     metadata: {
       started_by: 'user@example.com',
-      started_at: '2024-01-01T10:00:00Z'
-    }
+      started_at: '2024-01-01T10:00:00Z',
+    },
   },
   {
     id: 'execution-2',
@@ -299,28 +299,28 @@ const mockWorkflowExecutions: WorkflowExecution[] = [
     completedAt: '2024-01-01T12:00:00Z',
     context: {
       incidentId: 'inc-456',
-      severity: 'high'
+      severity: 'high',
     },
     tasks: [
       {
         id: 'task-execution-2',
         taskId: 'task-3',
         status: 'completed',
-        completedAt: '2024-01-01T08:30:00Z'
+        completedAt: '2024-01-01T08:30:00Z',
       },
       {
         id: 'task-execution-3',
         taskId: 'task-4',
         status: 'completed',
-        completedAt: '2024-01-01T12:00:00Z'
-      }
+        completedAt: '2024-01-01T12:00:00Z',
+      },
     ],
     metadata: {
       started_by: 'system',
       started_at: '2024-01-01T08:00:00Z',
-      completed_at: '2024-01-01T12:00:00Z'
-    }
-  }
+      completed_at: '2024-01-01T12:00:00Z',
+    },
+  },
 ];
 
 const mockWorkflowAnalytics: WorkflowAnalytics[] = [
@@ -334,10 +334,10 @@ const mockWorkflowAnalytics: WorkflowAnalytics[] = [
     lastMonthExecutions: 25,
     averageTaskCompletionTime: {
       'task-1': 3600,
-      'task-2': 1800
+      'task-2': 1800,
     },
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
+    updatedAt: '2024-01-01T00:00:00Z',
   },
   {
     workflowId: 'template-2',
@@ -351,11 +351,11 @@ const mockWorkflowAnalytics: WorkflowAnalytics[] = [
       'task-3': 1800,
       'task-4': 7200,
       'task-4a': 3600,
-      'task-4b': 5400
+      'task-4b': 5400,
     },
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  }
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
 ];
 
 describe('WorkflowService', () => {
@@ -385,9 +385,9 @@ describe('WorkflowService', () => {
               type: 'human',
               assignee: 'reviewer@example.com',
               priority: 'medium',
-              dependencies: []
-            }
-          ]
+              dependencies: [],
+            },
+          ],
         };
 
         mockQdrantClient.workflowTemplate.create.mockResolvedValue({
@@ -396,8 +396,8 @@ describe('WorkflowService', () => {
           metadata: {
             created_by: 'test-user',
             created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          }
+            updated_at: '2024-01-01T00:00:00Z',
+          },
         });
 
         const result = await workflowService.createTemplate(templateData);
@@ -408,19 +408,20 @@ describe('WorkflowService', () => {
         expect(mockQdrantClient.workflowTemplate.create).toHaveBeenCalledWith({
           data: expect.objectContaining({
             name: 'New Approval Workflow',
-            description: 'Custom approval process'
-          })
+            description: 'Custom approval process',
+          }),
         });
       });
 
       it('should validate template structure before creation', async () => {
         const invalidTemplate = {
           name: '', // Empty name
-          tasks: [] // No tasks
+          tasks: [], // No tasks
         };
 
-        await expect(workflowService.createTemplate(invalidTemplate))
-          .rejects.toThrow('Template validation failed');
+        await expect(workflowService.createTemplate(invalidTemplate)).rejects.toThrow(
+          'Template validation failed'
+        );
 
         expect(mockQdrantClient.workflowTemplate.create).not.toHaveBeenCalled();
       });
@@ -429,13 +430,14 @@ describe('WorkflowService', () => {
         const templateData = {
           name: 'Document Approval Workflow', // Duplicate name
           category: 'approval',
-          version: '1.0.0'
+          version: '1.0.0',
         };
 
         mockQdrantClient.workflowTemplate.findMany.mockResolvedValue(mockWorkflowTemplates);
 
-        await expect(workflowService.createTemplate(templateData))
-          .rejects.toThrow('Template with this name already exists');
+        await expect(workflowService.createTemplate(templateData)).rejects.toThrow(
+          'Template with this name already exists'
+        );
       });
     });
 
@@ -448,15 +450,15 @@ describe('WorkflowService', () => {
               id: 'task-1',
               name: 'Task 1',
               type: 'human',
-              dependencies: ['task-2'] // Circular dependency
+              dependencies: ['task-2'], // Circular dependency
             },
             {
               id: 'task-2',
               name: 'Task 2',
               type: 'human',
-              dependencies: ['task-1'] // Circular dependency
-            }
-          ]
+              dependencies: ['task-1'], // Circular dependency
+            },
+          ],
         };
 
         const validation = await workflowService.validateTemplate(templateWithCircularDeps as any);
@@ -472,13 +474,15 @@ describe('WorkflowService', () => {
             {
               id: 'task-1',
               name: 'Task 1',
-              type: 'human'
+              type: 'human',
               // Missing assignee for human task
-            }
-          ]
+            },
+          ],
         };
 
-        const validation = await workflowService.validateTemplate(templateWithIncompleteTasks as any);
+        const validation = await workflowService.validateTemplate(
+          templateWithIncompleteTasks as any
+        );
 
         expect(validation.isValid).toBe(false);
         expect(validation.errors).toContain('Human tasks require assignee');
@@ -498,9 +502,9 @@ describe('WorkflowService', () => {
               type: 'human',
               assignee: 'final-reviewer@example.com',
               priority: 'medium',
-              dependencies: ['task-2']
-            }
-          ]
+              dependencies: ['task-2'],
+            },
+          ],
         };
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue(existingTemplate);
@@ -511,8 +515,8 @@ describe('WorkflowService', () => {
           changes: updates,
           metadata: {
             created_by: 'test-user',
-            created_at: '2024-01-01T00:00:00Z'
-          }
+            created_at: '2024-01-01T00:00:00Z',
+          },
         });
 
         const result = await workflowService.createTemplateVersion(existingTemplate.id, updates);
@@ -531,15 +535,15 @@ describe('WorkflowService', () => {
             templateId,
             version: '1.0.0',
             changes: { name: 'Initial version' },
-            createdAt: '2024-01-01T00:00:00Z'
+            createdAt: '2024-01-01T00:00:00Z',
           },
           {
             id: 'version-2',
             templateId,
             version: '1.1.0',
             changes: { name: 'Updated version' },
-            createdAt: '2024-01-02T00:00:00Z'
-          }
+            createdAt: '2024-01-02T00:00:00Z',
+          },
         ]);
 
         const history = await workflowService.getTemplateVersionHistory(templateId);
@@ -557,7 +561,7 @@ describe('WorkflowService', () => {
         mockQdrantClient.workflowTemplate.update.mockResolvedValue({
           id: templateId,
           status: 'active',
-          activatedAt: '2024-01-01T00:00:00Z'
+          activatedAt: '2024-01-01T00:00:00Z',
         });
 
         const result = await workflowService.activateTemplate(templateId);
@@ -572,7 +576,7 @@ describe('WorkflowService', () => {
         mockQdrantClient.workflowTemplate.update.mockResolvedValue({
           id: templateId,
           status: 'inactive',
-          deactivatedAt: '2024-01-01T00:00:00Z'
+          deactivatedAt: '2024-01-01T00:00:00Z',
         });
 
         const result = await workflowService.deactivateTemplate(templateId);
@@ -589,20 +593,20 @@ describe('WorkflowService', () => {
             id: 'version-1',
             templateId,
             version: '1.0.0',
-            status: 'active'
+            status: 'active',
           },
           {
             id: 'version-2',
             templateId,
             version: '1.1.0',
-            status: 'active'
-          }
+            status: 'active',
+          },
         ]);
 
         mockQdrantClient.workflowVersion.update.mockResolvedValue({
           id: 'version-1',
           status: 'archived',
-          archivedAt: '2024-01-01T00:00:00Z'
+          archivedAt: '2024-01-01T00:00:00Z',
         });
 
         const result = await workflowService.archiveTemplateVersions(templateId, '1.1.0');
@@ -622,20 +626,20 @@ describe('WorkflowService', () => {
               id: 'task-1',
               name: 'Modified Task',
               type: 'human',
-              assignee: 'new-assignee@example.com'
-            }
-          ]
+              assignee: 'new-assignee@example.com',
+            },
+          ],
         };
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue({
           ...mockWorkflowTemplates[0],
-          status: 'inactive'
+          status: 'inactive',
         });
 
         mockQdrantClient.workflowTemplate.update.mockResolvedValue({
           id: templateId,
           ...updates,
-          updatedAt: '2024-01-01T00:00:00Z'
+          updatedAt: '2024-01-01T00:00:00Z',
         });
 
         const result = await workflowService.modifyTemplate(templateId, updates);
@@ -650,16 +654,17 @@ describe('WorkflowService', () => {
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue({
           ...mockWorkflowTemplates[0],
-          status: 'active'
+          status: 'active',
         });
 
         mockQdrantClient.workflowExecution.findMany.mockResolvedValue([
           { status: 'running' },
-          { status: 'pending' }
+          { status: 'pending' },
         ]);
 
-        await expect(workflowService.modifyTemplate(templateId, updates))
-          .rejects.toThrow('Cannot modify template with active executions');
+        await expect(workflowService.modifyTemplate(templateId, updates)).rejects.toThrow(
+          'Cannot modify template with active executions'
+        );
       });
     });
 
@@ -669,11 +674,9 @@ describe('WorkflowService', () => {
           name: 'Composed Workflow',
           subWorkflows: [
             { templateId: 'template-1', alias: 'approval' },
-            { templateId: 'template-2', alias: 'incident-response' }
+            { templateId: 'template-2', alias: 'incident-response' },
           ],
-          connections: [
-            { from: 'approval.task-2', to: 'incident-response.task-3' }
-          ]
+          connections: [{ from: 'approval.task-2', to: 'incident-response.task-3' }],
         };
 
         mockQdrantClient.workflowTemplate.findMany.mockResolvedValue(mockWorkflowTemplates);
@@ -681,8 +684,8 @@ describe('WorkflowService', () => {
           id: 'composed-template',
           ...composition,
           metadata: {
-            created_at: '2024-01-01T00:00:00Z'
-          }
+            created_at: '2024-01-01T00:00:00Z',
+          },
         });
 
         const result = await workflowService.composeTemplates(composition);
@@ -696,12 +699,13 @@ describe('WorkflowService', () => {
           name: 'Invalid Composition',
           subWorkflows: [
             { templateId: 'template-1', alias: 'approval' },
-            { templateId: 'template-1', alias: 'duplicate' } // Duplicate template
-          ]
+            { templateId: 'template-1', alias: 'duplicate' }, // Duplicate template
+          ],
         };
 
-        await expect(workflowService.composeTemplates(invalidComposition))
-          .rejects.toThrow('Duplicate template in composition');
+        await expect(workflowService.composeTemplates(invalidComposition)).rejects.toThrow(
+          'Duplicate template in composition'
+        );
       });
     });
   });
@@ -713,9 +717,9 @@ describe('WorkflowService', () => {
           templateId: 'template-1',
           context: {
             documentId: 'doc-123',
-            requestor: 'user@example.com'
+            requestor: 'user@example.com',
           },
-          mode: 'sequential'
+          mode: 'sequential',
         };
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue(mockWorkflowTemplates[0]);
@@ -723,7 +727,7 @@ describe('WorkflowService', () => {
           id: 'execution-1',
           ...executionRequest,
           status: 'running',
-          startedAt: '2024-01-01T10:00:00Z'
+          startedAt: '2024-01-01T10:00:00Z',
         });
 
         const result = await workflowService.executeWorkflow(executionRequest);
@@ -738,23 +742,27 @@ describe('WorkflowService', () => {
 
         mockQdrantClient.workflowExecution.findUnique.mockResolvedValue({
           ...mockWorkflowExecutions[0],
-          currentTask: 'task-1'
+          currentTask: 'task-1',
         });
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: 'task-execution-1',
           status: 'failed',
           error: 'Task execution failed',
-          failedAt: '2024-01-01T11:00:00Z'
+          failedAt: '2024-01-01T11:00:00Z',
         });
 
         mockQdrantClient.workflowExecution.update.mockResolvedValue({
           id: executionId,
           status: 'failed',
-          failedAt: '2024-01-01T11:00:00Z'
+          failedAt: '2024-01-01T11:00:00Z',
         });
 
-        const result = await workflowService.failTask(executionId, 'task-1', 'Task execution failed');
+        const result = await workflowService.failTask(
+          executionId,
+          'task-1',
+          'Task execution failed'
+        );
 
         expect(result.status).toBe('failed');
         expect(result.failedAt).toBeDefined();
@@ -765,19 +773,19 @@ describe('WorkflowService', () => {
 
         mockQdrantClient.workflowExecution.findUnique.mockResolvedValue({
           ...mockWorkflowExecutions[0],
-          currentTask: 'task-1'
+          currentTask: 'task-1',
         });
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: 'task-execution-1',
           status: 'completed',
-          completedAt: '2024-01-01T10:30:00Z'
+          completedAt: '2024-01-01T10:30:00Z',
         });
 
         mockQdrantClient.workflowExecution.update.mockResolvedValue({
           id: executionId,
           currentTask: 'task-2',
-          status: 'running'
+          status: 'running',
         });
 
         const result = await workflowService.completeTask(executionId, 'task-1');
@@ -792,7 +800,7 @@ describe('WorkflowService', () => {
         const executionRequest: WorkflowExecutionRequest = {
           templateId: 'template-2',
           context: { incidentId: 'inc-456' },
-          mode: 'parallel'
+          mode: 'parallel',
         };
 
         const parallelTemplate = {
@@ -802,15 +810,15 @@ describe('WorkflowService', () => {
               id: 'parallel-1',
               name: 'Task 1',
               type: 'service',
-              dependencies: []
+              dependencies: [],
             },
             {
               id: 'parallel-2',
               name: 'Task 2',
               type: 'service',
-              dependencies: []
-            }
-          ]
+              dependencies: [],
+            },
+          ],
         };
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue(parallelTemplate);
@@ -819,7 +827,7 @@ describe('WorkflowService', () => {
           ...executionRequest,
           status: 'running',
           startedAt: '2024-01-01T10:00:00Z',
-          currentTasks: ['parallel-1', 'parallel-2']
+          currentTasks: ['parallel-1', 'parallel-2'],
         });
 
         const result = await workflowService.executeWorkflow(executionRequest);
@@ -835,12 +843,12 @@ describe('WorkflowService', () => {
         mockQdrantClient.workflowExecution.findUnique.mockResolvedValue({
           id: executionId,
           currentTasks: parallelTasks,
-          status: 'running'
+          status: 'running',
         });
 
         mockQdrantClient.workflowTask.findMany.mockResolvedValue([
           { id: 'task-1', taskId: 'parallel-1', status: 'completed' },
-          { id: 'task-2', taskId: 'parallel-2', status: 'completed' }
+          { id: 'task-2', taskId: 'parallel-2', status: 'completed' },
         ]);
 
         const result = await workflowService.checkParallelCompletion(executionId);
@@ -855,12 +863,12 @@ describe('WorkflowService', () => {
         mockQdrantClient.workflowExecution.findUnique.mockResolvedValue({
           id: executionId,
           currentTasks: ['parallel-1', 'parallel-2'],
-          status: 'running'
+          status: 'running',
         });
 
         mockQdrantClient.workflowTask.findMany.mockResolvedValue([
           { id: 'task-1', taskId: 'parallel-1', status: 'completed' },
-          { id: 'task-2', taskId: 'parallel-2', status: 'failed' }
+          { id: 'task-2', taskId: 'parallel-2', status: 'failed' },
         ]);
 
         const result = await workflowService.checkParallelCompletion(executionId);
@@ -880,7 +888,7 @@ describe('WorkflowService', () => {
               id: 'task-1',
               name: 'Initial Task',
               type: 'service',
-              dependencies: []
+              dependencies: [],
             },
             {
               id: 'task-2a',
@@ -890,8 +898,8 @@ describe('WorkflowService', () => {
               condition: {
                 field: 'context.priority',
                 operator: 'equals',
-                value: 'high'
-              }
+                value: 'high',
+              },
             },
             {
               id: 'task-2b',
@@ -901,16 +909,16 @@ describe('WorkflowService', () => {
               condition: {
                 field: 'context.priority',
                 operator: 'equals',
-                value: 'low'
-              }
-            }
-          ]
+                value: 'low',
+              },
+            },
+          ],
         };
 
         const executionRequest: WorkflowExecutionRequest = {
           templateId: 'template-conditional',
           context: { priority: 'high' },
-          mode: 'conditional'
+          mode: 'conditional',
         };
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue(conditionalTemplate);
@@ -918,7 +926,7 @@ describe('WorkflowService', () => {
           id: 'execution-conditional',
           ...executionRequest,
           status: 'running',
-          currentTasks: ['task-2a'] // Only branch A selected
+          currentTasks: ['task-2a'], // Only branch A selected
         });
 
         const result = await workflowService.executeWorkflow(executionRequest);
@@ -931,17 +939,19 @@ describe('WorkflowService', () => {
         const complexCondition = {
           and: [
             { field: 'context.amount', operator: '>', value: 1000 },
-            { or: [
-              { field: 'context.region', operator: 'in', value: ['US', 'CA'] },
-              { field: 'context.vip', operator: 'equals', value: true }
-            ]}
-          ]
+            {
+              or: [
+                { field: 'context.region', operator: 'in', value: ['US', 'CA'] },
+                { field: 'context.vip', operator: 'equals', value: true },
+              ],
+            },
+          ],
         };
 
         const context = {
           amount: 1500,
           region: 'US',
-          vip: false
+          vip: false,
         };
 
         const result = await workflowService.evaluateCondition(complexCondition, context);
@@ -956,23 +966,27 @@ describe('WorkflowService', () => {
               id: 'task-1',
               name: 'Initial Task',
               type: 'service',
-              dependencies: []
+              dependencies: [],
             },
             {
               id: 'task-default',
               name: 'Default Branch',
               type: 'service',
               dependencies: ['task-1'],
-              default: true
-            }
-          ]
+              default: true,
+            },
+          ],
         };
 
         const context = { priority: 'medium' }; // Doesn't match any specific conditions
 
         mockQdrantClient.workflowTemplate.findUnique.mockResolvedValue(templateWithDefault);
 
-        const nextTasks = await workflowService.getNextTasks('task-1', context, templateWithDefault);
+        const nextTasks = await workflowService.getNextTasks(
+          'task-1',
+          context,
+          templateWithDefault
+        );
 
         expect(nextTasks).toContain('task-default');
       });
@@ -985,14 +999,14 @@ describe('WorkflowService', () => {
           currentTask: 'task-2',
           variables: {
             approvedAmount: 5000,
-            reviewer: 'john.doe@example.com'
-          }
+            reviewer: 'john.doe@example.com',
+          },
         };
 
         mockQdrantClient.workflowExecution.update.mockResolvedValue({
           id: executionId,
           ...stateUpdate,
-          updatedAt: '2024-01-01T10:30:00Z'
+          updatedAt: '2024-01-01T10:30:00Z',
         });
 
         const result = await workflowService.updateWorkflowState(executionId, stateUpdate);
@@ -1005,13 +1019,13 @@ describe('WorkflowService', () => {
         const executionId = 'execution-1';
         const previousState = {
           currentTask: 'task-1',
-          variables: { step: 'initial' }
+          variables: { step: 'initial' },
         };
 
         mockQdrantClient.workflowExecution.update.mockResolvedValue({
           id: executionId,
           ...previousState,
-          rolledBackAt: '2024-01-01T11:00:00Z'
+          rolledBackAt: '2024-01-01T11:00:00Z',
         });
 
         const result = await workflowService.rollbackWorkflowState(executionId, previousState);
@@ -1028,9 +1042,9 @@ describe('WorkflowService', () => {
           status: 'suspended',
           state: {
             checkpoint: 'task-5',
-            variables: { progress: 0.6 }
+            variables: { progress: 0.6 },
           },
-          suspendedAt: '2024-01-01T15:00:00Z'
+          suspendedAt: '2024-01-01T15:00:00Z',
         });
 
         const result = await workflowService.resumeWorkflow(executionId);
@@ -1049,13 +1063,13 @@ describe('WorkflowService', () => {
           executionId: 'execution-1',
           assignee: 'reviewer@example.com',
           assignedBy: 'system',
-          assignedAt: '2024-01-01T10:00:00Z'
+          assignedAt: '2024-01-01T10:00:00Z',
         };
 
         mockQdrantClient.workflowTask.create.mockResolvedValue({
           id: 'task-assignment-1',
           ...taskAssignment,
-          status: 'assigned'
+          status: 'assigned',
         });
 
         const result = await workflowService.assignTask(taskAssignment);
@@ -1069,16 +1083,19 @@ describe('WorkflowService', () => {
           type: 'technical-review',
           skills: ['javascript', 'security'],
           priority: 'high',
-          estimatedDuration: 3600
+          estimatedDuration: 3600,
         };
 
         const availableUsers = [
           { id: 'user-1', skills: ['javascript', 'react'], workload: 0.6 },
           { id: 'user-2', skills: ['security', 'python'], workload: 0.3 },
-          { id: 'user-3', skills: ['javascript', 'security'], workload: 0.2 }
+          { id: 'user-3', skills: ['javascript', 'security'], workload: 0.2 },
         ];
 
-        const bestAssignee = await workflowService.findBestAssignee(taskRequirements, availableUsers);
+        const bestAssignee = await workflowService.findBestAssignee(
+          taskRequirements,
+          availableUsers
+        );
 
         expect(bestAssignee.id).toBe('user-3'); // Best skill match and lowest workload
       });
@@ -1091,7 +1108,7 @@ describe('WorkflowService', () => {
           id: taskExecutionId,
           assignee: newAssignee,
           reassignedAt: '2024-01-01T11:00:00Z',
-          previousAssignee: 'old-reviewer@example.com'
+          previousAssignee: 'old-reviewer@example.com',
         });
 
         const result = await workflowService.reassignTask(taskExecutionId, newAssignee);
@@ -1107,18 +1124,18 @@ describe('WorkflowService', () => {
           {
             id: 'task-1',
             name: 'Setup',
-            dependencies: []
+            dependencies: [],
           },
           {
             id: 'task-2',
             name: 'Configuration',
-            dependencies: ['task-1']
+            dependencies: ['task-1'],
           },
           {
             id: 'task-3',
             name: 'Deployment',
-            dependencies: ['task-1', 'task-2']
-          }
+            dependencies: ['task-1', 'task-2'],
+          },
         ];
 
         const executionPlan = await workflowService.createExecutionPlan(tasksWithDependencies);
@@ -1133,36 +1150,37 @@ describe('WorkflowService', () => {
         const tasksWithCircularDeps = [
           {
             id: 'task-1',
-            dependencies: ['task-2']
+            dependencies: ['task-2'],
           },
           {
             id: 'task-2',
-            dependencies: ['task-3']
+            dependencies: ['task-3'],
           },
           {
             id: 'task-3',
-            dependencies: ['task-1'] // Circular
-          }
+            dependencies: ['task-1'], // Circular
+          },
         ];
 
-        await expect(workflowService.createExecutionPlan(tasksWithCircularDeps))
-          .rejects.toThrow('Circular dependency detected');
+        await expect(workflowService.createExecutionPlan(tasksWithCircularDeps)).rejects.toThrow(
+          'Circular dependency detected'
+        );
       });
 
       it('should handle optional dependencies', async () => {
         const tasksWithOptionalDeps = [
           {
             id: 'task-1',
-            dependencies: []
+            dependencies: [],
           },
           {
             id: 'task-2',
-            dependencies: [{ taskId: 'task-1', required: false }]
+            dependencies: [{ taskId: 'task-1', required: false }],
           },
           {
             id: 'task-3',
-            dependencies: ['task-2']
-          }
+            dependencies: ['task-2'],
+          },
         ];
 
         const plan = await workflowService.createExecutionPlan(tasksWithOptionalDeps);
@@ -1178,20 +1196,20 @@ describe('WorkflowService', () => {
         const timeoutConfig = {
           duration: 3600,
           action: 'escalate',
-          escalationTarget: 'manager@example.com'
+          escalationTarget: 'manager@example.com',
         };
 
         mockQdrantClient.workflowTask.findUnique.mockResolvedValue({
           id: taskExecutionId,
           status: 'assigned',
           assignedAt: '2024-01-01T08:00:00Z',
-          deadline: '2024-01-01T09:00:00Z'
+          deadline: '2024-01-01T09:00:00Z',
         });
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: taskExecutionId,
           status: 'timeout',
-          timeoutAt: '2024-01-01T09:00:00Z'
+          timeoutAt: '2024-01-01T09:00:00Z',
         });
 
         const result = await workflowService.handleTaskTimeout(taskExecutionId, timeoutConfig);
@@ -1205,21 +1223,21 @@ describe('WorkflowService', () => {
         const retryConfig = {
           maxRetries: 3,
           backoffStrategy: 'exponential',
-          initialDelay: 1000
+          initialDelay: 1000,
         };
 
         mockQdrantClient.workflowTask.findUnique.mockResolvedValue({
           id: taskExecutionId,
           status: 'failed',
           retryCount: 1,
-          lastFailureAt: '2024-01-01T10:00:00Z'
+          lastFailureAt: '2024-01-01T10:00:00Z',
         });
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: taskExecutionId,
           status: 'retrying',
           retryCount: 2,
-          nextRetryAt: '2024-01-01T10:04:00Z' // Exponential backoff
+          nextRetryAt: '2024-01-01T10:04:00Z', // Exponential backoff
         });
 
         const result = await workflowService.retryTask(taskExecutionId, retryConfig);
@@ -1235,14 +1253,14 @@ describe('WorkflowService', () => {
           id: taskExecutionId,
           status: 'failed',
           retryCount: 3,
-          maxRetries: 3
+          maxRetries: 3,
         });
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: taskExecutionId,
           status: 'escalated',
           escalatedAt: '2024-01-01T11:00:00Z',
-          escalatedTo: 'manager@example.com'
+          escalatedTo: 'manager@example.com',
         });
 
         const result = await workflowService.retryTask(taskExecutionId, { maxRetries: 3 });
@@ -1262,15 +1280,15 @@ describe('WorkflowService', () => {
             status: 'completed',
             completedAt: '2024-01-01T10:30:00Z',
             actualDuration: 1800,
-            estimatedDuration: 3600
+            estimatedDuration: 3600,
           },
           {
             id: 'task-2',
             status: 'completed',
             completedAt: '2024-01-01T11:00:00Z',
             actualDuration: 900,
-            estimatedDuration: 1800
-          }
+            estimatedDuration: 1800,
+          },
         ]);
 
         const metrics = await workflowService.getTaskCompletionMetrics(executionId);
@@ -1286,7 +1304,7 @@ describe('WorkflowService', () => {
           { taskId: 'task-1', actualDuration: 6300, estimatedDuration: 3600 },
           { taskId: 'task-1', actualDuration: 8100, estimatedDuration: 3600 },
           { taskId: 'task-2', actualDuration: 1800, estimatedDuration: 3600 },
-          { taskId: 'task-2', actualDuration: 1500, estimatedDuration: 3600 }
+          { taskId: 'task-2', actualDuration: 1500, estimatedDuration: 3600 },
         ];
 
         const analysis = await workflowService.analyzeTaskEstimates(taskHistory);
@@ -1310,15 +1328,15 @@ describe('WorkflowService', () => {
           dueDate: '2024-01-02T17:00:00Z',
           metadata: {
             documentId: 'doc-123',
-            reviewType: 'compliance'
-          }
+            reviewType: 'compliance',
+          },
         };
 
         mockQdrantClient.workflowTask.create.mockResolvedValue({
           id: 'task-assignment-1',
           ...humanTask,
           status: 'assigned',
-          assignedAt: '2024-01-01T10:00:00Z'
+          assignedAt: '2024-01-01T10:00:00Z',
         });
 
         const result = await workflowService.createHumanTask(humanTask);
@@ -1333,18 +1351,18 @@ describe('WorkflowService', () => {
           {
             taskId: 'task-1',
             assignee: 'user1@example.com',
-            priority: 'high'
+            priority: 'high',
           },
           {
             taskId: 'task-2',
             assignee: 'user2@example.com',
-            priority: 'medium'
+            priority: 'medium',
           },
           {
             taskId: 'task-3',
             assignee: 'user3@example.com',
-            priority: 'low'
-          }
+            priority: 'low',
+          },
         ];
 
         mockQdrantClient.$transaction.mockImplementation(async (callback) => {
@@ -1361,21 +1379,23 @@ describe('WorkflowService', () => {
 
       it('should handle user workload balancing', async () => {
         const users = ['user1@example.com', 'user2@example.com', 'user3@example.com'];
-        const tasks = Array(5).fill(null).map((_, i) => ({
-          id: `task-${i}`,
-          estimatedDuration: 3600
-        }));
+        const tasks = Array(5)
+          .fill(null)
+          .map((_, i) => ({
+            id: `task-${i}`,
+            estimatedDuration: 3600,
+          }));
 
         mockQdrantClient.workflowTask.findMany.mockResolvedValue([
           { assignee: 'user1@example.com', activeTasks: 3 },
           { assignee: 'user2@example.com', activeTasks: 1 },
-          { assignee: 'user3@example.com', activeTasks: 2 }
+          { assignee: 'user3@example.com', activeTasks: 2 },
         ]);
 
         const assignments = await workflowService.balanceTaskAssignment(tasks, users);
 
         // User2 has lowest workload, should get more tasks
-        const user2Tasks = assignments.filter(a => a.assignee === 'user2@example.com');
+        const user2Tasks = assignments.filter((a) => a.assignee === 'user2@example.com');
         expect(user2Tasks.length).toBeGreaterThanOrEqual(2);
       });
     });
@@ -1389,14 +1409,14 @@ describe('WorkflowService', () => {
           approvers: ['manager1@example.com', 'manager2@example.com', 'manager3@example.com'],
           requiredApprovals: 2,
           votingMethod: 'majority',
-          deadline: '2024-01-03T17:00:00Z'
+          deadline: '2024-01-03T17:00:00Z',
         };
 
         mockQdrantClient.workflowTask.create.mockResolvedValue({
           id: 'approval-task-1',
           ...approvalTask,
           status: 'pending_approval',
-          createdAt: '2024-01-01T10:00:00Z'
+          createdAt: '2024-01-01T10:00:00Z',
         });
 
         const result = await workflowService.createApprovalTask(approvalTask);
@@ -1411,13 +1431,13 @@ describe('WorkflowService', () => {
         const votes = [
           { approver: 'manager1@example.com', decision: 'approve', comment: 'Looks good' },
           { approver: 'manager2@example.com', decision: 'approve', comment: 'Approved' },
-          { approver: 'manager3@example.com', decision: 'reject', comment: 'Needs revision' }
+          { approver: 'manager3@example.com', decision: 'reject', comment: 'Needs revision' },
         ];
 
         mockQdrantClient.workflowTask.findUnique.mockResolvedValue({
           id: approvalTaskId,
           requiredApprovals: 2,
-          approvers: ['manager1@example.com', 'manager2@example.com', 'manager3@example.com']
+          approvers: ['manager1@example.com', 'manager2@example.com', 'manager3@example.com'],
         });
 
         const outcome = await workflowService.processApprovalVotes(approvalTaskId, votes);
@@ -1436,24 +1456,27 @@ describe('WorkflowService', () => {
               field: 'amount',
               operator: '>',
               value: 10000,
-              requiredApprovals: 3
+              requiredApprovals: 3,
             },
             {
               field: 'department',
               operator: 'equals',
               value: 'finance',
-              requiredApprovals: 2
-            }
+              requiredApprovals: 2,
+            },
           ],
-          defaultApprovals: 1
+          defaultApprovals: 1,
         };
 
         const context = {
           amount: 15000,
-          department: 'finance'
+          department: 'finance',
         };
 
-        const requiredApprovals = await workflowService.calculateRequiredApprovals(conditionalApproval, context);
+        const requiredApprovals = await workflowService.calculateRequiredApprovals(
+          conditionalApproval,
+          context
+        );
 
         expect(requiredApprovals).toBe(3); // High amount condition takes precedence
       });
@@ -1468,14 +1491,14 @@ describe('WorkflowService', () => {
           escalatedTo: 'manager@example.com',
           reason: 'timeout',
           originalDeadline: '2024-01-01T17:00:00Z',
-          newDeadline: '2024-01-02T10:00:00Z'
+          newDeadline: '2024-01-02T10:00:00Z',
         };
 
         mockQdrantClient.workflowTask.create.mockResolvedValue({
           id: 'escalation-task-1',
           ...escalationTask,
           status: 'escalated',
-          escalatedAt: '2024-01-01T18:00:00Z'
+          escalatedAt: '2024-01-01T18:00:00Z',
         });
 
         const result = await workflowService.createEscalationTask(escalationTask);
@@ -1489,11 +1512,14 @@ describe('WorkflowService', () => {
         const escalationChain = [
           { level: 1, target: 'manager@example.com', delay: 3600 },
           { level: 2, target: 'director@example.com', delay: 7200 },
-          { level: 3, target: 'vp@example.com', delay: 14400 }
+          { level: 3, target: 'vp@example.com', delay: 14400 },
         ];
 
         const currentLevel = 2;
-        const nextEscalation = await workflowService.getNextEscalation(escalationChain, currentLevel);
+        const nextEscalation = await workflowService.getNextEscalation(
+          escalationChain,
+          currentLevel
+        );
 
         expect(nextEscalation.level).toBe(3);
         expect(nextEscalation.target).toBe('vp@example.com');
@@ -1501,7 +1527,10 @@ describe('WorkflowService', () => {
       });
 
       it('should track escalation effectiveness', async () => {
-        const escalationAnalytics = await workflowService.getEscalationAnalytics('2024-01-01', '2024-01-31');
+        const escalationAnalytics = await workflowService.getEscalationAnalytics(
+          '2024-01-01',
+          '2024-01-31'
+        );
 
         expect(escalationAnalytics.totalEscalations).toBeDefined();
         expect(escalationAnalytics.resolvedAfterEscalation).toBeDefined();
@@ -1520,20 +1549,23 @@ describe('WorkflowService', () => {
           message: 'You have been assigned a new task',
           channels: ['email', 'slack'],
           priority: 'high',
-          scheduledAt: '2024-01-01T10:00:00Z'
+          scheduledAt: '2024-01-01T10:00:00Z',
         };
 
         const mockNotificationService = {
-          sendNotification: vi.fn().mockResolvedValue({ id: 'notif-1', sent: true })
+          sendNotification: vi.fn().mockResolvedValue({ id: 'notif-1', sent: true }),
         };
 
-        const result = await workflowService.sendNotification(notification, mockNotificationService);
+        const result = await workflowService.sendNotification(
+          notification,
+          mockNotificationService
+        );
 
         expect(result.sent).toBe(true);
         expect(mockNotificationService.sendNotification).toHaveBeenCalledWith(
           expect.objectContaining({
             type: 'task_assigned',
-            recipient: 'user@example.com'
+            recipient: 'user@example.com',
           })
         );
       });
@@ -1542,12 +1574,12 @@ describe('WorkflowService', () => {
         const template = {
           name: 'Task Reminder',
           subject: 'Reminder: {{task.name}} is due soon',
-          body: 'Hi {{user.name}}, your task "{{task.name}}" is due on {{task.dueDate}}'
+          body: 'Hi {{user.name}}, your task "{{task.name}}" is due on {{task.dueDate}}',
         };
 
         const context = {
           user: { name: 'John Doe' },
-          task: { name: 'Document Review', dueDate: '2024-01-02T17:00:00Z' }
+          task: { name: 'Document Review', dueDate: '2024-01-02T17:00:00Z' },
         };
 
         const personalized = await workflowService.personalizeNotification(template, context);
@@ -1563,13 +1595,13 @@ describe('WorkflowService', () => {
           slackNotifications: false,
           workingHoursOnly: true,
           timezone: 'America/New_York',
-          quietHours: { start: '18:00', end: '08:00' }
+          quietHours: { start: '18:00', end: '08:00' },
         };
 
         const notification = {
           type: 'task_reminder',
           recipient: 'user@example.com',
-          scheduledAt: '2024-01-01T20:00:00Z' // During quiet hours
+          scheduledAt: '2024-01-01T20:00:00Z', // During quiet hours
         };
 
         const adjustedSchedule = await workflowService.adjustNotificationSchedule(
@@ -1592,7 +1624,7 @@ describe('WorkflowService', () => {
           { status: 'completed', duration: 7200, startedAt: '2024-01-01T10:00:00Z' },
           { status: 'completed', duration: 5400, startedAt: '2024-01-02T11:00:00Z' },
           { status: 'failed', duration: 3600, startedAt: '2024-01-03T09:00:00Z' },
-          { status: 'running', duration: 1800, startedAt: '2024-01-04T08:00:00Z' }
+          { status: 'running', duration: 1800, startedAt: '2024-01-04T08:00:00Z' },
         ]);
 
         const metrics = await workflowService.getExecutionMetrics(timeRange);
@@ -1618,7 +1650,7 @@ describe('WorkflowService', () => {
         const templateComparison = await workflowService.compareTemplatePerformance([
           'template-1',
           'template-2',
-          'template-3'
+          'template-3',
         ]);
 
         expect(templateComparison).toHaveLength(3);
@@ -1637,15 +1669,15 @@ describe('WorkflowService', () => {
             averageDuration: 7200,
             queueTime: 1800,
             executionTime: 5400,
-            failureRate: 0.1
+            failureRate: 0.1,
           },
           {
             taskId: 'task-2',
             averageDuration: 14400,
             queueTime: 7200,
             executionTime: 7200,
-            failureRate: 0.3
-          }
+            failureRate: 0.3,
+          },
         ];
 
         const bottlenecks = await workflowService.identifyBottlenecks(performanceData);
@@ -1681,7 +1713,11 @@ describe('WorkflowService', () => {
 
     describe('Workflow Analytics', () => {
       it('should generate comprehensive workflow analytics', async () => {
-        const analytics = await workflowService.generateWorkflowAnalytics('template-1', '2024-01-01', '2024-01-31');
+        const analytics = await workflowService.generateWorkflowAnalytics(
+          'template-1',
+          '2024-01-01',
+          '2024-01-31'
+        );
 
         expect(analytics).toHaveProperty('executionMetrics');
         expect(analytics).toHaveProperty('taskPerformance');
@@ -1704,7 +1740,7 @@ describe('WorkflowService', () => {
       it('should predict workflow completion times', async () => {
         const executionRequest: WorkflowExecutionRequest = {
           templateId: 'template-1',
-          context: { complexity: 'high' }
+          context: { complexity: 'high' },
         };
 
         const prediction = await workflowService.predictCompletionTime(executionRequest);
@@ -1727,7 +1763,8 @@ describe('WorkflowService', () => {
       });
 
       it('should suggest workflow optimizations', async () => {
-        const optimizationSuggestions = await workflowService.getOptimizationSuggestions('template-1');
+        const optimizationSuggestions =
+          await workflowService.getOptimizationSuggestions('template-1');
 
         expect(Array.isArray(optimizationSuggestions)).toBe(true);
         if (optimizationSuggestions.length > 0) {
@@ -1740,7 +1777,8 @@ describe('WorkflowService', () => {
 
       it('should track bottleneck resolution effectiveness', async () => {
         const resolutionId = 'resolution-1';
-        const effectivenessReport = await workflowService.getBottleneckResolutionEffectiveness(resolutionId);
+        const effectivenessReport =
+          await workflowService.getBottleneckResolutionEffectiveness(resolutionId);
 
         expect(effectivenessReport).toHaveProperty('beforeMetrics');
         expect(effectivenessReport).toHaveProperty('afterMetrics');
@@ -1757,7 +1795,7 @@ describe('WorkflowService', () => {
           dateRange: { start: '2024-01-01', end: '2024-01-31' },
           includeMetrics: true,
           includeAnalytics: true,
-          includeRecommendations: true
+          includeRecommendations: true,
         };
 
         const report = await workflowService.generateReport(reportRequest);
@@ -1798,15 +1836,15 @@ describe('WorkflowService', () => {
             method: 'POST',
             payload: { data: 'test' },
             timeout: 30000,
-            retryConfig: { maxRetries: 3 }
-          }
+            retryConfig: { maxRetries: 3 },
+          },
         };
 
         mockQdrantClient.workflowTask.create.mockResolvedValue({
           id: 'service-execution-1',
           ...serviceTask,
           status: 'running',
-          startedAt: '2024-01-01T10:00:00Z'
+          startedAt: '2024-01-01T10:00:00Z',
         });
 
         const result = await workflowService.executeServiceTask(serviceTask);
@@ -1820,14 +1858,14 @@ describe('WorkflowService', () => {
         const serviceResponse = {
           status: 200,
           data: { result: 'success', validated: true },
-          executionTime: 1500
+          executionTime: 1500,
         };
 
         mockQdrantClient.workflowTask.update.mockResolvedValue({
           id: taskExecutionId,
           status: 'completed',
           result: serviceResponse,
-          completedAt: '2024-01-01T10:01:30Z'
+          completedAt: '2024-01-01T10:01:30Z',
         });
 
         const result = await workflowService.completeServiceTask(taskExecutionId, serviceResponse);
@@ -1840,10 +1878,12 @@ describe('WorkflowService', () => {
         const serviceName = 'unstable-service';
 
         // Simulate multiple failures
-        const failures = Array(5).fill(null).map((_, i) => ({
-          timestamp: Date.now() - (i * 60000),
-          error: 'Service unavailable'
-        }));
+        const failures = Array(5)
+          .fill(null)
+          .map((_, i) => ({
+            timestamp: Date.now() - i * 60000,
+            error: 'Service unavailable',
+          }));
 
         const circuitState = await workflowService.checkCircuitBreaker(serviceName, failures);
 
@@ -1859,21 +1899,24 @@ describe('WorkflowService', () => {
           services: [
             {
               name: 'user-service',
-              tasks: ['create-user', 'send-welcome']
+              tasks: ['create-user', 'send-welcome'],
             },
             {
               name: 'billing-service',
-              tasks: ['create-account', 'setup-billing']
+              tasks: ['create-account', 'setup-billing'],
             },
             {
               name: 'notification-service',
-              tasks: ['setup-preferences', 'send-onboarding']
-            }
+              tasks: ['setup-preferences', 'send-onboarding'],
+            },
           ],
           dependencies: [
             { from: 'user-service.create-user', to: 'billing-service.create-account' },
-            { from: 'billing-service.create-account', to: 'notification-service.setup-preferences' }
-          ]
+            {
+              from: 'billing-service.create-account',
+              to: 'notification-service.setup-preferences',
+            },
+          ],
         };
 
         const execution = await workflowService.executeCrossServiceWorkflow(crossServiceWorkflow);
@@ -1888,7 +1931,7 @@ describe('WorkflowService', () => {
           service: 'user-service',
           task: 'create-user',
           error: 'Connection timeout',
-          retryCount: 2
+          retryCount: 2,
         };
 
         const recoveryAction = await workflowService.handleServiceFailure(serviceFailure);
@@ -1903,8 +1946,8 @@ describe('WorkflowService', () => {
           operations: [
             { service: 'user-service', action: 'create', data: { name: 'John' } },
             { service: 'billing-service', action: 'create', data: { userId: '123' } },
-            { service: 'notification-service', action: 'update', data: { userId: '123' } }
-          ]
+            { service: 'notification-service', action: 'update', data: { userId: '123' } },
+          ],
         };
 
         const result = await workflowService.executeDistributedTransaction(transaction);
@@ -1923,9 +1966,9 @@ describe('WorkflowService', () => {
           data: {
             userId: 'user-123',
             email: 'user@example.com',
-            plan: 'premium'
+            plan: 'premium',
           },
-          timestamp: '2024-01-01T10:00:00Z'
+          timestamp: '2024-01-01T10:00:00Z',
         };
 
         const triggeredWorkflows = await workflowService.processEvent(workflowEvent);
@@ -1944,18 +1987,21 @@ describe('WorkflowService', () => {
           conditions: [
             { field: 'type', operator: 'equals', value: 'user_registered' },
             { field: 'data.plan', operator: 'equals', value: 'premium' },
-            { field: 'data.source', operator: 'in', value: ['website', 'referral'] }
+            { field: 'data.source', operator: 'in', value: ['website', 'referral'] },
           ],
           timeframe: 3600,
-          correlationId: 'session-123'
+          correlationId: 'session-123',
         };
 
         const matchingEvents = [
           { type: 'user_registered', data: { plan: 'premium' }, timestamp: Date.now() },
-          { type: 'profile_completed', data: { userId: 'user-123' }, timestamp: Date.now() + 1800 }
+          { type: 'profile_completed', data: { userId: 'user-123' }, timestamp: Date.now() + 1800 },
         ];
 
-        const patternMatch = await workflowService.evaluateEventPattern(eventPattern, matchingEvents);
+        const patternMatch = await workflowService.evaluateEventPattern(
+          eventPattern,
+          matchingEvents
+        );
 
         expect(patternMatch.matches).toBe(true);
         expect(patternMatch.confidence).toBeGreaterThan(0.8);
@@ -1965,11 +2011,14 @@ describe('WorkflowService', () => {
         const eventChain = [
           { event: 'user_registered', triggers: ['welcome-sequence'] },
           { event: 'profile_completed', triggers: ['profile-review'] },
-          { event: 'first-purchase', triggers: ['billing-setup', 'loyalty-enrollment'] }
+          { event: 'first-purchase', triggers: ['billing-setup', 'loyalty-enrollment'] },
         ];
 
         const completedEvents = ['user_registered', 'profile_completed'];
-        const activeWorkflows = await workflowService.getActiveEventDrivenChains(eventChain, completedEvents);
+        const activeWorkflows = await workflowService.getActiveEventDrivenChains(
+          eventChain,
+          completedEvents
+        );
 
         expect(activeWorkflows).toContain('welcome-sequence');
         expect(activeWorkflows).toContain('profile-review');
@@ -1985,9 +2034,9 @@ describe('WorkflowService', () => {
           body: {
             templateId: 'template-1',
             context: { userId: 'user-123' },
-            priority: 'high'
+            priority: 'high',
           },
-          headers: { 'Authorization': 'Bearer token-123' }
+          headers: { Authorization: 'Bearer token-123' },
         };
 
         const response = await workflowService.handleApiRequest(apiRequest);
@@ -2002,7 +2051,7 @@ describe('WorkflowService', () => {
           event: 'github.push',
           repository: 'example/repo',
           branch: 'main',
-          commits: [{ id: 'abc123', message: 'Update workflow' }]
+          commits: [{ id: 'abc123', message: 'Update workflow' }],
         };
 
         const webhookResult = await workflowService.processWebhook('github', webhookPayload);
@@ -2015,7 +2064,7 @@ describe('WorkflowService', () => {
         const unauthorizedRequest = {
           method: 'POST',
           endpoint: '/api/workflows',
-          headers: { 'Authorization': 'Invalid token' }
+          headers: { Authorization: 'Invalid token' },
         };
 
         const response = await workflowService.handleApiRequest(unauthorizedRequest);
@@ -2044,13 +2093,13 @@ describe('WorkflowService', () => {
         const primaryService = {
           name: 'user-service',
           url: 'https://primary.user-service.com',
-          status: 'unhealthy'
+          status: 'unhealthy',
         };
 
         const backupService = {
           name: 'user-service-backup',
           url: 'https://backup.user-service.com',
-          status: 'healthy'
+          status: 'healthy',
         };
 
         const failoverResult = await workflowService.executeFailover(primaryService, backupService);
@@ -2061,7 +2110,8 @@ describe('WorkflowService', () => {
       });
 
       it('should provide service performance analytics', async () => {
-        const performanceAnalytics = await workflowService.getServicePerformanceAnalytics('user-service');
+        const performanceAnalytics =
+          await workflowService.getServicePerformanceAnalytics('user-service');
 
         expect(performanceAnalytics).toHaveProperty('averageResponseTime');
         expect(performanceAnalytics).toHaveProperty('successRate');
@@ -2076,20 +2126,24 @@ describe('WorkflowService', () => {
     it('should handle concurrent workflow execution conflicts', async () => {
       const conflictingRequests = [
         { templateId: 'template-1', context: { resource: 'shared-1' } },
-        { templateId: 'template-1', context: { resource: 'shared-1' } }
+        { templateId: 'template-1', context: { resource: 'shared-1' } },
       ];
 
       const firstExecution = await workflowService.executeWorkflow(conflictingRequests[0]);
 
-      await expect(workflowService.executeWorkflow(conflictingRequests[1]))
-        .rejects.toThrow('Resource conflict detected');
+      await expect(workflowService.executeWorkflow(conflictingRequests[1])).rejects.toThrow(
+        'Resource conflict detected'
+      );
     });
 
     it('should handle database connection failures gracefully', async () => {
-      mockQdrantClient.workflowExecution.create.mockRejectedValue(new Error('Database connection failed'));
+      mockQdrantClient.workflowExecution.create.mockRejectedValue(
+        new Error('Database connection failed')
+      );
 
-      await expect(workflowService.executeWorkflow({ templateId: 'template-1' }))
-        .rejects.toThrow('Unable to start workflow');
+      await expect(workflowService.executeWorkflow({ templateId: 'template-1' })).rejects.toThrow(
+        'Unable to start workflow'
+      );
 
       // Verify retry mechanism
       expect(mockQdrantClient.workflowExecution.create).toHaveBeenCalledTimes(3);
@@ -2099,24 +2153,25 @@ describe('WorkflowService', () => {
       const invalidConfiguration = {
         templateId: 'invalid-template',
         context: null,
-        mode: 'invalid-mode'
+        mode: 'invalid-mode',
       };
 
-      await expect(workflowService.executeWorkflow(invalidConfiguration))
-        .rejects.toThrow('Invalid workflow configuration');
+      await expect(workflowService.executeWorkflow(invalidConfiguration)).rejects.toThrow(
+        'Invalid workflow configuration'
+      );
     });
 
     it('should handle large workflow data sets efficiently', async () => {
       const largeWorkflow = {
         templateId: 'large-template',
-        context: { data: Array(10000).fill('test data') }
+        context: { data: Array(10000).fill('test data') },
       };
 
       // Mock streaming response for large data
       mockQdrantClient.workflowExecution.create.mockResolvedValue({
         id: 'large-execution',
         status: 'running',
-        streaming: true
+        streaming: true,
       });
 
       const result = await workflowService.executeWorkflow(largeWorkflow);
@@ -2128,14 +2183,16 @@ describe('WorkflowService', () => {
 
   describe('Performance and Scalability', () => {
     it('should handle high volume of concurrent workflow executions', async () => {
-      const concurrentRequests = Array(100).fill(null).map((_, i) => ({
-        templateId: 'template-1',
-        context: { requestId: i }
-      }));
+      const concurrentRequests = Array(100)
+        .fill(null)
+        .map((_, i) => ({
+          templateId: 'template-1',
+          context: { requestId: i },
+        }));
 
       const startTime = Date.now();
 
-      const promises = concurrentRequests.map(req => workflowService.executeWorkflow(req));
+      const promises = concurrentRequests.map((req) => workflowService.executeWorkflow(req));
       const results = await Promise.all(promises);
 
       const endTime = Date.now();
@@ -2161,7 +2218,7 @@ describe('WorkflowService', () => {
       const analyticsQuery = {
         templateIds: ['template-1', 'template-2'],
         dateRange: { start: '2024-01-01', end: '2024-01-31' },
-        metrics: ['execution_time', 'success_rate', 'user_satisfaction']
+        metrics: ['execution_time', 'success_rate', 'user_satisfaction'],
       };
 
       const analytics = await workflowService.getWorkflowAnalytics(analyticsQuery);

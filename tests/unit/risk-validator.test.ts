@@ -36,9 +36,7 @@ describe('RiskValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Critical risks must have documented mitigation strategies'
-      );
+      expect(result.errors).toContain('Critical risks must have documented mitigation strategies');
     });
 
     it('should ACCEPT critical risk with comprehensive mitigation strategies', async () => {
@@ -111,9 +109,7 @@ describe('RiskValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'Critical risks must have documented mitigation strategies'
-      );
+      expect(result.errors).toContain('Critical risks must have documented mitigation strategies');
     });
 
     it('should ACCEPT high risk without mitigation strategies (not critical)', async () => {

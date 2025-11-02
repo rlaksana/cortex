@@ -65,7 +65,8 @@ export class TestDataFactory {
         component: 'auth',
         status: 'proposed',
         title: 'Use OAuth 2.0 for Authentication',
-        rationale: 'OAuth 2.0 is the industry standard for API authentication with comprehensive security features.',
+        rationale:
+          'OAuth 2.0 is the industry standard for API authentication with comprehensive security features.',
         alternatives_considered: ['Basic Authentication', 'JWT-only', 'API Keys'],
         consequences: 'Requires additional infrastructure for token management',
         supersedes: '',
@@ -186,7 +187,8 @@ export class TestDataFactory {
         id,
         subject_ref: 'AUTH-2024-001',
         summary: 'Add OAuth 2.0 authentication support',
-        details: 'Implemented complete OAuth 2.0 flow with access tokens, refresh tokens, and proper security measures.',
+        details:
+          'Implemented complete OAuth 2.0 flow with access tokens, refresh tokens, and proper security measures.',
         author: 'security-team@example.com',
         change_type: 'feature',
         impact: 'medium',
@@ -293,7 +295,8 @@ export class TestDataFactory {
       data: {
         id,
         title: 'Add OAuth 2.0 authentication support',
-        description: 'This PR implements OAuth 2.0 authentication with proper security measures and comprehensive testing.',
+        description:
+          'This PR implements OAuth 2.0 authentication with proper security measures and comprehensive testing.',
         pr_number: 1234,
         author: 'developer@example.com',
         reviewers: ['tech-lead@example.com', 'security-team@example.com'],
@@ -478,7 +481,8 @@ export class TestDataFactory {
         scope: 'OAuth 2.0 authentication implementation with performance improvements',
         planned_date: MockDataGenerator.generateTimestamp(-2),
         actual_date: MockDataGenerator.generateTimestamp(-1),
-        description: 'Major release implementing OAuth 2.0 authentication with comprehensive security measures',
+        description:
+          'Major release implementing OAuth 2.0 authentication with comprehensive security measures',
         features: [
           'OAuth 2.0 authentication flow',
           'Token management system',
@@ -520,7 +524,8 @@ export class TestDataFactory {
         title: 'OAuth Token Storage Security Risk',
         category: 'security',
         risk_level: 'high',
-        impact_description: 'Compromise of OAuth tokens could lead to unauthorized access to user accounts',
+        impact_description:
+          'Compromise of OAuth tokens could lead to unauthorized access to user accounts',
         probability: 'medium',
         impact_score: 8,
         probability_score: 5,
@@ -558,7 +563,8 @@ export class TestDataFactory {
       data: {
         id,
         title: 'Users have OAuth 2.0 compatible clients',
-        description: 'Assumes that all client applications can be updated to support OAuth 2.0 authentication flow',
+        description:
+          'Assumes that all client applications can be updated to support OAuth 2.0 authentication flow',
         category: 'technical',
         validation_status: 'validated',
         impact_if_invalid: 'High impact - would require maintaining legacy authentication systems',

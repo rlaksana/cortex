@@ -40,22 +40,16 @@ class CoverageBadgeGenerator {
         schemaVersion: 1,
         label: 'coverage',
         message: `${overallCoverage}%`,
-        color: this.getBadgeColor(overallCoverage)
+        color: this.getBadgeColor(overallCoverage),
       };
 
       const badgeSvg = this.generateBadgeSvg(badge);
 
       // Save the badge
-      await fs.writeFile(
-        path.join(this.badgesDir, 'coverage-badge.svg'),
-        badgeSvg
-      );
+      await fs.writeFile(path.join(this.badgesDir, 'coverage-badge.svg'), badgeSvg);
 
       // Also save as latest
-      await fs.writeFile(
-        path.join(this.badgesDir, 'coverage-latest.svg'),
-        badgeSvg
-      );
+      await fs.writeFile(path.join(this.badgesDir, 'coverage-latest.svg'), badgeSvg);
 
       // Save JSON version
       await fs.writeFile(
@@ -65,7 +59,6 @@ class CoverageBadgeGenerator {
 
       console.log(`📊 Overall Coverage: ${overallCoverage}%`);
       console.log(`🎨 Badge Color: ${badge.color}`);
-
     } catch (error) {
       console.warn('⚠️  Could not generate badge:', error.message);
 
@@ -74,14 +67,11 @@ class CoverageBadgeGenerator {
         schemaVersion: 1,
         label: 'coverage',
         message: 'unknown',
-        color: 'lightgrey'
+        color: 'lightgrey',
       };
 
       const defaultSvg = this.generateBadgeSvg(defaultBadge);
-      await fs.writeFile(
-        path.join(this.badgesDir, 'coverage-badge.svg'),
-        defaultSvg
-      );
+      await fs.writeFile(path.join(this.badgesDir, 'coverage-badge.svg'), defaultSvg);
     }
   }
 
@@ -102,7 +92,7 @@ class CoverageBadgeGenerator {
       yellow: '#dfb317',
       orange: '#fe7d37',
       red: '#e05d44',
-      lightgrey: '#9f9f9f'
+      lightgrey: '#9f9f9f',
     };
 
     const color = colors[badge.color] || '#9f9f9f';
@@ -122,8 +112,8 @@ class CoverageBadgeGenerator {
   <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
     <text x="18.5" y="15" fill="#010101" fill-opacity=".3">${badge.label}</text>
     <text x="18.5" y="14">${badge.label}</text>
-    <text x="${37 + messageWidth/2}" y="15" fill="#010101" fill-opacity=".3">${badge.message}</text>
-    <text x="${37 + messageWidth/2}" y="14">${badge.message}</text>
+    <text x="${37 + messageWidth / 2}" y="15" fill="#010101" fill-opacity=".3">${badge.message}</text>
+    <text x="${37 + messageWidth / 2}" y="14">${badge.message}</text>
   </g>
 </svg>`;
   }

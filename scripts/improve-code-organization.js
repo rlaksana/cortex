@@ -20,7 +20,7 @@ class CodeOrganizationAnalyzer {
       largeFiles: [],
       deepNesting: [],
       inconsistencies: [],
-      recommendations: []
+      recommendations: [],
     };
   }
 
@@ -47,7 +47,6 @@ class CodeOrganizationAnalyzer {
       if (process.argv.includes('--fix')) {
         await this.applyImprovements();
       }
-
     } catch (error) {
       console.error('❌ Analysis failed:', error.message);
       process.exit(1);
@@ -69,7 +68,7 @@ class CodeOrganizationAnalyzer {
       path: relativePath,
       type: 'directory',
       children: [],
-      stats: { files: 0, directories: 0, totalLines: 0 }
+      stats: { files: 0, directories: 0, totalLines: 0 },
     };
 
     if (!fs.existsSync(dirPath)) {
@@ -120,7 +119,7 @@ class CodeOrganizationAnalyzer {
       lines,
       imports,
       exports,
-      size: fs.statSync(filePath).size
+      size: fs.statSync(filePath).size,
     };
   }
 
@@ -173,7 +172,7 @@ class CodeOrganizationAnalyzer {
         const cycle = path.slice(cycleStart).concat(dep);
         this.analysis.circularDependencies.push({
           cycle,
-          length: cycle.length - 1
+          length: cycle.length - 1,
         });
       }
     }
@@ -184,9 +183,9 @@ class CodeOrganizationAnalyzer {
   identifyOrphanFiles() {
     console.log('👤 Identifying orphan files...');
 
-    const allFiles = new Set(this.getAllSourceFiles(this.srcPath).map(f =>
-      path.relative(this.srcPath, f)
-    ));
+    const allFiles = new Set(
+      this.getAllSourceFiles(this.srcPath).map((f) => path.relative(this.srcPath, f))
+    );
 
     const importedFiles = new Set();
 
@@ -222,7 +221,7 @@ class CodeOrganizationAnalyzer {
         this.analysis.largeFiles.push({
           path: path.relative(this.srcPath, file),
           lines,
-          size: fs.statSync(file).size
+          size: fs.statSync(file).size,
         });
       }
     }
@@ -241,7 +240,7 @@ class CodeOrganizationAnalyzer {
         this.analysis.deepNesting.push({
           path: node.path,
           depth,
-          name: node.name
+          name: node.name,
         });
       }
     });
@@ -276,7 +275,7 @@ class CodeOrganizationAnalyzer {
           type: 'naming',
           file: path.relative(this.srcPath, file),
           issue: 'Mixed naming conventions (underscore and hyphen)',
-          suggestion: 'Use consistent naming convention'
+          suggestion: 'Use consistent naming convention',
         });
       }
 
@@ -288,7 +287,7 @@ class CodeOrganizationAnalyzer {
             type: 'naming',
             file: path.relative(this.srcPath, file),
             issue: 'Mixed case in filename',
-            suggestion: 'Use consistent case (kebab-case or PascalCase)'
+            suggestion: 'Use consistent case (kebab-case or PascalCase)',
           });
         }
       }
@@ -298,7 +297,7 @@ class CodeOrganizationAnalyzer {
   checkOrganizationPatterns() {
     // Check for consistent directory structures
     const dirs = this.getAllDirectories(this.srcPath);
-    const dirNames = dirs.map(dir => path.basename(dir));
+    const dirNames = dirs.map((dir) => path.basename(dir));
 
     // Look for similar directories with different names
     const similarDirs = this.findSimilarDirectories(dirNames);
@@ -308,7 +307,7 @@ class CodeOrganizationAnalyzer {
         this.analysis.inconsistencies.push({
           type: 'organization',
           issue: `Similar directory names: ${similar.join(', ')}`,
-          suggestion: 'Consider consolidating or standardizing directory names'
+          suggestion: 'Consider consolidating or standardizing directory names',
         });
       }
     }
@@ -322,14 +321,14 @@ class CodeOrganizationAnalyzer {
       const hasIndex = fs.existsSync(indexPath);
 
       if (!hasIndex) {
-        const files = fs.readdirSync(dir).filter(f => this.isSourceFile(f));
+        const files = fs.readdirSync(dir).filter((f) => this.isSourceFile(f));
 
         if (files.length > 3) {
           this.analysis.inconsistencies.push({
             type: 'missing_index',
             directory: path.relative(this.srcPath, dir),
             issue: 'Directory with multiple files missing index.ts',
-            suggestion: 'Add index.ts file for cleaner imports'
+            suggestion: 'Add index.ts file for cleaner imports',
           });
         }
       }
@@ -347,7 +346,7 @@ class CodeOrganizationAnalyzer {
         title: 'Resolve Circular Dependencies',
         description: `Found ${this.analysis.circularDependencies.length} circular dependencies that should be resolved`,
         action: 'Refactor code to eliminate circular dependencies',
-        affected_files: this.analysis.circularDependencies.flatMap(c => c.cycle)
+        affected_files: this.analysis.circularDependencies.flatMap((c) => c.cycle),
       });
     }
 
@@ -359,7 +358,7 @@ class CodeOrganizationAnalyzer {
         title: 'Break Down Large Files',
         description: `Found ${this.analysis.largeFiles.length} files with more than 300 lines`,
         action: 'Split large files into smaller, more focused modules',
-        affected_files: this.analysis.largeFiles.map(f => f.path)
+        affected_files: this.analysis.largeFiles.map((f) => f.path),
       });
     }
 
@@ -371,7 +370,7 @@ class CodeOrganizationAnalyzer {
         title: 'Review Orphan Files',
         description: `Found ${this.analysis.orphanFiles.length} files that are not imported anywhere`,
         action: 'Remove unused files or add them to appropriate modules',
-        affected_files: this.analysis.orphanFiles
+        affected_files: this.analysis.orphanFiles,
       });
     }
 
@@ -383,7 +382,7 @@ class CodeOrganizationAnalyzer {
         title: 'Reduce Directory Nesting',
         description: `Found ${this.analysis.deepNesting.length} files with deep nesting (>5 levels)`,
         action: 'Flatten directory structure where possible',
-        affected_files: this.analysis.deepNesting.map(f => f.path)
+        affected_files: this.analysis.deepNesting.map((f) => f.path),
       });
     }
 
@@ -395,7 +394,9 @@ class CodeOrganizationAnalyzer {
         title: 'Fix Inconsistencies',
         description: `Found ${this.analysis.inconsistencies.length} naming and organization inconsistencies`,
         action: 'Standardize naming conventions and organization patterns',
-        affected_files: this.analysis.inconsistencies.map(i => i.file || i.directory).filter(Boolean)
+        affected_files: this.analysis.inconsistencies
+          .map((i) => i.file || i.directory)
+          .filter(Boolean),
       });
     }
 
@@ -425,7 +426,7 @@ class CodeOrganizationAnalyzer {
     if (this.analysis.largeFiles.length > 0) {
       console.log('📏 LARGE FILES (>300 lines):');
       console.log('-----------------------------');
-      this.analysis.largeFiles.forEach(file => {
+      this.analysis.largeFiles.forEach((file) => {
         console.log(`📄 ${file.path}: ${file.lines} lines (${(file.size / 1024).toFixed(1)}KB)`);
       });
       console.log();
@@ -434,7 +435,7 @@ class CodeOrganizationAnalyzer {
     if (this.analysis.orphanFiles.length > 0) {
       console.log('👤 ORPHAN FILES:');
       console.log('----------------');
-      this.analysis.orphanFiles.forEach(file => {
+      this.analysis.orphanFiles.forEach((file) => {
         console.log(`📄 ${file}`);
       });
       console.log();
@@ -443,7 +444,7 @@ class CodeOrganizationAnalyzer {
     if (this.analysis.deepNesting.length > 0) {
       console.log('📂 DEEP NESTING (>5 levels):');
       console.log('------------------------------');
-      this.analysis.deepNesting.forEach(file => {
+      this.analysis.deepNesting.forEach((file) => {
         console.log(`📄 ${file.path}: depth ${file.depth}`);
       });
       console.log();
@@ -452,7 +453,7 @@ class CodeOrganizationAnalyzer {
     if (this.analysis.inconsistencies.length > 0) {
       console.log('🔍 INCONSISTENCIES:');
       console.log('--------------------');
-      this.analysis.inconsistencies.forEach(inc => {
+      this.analysis.inconsistencies.forEach((inc) => {
         const location = inc.file || inc.directory || 'Unknown';
         console.log(`⚠️  ${location}: ${inc.issue}`);
         console.log(`   Suggestion: ${inc.suggestion}`);
@@ -505,20 +506,21 @@ class CodeOrganizationAnalyzer {
   }
 
   async createMissingIndexFiles() {
-    const missingIndexIssues = this.analysis.inconsistencies.filter(inc => inc.type === 'missing_index');
+    const missingIndexIssues = this.analysis.inconsistencies.filter(
+      (inc) => inc.type === 'missing_index'
+    );
 
     for (const issue of missingIndexIssues) {
       const dirPath = path.join(this.srcPath, issue.directory);
       const indexPath = path.join(dirPath, 'index.ts');
 
       if (!fs.existsSync(indexPath)) {
-        const files = fs.readdirSync(dirPath)
-          .filter(f => this.isSourceFile(f) && f !== 'index.ts')
-          .map(f => f.replace('.ts', ''));
+        const files = fs
+          .readdirSync(dirPath)
+          .filter((f) => this.isSourceFile(f) && f !== 'index.ts')
+          .map((f) => f.replace('.ts', ''));
 
-        const indexContent = files.map(file =>
-          `export * from './${file}';`
-        ).join('\n') + '\n';
+        const indexContent = files.map((file) => `export * from './${file}';`).join('\n') + '\n';
 
         fs.writeFileSync(indexPath, indexContent);
         console.log(`📝 Created index.ts for ${issue.directory}`);
@@ -527,7 +529,7 @@ class CodeOrganizationAnalyzer {
   }
 
   async fixNamingInconsistencies() {
-    const namingIssues = this.analysis.inconsistencies.filter(inc => inc.type === 'naming');
+    const namingIssues = this.analysis.inconsistencies.filter((inc) => inc.type === 'naming');
 
     for (const issue of namingIssues) {
       if (issue.file) {
@@ -631,10 +633,12 @@ class CodeOrganizationAnalyzer {
 
   isEntryFile(filePath) {
     const relativePath = path.relative(this.srcPath, filePath);
-    return relativePath === 'index.ts' ||
-           relativePath.includes('index-') ||
-           relativePath.endsWith('.test.ts') ||
-           relativePath.endsWith('.spec.ts');
+    return (
+      relativePath === 'index.ts' ||
+      relativePath.includes('index-') ||
+      relativePath.endsWith('.test.ts') ||
+      relativePath.endsWith('.spec.ts')
+    );
   }
 
   extractImports(content) {
@@ -741,7 +745,7 @@ class CodeOrganizationAnalyzer {
         if (similarity > 0.7 && dirNames[i] !== dirNames[j]) {
           similar.push({
             dirs: [dirNames[i], dirNames[j]],
-            similarity
+            similarity,
           });
         }
       }
@@ -799,7 +803,7 @@ class CodeOrganizationAnalyzer {
         orphanFiles: this.analysis.orphanFiles,
         largeFiles: this.analysis.largeFiles,
         deepNesting: this.analysis.deepNesting,
-        inconsistencies: this.analysis.inconsistencies
+        inconsistencies: this.analysis.inconsistencies,
       },
       recommendations: this.analysis.recommendations,
       summary: {
@@ -810,8 +814,8 @@ class CodeOrganizationAnalyzer {
         orphanFiles: this.analysis.orphanFiles.length,
         deepNesting: this.analysis.deepNesting.length,
         inconsistencies: this.analysis.inconsistencies.length,
-        recommendations: this.analysis.recommendations.length
-      }
+        recommendations: this.analysis.recommendations.length,
+      },
     };
 
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
@@ -822,7 +826,7 @@ class CodeOrganizationAnalyzer {
 // Run the analysis
 if (require.main === module) {
   const analyzer = new CodeOrganizationAnalyzer();
-  analyzer.runAnalysis().catch(error => {
+  analyzer.runAnalysis().catch((error) => {
     console.error('❌ Analysis failed:', error);
     process.exit(1);
   });

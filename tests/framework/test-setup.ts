@@ -47,7 +47,8 @@ export class CortexMemoryTestFramework {
    * Create a test database and return its connection
    */
   async createTestDatabase(name?: string): Promise<QdrantClient> {
-    const dbName = name || `test_cortex_memory_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const dbName =
+      name || `test_cortex_memory_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     this.testDatabases.push(dbName);
     return DatabaseTestHelper.setupTestDatabase(dbName);
   }
@@ -167,7 +168,6 @@ export class TestRunner {
       }
 
       return scenarioResults;
-
     } finally {
       await testDb.end();
     }
@@ -184,9 +184,7 @@ export class TestRunner {
       const timeoutMs = testCase.timeout || 30000; // Default 30s timeout
       await Promise.race([
         testCase.test(context),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Test timeout')), timeoutMs)
-        )
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Test timeout')), timeoutMs)),
       ]);
 
       const duration = Date.now() - startTime;
@@ -198,7 +196,6 @@ export class TestRunner {
         status: 'passed',
         duration,
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
       console.log(`    ❌ ${testCase.name} (${duration}ms)`);
@@ -234,10 +231,10 @@ export class TestRunner {
     averageDuration: number;
   } {
     const total = this.results.length;
-    const passed = this.results.filter(r => r.status === 'passed').length;
-    const failed = this.results.filter(r => r.status === 'failed').length;
-    const timeout = this.results.filter(r => r.status === 'timeout').length;
-    const skipped = this.results.filter(r => r.status === 'skipped').length;
+    const passed = this.results.filter((r) => r.status === 'passed').length;
+    const failed = this.results.filter((r) => r.status === 'failed').length;
+    const timeout = this.results.filter((r) => r.status === 'timeout').length;
+    const skipped = this.results.filter((r) => r.status === 'skipped').length;
     const totalDuration = this.results.reduce((sum, r) => sum + r.duration, 0);
     const averageDuration = total > 0 ? totalDuration / total : 0;
 
@@ -272,8 +269,8 @@ export class TestRunner {
     if (summary.failed > 0) {
       console.log('\n❌ Failed Tests:');
       this.results
-        .filter(r => r.status === 'failed')
-        .forEach(r => {
+        .filter((r) => r.status === 'failed')
+        .forEach((r) => {
           console.log(`  - ${r.testCase}: ${r.error?.message}`);
         });
     }
@@ -281,8 +278,8 @@ export class TestRunner {
     if (summary.timeout > 0) {
       console.log('\n⏰ Timeout Tests:');
       this.results
-        .filter(r => r.status === 'timeout')
-        .forEach(r => {
+        .filter((r) => r.status === 'timeout')
+        .forEach((r) => {
           console.log(`  - ${r.testCase}`);
         });
     }
@@ -322,7 +319,6 @@ export async function runTests(scenarios: TestScenario[]): Promise<void> {
     if (summary.failed > 0 || summary.timeout > 0) {
       process.exit(1);
     }
-
   } finally {
     await testRunner.cleanup();
   }
@@ -352,12 +348,17 @@ export class TestAssertions {
 
   static assertArrayEquals<T>(actual: T[], expected: T[], message?: string): void {
     if (actual.length !== expected.length) {
-      throw new Error(message || `Expected array of length ${expected.length}, but got ${actual.length}`);
+      throw new Error(
+        message || `Expected array of length ${expected.length}, but got ${actual.length}`
+      );
     }
 
     for (let i = 0; i < expected.length; i++) {
       if (actual[i] !== expected[i]) {
-        throw new Error(message || `Array elements differ at index ${i}: expected ${expected[i]}, but got ${actual[i]}`);
+        throw new Error(
+          message ||
+            `Array elements differ at index ${i}: expected ${expected[i]}, but got ${actual[i]}`
+        );
       }
     }
   }
@@ -375,7 +376,9 @@ export class TestAssertions {
         throw new Error('Expected function to throw an error');
       } catch (error) {
         if (expectedError && error instanceof Error && !error.message.includes(expectedError)) {
-          throw new Error(`Expected error to contain "${expectedError}", but got "${error.message}"`);
+          throw new Error(
+            `Expected error to contain "${expectedError}", but got "${error.message}"`
+          );
         }
       }
     })();
@@ -383,7 +386,9 @@ export class TestAssertions {
 
   static assertPerformance(duration: number, maxDuration: number, operation: string): void {
     if (duration > maxDuration) {
-      throw new Error(`Performance assertion failed: ${operation} took ${duration}ms (max: ${maxDuration}ms)`);
+      throw new Error(
+        `Performance assertion failed: ${operation} took ${duration}ms (max: ${maxDuration}ms)`
+      );
     }
   }
 }
@@ -397,7 +402,27 @@ export class MockDataGenerator {
   }
 
   static generateText(length: number): string {
-    const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore', 'magna', 'aliqua'];
+    const words = [
+      'lorem',
+      'ipsum',
+      'dolor',
+      'sit',
+      'amet',
+      'consectetur',
+      'adipiscing',
+      'elit',
+      'sed',
+      'do',
+      'eiusmod',
+      'tempor',
+      'incididunt',
+      'ut',
+      'labore',
+      'et',
+      'dolore',
+      'magna',
+      'aliqua',
+    ];
     const result = [];
     for (let i = 0; i < length; i++) {
       result.push(words[Math.floor(Math.random() * words.length)]);

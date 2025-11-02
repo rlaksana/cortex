@@ -44,8 +44,12 @@ async function main() {
     console.log('='.repeat(60));
     console.log(`⏱️  Total Test Time: ${(totalTime / 1000).toFixed(2)}s`);
     console.log(`📊 Total Tests: ${results.summary.totalTests}`);
-    console.log(`✅ Passed: ${results.summary.passedTests} (${((results.summary.passedTests / results.summary.totalTests) * 100).toFixed(1)}%)`);
-    console.log(`❌ Failed: ${results.summary.failedTests} (${((results.summary.failedTests / results.summary.totalTests) * 100).toFixed(1)}%)`);
+    console.log(
+      `✅ Passed: ${results.summary.passedTests} (${((results.summary.passedTests / results.summary.totalTests) * 100).toFixed(1)}%)`
+    );
+    console.log(
+      `❌ Failed: ${results.summary.failedTests} (${((results.summary.failedTests / results.summary.totalTests) * 100).toFixed(1)}%)`
+    );
     console.log(`🔒 Security Vulnerabilities: ${results.summary.vulnerabilities}`);
     console.log(`⚡ Avg Response Time: ${results.summary.avgResponseTime.toFixed(2)}ms`);
     console.log(`📈 Max Response Time: ${results.summary.maxResponseTime.toFixed(2)}ms`);
@@ -60,7 +64,7 @@ async function main() {
 
     if (results.summary.recommendations.length > 0) {
       console.log('\n💡 Key Recommendations:');
-      results.summary.recommendations.slice(0, 5).forEach(rec => {
+      results.summary.recommendations.slice(0, 5).forEach((rec) => {
         console.log(`   • ${rec}`);
       });
     }
@@ -71,7 +75,6 @@ async function main() {
     // Exit with appropriate code
     const isProductionReady = assessment.includes('PRODUCTION READY');
     process.exit(isProductionReady ? 0 : 1);
-
   } catch (error) {
     logger.error({ error }, 'Test execution failed');
     console.error('\n❌ Test execution failed:', error instanceof Error ? error.message : error);

@@ -21,14 +21,14 @@ describe('Chunk Reassembly Simple Test', () => {
     embeddingService = new MockEmbeddingService({
       shouldFail: false,
       failMethod: 'both',
-      latency: 0
+      latency: 0,
     });
 
     chunkingService = new ChunkingService(undefined, undefined, embeddingService as any);
 
     // Replace the semantic analyzer with our mock - ensure it's properly set
     const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
-      shouldFail: false
+      shouldFail: false,
     });
     (chunkingService as any).semanticAnalyzer = mockSemanticAnalyzer;
 
@@ -65,8 +65,8 @@ This document provides a comprehensive overview of our technical architecture.
       scope: { project: 'test-project' },
       data: {
         content,
-        title: 'Technical Documentation'
-      }
+        title: 'Technical Documentation',
+      },
     };
 
     // Apply chunking
@@ -76,8 +76,8 @@ This document provides a comprehensive overview of our technical architecture.
     expect(chunkedItems.length).toBeGreaterThan(1);
 
     // Find parent and chunks
-    const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-    const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+    const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+    const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
 
     expect(parentItem).toBeDefined();
     expect(childChunks.length).toBeGreaterThan(0);
@@ -94,10 +94,10 @@ This document provides a comprehensive overview of our technical architecture.
         scope: parentItem!.scope,
         confidence_score: 0.9,
         created_at: parentItem!.created_at!,
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       },
       // Add chunk results
-      ...childChunks.map(chunk => ({
+      ...childChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.data.content,
@@ -105,8 +105,8 @@ This document provides a comprehensive overview of our technical architecture.
         scope: chunk.scope,
         confidence_score: 0.8,
         created_at: chunk.created_at!,
-        match_type: 'semantic' as const
-      }))
+        match_type: 'semantic' as const,
+      })),
     ];
 
     // Group results
@@ -114,7 +114,7 @@ This document provides a comprehensive overview of our technical architecture.
     expect(groupedResults.length).toBeGreaterThan(0);
 
     // Find the group for our parent
-    const groupedResult = groupedResults.find(g => g.parent_id === parentItem!.id);
+    const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
     expect(groupedResult).toBeDefined();
 
     // Reconstruct content
@@ -142,8 +142,8 @@ This document provides a comprehensive overview of our technical architecture.
       scope: { project: 'test' },
       data: {
         content: 'A'.repeat(3000), // Long content
-        title: 'Chunkable Item'
-      }
+        title: 'Chunkable Item',
+      },
     };
 
     const nonChunkableItem: KnowledgeItem = {
@@ -152,15 +152,18 @@ This document provides a comprehensive overview of our technical architecture.
       scope: { project: 'test' },
       data: {
         content: 'This is a short entity that will not be chunked.',
-        name: 'Test Entity'
-      }
+        name: 'Test Entity',
+      },
     };
 
     // Process both items
-    const processedItems = await chunkingService.processItemsForStorage([chunkableItem, nonChunkableItem]);
+    const processedItems = await chunkingService.processItemsForStorage([
+      chunkableItem,
+      nonChunkableItem,
+    ]);
 
     // Create simulated search results
-    const searchResults = processedItems.map(item => ({
+    const searchResults = processedItems.map((item) => ({
       id: item.id,
       kind: item.kind,
       content: item.data.content,
@@ -168,25 +171,25 @@ This document provides a comprehensive overview of our technical architecture.
       scope: item.scope,
       confidence_score: 0.7 + Math.random() * 0.3,
       created_at: item.created_at || new Date().toISOString(),
-      match_type: 'semantic' as const
+      match_type: 'semantic' as const,
     }));
 
     // Group results
     const groupedResults = groupingService.groupResultsByParent(searchResults);
 
     // Should have both single items and grouped items
-    const singleItems = groupedResults.filter(g => g.is_single_item);
-    const groupedItems = groupedResults.filter(g => !g.is_single_item);
+    const singleItems = groupedResults.filter((g) => g.is_single_item);
+    const groupedItems = groupedResults.filter((g) => !g.is_single_item);
 
     expect(singleItems.length).toBeGreaterThan(0);
     expect(groupedItems.length).toBeGreaterThan(0);
 
     // Verify the entity is single item
-    const entityGroup = singleItems.find(g => g.parent_id === 'non-chunkable-001');
+    const entityGroup = singleItems.find((g) => g.parent_id === 'non-chunkable-001');
     expect(entityGroup).toBeDefined();
 
     // Verify the section is grouped
-    const sectionGroup = groupedItems.find(g => g.parent_id === 'chunkable-001');
+    const sectionGroup = groupedItems.find((g) => g.parent_id === 'chunkable-001');
     expect(sectionGroup).toBeDefined();
   });
 });

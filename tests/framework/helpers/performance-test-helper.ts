@@ -119,26 +119,34 @@ export class PerformanceTestHelper {
     console.log('\n🚀 Testing Memory Store Performance...');
 
     // Test single item storage
-    await this.measureOperation('memory_store_single', async () => {
-      const item = context.dataFactory.createSection();
-      const result = await memoryStore([item]);
-      if (result.errors.length > 0) {
-        throw new Error(`Store operation failed: ${result.errors[0].message}`);
-      }
-      return result;
-    }, { itemCount: 1 });
+    await this.measureOperation(
+      'memory_store_single',
+      async () => {
+        const item = context.dataFactory.createSection();
+        const result = await memoryStore([item]);
+        if (result.errors.length > 0) {
+          throw new Error(`Store operation failed: ${result.errors[0].message}`);
+        }
+        return result;
+      },
+      { itemCount: 1 }
+    );
 
     // Test batch storage
     const batchSizes = [10, 50, 100];
     for (const batchSize of batchSizes) {
-      await this.measureOperation('memory_store_batch', async () => {
-        const items = context.dataFactory.createMixedBatch(batchSize);
-        const result = await memoryStore(items);
-        if (result.errors.length > 0) {
-          throw new Error(`Batch store operation failed: ${result.errors[0].message}`);
-        }
-        return result;
-      }, { itemCount: batchSize, batchSize });
+      await this.measureOperation(
+        'memory_store_batch',
+        async () => {
+          const items = context.dataFactory.createMixedBatch(batchSize);
+          const result = await memoryStore(items);
+          if (result.errors.length > 0) {
+            throw new Error(`Batch store operation failed: ${result.errors[0].message}`);
+          }
+          return result;
+        },
+        { itemCount: batchSize, batchSize }
+      );
     }
 
     // Test concurrent operations
@@ -154,25 +162,29 @@ export class PerformanceTestHelper {
     const concurrencyLevels = [2, 5, 10];
 
     for (const concurrency of concurrencyLevels) {
-      await this.measureOperation('memory_store_concurrent', async () => {
-        const promises = Array.from({ length: concurrency }, async (_, i) => {
-          const item = context.dataFactory.createSection({
-            title: `Concurrent Section ${i}`,
+      await this.measureOperation(
+        'memory_store_concurrent',
+        async () => {
+          const promises = Array.from({ length: concurrency }, async (_, i) => {
+            const item = context.dataFactory.createSection({
+              title: `Concurrent Section ${i}`,
+            });
+            return memoryStore([item]);
           });
-          return memoryStore([item]);
-        });
 
-        const results = await Promise.all(promises);
+          const results = await Promise.all(promises);
 
-        // Check all operations succeeded
-        for (const result of results) {
-          if (result.errors.length > 0) {
-            throw new Error(`Concurrent operation failed: ${result.errors[0].message}`);
+          // Check all operations succeeded
+          for (const result of results) {
+            if (result.errors.length > 0) {
+              throw new Error(`Concurrent operation failed: ${result.errors[0].message}`);
+            }
           }
-        }
 
-        return results;
-      }, { itemCount: concurrency, concurrency });
+          return results;
+        },
+        { itemCount: concurrency, concurrency }
+      );
     }
   }
 
@@ -214,12 +226,16 @@ export class PerformanceTestHelper {
     // Test search performance with different result sizes
     const resultSizes = [10, 50, 100];
     for (const size of resultSizes) {
-      await this.measureOperation('memory_find_large_results', async () => {
-        return memoryFind({
-          query: 'test',
-          top_k: size,
-        });
-      }, { itemCount: size });
+      await this.measureOperation(
+        'memory_find_large_results',
+        async () => {
+          return memoryFind({
+            query: 'test',
+            top_k: size,
+          });
+        },
+        { itemCount: size }
+      );
     }
 
     // Test query enhancement performance
@@ -259,7 +275,7 @@ export class PerformanceTestHelper {
     }
 
     // Test batch delete
-    const deletePromises = storeResult.stored.slice(0, 10).map(item =>
+    const deletePromises = storeResult.stored.slice(0, 10).map((item) =>
       this.measureOperation('soft_delete_batch', async () => {
         return softDelete(context.testDb, {
           entity_type: item.kind,
@@ -272,7 +288,7 @@ export class PerformanceTestHelper {
 
     // Test cascade delete
     if (storeResult.stored.length > 0) {
-      const entityItem = storeResult.stored.find(item => item.kind === 'entity');
+      const entityItem = storeResult.stored.find((item) => item.kind === 'entity');
       if (entityItem) {
         await this.measureOperation('soft_delete_cascade', async () => {
           return softDelete(context.testDb, {
@@ -299,22 +315,30 @@ export class PerformanceTestHelper {
       console.log(`  Testing with ${size} items...`);
 
       // Store performance test
-      await this.measureOperation(`store_${size}_items`, async () => {
-        const items = context.dataFactory.createMixedBatch(size);
-        const result = await memoryStore(items);
-        if (result.errors.length > 0) {
-          throw new Error(`Store operation failed for ${size} items`);
-        }
-        return result;
-      }, { itemCount: size });
+      await this.measureOperation(
+        `store_${size}_items`,
+        async () => {
+          const items = context.dataFactory.createMixedBatch(size);
+          const result = await memoryStore(items);
+          if (result.errors.length > 0) {
+            throw new Error(`Store operation failed for ${size} items`);
+          }
+          return result;
+        },
+        { itemCount: size }
+      );
 
       // Search performance test
-      await this.measureOperation(`search_${size}_items`, async () => {
-        return memoryFind({
-          query: 'test',
-          top_k: Math.min(50, size),
-        });
-      }, { itemCount: size });
+      await this.measureOperation(
+        `search_${size}_items`,
+        async () => {
+          return memoryFind({
+            query: 'test',
+            top_k: Math.min(50, size),
+          });
+        },
+        { itemCount: size }
+      );
     }
 
     console.log('✅ Scalability Tests Completed');
@@ -382,7 +406,9 @@ export class PerformanceTestHelper {
         operationsCompleted++;
       } catch (error) {
         // Log error but continue testing
-        console.warn(`Load test operation failed: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(
+          `Load test operation failed: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -445,8 +471,8 @@ export class PerformanceTestHelper {
       };
     }
 
-    const durations = this.metrics.map(m => m.duration);
-    const memoryDeltas = this.metrics.map(m => m.memoryDelta);
+    const durations = this.metrics.map((m) => m.duration);
+    const memoryDeltas = this.metrics.map((m) => m.memoryDelta);
 
     const operationsByType: Record<string, number> = {};
     for (const metrics of this.metrics) {
@@ -459,7 +485,8 @@ export class PerformanceTestHelper {
       minDuration: Math.min(...durations),
       maxDuration: Math.max(...durations),
       totalMemoryUsed: memoryDeltas.reduce((sum, d) => sum + Math.max(0, d), 0),
-      averageMemoryUsed: memoryDeltas.reduce((sum, d) => sum + Math.max(0, d), 0) / memoryDeltas.length,
+      averageMemoryUsed:
+        memoryDeltas.reduce((sum, d) => sum + Math.max(0, d), 0) / memoryDeltas.length,
       operationsByType,
     };
   }
@@ -489,7 +516,9 @@ export class PerformanceTestHelper {
     if (verification.failed.length > 0) {
       console.log('\n❌ Performance Thresholds Failed:');
       for (const failure of verification.failed) {
-        console.log(`  ${failure.operation}: ${failure.actual}ms (threshold: ${failure.threshold}ms)`);
+        console.log(
+          `  ${failure.operation}: ${failure.actual}ms (threshold: ${failure.threshold}ms)`
+        );
       }
     } else {
       console.log('\n✅ All performance thresholds passed');
@@ -497,8 +526,12 @@ export class PerformanceTestHelper {
 
     console.log('\nDetailed Metrics:');
     for (const metrics of this.metrics) {
-      const status = verification.failed.some(f => f.operation === metrics.operation) ? '❌' : '✅';
-      console.log(`  ${status} ${metrics.operation}: ${metrics.duration}ms, ${metrics.memoryDelta}MB`);
+      const status = verification.failed.some((f) => f.operation === metrics.operation)
+        ? '❌'
+        : '✅';
+      console.log(
+        `  ${status} ${metrics.operation}: ${metrics.duration}ms, ${metrics.memoryDelta}MB`
+      );
     }
   }
 

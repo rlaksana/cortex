@@ -4,13 +4,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { storeRelation } from '../../src/services/knowledge/relation.js';
-import { getOutgoingRelations, getIncomingRelations } from '../../src/services/knowledge/relation.js';
+import {
+  storeRelation,
+  getOutgoingRelations,
+  getIncomingRelations,
+} from '../../src/services/knowledge/relation.js';
 
 describe('P4-T4.1: Basic Relation Functionality', () => {
   const testScope = {
     project: 'test-relation-storage',
-    branch: 'main'
+    branch: 'main',
   };
 
   it('should store and query relations using the service directly', async () => {
@@ -21,7 +24,7 @@ describe('P4-T4.1: Basic Relation Functionality', () => {
       to_entity_type: 'entity',
       to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
       relation_type: 'relates_to',
-      metadata: { strength: 0.8 }
+      metadata: { strength: 0.8 },
     };
 
     const storeResult = await storeRelation(relationData, testScope);
@@ -48,22 +51,28 @@ describe('P4-T4.1: Basic Relation Functionality', () => {
     const entityC = '550e8400-e29b-41d4-a716-446655440003';
 
     // Store A -> B relation
-    await storeRelation({
-      from_entity_type: 'entity',
-      from_entity_id: entityA,
-      to_entity_type: 'entity',
-      to_entity_id: entityB,
-      relation_type: 'depends_on'
-    }, testScope);
+    await storeRelation(
+      {
+        from_entity_type: 'entity',
+        from_entity_id: entityA,
+        to_entity_type: 'entity',
+        to_entity_id: entityB,
+        relation_type: 'depends_on',
+      },
+      testScope
+    );
 
     // Store B -> C relation
-    await storeRelation({
-      from_entity_type: 'entity',
-      from_entity_id: entityB,
-      to_entity_type: 'entity',
-      to_entity_id: entityC,
-      relation_type: 'implements'
-    }, testScope);
+    await storeRelation(
+      {
+        from_entity_type: 'entity',
+        from_entity_id: entityB,
+        to_entity_type: 'entity',
+        to_entity_id: entityC,
+        relation_type: 'implements',
+      },
+      testScope
+    );
 
     // Query relations from B
     const outgoingFromB = await getOutgoingRelations('entity', entityB);

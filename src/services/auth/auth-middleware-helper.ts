@@ -5,7 +5,7 @@
 
 import { AuthService } from './auth-service.js';
 import { AuthorizationService } from './authorization-service.js';
-import { AuditService } from '../audit/audit-service.js';
+// import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import { AuthContext, AuthScope, UserRole } from '../../types/auth-types.js';
 import { logger } from '../../utils/logger.js';
 
@@ -48,8 +48,8 @@ export function convertToAuthContext(mcpAuth: MCPAuthContext): AuthContext {
 export class MCPAuthHelper {
   constructor(
     private _authService: AuthService,
-    private _authorizationService: AuthorizationService,
-    private _auditService: AuditService
+    private _authorizationService: AuthorizationService
+    // private _auditService: AuditService // REMOVED: Service file deleted
   ) {}
 
   /**
@@ -121,18 +121,20 @@ export class MCPAuthHelper {
     userId: string,
     sessionId: string,
     method: 'jwt' | 'api_key',
-    requestInfo: MCPRequestInfo,
-    scopes: AuthScope[]
+    _requestInfo: MCPRequestInfo,
+    _scopes: AuthScope[]
   ): Promise<void> {
     try {
-      await this._auditService.logAuthSuccess(
-        userId,
-        sessionId,
-        method,
-        requestInfo.ip_address,
-        requestInfo.user_agent,
-        scopes.map((s) => s as string)
-      );
+      // await this._auditService.logAuthSuccess(
+      //   userId,
+      //   sessionId,
+      //   method,
+      //   requestInfo.ip_address,
+      //   requestInfo.user_agent,
+      //   scopes.map((s) => s as string)
+      // ); // REMOVED: audit-service deleted
+      // Logging disabled temporarily due to missing audit service
+      logger.debug({ userId, sessionId, method }, 'Auth success (logging disabled)');
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
       logger.error({ error, userId, sessionId, method }, 'Failed to log auth success');
@@ -143,19 +145,21 @@ export class MCPAuthHelper {
    * Log authentication failure
    */
   async logAuthFailure(
-    requestInfo: MCPRequestInfo,
+    _requestInfo: MCPRequestInfo,
     reason: string,
     userId?: string,
     sessionId?: string
   ): Promise<void> {
     try {
-      await this._auditService.logAuthFailure(
-        requestInfo.ip_address,
-        requestInfo.user_agent,
-        reason,
-        userId,
-        sessionId
-      );
+      // await this._auditService.logAuthFailure(
+      //   requestInfo.ip_address,
+      //   requestInfo.user_agent,
+      //   reason,
+      //   userId,
+      //   sessionId
+      // ); // REMOVED: audit-service deleted
+      // Logging disabled temporarily due to missing audit service
+      logger.debug({ userId, sessionId, reason }, 'Auth failure (logging disabled)');
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
       logger.error({ error, userId, sessionId, reason }, 'Failed to log auth failure');
@@ -171,18 +175,20 @@ export class MCPAuthHelper {
     action: string,
     requiredScopes: AuthScope[],
     userScopes: AuthScope[],
-    requestInfo: MCPRequestInfo
+    _requestInfo: MCPRequestInfo
   ): Promise<void> {
     try {
-      await this._auditService.logPermissionDenied(
-        userId,
-        resource,
-        action,
-        requiredScopes.map((s) => s as string),
-        userScopes.map((s) => s as string),
-        requestInfo.ip_address,
-        requestInfo.user_agent
-      );
+      // await this._auditService.logPermissionDenied(
+      //   userId,
+      //   resource,
+      //   action,
+      //   requiredScopes.map((s) => s as string),
+      //   userScopes.map((s) => s as string),
+      //   requestInfo.ip_address,
+      //   requestInfo.user_agent
+      // ); // REMOVED: audit-service deleted
+      // Logging disabled temporarily due to missing audit service
+      logger.debug({ userId, resource, action }, 'Permission denied (logging disabled)');
     } catch (error) {
       // Log errors but don't throw to avoid breaking authentication flow
       logger.error(

@@ -72,7 +72,7 @@ import type {
   // Error types
   DatabaseError,
   ValidationError,
-  ConnectionError
+  ConnectionError,
 } from '../../../src/db/types/database-types';
 
 // Mock implementations for testing
@@ -84,7 +84,7 @@ const mockDatabaseConfig: DatabaseConfig = {
   distance: 'Cosine',
   logQueries: false,
   connectionTimeout: 30000,
-  maxConnections: 10
+  maxConnections: 10,
 };
 
 const mockTableDefinition: TableDefinition = {
@@ -93,11 +93,9 @@ const mockTableDefinition: TableDefinition = {
     { name: 'id', type: 'UUID', primary: true, nullable: false },
     { name: 'kind', type: 'VARCHAR(50)', nullable: false },
     { name: 'content', type: 'TEXT', nullable: true },
-    { name: 'created_at', type: 'TIMESTAMP', default: 'NOW()', nullable: false }
+    { name: 'created_at', type: 'TIMESTAMP', default: 'NOW()', nullable: false },
   ],
-  indexes: [
-    { name: 'idx_kind', table: 'knowledge_items', columns: ['kind'], unique: false }
-  ]
+  indexes: [{ name: 'idx_kind', table: 'knowledge_items', columns: ['kind'], unique: false }],
 };
 
 const mockVectorConfig: VectorConfig = {
@@ -105,11 +103,10 @@ const mockVectorConfig: VectorConfig = {
   distance: 'Cosine',
   embeddingModel: 'text-embedding-ada-002',
   batchSize: 10,
-  openaiApiKey: 'test-openai-key'
+  openaiApiKey: 'test-openai-key',
 };
 
 describe('Database Type Schemas - Comprehensive Validation Testing', () => {
-
   describe('Database Schema Validation - Foundation', () => {
     it('should validate complete database configuration', () => {
       const config = {
@@ -120,7 +117,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         distance: 'Cosine' as const,
         logQueries: false,
         connectionTimeout: 30000,
-        maxConnections: 10
+        maxConnections: 10,
       };
 
       const schema = z.object({
@@ -131,7 +128,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']),
         logQueries: z.boolean(),
         connectionTimeout: z.number().min(1000),
-        maxConnections: z.number().min(1).max(100)
+        maxConnections: z.number().min(1).max(100),
       });
 
       const result = schema.safeParse(config);
@@ -152,25 +149,25 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             type: 'UUID',
             primary: true,
             nullable: false,
-            unique: true
+            unique: true,
           },
           {
             name: 'name',
             type: 'VARCHAR(255)',
             nullable: false,
-            default: 'unnamed'
+            default: 'unnamed',
           },
           {
             name: 'description',
             type: 'TEXT',
-            nullable: true
+            nullable: true,
           },
           {
             name: 'created_at',
             type: 'TIMESTAMP',
             nullable: false,
-            default: 'NOW()'
-          }
+            default: 'NOW()',
+          },
         ],
         indexes: [
           {
@@ -178,51 +175,63 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             table: 'test_table',
             columns: ['name'],
             unique: false,
-            type: 'btree' as const
+            type: 'btree' as const,
           },
           {
             name: 'idx_id_name',
             table: 'test_table',
             columns: ['id', 'name'],
             unique: true,
-            type: 'btree' as const
-          }
+            type: 'btree' as const,
+          },
         ],
         foreignKeys: [
           {
             column: 'created_by',
             referencesTable: 'users',
             referencesColumn: 'id',
-            onDelete: 'CASCADE' as const
-          }
-        ]
+            onDelete: 'CASCADE' as const,
+          },
+        ],
       };
 
       const tableSchema = z.object({
         name: z.string().min(1).max(64),
-        columns: z.array(z.object({
-          name: z.string().min(1).max(64),
-          type: z.string().min(1),
-          nullable: z.boolean().default(false),
-          primary: z.boolean().default(false),
-          unique: z.boolean().default(false),
-          default: z.any().optional(),
-          check: z.string().optional()
-        })).min(1),
-        indexes: z.array(z.object({
-          name: z.string().min(1).max(64),
-          table: z.string(),
-          columns: z.array(z.string()).min(1),
-          unique: z.boolean().default(false),
-          type: z.enum(['btree', 'hash', 'gist', 'gin', 'brin']).optional(),
-          where: z.string().optional()
-        })).optional(),
-        foreignKeys: z.array(z.object({
-          column: z.string(),
-          referencesTable: z.string(),
-          referencesColumn: z.string(),
-          onDelete: z.enum(['CASCADE', 'SET NULL', 'RESTRICT']).optional()
-        })).optional()
+        columns: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(64),
+              type: z.string().min(1),
+              nullable: z.boolean().default(false),
+              primary: z.boolean().default(false),
+              unique: z.boolean().default(false),
+              default: z.any().optional(),
+              check: z.string().optional(),
+            })
+          )
+          .min(1),
+        indexes: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(64),
+              table: z.string(),
+              columns: z.array(z.string()).min(1),
+              unique: z.boolean().default(false),
+              type: z.enum(['btree', 'hash', 'gist', 'gin', 'brin']).optional(),
+              where: z.string().optional(),
+            })
+          )
+          .optional(),
+        foreignKeys: z
+          .array(
+            z.object({
+              column: z.string(),
+              referencesTable: z.string(),
+              referencesColumn: z.string(),
+              onDelete: z.enum(['CASCADE', 'SET NULL', 'RESTRICT']).optional(),
+            })
+          )
+          .optional(),
       });
 
       const result = tableSchema.safeParse(table);
@@ -236,24 +245,36 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
 
     it('should enforce column type constraints', () => {
       const validTypes = [
-        'UUID', 'VARCHAR(255)', 'TEXT', 'INTEGER', 'BIGINT',
-        'DECIMAL(10,2)', 'BOOLEAN', 'TIMESTAMP', 'JSONB', 'VECTOR(1536)'
+        'UUID',
+        'VARCHAR(255)',
+        'TEXT',
+        'INTEGER',
+        'BIGINT',
+        'DECIMAL(10,2)',
+        'BOOLEAN',
+        'TIMESTAMP',
+        'JSONB',
+        'VECTOR(1536)',
       ];
 
-      validTypes.forEach(type => {
+      validTypes.forEach((type) => {
         const column = {
           name: 'test_column',
           type,
-          nullable: false
+          nullable: false,
         };
 
         const columnSchema = z.object({
           name: z.string().min(1).max(64),
-          type: z.string().regex(/^(UUID|VARCHAR\(\d+\)|TEXT|INTEGER|BIGINT|DECIMAL\(\d+,\d+\)|BOOLEAN|TIMESTAMP|JSONB|VECTOR\(\d+\))$/),
+          type: z
+            .string()
+            .regex(
+              /^(UUID|VARCHAR\(\d+\)|TEXT|INTEGER|BIGINT|DECIMAL\(\d+,\d+\)|BOOLEAN|TIMESTAMP|JSONB|VECTOR\(\d+\))$/
+            ),
           nullable: z.boolean(),
           primary: z.boolean().default(false),
           unique: z.boolean().default(false),
-          default: z.any().optional()
+          default: z.any().optional(),
         });
 
         const result = columnSchema.safeParse(column);
@@ -264,14 +285,14 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
     it('should validate index schema configuration', () => {
       const indexTypes = ['btree', 'hash', 'gist', 'gin', 'brin'] as const;
 
-      indexTypes.forEach(type => {
+      indexTypes.forEach((type) => {
         const index = {
           name: `idx_test_${type}`,
           table: 'test_table',
           columns: ['column1', 'column2'],
           unique: type === 'btree',
           type,
-          where: type === 'gin' ? 'column1 IS NOT NULL' : undefined
+          where: type === 'gin' ? 'column1 IS NOT NULL' : undefined,
         };
 
         const indexSchema = z.object({
@@ -280,7 +301,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           columns: z.array(z.string()).min(1).max(32),
           unique: z.boolean(),
           type: z.enum(['btree', 'hash', 'gist', 'gin', 'brin']),
-          where: z.string().optional()
+          where: z.string().optional(),
         });
 
         const result = indexSchema.safeParse(index);
@@ -298,7 +319,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           toColumn: 'id',
           onDelete: 'CASCADE' as const,
           onUpdate: 'RESTRICT' as const,
-          cardinality: 'many-to-one' as const
+          cardinality: 'many-to-one' as const,
         },
         {
           name: 'fk_post_comments',
@@ -308,8 +329,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           toColumn: 'id',
           onDelete: 'CASCADE' as const,
           onUpdate: 'CASCADE' as const,
-          cardinality: 'many-to-one' as const
-        }
+          cardinality: 'many-to-one' as const,
+        },
       ];
 
       const relationshipSchema = z.object({
@@ -320,10 +341,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         toColumn: z.string(),
         onDelete: z.enum(['CASCADE', 'SET NULL', 'RESTRICT', 'NO ACTION']).optional(),
         onUpdate: z.enum(['CASCADE', 'SET NULL', 'RESTRICT', 'NO ACTION']).optional(),
-        cardinality: z.enum(['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many'])
+        cardinality: z.enum(['one-to-one', 'one-to-many', 'many-to-one', 'many-to-many']),
       });
 
-      relationships.forEach(relationship => {
+      relationships.forEach((relationship) => {
         const result = relationshipSchema.safeParse(relationship);
         expect(result.success).toBe(true);
       });
@@ -338,13 +359,13 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         indexType: 'HNSW' as const,
         indexParams: {
           M: 16,
-          efConstruction: 200
+          efConstruction: 200,
         },
         quantization: {
           enabled: true,
           type: 'Scalar' as const,
-          bits: 8
-        }
+          bits: 8,
+        },
       };
 
       const schema = z.object({
@@ -355,13 +376,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           M: z.number().min(1).max(100).optional(),
           efConstruction: z.number().min(10).max(1000).optional(),
           nlist: z.number().min(1).max(10000).optional(),
-          nprobe: z.number().min(1).max(1000).optional()
+          nprobe: z.number().min(1).max(1000).optional(),
         }),
-        quantization: z.object({
-          enabled: z.boolean(),
-          type: z.enum(['Scalar', 'Product', 'Binary']),
-          bits: z.number().min(1).max(16)
-        }).optional()
+        quantization: z
+          .object({
+            enabled: z.boolean(),
+            type: z.enum(['Scalar', 'Product', 'Binary']),
+            bits: z.number().min(1).max(16),
+          })
+          .optional(),
       });
 
       const result = schema.safeParse(vectorSchema);
@@ -376,7 +399,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           dimension: 1536,
           maxTokens: 8191,
           batchSize: 100,
-          apiKey: 'test-key'
+          apiKey: 'test-key',
         },
         {
           provider: 'cohere' as const,
@@ -384,7 +407,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           dimension: 1024,
           maxTokens: 500,
           batchSize: 96,
-          apiKey: 'test-key'
+          apiKey: 'test-key',
         },
         {
           provider: 'local' as const,
@@ -392,8 +415,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           dimension: 384,
           maxTokens: 512,
           batchSize: 32,
-          modelPath: '/models/sentence-transformers'
-        }
+          modelPath: '/models/sentence-transformers',
+        },
       ];
 
       const configSchema = z.object({
@@ -404,10 +427,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         batchSize: z.number().min(1).max(1000),
         apiKey: z.string().optional(),
         modelPath: z.string().optional(),
-        cacheEnabled: z.boolean().default(true)
+        cacheEnabled: z.boolean().default(true),
       });
 
-      embeddingConfigs.forEach(config => {
+      embeddingConfigs.forEach((config) => {
         const result = configSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -418,36 +441,38 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         {
           type: 'cosine' as const,
           params: {},
-          description: 'Cosine similarity measure'
+          description: 'Cosine similarity measure',
         },
         {
           type: 'euclidean' as const,
           params: { normalized: true },
-          description: 'Euclidean distance measure'
+          description: 'Euclidean distance measure',
         },
         {
           type: 'dotproduct' as const,
           params: { normalized: false },
-          description: 'Dot product similarity'
+          description: 'Dot product similarity',
         },
         {
           type: 'manhattan' as const,
           params: {},
-          description: 'Manhattan distance measure'
-        }
+          description: 'Manhattan distance measure',
+        },
       ];
 
       const metricSchema = z.object({
         type: z.enum(['cosine', 'euclidean', 'dotproduct', 'manhattan', 'chebyshev']),
         params: z.record(z.any()),
         description: z.string().optional(),
-        range: z.object({
-          min: z.number(),
-          max: z.number()
-        }).optional()
+        range: z
+          .object({
+            min: z.number(),
+            max: z.number(),
+          })
+          .optional(),
       });
 
-      similarityMetrics.forEach(metric => {
+      similarityMetrics.forEach((metric) => {
         const result = metricSchema.safeParse(metric);
         expect(result.success).toBe(true);
       });
@@ -461,12 +486,12 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           parameters: {
             M: 16,
             efConstruction: 200,
-            efSearch: 50
+            efSearch: 50,
           },
           buildParameters: {
             maxConnections: 32,
-            efConstructionQuality: 'high' as const
-          }
+            efConstructionQuality: 'high' as const,
+          },
         },
         {
           name: 'ivf_index',
@@ -474,13 +499,13 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           parameters: {
             nlist: 1000,
             nprobe: 10,
-            metric: 'L2' as const
+            metric: 'L2' as const,
           },
           buildParameters: {
             niter: 20,
-            minPointsPerCentroid: 5
-          }
-        }
+            minPointsPerCentroid: 5,
+          },
+        },
       ];
 
       const indexConfigSchema = z.object({
@@ -488,14 +513,16 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         type: z.enum(['FLAT', 'IVF', 'HNSW', 'LSH', 'PQ']),
         parameters: z.record(z.any()),
         buildParameters: z.record(z.any()).optional(),
-        storageParameters: z.object({
-          compression: z.boolean().default(false),
-          memoryMap: z.boolean().default(false),
-          cacheSize: z.number().optional()
-        }).optional()
+        storageParameters: z
+          .object({
+            compression: z.boolean().default(false),
+            memoryMap: z.boolean().default(false),
+            cacheSize: z.number().optional(),
+          })
+          .optional(),
       });
 
-      indexConfigs.forEach(config => {
+      indexConfigs.forEach((config) => {
         const result = indexConfigSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -522,7 +549,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           `,
           rollbackSql: 'DROP TABLE knowledge_items;',
           estimatedDuration: 5000,
-          dryRun: false
+          dryRun: false,
         },
         {
           id: '002_add_vector_index',
@@ -534,7 +561,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           sql: 'CREATE INDEX idx_content_vector ON knowledge_items USING hnsw (content vector_cosine_ops);',
           rollbackSql: 'DROP INDEX idx_content_vector;',
           estimatedDuration: 30000,
-          dryRun: false
+          dryRun: false,
         },
         {
           id: '003_add_metadata_column',
@@ -543,16 +570,28 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           description: 'Adds metadata column for additional item properties',
           version: '1.2.0',
           dependencies: ['001_initial_schema'],
-          sql: 'ALTER TABLE knowledge_items ADD COLUMN metadata JSONB DEFAULT \'{}\';',
+          sql: "ALTER TABLE knowledge_items ADD COLUMN metadata JSONB DEFAULT '{}';",
           rollbackSql: 'ALTER TABLE knowledge_items DROP COLUMN metadata;',
           estimatedDuration: 2000,
-          dryRun: false
-        }
+          dryRun: false,
+        },
       ];
 
       const operationSchema = z.object({
         id: z.string().min(1).max(100),
-        type: z.enum(['create_table', 'drop_table', 'add_column', 'drop_column', 'alter_column', 'create_index', 'drop_index', 'insert_data', 'update_data', 'delete_data', 'custom']),
+        type: z.enum([
+          'create_table',
+          'drop_table',
+          'add_column',
+          'drop_column',
+          'alter_column',
+          'create_index',
+          'drop_index',
+          'insert_data',
+          'update_data',
+          'delete_data',
+          'custom',
+        ]),
         name: z.string().min(1).max(200),
         description: z.string().max(1000),
         version: z.string().regex(/^\d+\.\d+\.\d+$/),
@@ -563,10 +602,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         dryRun: z.boolean().default(false),
         tags: z.array(z.string()).optional(),
         author: z.string().optional(),
-        createdAt: z.string().datetime().optional()
+        createdAt: z.string().datetime().optional(),
       });
 
-      migrationOperations.forEach(operation => {
+      migrationOperations.forEach((operation) => {
         const result = operationSchema.safeParse(operation);
         expect(result.success).toBe(true);
       });
@@ -588,8 +627,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           metadata: {
             tablesCreated: ['knowledge_items'],
             indexesCreated: [],
-            rowsAffected: 0
-          }
+            rowsAffected: 0,
+          },
         },
         {
           migrationId: '002_add_vector_index',
@@ -603,15 +642,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             code: 'INSUFFICIENT_MEMORY',
             message: 'Not enough memory to create HNSW index',
             stack: 'Error: Not enough memory...',
-            timestamp: '2025-01-01T10:01:30Z'
+            timestamp: '2025-01-01T10:01:30Z',
           },
           rollbackAvailable: false,
           rollbackBefore: null,
           metadata: {
             attempt: 1,
-            maxRetries: 3
-          }
-        }
+            maxRetries: 3,
+          },
+        },
       ];
 
       const stateSchema = z.object({
@@ -622,18 +661,20 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         duration: z.number().min(0),
         checksum: z.string().min(1),
         version: z.string(),
-        error: z.object({
-          code: z.string(),
-          message: z.string(),
-          stack: z.string().optional(),
-          timestamp: z.string().datetime()
-        }).nullable(),
+        error: z
+          .object({
+            code: z.string(),
+            message: z.string(),
+            stack: z.string().optional(),
+            timestamp: z.string().datetime(),
+          })
+          .nullable(),
         rollbackAvailable: z.boolean(),
         rollbackBefore: z.string().datetime().nullable(),
-        metadata: z.record(z.any())
+        metadata: z.record(z.any()),
       });
 
-      migrationStates.forEach(state => {
+      migrationStates.forEach((state) => {
         const result = stateSchema.safeParse(state);
         expect(result.success).toBe(true);
       });
@@ -654,22 +695,22 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
               table: 'knowledge_items',
               column: 'content_vector',
               columnType: 'VECTOR(1536)',
-              nullable: true
-            }
+              nullable: true,
+            },
           ],
           migrations: ['002_add_vector_index'],
           validationRules: [
             {
               type: 'data_integrity' as const,
-              description: 'Ensure all existing items have null vectors'
-            }
+              description: 'Ensure all existing items have null vectors',
+            },
           ],
           rollbackPlan: {
             strategy: 'drop_column' as const,
             changes: ['DROP COLUMN content_vector'],
-            dataPreservation: false
-          }
-        }
+            dataPreservation: false,
+          },
+        },
       ];
 
       const evolutionSchema = z.object({
@@ -679,28 +720,40 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         fromVersion: z.string(),
         toVersion: z.string(),
         strategy: z.enum(['backward_compatible', 'breaking_change', 'migration_required']),
-        changes: z.array(z.object({
-          type: z.enum(['add_column', 'drop_column', 'alter_column', 'add_table', 'drop_table', 'add_constraint', 'drop_constraint']),
-          table: z.string(),
-          column: z.string().optional(),
-          columnType: z.string().optional(),
-          nullable: z.boolean().optional(),
-          constraint: z.string().optional()
-        })),
+        changes: z.array(
+          z.object({
+            type: z.enum([
+              'add_column',
+              'drop_column',
+              'alter_column',
+              'add_table',
+              'drop_table',
+              'add_constraint',
+              'drop_constraint',
+            ]),
+            table: z.string(),
+            column: z.string().optional(),
+            columnType: z.string().optional(),
+            nullable: z.boolean().optional(),
+            constraint: z.string().optional(),
+          })
+        ),
         migrations: z.array(z.string()),
-        validationRules: z.array(z.object({
-          type: z.enum(['data_integrity', 'performance', 'schema_consistency']),
-          description: z.string(),
-          sql: z.string().optional()
-        })),
+        validationRules: z.array(
+          z.object({
+            type: z.enum(['data_integrity', 'performance', 'schema_consistency']),
+            description: z.string(),
+            sql: z.string().optional(),
+          })
+        ),
         rollbackPlan: z.object({
           strategy: z.enum(['reverse_migrations', 'drop_column', 'restore_backup']),
           changes: z.array(z.string()),
-          dataPreservation: z.boolean()
-        })
+          dataPreservation: z.boolean(),
+        }),
       });
 
-      schemaEvolutions.forEach(evolution => {
+      schemaEvolutions.forEach((evolution) => {
         const result = evolutionSchema.safeParse(evolution);
         expect(result.success).toBe(true);
       });
@@ -717,8 +770,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             {
               type: 'drop_index' as const,
               name: 'idx_content_vector',
-              sql: 'DROP INDEX IF EXISTS idx_content_vector;'
-            }
+              sql: 'DROP INDEX IF EXISTS idx_content_vector;',
+            },
           ],
           createdAt: '2025-01-01T10:05:00Z',
           executedAt: '2025-01-01T10:05:05Z',
@@ -726,9 +779,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           rollbackData: {
             previousState: 'no_index',
             affectedRows: 0,
-            diskSpaceFreed: 1024000
-          }
-        }
+            diskSpaceFreed: 1024000,
+          },
+        },
       ];
 
       const rollbackSchema = z.object({
@@ -736,20 +789,30 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         targetMigrationId: z.string().min(1),
         reason: z.string().min(1),
         strategy: z.enum(['single_step', 'cascade', 'manual']),
-        operations: z.array(z.object({
-          type: z.enum(['drop_table', 'create_table', 'drop_column', 'add_column', 'drop_index', 'create_index', 'restore_data']),
-          name: z.string().optional(),
-          sql: z.string().min(1),
-          parameters: z.record(z.any()).optional()
-        })),
+        operations: z.array(
+          z.object({
+            type: z.enum([
+              'drop_table',
+              'create_table',
+              'drop_column',
+              'add_column',
+              'drop_index',
+              'create_index',
+              'restore_data',
+            ]),
+            name: z.string().optional(),
+            sql: z.string().min(1),
+            parameters: z.record(z.any()).optional(),
+          })
+        ),
         createdAt: z.string().datetime(),
         executedAt: z.string().datetime().nullable(),
         status: z.enum(['pending', 'executing', 'completed', 'failed']),
         rollbackData: z.record(z.any()).optional(),
-        error: z.string().optional()
+        error: z.string().optional(),
       });
 
-      rollbackOperations.forEach(rollback => {
+      rollbackOperations.forEach((rollback) => {
         const result = rollbackSchema.safeParse(rollback);
         expect(result.success).toBe(true);
       });
@@ -767,8 +830,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           validation: {
             enum: ['entity', 'relation', 'observation', 'decision'],
             minLength: 1,
-            maxLength: 50
-          }
+            maxLength: 50,
+          },
         },
         {
           name: 'limit',
@@ -777,8 +840,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           default: 10,
           validation: {
             min: 1,
-            max: 1000
-          }
+            max: 1000,
+          },
         },
         {
           name: 'created_after',
@@ -786,15 +849,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           required: false,
           default: null,
           validation: {
-            format: 'iso8601'
-          }
+            format: 'iso8601',
+          },
         },
         {
           name: 'include_metadata',
           type: 'boolean' as const,
           required: false,
           default: false,
-          validation: {}
+          validation: {},
         },
         {
           name: 'tags',
@@ -803,9 +866,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           default: [],
           validation: {
             itemType: 'string',
-            maxItems: 10
-          }
-        }
+            maxItems: 10,
+          },
+        },
       ];
 
       const parameterSchema = z.object({
@@ -823,11 +886,11 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           format: z.string().optional(),
           itemType: z.string().optional(),
           maxItems: z.number().optional(),
-          custom: z.function().optional()
-        })
+          custom: z.function().optional(),
+        }),
       });
 
-      queryParameters.forEach(param => {
+      queryParameters.forEach((param) => {
         const result = parameterSchema.safeParse(param);
         expect(result.success).toBe(true);
       });
@@ -839,13 +902,13 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           field: 'kind',
           operator: 'equals' as const,
           value: 'entity',
-          type: 'simple' as const
+          type: 'simple' as const,
         },
         {
           field: 'created_at',
           operator: 'greater_than' as const,
           value: '2025-01-01T00:00:00Z',
-          type: 'simple' as const
+          type: 'simple' as const,
         },
         {
           type: 'and' as const,
@@ -854,15 +917,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
               field: 'kind',
               operator: 'in' as const,
               value: ['entity', 'relation'],
-              type: 'simple' as const
+              type: 'simple' as const,
             },
             {
               field: 'scope.project',
               operator: 'equals' as const,
               value: 'test-project',
-              type: 'simple' as const
-            }
-          ]
+              type: 'simple' as const,
+            },
+          ],
         },
         {
           type: 'or' as const,
@@ -871,15 +934,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
               field: 'title',
               operator: 'contains' as const,
               value: 'important',
-              type: 'simple' as const
+              type: 'simple' as const,
             },
             {
               field: 'tags',
               operator: 'contains' as const,
               value: 'urgent',
-              type: 'simple' as const
-            }
-          ]
+              type: 'simple' as const,
+            },
+          ],
         },
         {
           type: 'not' as const,
@@ -887,29 +950,42 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             field: 'status',
             operator: 'equals' as const,
             value: 'archived',
-            type: 'simple' as const
-          }
-        }
+            type: 'simple' as const,
+          },
+        },
       ];
 
       const filterSchema = z.union([
         z.object({
           field: z.string(),
-          operator: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'greater_equal', 'less_equal', 'contains', 'starts_with', 'ends_with', 'in', 'not_in', 'regex']),
+          operator: z.enum([
+            'equals',
+            'not_equals',
+            'greater_than',
+            'less_than',
+            'greater_equal',
+            'less_equal',
+            'contains',
+            'starts_with',
+            'ends_with',
+            'in',
+            'not_in',
+            'regex',
+          ]),
           value: z.any(),
-          type: z.literal('simple')
+          type: z.literal('simple'),
         }),
         z.object({
           type: z.enum(['and', 'or']),
-          filters: z.array(z.any()).min(1)
+          filters: z.array(z.any()).min(1),
         }),
         z.object({
           type: z.literal('not'),
-          filter: z.any()
-        })
+          filter: z.any(),
+        }),
       ]);
 
-      filterExpressions.forEach(filter => {
+      filterExpressions.forEach((filter) => {
         const result = filterSchema.safeParse(filter);
         expect(result.success).toBe(true);
       });
@@ -920,12 +996,12 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         {
           field: 'created_at',
           direction: 'desc' as const,
-          priority: 1
+          priority: 1,
         },
         {
           field: 'kind',
           direction: 'asc' as const,
-          priority: 2
+          priority: 2,
         },
         {
           field: 'title',
@@ -934,9 +1010,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           nulls: 'last' as const,
           custom: {
             caseSensitive: false,
-            locale: 'en-US'
-          }
-        }
+            locale: 'en-US',
+          },
+        },
       ];
 
       const sortSchema = z.object({
@@ -944,14 +1020,16 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         direction: z.enum(['asc', 'desc']),
         priority: z.number().min(1),
         nulls: z.enum(['first', 'last']).optional(),
-        custom: z.object({
-          caseSensitive: z.boolean().optional(),
-          locale: z.string().optional(),
-          numeric: z.boolean().optional()
-        }).optional()
+        custom: z
+          .object({
+            caseSensitive: z.boolean().optional(),
+            locale: z.string().optional(),
+            numeric: z.boolean().optional(),
+          })
+          .optional(),
       });
 
-      sortOrders.forEach(sort => {
+      sortOrders.forEach((sort) => {
         const result = sortSchema.safeParse(sort);
         expect(result.success).toBe(true);
       });
@@ -964,7 +1042,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           limit: 20,
           offset: 0,
           sortBy: 'created_at',
-          sortOrder: 'desc' as const
+          sortOrder: 'desc' as const,
         },
         {
           page: 2,
@@ -973,7 +1051,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           sortBy: 'title',
           sortOrder: 'asc' as const,
           includeTotal: true,
-          maxItems: 1000
+          maxItems: 1000,
         },
         {
           limit: 10,
@@ -981,8 +1059,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           sortBy: 'relevance_score',
           sortOrder: 'desc' as const,
           cursor: 'next_page_token_abc123',
-          includeCount: true
-        }
+          includeCount: true,
+        },
       ];
 
       const paginationSchema = z.object({
@@ -995,10 +1073,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         includeCount: z.boolean().optional(),
         maxItems: z.number().min(1).optional(),
         cursor: z.string().optional(),
-        meta: z.record(z.any()).optional()
+        meta: z.record(z.any()).optional(),
       });
 
-      paginationOptions.forEach(pagination => {
+      paginationOptions.forEach((pagination) => {
         const result = paginationSchema.safeParse(pagination);
         expect(result.success).toBe(true);
       });
@@ -1020,8 +1098,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           keepAlive: true,
           idleTimeout: 300000,
           headers: {
-            'User-Agent': 'Cortex-MCP/1.0.0'
-          }
+            'User-Agent': 'Cortex-MCP/1.0.0',
+          },
         },
         {
           type: 'qdrant' as const,
@@ -1034,8 +1112,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           caPath: '/path/to/ca.pem',
           validateCert: true,
           maxRetries: 5,
-          retryDelay: 2000
-        }
+          retryDelay: 2000,
+        },
       ];
 
       const connectionSchema = z.object({
@@ -1057,10 +1135,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         keepAlive: z.boolean(),
         idleTimeout: z.number().min(1000),
         headers: z.record(z.string()).optional(),
-        meta: z.record(z.any()).optional()
+        meta: z.record(z.any()).optional(),
       });
 
-      connectionConfigs.forEach(config => {
+      connectionConfigs.forEach((config) => {
         const result = connectionSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -1081,11 +1159,11 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             enabled: true,
             interval: 10000,
             timeout: 2000,
-            query: 'SELECT 1'
+            query: 'SELECT 1',
           },
           maxUses: 1000,
           maxSize: 100,
-          evictionStrategy: 'lru' as const
+          evictionStrategy: 'lru' as const,
         },
         {
           minConnections: 5,
@@ -1102,7 +1180,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             timeout: 5000,
             query: 'SELECT 1',
             softFailureThreshold: 3,
-            hardFailureThreshold: 5
+            hardFailureThreshold: 5,
           },
           maxUses: 10000,
           maxSize: 1000,
@@ -1112,9 +1190,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             enabled: true,
             level: 'info' as const,
             includeSlowQueries: true,
-            slowQueryThreshold: 1000
-          }
-        }
+            slowQueryThreshold: 1000,
+          },
+        },
       ];
 
       const poolSchema = z.object({
@@ -1132,21 +1210,23 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           timeout: z.number().min(100),
           query: z.string(),
           softFailureThreshold: z.number().min(1).optional(),
-          hardFailureThreshold: z.number().min(1).optional()
+          hardFailureThreshold: z.number().min(1).optional(),
         }),
         maxUses: z.number().min(1),
         maxSize: z.number().min(1),
         evictionStrategy: z.enum(['lru', 'fifo', 'lifo', 'random']),
         trackUsage: z.boolean().optional(),
-        logging: z.object({
-          enabled: z.boolean(),
-          level: z.enum(['debug', 'info', 'warn', 'error']),
-          includeSlowQueries: z.boolean(),
-          slowQueryThreshold: z.number().min(100)
-        }).optional()
+        logging: z
+          .object({
+            enabled: z.boolean(),
+            level: z.enum(['debug', 'info', 'warn', 'error']),
+            includeSlowQueries: z.boolean(),
+            slowQueryThreshold: z.number().min(100),
+          })
+          .optional(),
       });
 
-      poolConfigs.forEach(config => {
+      poolConfigs.forEach((config) => {
         const result = poolSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -1164,7 +1244,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           savepoints: true,
           deadlockDetection: true,
           lockTimeout: 10000,
-          maxBatchSize: 1000
+          maxBatchSize: 1000,
         },
         {
           isolation: 'SERIALIZABLE' as const,
@@ -1178,12 +1258,17 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           lockTimeout: 30000,
           maxBatchSize: 500,
           consistentSnapshot: true,
-          retryOnDeadlock: true
-        }
+          retryOnDeadlock: true,
+        },
       ];
 
       const transactionSchema = z.object({
-        isolation: z.enum(['READ_UNCOMMITTED', 'READ_COMMITTED', 'REPEATABLE_READ', 'SERIALIZABLE']),
+        isolation: z.enum([
+          'READ_UNCOMMITTED',
+          'READ_COMMITTED',
+          'REPEATABLE_READ',
+          'SERIALIZABLE',
+        ]),
         readOnly: z.boolean(),
         timeout: z.number().min(1000),
         retryAttempts: z.number().min(0),
@@ -1195,10 +1280,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         maxBatchSize: z.number().min(1),
         consistentSnapshot: z.boolean().optional(),
         retryOnDeadlock: z.boolean().optional(),
-        transactionId: z.string().optional()
+        transactionId: z.string().optional(),
       });
 
-      transactionConfigs.forEach(config => {
+      transactionConfigs.forEach((config) => {
         const result = transactionSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -1217,8 +1302,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           metadata: {
             userAgent: 'Mozilla/5.0...',
             ipAddress: '192.168.1.100',
-            location: 'US-West'
-          }
+            location: 'US-West',
+          },
         },
         {
           sessionId: 'session_def789',
@@ -1231,15 +1316,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           metadata: {
             userAgent: 'curl/7.68.0',
             ipAddress: '10.0.0.50',
-            role: 'administrator'
+            role: 'administrator',
           },
           transactionState: {
             active: true,
             transactionId: 'txn_123',
             startTime: '2025-01-01T11:10:00Z',
-            savepoints: ['sp1', 'sp2']
-          }
-        }
+            savepoints: ['sp1', 'sp2'],
+          },
+        },
       ];
 
       const sessionSchema = z.object({
@@ -1251,15 +1336,17 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         maxIdleTime: z.number().min(30000), // minimum 30 seconds
         permissions: z.array(z.string()),
         metadata: z.record(z.any()),
-        transactionState: z.object({
-          active: z.boolean(),
-          transactionId: z.string(),
-          startTime: z.string().datetime(),
-          savepoints: z.array(z.string()).optional()
-        }).optional()
+        transactionState: z
+          .object({
+            active: z.boolean(),
+            transactionId: z.string(),
+            startTime: z.string().datetime(),
+            savepoints: z.array(z.string()).optional(),
+          })
+          .optional(),
       });
 
-      sessionConfigs.forEach(config => {
+      sessionConfigs.forEach((config) => {
         const result = sessionSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -1279,15 +1366,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           memoryUsage: {
             used: 256000000, // 256MB
             total: 512000000, // 512MB
-            percentage: 50
+            percentage: 50,
           },
           cpuUsage: 25.5,
           diskIO: {
             reads: 1000,
             writes: 500,
             bytesRead: 104857600, // 100MB
-            bytesWritten: 52428800 // 50MB
-          }
+            bytesWritten: 52428800, // 50MB
+          },
         },
         {
           queryCount: 50000,
@@ -1301,15 +1388,15 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             totalIndexes: 25,
             usedIndexes: 20,
             unusedIndexes: 5,
-            efficiency: 80
+            efficiency: 80,
           },
           vectorOperations: {
             embeddingsGenerated: 10000,
             similaritySearches: 25000,
             indexUpdates: 100,
-            averageIndexingTime: 200
-          }
-        }
+            averageIndexingTime: 200,
+          },
+        },
       ];
 
       const metricsSchema = z.object({
@@ -1319,34 +1406,42 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         connectionErrors: z.number().min(0),
         uptime: z.number().min(0),
         timestamp: z.string().datetime(),
-        memoryUsage: z.object({
-          used: z.number().min(0),
-          total: z.number().min(0),
-          percentage: z.number().min(0).max(100)
-        }).optional(),
+        memoryUsage: z
+          .object({
+            used: z.number().min(0),
+            total: z.number().min(0),
+            percentage: z.number().min(0).max(100),
+          })
+          .optional(),
         cpuUsage: z.number().min(0).max(100).optional(),
-        diskIO: z.object({
-          reads: z.number().min(0),
-          writes: z.number().min(0),
-          bytesRead: z.number().min(0),
-          bytesWritten: z.number().min(0)
-        }).optional(),
+        diskIO: z
+          .object({
+            reads: z.number().min(0),
+            writes: z.number().min(0),
+            bytesRead: z.number().min(0),
+            bytesWritten: z.number().min(0),
+          })
+          .optional(),
         cacheHitRate: z.number().min(0).max(100).optional(),
-        indexUsageStats: z.object({
-          totalIndexes: z.number().min(0),
-          usedIndexes: z.number().min(0),
-          unusedIndexes: z.number().min(0),
-          efficiency: z.number().min(0).max(100)
-        }).optional(),
-        vectorOperations: z.object({
-          embeddingsGenerated: z.number().min(0),
-          similaritySearches: z.number().min(0),
-          indexUpdates: z.number().min(0),
-          averageIndexingTime: z.number().min(0)
-        }).optional()
+        indexUsageStats: z
+          .object({
+            totalIndexes: z.number().min(0),
+            usedIndexes: z.number().min(0),
+            unusedIndexes: z.number().min(0),
+            efficiency: z.number().min(0).max(100),
+          })
+          .optional(),
+        vectorOperations: z
+          .object({
+            embeddingsGenerated: z.number().min(0),
+            similaritySearches: z.number().min(0),
+            indexUpdates: z.number().min(0),
+            averageIndexingTime: z.number().min(0),
+          })
+          .optional(),
       });
 
-      performanceMetrics.forEach(metrics => {
+      performanceMetrics.forEach((metrics) => {
         const result = metricsSchema.safeParse(metrics);
         expect(result.success).toBe(true);
       });
@@ -1361,29 +1456,29 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             analyzeQueries: true,
             slowQueryThreshold: 1000,
             explainPlans: true,
-            autoIndexRecommendations: true
+            autoIndexRecommendations: true,
           },
           connectionOptimization: {
             enabled: true,
             connectionPooling: true,
             keepAlive: true,
             compression: true,
-            batchSize: 100
+            batchSize: 100,
           },
           memoryOptimization: {
             enabled: true,
             maxMemoryUsage: 1073741824, // 1GB
             garbageCollection: true,
             cacheSize: 268435456, // 256MB
-            bufferPool: true
+            bufferPool: true,
           },
           vectorOptimization: {
             enabled: true,
             indexType: 'HNSW',
             indexParams: { M: 16, efConstruction: 200 },
             quantization: true,
-            parallelProcessing: true
-          }
+            parallelProcessing: true,
+          },
         },
         {
           queryOptimization: {
@@ -1394,7 +1489,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             explainPlans: false,
             autoIndexRecommendations: false,
             queryCacheEnabled: true,
-            queryCacheSize: 1000
+            queryCacheSize: 1000,
           },
           storageOptimization: {
             enabled: true,
@@ -1402,9 +1497,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             compressionLevel: 6,
             deduplication: true,
             tieredStorage: true,
-            hotDataRetention: 2592000000 // 30 days
-          }
-        }
+            hotDataRetention: 2592000000, // 30 days
+          },
+        },
       ];
 
       const optimizationSchema = z.object({
@@ -1416,40 +1511,48 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           explainPlans: z.boolean(),
           autoIndexRecommendations: z.boolean(),
           queryCacheEnabled: z.boolean().optional(),
-          queryCacheSize: z.number().min(1).optional()
+          queryCacheSize: z.number().min(1).optional(),
         }),
-        connectionOptimization: z.object({
-          enabled: z.boolean(),
-          connectionPooling: z.boolean(),
-          keepAlive: z.boolean(),
-          compression: z.boolean(),
-          batchSize: z.number().min(1)
-        }).optional(),
-        memoryOptimization: z.object({
-          enabled: z.boolean(),
-          maxMemoryUsage: z.number().min(1),
-          garbageCollection: z.boolean(),
-          cacheSize: z.number().min(1),
-          bufferPool: z.boolean()
-        }).optional(),
-        vectorOptimization: z.object({
-          enabled: z.boolean(),
-          indexType: z.enum(['FLAT', 'IVF', 'HNSW', 'LSH']),
-          indexParams: z.record(z.any()),
-          quantization: z.boolean(),
-          parallelProcessing: z.boolean()
-        }).optional(),
-        storageOptimization: z.object({
-          enabled: z.boolean(),
-          compression: z.enum(['gzip', 'lz4', 'snappy', 'zstd']),
-          compressionLevel: z.number().min(1).max(22),
-          deduplication: z.boolean(),
-          tieredStorage: z.boolean(),
-          hotDataRetention: z.number().min(1)
-        }).optional()
+        connectionOptimization: z
+          .object({
+            enabled: z.boolean(),
+            connectionPooling: z.boolean(),
+            keepAlive: z.boolean(),
+            compression: z.boolean(),
+            batchSize: z.number().min(1),
+          })
+          .optional(),
+        memoryOptimization: z
+          .object({
+            enabled: z.boolean(),
+            maxMemoryUsage: z.number().min(1),
+            garbageCollection: z.boolean(),
+            cacheSize: z.number().min(1),
+            bufferPool: z.boolean(),
+          })
+          .optional(),
+        vectorOptimization: z
+          .object({
+            enabled: z.boolean(),
+            indexType: z.enum(['FLAT', 'IVF', 'HNSW', 'LSH']),
+            indexParams: z.record(z.any()),
+            quantization: z.boolean(),
+            parallelProcessing: z.boolean(),
+          })
+          .optional(),
+        storageOptimization: z
+          .object({
+            enabled: z.boolean(),
+            compression: z.enum(['gzip', 'lz4', 'snappy', 'zstd']),
+            compressionLevel: z.number().min(1).max(22),
+            deduplication: z.boolean(),
+            tieredStorage: z.boolean(),
+            hotDataRetention: z.number().min(1),
+          })
+          .optional(),
       });
 
-      optimizationConfigs.forEach(config => {
+      optimizationConfigs.forEach((config) => {
         const result = optimizationSchema.safeParse(config);
         expect(result.success).toBe(true);
       });
@@ -1464,7 +1567,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           maxSizeBytes: 104857600, // 100MB
           evictionPolicy: 'lru' as const,
           compressionEnabled: true,
-          statsEnabled: true
+          statsEnabled: true,
         },
         {
           type: 'redis' as const,
@@ -1477,7 +1580,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           maxRetries: 3,
           retryDelay: 1000,
           clusterEnabled: false,
-          sslEnabled: false
+          sslEnabled: false,
         },
         {
           type: 'hybrid' as const,
@@ -1485,18 +1588,18 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             {
               type: 'memory' as const,
               maxSize: 100,
-              ttl: 300000 // 5 minutes
+              ttl: 300000, // 5 minutes
             },
             {
               type: 'redis' as const,
               host: 'redis-cluster.example.com',
               port: 6379,
-              ttl: 3600000 // 1 hour
-            }
+              ttl: 3600000, // 1 hour
+            },
           ],
           fallbackPolicy: 'memory_first' as const,
-          syncInterval: 60000 // 1 minute
-        }
+          syncInterval: 60000, // 1 minute
+        },
       ];
 
       const cacheSchema = z.union([
@@ -1507,7 +1610,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           maxSizeBytes: z.number().min(1024),
           evictionPolicy: z.enum(['lru', 'lfu', 'fifo', 'random']),
           compressionEnabled: z.boolean(),
-          statsEnabled: z.boolean()
+          statsEnabled: z.boolean(),
         }),
         z.object({
           type: z.literal('redis'),
@@ -1521,20 +1624,22 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           retryDelay: z.number().min(100),
           clusterEnabled: z.boolean(),
           sslEnabled: z.boolean(),
-          sentinel: z.object({
-            hosts: z.array(z.string()),
-            name: z.string()
-          }).optional()
+          sentinel: z
+            .object({
+              hosts: z.array(z.string()),
+              name: z.string(),
+            })
+            .optional(),
         }),
         z.object({
           type: z.literal('hybrid'),
           strategies: z.array(z.any()),
           fallbackPolicy: z.enum(['memory_first', 'redis_first', 'load_balance']),
-          syncInterval: z.number().min(1000)
-        })
+          syncInterval: z.number().min(1000),
+        }),
       ]);
 
-      cachingStrategies.forEach(strategy => {
+      cachingStrategies.forEach((strategy) => {
         const result = cacheSchema.safeParse(strategy);
         expect(result.success).toBe(true);
       });
@@ -1552,26 +1657,26 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           maxBatchSize: 10000,
           maxConcurrentOperations: 50,
           timeout: 60000,
-          retryAttempts: 3
+          retryAttempts: 3,
         },
         {
           perUser: {
             maxConnections: 10,
             maxQueriesPerMinute: 100,
             maxMemoryUsage: 104857600, // 100MB
-            maxBatchSize: 1000
+            maxBatchSize: 1000,
           },
           perProject: {
             maxItems: 1000000,
             maxStorageSize: 10737418240, // 10GB
-            maxVectorCount: 500000
+            maxVectorCount: 500000,
           },
           global: {
             maxTotalConnections: 1000,
             maxTotalMemory: 8589934592, // 8GB
-            maxTotalStorage: 1099511627776 // 1TB
-          }
-        }
+            maxTotalStorage: 1099511627776, // 1TB
+          },
+        },
       ];
 
       const limitSchema = z.union([
@@ -1585,29 +1690,29 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           maxBatchSize: z.number().min(1),
           maxConcurrentOperations: z.number().min(1),
           timeout: z.number().min(1000),
-          retryAttempts: z.number().min(0)
+          retryAttempts: z.number().min(0),
         }),
         z.object({
           perUser: z.object({
             maxConnections: z.number().min(1),
             maxQueriesPerMinute: z.number().min(1),
             maxMemoryUsage: z.number().min(1),
-            maxBatchSize: z.number().min(1)
+            maxBatchSize: z.number().min(1),
           }),
           perProject: z.object({
             maxItems: z.number().min(1),
             maxStorageSize: z.number().min(1),
-            maxVectorCount: z.number().min(1)
+            maxVectorCount: z.number().min(1),
           }),
           global: z.object({
             maxTotalConnections: z.number().min(1),
             maxTotalMemory: z.number().min(1),
-            maxTotalStorage: z.number().min(1)
-          })
-        })
+            maxTotalStorage: z.number().min(1),
+          }),
+        }),
       ]);
 
-      resourceLimits.forEach(limit => {
+      resourceLimits.forEach((limit) => {
         const result = limitSchema.safeParse(limit);
         expect(result.success).toBe(true);
       });
@@ -1622,26 +1727,26 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           url: 'http://localhost:6333',
           apiKey: 'test-key',
           connectionTimeout: 30000,
-          maxConnections: 10
+          maxConnections: 10,
         },
         vector: {
           size: 1536,
           distance: 'Cosine' as const,
           indexType: 'HNSW' as const,
           embeddingModel: 'text-embedding-ada-002',
-          batchSize: 100
+          batchSize: 100,
         },
         optimization: {
           queryCacheEnabled: true,
           connectionPooling: true,
           compressionEnabled: true,
-          maxMemoryUsage: 2147483648
+          maxMemoryUsage: 2147483648,
         },
         limits: {
           maxConnections: 100,
           maxQueriesPerSecond: 1000,
-          maxBatchSize: 10000
-        }
+          maxBatchSize: 10000,
+        },
       };
 
       const integratedSchema = z.object({
@@ -1650,26 +1755,26 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           url: z.string().url(),
           apiKey: z.string(),
           connectionTimeout: z.number().min(1000),
-          maxConnections: z.number().min(1)
+          maxConnections: z.number().min(1),
         }),
         vector: z.object({
           size: z.number().min(1),
           distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']),
           indexType: z.enum(['FLAT', 'IVF', 'HNSW', 'LSH']),
           embeddingModel: z.string(),
-          batchSize: z.number().min(1)
+          batchSize: z.number().min(1),
         }),
         optimization: z.object({
           queryCacheEnabled: z.boolean(),
           connectionPooling: z.boolean(),
           compressionEnabled: z.boolean(),
-          maxMemoryUsage: z.number().min(1)
+          maxMemoryUsage: z.number().min(1),
         }),
         limits: z.object({
           maxConnections: z.number().min(1),
           maxQueriesPerSecond: z.number().min(1),
-          maxBatchSize: z.number().min(1)
-        })
+          maxBatchSize: z.number().min(1),
+        }),
       });
 
       const result = integratedSchema.safeParse(integratedConfig);
@@ -1684,43 +1789,45 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             dependencies: [],
             operations: [
               { type: 'create_table', name: 'knowledge_items' },
-              { type: 'create_table', name: 'relations' }
+              { type: 'create_table', name: 'relations' },
             ],
             rollbackOperations: [
               { type: 'drop_table', name: 'relations' },
-              { type: 'drop_table', name: 'knowledge_items' }
-            ]
+              { type: 'drop_table', name: 'knowledge_items' },
+            ],
           },
           {
             id: '002_add_vectors',
             dependencies: ['001_create_tables'],
             operations: [
-              { type: 'add_column', table: 'knowledge_items', column: 'content_vector' }
+              { type: 'add_column', table: 'knowledge_items', column: 'content_vector' },
             ],
             rollbackOperations: [
-              { type: 'drop_column', table: 'knowledge_items', column: 'content_vector' }
-            ]
-          }
+              { type: 'drop_column', table: 'knowledge_items', column: 'content_vector' },
+            ],
+          },
         ],
         validation: {
           checkDependencies: true,
           validateRollback: true,
-          testRollback: true
-        }
+          testRollback: true,
+        },
       };
 
       const chainSchema = z.object({
-        migrations: z.array(z.object({
-          id: z.string(),
-          dependencies: z.array(z.string()),
-          operations: z.array(z.any()),
-          rollbackOperations: z.array(z.any())
-        })),
+        migrations: z.array(
+          z.object({
+            id: z.string(),
+            dependencies: z.array(z.string()),
+            operations: z.array(z.any()),
+            rollbackOperations: z.array(z.any()),
+          })
+        ),
         validation: z.object({
           checkDependencies: z.boolean(),
           validateRollback: z.boolean(),
-          testRollback: z.boolean()
-        })
+          testRollback: z.boolean(),
+        }),
       });
 
       const result = chainSchema.safeParse(migrationChain);
@@ -1738,50 +1845,52 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
               {
                 or: [
                   { field: 'scope.project', operator: 'equals', value: 'ml-project' },
-                  { field: 'tags', operator: 'contains', value: 'machine-learning' }
-                ]
-              }
-            ]
+                  { field: 'tags', operator: 'contains', value: 'machine-learning' },
+                ],
+              },
+            ],
           },
           sort: [
             { field: 'relevance_score', direction: 'desc', priority: 1 },
-            { field: 'created_at', direction: 'desc', priority: 2 }
+            { field: 'created_at', direction: 'desc', priority: 2 },
           ],
           pagination: {
             limit: 20,
             offset: 0,
-            includeTotal: true
-          }
+            includeTotal: true,
+          },
         },
         options: {
           includeVectors: false,
           includeMetadata: true,
           cache: true,
-          timeout: 10000
-        }
+          timeout: 10000,
+        },
       };
 
       const querySchema = z.object({
         query: z.object({
           text: z.string(),
           filters: z.any(),
-          sort: z.array(z.object({
-            field: z.string(),
-            direction: z.enum(['asc', 'desc']),
-            priority: z.number()
-          })),
+          sort: z.array(
+            z.object({
+              field: z.string(),
+              direction: z.enum(['asc', 'desc']),
+              priority: z.number(),
+            })
+          ),
           pagination: z.object({
             limit: z.number().min(1),
             offset: z.number().min(0),
-            includeTotal: z.boolean()
-          })
+            includeTotal: z.boolean(),
+          }),
         }),
         options: z.object({
           includeVectors: z.boolean(),
           includeMetadata: z.boolean(),
           cache: z.boolean(),
-          timeout: z.number().min(1000)
-        })
+          timeout: z.number().min(1000),
+        }),
       });
 
       const result = querySchema.safeParse(complexQuery);
@@ -1799,7 +1908,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         { type: 'qdrant', url: 'not-a-url' },
         { type: 'qdrant', url: 'http://localhost:6333', vectorSize: -1 },
         { type: 'qdrant', url: 'http://localhost:6333', distance: 'INVALID_DISTANCE' },
-        { type: 'qdrant', url: 'http://localhost:6333', connectionTimeout: 0 }
+        { type: 'qdrant', url: 'http://localhost:6333', connectionTimeout: 0 },
       ];
 
       const configSchema = z.object({
@@ -1809,10 +1918,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         vectorSize: z.number().min(1).max(10000),
         distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']),
         connectionTimeout: z.number().min(1000),
-        maxConnections: z.number().min(1).max(100)
+        maxConnections: z.number().min(1).max(100),
       });
 
-      malformedConfigs.forEach(config => {
+      malformedConfigs.forEach((config) => {
         const result = configSchema.safeParse(config);
         expect(result.success).toBe(false);
         if (!result.success) {
@@ -1826,30 +1935,30 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         {
           size: 1,
           distance: 'Cosine' as const,
-          indexType: 'FLAT' as const
+          indexType: 'FLAT' as const,
         },
         {
           size: 20000,
           distance: 'DotProduct' as const,
           indexType: 'HNSW' as const,
-          indexParams: { M: 100, efConstruction: 1000 }
+          indexParams: { M: 100, efConstruction: 1000 },
         },
         {
           size: 1536,
           distance: 'Euclidean' as const,
           indexType: 'IVF' as const,
-          indexParams: { nlist: 10000, nprobe: 1000 }
-        }
+          indexParams: { nlist: 10000, nprobe: 1000 },
+        },
       ];
 
       const vectorSchema = z.object({
         size: z.number().min(1).max(20000),
         distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']),
         indexType: z.enum(['FLAT', 'IVF', 'HNSW', 'LSH']),
-        indexParams: z.record(z.any()).optional()
+        indexParams: z.record(z.any()).optional(),
       });
 
-      edgeCases.forEach(edgeCase => {
+      edgeCases.forEach((edgeCase) => {
         const result = vectorSchema.safeParse(edgeCase);
         expect(result.success).toBe(true);
       });
@@ -1861,31 +1970,39 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           id: '',
           type: 'invalid_operation',
           sql: '',
-          rollbackSql: ''
+          rollbackSql: '',
         },
         {
           id: 'migration_with_empty_dependencies',
           type: 'create_table',
           dependencies: ['nonexistent_migration'],
-          sql: 'CREATE TABLE test (id INT);'
+          sql: 'CREATE TABLE test (id INT);',
         },
         {
           id: 'migration_with_invalid_sql',
           type: 'create_table',
           sql: 'INVALID SQL SYNTAX',
-          rollbackSql: 'DROP TABLE IF EXISTS test;'
-        }
+          rollbackSql: 'DROP TABLE IF EXISTS test;',
+        },
       ];
 
       const migrationSchema = z.object({
         id: z.string().min(1),
-        type: z.enum(['create_table', 'drop_table', 'add_column', 'drop_column', 'alter_column', 'create_index', 'drop_index']),
+        type: z.enum([
+          'create_table',
+          'drop_table',
+          'add_column',
+          'drop_column',
+          'alter_column',
+          'create_index',
+          'drop_index',
+        ]),
         dependencies: z.array(z.string()),
         sql: z.string().min(1),
-        rollbackSql: z.string().min(1)
+        rollbackSql: z.string().min(1),
       });
 
-      invalidMigrations.forEach(migration => {
+      invalidMigrations.forEach((migration) => {
         const result = migrationSchema.safeParse(migration);
         expect(result.success).toBe(false);
       });
@@ -1896,16 +2013,16 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         { limit: 1, offset: 0 },
         { limit: 1000, offset: 0 },
         { limit: 100, offset: 1000000 },
-        { limit: 1, offset: 0, cursor: `very_long_cursor_string_${  'a'.repeat(1000)}` }
+        { limit: 1, offset: 0, cursor: `very_long_cursor_string_${'a'.repeat(1000)}` },
       ];
 
       const paginationSchema = z.object({
         limit: z.number().min(1).max(1000),
         offset: z.number().min(0),
-        cursor: z.string().max(2000).optional()
+        cursor: z.string().max(2000).optional(),
       });
 
-      extremePagination.forEach(pagination => {
+      extremePagination.forEach((pagination) => {
         const result = paginationSchema.safeParse(pagination);
         expect(result.success).toBe(true);
       });
@@ -1921,7 +2038,7 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         vectorSize: 1536,
         distance: 'Cosine' as const,
         connectionTimeout: 30000,
-        maxConnections: 10
+        maxConnections: 10,
       }));
 
       const configSchema = z.object({
@@ -1931,14 +2048,14 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         vectorSize: z.number().min(1).max(10000),
         distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']),
         connectionTimeout: z.number().min(1000),
-        maxConnections: z.number().min(1).max(100)
+        maxConnections: z.number().min(1).max(100),
       });
 
       const startTime = Date.now();
-      const results = configs.map(config => configSchema.safeParse(config));
+      const results = configs.map((config) => configSchema.safeParse(config));
       const endTime = Date.now();
 
-      const validResults = results.filter(r => r.success);
+      const validResults = results.filter((r) => r.success);
       expect(validResults).toHaveLength(100);
       expect(endTime - startTime).toBeLessThan(1000);
     });
@@ -1952,54 +2069,62 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             config: {
               host: `host-${i}`,
               port: 6333 + i,
-              timeout: 30000 + i * 1000
-            }
-          }))
+              timeout: 30000 + i * 1000,
+            },
+          })),
         },
         vectors: Array.from({ length: 50 }, (_, i) => ({
           id: `vector-${i}`,
           dimensions: 1536,
           index: {
             type: 'HNSW',
-            params: { M: 16 + i, efConstruction: 200 + i * 10 }
-          }
+            params: { M: 16 + i, efConstruction: 200 + i * 10 },
+          },
         })),
         migrations: Array.from({ length: 20 }, (_, i) => ({
           id: `migration-${i}`,
           operations: Array.from({ length: 5 }, (_, j) => ({
             type: 'create_table',
-            name: `table_${i}_${j}`
-          }))
-        }))
+            name: `table_${i}_${j}`,
+          })),
+        })),
       };
 
       const complexSchema = z.object({
         database: z.object({
           type: z.string(),
-          connections: z.array(z.object({
-            id: z.string(),
-            config: z.object({
-              host: z.string(),
-              port: z.number(),
-              timeout: z.number()
+          connections: z.array(
+            z.object({
+              id: z.string(),
+              config: z.object({
+                host: z.string(),
+                port: z.number(),
+                timeout: z.number(),
+              }),
             })
-          }))
+          ),
         }),
-        vectors: z.array(z.object({
-          id: z.string(),
-          dimensions: z.number(),
-          index: z.object({
-            type: z.string(),
-            params: z.record(z.number())
+        vectors: z.array(
+          z.object({
+            id: z.string(),
+            dimensions: z.number(),
+            index: z.object({
+              type: z.string(),
+              params: z.record(z.number()),
+            }),
           })
-        })),
-        migrations: z.array(z.object({
-          id: z.string(),
-          operations: z.array(z.object({
-            type: z.string(),
-            name: z.string()
-          }))
-        }))
+        ),
+        migrations: z.array(
+          z.object({
+            id: z.string(),
+            operations: z.array(
+              z.object({
+                type: z.string(),
+                name: z.string(),
+              })
+            ),
+          })
+        ),
       });
 
       const startTime = Date.now();
@@ -2021,22 +2146,24 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
         host: 'localhost',
         // New optional fields that might not exist in legacy configs
         vectorSize: undefined,
-        distance: undefined
+        distance: undefined,
       };
 
-      const backwardCompatibleSchema = z.object({
-        type: z.enum(['qdrant']),
-        url: z.string().url().optional(),
-        host: z.string().optional(),
-        port: z.number().optional(),
-        vectorSize: z.number().min(1).max(10000).optional(),
-        distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']).optional()
-      }).transform(data => ({
-        ...data,
-        url: data.url || `http://${data.host}:${data.port}`,
-        vectorSize: data.vectorSize || 1536,
-        distance: data.distance || 'Cosine'
-      }));
+      const backwardCompatibleSchema = z
+        .object({
+          type: z.enum(['qdrant']),
+          url: z.string().url().optional(),
+          host: z.string().optional(),
+          port: z.number().optional(),
+          vectorSize: z.number().min(1).max(10000).optional(),
+          distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']).optional(),
+        })
+        .transform((data) => ({
+          ...data,
+          url: data.url || `http://${data.host}:${data.port}`,
+          vectorSize: data.vectorSize || 1536,
+          distance: data.distance || 'Cosine',
+        }));
 
       const result = backwardCompatibleSchema.safeParse(legacyConfig);
       expect(result.success).toBe(true);
@@ -2053,8 +2180,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           version: '1.0.0',
           config: {
             type: 'qdrant',
-            url: 'http://localhost:6333'
-          }
+            url: 'http://localhost:6333',
+          },
         },
         {
           version: '1.1.0',
@@ -2062,8 +2189,8 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             type: 'qdrant',
             url: 'http://localhost:6333',
             vectorSize: 1536,
-            distance: 'Cosine'
-          }
+            distance: 'Cosine',
+          },
         },
         {
           version: '1.2.0',
@@ -2074,10 +2201,10 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
             distance: 'Cosine',
             optimization: {
               enabled: true,
-              queryCache: true
-            }
-          }
-        }
+              queryCache: true,
+            },
+          },
+        },
       ];
 
       const versionedSchema = z.object({
@@ -2087,14 +2214,16 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           url: z.string().url(),
           vectorSize: z.number().optional(),
           distance: z.enum(['Cosine', 'Euclidean', 'DotProduct']).optional(),
-          optimization: z.object({
-            enabled: z.boolean(),
-            queryCache: z.boolean()
-          }).optional()
-        })
+          optimization: z
+            .object({
+              enabled: z.boolean(),
+              queryCache: z.boolean(),
+            })
+            .optional(),
+        }),
       });
 
-      versionedSchemas.forEach(schema => {
+      versionedSchemas.forEach((schema) => {
         const result = versionedSchema.safeParse(schema);
         expect(result.success).toBe(true);
       });
@@ -2106,12 +2235,12 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           query: {
             text: 'test query',
             filters: { kind: 'entity' },
-            limit: 10
+            limit: 10,
           },
           options: {
             includeMetadata: true,
-            timeout: 5000
-          }
+            timeout: 5000,
+          },
         },
         response: {
           results: [
@@ -2119,16 +2248,16 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
               id: 'result-1',
               kind: 'entity',
               score: 0.95,
-              metadata: { created_at: '2025-01-01T00:00:00Z' }
-            }
+              metadata: { created_at: '2025-01-01T00:00:00Z' },
+            },
           ],
           total: 1,
           took: 150,
           meta: {
             query_id: 'query-123',
-            cache_hit: false
-          }
-        }
+            cache_hit: false,
+          },
+        },
       };
 
       const apiSchema = z.object({
@@ -2136,27 +2265,29 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
           query: z.object({
             text: z.string(),
             filters: z.record(z.any()).optional(),
-            limit: z.number().min(1).max(1000)
+            limit: z.number().min(1).max(1000),
           }),
           options: z.object({
             includeMetadata: z.boolean(),
-            timeout: z.number().min(1000)
-          })
+            timeout: z.number().min(1000),
+          }),
         }),
         response: z.object({
-          results: z.array(z.object({
-            id: z.string(),
-            kind: z.string(),
-            score: z.number().min(0).max(1),
-            metadata: z.record(z.any())
-          })),
+          results: z.array(
+            z.object({
+              id: z.string(),
+              kind: z.string(),
+              score: z.number().min(0).max(1),
+              metadata: z.record(z.any()),
+            })
+          ),
           total: z.number().min(0),
           took: z.number().min(0),
           meta: z.object({
             query_id: z.string(),
-            cache_hit: z.boolean()
-          })
-        })
+            cache_hit: z.boolean(),
+          }),
+        }),
       });
 
       const result = apiSchema.safeParse(apiData);

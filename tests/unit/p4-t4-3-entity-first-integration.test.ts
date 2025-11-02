@@ -28,7 +28,9 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
 
     it('should have GraphExpansionService available', async () => {
       // Test that the graph expansion service is available for integration
-      const { graphExpansionService } = await import('../../src/services/search/graph-expansion-service');
+      const { graphExpansionService } = await import(
+        '../../src/services/search/graph-expansion-service'
+      );
 
       expect(graphExpansionService).toBeDefined();
       expect(typeof graphExpansionService.expandResults).toBe('function');
@@ -78,7 +80,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
 
       const emptyQuery = {
         query: '',
-        limit: 10
+        limit: 10,
       };
 
       // Should not throw
@@ -97,7 +99,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
       const complexQueries = [
         { query: 'Test Entity AND Something', limit: 10 },
         { query: '"Test Entity"', limit: 10 },
-        { query: 'Test Entity OR Something', limit: 10 }
+        { query: 'Test Entity OR Something', limit: 10 },
       ];
 
       for (const query of complexQueries) {
@@ -117,7 +119,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
       const entityQueries = [
         { query: 'User Service', limit: 10 },
         { query: 'AuthenticationComponent', limit: 10 },
-        { query: 'DatabaseManager', limit: 10 }
+        { query: 'DatabaseManager', limit: 10 },
       ];
 
       for (const query of entityQueries) {
@@ -138,7 +140,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
 
       const testQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       // Should not throw and should return valid SearchMethodResult
@@ -160,7 +162,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
       const testQuery = {
         query: 'Test Entity',
         expand: 'relations' as const,
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -179,7 +181,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
         const testQuery = {
           query: 'Test Entity',
           mode,
-          limit: 10
+          limit: 10,
         };
 
         const result = await searchService.searchByMode(testQuery);
@@ -197,7 +199,7 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
 
       const testQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       const startTime = Date.now();
@@ -213,15 +215,15 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
 
       const queries = Array.from({ length: 5 }, (_, i) => ({
         query: `Test Entity ${i}`,
-        limit: 10
+        limit: 10,
       }));
 
       // Should handle multiple concurrent searches
-      const promises = queries.map(query => searchService.searchByMode(query));
+      const promises = queries.map((query) => searchService.searchByMode(query));
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toHaveProperty('results');
         expect(result).toHaveProperty('strategy');
         expect(Array.isArray(result.results)).toBe(true);

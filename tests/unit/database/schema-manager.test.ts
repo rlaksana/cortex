@@ -60,7 +60,7 @@ vi.mock('@qdrant/js-client-rest', () => ({
     async healthCheck() {
       return { status: 'ok' };
     }
-  }
+  },
 }));
 
 // Mock Environment
@@ -95,11 +95,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     // Set up default mock behaviors
     mockGetCollections.mockResolvedValue({
-      collections: [
-        { name: 'entity' },
-        { name: 'relation' },
-        { name: 'observation' }
-      ]
+      collections: [{ name: 'entity' }, { name: 'relation' }, { name: 'observation' }],
     });
 
     mockCreateCollection.mockResolvedValue({ name: 'test-collection' });
@@ -113,10 +109,10 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       disk_data_size: 1048576,
       config: {
         vector_size: 1536,
-        distance: 'Cosine'
+        distance: 'Cosine',
       },
       payload_schema: {},
-      optimizer_status: 'ok'
+      optimizer_status: 'ok',
     });
 
     mockDeleteCollection.mockResolvedValue({ name: 'test-collection' });
@@ -136,16 +132,29 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       expect(COLLECTION_CONFIGS).toHaveLength(16);
 
       const expectedTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
-      const actualTypes = COLLECTION_CONFIGS.map(config => config.name);
+      const actualTypes = COLLECTION_CONFIGS.map((config) => config.name);
       expect(actualTypes).toEqual(expect.arrayContaining(expectedTypes));
 
       // Validate each configuration has required properties
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(config).toHaveProperty('name');
         expect(config).toHaveProperty('vectorSize');
         expect(config).toHaveProperty('distance');
@@ -159,8 +168,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     });
 
     it('should enforce consistent vector configuration across knowledge types', () => {
-      const vectorSizes = COLLECTION_CONFIGS.map(config => config.vectorSize);
-      const distances = COLLECTION_CONFIGS.map(config => config.distance);
+      const vectorSizes = COLLECTION_CONFIGS.map((config) => config.vectorSize);
+      const distances = COLLECTION_CONFIGS.map((config) => config.distance);
 
       // All collections should use the same vector size
       expect(new Set(vectorSizes)).toHaveLength(1);
@@ -172,7 +181,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     });
 
     it('should validate payload schema structure for each knowledge type', () => {
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         const schema = config.payloadSchema;
 
         expect(schema).toHaveProperty('type', 'object');
@@ -205,9 +214,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
             created_at: { type: 'datetime' },
             updated_at: { type: 'datetime' },
             tags: { type: 'array', items: { type: 'keyword' } },
-            metadata: { type: 'object' }
-          }
-        }
+            metadata: { type: 'object' },
+          },
+        },
       };
 
       // Simulate dynamic registration by creating collection with new schema
@@ -216,8 +225,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       await schemaManager.getClient().createCollection(newKnowledgeType.name, {
         vectors: {
           size: newKnowledgeType.vectorSize,
-          distance: newKnowledgeType.distance
-        }
+          distance: newKnowledgeType.distance,
+        },
       });
 
       expect(mockCreateCollection).toHaveBeenCalledWith(
@@ -225,8 +234,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
         expect.objectContaining({
           vectors: {
             size: 1536,
-            distance: 'Cosine'
-          }
+            distance: 'Cosine',
+          },
         })
       );
     });
@@ -235,14 +244,14 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // Test that current schema configurations are version-compatible
       const currentVersion = '2.0.0';
 
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         // Verify schema structure matches expected version
         expect(config.payloadSchema.properties).toHaveProperty('created_at');
         expect(config.payloadSchema.properties).toHaveProperty('updated_at');
 
         // Verify no deprecated fields exist
         const deprecatedFields = ['old_timestamp', 'legacy_field'];
-        deprecatedFields.forEach(field => {
+        deprecatedFields.forEach((field) => {
           expect(config.payloadSchema.properties).not.toHaveProperty(field);
         });
       });
@@ -254,16 +263,16 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       const newConfig = {
         vectors: {
           size: 1536,
-          distance: 'Cosine'
-        }
+          distance: 'Cosine',
+        },
       };
 
       mockGetCollection.mockResolvedValue({
         name: collectionName,
         config: {
           vector_size: 1536, // Same size - compatible
-          distance: 'Cosine'  // Same distance - compatible
-        }
+          distance: 'Cosine', // Same distance - compatible
+        },
       });
 
       // Should allow compatible updates
@@ -285,14 +294,14 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       expect(mockCreateCollection).toHaveBeenCalledTimes(16);
 
       // Verify each collection was created with correct configuration
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(mockCreateCollection).toHaveBeenCalledWith(
           config.name,
           expect.objectContaining({
             vectors: {
               size: config.vectorSize,
-              distance: config.distance
-            }
+              distance: config.distance,
+            },
           })
         );
       });
@@ -301,7 +310,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     it('should skip collection creation when collection already exists', async () => {
       // Mock that all collections already exist
       mockGetCollections.mockResolvedValue({
-        collections: COLLECTION_CONFIGS.map(config => ({ name: config.name }))
+        collections: COLLECTION_CONFIGS.map((config) => ({ name: config.name })),
       });
 
       await schemaManager.initializeCollections();
@@ -314,7 +323,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       mockGetCollections.mockResolvedValue({ collections: [] });
       mockCreateCollection.mockRejectedValue(new Error('Insufficient permissions'));
 
-      await expect(schemaManager.initializeCollections()).rejects.toThrow('Insufficient permissions');
+      await expect(schemaManager.initializeCollections()).rejects.toThrow(
+        'Insufficient permissions'
+      );
       expect(mockCreateCollection).toHaveBeenCalled();
     });
 
@@ -326,15 +337,15 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
         name: collectionName,
         config: {
           vector_size: 1536,
-          distance: 'Cosine'
+          distance: 'Cosine',
         },
         payload_schema: {
           type: 'object',
           properties: {
             entity_type: { type: 'keyword' },
-            created_at: { type: 'datetime' }
-          }
-        }
+            created_at: { type: 'datetime' },
+          },
+        },
       });
 
       const info = await schemaManager.getCollectionInfo(collectionName);
@@ -348,8 +359,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       const updatedConfig = {
         vectors: {
           size: 1536,
-          distance: 'Cosine'
-        }
+          distance: 'Cosine',
+        },
       };
 
       await schemaManager.getClient().updateCollection(collectionName, updatedConfig);
@@ -359,21 +370,23 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should configure indexes for optimal performance', () => {
       // Verify index configurations are defined for key fields
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         if (config.indexes) {
-          config.indexes.forEach(index => {
+          config.indexes.forEach((index) => {
             expect(index).toHaveProperty('field');
             expect(index).toHaveProperty('schemaType');
-            expect(['keyword', 'integer', 'float', 'bool', 'datetime', 'geo']).toContain(index.schemaType);
+            expect(['keyword', 'integer', 'float', 'bool', 'datetime', 'geo']).toContain(
+              index.schemaType
+            );
           });
         }
       });
 
       // Verify entity collection has proper indexes
-      const entityConfig = COLLECTION_CONFIGS.find(config => config.name === 'entity');
+      const entityConfig = COLLECTION_CONFIGS.find((config) => config.name === 'entity');
       expect(entityConfig?.indexes).toBeDefined();
-      expect(entityConfig?.indexes?.some(index => index.field === 'entity_type')).toBe(true);
-      expect(entityConfig?.indexes?.some(index => index.field === 'created_at')).toBe(true);
+      expect(entityConfig?.indexes?.some((index) => index.field === 'entity_type')).toBe(true);
+      expect(entityConfig?.indexes?.some((index) => index.field === 'created_at')).toBe(true);
     });
 
     it('should handle collection deletion for migration purposes', async () => {
@@ -385,11 +398,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     });
 
     it('should list all collections with their schemas', async () => {
-      const mockCollections = [
-        { name: 'entity' },
-        { name: 'relation' },
-        { name: 'observation' }
-      ];
+      const mockCollections = [{ name: 'entity' }, { name: 'relation' }, { name: 'observation' }];
       mockGetCollections.mockResolvedValue({ collections: mockCollections });
 
       const collections = await schemaManager.listCollections();
@@ -402,19 +411,25 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
   describe('Field Validation', () => {
     it('should validate required fields for each knowledge type', () => {
       // Test entity schema requirements
-      const entitySchema = COLLECTION_CONFIGS.find(config => config.name === 'entity')?.payloadSchema;
+      const entitySchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'entity'
+      )?.payloadSchema;
       expect(entitySchema?.properties).toHaveProperty('entity_type');
       expect(entitySchema?.properties).toHaveProperty('name');
       expect(entitySchema?.properties).toHaveProperty('data');
 
       // Test relation schema requirements
-      const relationSchema = COLLECTION_CONFIGS.find(config => config.name === 'relation')?.payloadSchema;
+      const relationSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'relation'
+      )?.payloadSchema;
       expect(relationSchema?.properties).toHaveProperty('from_entity_type');
       expect(relationSchema?.properties).toHaveProperty('to_entity_type');
       expect(relationSchema?.properties).toHaveProperty('relation_type');
 
       // Test decision schema requirements
-      const decisionSchema = COLLECTION_CONFIGS.find(config => config.name === 'decision')?.payloadSchema;
+      const decisionSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'decision'
+      )?.payloadSchema;
       expect(decisionSchema?.properties).toHaveProperty('component');
       expect(decisionSchema?.properties).toHaveProperty('status');
       expect(decisionSchema?.properties).toHaveProperty('title');
@@ -422,7 +437,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should handle optional fields correctly', () => {
       // Verify metadata and tags are optional but properly typed
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(config.payloadSchema.properties).toHaveProperty('metadata');
         expect(config.payloadSchema.properties).toHaveProperty('tags');
 
@@ -434,19 +449,21 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should enforce field type constraints', () => {
       // Test entity field types
-      const entitySchema = COLLECTION_CONFIGS.find(config => config.name === 'entity')?.payloadSchema;
+      const entitySchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'entity'
+      )?.payloadSchema;
       expect(entitySchema?.properties.entity_type.type).toBe('keyword');
       expect(entitySchema?.properties.name.type).toBe('text');
       expect(entitySchema?.properties.data.type).toBe('object');
 
       // Test datetime fields
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(config.payloadSchema.properties.created_at.type).toBe('datetime');
         expect(config.payloadSchema.properties.updated_at.type).toBe('datetime');
       });
 
       // Test array fields
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(config.payloadSchema.properties.tags.type).toBe('array');
         expect(config.payloadSchema.properties.tags.items.type).toBe('keyword');
       });
@@ -454,13 +471,17 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should support custom validation rules for specific fields', () => {
       // Test decision-specific validation rules
-      const decisionSchema = COLLECTION_CONFIGS.find(config => config.name === 'decision')?.payloadSchema;
+      const decisionSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'decision'
+      )?.payloadSchema;
       expect(decisionSchema?.properties.alternatives_considered.type).toBe('array');
       expect(decisionSchema?.properties.consequences.type).toBe('text');
       expect(decisionSchema?.properties.supersedes.type).toBe('keyword');
 
       // Test incident-specific validation rules
-      const incidentSchema = COLLECTION_CONFIGS.find(config => config.name === 'incident')?.payloadSchema;
+      const incidentSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'incident'
+      )?.payloadSchema;
       expect(incidentSchema?.properties.severity.type).toBe('keyword');
       expect(incidentSchema?.properties.follow_up_required.type).toBe('bool');
       expect(incidentSchema?.properties.affected_services.type).toBe('array');
@@ -468,15 +489,19 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should validate nested object structures', () => {
       // Test timeline object in incident schema
-      const incidentSchema = COLLECTION_CONFIGS.find(config => config.name === 'incident')?.payloadSchema;
+      const incidentSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'incident'
+      )?.payloadSchema;
       expect(incidentSchema?.properties.timeline.type).toBe('object');
 
       // Test scope object in various schemas
-      const todoSchema = COLLECTION_CONFIGS.find(config => config.name === 'todo')?.payloadSchema;
+      const todoSchema = COLLECTION_CONFIGS.find((config) => config.name === 'todo')?.payloadSchema;
       expect(todoSchema?.properties).toHaveProperty('scope');
 
       // Test complex nested structures
-      const releaseSchema = COLLECTION_CONFIGS.find(config => config.name === 'release')?.payloadSchema;
+      const releaseSchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'release'
+      )?.payloadSchema;
       expect(releaseSchema?.properties).toHaveProperty('ticket_references');
       expect(releaseSchema?.properties).toHaveProperty('included_changes');
     });
@@ -487,8 +512,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // Test that current schemas maintain backward compatibility
       const requiredFields = ['created_at', 'updated_at'];
 
-      COLLECTION_CONFIGS.forEach(config => {
-        requiredFields.forEach(field => {
+      COLLECTION_CONFIGS.forEach((config) => {
+        requiredFields.forEach((field) => {
           expect(config.payloadSchema.properties).toHaveProperty(field);
         });
       });
@@ -505,9 +530,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
           type: 'object',
           properties: {
             entity_type: { type: 'keyword' },
-            created_at: { type: 'datetime' }
-          }
-        }
+            created_at: { type: 'datetime' },
+          },
+        },
       });
 
       const info = await schemaManager.getCollectionInfo(collectionName);
@@ -519,7 +544,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should handle field removal safely', () => {
       // Test schema can handle deprecated fields gracefully
-      const entitySchema = COLLECTION_CONFIGS.find(config => config.name === 'entity')?.payloadSchema;
+      const entitySchema = COLLECTION_CONFIGS.find(
+        (config) => config.name === 'entity'
+      )?.payloadSchema;
 
       // Should not have deprecated fields
       expect(entitySchema?.properties).not.toHaveProperty('legacy_field');
@@ -536,7 +563,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // Test incompatible vector size change
       mockGetCollection.mockResolvedValue({
         name: collectionName,
-        config: { vector_size: 1024, distance: 'Cosine' } // Different size
+        config: { vector_size: 1024, distance: 'Cosine' }, // Different size
       });
 
       // Should handle type incompatibility detection
@@ -547,7 +574,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     it('should support schema migration strategies', async () => {
       // Mock migration scenario
       mockGetCollections.mockResolvedValue({
-        collections: [{ name: 'entity' }] // Only one collection exists
+        collections: [{ name: 'entity' }], // Only one collection exists
       });
 
       // Initialize should create missing collections
@@ -559,7 +586,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should track schema version history', () => {
       // All schemas should be compatible with version 2.0.0
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         // Verify schema has required fields for current version
         expect(config.payloadSchema.properties).toHaveProperty('created_at');
         expect(config.payloadSchema.properties).toHaveProperty('updated_at');
@@ -574,7 +601,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       mockCreateCollection.mockRejectedValue(new Error('Invalid schema configuration'));
       mockGetCollections.mockResolvedValue({ collections: [] });
 
-      await expect(schemaManager.initializeCollections()).rejects.toThrow('Invalid schema configuration');
+      await expect(schemaManager.initializeCollections()).rejects.toThrow(
+        'Invalid schema configuration'
+      );
       expect(mockCreateCollection).toHaveBeenCalled();
     });
 
@@ -608,7 +637,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
         status: 'green',
         vectors_count: 100,
         points_count: 100,
-        config: { vector_size: 1536, distance: 'Cosine' }
+        config: { vector_size: 1536, distance: 'Cosine' },
       });
 
       const stats = await schemaManager.getCollectionStats(collectionName);
@@ -646,7 +675,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // Mock corrupted collection state
       mockGetCollection.mockRejectedValue(new Error('Schema corrupted'));
 
-      await expect(schemaManager.getCollectionInfo(collectionName)).rejects.toThrow('Schema corrupted');
+      await expect(schemaManager.getCollectionInfo(collectionName)).rejects.toThrow(
+        'Schema corrupted'
+      );
 
       // Should be able to delete corrupted collection
       await schemaManager.deleteCollection(collectionName);
@@ -657,13 +688,26 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
   describe('Integration with Knowledge Types', () => {
     it('should register schemas for all 16 knowledge types', () => {
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
-      knowledgeTypes.forEach(type => {
-        const config = COLLECTION_CONFIGS.find(config => config.name === type);
+      knowledgeTypes.forEach((type) => {
+        const config = COLLECTION_CONFIGS.find((config) => config.name === type);
         expect(config).toBeDefined();
         expect(config?.name).toBe(type);
         expect(config?.payloadSchema).toBeDefined();
@@ -673,7 +717,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     it('should support dynamic schema updates for knowledge types', async () => {
       const collectionName = 'entity';
       const newFieldConfig = {
-        vectors: { size: 1536, distance: 'Cosine' }
+        vectors: { size: 1536, distance: 'Cosine' },
       };
 
       // Should support runtime schema updates
@@ -683,30 +727,30 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should enforce type-specific validation rules', () => {
       // Test entity type validation
-      const entityConfig = COLLECTION_CONFIGS.find(config => config.name === 'entity');
+      const entityConfig = COLLECTION_CONFIGS.find((config) => config.name === 'entity');
       expect(entityConfig?.payloadSchema.properties.entity_type.type).toBe('keyword');
       expect(entityConfig?.payloadSchema.properties.name.type).toBe('text');
 
       // Test relation type validation
-      const relationConfig = COLLECTION_CONFIGS.find(config => config.name === 'relation');
+      const relationConfig = COLLECTION_CONFIGS.find((config) => config.name === 'relation');
       expect(relationConfig?.payloadSchema.properties.from_entity_type.type).toBe('keyword');
       expect(relationConfig?.payloadSchema.properties.to_entity_type.type).toBe('keyword');
 
       // Test incident type validation
-      const incidentConfig = COLLECTION_CONFIGS.find(config => config.name === 'incident');
+      const incidentConfig = COLLECTION_CONFIGS.find((config) => config.name === 'incident');
       expect(incidentConfig?.payloadSchema.properties.severity.type).toBe('keyword');
       expect(incidentConfig?.payloadSchema.properties.follow_up_required.type).toBe('bool');
     });
 
     it('should validate cross-type relationship constraints', () => {
       // Test relation schema references entity types
-      const relationConfig = COLLECTION_CONFIGS.find(config => config.name === 'relation');
+      const relationConfig = COLLECTION_CONFIGS.find((config) => config.name === 'relation');
       expect(relationConfig?.payloadSchema.properties.from_entity_type.type).toBe('keyword');
       expect(relationConfig?.payloadSchema.properties.to_entity_type.type).toBe('keyword');
       expect(relationConfig?.payloadSchema.properties.relation_type.type).toBe('keyword');
 
       // Test DDL schema references
-      const ddlConfig = COLLECTION_CONFIGS.find(config => config.name === 'ddl');
+      const ddlConfig = COLLECTION_CONFIGS.find((config) => config.name === 'ddl');
       expect(ddlConfig?.payloadSchema.properties.migration_id.type).toBe('keyword');
       expect(ddlConfig?.payloadSchema.properties.status.type).toBe('keyword');
     });
@@ -715,8 +759,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // Test common fields across all knowledge types
       const commonFields = ['created_at', 'updated_at', 'tags', 'metadata'];
 
-      COLLECTION_CONFIGS.forEach(config => {
-        commonFields.forEach(field => {
+      COLLECTION_CONFIGS.forEach((config) => {
+        commonFields.forEach((field) => {
           expect(config.payloadSchema.properties).toHaveProperty(field);
         });
       });
@@ -724,20 +768,20 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should support type-specific field constraints', () => {
       // Test PR context specific constraints
-      const prContextConfig = COLLECTION_CONFIGS.find(config => config.name === 'pr_context');
+      const prContextConfig = COLLECTION_CONFIGS.find((config) => config.name === 'pr_context');
       expect(prContextConfig?.payloadSchema.properties.pr_number.type).toBe('integer');
       expect(prContextConfig?.payloadSchema.properties.expires_at.type).toBe('datetime');
 
       // Test release note specific constraints
-      const releaseNoteConfig = COLLECTION_CONFIGS.find(config => config.name === 'release_note');
+      const releaseNoteConfig = COLLECTION_CONFIGS.find((config) => config.name === 'release_note');
       expect(releaseNoteConfig?.payloadSchema.properties.version.type).toBe('keyword');
       expect(releaseNoteConfig?.payloadSchema.properties.release_date.type).toBe('datetime');
     });
 
     it('should maintain referential integrity across types', () => {
       // Test that related types have compatible field types
-      const entityConfig = COLLECTION_CONFIGS.find(config => config.name === 'entity');
-      const relationConfig = COLLECTION_CONFIGS.find(config => config.name === 'relation');
+      const entityConfig = COLLECTION_CONFIGS.find((config) => config.name === 'entity');
+      const relationConfig = COLLECTION_CONFIGS.find((config) => config.name === 'relation');
 
       // Both should use keyword type for entity references
       expect(entityConfig?.payloadSchema.properties.entity_type.type).toBe('keyword');
@@ -755,8 +799,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       expect(mockCreateCollection).toHaveBeenCalledTimes(16);
 
       // Verify all knowledge type collections were created
-      const createdCollections = mockCreateCollection.mock.calls.map(call => call[0]);
-      const expectedCollections = COLLECTION_CONFIGS.map(config => config.name);
+      const createdCollections = mockCreateCollection.mock.calls.map((call) => call[0]);
+      const expectedCollections = COLLECTION_CONFIGS.map((config) => config.name);
       expect(createdCollections).toEqual(expect.arrayContaining(expectedCollections));
     });
   });
@@ -764,7 +808,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
   describe('Collection Verification and Health Monitoring', () => {
     it('should verify all required collections exist', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: COLLECTION_CONFIGS.map(config => ({ name: config.name }))
+        collections: COLLECTION_CONFIGS.map((config) => ({ name: config.name })),
       });
 
       const isVerified = await schemaManager.verifyCollections();
@@ -774,7 +818,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should detect missing collections', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: [{ name: 'entity' }, { name: 'relation' }] // Missing 14 collections
+        collections: [{ name: 'entity' }, { name: 'relation' }], // Missing 14 collections
       });
 
       const isVerified = await schemaManager.verifyCollections();
@@ -793,10 +837,10 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
           optimizer_status: 'ok',
           config: {
             optimizer_config: {
-              deleted_threshold: 0.2
-            }
-          }
-        }
+              deleted_threshold: 0.2,
+            },
+          },
+        },
       };
 
       mockGetCollection.mockResolvedValue(mockStats);
@@ -811,7 +855,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
         segmentsCount: 2,
         diskDataSize: 0.2,
         status: 'green',
-        optimizerStatus: 'ok'
+        optimizerStatus: 'ok',
       });
     });
 
@@ -825,7 +869,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should perform comprehensive health checks', async () => {
       mockGetCollections.mockResolvedValue({
-        collections: COLLECTION_CONFIGS.map(config => ({ name: config.name }))
+        collections: COLLECTION_CONFIGS.map((config) => ({ name: config.name })),
       });
 
       const health = await schemaManager.healthCheck();
@@ -856,9 +900,9 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       const healthPromise = schemaManager.healthCheck();
 
       const [initResult, listResult, healthResult] = await Promise.all([
-        initPromise.catch(e => e),
+        initPromise.catch((e) => e),
         listPromise,
-        healthPromise
+        healthPromise,
       ]);
 
       expect(mockGetCollections).toHaveBeenCalled();
@@ -871,24 +915,24 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       expect(COLLECTION_CONFIGS).toHaveLength(16);
 
       // Verify all configurations are properly structured
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         expect(Object.keys(config.payloadSchema.properties).length).toBeGreaterThan(5);
       });
     });
 
     it('should optimize index creation for performance', () => {
       // Verify strategic index placement
-      const entityConfig = COLLECTION_CONFIGS.find(config => config.name === 'entity');
+      const entityConfig = COLLECTION_CONFIGS.find((config) => config.name === 'entity');
       const criticalIndexes = ['entity_type', 'name', 'created_at', 'updated_at'];
 
-      criticalIndexes.forEach(indexField => {
-        expect(entityConfig?.indexes?.some(index => index.field === indexField)).toBe(true);
+      criticalIndexes.forEach((indexField) => {
+        expect(entityConfig?.indexes?.some((index) => index.field === indexField)).toBe(true);
       });
     });
 
     it('should handle memory-intensive schema operations', async () => {
       // Test processing all schema configurations
-      const schemaPromises = COLLECTION_CONFIGS.map(config =>
+      const schemaPromises = COLLECTION_CONFIGS.map((config) =>
         schemaManager.getCollectionInfo(config.name).catch(() => null)
       );
 
@@ -899,8 +943,8 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
   describe('Schema Configuration Validation', () => {
     it('should validate vector configuration consistency', () => {
-      const vectorSizes = COLLECTION_CONFIGS.map(config => config.vectorSize);
-      const distances = COLLECTION_CONFIGS.map(config => config.distance);
+      const vectorSizes = COLLECTION_CONFIGS.map((config) => config.vectorSize);
+      const distances = COLLECTION_CONFIGS.map((config) => config.distance);
 
       // All collections should use consistent vector configuration
       expect(new Set(vectorSizes)).toHaveLength(1);
@@ -908,7 +952,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     });
 
     it('should ensure payload schema completeness', () => {
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         const properties = config.payloadSchema.properties;
 
         // Must have core timestamp fields
@@ -926,14 +970,16 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
     });
 
     it('should validate index configuration effectiveness', () => {
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         if (config.indexes) {
-          config.indexes.forEach(index => {
+          config.indexes.forEach((index) => {
             // Index field should exist in payload schema
             expect(config.payloadSchema.properties).toHaveProperty(index.field);
 
             // Index type should be valid
-            expect(['keyword', 'integer', 'float', 'bool', 'datetime', 'geo']).toContain(index.schemaType);
+            expect(['keyword', 'integer', 'float', 'bool', 'datetime', 'geo']).toContain(
+              index.schemaType
+            );
           });
         }
       });
@@ -941,7 +987,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
     it('should ensure schema extensibility', () => {
       // All schemas should support additional properties
-      COLLECTION_CONFIGS.forEach(config => {
+      COLLECTION_CONFIGS.forEach((config) => {
         // Metadata field allows for extensibility
         expect(config.payloadSchema.properties.metadata.type).toBe('object');
 

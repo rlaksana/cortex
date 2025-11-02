@@ -14,7 +14,7 @@ console.log('=== Testing Minimal MCP Server ===\n');
 // Start the minimal MCP server
 const server = spawn('node', [path.join(__dirname, 'minimal-mcp-server.mjs')], {
   stdio: ['pipe', 'pipe', 'pipe'],
-  env: { ...process.env, MCP_TRANSPORT: 'stdio' }
+  env: { ...process.env, MCP_TRANSPORT: 'stdio' },
 });
 
 let stdoutBuffer = '';
@@ -49,21 +49,20 @@ setTimeout(() => {
   console.log('\n=== Sending Initialize Request ===');
 
   const initRequest = {
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     id: 1,
-    method: "initialize",
+    method: 'initialize',
     params: {
-      protocolVersion: "2024-11-05",
+      protocolVersion: '2024-11-05',
       capabilities: { roots: { listChanged: true } },
       clientInfo: {
-        name: "test-client",
-        version: "1.0.0"
-      }
-    }
+        name: 'test-client',
+        version: '1.0.0',
+      },
+    },
   };
 
   server.stdin.write(JSON.stringify(initRequest) + '\n');
-
 }, 2000);
 
 // Listen for response and send tools request
@@ -71,14 +70,13 @@ setTimeout(() => {
   console.log('\n=== Sending Tools List Request ===');
 
   const toolsRequest = {
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     id: 2,
-    method: "tools/list",
-    params: {}
+    method: 'tools/list',
+    params: {},
   };
 
   server.stdin.write(JSON.stringify(toolsRequest) + '\n');
-
 }, 4000);
 
 // Test the logger tool
@@ -86,19 +84,18 @@ setTimeout(() => {
   console.log('\n=== Testing Logger Tool ===');
 
   const toolRequest = {
-    jsonrpc: "2.0",
+    jsonrpc: '2.0',
     id: 3,
-    method: "tools/call",
+    method: 'tools/call',
     params: {
-      name: "test_logger",
+      name: 'test_logger',
       arguments: {
-        message: "Hello from MCP client!"
-      }
-    }
+        message: 'Hello from MCP client!',
+      },
+    },
   };
 
   server.stdin.write(JSON.stringify(toolRequest) + '\n');
-
 }, 6000);
 
 // Final results

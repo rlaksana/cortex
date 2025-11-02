@@ -39,7 +39,7 @@ vi.mock('../../src/db/qdrant', () => ({
     issueLog: {
       findUnique: vi.fn().mockResolvedValue(null),
     },
-  })
+  }),
 }));
 
 // Mock knowledge storage functions
@@ -70,16 +70,16 @@ vi.mock('../../src/services/knowledge', () => ({
 // Mock validation and audit services
 vi.mock('../../src/services/validation/validation-service', () => ({
   validationService: {
-    validateStoreInput: vi.fn().mockResolvedValue({ valid: true, errors: [] })
-  }
+    validateStoreInput: vi.fn().mockResolvedValue({ valid: true, errors: [] }),
+  },
 }));
 
 vi.mock('../../src/services/audit/audit-service', () => ({
   auditService: {
     logStoreOperation: vi.fn().mockResolvedValue(undefined),
     logError: vi.fn().mockResolvedValue(undefined),
-    logBatchOperation: vi.fn().mockResolvedValue(undefined)
-  }
+    logBatchOperation: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
@@ -294,21 +294,19 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           content: largeContent,
           metadata: {
             title: 'System Architecture Documentation',
-            tags: { category: 'architecture', priority: 'high' }
+            tags: { category: 'architecture', priority: 'high' },
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
-        }
+            branch: 'main',
+          },
+        },
       ];
 
       // Mock the deduplication check to simulate parent being deduped
       // First, calculate the expected content hash
       const { createHash } = await import('node:crypto');
-      const expectedContentHash = createHash('sha256')
-        .update(largeContent.trim())
-        .digest('hex');
+      const expectedContentHash = createHash('sha256').update(largeContent.trim()).digest('hex');
 
       const mockQdrantClient = await import('../../src/db/qdrant');
       vi.spyOn(mockQdrantClient, 'getQdrantClient').mockReturnValue({
@@ -316,15 +314,17 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           findMany: vi.fn().mockImplementation(async ({ where }) => {
             // Return the duplicate only if the hash matches what we expect
             if (where.content_hash === expectedContentHash && where.entity_type === 'section') {
-              return [{
-                id: 'existing-duplicate-parent-id',
-                content_hash: expectedContentHash,
-                entity_type: 'section',
-                created_at: '2024-01-01T00:00:00Z'
-              }];
+              return [
+                {
+                  id: 'existing-duplicate-parent-id',
+                  content_hash: expectedContentHash,
+                  entity_type: 'section',
+                  created_at: '2024-01-01T00:00:00Z',
+                },
+              ];
             }
             return [];
-          })
+          }),
         },
         adrDecision: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -363,20 +363,20 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.items.length).toBeGreaterThan(0);
 
       // Some items should be marked as skipped_dedupe due to cascade logic
-      const skippedItems = result.items.filter(item => item.status === 'skipped_dedupe');
-      const storedItems = result.items.filter(item => item.status === 'stored');
+      const skippedItems = result.items.filter((item) => item.status === 'skipped_dedupe');
+      const storedItems = result.items.filter((item) => item.status === 'stored');
 
       expect(skippedItems.length).toBeGreaterThan(0);
       expect(storedItems.length).toBeGreaterThanOrEqual(0);
 
       // Should have chunk:child items that are deduped due to cascade
-      const childItems = result.items.filter(item =>
-        item.status === 'skipped_dedupe' && item.reason?.includes('chunk:child')
+      const childItems = result.items.filter(
+        (item) => item.status === 'skipped_dedupe' && item.reason?.includes('chunk:child')
       );
       expect(childItems.length).toBeGreaterThan(0);
 
       // Verify child items have the correct reason
-      childItems.forEach(child => {
+      childItems.forEach((child) => {
         expect(child.reason).toContain('Parent item deduplicated');
       });
 
@@ -384,7 +384,7 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.summary).toMatchObject({
         stored: expect.any(Number),
         skipped_dedupe: expect.any(Number),
-        total: expect.any(Number)
+        total: expect.any(Number),
       });
 
       expect(result.summary.skipped_dedupe + result.summary.stored).toBe(result.summary.total);
@@ -393,7 +393,9 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.autonomous_context.duplicates_found).toBeGreaterThan(0);
       expect(result.autonomous_context.action_performed).toBe('batch'); // Mixed results, so batch
 
-      console.log('✅ P2-T2.3 Cascade deduplication test passed - all chunks marked as skipped_dedupe when parent deduped');
+      console.log(
+        '✅ P2-T2.3 Cascade deduplication test passed - all chunks marked as skipped_dedupe when parent deduped'
+      );
     });
 
     it('should handle mixed scenario: parent deduped but other items processed normally', async () => {
@@ -408,12 +410,12 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           content: largeContent,
           metadata: {
             title: 'Large Section for Deduplication',
-            tags: { category: 'test' }
+            tags: { category: 'test' },
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
+            branch: 'main',
+          },
         },
         {
           kind: 'decision' as const,
@@ -421,21 +423,19 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           metadata: {
             title: 'Regular Decision',
             component: 'test-component',
-            rationale: 'This should be stored normally'
+            rationale: 'This should be stored normally',
           },
           scope: {
             project: 'test-project',
-            branch: 'main'
-          }
-        }
+            branch: 'main',
+          },
+        },
       ];
 
       // Mock deduplication only for the section
       // Calculate expected content hash for the section
       const { createHash: createHash2 } = await import('node:crypto');
-      const sectionContentHash = createHash2('sha256')
-        .update(largeContent.trim())
-        .digest('hex');
+      const sectionContentHash = createHash2('sha256').update(largeContent.trim()).digest('hex');
 
       const mockQdrantClient = await import('../../src/db/qdrant');
       vi.spyOn(mockQdrantClient, 'getQdrantClient').mockReturnValue({
@@ -443,15 +443,17 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           findMany: vi.fn().mockImplementation(async ({ where }) => {
             // Return duplicate only for section content with matching hash
             if (where.entity_type === 'section' && where.content_hash === sectionContentHash) {
-              return [{
-                id: 'existing-section-id',
-                content_hash: sectionContentHash,
-                entity_type: 'section',
-                created_at: '2024-01-01T00:00:00Z'
-              }];
+              return [
+                {
+                  id: 'existing-section-id',
+                  content_hash: sectionContentHash,
+                  entity_type: 'section',
+                  created_at: '2024-01-01T00:00:00Z',
+                },
+              ];
             }
             return [];
-          })
+          }),
         },
         adrDecision: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -487,15 +489,15 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.items.length).toBeGreaterThan(2); // section parent + section chunks + decision
 
       // Section items should be skipped_dedupe (both parent and chunks)
-      const sectionItems = result.items.filter(item => item.kind === 'section');
-      const skippedSections = sectionItems.filter(item => item.status === 'skipped_dedupe');
-      const storedSections = sectionItems.filter(item => item.status === 'stored');
+      const sectionItems = result.items.filter((item) => item.kind === 'section');
+      const skippedSections = sectionItems.filter((item) => item.status === 'skipped_dedupe');
+      const storedSections = sectionItems.filter((item) => item.status === 'stored');
 
       expect(skippedSections.length).toBeGreaterThan(0); // Some sections should be skipped
       expect(storedSections.length).toBeGreaterThanOrEqual(0); // Parent might be stored
 
       // Decision should be stored normally
-      const decisionItems = result.items.filter(item => item.kind === 'decision');
+      const decisionItems = result.items.filter((item) => item.kind === 'decision');
       expect(decisionItems).toHaveLength(1);
       expect(decisionItems[0].status).toBe('stored');
 
@@ -504,7 +506,9 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.summary.skipped_dedupe).toBeGreaterThan(0); // Some section items skipped
       expect(result.summary.total).toBe(result.summary.stored + result.summary.skipped_dedupe);
 
-      console.log('✅ Mixed scenario test passed - parent deduped with cascade, other items processed normally');
+      console.log(
+        '✅ Mixed scenario test passed - parent deduped with cascade, other items processed normally'
+      );
     });
 
     it('should handle nested chunking scenarios with proper cascade', async () => {
@@ -517,37 +521,37 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           kind: 'section' as const,
           content: largeContent1,
           metadata: { title: 'Section 1 - Will be deduped' },
-          scope: { project: 'test', branch: 'main' }
+          scope: { project: 'test', branch: 'main' },
         },
         {
           kind: 'runbook' as const,
           content: largeContent2,
           metadata: { title: 'Runbook 1 - Will be stored normally' },
-          scope: { project: 'test', branch: 'main' }
-        }
+          scope: { project: 'test', branch: 'main' },
+        },
       ];
 
       // Mock deduplication only for the section
       // Calculate expected content hash for the section
       const { createHash: createHash3 } = await import('node:crypto');
-      const section1ContentHash = createHash3('sha256')
-        .update(largeContent1.trim())
-        .digest('hex');
+      const section1ContentHash = createHash3('sha256').update(largeContent1.trim()).digest('hex');
 
       const mockQdrantClient = await import('../../src/db/qdrant');
       vi.spyOn(mockQdrantClient, 'getQdrantClient').mockReturnValue({
         knowledgeEntity: {
           findMany: vi.fn().mockImplementation(async ({ where }) => {
             if (where.entity_type === 'section' && where.content_hash === section1ContentHash) {
-              return [{
-                id: 'existing-section-id',
-                content_hash: section1ContentHash,
-                entity_type: 'section',
-                created_at: '2024-01-01T00:00:00Z'
-              }];
+              return [
+                {
+                  id: 'existing-section-id',
+                  content_hash: section1ContentHash,
+                  entity_type: 'section',
+                  created_at: '2024-01-01T00:00:00Z',
+                },
+              ];
             }
             return [];
-          })
+          }),
         },
         adrDecision: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -579,12 +583,12 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       const result = await orchestrator.storeItems(items);
 
       // Assert: Verify proper cascade behavior
-      const sectionItems = result.items.filter(item => item.kind === 'section');
-      const runbookItems = result.items.filter(item => item.kind === 'runbook');
+      const sectionItems = result.items.filter((item) => item.kind === 'section');
+      const runbookItems = result.items.filter((item) => item.kind === 'runbook');
 
       // Section items should be partially skipped due to cascade
-      const skippedSections = sectionItems.filter(item => item.status === 'skipped_dedupe');
-      const storedSections = sectionItems.filter(item => item.status === 'stored');
+      const skippedSections = sectionItems.filter((item) => item.status === 'skipped_dedupe');
+      const storedSections = sectionItems.filter((item) => item.status === 'stored');
 
       expect(skippedSections.length).toBeGreaterThan(0); // Some sections should be skipped
       expect(storedSections.length).toBeGreaterThanOrEqual(0); // Parent might be stored
@@ -594,7 +598,7 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       // We don't enforce exact behavior since runbooks may have their own deduplication logic
 
       // Verify chunk metadata is preserved even when deduped
-      sectionItems.forEach(item => {
+      sectionItems.forEach((item) => {
         if (item.reason?.includes('chunk:child')) {
           expect(item.reason).toContain('Parent item deduplicated');
         }
@@ -610,7 +614,7 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       const mockQdrantClient = await import('../../src/db/qdrant');
       vi.spyOn(mockQdrantClient, 'getQdrantClient').mockReturnValue({
         knowledgeEntity: {
-          findMany: vi.fn().mockRejectedValue(new Error('Database connection failed'))
+          findMany: vi.fn().mockRejectedValue(new Error('Database connection failed')),
         },
         adrDecision: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -644,8 +648,8 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           kind: 'section' as const,
           content: largeContent,
           metadata: { title: 'Test Section' },
-          scope: { project: 'test', branch: 'main' }
-        }
+          scope: { project: 'test', branch: 'main' },
+        },
       ];
 
       // Act & Assert: Should handle error gracefully and process items
@@ -655,7 +659,7 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       expect(result.items.length).toBeGreaterThan(0);
 
       // Should process items normally when deduplication check fails
-      const storedItems = result.items.filter(item => item.status === 'stored');
+      const storedItems = result.items.filter((item) => item.status === 'stored');
       expect(storedItems.length).toBeGreaterThan(0);
 
       console.log('✅ Error handling test passed - graceful degradation on deduplication failure');
@@ -670,22 +674,24 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
           content: largeContent,
           metadata: {
             title: 'Metadata Preservation Test',
-            tags: { test: true, category: 'validation' }
+            tags: { test: true, category: 'validation' },
           },
-          scope: { project: 'test', branch: 'main' }
-        }
+          scope: { project: 'test', branch: 'main' },
+        },
       ];
 
       // Mock deduplication
       const mockQdrantClient = await import('../../src/db/qdrant');
       vi.spyOn(mockQdrantClient, 'getQdrantClient').mockReturnValue({
         knowledgeEntity: {
-          findMany: vi.fn().mockResolvedValue([{
-            id: 'existing-id',
-            content_hash: expect.any(String),
-            entity_type: 'section',
-            created_at: '2024-01-01T00:00:00Z'
-          }])
+          findMany: vi.fn().mockResolvedValue([
+            {
+              id: 'existing-id',
+              content_hash: expect.any(String),
+              entity_type: 'section',
+              created_at: '2024-01-01T00:00:00Z',
+            },
+          ]),
         },
         adrDecision: {
           findUnique: vi.fn().mockResolvedValue(null),
@@ -717,7 +723,7 @@ describe('P2-T2.3: Cascade Deduplication Integration Tests', () => {
       const result = await orchestrator.storeItems(items);
 
       // Assert: Verify metadata is preserved in deduped chunks
-      result.items.forEach(item => {
+      result.items.forEach((item) => {
         expect(item.kind).toBe('section');
         expect(item.content).toBeDefined();
         if (item.reason?.includes('chunk:child')) {

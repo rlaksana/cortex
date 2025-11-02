@@ -43,7 +43,9 @@ describe('GraphExpansionService', () => {
     vi.clearAllMocks();
 
     // Get mock functions
-    const { getOutgoingRelations, getIncomingRelations } = await import('../../../src/services/knowledge/relation');
+    const { getOutgoingRelations, getIncomingRelations } = await import(
+      '../../../src/services/knowledge/relation'
+    );
     mockGetOutgoingRelations = getOutgoingRelations;
     mockGetIncomingRelations = getIncomingRelations;
 
@@ -65,13 +67,13 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'none'
+        expand: 'none',
       };
 
       // Act
@@ -95,8 +97,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock outgoing relations
@@ -107,8 +109,8 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       // Mock incoming relations
@@ -119,8 +121,8 @@ describe('GraphExpansionService', () => {
           from_entity_id: 'todo-id-1',
           relation_type: 'implements',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       // Mock database responses for related entities
@@ -128,29 +130,33 @@ describe('GraphExpansionService', () => {
         initialize: vi.fn().mockResolvedValue(undefined),
         find: vi.fn().mockImplementation((table, query) => {
           if (query.id === 'issue-id-1') {
-            return Promise.resolve([{
-              id: 'issue-id-1',
-              data: { title: 'Related Issue', description: 'Issue description' },
-              tags: { project: 'test', branch: 'main' },
-              created_at: new Date('2024-01-02T00:00:00Z')
-            }]);
+            return Promise.resolve([
+              {
+                id: 'issue-id-1',
+                data: { title: 'Related Issue', description: 'Issue description' },
+                tags: { project: 'test', branch: 'main' },
+                created_at: new Date('2024-01-02T00:00:00Z'),
+              },
+            ]);
           }
           if (query.id === 'todo-id-1') {
-            return Promise.resolve([{
-              id: 'todo-id-1',
-              data: { title: 'Related Todo', description: 'Todo description' },
-              tags: { project: 'test', branch: 'main' },
-              created_at: new Date('2024-01-03T00:00:00Z')
-            }]);
+            return Promise.resolve([
+              {
+                id: 'todo-id-1',
+                data: { title: 'Related Todo', description: 'Todo description' },
+                tags: { project: 'test', branch: 'main' },
+                created_at: new Date('2024-01-03T00:00:00Z'),
+              },
+            ]);
           }
           return Promise.resolve([]);
-        })
+        }),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act
@@ -164,9 +170,9 @@ describe('GraphExpansionService', () => {
       expect(result.expansionMetadata.neighborsLimited).toBe(false);
 
       // Check that expanded results have correct match_type and reduced confidence
-      const expandedResults = result.expandedResults.filter(r => r.match_type === 'graph');
+      const expandedResults = result.expandedResults.filter((r) => r.match_type === 'graph');
       expect(expandedResults).toHaveLength(2);
-      expandedResults.forEach(result => {
+      expandedResults.forEach((result) => {
         expect(result.confidence_score).toBeLessThan(0.9); // Should be reduced
         expect(result.match_type).toBe('graph');
       });
@@ -182,8 +188,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock only incoming relations
@@ -194,8 +200,8 @@ describe('GraphExpansionService', () => {
           from_entity_id: 'todo-id-1',
           relation_type: 'implements',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetOutgoingRelations.mockResolvedValue([]); // No outgoing relations
@@ -203,18 +209,20 @@ describe('GraphExpansionService', () => {
       // Mock database response
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'todo-id-1',
-          data: { title: 'Parent Todo' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'todo-id-1',
+            data: { title: 'Parent Todo' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'parents'
+        expand: 'parents',
       };
 
       // Act
@@ -240,8 +248,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock only outgoing relations
@@ -252,8 +260,8 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]); // No incoming relations
@@ -261,18 +269,20 @@ describe('GraphExpansionService', () => {
       // Mock database response
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'issue-id-1',
-          data: { title: 'Child Issue' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'issue-id-1',
+            data: { title: 'Child Issue' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
@@ -300,8 +310,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock 25 outgoing relations (exceeding the 20 limit)
@@ -311,7 +321,7 @@ describe('GraphExpansionService', () => {
         to_entity_id: `issue-id-${i}`,
         relation_type: 'resolves',
         metadata: null,
-        created_at: new Date()
+        created_at: new Date(),
       }));
 
       mockGetOutgoingRelations.mockResolvedValue(outgoingRelations);
@@ -320,18 +330,20 @@ describe('GraphExpansionService', () => {
       // Mock database responses for many entities
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'issue-id',
-          data: { title: 'Related Issue' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'issue-id',
+            data: { title: 'Related Issue' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
@@ -355,8 +367,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock 10 relations (exceeding custom limit of 5)
@@ -366,7 +378,7 @@ describe('GraphExpansionService', () => {
         to_entity_id: `issue-id-${i}`,
         relation_type: 'resolves',
         metadata: null,
-        created_at: new Date()
+        created_at: new Date(),
       }));
 
       mockGetOutgoingRelations.mockResolvedValue(outgoingRelations);
@@ -374,18 +386,20 @@ describe('GraphExpansionService', () => {
 
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'issue-id',
-          data: { title: 'Related Issue' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'issue-id',
+            data: { title: 'Related Issue' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
@@ -408,8 +422,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGetOutgoingRelations.mockResolvedValue([
@@ -419,34 +433,36 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]);
 
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'issue-id-1',
-          data: { title: 'Related Issue' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'issue-id-1',
+            data: { title: 'Related Issue' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
       const result = await service.expandResults(initialResults, query);
 
       // Assert
-      const originalResults = result.expandedResults.filter(r => r.match_type !== 'graph');
-      const expandedResults = result.expandedResults.filter(r => r.match_type === 'graph');
+      const originalResults = result.expandedResults.filter((r) => r.match_type !== 'graph');
+      const expandedResults = result.expandedResults.filter((r) => r.match_type === 'graph');
 
       expect(originalResults).toHaveLength(1);
       expect(originalResults[0].match_type).toBe('semantic'); // Original match type preserved
@@ -466,8 +482,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGetOutgoingRelations.mockResolvedValue([
@@ -477,33 +493,35 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]);
 
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'issue-id-1',
-          data: { title: 'Related Issue' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'issue-id-1',
+            data: { title: 'Related Issue' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
       const result = await customService.expandResults(initialResults, query);
 
       // Assert
-      const expandedResults = result.expandedResults.filter(r => r.match_type === 'graph');
+      const expandedResults = result.expandedResults.filter((r) => r.match_type === 'graph');
       expect(expandedResults).toHaveLength(1);
       expect(expandedResults[0].confidence_score).toBe(0.35); // 0.7 * 0.5
     });
@@ -520,8 +538,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGetOutgoingRelations.mockResolvedValue([
@@ -531,7 +549,7 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1', // Same scope
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
+          created_at: new Date(),
         },
         {
           id: 'relation-2',
@@ -539,8 +557,8 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-2', // Different scope
           relation_type: 'relates_to',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]);
@@ -550,30 +568,34 @@ describe('GraphExpansionService', () => {
         initialize: vi.fn().mockResolvedValue(undefined),
         find: vi.fn().mockImplementation((table, query) => {
           if (query.id === 'issue-id-1') {
-            return Promise.resolve([{
-              id: 'issue-id-1',
-              data: { title: 'Same Scope Issue' },
-              tags: { project: 'test', branch: 'main' }, // Same scope
-              created_at: new Date('2024-01-02T00:00:00Z')
-            }]);
+            return Promise.resolve([
+              {
+                id: 'issue-id-1',
+                data: { title: 'Same Scope Issue' },
+                tags: { project: 'test', branch: 'main' }, // Same scope
+                created_at: new Date('2024-01-02T00:00:00Z'),
+              },
+            ]);
           }
           if (query.id === 'issue-id-2') {
-            return Promise.resolve([{
-              id: 'issue-id-2',
-              data: { title: 'Different Scope Issue' },
-              tags: { project: 'other', branch: 'dev' }, // Different scope
-              created_at: new Date('2024-01-03T00:00:00Z')
-            }]);
+            return Promise.resolve([
+              {
+                id: 'issue-id-2',
+                data: { title: 'Different Scope Issue' },
+                tags: { project: 'other', branch: 'dev' }, // Different scope
+                created_at: new Date('2024-01-03T00:00:00Z'),
+              },
+            ]);
           }
           return Promise.resolve([]);
-        })
+        }),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
         expand: 'children',
-        scope: { project: 'test', branch: 'main' } // Filter for specific scope
+        scope: { project: 'test', branch: 'main' }, // Filter for specific scope
       };
 
       // Act
@@ -583,7 +605,7 @@ describe('GraphExpansionService', () => {
       expect(result.expansionMetadata.neighborsFound).toBe(1); // Only 1 matches scope
       expect(result.expansionMetadata.totalExpansions).toBe(1);
 
-      const expandedResults = result.expandedResults.filter(r => r.match_type === 'graph');
+      const expandedResults = result.expandedResults.filter((r) => r.match_type === 'graph');
       expect(expandedResults).toHaveLength(1);
       expect(expandedResults[0].id).toBe('issue-id-1'); // Only the matching scope entity
     });
@@ -600,8 +622,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock relation service to throw error
@@ -610,7 +632,7 @@ describe('GraphExpansionService', () => {
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act
@@ -632,8 +654,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGetOutgoingRelations.mockResolvedValue([
@@ -643,8 +665,8 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'issue-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]);
@@ -652,13 +674,13 @@ describe('GraphExpansionService', () => {
       // Mock database to throw error
       const mockDb = {
         initialize: vi.fn().mockRejectedValue(new Error('Database error')),
-        find: vi.fn()
+        find: vi.fn(),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
@@ -679,8 +701,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       mockGetOutgoingRelations.mockResolvedValue([
@@ -690,15 +712,15 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'unknown-id-1',
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([]);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'children'
+        expand: 'children',
       };
 
       // Act
@@ -715,7 +737,7 @@ describe('GraphExpansionService', () => {
       // Act
       service.updateConfig({
         maxNeighbors: 15,
-        confidenceReduction: 0.7
+        confidenceReduction: 0.7,
       });
 
       const config = service.getConfig();
@@ -750,8 +772,8 @@ describe('GraphExpansionService', () => {
           data: { title: 'Test Decision' },
           created_at: '2024-01-01T00:00:00Z',
           confidence_score: 0.9,
-          match_type: 'semantic'
-        }
+          match_type: 'semantic',
+        },
       ];
 
       // Mock relations that point to the same entity (creating duplicates)
@@ -762,8 +784,8 @@ describe('GraphExpansionService', () => {
           to_entity_id: 'duplicate-id', // Same target entity
           relation_type: 'resolves',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       mockGetIncomingRelations.mockResolvedValue([
@@ -773,24 +795,26 @@ describe('GraphExpansionService', () => {
           from_entity_id: 'duplicate-id', // Same target entity
           relation_type: 'implements',
           metadata: null,
-          created_at: new Date()
-        }
+          created_at: new Date(),
+        },
       ]);
 
       const mockDb = {
         initialize: vi.fn().mockResolvedValue(undefined),
-        find: vi.fn().mockResolvedValue([{
-          id: 'duplicate-id',
-          data: { title: 'Duplicate Entity' },
-          tags: { project: 'test', branch: 'main' },
-          created_at: new Date('2024-01-02T00:00:00Z')
-        }])
+        find: vi.fn().mockResolvedValue([
+          {
+            id: 'duplicate-id',
+            data: { title: 'Duplicate Entity' },
+            tags: { project: 'test', branch: 'main' },
+            created_at: new Date('2024-01-02T00:00:00Z'),
+          },
+        ]),
       };
       mockUnifiedDatabaseLayer.mockImplementation(() => mockDb);
 
       const query: SearchQuery = {
         query: 'test query',
-        expand: 'relations'
+        expand: 'relations',
       };
 
       // Act

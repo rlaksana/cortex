@@ -154,9 +154,9 @@ export const coreMocks = {
 
 // Helper to reset all mocks
 export const resetAllMocks = () => {
-  Object.values(coreMocks).forEach(mock => {
+  Object.values(coreMocks).forEach((mock) => {
     if (mock && typeof mock === 'object') {
-      Object.values(mock).forEach(method => {
+      Object.values(mock).forEach((method) => {
         if (vi.isMockFunction(method)) {
           vi.clearAllMocks();
         }

@@ -22,7 +22,7 @@ import {
   afterEach,
   vi,
   type MockedFunction,
-  type MockedObject
+  type MockedObject,
 } from 'vitest';
 
 // Import core interfaces
@@ -79,7 +79,7 @@ import type {
   StorageMonitoring,
   StorageBackupConfig,
   StorageSecurityConfig,
-  StoragePerformanceConfig
+  StoragePerformanceConfig,
 } from '../../../src/types/core-interfaces.js';
 
 // Import logging interfaces
@@ -96,7 +96,7 @@ import type {
   LogSecurityConfig,
   LogAnalytics,
   LogHealthStatus,
-  LogConfiguration
+  LogConfiguration,
 } from '../../../src/types/logging-interfaces.js';
 
 // Import workflow interfaces
@@ -109,7 +109,6 @@ import type {
   ActionType,
   NotificationType,
   IntegrationType,
-
   WorkflowDefinition,
   WorkflowTask,
   TaskType,
@@ -121,7 +120,7 @@ import type {
   WorkflowContext,
   WorkflowTrigger,
   WorkflowConfiguration,
-  WorkflowMetadata
+  WorkflowMetadata,
 } from '../../../src/types/workflow-interfaces.js';
 
 // Mock environment
@@ -129,7 +128,7 @@ const originalEnv = process.env;
 const mockEnv = {
   NODE_ENV: 'test',
   LOG_LEVEL: 'error',
-  TEST_MODE: 'true'
+  TEST_MODE: 'true',
 };
 
 describe('Core Interfaces', () => {
@@ -152,18 +151,18 @@ describe('Core Interfaces', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          org: 'test-org'
+          org: 'test-org',
         },
         data: {
           title: 'Test Entity',
-          description: 'Test description'
+          description: 'Test description',
         },
         metadata: {
           version: '1.0.0',
-          tags: ['test', 'entity']
+          tags: ['test', 'entity'],
         },
         created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       expect(validKnowledgeItem.id).toBe('test-id-123');
@@ -178,7 +177,7 @@ describe('Core Interfaces', () => {
         id: 'store-result-123',
         status: 'inserted',
         kind: 'entity',
-        created_at: '2024-01-01T00:00:00Z'
+        created_at: '2024-01-01T00:00:00Z',
       };
 
       expect(storeResult.id).toBe('store-result-123');
@@ -194,7 +193,7 @@ describe('Core Interfaces', () => {
         message: 'Invalid input data',
         field: 'content',
         stack: 'Error stack trace',
-        timestamp: '2024-01-01T00:00:00Z'
+        timestamp: '2024-01-01T00:00:00Z',
       };
 
       expect(storeError.index).toBe(0);
@@ -212,10 +211,12 @@ describe('Core Interfaces', () => {
         contradictions_detected: false,
         recommendation: 'Review duplicates',
         reasoning: 'Similar content detected',
-        user_message_suggestion: 'Found 2 potential duplicates'
+        user_message_suggestion: 'Found 2 potential duplicates',
       };
 
-      expect(['created', 'updated', 'deleted', 'skipped', 'batch']).toContain(autonomousContext.action_performed);
+      expect(['created', 'updated', 'deleted', 'skipped', 'batch']).toContain(
+        autonomousContext.action_performed
+      );
       expect(autonomousContext.similar_items_checked).toBe(5);
       expect(autonomousContext.duplicates_found).toBe(2);
       expect(autonomousContext.contradictions_detected).toBe(false);
@@ -230,7 +231,7 @@ describe('Core Interfaces', () => {
         created_at: '2024-01-01T00:00:00Z',
         confidence_score: 0.95,
         match_type: 'semantic',
-        highlight: ['matched content']
+        highlight: ['matched content'],
       };
 
       expect(searchResult.id).toBe('search-result-123');
@@ -245,13 +246,13 @@ describe('Core Interfaces', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          org: 'test-org'
+          org: 'test-org',
         },
         types: ['entity', 'relation'],
         kind: 'entity',
         mode: 'auto',
         limit: 10,
-        top_k: 5
+        top_k: 5,
       };
 
       expect(searchQuery.query).toBe('test query');
@@ -265,16 +266,29 @@ describe('Core Interfaces', () => {
   describe('Knowledge Type Interfaces', () => {
     test('should validate all 16 knowledge types', () => {
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
-      knowledgeTypes.forEach(kind => {
+      knowledgeTypes.forEach((kind) => {
         const knowledgeItem: KnowledgeItem = {
           kind,
           scope: { project: 'test' },
-          data: { test: 'data' }
+          data: { test: 'data' },
         };
 
         expect(knowledgeTypes).toContain(knowledgeItem.kind);
@@ -286,7 +300,7 @@ describe('Core Interfaces', () => {
         id: 'entity-123',
         kind: 'entity',
         scope: { project: 'test' },
-        data: { name: 'Test Entity', type: 'component' }
+        data: { name: 'Test Entity', type: 'component' },
       };
 
       const relationKnowledge: KnowledgeItem = {
@@ -296,8 +310,8 @@ describe('Core Interfaces', () => {
         data: {
           from_id: 'entity-123',
           to_id: 'entity-456',
-          relation_type: 'depends_on'
-        }
+          relation_type: 'depends_on',
+        },
       };
 
       expect(entityKnowledge.kind).toBe('entity');
@@ -316,8 +330,8 @@ describe('Core Interfaces', () => {
           tags: ['test', 'validation'],
           author: 'test-user',
           reviewed: true,
-          confidence: 0.95
-        }
+          confidence: 0.95,
+        },
       };
 
       expect(knowledgeItemWithMetadata.metadata?.version).toBe('1.0.0');
@@ -334,8 +348,8 @@ describe('Core Interfaces', () => {
           rationale: 'Type safety benefits',
           alternatives: ['JavaScript', 'Flow'],
           impact: 'high',
-          stakeholders: ['team-lead', 'architect']
-        }
+          stakeholders: ['team-lead', 'architect'],
+        },
       };
 
       expect(decisionKnowledge.data.title).toBe('Use TypeScript');
@@ -352,7 +366,7 @@ describe('Core Interfaces', () => {
         update: vi.fn(),
         delete: vi.fn(),
         findById: vi.fn(),
-        findSimilar: vi.fn()
+        findSimilar: vi.fn(),
       };
 
       expect(typeof mockRepository.store).toBe('function');
@@ -368,7 +382,7 @@ describe('Core Interfaces', () => {
         minConnections: 2,
         acquireTimeout: 30000,
         idleTimeout: 300000,
-        healthCheckInterval: 60000
+        healthCheckInterval: 60000,
       };
 
       expect(poolConfig.maxConnections).toBe(10);
@@ -381,7 +395,7 @@ describe('Core Interfaces', () => {
         isolationLevel: 'READ_COMMITTED',
         timeoutMs: 30000,
         retryAttempts: 3,
-        retryDelayMs: 1000
+        retryDelayMs: 1000,
       };
 
       expect(transactionConfig.isolationLevel).toBe('READ_COMMITTED');
@@ -394,7 +408,7 @@ describe('Core Interfaces', () => {
         version: '1.0.0',
         migrationsPath: './migrations',
         validationEnabled: true,
-        autoMigrate: false
+        autoMigrate: false,
       };
 
       expect(schemaConfig.version).toBe('1.0.0');
@@ -407,7 +421,7 @@ describe('Core Interfaces', () => {
     test('should validate SearchService interface contracts', () => {
       const mockSearchService: SearchService = {
         search: vi.fn(),
-        validateQuery: vi.fn()
+        validateQuery: vi.fn(),
       };
 
       expect(typeof mockSearchService.search).toBe('function');
@@ -418,7 +432,7 @@ describe('Core Interfaces', () => {
       const mockValidationService: ValidationService = {
         validateStoreInput: vi.fn(),
         validateFindInput: vi.fn(),
-        validateKnowledgeItem: vi.fn()
+        validateKnowledgeItem: vi.fn(),
       };
 
       expect(typeof mockValidationService.validateStoreInput).toBe('function');
@@ -431,7 +445,7 @@ describe('Core Interfaces', () => {
         database: 'KnowledgeRepository',
         cache: 'RedisCache',
         logger: 'WinstonLogger',
-        config: 'ConfigurationService'
+        config: 'ConfigurationService',
       };
 
       expect(serviceDependencies.database).toBe('KnowledgeRepository');
@@ -445,7 +459,7 @@ describe('Core Interfaces', () => {
         database: 'cortex_test',
         ssl: false,
         connectionTimeout: 30000,
-        queryTimeout: 10000
+        queryTimeout: 10000,
       };
 
       expect(serviceConfig.host).toBe('localhost');
@@ -459,11 +473,11 @@ describe('Core Interfaces', () => {
         checks: {
           database: 'healthy',
           cache: 'healthy',
-          search: 'degraded'
+          search: 'degraded',
         },
         uptime: 3600000,
         version: '1.0.0',
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       };
 
       expect(healthCheck.status).toBe('healthy');
@@ -481,7 +495,7 @@ describe('Core Interfaces', () => {
         secretKey: 'test-secret-key',
         tokenExpiry: 3600,
         refreshEnabled: true,
-        refreshExpiry: 86400
+        refreshExpiry: 86400,
       };
 
       expect(authConfig.enabled).toBe(true);
@@ -496,9 +510,9 @@ describe('Core Interfaces', () => {
         permissions: {
           'read:entities': ['admin', 'user', 'viewer'],
           'write:entities': ['admin', 'user'],
-          'delete:entities': ['admin']
+          'delete:entities': ['admin'],
         },
-        defaultRole: 'viewer'
+        defaultRole: 'viewer',
       };
 
       expect(authzConfig.roles).toContain('admin');
@@ -511,18 +525,18 @@ describe('Core Interfaces', () => {
         rateLimiting: {
           enabled: true,
           windowMs: 900000,
-          maxRequests: 100
+          maxRequests: 100,
         },
         cors: {
           enabled: true,
           origins: ['http://localhost:3000'],
-          credentials: true
+          credentials: true,
         },
         headers: {
           enabled: true,
           csp: "default-src 'self'",
-          hsts: true
-        }
+          hsts: true,
+        },
       };
 
       expect(securityConfig.rateLimiting.enabled).toBe(true);
@@ -537,7 +551,7 @@ describe('Core Interfaces', () => {
         keyLength: 32,
         expiryDays: 365,
         rotationRequired: false,
-        allowedKeys: ['key-123', 'key-456']
+        allowedKeys: ['key-123', 'key-456'],
       };
 
       expect(apiKeyConfig.enabled).toBe(true);
@@ -554,14 +568,14 @@ describe('Core Interfaces', () => {
         id: 'test-123',
         kind: 'entity',
         scope: { project: 'test' },
-        data: { name: 'Test Entity' }
+        data: { name: 'Test Entity' },
       };
 
       const storeResult: StoreResult = {
         id: knowledgeItem.id!,
         status: 'inserted',
         kind: knowledgeItem.kind,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const searchResult: SearchResult = {
@@ -571,7 +585,7 @@ describe('Core Interfaces', () => {
         data: knowledgeItem.data,
         created_at: storeResult.created_at,
         confidence_score: 1.0,
-        match_type: 'exact'
+        match_type: 'exact',
       };
 
       expect(storeResult.id).toBe(knowledgeItem.id);
@@ -582,13 +596,13 @@ describe('Core Interfaces', () => {
     test('should validate interface versioning support', () => {
       const v1Interface = {
         version: '1.0.0',
-        data: { name: 'test' }
+        data: { name: 'test' },
       };
 
       const v2Interface = {
         version: '2.0.0',
         data: { name: 'test', description: 'Added in v2' },
-        backwardsCompatible: true
+        backwardsCompatible: true,
       };
 
       expect(v1Interface.version).toBe('1.0.0');
@@ -600,7 +614,7 @@ describe('Core Interfaces', () => {
     test('should validate backward compatibility testing', () => {
       const oldClientRequest = {
         query: 'test query',
-        limit: 10
+        limit: 10,
         // Missing new fields like 'mode', 'types'
       };
 
@@ -608,7 +622,7 @@ describe('Core Interfaces', () => {
         query: oldClientRequest.query,
         limit: oldClientRequest.limit,
         mode: oldClientRequest.mode || 'auto', // Default for old clients
-        types: oldClientRequest.types || ['all'] // Default for old clients
+        types: oldClientRequest.types || ['all'], // Default for old clients
       };
 
       expect(newServerHandling.query).toBe('test query');
@@ -637,14 +651,14 @@ describe('Core Interfaces', () => {
       const v1Item: V1KnowledgeItem = {
         id: 'test-123',
         kind: 'entity',
-        data: { name: 'test' }
+        data: { name: 'test' },
       };
 
       const v2Item: V2KnowledgeItem = {
         ...v1Item,
         scope: { project: 'test' },
         metadata: { version: '2.0.0' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       expect(v2Item.id).toBe(v1Item.id);
@@ -663,28 +677,28 @@ describe('Core Interfaces', () => {
         knowledgeTypeDistribution: {
           entity: 40,
           relation: 20,
-          observation: 40
+          observation: 40,
         },
         growthMetrics: {
           dailyGrowthRate: 0.05,
           weeklyGrowthRate: 0.35,
           monthlyGrowthRate: 1.5,
-          totalGrowthThisPeriod: 25
+          totalGrowthThisPeriod: 25,
         },
         contentMetrics: {
           averageContentLength: 500,
           totalContentLength: 50000,
-          contentComplexity: 'medium'
+          contentComplexity: 'medium',
         },
         scopeDistribution: {
           'project-a': 60,
-          'project-b': 40
+          'project-b': 40,
         },
         temporalDistribution: {
           '2024-01': 30,
           '2024-02': 45,
-          '2024-03': 25
-        }
+          '2024-03': 25,
+        },
       };
 
       expect(analytics.totalEntities).toBe(100);
@@ -700,35 +714,32 @@ describe('Core Interfaces', () => {
           p95ResponseTime: 300,
           p99ResponseTime: 500,
           throughput: 1000,
-          errorRate: 0.01
+          errorRate: 0.01,
         },
         storageUtilization: {
           totalStorageUsed: 1000000000,
           storageByType: {
             entities: 500000000,
             relations: 300000000,
-            observations: 200000000
+            observations: 200000000,
           },
-          growthRate: 0.1
+          growthRate: 0.1,
         },
         systemMetrics: {
           cpuUsage: 0.65,
           memoryUsage: 0.78,
           diskIO: 0.45,
-          networkIO: 0.23
+          networkIO: 0.23,
         },
         bottlenecks: [
           {
             type: 'memory',
             severity: 'medium',
             description: 'High memory usage',
-            recommendation: 'Increase memory allocation'
-          }
+            recommendation: 'Increase memory allocation',
+          },
         ],
-        optimizationSuggestions: [
-          'Enable query caching',
-          'Optimize database indexes'
-        ]
+        optimizationSuggestions: ['Enable query caching', 'Optimize database indexes'],
       };
 
       expect(performance.queryPerformance.averageResponseTime).toBe(150);
@@ -749,26 +760,26 @@ describe('Core Interfaces', () => {
         encryption: {
           enabled: true,
           algorithm: 'AES256',
-          bucketKeyEnabled: true
+          bucketKeyEnabled: true,
         },
         versioning: true,
         compression: {
           enabled: true,
           algorithm: 'gzip',
           level: 6,
-          threshold: 1024
+          threshold: 1024,
         },
         caching: {
           enabled: true,
           ttl: 3600,
           maxSize: 1000000000,
           evictionPolicy: 'LRU',
-          persistenceEnabled: true
+          persistenceEnabled: true,
         },
         security: {
           encryption: {
             enabled: true,
-            algorithm: 'AES256'
+            algorithm: 'AES256',
           },
           accessControl: {
             read: ['admin'],
@@ -777,21 +788,21 @@ describe('Core Interfaces', () => {
             admin: ['admin'],
             public: false,
             anonymousRead: false,
-            authenticatedRead: true
+            authenticatedRead: true,
           },
           mfaDelete: false,
           legalHold: false,
           auditLogging: true,
           accessLogging: true,
-          threatDetection: false
+          threatDetection: false,
         },
         performance: {
           multipartThreshold: 104857600,
           chunkSize: 8388608,
           maxConcurrency: 10,
           timeoutMs: 30000,
-          retryAttempts: 3
-        }
+          retryAttempts: 3,
+        },
       };
 
       expect(config.provider).toBe('s3');
@@ -809,18 +820,18 @@ describe('Core Interfaces', () => {
         contentType: 'text/plain',
         metadata: {
           'original-name': 'test.txt',
-          'uploaded-by': 'test-user'
+          'uploaded-by': 'test-user',
         },
         tags: {
           environment: 'test',
-          project: 'cortex'
+          project: 'cortex',
         },
         encryption: {
           enabled: true,
-          algorithm: 'AES256'
+          algorithm: 'AES256',
         },
         compression: true,
-        storageClass: 'STANDARD'
+        storageClass: 'STANDARD',
       };
 
       const downloadRequest: DownloadRequest = {
@@ -828,7 +839,7 @@ describe('Core Interfaces', () => {
         versionId: 'version-123',
         range: 'bytes=0-1023',
         ifMatch: 'etag-123',
-        ifModifiedSince: new Date('2024-01-01')
+        ifModifiedSince: new Date('2024-01-01'),
       };
 
       expect(uploadRequest.key).toBe('test-file.txt');
@@ -848,7 +859,7 @@ describe('Core Interfaces', () => {
         context: {
           userId: 'user-123',
           action: 'test-action',
-          result: 'success'
+          result: 'success',
         },
         correlationId: 'corr-123',
         timestamp: '2024-01-01T00:00:00Z',
@@ -862,8 +873,8 @@ describe('Core Interfaces', () => {
         tags: ['test', 'validation'],
         metadata: {
           test: true,
-          validation: 'comprehensive'
-        }
+          validation: 'comprehensive',
+        },
       };
 
       expect(['debug', 'info', 'warn', 'error', 'fatal']).toContain(logEntry.level);
@@ -878,14 +889,14 @@ describe('Core Interfaces', () => {
         level: ['error', 'warn'],
         timeRange: {
           start: new Date('2024-01-01'),
-          end: new Date('2024-01-31')
+          end: new Date('2024-01-31'),
         },
         context: {
-          service: 'test-service'
+          service: 'test-service',
         },
         contextFilters: {
           userId: ['user-123', 'user-456'],
-          action: 'test-action'
+          action: 'test-action',
         },
         messagePattern: /error.*test/i,
         correlationId: 'corr-123',
@@ -894,7 +905,7 @@ describe('Core Interfaces', () => {
         limit: 100,
         offset: 0,
         sortBy: 'timestamp',
-        sortOrder: 'desc'
+        sortOrder: 'desc',
       };
 
       expect(queryOptions.level).toContain('error');
@@ -918,8 +929,8 @@ describe('Core Interfaces', () => {
           retryPolicy: {
             attempts: 3,
             backoffMs: 1000,
-            maxBackoffMs: 10000
-          }
+            maxBackoffMs: 10000,
+          },
         },
         retention: {
           defaultDays: 30,
@@ -929,7 +940,7 @@ describe('Core Interfaces', () => {
           cleanupInterval: '24h',
           archiveLocation: './archive',
           compressionFormat: 'gzip',
-          deleteAfterArchive: true
+          deleteAfterArchive: true,
         },
         streaming: {
           enabled: true,
@@ -941,13 +952,13 @@ describe('Core Interfaces', () => {
             websocket: true,
             sse: true,
             tcp: false,
-            udp: false
+            udp: false,
           },
           authentication: {
             enabled: true,
             tokenRequired: true,
-            allowedOrigins: ['http://localhost:3000']
-          }
+            allowedOrigins: ['http://localhost:3000'],
+          },
         },
         analytics: {
           enabled: true,
@@ -959,8 +970,8 @@ describe('Core Interfaces', () => {
           dashboard: {
             enabled: true,
             refreshInterval: 30000,
-            widgets: ['chart', 'table', 'gauge']
-          }
+            widgets: ['chart', 'table', 'gauge'],
+          },
         },
         security: {
           masking: {
@@ -971,33 +982,33 @@ describe('Core Interfaces', () => {
               {
                 name: 'email',
                 pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-                replacement: '***@***.***'
-              }
-            ]
+                replacement: '***@***.***',
+              },
+            ],
           },
           accessControl: {
             enabled: true,
             roles: {
               admin: ['read', 'write', 'delete'],
               user: ['read'],
-              viewer: ['read']
+              viewer: ['read'],
             },
             defaultRole: 'viewer',
-            tokenValidation: true
+            tokenValidation: true,
           },
           encryption: {
             enabled: true,
             algorithm: 'AES-256-GCM',
             keyRotationDays: 90,
-            keyProvider: 'local'
+            keyProvider: 'local',
           },
           audit: {
             enabled: true,
             accessLogging: true,
             modificationLogging: true,
-            exportLogging: true
-          }
-        }
+            exportLogging: true,
+          },
+        },
       };
 
       expect(logConfig.storage.type).toBe('hybrid');
@@ -1028,9 +1039,9 @@ describe('Core Interfaces', () => {
             dependencies: [],
             config: {
               instructions: 'Complete this task',
-              requiredData: ['input1', 'input2']
-            }
-          }
+              requiredData: ['input1', 'input2'],
+            },
+          },
         ],
         triggers: [
           {
@@ -1039,25 +1050,27 @@ describe('Core Interfaces', () => {
             name: 'Manual Trigger',
             description: 'Start workflow manually',
             config: {
-              allowedUsers: ['admin', 'user']
+              allowedUsers: ['admin', 'user'],
             },
             enabled: true,
             createdAt: '2024-01-01T00:00:00Z',
-            updatedAt: '2024-01-01T00:00:00Z'
-          }
+            updatedAt: '2024-01-01T00:00:00Z',
+          },
         ],
         metadata: {
           created_by: 'test-user',
           created_at: '2024-01-01T00:00:00Z',
           updated_at: '2024-01-01T00:00:00Z',
-          tags: ['test', 'validation']
+          tags: ['test', 'validation'],
         },
         createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z'
+        updatedAt: '2024-01-01T00:00:00Z',
       };
 
       expect(workflowDef.id).toBe('workflow-123');
-      expect(['draft', 'active', 'inactive', 'archived', 'deprecated']).toContain(workflowDef.status);
+      expect(['draft', 'active', 'inactive', 'archived', 'deprecated']).toContain(
+        workflowDef.status
+      );
       expect(workflowDef.tasks).toHaveLength(1);
       expect(workflowDef.triggers).toHaveLength(1);
       expect(workflowDef.tasks[0].type).toBe('human');
@@ -1075,23 +1088,23 @@ describe('Core Interfaces', () => {
         currentTask: 'task-1',
         context: {
           initiator: 'test-user',
-          triggerData: { source: 'api' }
+          triggerData: { source: 'api' },
         },
         state: {
           currentPhase: 'validation',
           completedPhases: ['initialization'],
           variables: {
             input1: 'value1',
-            input2: 'value2'
+            input2: 'value2',
           },
           checkpoints: {},
           history: [
             {
               timestamp: '2024-01-01T00:00:00Z',
               action: 'started',
-              data: { user: 'test-user' }
-            }
-          ]
+              data: { user: 'test-user' },
+            },
+          ],
         },
         tasks: [
           {
@@ -1101,25 +1114,33 @@ describe('Core Interfaces', () => {
             assignee: 'test-user',
             assignedAt: '2024-01-01T00:01:00Z',
             startedAt: '2024-01-01T00:01:30Z',
-            duration: 30000
-          }
+            duration: 30000,
+          },
         ],
         variables: {
           input1: 'value1',
           input2: 'value2',
-          processed: true
+          processed: true,
         },
         metadata: {
           started_by: 'test-user',
           started_at: '2024-01-01T00:00:00Z',
           environment: 'test',
           version: '1.0.0',
-          tags: ['test', 'execution']
-        }
+          tags: ['test', 'execution'],
+        },
       };
 
       expect(workflowExec.id).toBe('execution-123');
-      expect(['pending', 'running', 'suspended', 'completed', 'failed', 'cancelled', 'escalated']).toContain(workflowExec.status);
+      expect([
+        'pending',
+        'running',
+        'suspended',
+        'completed',
+        'failed',
+        'cancelled',
+        'escalated',
+      ]).toContain(workflowExec.status);
       expect(['sequential', 'parallel', 'conditional', 'hybrid']).toContain(workflowExec.mode);
       expect(workflowExec.tasks).toHaveLength(1);
       expect(workflowExec.tasks[0].status).toBe('in_progress');
@@ -1134,7 +1155,7 @@ describe('Core Interfaces', () => {
             maxRetries: 3,
             backoffStrategy: 'exponential',
             initialDelay: 1000,
-            maxDelay: 30000
+            maxDelay: 30000,
           },
           defaultEscalationPolicy: {
             levels: [
@@ -1142,81 +1163,81 @@ describe('Core Interfaces', () => {
                 level: 1,
                 target: 'manager',
                 delay: 1800000,
-                action: 'assign'
-              }
+                action: 'assign',
+              },
             ],
-            autoEscalate: true
+            autoEscalate: true,
           },
           maxConcurrentExecutions: 10,
           executionHistoryRetention: 90,
           auditEnabled: true,
-          notificationsEnabled: true
+          notificationsEnabled: true,
         },
         validation: {
           strictValidation: true,
           customValidators: [],
           requiredFields: ['name', 'category'],
-          fieldValidationRules: {}
+          fieldValidationRules: {},
         },
         security: {
           authentication: {
             required: true,
             methods: ['jwt', 'oauth'],
-            providers: ['auth0', 'okta']
+            providers: ['auth0', 'okta'],
           },
           authorization: {
             required: true,
             roles: ['admin', 'user', 'viewer'],
-            permissions: ['execute', 'view', 'manage']
+            permissions: ['execute', 'view', 'manage'],
           },
           encryption: {
             atRest: true,
             inTransit: true,
-            algorithm: 'AES-256-GCM'
+            algorithm: 'AES-256-GCM',
           },
           audit: {
             logLevel: 'info',
             retentionPeriod: 365,
-            includeSensitiveData: false
-          }
+            includeSensitiveData: false,
+          },
         },
         performance: {
           caching: {
             enabled: true,
             ttl: 300000,
-            maxSize: 1000
+            maxSize: 1000,
           },
           optimization: {
             queryOptimization: true,
             batchProcessing: true,
-            parallelExecution: true
+            parallelExecution: true,
           },
           monitoring: {
             metricsCollection: true,
             performanceProfiling: true,
-            alerting: true
-          }
+            alerting: true,
+          },
         },
         integrations: {
           defaultTimeout: 30000,
           retryPolicy: {
             maxRetries: 3,
             backoffStrategy: 'linear',
-            initialDelay: 1000
+            initialDelay: 1000,
           },
           circuitBreaker: {
             enabled: true,
             failureThreshold: 5,
             recoveryTimeout: 60000,
-            expectedRecoveryTime: 30000
+            expectedRecoveryTime: 30000,
           },
           rateLimiting: {
             enabled: true,
             requestsPerSecond: 100,
             burstSize: 200,
-            windowSize: 60000
-          }
-        }
+            windowSize: 60000,
+          },
+        },
       };
 
       expect(workflowConfig.settings.defaultTimeout).toBe(3600000);
@@ -1235,15 +1256,15 @@ describe('Core Interfaces', () => {
             id: 'entity-1',
             kind: 'entity',
             scope: { project: 'test' },
-            data: { name: 'Test Entity 1' }
+            data: { name: 'Test Entity 1' },
           },
           {
             id: 'relation-1',
             kind: 'relation',
             scope: { project: 'test' },
-            data: { from_id: 'entity-1', to_id: 'entity-2', type: 'depends_on' }
-          }
-        ]
+            data: { from_id: 'entity-1', to_id: 'entity-2', type: 'depends_on' },
+          },
+        ],
       };
 
       const storeResponse: MemoryStoreResponse = {
@@ -1252,14 +1273,14 @@ describe('Core Interfaces', () => {
             id: 'entity-1',
             status: 'inserted',
             kind: 'entity',
-            created_at: '2024-01-01T00:00:00Z'
+            created_at: '2024-01-01T00:00:00Z',
           },
           {
             id: 'relation-1',
             status: 'inserted',
             kind: 'relation',
-            created_at: '2024-01-01T00:00:00Z'
-          }
+            created_at: '2024-01-01T00:00:00Z',
+          },
         ],
         errors: [],
         autonomous_context: {
@@ -1269,8 +1290,8 @@ describe('Core Interfaces', () => {
           contradictions_detected: false,
           recommendation: 'Items stored successfully',
           reasoning: 'No duplicates or contradictions found',
-          user_message_suggestion: 'Successfully stored 2 new items'
-        }
+          user_message_suggestion: 'Successfully stored 2 new items',
+        },
       };
 
       expect(storeRequest.items).toHaveLength(2);
@@ -1290,7 +1311,7 @@ describe('Core Interfaces', () => {
         enable_auto_fix: true,
         return_corrections: true,
         max_attempts: 3,
-        timeout_per_attempt_ms: 5000
+        timeout_per_attempt_ms: 5000,
       };
 
       const smartFindResult: SmartFindResult = {
@@ -1304,8 +1325,8 @@ describe('Core Interfaces', () => {
             scope: { project: 'test' },
             updated_at: '2024-01-01T00:00:00Z',
             route_used: 'semantic_search',
-            confidence: 0.95
-          }
+            confidence: 0.95,
+          },
         ],
         suggestions: ['Try "test query" for more results', 'Add more specific terms'],
         autonomous_metadata: {
@@ -1317,7 +1338,7 @@ describe('Core Interfaces', () => {
           avg_score: 0.95,
           fallback_attempted: false,
           recommendation: 'Query was successful',
-          user_message_suggestion: 'Found 1 result for "test query"'
+          user_message_suggestion: 'Found 1 result for "test query"',
         },
         corrections: {
           original_query: 'test qurey',
@@ -1330,16 +1351,16 @@ describe('Core Interfaces', () => {
               sanitization_level: 'basic',
               success: true,
               timestamp: Date.now(),
-              duration_ms: 100
-            }
+              duration_ms: 100,
+            },
           ],
           transformations: ['spelling_correction'],
           total_attempts: 1,
           auto_fixes_applied: ['spelling_correction'],
           patterns_detected: ['typo'],
           final_sanitization_level: 'enhanced',
-          recommendation: 'Spelling was corrected automatically'
-        }
+          recommendation: 'Spelling was corrected automatically',
+        },
       };
 
       expect(smartFindRequest.query).toBe('test qurey');
@@ -1356,32 +1377,32 @@ describe('Core Interfaces', () => {
         title: 'Knowledge Growth Report',
         timeRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
+          endDate: new Date('2024-01-31'),
         },
         filters: {
           scope: {
             project: 'test-project',
-            org: 'test-org'
+            org: 'test-org',
           },
           types: ['entity', 'relation'],
           dateRange: {
             startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-31')
-          }
+            endDate: new Date('2024-01-31'),
+          },
         },
         aggregations: [
           {
             field: 'kind',
             operation: 'count',
-            groupBy: 'kind'
+            groupBy: 'kind',
           },
           {
             field: 'created_at',
             operation: 'count',
-            groupBy: 'date'
-          }
+            groupBy: 'date',
+          },
         ],
-        limit: 100
+        limit: 100,
       };
 
       const analyticsReport: AnalyticsReport = {
@@ -1390,7 +1411,7 @@ describe('Core Interfaces', () => {
         generatedAt: new Date('2024-02-01'),
         timeRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
+          endDate: new Date('2024-01-31'),
         },
         filters: analyticsQuery.filters,
         data: {
@@ -1398,7 +1419,7 @@ describe('Core Interfaces', () => {
           entities: 80,
           relations: 40,
           observations: 30,
-          growthRate: 0.15
+          growthRate: 0.15,
         },
         visualizations: [
           {
@@ -1406,23 +1427,25 @@ describe('Core Interfaces', () => {
             title: 'Knowledge Type Distribution',
             data: {
               labels: ['Entity', 'Relation', 'Observation'],
-              datasets: [{
-                data: [80, 40, 30],
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-              }]
+              datasets: [
+                {
+                  data: [80, 40, 30],
+                  backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                },
+              ],
             },
             config: {
               type: 'pie',
-              options: { responsive: true }
-            }
-          }
+              options: { responsive: true },
+            },
+          },
         ],
         summary: 'Knowledge base grew by 15% in January 2024, with 80 new entities added.',
         metadata: {
           totalDataPoints: 150,
           processingTimeMs: 2500,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       };
 
       expect(analyticsQuery.type).toBe('knowledge');
@@ -1439,11 +1462,11 @@ describe('Core Interfaces', () => {
       const minimalKnowledgeItem: KnowledgeItem = {
         kind: 'entity',
         scope: {},
-        data: {}
+        data: {},
       };
 
       const minimalSearchQuery: SearchQuery = {
-        query: 'test'
+        query: 'test',
       };
 
       expect(minimalKnowledgeItem.kind).toBe('entity');
@@ -1461,7 +1484,7 @@ describe('Core Interfaces', () => {
         content: 'Test content',
         metadata: undefined,
         created_at: undefined,
-        updated_at: undefined
+        updated_at: undefined,
       };
 
       expect(knowledgeItemWithOptionals.metadata).toBeUndefined();
@@ -1475,17 +1498,17 @@ describe('Core Interfaces', () => {
       const validMatchTypes = ['exact', 'fuzzy', 'semantic'];
       const validModes = ['auto', 'fast', 'deep'];
 
-      validStatuses.forEach(status => {
+      validStatuses.forEach((status) => {
         const result: StoreResult = {
           id: 'test',
           status: status as any,
           kind: 'entity',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         };
         expect(validStatuses).toContain(result.status);
       });
 
-      validMatchTypes.forEach(matchType => {
+      validMatchTypes.forEach((matchType) => {
         const result: SearchResult = {
           id: 'test',
           kind: 'entity',
@@ -1493,15 +1516,15 @@ describe('Core Interfaces', () => {
           data: {},
           created_at: new Date().toISOString(),
           confidence_score: 0.5,
-          match_type: matchType as any
+          match_type: matchType as any,
         };
         expect(validMatchTypes).toContain(result.match_type);
       });
 
-      validModes.forEach(mode => {
+      validModes.forEach((mode) => {
         const query: SearchQuery = {
           query: 'test',
-          mode: mode as any
+          mode: mode as any,
         };
         expect(validModes).toContain(query.mode);
       });
@@ -1514,7 +1537,7 @@ describe('Core Interfaces', () => {
         scope: {
           project: 'complex-project',
           branch: 'feature/complex',
-          org: 'complex-org'
+          org: 'complex-org',
         },
         data: {
           name: 'Complex Entity',
@@ -1525,11 +1548,11 @@ describe('Core Interfaces', () => {
                 array: [1, 2, 3],
                 object: {
                   flag: true,
-                  count: 42
-                }
-              }
-            }
-          }
+                  count: 42,
+                },
+              },
+            },
+          },
         },
         metadata: {
           version: '2.0.0',
@@ -1538,12 +1561,12 @@ describe('Core Interfaces', () => {
             features: ['feature1', 'feature2'],
             settings: {
               enabled: true,
-              threshold: 0.8
-            }
-          }
+              threshold: 0.8,
+            },
+          },
         },
         created_at: '2024-01-01T00:00:00Z',
-        updated_at: '2024-01-01T00:00:00Z'
+        updated_at: '2024-01-01T00:00:00Z',
       };
 
       expect(complexKnowledgeItem.data.properties.nested.deeply.value).toBe('deep value');

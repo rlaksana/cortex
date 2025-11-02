@@ -49,11 +49,10 @@ class CoverageReportUploader {
       execSync(command, {
         stdio: 'inherit',
         cwd: this.projectRoot,
-        timeout: 30000
+        timeout: 30000,
       });
 
       console.log('✅ Codecov upload successful');
-
     } catch (error) {
       console.warn('⚠️  Codecov upload failed:', error.message);
       console.log('📝 This is expected in local development');
@@ -79,10 +78,12 @@ class CoverageReportUploader {
             lines: summaryData.total.lines?.pct || 0,
             functions: summaryData.total.functions?.pct || 0,
             branches: summaryData.total.branches?.pct || 0,
-            statements: summaryData.total.statements?.pct || 0
+            statements: summaryData.total.statements?.pct || 0,
           };
 
-          const overall = Math.round((coverage.lines + coverage.functions + coverage.statements) / 3);
+          const overall = Math.round(
+            (coverage.lines + coverage.functions + coverage.statements) / 3
+          );
 
           // Set GitHub output (for GitHub Actions)
           console.log(`::set-output name=coverage-lines::${coverage.lines}`);
@@ -104,7 +105,6 @@ class CoverageReportUploader {
       }
 
       console.log('✅ GitHub upload successful');
-
     } catch (error) {
       console.warn('⚠️  GitHub upload failed:', error.message);
     }
@@ -114,18 +114,17 @@ class CoverageReportUploader {
     try {
       // Ensure LCOV file exists
       const lcovFile = path.join(this.coverageDir, 'lcov.info');
-      if (!await this.fileExists(lcovFile)) {
+      if (!(await this.fileExists(lcovFile))) {
         console.log('📝 Generating LCOV file...');
         await this.generateLcovFile();
       }
 
       // Ensure JSON file exists
       const jsonFile = path.join(this.coverageDir, 'coverage.json');
-      if (!await this.fileExists(jsonFile)) {
+      if (!(await this.fileExists(jsonFile))) {
         console.log('📝 Generating JSON coverage file...');
         await this.generateJsonFile();
       }
-
     } catch (error) {
       console.warn('⚠️  Could not ensure codecov files:', error.message);
     }
@@ -159,12 +158,14 @@ end_of_record
         // Simple JSON coverage format
         const jsonCoverage = {
           total: summaryData.total,
-          coverage: summaryData.total ? {
-            lines: summaryData.total.lines?.pct || 0,
-            functions: summaryData.total.functions?.pct || 0,
-            branches: summaryData.total.branches?.pct || 0,
-            statements: summaryData.total.statements?.pct || 0
-          } : {}
+          coverage: summaryData.total
+            ? {
+                lines: summaryData.total.lines?.pct || 0,
+                functions: summaryData.total.functions?.pct || 0,
+                branches: summaryData.total.branches?.pct || 0,
+                statements: summaryData.total.statements?.pct || 0,
+              }
+            : {},
         };
 
         await fs.writeFile(

@@ -222,7 +222,11 @@ export class SemanticAnalyzer {
         this.lastFailureTime = Date.now();
 
         logger.warn(
-          { error, sentence: sentence.substring(0, 50), consecutiveFailures: this.consecutiveFailures },
+          {
+            error,
+            sentence: sentence.substring(0, 50),
+            consecutiveFailures: this.consecutiveFailures,
+          },
           'Failed to generate embedding for sentence'
         );
 

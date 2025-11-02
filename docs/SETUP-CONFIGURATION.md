@@ -88,6 +88,7 @@ ENABLE_DEV_TOOLS=true                 # Enable development tools
 Create specific configuration files for different environments:
 
 #### development.env
+
 ```bash
 NODE_ENV=development
 LOG_LEVEL=debug
@@ -99,6 +100,7 @@ SIMILARITY_THRESHOLD=0.5              # Lower threshold for testing
 ```
 
 #### staging.env
+
 ```bash
 NODE_ENV=staging
 LOG_LEVEL=info
@@ -109,6 +111,7 @@ SEARCH_LIMIT=25                       # Smaller limit for staging
 ```
 
 #### production.env
+
 ```bash
 NODE_ENV=production
 LOG_LEVEL=warn
@@ -150,7 +153,7 @@ export class Environment {
 
   private validate(): void {
     const required = ['DATABASE_URL', 'QDRANT_URL', 'OPENAI_API_KEY'];
-    const missing = required.filter(key => !this.env[key]);
+    const missing = required.filter((key) => !this.env[key]);
 
     if (missing.length > 0) {
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -207,8 +210,8 @@ export const DatabaseConfig = {
     collectionName: qdrantConfig.QDRANT_COLLECTION_NAME,
     maxConnections: qdrantConfig.QDRANT_MAX_CONNECTIONS,
     timeout: qdrantConfig.QDRANT_TIMEOUT,
-    retryAttempts: qdrantConfig.QDRANT_RETRY_ATTEMPTS
-  }
+    retryAttempts: qdrantConfig.QDRANT_RETRY_ATTEMPTS,
+  },
 };
 ```
 
@@ -219,7 +222,7 @@ export const DatabaseConfig = {
 export const SearchConfig = {
   limits: {
     default: dbConfig.SEARCH_LIMIT,
-    maximum: dbConfig.SEARCH_MAX_LIMIT
+    maximum: dbConfig.SEARCH_MAX_LIMIT,
   },
 
   strategies: {
@@ -227,13 +230,13 @@ export const SearchConfig = {
       enableSemantic: true,
       enableFullText: true,
       enableHybrid: true,
-      fallbackEnabled: true
+      fallbackEnabled: true,
     },
     fast: {
       enableSemantic: false,
       enableFullText: true,
       enableHybrid: false,
-      fallbackEnabled: true
+      fallbackEnabled: true,
     },
     deep: {
       enableSemantic: true,
@@ -241,18 +244,18 @@ export const SearchConfig = {
       enableHybrid: true,
       fallbackEnabled: true,
       expandedContext: true,
-      maxIterations: 3
-    }
+      maxIterations: 3,
+    },
   },
 
   cache: {
     enabled: dbConfig.ENABLE_CACHE,
     ttl: dbConfig.CACHE_TTL * 1000, // Convert to milliseconds
     maxSize: 1000,
-    strategy: 'lru' // Least Recently Used
+    strategy: 'lru', // Least Recently Used
   },
 
-  timeout: dbConfig.SEARCH_TIMEOUT
+  timeout: dbConfig.SEARCH_TIMEOUT,
 };
 ```
 
@@ -268,20 +271,20 @@ export const SimilarityConfig = {
     similarity: dbConfig.SIMILARITY_THRESHOLD,
     high: 0.8,
     medium: 0.6,
-    low: 0.4
+    low: 0.4,
   },
 
   weighting: {
     content: dbConfig.SIMILARITY_WEIGHT_CONTENT,
     title: dbConfig.SIMILARITY_WEIGHT_TITLE,
     kind: dbConfig.SIMILARITY_WEIGHT_KIND,
-    scope: dbConfig.SIMILARITY_WEIGHT_SCOPE
+    scope: dbConfig.SIMILARITY_WEIGHT_SCOPE,
   },
 
   limits: {
     maxResults: dbConfig.SIMILARITY_MAX_RESULTS,
     maxCandidates: 100,
-    recentDays: 30 // Only consider recent items
+    recentDays: 30, // Only consider recent items
   },
 
   analysis: {
@@ -289,8 +292,8 @@ export const SimilarityConfig = {
     includeMetadataAnalysis: true,
     enableStopWordFiltering: true,
     minWordLength: 3,
-    maxTitleLength: 200
-  }
+    maxTitleLength: 200,
+  },
 };
 ```
 
@@ -311,7 +314,7 @@ export class RuntimeConfig {
     // Notify watchers
     const watchers = this.watchers.get(key);
     if (watchers) {
-      watchers.forEach(watcher => watcher(value));
+      watchers.forEach((watcher) => watcher(value));
     }
   }
 
@@ -388,22 +391,22 @@ export const DevelopmentConfig = {
     level: 'debug',
     format: 'pretty',
     enableColors: true,
-    enableStackTrace: true
+    enableStackTrace: true,
   },
 
   features: {
     hotReload: true,
     devTools: true,
     mockData: false,
-    debugEndpoints: true
+    debugEndpoints: true,
   },
 
   performance: {
     enableCache: false,
     enableMetrics: false,
     enableProfiling: true,
-    slowQueryThreshold: 1000
-  }
+    slowQueryThreshold: 1000,
+  },
 };
 ```
 
@@ -416,28 +419,28 @@ export const ProductionConfig = {
     level: 'warn',
     format: 'json',
     enableColors: false,
-    enableStackTrace: false
+    enableStackTrace: false,
   },
 
   security: {
     enableApiKeyAuth: true,
     enableRateLimit: true,
     enableCORS: true,
-    enableHelmet: true
+    enableHelmet: true,
   },
 
   performance: {
     enableCache: true,
     enableMetrics: true,
     enableProfiling: false,
-    slowQueryThreshold: 500
+    slowQueryThreshold: 500,
   },
 
   monitoring: {
     enableHealthChecks: true,
     enablePrometheus: true,
-    healthCheckInterval: 30000
-  }
+    healthCheckInterval: 30000,
+  },
 };
 ```
 
@@ -453,7 +456,7 @@ export class SecurityConfig {
     const sensitiveKeys = ['OPENAI_API_KEY', 'QDRANT_API_KEY'];
     // NO DATABASE_URL - QDRANT ONLY
 
-    sensitiveKeys.forEach(key => {
+    sensitiveKeys.forEach((key) => {
       if (process.env[key]) {
         process.env[key] = '***REDACTED***';
       }
@@ -484,27 +487,27 @@ export const PerformanceConfig = {
     // NO POSTGRESQL POOLING - QDRANT ONLY
     qdrant: {
       min: 2,
-      max: 10
-    }
+      max: 10,
+    },
   },
 
   caching: {
     search: {
       ttl: process.env.NODE_ENV === 'production' ? 3600 : 300,
-      maxSize: process.env.NODE_ENV === 'production' ? 10000 : 1000
+      maxSize: process.env.NODE_ENV === 'production' ? 10000 : 1000,
     },
     embeddings: {
       ttl: 86400, // 24 hours
-      maxSize: 50000
-    }
+      maxSize: 50000,
+    },
   },
 
   timeouts: {
-    qdrant: 30000,  // Qdrant operations
+    qdrant: 30000, // Qdrant operations
     search: 10000,
     embedding: 60000,
-    api: 120000
-  }
+    api: 120000,
+  },
 };
 ```
 
@@ -514,24 +517,23 @@ export const PerformanceConfig = {
 // src/config/environment-detection.ts
 export class EnvironmentDetector {
   static isDevelopment(): boolean {
-    return process.env.NODE_ENV === 'development' ||
-           process.env.NODE_ENV === 'dev' ||
-           !process.env.NODE_ENV;
+    return (
+      process.env.NODE_ENV === 'development' ||
+      process.env.NODE_ENV === 'dev' ||
+      !process.env.NODE_ENV
+    );
   }
 
   static isStaging(): boolean {
-    return process.env.NODE_ENV === 'staging' ||
-           process.env.NODE_ENV === 'stage';
+    return process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'stage';
   }
 
   static isProduction(): boolean {
-    return process.env.NODE_ENV === 'production' ||
-           process.env.NODE_ENV === 'prod';
+    return process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod';
   }
 
   static isTest(): boolean {
-    return process.env.NODE_ENV === 'test' ||
-           process.env.NODE_ENV === 'testing';
+    return process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'testing';
   }
 
   static getCpuCount(): number {
@@ -681,12 +683,12 @@ kind: ConfigMap
 metadata:
   name: cortex-config
 data:
-  NODE_ENV: "production"
-  ENABLE_CACHE: "true"
-  ENABLE_METRICS: "true"
-  LOG_LEVEL: "info"
-  SEARCH_LIMIT: "50"
-  SIMILARITY_THRESHOLD: "0.7"
+  NODE_ENV: 'production'
+  ENABLE_CACHE: 'true'
+  ENABLE_METRICS: 'true'
+  LOG_LEVEL: 'info'
+  SEARCH_LIMIT: '50'
+  SIMILARITY_THRESHOLD: '0.7'
   # NO DB_POOL_SIZE - QDRANT ONLY
 
 ---

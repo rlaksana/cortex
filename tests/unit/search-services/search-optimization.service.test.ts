@@ -33,7 +33,7 @@ import type {
   SearchResult,
   MemoryFindResponse,
   PerformanceMetrics,
-  OptimizationRecommendation
+  OptimizationRecommendation,
 } from '../../../src/types/core-interfaces';
 
 // Mock dependencies
@@ -42,12 +42,12 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 vi.mock('../../../src/services/embeddings/embedding-service', () => ({
@@ -56,15 +56,15 @@ vi.mock('../../../src/services/embeddings/embedding-service', () => ({
     generateBatchEmbeddings: vi.fn().mockResolvedValue([
       [0.1, 0.2, 0.3, 0.4, 0.5],
       [0.2, 0.3, 0.4, 0.5, 0.6],
-      [0.3, 0.4, 0.5, 0.6, 0.7]
+      [0.3, 0.4, 0.5, 0.6, 0.7],
     ]),
     calculateSimilarity: vi.fn().mockImplementation((vec1, vec2) => {
       const dot = vec1.reduce((sum, val, i) => sum + val * vec2[i], 0);
       const mag1 = Math.sqrt(vec1.reduce((sum, val) => sum + val * val, 0));
       const mag2 = Math.sqrt(vec2.reduce((sum, val) => sum + val * val, 0));
       return dot / (mag1 * mag2);
-    })
-  }))
+    }),
+  })),
 }));
 
 vi.mock('../../../src/services/performance/performance-monitor', () => ({
@@ -76,13 +76,13 @@ vi.mock('../../../src/services/performance/performance-monitor', () => ({
       memoryUsage: 60,
       queryLatency: 150,
       throughput: 1200,
-      errorRate: 0.02
+      errorRate: 0.02,
     }),
     identifyBottlenecks: vi.fn().mockResolvedValue([
       { type: 'cpu', severity: 'medium', description: 'High CPU usage during peak hours' },
-      { type: 'memory', severity: 'low', description: 'Memory usage within acceptable limits' }
-    ])
-  }))
+      { type: 'memory', severity: 'low', description: 'Memory usage within acceptable limits' },
+    ]),
+  })),
 }));
 
 vi.mock('../../../src/services/cache/intelligent-cache', () => ({
@@ -95,11 +95,11 @@ vi.mock('../../../src/services/cache/intelligent-cache', () => ({
       missRate: 0.15,
       evictionRate: 0.05,
       size: 1000,
-      maxSize: 5000
+      maxSize: 5000,
     }),
     warmUp: vi.fn().mockResolvedValue(true),
-    invalidate: vi.fn().mockResolvedValue(true)
-  }))
+    invalidate: vi.fn().mockResolvedValue(true),
+  })),
 }));
 
 vi.mock('../../../src/services/index/index-optimizer', () => ({
@@ -107,19 +107,19 @@ vi.mock('../../../src/services/index/index-optimizer', () => ({
     analyzeIndexUsage: vi.fn().mockResolvedValue([
       { index: 'title_vector', usage: 0.92, efficiency: 0.88 },
       { index: 'content_vector', usage: 0.78, efficiency: 0.85 },
-      { index: 'tags_index', usage: 0.65, efficiency: 0.92 }
+      { index: 'tags_index', usage: 0.65, efficiency: 0.92 },
     ]),
     optimizeIndexes: vi.fn().mockResolvedValue([
       { action: 'rebuild', index: 'content_vector', reason: 'low efficiency' },
-      { action: 'create', index: 'author_date', reason: 'frequent queries' }
+      { action: 'create', index: 'author_date', reason: 'frequent queries' },
     ]),
     getIndexStats: vi.fn().mockResolvedValue({
       totalIndexes: 15,
       optimizedIndexes: 12,
       averageEfficiency: 0.87,
-      storageUsage: '2.3GB'
-    })
-  }))
+      storageUsage: '2.3GB',
+    }),
+  })),
 }));
 
 vi.mock('../../../src/services/analytics/search-analytics', () => ({
@@ -128,29 +128,37 @@ vi.mock('../../../src/services/analytics/search-analytics', () => ({
       topQueries: [
         { query: 'user authentication', count: 1250, avgScore: 0.89 },
         { query: 'database performance', count: 980, avgScore: 0.84 },
-        { query: 'security policies', count: 765, avgScore: 0.91 }
+        { query: 'security policies', count: 765, avgScore: 0.91 },
       ],
       userBehavior: {
         avgQueriesPerSession: 4.2,
         avgSessionDuration: 12.5,
-        bounceRate: 0.18
+        bounceRate: 0.18,
       },
       performanceTrends: {
         avgLatency: [145, 142, 148, 151, 147],
-        throughput: [1150, 1180, 1220, 1190, 1210]
-      }
+        throughput: [1150, 1180, 1220, 1190, 1210],
+      },
     }),
     generateInsights: vi.fn().mockResolvedValue([
-      { type: 'optimization', priority: 'high', description: 'Consider adding index for common query patterns' },
-      { type: 'performance', priority: 'medium', description: 'Query latency trending upward, investigate' }
+      {
+        type: 'optimization',
+        priority: 'high',
+        description: 'Consider adding index for common query patterns',
+      },
+      {
+        type: 'performance',
+        priority: 'medium',
+        description: 'Query latency trending upward, investigate',
+      },
     ]),
     calculateROI: vi.fn().mockResolvedValue({
       searchImprovement: 0.23,
       userSatisfaction: 0.18,
       operationalEfficiency: 0.31,
-      overallROI: 0.24
-    })
-  }))
+      overallROI: 0.24,
+    }),
+  })),
 }));
 
 vi.mock('../../../src/services/ml/ml-optimizer', () => ({
@@ -158,22 +166,22 @@ vi.mock('../../../src/services/ml/ml-optimizer', () => ({
     optimizeRanking: vi.fn().mockResolvedValue({
       modelAccuracy: 0.94,
       relevanceImprovement: 0.27,
-      userFeedbackScore: 0.89
+      userFeedbackScore: 0.89,
     }),
     predictPerformance: vi.fn().mockResolvedValue({
       expectedLatency: 135,
       confidence: 0.87,
-      recommendedActions: ['increase cache size', 'optimize query plan']
+      recommendedActions: ['increase cache size', 'optimize query plan'],
     }),
     detectAnomalies: vi.fn().mockResolvedValue([
       { type: 'latency_spike', timestamp: '2024-06-15T10:30:00Z', severity: 'medium' },
-      { type: 'query_pattern_change', timestamp: '2024-06-15T09:15:00Z', severity: 'low' }
+      { type: 'query_pattern_change', timestamp: '2024-06-15T09:15:00Z', severity: 'low' },
     ]),
     autoOptimize: vi.fn().mockResolvedValue([
       { action: 'adjust_cache_ttl', impact: '5% performance improvement' },
-      { action: 'rebalance_indexes', impact: '12% query speed improvement' }
-    ])
-  }))
+      { action: 'rebalance_indexes', impact: '12% query speed improvement' },
+    ]),
+  })),
 }));
 
 // Mock Qdrant client with comprehensive collection support
@@ -182,82 +190,82 @@ const mockQdrantClient = {
   section: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   adrDecision: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   issueLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   todoLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   runbook: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   changeLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   releaseNote: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   ddlHistory: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   prContext: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeEntity: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeRelation: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   knowledgeObservation: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   incidentLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   releaseLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   riskLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   assumptionLog: {
     findMany: vi.fn(),
     createIndex: vi.fn(),
-    upsert: vi.fn()
+    upsert: vi.fn(),
   },
   // Vector search methods
   search: vi.fn(),
@@ -265,7 +273,7 @@ const mockQdrantClient = {
   createCollection: vi.fn(),
   deleteCollection: vi.fn(),
   getCollection: vi.fn(),
-  upsertBatch: vi.fn()
+  upsertBatch: vi.fn(),
 };
 
 // Mock performance monitor
@@ -279,13 +287,13 @@ const mockPerformanceMonitor = {
     throughput: 1200,
     errorRate: 0.02,
     cacheHitRate: 0.85,
-    indexEfficiency: 0.87
+    indexEfficiency: 0.87,
   }),
   identifyBottlenecks: vi.fn().mockResolvedValue([
     { type: 'cpu', severity: 'medium', description: 'High CPU usage during peak hours' },
     { type: 'memory', severity: 'low', description: 'Memory usage within acceptable limits' },
-    { type: 'io', severity: 'high', description: 'Disk I/O bottleneck detected' }
-  ])
+    { type: 'io', severity: 'high', description: 'Disk I/O bottleneck detected' },
+  ]),
 };
 
 // Mock intelligent cache
@@ -299,15 +307,15 @@ const mockIntelligentCache = {
     evictionRate: 0.05,
     size: 1000,
     maxSize: 5000,
-    memoryUsage: '250MB'
+    memoryUsage: '250MB',
   }),
   warmUp: vi.fn().mockResolvedValue(true),
   invalidate: vi.fn().mockResolvedValue(true),
   optimizeStrategy: vi.fn().mockResolvedValue({
     strategy: 'adaptive_lru',
     hitRateImprovement: 0.08,
-    memoryReduction: 0.15
-  })
+    memoryReduction: 0.15,
+  }),
 };
 
 // Mock index optimizer
@@ -316,20 +324,30 @@ const mockIndexOptimizer = {
     { index: 'title_vector', usage: 0.92, efficiency: 0.88, size: '500MB' },
     { index: 'content_vector', usage: 0.78, efficiency: 0.85, size: '1.2GB' },
     { index: 'tags_index', usage: 0.65, efficiency: 0.92, size: '100MB' },
-    { index: 'date_index', usage: 0.45, efficiency: 0.78, size: '50MB' }
+    { index: 'date_index', usage: 0.45, efficiency: 0.78, size: '50MB' },
   ]),
   optimizeIndexes: vi.fn().mockResolvedValue([
-    { action: 'rebuild', index: 'content_vector', reason: 'low efficiency', impact: '15% performance boost' },
-    { action: 'create', index: 'author_date', reason: 'frequent queries', impact: '8% query speed improvement' },
-    { action: 'drop', index: 'unused_index', reason: 'no usage', impact: '200MB space saved' }
+    {
+      action: 'rebuild',
+      index: 'content_vector',
+      reason: 'low efficiency',
+      impact: '15% performance boost',
+    },
+    {
+      action: 'create',
+      index: 'author_date',
+      reason: 'frequent queries',
+      impact: '8% query speed improvement',
+    },
+    { action: 'drop', index: 'unused_index', reason: 'no usage', impact: '200MB space saved' },
   ]),
   getIndexStats: vi.fn().mockResolvedValue({
     totalIndexes: 15,
     optimizedIndexes: 12,
     averageEfficiency: 0.87,
     storageUsage: '2.3GB',
-    lastOptimized: new Date('2024-06-14')
-  })
+    lastOptimized: new Date('2024-06-14'),
+  }),
 };
 
 // Mock search analytics
@@ -338,19 +356,19 @@ const mockSearchAnalytics = {
     topQueries: [
       { query: 'user authentication', count: 1250, avgScore: 0.89, trend: 'increasing' },
       { query: 'database performance', count: 980, avgScore: 0.84, trend: 'stable' },
-      { query: 'security policies', count: 765, avgScore: 0.91, trend: 'decreasing' }
+      { query: 'security policies', count: 765, avgScore: 0.91, trend: 'decreasing' },
     ],
     userBehavior: {
       avgQueriesPerSession: 4.2,
       avgSessionDuration: 12.5,
       bounceRate: 0.18,
-      conversionRate: 0.65
+      conversionRate: 0.65,
     },
     performanceTrends: {
       avgLatency: [145, 142, 148, 151, 147, 144, 149],
       throughput: [1150, 1180, 1220, 1190, 1210, 1230, 1200],
-      errorRate: [0.02, 0.018, 0.025, 0.022, 0.019, 0.021, 0.02]
-    }
+      errorRate: [0.02, 0.018, 0.025, 0.022, 0.019, 0.021, 0.02],
+    },
   }),
   generateInsights: vi.fn().mockResolvedValue([
     {
@@ -358,15 +376,15 @@ const mockSearchAnalytics = {
       priority: 'high',
       description: 'Consider adding index for common query patterns',
       impact: 'Estimated 15% performance improvement',
-      effort: 'medium'
+      effort: 'medium',
     },
     {
       type: 'performance',
       priority: 'medium',
       description: 'Query latency trending upward, investigate',
       impact: 'Prevent performance degradation',
-      effort: 'low'
-    }
+      effort: 'low',
+    },
   ]),
   calculateROI: vi.fn().mockResolvedValue({
     searchImprovement: 0.23,
@@ -374,8 +392,8 @@ const mockSearchAnalytics = {
     operationalEfficiency: 0.31,
     overallROI: 0.24,
     costSavings: '$12,500 annually',
-    productivityGain: '85 hours/month'
-  })
+    productivityGain: '85 hours/month',
+  }),
 };
 
 // Mock ML optimizer
@@ -385,19 +403,19 @@ const mockMLOptimizer = {
     relevanceImprovement: 0.27,
     userFeedbackScore: 0.89,
     trainingLoss: 0.12,
-    validationAccuracy: 0.91
+    validationAccuracy: 0.91,
   }),
   predictPerformance: vi.fn().mockResolvedValue({
     expectedLatency: 135,
     confidence: 0.87,
     recommendedActions: [
       { action: 'increase cache size', impact: '5% performance improvement', confidence: 0.92 },
-      { action: 'optimize query plan', impact: '8% query speed improvement', confidence: 0.78 }
+      { action: 'optimize query plan', impact: '8% query speed improvement', confidence: 0.78 },
     ],
     riskFactors: [
       { factor: 'increased query complexity', probability: 0.65 },
-      { factor: 'seasonal traffic increase', probability: 0.45 }
-    ]
+      { factor: 'seasonal traffic increase', probability: 0.45 },
+    ],
   }),
   detectAnomalies: vi.fn().mockResolvedValue([
     {
@@ -405,34 +423,36 @@ const mockMLOptimizer = {
       timestamp: '2024-06-15T10:30:00Z',
       severity: 'medium',
       deviation: 2.3,
-      affectedQueries: ['user authentication', 'database performance']
+      affectedQueries: ['user authentication', 'database performance'],
     },
     {
       type: 'query_pattern_change',
       timestamp: '2024-06-15T09:15:00Z',
       severity: 'low',
       deviation: 1.2,
-      newPattern: 'increased mobile queries'
-    }
+      newPattern: 'increased mobile queries',
+    },
   ]),
   autoOptimize: vi.fn().mockResolvedValue([
     {
       action: 'adjust_cache_ttl',
       impact: '5% performance improvement',
       confidence: 0.89,
-      rollback: 'automatic if performance degrades'
+      rollback: 'automatic if performance degrades',
     },
     {
       action: 'rebalance_indexes',
       impact: '12% query speed improvement',
       confidence: 0.76,
-      rollback: 'manual approval required'
-    }
-  ])
+      rollback: 'manual approval required',
+    },
+  ]),
 };
 
 // Import after mocking to get mocked instances
-const { SearchOptimizationService } = await import('../../../src/services/search/search-optimization');
+const { SearchOptimizationService } = await import(
+  '../../../src/services/search/search-optimization'
+);
 
 describe('Search Optimization Service - Comprehensive Advanced Optimization Functionality', () => {
   let searchOptimizationService: any;
@@ -453,7 +473,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       cache: mockIntelligentCache,
       indexOptimizer: mockIndexOptimizer,
       analytics: mockSearchAnalytics,
-      mlOptimizer: mockMLOptimizer
+      mlOptimizer: mockMLOptimizer,
     });
 
     // Setup default vector search responses
@@ -464,9 +484,9 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         payload: {
           kind: 'entity',
           data: { title: 'Optimized Search Result', content: 'High-performance search result' },
-          tags: { project: 'test', optimized: true }
-        }
-      }
+          tags: { project: 'test', optimized: true },
+        },
+      },
     ]);
   });
 
@@ -481,7 +501,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const optimizationOptions = {
         enableCostBasedOptimization: true,
         queryComplexityThreshold: 0.7,
-        maxExecutionPlans: 5
+        maxExecutionPlans: 5,
       };
 
       // Mock query plan analysis
@@ -490,20 +510,20 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
           plan: 'vector_first',
           cost: 0.45,
           estimatedLatency: 120,
-          confidence: 0.89
+          confidence: 0.89,
         },
         {
           plan: 'keyword_first',
           cost: 0.32,
           estimatedLatency: 95,
-          confidence: 0.76
+          confidence: 0.76,
         },
         {
           plan: 'hybrid_approach',
           cost: 0.38,
           estimatedLatency: 108,
-          confidence: 0.83
-        }
+          confidence: 0.83,
+        },
       ];
 
       const optimizedQuery = await searchOptimizationService.optimizeQuery(
@@ -527,7 +547,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         { name: 'database_vector', type: 'vector', efficiency: 0.92, cost: 0.15 },
         { name: 'connection_pool_index', type: 'btree', efficiency: 0.88, cost: 0.08 },
         { name: 'performance_metrics_index', type: 'hash', efficiency: 0.75, cost: 0.05 },
-        { name: 'optimization_pattern_index', type: 'vector', efficiency: 0.81, cost: 0.12 }
+        { name: 'optimization_pattern_index', type: 'vector', efficiency: 0.81, cost: 0.12 },
       ];
 
       const indexOptimization = await searchOptimizationService.optimizeIndexUsage(
@@ -540,8 +560,8 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should prioritize efficiency and cost balance
       const selectedIndexes = indexOptimization.selectedIndexes;
-      expect(selectedIndexes.some(idx => idx.name === 'database_vector')).toBe(true);
-      expect(selectedIndexes.some(idx => idx.name === 'connection_pool_index')).toBe(true);
+      expect(selectedIndexes.some((idx) => idx.name === 'database_vector')).toBe(true);
+      expect(selectedIndexes.some((idx) => idx.name === 'connection_pool_index')).toBe(true);
 
       // Should provide optimization rationale
       expect(indexOptimization.rationale).toBeDefined();
@@ -553,7 +573,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         { type: 'simple_keyword', expectedLatency: 50, complexity: 0.2 },
         { type: 'complex_semantic', expectedLatency: 200, complexity: 0.8 },
         { type: 'hybrid_query', expectedLatency: 120, complexity: 0.5 },
-        { type: 'aggregated_search', expectedLatency: 350, complexity: 0.9 }
+        { type: 'aggregated_search', expectedLatency: 350, complexity: 0.9 },
       ];
 
       const algorithmTuning = [];
@@ -567,12 +587,12 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         algorithmTuning.push({
           type: queryType.type,
           tuning,
-          complexity: queryType.complexity
+          complexity: queryType.complexity,
         });
       }
 
       // Each query type should have appropriate algorithm parameters
-      algorithmTuning.forEach(result => {
+      algorithmTuning.forEach((result) => {
         expect(result.tuning).toBeDefined();
         expect(result.tuning.algorithm).toBeDefined();
         expect(result.tuning.parameters).toBeDefined();
@@ -593,7 +613,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         cpuUsage: 75,
         memoryUsage: 68,
         diskIO: 45,
-        networkBandwidth: 30
+        networkBandwidth: 30,
       };
 
       const resourceOptimization = await searchOptimizationService.optimizeResourceUsage(
@@ -613,7 +633,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(resourceOptimization.optimizations).toContainEqual(
         expect.objectContaining({
           resource: 'cpu',
-          action: expect.any(String)
+          action: expect.any(String),
         })
       );
     });
@@ -629,13 +649,12 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
           latency: 500,
           errorRate: 0.05,
           cpuUsage: 80,
-          memoryUsage: 85
-        }
+          memoryUsage: 85,
+        },
       };
 
-      const performanceMetrics = await searchOptimizationService.getRealTimeMetrics(
-        monitoringConfig
-      );
+      const performanceMetrics =
+        await searchOptimizationService.getRealTimeMetrics(monitoringConfig);
 
       expect(performanceMetrics).toBeDefined();
       expect(performanceMetrics.currentMetrics).toBeDefined();
@@ -656,7 +675,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         expect(performanceMetrics.alerts).toContainEqual(
           expect.objectContaining({
             type: 'cpu_threshold',
-            severity: 'warning'
+            severity: 'warning',
           })
         );
       }
@@ -674,7 +693,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const bottlenecks = bottleneckAnalysis.bottlenecks;
       expect(bottlenecks.length).toBeGreaterThan(0);
 
-      bottlenecks.forEach(bottleneck => {
+      bottlenecks.forEach((bottleneck) => {
         expect(bottleneck.type).toBeDefined();
         expect(bottleneck.severity).toBeDefined();
         expect(bottleneck.impact).toBeDefined();
@@ -683,7 +702,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should provide root cause analysis
       const rootCauses = bottleneckAnalysis.rootCauses;
-      rootCauses.forEach(cause => {
+      rootCauses.forEach((cause) => {
         expect(cause.bottleneckId).toBeDefined();
         expect(cause.analysis).toBeDefined();
         expect(cause.contributionFactor).toBeGreaterThan(0);
@@ -692,7 +711,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       // Should provide actionable recommendations
       const recommendations = bottleneckAnalysis.recommendations;
       expect(recommendations.length).toBeGreaterThan(0);
-      recommendations.forEach(rec => {
+      recommendations.forEach((rec) => {
         expect(rec.action).toBeDefined();
         expect(rec.priority).toBeDefined();
         expect(rec.estimatedImpact).toBeDefined();
@@ -703,7 +722,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const trendAnalysis = await searchOptimizationService.analyzePerformanceTrends({
         timeWindow: '24h',
         granularity: '1h',
-        metrics: ['latency', 'throughput', 'errorRate']
+        metrics: ['latency', 'throughput', 'errorRate'],
       });
 
       expect(trendAnalysis).toBeDefined();
@@ -717,7 +736,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(trends.throughput).toBeDefined();
       expect(trends.errorRate).toBeDefined();
 
-      trends.latency.forEach(trend => {
+      trends.latency.forEach((trend) => {
         expect(trend.timestamp).toBeDefined();
         expect(trend.value).toBeGreaterThan(0);
         expect(trend.movingAverage).toBeGreaterThan(0);
@@ -725,7 +744,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should provide predictive insights
       const predictions = trendAnalysis.predictions;
-      predictions.forEach(prediction => {
+      predictions.forEach((prediction) => {
         expect(prediction.metric).toBeDefined();
         expect(prediction.predictedValue).toBeDefined();
         expect(prediction.confidence).toBeGreaterThan(0);
@@ -734,7 +753,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should identify anomalies in trends
       const anomalies = trendAnalysis.anomalies;
-      anomalies.forEach(anomaly => {
+      anomalies.forEach((anomaly) => {
         expect(anomaly.metric).toBeDefined();
         expect(anomaly.timestamp).toBeDefined();
         expect(anomaly.deviation).toBeGreaterThan(0);
@@ -752,7 +771,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should provide various types of recommendations
       const recs = recommendations.recommendations;
-      const recommendationTypes = [...new Set(recs.map(r => r.type))];
+      const recommendationTypes = [...new Set(recs.map((r) => r.type))];
       expect(recommendationTypes.length).toBeGreaterThan(1);
 
       // Should prioritize recommendations by impact and effort
@@ -787,12 +806,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         maxSize: '1GB',
         ttl: 3600,
         enableCompression: true,
-        enablePrefetch: true
+        enablePrefetch: true,
       };
 
-      const cacheOptimization = await searchOptimizationService.optimizeCaching(
-        cachingConfig
-      );
+      const cacheOptimization = await searchOptimizationService.optimizeCaching(cachingConfig);
 
       expect(cacheOptimization).toBeDefined();
       expect(cacheOptimization.selectedStrategy).toBeDefined();
@@ -821,12 +838,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         strategies: ['event_driven', 'ttl_based', 'manual'],
         eventTypes: ['data_update', 'schema_change', 'index_rebuild'],
         propagateInvalidations: true,
-        invalidationDelay: 100
+        invalidationDelay: 100,
       };
 
-      const invalidationOptimization = await searchOptimizationService.optimizeCacheInvalidation(
-        invalidationConfig
-      );
+      const invalidationOptimization =
+        await searchOptimizationService.optimizeCacheInvalidation(invalidationConfig);
 
       expect(invalidationOptimization).toBeDefined();
       expect(invalidationOptimization.activeStrategies).toBeDefined();
@@ -837,7 +853,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const strategies = invalidationOptimization.activeStrategies;
       expect(strategies.length).toBeGreaterThan(1);
 
-      strategies.forEach(strategy => {
+      strategies.forEach((strategy) => {
         expect(strategy.name).toBeDefined();
         expect(strategy.configuration).toBeDefined();
         expect(strategy.applicability).toBeGreaterThan(0);
@@ -845,7 +861,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
       // Should handle event-driven invalidations
       const eventHandlers = invalidationOptimization.eventHandlers;
-      invalidationConfig.eventTypes.forEach(eventType => {
+      invalidationConfig.eventTypes.forEach((eventType) => {
         expect(eventHandlers[eventType]).toBeDefined();
         expect(eventHandlers[eventType].handler).toBeDefined();
         expect(eventHandlers[eventType].invalidationScope).toBeDefined();
@@ -864,12 +880,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         warmingSchedule: 'hourly',
         maxWarmingQueries: 100,
         minHitRateThreshold: 0.8,
-        warmingDataSources: ['popular_queries', 'user_patterns', 'seasonal_trends']
+        warmingDataSources: ['popular_queries', 'user_patterns', 'seasonal_trends'],
       };
 
-      const cacheWarming = await searchOptimizationService.optimizeCacheWarming(
-        warmingConfig
-      );
+      const cacheWarming = await searchOptimizationService.optimizeCacheWarming(warmingConfig);
 
       expect(cacheWarming).toBeDefined();
       expect(cacheWarming.warmingPlan).toBeDefined();
@@ -880,7 +894,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const predictedQueries = cacheWarming.predictedQueries;
       expect(predictedQueries.length).toBeGreaterThan(0);
 
-      predictedQueries.forEach(query => {
+      predictedQueries.forEach((query) => {
         expect(query.query).toBeDefined();
         expect(query.probability).toBeGreaterThan(0);
         expect(query.expectedBenefit).toBeGreaterThan(0);
@@ -905,12 +919,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         consistencyLevel: 'eventual',
         replicationFactor: 2,
         enableSharding: true,
-        conflictResolution: 'last_write_wins'
+        conflictResolution: 'last_write_wins',
       };
 
-      const distributedCaching = await searchOptimizationService.optimizeDistributedCaching(
-        distributedConfig
-      );
+      const distributedCaching =
+        await searchOptimizationService.optimizeDistributedCaching(distributedConfig);
 
       expect(distributedCaching).toBeDefined();
       expect(distributedCaching.topology).toBeDefined();
@@ -949,12 +962,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         targetEfficiency: 0.9,
         maxIndexSize: '5GB',
         indexTypes: ['vector', 'btree', 'hash', 'fulltext'],
-        enableAutoTuning: true
+        enableAutoTuning: true,
       };
 
-      const indexOptimization = await searchOptimizationService.optimizeIndexStructure(
-        indexConfig
-      );
+      const indexOptimization = await searchOptimizationService.optimizeIndexStructure(indexConfig);
 
       expect(indexOptimization).toBeDefined();
       expect(indexOptimization.optimizedIndexes).toBeDefined();
@@ -965,7 +976,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const optimizedIndexes = indexOptimization.optimizedIndexes;
       expect(optimizedIndexes.length).toBeGreaterThan(0);
 
-      optimizedIndexes.forEach(index => {
+      optimizedIndexes.forEach((index) => {
         expect(index.name).toBeDefined();
         expect(index.type).toBeDefined();
         expect(index.optimizationAction).toBeDefined();
@@ -992,12 +1003,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         maintenanceWindow: '02:00-04:00',
         frequency: 'weekly',
         healthCheckThreshold: 0.85,
-        autoRebuildEnabled: true
+        autoRebuildEnabled: true,
       };
 
-      const maintenanceAutomation = await searchOptimizationService.automateIndexMaintenance(
-        maintenanceConfig
-      );
+      const maintenanceAutomation =
+        await searchOptimizationService.automateIndexMaintenance(maintenanceConfig);
 
       expect(maintenanceAutomation).toBeDefined();
       expect(maintenanceAutomation.schedule).toBeDefined();
@@ -1014,7 +1024,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const tasks = maintenanceAutomation.tasks;
       expect(tasks.length).toBeGreaterThan(0);
 
-      tasks.forEach(task => {
+      tasks.forEach((task) => {
         expect(task.name).toBeDefined();
         expect(task.description).toBeDefined();
         expect(task.executionPlan).toBeDefined();
@@ -1028,7 +1038,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(healthChecks.thresholds).toBeDefined();
       expect(healthChecks.alerting).toBeDefined();
 
-      healthChecks.metrics.forEach(metric => {
+      healthChecks.metrics.forEach((metric) => {
         expect(metric.name).toBeDefined();
         expect(metric.checkInterval).toBeGreaterThan(0);
         expect(metric.threshold).toBeDefined();
@@ -1040,12 +1050,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         enableFeedbackLearning: true,
         feedbackSources: ['user_ratings', 'click_through', 'dwell_time'],
         tuningFrequency: 'daily',
-        minFeedbackCount: 50
+        minFeedbackCount: 50,
       };
 
-      const relevanceTuning = await searchOptimizationService.tuneRelevance(
-        relevanceConfig
-      );
+      const relevanceTuning = await searchOptimizationService.tuneRelevance(relevanceConfig);
 
       expect(relevanceTuning).toBeDefined();
       expect(relevanceTuning.feedbackAnalysis).toBeDefined();
@@ -1058,7 +1066,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(feedbackAnalysis.patterns).toBeDefined();
       expect(feedbackAnalysis.qualityScore).toBeGreaterThan(0);
 
-      feedbackAnalysis.sources.forEach(source => {
+      feedbackAnalysis.sources.forEach((source) => {
         expect(source.name).toBeDefined();
         expect(source.feedbackCount).toBeGreaterThan(0);
         expect(source.avgRating).toBeGreaterThanOrEqual(0);
@@ -1084,12 +1092,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         metrics: ['usage', 'efficiency', 'maintenance_cost', 'query_performance'],
         timeRange: '30d',
         granularity: '1d',
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       };
 
-      const indexAnalytics = await searchOptimizationService.analyzeIndexes(
-        analyticsConfig
-      );
+      const indexAnalytics = await searchOptimizationService.analyzeIndexes(analyticsConfig);
 
       expect(indexAnalytics).toBeDefined();
       expect(indexAnalytics.usageMetrics).toBeDefined();
@@ -1131,12 +1137,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         trackingEnabled: true,
         anonymizationLevel: 'partial',
         retentionPeriod: '90d',
-        analysisDimensions: ['temporal', 'query_type', 'user_segment', 'content_category']
+        analysisDimensions: ['temporal', 'query_type', 'user_segment', 'content_category'],
       };
 
-      const patternAnalysis = await searchOptimizationService.analyzeSearchPatterns(
-        analyticsConfig
-      );
+      const patternAnalysis =
+        await searchOptimizationService.analyzeSearchPatterns(analyticsConfig);
 
       expect(patternAnalysis).toBeDefined();
       expect(patternAnalysis.queryPatterns).toBeDefined();
@@ -1150,7 +1155,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(queryPatterns.emergingQueries).toBeDefined();
       expect(queryPatterns.failedQueries).toBeDefined();
 
-      queryPatterns.frequentQueries.forEach(query => {
+      queryPatterns.frequentQueries.forEach((query) => {
         expect(query.text).toBeDefined();
         expect(query.frequency).toBeGreaterThan(0);
         expect(query.avgResults).toBeGreaterThan(0);
@@ -1181,12 +1186,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         enablePersonalization: true,
         profilingLevel: 'detailed',
         learningRate: 0.1,
-        privacyControls: { dataRetention: '30d', anonymization: true }
+        privacyControls: { dataRetention: '30d', anonymization: true },
       };
 
-      const userInsights = await searchOptimizationService.generateUserInsights(
-        personalizationConfig
-      );
+      const userInsights =
+        await searchOptimizationService.generateUserInsights(personalizationConfig);
 
       expect(userInsights).toBeDefined();
       expect(userInsights.userProfiles).toBeDefined();
@@ -1199,7 +1203,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(userProfiles.behavioralPatterns).toBeDefined();
       expect(userInsights.preferences).toBeDefined();
 
-      userProfiles.segments.forEach(segment => {
+      userProfiles.segments.forEach((segment) => {
         expect(segment.name).toBeDefined();
         expect(segment.size).toBeGreaterThan(0);
         expect(segment.characteristics).toBeDefined();
@@ -1224,12 +1228,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         reportTypes: ['performance', 'usage', 'quality', 'trends'],
         timeRanges: ['24h', '7d', '30d', '90d'],
         granularity: ['hourly', 'daily', 'weekly'],
-        formats: ['dashboard', 'pdf', 'api']
+        formats: ['dashboard', 'pdf', 'api'],
       };
 
-      const performanceReports = await searchOptimizationService.generatePerformanceReports(
-        reportingConfig
-      );
+      const performanceReports =
+        await searchOptimizationService.generatePerformanceReports(reportingConfig);
 
       expect(performanceReports).toBeDefined();
       expect(performanceReports.reports).toBeDefined();
@@ -1257,7 +1260,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(detailedMetrics.userExperience).toBeDefined();
       expect(detailedMetrics.operationalMetrics).toBeDefined();
 
-      detailedMetrics.systemPerformance.forEach(metric => {
+      detailedMetrics.systemPerformance.forEach((metric) => {
         expect(metric.name).toBeDefined();
         expect(metric.currentValue).toBeDefined();
         expect(metric.targetValue).toBeDefined();
@@ -1270,7 +1273,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         metrics: ['time_savings', 'productivity_gain', 'cost_reduction', 'revenue_impact'],
         calculationMethod: 'hybrid',
         baselinePeriod: '90d',
-        confidenceInterval: 0.95
+        confidenceInterval: 0.95,
       };
 
       const roiAnalysis = await searchOptimizationService.calculateROI(roiConfig);
@@ -1295,7 +1298,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(componentROI.operationalEfficiency).toBeDefined();
       expect(componentROI.costSavings).toBeDefined();
 
-      Object.values(componentROI).forEach(component => {
+      Object.values(componentROI).forEach((component) => {
         expect(component.value).toBeGreaterThan(0);
         expect(component.percentage).toBeGreaterThan(0);
         expect(component.contribution).toBeGreaterThan(0);
@@ -1314,7 +1317,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(projections.threeYear).toBeDefined();
       expect(projections.fiveYear).toBeDefined();
 
-      Object.values(projections).forEach(projection => {
+      Object.values(projections).forEach((projection) => {
         expect(projection.expectedROI).toBeGreaterThan(0);
         expect(projection.confidenceInterval).toBeDefined();
         expect(projection.assumptions).toBeDefined();
@@ -1330,12 +1333,10 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         trainingData: 'user_interactions',
         featureSet: ['query_features', 'user_features', 'content_features', 'context_features'],
         learningRate: 0.001,
-        batchSize: 256
+        batchSize: 256,
       };
 
-      const mlRankingOptimization = await searchOptimizationService.optimizeRankingWithML(
-        mlConfig
-      );
+      const mlRankingOptimization = await searchOptimizationService.optimizeRankingWithML(mlConfig);
 
       expect(mlRankingOptimization).toBeDefined();
       expect(mlRankingOptimization.modelPerformance).toBeDefined();
@@ -1363,7 +1364,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(featureImportance.topFeatures).toBeDefined();
       expect(featureImportance.featureContributions).toBeDefined();
 
-      featureImportance.topFeatures.forEach(feature => {
+      featureImportance.topFeatures.forEach((feature) => {
         expect(feature.name).toBeDefined();
         expect(feature.importance).toBeGreaterThan(0);
         expect(feature.description).toBeDefined();
@@ -1381,12 +1382,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         predictionModel: 'lstm_with_attention',
         anomalyDetection: 'isolation_forest',
         predictionHorizon: '24h',
-        alertThreshold: 0.8
+        alertThreshold: 0.8,
       };
 
-      const predictiveTuning = await searchOptimizationService.enablePredictiveTuning(
-        predictiveConfig
-      );
+      const predictiveTuning =
+        await searchOptimizationService.enablePredictiveTuning(predictiveConfig);
 
       expect(predictiveTuning).toBeDefined();
       expect(predictiveTuning.predictions).toBeDefined();
@@ -1401,7 +1401,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(predictions.resourceUtilization).toBeDefined();
       expect(predictions.confidenceScores).toBeDefined();
 
-      predictions.latencyForecast.forEach(forecast => {
+      predictions.latencyForecast.forEach((forecast) => {
         expect(forecast.timestamp).toBeDefined();
         expect(forecast.predictedValue).toBeGreaterThan(0);
         expect(forecast.confidenceInterval).toBeDefined();
@@ -1414,7 +1414,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(anomalyDetection.patternAnalysis).toBeDefined();
       expect(anomalyDetection.earlyWarnings).toBeDefined();
 
-      anomalyDetection.detectedAnomalies.forEach(anomaly => {
+      anomalyDetection.detectedAnomalies.forEach((anomaly) => {
         expect(anomaly.type).toBeDefined();
         expect(anomaly.severity).toBeDefined();
         expect(anomaly.confidence).toBeGreaterThan(0);
@@ -1440,12 +1440,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         healingStrategies: ['parameter_tuning', 'cache_adjustment', 'index_rebalancing'],
         safetyChecks: true,
         rollbackMechanism: true,
-        approvalThreshold: 0.9
+        approvalThreshold: 0.9,
       };
 
-      const selfHealingOptimization = await searchOptimizationService.enableSelfHealing(
-        selfHealingConfig
-      );
+      const selfHealingOptimization =
+        await searchOptimizationService.enableSelfHealing(selfHealingConfig);
 
       expect(selfHealingOptimization).toBeDefined();
       expect(selfHealingOptimization.healingMechanisms).toBeDefined();
@@ -1459,7 +1458,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(healingMechanisms.solutionIdentification).toBeDefined();
       expect(healingMechanisms.automaticRecovery).toBeDefined();
 
-      healingMechanisms.problemDetection.forEach(detector => {
+      healingMechanisms.problemDetection.forEach((detector) => {
         expect(detector.type).toBeDefined();
         expect(detector.thresholds).toBeDefined();
         expect(detector.sensitivity).toBeGreaterThan(0);
@@ -1481,7 +1480,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       const performanceTracking = selfHealingOptimization.performanceTracking;
       expect(performanceTracking.beforeAfterComparison).toBeDefined();
       expect(performanceTracking.sustainedImprovement).toBeDefined();
-      expect(performanceMetrics.userSatisfactionImpact).toBeDefined();
+      expect(performanceTracking.userSatisfactionImpact).toBeDefined();
     });
   });
 
@@ -1492,12 +1491,11 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         enableAllOptimizations: true,
         workflowCoordination: true,
         feedbackLoops: true,
-        continuousImprovement: true
+        continuousImprovement: true,
       };
 
-      const integrationTest = await searchOptimizationService.runIntegratedOptimization(
-        integrationConfig
-      );
+      const integrationTest =
+        await searchOptimizationService.runIntegratedOptimization(integrationConfig);
 
       expect(integrationTest).toBeDefined();
       expect(integrationTest.workflowExecution).toBeDefined();
@@ -1511,7 +1509,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
       expect(workflow.dependencies).toBeDefined();
       expect(workflow.executionTime).toBeGreaterThan(0);
 
-      workflow.stages.forEach(stage => {
+      workflow.stages.forEach((stage) => {
         expect(stage.name).toBeDefined();
         expect(stage.status).toBeDefined();
         expect(stage.duration).toBeGreaterThan(0);
@@ -1544,7 +1542,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         { scenario: 'malformed_query', expectedBehavior: 'sanitize_and_process' },
         { scenario: 'resource_exhaustion', expectedBehavior: 'graceful_degradation' },
         { scenario: 'service_unavailable', expectedBehavior: 'fallback_mechanisms' },
-        { scenario: 'data_corruption', expectedBehavior: 'error_recovery' }
+        { scenario: 'data_corruption', expectedBehavior: 'error_recovery' },
       ];
 
       const edgeCaseResults = [];
@@ -1556,23 +1554,25 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
           scenario: edgeCase.scenario,
           result,
           handled: result.success !== false,
-          graceful: result.error === undefined || result.recoverable === true
+          graceful: result.error === undefined || result.recoverable === true,
         });
       }
 
       // All edge cases should be handled gracefully
-      edgeCaseResults.forEach(result => {
+      edgeCaseResults.forEach((result) => {
         expect(result.handled).toBe(true);
         expect(result.graceful).toBe(true);
         expect(result.result).toBeDefined();
       });
 
       // Should provide appropriate fallback behavior
-      const emptyQueryResult = edgeCaseResults.find(r => r.scenario === 'empty_query');
+      const emptyQueryResult = edgeCaseResults.find((r) => r.scenario === 'empty_query');
       expect(emptyQueryResult.result.results).toEqual([]);
 
       // Should implement error recovery
-      const serviceUnavailableResult = edgeCaseResults.find(r => r.scenario === 'service_unavailable');
+      const serviceUnavailableResult = edgeCaseResults.find(
+        (r) => r.scenario === 'service_unavailable'
+      );
       expect(serviceUnavailableResult.result.fallbackUsed).toBe(true);
     });
 
@@ -1581,7 +1581,7 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
         concurrentUsers: 100,
         queriesPerSecond: 50,
         testDuration: 60,
-        optimizationEnabled: true
+        optimizationEnabled: true,
       };
 
       const loadTest = await searchOptimizationService.performLoadTest(loadTestConfig);
@@ -1621,26 +1621,30 @@ describe('Search Optimization Service - Comprehensive Advanced Optimization Func
 
   // Helper function to validate optimization results
   function validateOptimizationResult(result: any): boolean {
-    return result !== null &&
-           typeof result === 'object' &&
-           result.optimizations !== undefined &&
-           Array.isArray(result.optimizations) &&
-           result.optimizations.length > 0 &&
-           result.performanceImpact !== undefined &&
-           result.confidence !== undefined &&
-           result.confidence > 0;
+    return (
+      result !== null &&
+      typeof result === 'object' &&
+      result.optimizations !== undefined &&
+      Array.isArray(result.optimizations) &&
+      result.optimizations.length > 0 &&
+      result.performanceImpact !== undefined &&
+      result.confidence !== undefined &&
+      result.confidence > 0
+    );
   }
 
   // Helper function to validate performance metrics
   function validatePerformanceMetrics(metrics: any): boolean {
-    return metrics !== null &&
-           typeof metrics === 'object' &&
-           metrics.latency !== undefined &&
-           metrics.latency > 0 &&
-           metrics.throughput !== undefined &&
-           metrics.throughput > 0 &&
-           metrics.errorRate !== undefined &&
-           metrics.errorRate >= 0 &&
-           metrics.errorRate <= 1;
+    return (
+      metrics !== null &&
+      typeof metrics === 'object' &&
+      metrics.latency !== undefined &&
+      metrics.latency > 0 &&
+      metrics.throughput !== undefined &&
+      metrics.throughput > 0 &&
+      metrics.errorRate !== undefined &&
+      metrics.errorRate >= 0 &&
+      metrics.errorRate <= 1
+    );
   }
 });

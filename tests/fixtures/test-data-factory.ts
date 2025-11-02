@@ -12,12 +12,25 @@ import type { KnowledgeItem } from '../../src/types/core-interfaces';
 // ============================================================================
 
 export const KNOWLEDGE_TYPES = [
-  'entity', 'relation', 'observation', 'section', 'runbook',
-  'change', 'issue', 'decision', 'todo', 'release_note',
-  'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+  'entity',
+  'relation',
+  'observation',
+  'section',
+  'runbook',
+  'change',
+  'issue',
+  'decision',
+  'todo',
+  'release_note',
+  'ddl',
+  'pr_context',
+  'incident',
+  'release',
+  'risk',
+  'assumption',
 ] as const;
 
-export type KnowledgeType = typeof KNOWLEDGE_TYPES[number];
+export type KnowledgeType = (typeof KNOWLEDGE_TYPES)[number];
 
 // ============================================================================
 // Test Data Generators by Knowledge Type
@@ -43,7 +56,7 @@ export function generateMinimalItem(type: KnowledgeType, overrides: Partial<any>
     incident: { kind: 'incident', content: 'Test incident report' },
     release: { kind: 'release', content: 'Test release information' },
     risk: { kind: 'risk', content: 'Test risk assessment' },
-    assumption: { kind: 'assumption', content: 'Test assumption noted' }
+    assumption: { kind: 'assumption', content: 'Test assumption noted' },
   };
 
   return { ...baseItems[type], ...overrides };
@@ -62,13 +75,13 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         type: 'person',
         attributes: { name: 'John Doe', email: 'john@example.com' },
         created_by: 'test-user',
-        tags: ['important', 'test']
+        tags: ['important', 'test'],
       },
       scope: {
         project: 'test-project',
         branch: 'main',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     relation: {
       ...minimal,
@@ -77,12 +90,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         target: 'entity-b',
         relationship_type: 'depends_on',
         strength: 0.8,
-        bidirectional: false
+        bidirectional: false,
       },
       scope: {
         project: 'test-project',
-        branch: 'feature/relations'
-      }
+        branch: 'feature/relations',
+      },
     },
     observation: {
       ...minimal,
@@ -91,12 +104,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         timestamp: '2025-10-30T13:00:00Z',
         context: 'code-review',
         severity: 'medium',
-        category: 'performance'
+        category: 'performance',
       },
       scope: {
         project: 'test-project',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     section: {
       ...minimal,
@@ -105,12 +118,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         level: 2,
         parent_section: 'root',
         order: 1,
-        tags: ['documentation', 'getting-started']
+        tags: ['documentation', 'getting-started'],
       },
       scope: {
         project: 'docs-project',
-        branch: 'main'
-      }
+        branch: 'main',
+      },
     },
     runbook: {
       ...minimal,
@@ -122,13 +135,13 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         prerequisites: ['access-to-production', 'ssh-keys'],
         steps: [
           { step: 1, action: 'backup-database', description: 'Create database backup' },
-          { step: 2, action: 'deploy-code', description: 'Deploy new code version' }
-        ]
+          { step: 2, action: 'deploy-code', description: 'Deploy new code version' },
+        ],
       },
       scope: {
         project: 'ops-project',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     change: {
       ...minimal,
@@ -138,12 +151,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         risk_level: 'low',
         approvers: ['team-lead', 'product-manager'],
         rollback_plan: 'Revert to previous commit if issues arise',
-        testing_required: true
+        testing_required: true,
       },
       scope: {
         project: 'test-project',
-        branch: 'feature/new-feature'
-      }
+        branch: 'feature/new-feature',
+      },
     },
     issue: {
       ...minimal,
@@ -156,12 +169,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         environment: 'production',
         steps_to_reproduce: ['Step 1', 'Step 2', 'Step 3'],
         expected_behavior: 'System should work correctly',
-        actual_behavior: 'System shows error'
+        actual_behavior: 'System shows error',
       },
       scope: {
         project: 'test-project',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     decision: {
       ...minimal,
@@ -172,12 +185,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         rationale: 'Best performance and maintainability',
         impact: 'Medium - requires refactoring existing code',
         expiration_date: '2025-12-31T23:59:59Z',
-        decision_maker: 'tech-lead'
+        decision_maker: 'tech-lead',
       },
       scope: {
         project: 'architecture-project',
-        branch: 'main'
-      }
+        branch: 'main',
+      },
     },
     todo: {
       ...minimal,
@@ -188,12 +201,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         due_date: '2025-11-15T23:59:59Z',
         estimated_hours: 4,
         tags: ['frontend', 'urgent'],
-        dependencies: ['task-123', 'task-456']
+        dependencies: ['task-123', 'task-456'],
       },
       scope: {
         project: 'sprint-23',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     release_note: {
       ...minimal,
@@ -203,12 +216,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         features: ['New authentication system', 'Performance improvements'],
         bug_fixes: ['Fixed memory leak', 'Resolved timeout issues'],
         breaking_changes: ['API endpoint modification'],
-        upgrade_instructions: 'Run migration script before upgrading'
+        upgrade_instructions: 'Run migration script before upgrading',
       },
       scope: {
         project: 'product-releases',
-        branch: 'release/v2.1.0'
-      }
+        branch: 'release/v2.1.0',
+      },
     },
     ddl: {
       ...minimal,
@@ -218,12 +231,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         database: 'production',
         rollback_script: 'DROP TABLE users;',
         impact_assessment: 'No data loss expected',
-        execution_time: '2 minutes'
+        execution_time: '2 minutes',
       },
       scope: {
         project: 'database-project',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     pr_context: {
       ...minimal,
@@ -235,12 +248,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         files_changed: 15,
         lines_added: 200,
         lines_removed: 50,
-        automated_checks_passed: true
+        automated_checks_passed: true,
       },
       scope: {
         project: 'main-repo',
-        branch: 'feature/auth'
-      }
+        branch: 'feature/auth',
+      },
     },
     incident: {
       ...minimal,
@@ -253,12 +266,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         end_time: '2025-10-30T12:30:00Z',
         root_cause: 'Database connection pool exhaustion',
         resolution: 'Increased connection pool size',
-        affected_services: ['api', 'web-app']
+        affected_services: ['api', 'web-app'],
       },
       scope: {
         project: 'production-infra',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     release: {
       ...minimal,
@@ -270,12 +283,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         rollback_available: true,
         build_number: 'build-456',
         artifacts: ['app.jar', 'config.yml'],
-        release_manager: 'ops-lead'
+        release_manager: 'ops-lead',
       },
       scope: {
         project: 'product-releases',
-        branch: 'release/v2.1.0'
-      }
+        branch: 'release/v2.1.0',
+      },
     },
     risk: {
       ...minimal,
@@ -287,12 +300,12 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         mitigation_plan: 'Implement rate limiting and monitoring',
         risk_owner: 'security-team',
         review_date: '2025-11-30T23:59:59Z',
-        related_threats: ['data-breach', 'service-disruption']
+        related_threats: ['data-breach', 'service-disruption'],
       },
       scope: {
         project: 'security-assessment',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     },
     assumption: {
       ...minimal,
@@ -303,13 +316,13 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
         validation_method: 'load testing',
         impact_if_invalid: 'High - requires redesign',
         made_by: 'architecture-team',
-        review_date: '2025-12-01T23:59:59Z'
+        review_date: '2025-12-01T23:59:59Z',
       },
       scope: {
         project: 'architecture-project',
-        branch: 'main'
-      }
-    }
+        branch: 'main',
+      },
+    },
   };
 
   return { ...completeItems[type], ...overrides };
@@ -323,30 +336,30 @@ export function generateCompleteItem(type: KnowledgeType, overrides: Partial<any
  * Generate items for all knowledge types with minimal data
  */
 export function generateMinimalItems(overrides: Record<KnowledgeType, Partial<any>> = {}): any[] {
-  return KNOWLEDGE_TYPES.map(type => generateMinimalItem(type, overrides[type]));
+  return KNOWLEDGE_TYPES.map((type) => generateMinimalItem(type, overrides[type]));
 }
 
 /**
  * Generate items for all knowledge types with complete data
  */
 export function generateCompleteItems(overrides: Record<KnowledgeType, Partial<any>> = {}): any[] {
-  return KNOWLEDGE_TYPES.map(type => generateCompleteItem(type, overrides[type]));
+  return KNOWLEDGE_TYPES.map((type) => generateCompleteItem(type, overrides[type]));
 }
 
 /**
  * Generate items with specific scope variations
  */
-export function generateScopedItems(scopeType: 'project-only' | 'branch-only' | 'org-only' | 'complete'): any[] {
+export function generateScopedItems(
+  scopeType: 'project-only' | 'branch-only' | 'org-only' | 'complete'
+): any[] {
   const scopeOverrides = {
     'project-only': { scope: { project: 'test-project' } },
     'branch-only': { scope: { branch: 'feature-branch' } },
     'org-only': { scope: { org: 'test-org' } },
-    'complete': { scope: { project: 'test-project', branch: 'main', org: 'test-org' } }
+    complete: { scope: { project: 'test-project', branch: 'main', org: 'test-org' } },
   };
 
-  return KNOWLEDGE_TYPES.map(type =>
-    generateCompleteItem(type, scopeOverrides[scopeType])
-  );
+  return KNOWLEDGE_TYPES.map((type) => generateCompleteItem(type, scopeOverrides[scopeType]));
 }
 
 // ============================================================================
@@ -363,20 +376,20 @@ export function generateEdgeCaseItems(): any[] {
 
     // Very long content
     generateMinimalItem('observation', {
-      content: 'A'.repeat(1000)
+      content: 'A'.repeat(1000),
     }),
 
     // Special characters and Unicode
     generateMinimalItem('issue', {
-      content: 'Issue with émojis 🚨 and spëcial chars & symbols @#$%^&*()'
+      content: 'Issue with émojis 🚨 and spëcial chars & symbols @#$%^&*()',
     }),
 
     // Large metadata object
     generateMinimalItem('runbook', {
       metadata: {
         largeArray: Array.from({ length: 100 }, (_, i) => ({ step: i, action: `action-${i}` })),
-        nestedObject: { level1: { level2: { level3: { deep: 'value' } } } }
-      }
+        nestedObject: { level1: { level2: { level3: { deep: 'value' } } } },
+      },
     }),
 
     // Null/undefined metadata
@@ -386,11 +399,11 @@ export function generateEdgeCaseItems(): any[] {
     generateMinimalItem('todo', { scope: {} }),
 
     // All knowledge types with invalid data (for error testing)
-    ...KNOWLEDGE_TYPES.map(type => ({
+    ...KNOWLEDGE_TYPES.map((type) => ({
       kind: type,
       content: null, // Invalid content
-      metadata: 'not-an-object' // Invalid metadata type
-    }))
+      metadata: 'not-an-object', // Invalid metadata type
+    })),
   ];
 }
 
@@ -404,7 +417,7 @@ export function generateStressTestItems(count: number = 100): any[] {
     const type = KNOWLEDGE_TYPES[i % KNOWLEDGE_TYPES.length];
     const item = generateCompleteItem(type, {
       content: `Stress test item ${i} of type ${type}`,
-      metadata: { testIndex: i, batchId: 'stress-test-batch' }
+      metadata: { testIndex: i, batchId: 'stress-test-batch' },
     });
     items.push(item);
   }
@@ -422,29 +435,29 @@ export function generateStressTestItems(count: number = 100): any[] {
 export function generateSearchTestData(): any[] {
   return [
     generateCompleteItem('entity', {
-      content: 'User authentication system with OAuth2 integration'
+      content: 'User authentication system with OAuth2 integration',
     }),
     generateCompleteItem('observation', {
-      content: 'Noticed slow response times during peak hours'
+      content: 'Noticed slow response times during peak hours',
     }),
     generateCompleteItem('decision', {
-      content: 'Decided to use PostgreSQL instead of MongoDB for better consistency'
+      content: 'Decided to use PostgreSQL instead of MongoDB for better consistency',
     }),
     generateCompleteItem('issue', {
-      content: 'Critical bug: Memory leak causing server crashes'
+      content: 'Critical bug: Memory leak causing server crashes',
     }),
     generateCompleteItem('runbook', {
-      content: 'Emergency restart procedure for production services'
+      content: 'Emergency restart procedure for production services',
     }),
     generateCompleteItem('risk', {
-      content: 'Security risk: Potential SQL injection vulnerability in API'
+      content: 'Security risk: Potential SQL injection vulnerability in API',
     }),
     generateCompleteItem('change', {
-      content: 'Database schema migration to add user preferences table'
+      content: 'Database schema migration to add user preferences table',
     }),
     generateCompleteItem('release_note', {
-      content: 'Version 2.1.0: New authentication system and performance improvements'
-    })
+      content: 'Version 2.1.0: New authentication system and performance improvements',
+    }),
   ];
 }
 
@@ -513,5 +526,5 @@ export default {
   generateSearchTestData,
   getRandomKnowledgeType,
   generateRandomItem,
-  validateTestItem
+  validateTestItem,
 };

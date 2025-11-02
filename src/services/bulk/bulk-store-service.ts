@@ -154,11 +154,14 @@ export class BulkStoreService extends EventEmitter {
     const startTime = Date.now();
     const options = { ...this.defaultOptions, ...request.options };
 
-    logger.info({
-      requestId,
-      totalItems: request.items.length,
-      options,
-    }, 'Starting bulk store operation');
+    logger.info(
+      {
+        requestId,
+        totalItems: request.items.length,
+        options,
+      },
+      'Starting bulk store operation'
+    );
 
     this.emit('started', { requestId, totalItems: request.items.length });
 
@@ -177,11 +180,14 @@ export class BulkStoreService extends EventEmitter {
       // Process items in batches
       const batches = this.createBatches(processedItems, options.batchSize);
 
-      logger.info({
-        requestId,
-        totalBatches: batches.length,
-        averageBatchSize: Math.ceil(processedItems.length / batches.length),
-      }, 'Created processing batches');
+      logger.info(
+        {
+          requestId,
+          totalBatches: batches.length,
+          averageBatchSize: Math.ceil(processedItems.length / batches.length),
+        },
+        'Created processing batches'
+      );
 
       // Process batches with controlled concurrency
       await this.processBatches(
@@ -202,10 +208,10 @@ export class BulkStoreService extends EventEmitter {
         success: errors.length === 0 || !options.enableRetry,
         totalItems: request.items.length,
         processedItems: results.length,
-        successfulItems: results.filter(r => r.success).length,
-        failedItems: results.filter(r => !r.success).length,
-        skippedItems: results.filter(r => r.status === 'skipped_dedupe').length,
-        duplicateItems: results.filter(r => r.status === 'skipped_dedupe').length,
+        successfulItems: results.filter((r) => r.success).length,
+        failedItems: results.filter((r) => !r.success).length,
+        skippedItems: results.filter((r) => r.status === 'skipped_dedupe').length,
+        duplicateItems: results.filter((r) => r.status === 'skipped_dedupe').length,
         results,
         errors,
         metadata: {
@@ -213,9 +219,10 @@ export class BulkStoreService extends EventEmitter {
           startTime: new Date(startTime).toISOString(),
           endTime: new Date(endTime).toISOString(),
           totalProcessingTime,
-          averageProcessingTime: results.length > 0
-            ? results.reduce((sum, r) => sum + r.processingTime, 0) / results.length
-            : 0,
+          averageProcessingTime:
+            results.length > 0
+              ? results.reduce((sum, r) => sum + r.processingTime, 0) / results.length
+              : 0,
           throughput: request.items.length / (totalProcessingTime / 1000),
           memoryUsage: {
             peak: process.memoryUsage().heapUsed,
@@ -230,27 +237,32 @@ export class BulkStoreService extends EventEmitter {
       };
 
       // Log completion
-      logger.info({
-        ...bulkResult.metadata,
-        success: bulkResult.success,
-        successfulItems: bulkResult.successfulItems,
-        failedItems: bulkResult.failedItems,
-        skippedItems: bulkResult.skippedItems,
-      }, 'Bulk store operation completed');
+      logger.info(
+        {
+          ...bulkResult.metadata,
+          success: bulkResult.success,
+          successfulItems: bulkResult.successfulItems,
+          failedItems: bulkResult.failedItems,
+          skippedItems: bulkResult.skippedItems,
+        },
+        'Bulk store operation completed'
+      );
 
       this.emit('completed', bulkResult);
 
       return bulkResult;
-
     } catch (error) {
       const endTime = Date.now();
       const processingTime = endTime - startTime;
 
-      logger.error({
-        requestId,
-        error,
-        processingTime,
-      }, 'Bulk store operation failed');
+      logger.error(
+        {
+          requestId,
+          error,
+          processingTime,
+        },
+        'Bulk store operation failed'
+      );
 
       this.emit('failed', { requestId, error, processingTime });
 
@@ -425,11 +437,14 @@ export class BulkStoreService extends EventEmitter {
     const startTime = Date.now();
 
     try {
-      logger.debug({
-        requestId,
-        batchIndex,
-        batchSize: batch.length,
-      }, 'Processing batch');
+      logger.debug(
+        {
+          requestId,
+          batchIndex,
+          batchSize: batch.length,
+        },
+        'Processing batch'
+      );
 
       // Dry run mode - just validate without storing
       if (options?.dryRun) {
@@ -451,20 +466,22 @@ export class BulkStoreService extends EventEmitter {
       // Process batch through memory store
       const storeResult = await Promise.race([
         this.memoryStoreService.storeItems(batch, authContext),
-        this.createTimeoutPromise(options?.timeout || this.defaultOptions.timeout)
+        this.createTimeoutPromise(options?.timeout || this.defaultOptions.timeout),
       ]);
 
       // Convert store results to bulk store results
       this.convertStoreResults(storeResult, batchIndex * batch.length, results, errors);
 
-      logger.debug({
-        requestId,
-        batchIndex,
-        processingTime: Date.now() - startTime,
-        stored: storeResult.stored?.length || 0,
-        errors: storeResult.errors?.length || 0,
-      }, 'Batch processing completed');
-
+      logger.debug(
+        {
+          requestId,
+          batchIndex,
+          processingTime: Date.now() - startTime,
+          stored: storeResult.stored?.length || 0,
+          errors: storeResult.errors?.length || 0,
+        },
+        'Batch processing completed'
+      );
     } catch (error) {
       // Handle batch-level errors
       const processingTime = Date.now() - startTime;
@@ -495,12 +512,15 @@ export class BulkStoreService extends EventEmitter {
         results.push(itemResult);
       }
 
-      logger.error({
-        requestId,
-        batchIndex,
-        error,
-        processingTime,
-      }, 'Batch processing failed');
+      logger.error(
+        {
+          requestId,
+          batchIndex,
+          error,
+          processingTime,
+        },
+        'Batch processing failed'
+      );
 
       // Schedule retries if enabled
       if (options?.enableRetry && this.retryWorkerService) {
@@ -573,10 +593,10 @@ export class BulkStoreService extends EventEmitter {
    */
   private mapStoreStatus(storeStatus: string): BulkStoreItemResult['status'] {
     const statusMap: Record<string, BulkStoreItemResult['status']> = {
-      'inserted': 'stored',
-      'updated': 'updated',
-      'skipped_dedupe': 'skipped_dedupe',
-      'deleted': 'stored',
+      inserted: 'stored',
+      updated: 'updated',
+      skipped_dedupe: 'skipped_dedupe',
+      deleted: 'stored',
     };
 
     return statusMap[storeStatus] || 'failed';
@@ -606,10 +626,13 @@ export class BulkStoreService extends EventEmitter {
           },
         });
       } catch (retryError) {
-        logger.error({
-          itemId: item.id,
-          error: retryError,
-        }, 'Failed to schedule retry for item');
+        logger.error(
+          {
+            itemId: item.id,
+            error: retryError,
+          },
+          'Failed to schedule retry for item'
+        );
       }
     }
   }

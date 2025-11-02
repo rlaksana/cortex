@@ -510,7 +510,11 @@ export class DeduplicationService implements IDeduplicationService {
     }
 
     const upserted: KnowledgeItem[] = [];
-    const merged: Array<{ newItem: KnowledgeItem; existingItem: KnowledgeItem; similarity: number }> = [];
+    const merged: Array<{
+      newItem: KnowledgeItem;
+      existingItem: KnowledgeItem;
+      similarity: number;
+    }> = [];
     const created: KnowledgeItem[] = [];
 
     logger.info(
@@ -522,7 +526,10 @@ export class DeduplicationService implements IDeduplicationService {
       try {
         const analysis = await this.isDuplicate(item);
 
-        if (!analysis.isDuplicate || analysis.similarityScore < this.config.contentSimilarityThreshold) {
+        if (
+          !analysis.isDuplicate ||
+          analysis.similarityScore < this.config.contentSimilarityThreshold
+        ) {
           // Create new item if not a duplicate or below threshold
           created.push(item);
           continue;
@@ -561,7 +568,6 @@ export class DeduplicationService implements IDeduplicationService {
           },
           'Item merged with existing record'
         );
-
       } catch (error) {
         logger.error(
           { error, itemId: item.id, kind: item.kind },
@@ -598,7 +604,7 @@ export class DeduplicationService implements IDeduplicationService {
       const result = await qdrant.client.retrieve(tableName, {
         ids: [id],
         with_payload: true,
-        with_vector: false
+        with_vector: false,
       });
 
       if (result.length === 0) {

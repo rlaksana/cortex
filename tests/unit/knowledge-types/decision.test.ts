@@ -16,7 +16,7 @@ import { VectorDatabase } from '../../../src/index';
 import {
   DecisionSchema,
   validateKnowledgeItem,
-  violatesADRImmutability
+  violatesADRImmutability,
 } from '../../../src/schemas/knowledge-types';
 
 // Mock Qdrant client - reusing pattern from memory-store.test.ts
@@ -24,20 +24,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
@@ -55,28 +55,30 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
         kind: 'decision' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           id: '550e8400-e29b-41d4-a716-446655440000',
           component: 'authentication-system',
           status: 'accepted' as const,
           title: 'Use OAuth 2.0 for authentication',
-          rationale: 'OAuth 2.0 provides industry-standard security with token-based authentication and delegated access.',
+          rationale:
+            'OAuth 2.0 provides industry-standard security with token-based authentication and delegated access.',
           alternatives_considered: [
             'Basic Auth with API keys',
             'JWT-only implementation',
-            'Custom session management'
+            'Custom session management',
           ],
-          consequences: 'Requires additional infrastructure for token management but improves security posture.',
-          supersedes: '550e8400-e29b-41d4-a716-446655440001'
+          consequences:
+            'Requires additional infrastructure for token management but improves security posture.',
+          supersedes: '550e8400-e29b-41d4-a716-446655440001',
         },
         tags: { security: true, architecture: true },
         source: {
           actor: 'tech-lead',
           tool: 'adr-system',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -95,14 +97,14 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
         kind: 'decision' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           component: 'database-layer',
           status: 'proposed' as const,
           title: 'Choose primary database',
-          rationale: 'We need a database that supports our performance requirements.'
-        }
+          rationale: 'We need a database that supports our performance requirements.',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -124,8 +126,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             // Missing component
             status: 'accepted',
             title: 'Test decision',
-            rationale: 'Test rationale'
-          }
+            rationale: 'Test rationale',
+          },
         },
         {
           kind: 'decision' as const,
@@ -134,8 +136,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'test-component',
             // Missing status
             title: 'Test decision',
-            rationale: 'Test rationale'
-          }
+            rationale: 'Test rationale',
+          },
         },
         {
           kind: 'decision' as const,
@@ -144,8 +146,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'test-component',
             status: 'accepted',
             // Missing title
-            rationale: 'Test rationale'
-          }
+            rationale: 'Test rationale',
+          },
         },
         {
           kind: 'decision' as const,
@@ -153,10 +155,10 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           data: {
             component: 'test-component',
             status: 'accepted',
-            title: 'Test decision'
+            title: 'Test decision',
             // Missing rationale
-          }
-        }
+          },
+        },
       ];
 
       invalidDecisions.forEach((decision, index) => {
@@ -176,8 +178,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'invalid_status' as any, // Invalid status
           title: 'Test decision',
-          rationale: 'Test rationale'
-        }
+          rationale: 'Test rationale',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -195,8 +197,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'x'.repeat(201), // Exceeds 200 character limit
           status: 'proposed',
           title: 'Test decision',
-          rationale: 'Test rationale'
-        }
+          rationale: 'Test rationale',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -214,8 +216,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'proposed',
           title: 'x'.repeat(501), // Exceeds 500 character limit
-          rationale: 'Test rationale'
-        }
+          rationale: 'Test rationale',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -235,8 +237,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'proposed',
           title: 'Original title',
-          rationale: 'Original rationale'
-        }
+          rationale: 'Original rationale',
+        },
       };
 
       const incoming = {
@@ -246,8 +248,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'proposed',
           title: 'Updated title',
-          rationale: 'Updated rationale'
-        }
+          rationale: 'Updated rationale',
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existing, incoming);
@@ -264,8 +266,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           title: 'Use OAuth 2.0',
           rationale: 'OAuth 2.0 provides industry-standard security.',
           alternatives_considered: ['Basic Auth'],
-          consequences: 'Requires token management infrastructure.'
-        }
+          consequences: 'Requires token management infrastructure.',
+        },
       };
 
       const incoming = {
@@ -277,8 +279,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           title: 'Use OAuth 2.0 with Bearer tokens', // Title changed
           rationale: 'OAuth 2.0 provides industry-standard security.',
           alternatives_considered: ['Basic Auth'],
-          consequences: 'Requires token management infrastructure.'
-        }
+          consequences: 'Requires token management infrastructure.',
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existing, incoming);
@@ -293,8 +295,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'authentication-system',
           status: 'accepted',
           title: 'Use OAuth 2.0',
-          rationale: 'OAuth 2.0 provides industry-standard security.'
-        }
+          rationale: 'OAuth 2.0 provides industry-standard security.',
+        },
       };
 
       const incoming = {
@@ -305,8 +307,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           status: 'accepted',
           title: 'Use OAuth 2.0',
           rationale: 'OAuth 2.0 provides industry-standard security.',
-          supersedes: '550e8400-e29b-41d4-a716-446655440001' // New metadata
-        }
+          supersedes: '550e8400-e29b-41d4-a716-446655440001', // New metadata
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existing, incoming);
@@ -321,8 +323,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'accepted',
           title: 'Test Decision',
-          rationale: 'Original rationale for the decision.'
-        }
+          rationale: 'Original rationale for the decision.',
+        },
       };
 
       const incoming = {
@@ -332,8 +334,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'accepted',
           title: 'Test Decision',
-          rationale: 'Modified rationale - this should be blocked.' // Rationale changed
-        }
+          rationale: 'Modified rationale - this should be blocked.', // Rationale changed
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existing, incoming);
@@ -348,8 +350,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'auth-service',
           status: 'accepted',
           title: 'Test Decision',
-          rationale: 'Test rationale.'
-        }
+          rationale: 'Test rationale.',
+        },
       };
 
       const incoming = {
@@ -359,8 +361,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'user-service', // Component changed
           status: 'accepted',
           title: 'Test Decision',
-          rationale: 'Test rationale.'
-        }
+          rationale: 'Test rationale.',
+        },
       };
 
       const violatesImmutability = violatesADRImmutability(existing, incoming);
@@ -374,14 +376,14 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
         kind: 'decision' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           component: 'api-gateway',
           status: 'proposed',
           title: 'Implement rate limiting',
-          rationale: 'Rate limiting will prevent abuse and ensure fair usage.'
-        }
+          rationale: 'Rate limiting will prevent abuse and ensure fair usage.',
+        },
       };
 
       const result = await db.storeItems([decision]);
@@ -406,8 +408,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'database',
             status: 'proposed',
             title: 'Choose PostgreSQL',
-            rationale: 'PostgreSQL offers good performance and features.'
-          }
+            rationale: 'PostgreSQL offers good performance and features.',
+          },
         },
         {
           kind: 'decision' as const,
@@ -416,8 +418,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'cache-layer',
             status: 'accepted',
             title: 'Use Redis for caching',
-            rationale: 'Redis provides fast in-memory caching.'
-          }
+            rationale: 'Redis provides fast in-memory caching.',
+          },
         },
         {
           kind: 'decision' as const,
@@ -426,9 +428,9 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'ui-framework',
             status: 'rejected',
             title: 'React vs Angular',
-            rationale: 'Angular was rejected due to team expertise.'
-          }
-        }
+            rationale: 'Angular was rejected due to team expertise.',
+          },
+        },
       ];
 
       const result = await db.storeItems(decisions);
@@ -452,8 +454,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'valid-component',
             status: 'proposed',
             title: 'Valid Decision',
-            rationale: 'Valid rationale.'
-          }
+            rationale: 'Valid rationale.',
+          },
         },
         {
           kind: 'decision' as const,
@@ -462,8 +464,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             // Missing component
             status: 'proposed',
             title: 'Invalid Decision',
-            rationale: 'Invalid rationale.'
-          }
+            rationale: 'Invalid rationale.',
+          },
         },
         {
           kind: 'decision' as const,
@@ -472,9 +474,9 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             component: 'another-valid-component',
             status: 'accepted',
             title: 'Another Valid Decision',
-            rationale: 'Another valid rationale.'
-          }
-        }
+            rationale: 'Another valid rationale.',
+          },
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -497,10 +499,10 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
               component: 'authentication-system',
               status: 'accepted',
               title: 'Use OAuth 2.0 for authentication',
-              rationale: 'OAuth 2.0 provides industry-standard security.'
+              rationale: 'OAuth 2.0 provides industry-standard security.',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'decision-id-2',
@@ -511,11 +513,11 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
               component: 'database-layer',
               status: 'proposed',
               title: 'Choose primary database technology',
-              rationale: 'We need to evaluate database options for performance.'
+              rationale: 'We need to evaluate database options for performance.',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -544,7 +546,11 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
   describe('Decision Status Lifecycle', () => {
     it('should handle all valid decision statuses', async () => {
       const statuses: Array<'proposed' | 'accepted' | 'rejected' | 'deprecated' | 'superseded'> = [
-        'proposed', 'accepted', 'rejected', 'deprecated', 'superseded'
+        'proposed',
+        'accepted',
+        'rejected',
+        'deprecated',
+        'superseded',
       ];
 
       const decisions = statuses.map((status, index) => ({
@@ -554,13 +560,11 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: `component-${index}`,
           status,
           title: `Decision with status ${status}`,
-          rationale: `Rationale for ${status} decision.`
-        }
+          rationale: `Rationale for ${status} decision.`,
+        },
       }));
 
-      const results = await Promise.all(
-        decisions.map(decision => db.storeItems([decision]))
-      );
+      const results = await Promise.all(decisions.map((decision) => db.storeItems([decision])));
 
       results.forEach((result, index) => {
         expect(result.stored).toHaveLength(1);
@@ -579,8 +583,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           status: 'accepted',
           title: 'Test Decision',
           rationale: 'Test rationale.',
-          supersedes: 'invalid-uuid-format' // Invalid UUID
-        }
+          supersedes: 'invalid-uuid-format', // Invalid UUID
+        },
       };
 
       const result = DecisionSchema.safeParse(decisionWithInvalidSupersedes);
@@ -599,8 +603,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           status: 'accepted',
           title: 'Test Decision',
           rationale: 'Test rationale.',
-          supersedes: '550e8400-e29b-41d4-a716-446655440000' // Valid UUID
-        }
+          supersedes: '550e8400-e29b-41d4-a716-446655440000', // Valid UUID
+        },
       };
 
       const result = DecisionSchema.safeParse(decisionWithValidSupersedes);
@@ -617,26 +621,23 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
         kind: 'decision' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           component: 'microservices-architecture',
           status: 'accepted',
           title: 'Adopt microservices architecture',
           rationale: 'Microservices will improve scalability and maintainability.',
-          alternatives_considered: [
-            'Monolithic architecture',
-            'Modular monolith'
-          ],
-          consequences: 'Increased operational complexity but better team autonomy.'
+          alternatives_considered: ['Monolithic architecture', 'Modular monolith'],
+          consequences: 'Increased operational complexity but better team autonomy.',
         },
         tags: { architecture: true, scale: true },
         source: {
           actor: 'principal-architect',
           tool: 'adr-workflow',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'permanent' as const
+        ttl_policy: 'permanent' as const,
       };
 
       const result = validateKnowledgeItem(decision);
@@ -661,10 +662,10 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
             'Stripe - Excellent API and documentation, but higher fees',
             'PayPal - Widely recognized but limited API capabilities',
             'Braintree - Good features but complex integration',
-            'Build custom solution - Maximum control but high maintenance overhead'
+            'Build custom solution - Maximum control but high maintenance overhead',
           ],
-          consequences: '2.9% + 30¢ per transaction, but reduces development time by 3 months.'
-        }
+          consequences: '2.9% + 30¢ per transaction, but reduces development time by 3 months.',
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);
@@ -685,8 +686,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'test-component',
           status: 'proposed',
           title: 'Test Decision',
-          rationale: 'Test rationale.'
-        }
+          rationale: 'Test rationale.',
+        },
       };
 
       // Mock upsert to throw an error
@@ -707,12 +708,13 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           component: 'api-security',
           status: 'accepted',
           title: 'Implement JWT with RS256 (asymmetric keys) & refresh tokens',
-          rationale: 'RS256 provides better security than HS256 for distributed systems. Refresh tokens improve UX by allowing long-lived sessions.',
+          rationale:
+            'RS256 provides better security than HS256 for distributed systems. Refresh tokens improve UX by allowing long-lived sessions.',
           alternatives_considered: [
             'HS256 (symmetric) - simpler key management but less secure',
-            'Session-based authentication - server-side state, less scalable'
-          ]
-        }
+            'Session-based authentication - server-side state, less scalable',
+          ],
+        },
       };
 
       const result = await db.storeItems([decision]);
@@ -731,8 +733,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
           status: 'accepted',
           title: 'Simple Decision',
           rationale: 'Simple rationale.',
-          alternatives_considered: [] // Empty array is valid
-        }
+          alternatives_considered: [], // Empty array is valid
+        },
       };
 
       const result = DecisionSchema.safeParse(decision);

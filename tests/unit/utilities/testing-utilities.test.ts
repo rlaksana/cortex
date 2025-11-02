@@ -26,7 +26,7 @@ import type {
   TestAssertion,
   TestMock,
   TestStub,
- TestFixture,
+  TestFixture,
   TestEnvironment,
   TestReport,
   TestCoverage,
@@ -57,7 +57,7 @@ import type {
   TestEnvironmentManager,
   TestDependencyManager,
   TestMetricsCollector,
-  TestAnalyticsEngine
+  TestAnalyticsEngine,
 } from '../../../src/types/testing-interfaces';
 
 // Mock testing utilities for testing
@@ -73,7 +73,7 @@ class MockTestingUtilities {
         age: Math.floor(Math.random() * 50) + 18,
         isActive: Math.random() > 0.5,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }),
       product: () => ({
         id: `product-${Math.random().toString(36).substr(2, 9)}`,
@@ -83,7 +83,7 @@ class MockTestingUtilities {
         category: ['Electronics', 'Clothing', 'Books', 'Home'][Math.floor(Math.random() * 4)],
         inStock: Math.random() > 0.3,
         quantity: Math.floor(Math.random() * 100),
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       }),
       order: () => ({
         id: `order-${Math.random().toString(36).substr(2, 9)}`,
@@ -91,12 +91,12 @@ class MockTestingUtilities {
         items: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, i) => ({
           productId: `product-${Math.random().toString(36).substr(2, 9)}`,
           quantity: Math.floor(Math.random() * 3) + 1,
-          price: parseFloat((Math.random() * 100).toFixed(2))
+          price: parseFloat((Math.random() * 100).toFixed(2)),
         })),
         totalAmount: parseFloat((Math.random() * 500).toFixed(2)),
         status: ['pending', 'processing', 'shipped', 'delivered'][Math.floor(Math.random() * 4)],
-        orderDate: new Date().toISOString()
-      })
+        orderDate: new Date().toISOString(),
+      }),
     };
 
     const generator = generators[type];
@@ -107,7 +107,10 @@ class MockTestingUtilities {
     return Array.from({ length: count }, () => generator());
   }
 
-  static createTestEnvironment(name: string, config: Partial<TestEnvironment> = {}): TestEnvironment {
+  static createTestEnvironment(
+    name: string,
+    config: Partial<TestEnvironment> = {}
+  ): TestEnvironment {
     return {
       name,
       type: 'integration',
@@ -120,11 +123,11 @@ class MockTestingUtilities {
         timeout: 30000,
         retries: 3,
         parallel: true,
-        ...config
+        ...config,
       },
       variables: new Map(),
       services: new Map(),
-      state: 'clean'
+      state: 'clean',
     };
   }
 
@@ -135,12 +138,15 @@ class MockTestingUtilities {
     return mockFn;
   }
 
-  static createTestAssertion<T>(name: string, validator: (actual: T, expected: T) => boolean): TestAssertion<T> {
+  static createTestAssertion<T>(
+    name: string,
+    validator: (actual: T, expected: T) => boolean
+  ): TestAssertion<T> {
     return {
       name,
       validate: validator,
       message: (actual, expected) => `Assertion ${name} failed`,
-      negatedMessage: (actual, expected) => `Assertion ${name} passed (but was negated)`
+      negatedMessage: (actual, expected) => `Assertion ${name} passed (but was negated)`,
     };
   }
 
@@ -151,19 +157,19 @@ class MockTestingUtilities {
       config: {
         timeout: 30000,
         retries: 1,
-        parallel: false
+        parallel: false,
       },
       hooks: {
         beforeAll: vi.fn(),
         afterAll: vi.fn(),
         beforeEach: vi.fn(),
-        afterEach: vi.fn()
+        afterEach: vi.fn(),
       },
       metadata: {
         description: `Test suite: ${name}`,
         tags: ['unit', 'utilities'],
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
   }
 }
@@ -186,7 +192,7 @@ describe('Testing Utilities', () => {
       seedData: vi.fn(),
       cleanupData: vi.fn(),
       getDataFactory: vi.fn(),
-      registerGenerator: vi.fn()
+      registerGenerator: vi.fn(),
     };
 
     mockAssertionHelper = {
@@ -198,7 +204,7 @@ describe('Testing Utilities', () => {
       assertMatches: vi.fn(),
       assertContains: vi.fn(),
       assertInstanceOf: vi.fn(),
-      createCustomAssertion: vi.fn()
+      createCustomAssertion: vi.fn(),
     };
 
     mockMockFactory = {
@@ -209,7 +215,7 @@ describe('Testing Utilities', () => {
       registerMock: vi.fn(),
       getMock: vi.fn(),
       resetMocks: vi.fn(),
-      restoreMocks: vi.fn()
+      restoreMocks: vi.fn(),
     };
 
     mockTestReporter = {
@@ -220,7 +226,7 @@ describe('Testing Utilities', () => {
       reportCoverage: vi.fn(),
       reportPerformance: vi.fn(),
       generateReport: vi.fn(),
-      exportReport: vi.fn()
+      exportReport: vi.fn(),
     };
 
     mockTestOrchestrator = {
@@ -230,7 +236,7 @@ describe('Testing Utilities', () => {
       scheduleTest: vi.fn(),
       cancelTest: vi.fn(),
       getExecutionPlan: vi.fn(),
-      getProgress: vi.fn()
+      getProgress: vi.fn(),
     };
   });
 
@@ -246,7 +252,7 @@ describe('Testing Utilities', () => {
       const users = MockTestingUtilities.generateTestData('user', 5);
 
       expect(users).toHaveLength(5);
-      users.forEach(user => {
+      users.forEach((user) => {
         expect(user).toHaveProperty('id');
         expect(user).toHaveProperty('username');
         expect(user).toHaveProperty('email');
@@ -273,21 +279,21 @@ describe('Testing Utilities', () => {
       const products = MockTestingUtilities.generateTestData('product', 3);
 
       // Create orders that reference existing users and products
-      const orders = users.map(user => ({
+      const orders = users.map((user) => ({
         ...MockTestingUtilities.generateTestData('order', 1)[0],
         userId: user.id,
-        items: products.slice(0, 2).map(product => ({
+        items: products.slice(0, 2).map((product) => ({
           productId: product.id,
           quantity: Math.floor(Math.random() * 3) + 1,
-          price: product.price
-        }))
+          price: product.price,
+        })),
       }));
 
       expect(orders).toHaveLength(2);
-      orders.forEach(order => {
-        expect(users.some(u => u.id === order.userId)).toBe(true);
-        order.items.forEach(item => {
-          expect(products.some(p => p.id === item.productId)).toBe(true);
+      orders.forEach((order) => {
+        expect(users.some((u) => u.id === order.userId)).toBe(true);
+        order.items.forEach((item) => {
+          expect(products.some((p) => p.id === item.productId)).toBe(true);
         });
       });
     });
@@ -296,7 +302,7 @@ describe('Testing Utilities', () => {
       const mockDatabase = {
         insert: vi.fn().mockResolvedValue({ id: 'mock-id' }),
         find: vi.fn().mockResolvedValue([]),
-        clear: vi.fn().mockResolvedValue({ deletedCount: 0 })
+        clear: vi.fn().mockResolvedValue({ deletedCount: 0 }),
       };
 
       const testDataSeeder: TestDataSeeder = {
@@ -307,7 +313,9 @@ describe('Testing Utilities', () => {
           }
           return data;
         },
-        seedRelated: async (relations: Array<{ type: string; count: number; dependencies?: any[] }>) => {
+        seedRelated: async (
+          relations: Array<{ type: string; count: number; dependencies?: any[] }>
+        ) => {
           const results = new Map();
           for (const relation of relations) {
             const data = MockTestingUtilities.generateTestData(relation.type, relation.count);
@@ -327,14 +335,14 @@ describe('Testing Utilities', () => {
             await mockDatabase.insert('test', item);
           }
           return data;
-        }
+        },
       };
 
       const users = await testDataSeeder.seed('user', 10);
       const relatedData = await testDataSeeder.seedRelated([
         { type: 'user', count: 5 },
         { type: 'product', count: 8 },
-        { type: 'order', count: 3 }
+        { type: 'order', count: 3 },
       ]);
 
       expect(users).toHaveLength(10);
@@ -354,37 +362,39 @@ describe('Testing Utilities', () => {
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          ...overrides
+          ...overrides,
         }),
         createMany: (count: number, overrides = {}) =>
           Array.from({ length: count }, () => userFactory.create(overrides)),
         withDefaults: (defaults: any) => ({
           create: (overrides = {}) => userFactory.create({ ...defaults, ...overrides }),
           createMany: (count: number, overrides = {}) =>
-            Array.from({ length: count }, () => userFactory.create({ ...defaults, ...overrides }))
-        })
+            Array.from({ length: count }, () => userFactory.create({ ...defaults, ...overrides })),
+        }),
       };
 
       const adminUser = userFactory.create({
         firstName: 'Admin',
         lastName: 'User',
         role: 'admin',
-        permissions: ['read', 'write', 'delete']
+        permissions: ['read', 'write', 'delete'],
       });
 
-      const testUsers = userFactory.withDefaults({
-        isActive: true,
-        role: 'test'
-      }).createMany(3, {
-        firstName: 'Test',
-        lastName: 'User'
-      });
+      const testUsers = userFactory
+        .withDefaults({
+          isActive: true,
+          role: 'test',
+        })
+        .createMany(3, {
+          firstName: 'Test',
+          lastName: 'User',
+        });
 
       expect(adminUser.role).toBe('admin');
       expect(adminUser.permissions).toContain('delete');
       expect(testUsers).toHaveLength(3);
-      expect(testUsers.every(u => u.isActive && u.role === 'test')).toBe(true);
-      expect(testUsers.every(u => u.firstName === 'Test' && u.lastName === 'User')).toBe(true);
+      expect(testUsers.every((u) => u.isActive && u.role === 'test')).toBe(true);
+      expect(testUsers.every((u) => u.firstName === 'Test' && u.lastName === 'User')).toBe(true);
     });
 
     it('should implement test environment isolation', async () => {
@@ -416,12 +426,12 @@ describe('Testing Utilities', () => {
           for (const env of environments) {
             await environmentManager.teardownEnvironment(env);
           }
-        }
+        },
       };
 
       const testEnv = environmentManager.createEnvironment('test-env', {
         type: 'unit',
-        isolation: 'container'
+        isolation: 'container',
       });
 
       expect(testEnv.state).toBe('clean');
@@ -461,26 +471,33 @@ describe('Testing Utilities', () => {
           const passes = assertion.validate(actual, expected);
           return {
             passes,
-            message: passes ? undefined : assertion.message(actual, expected)
+            message: passes ? undefined : assertion.message(actual, expected),
           };
-        }
+        },
       };
 
       // Register custom assertions
-      assertionRegistry.register('isValidEmail', MockTestingUtilities.createTestAssertion(
+      assertionRegistry.register(
         'isValidEmail',
-        (actual) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(actual)
-      ));
+        MockTestingUtilities.createTestAssertion('isValidEmail', (actual) =>
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(actual)
+        )
+      );
 
-      assertionRegistry.register('isInRange', MockTestingUtilities.createTestAssertion(
+      assertionRegistry.register(
         'isInRange',
-        (actual, expected) => actual >= expected.min && actual <= expected.max
-      ));
+        MockTestingUtilities.createTestAssertion(
+          'isInRange',
+          (actual, expected) => actual >= expected.min && actual <= expected.max
+        )
+      );
 
-      assertionRegistry.register('hasValidStructure', MockTestingUtilities.createTestAssertion(
+      assertionRegistry.register(
         'hasValidStructure',
-        (actual, expected) => expected.every((prop: string) => prop in actual)
-      ));
+        MockTestingUtilities.createTestAssertion('hasValidStructure', (actual, expected) =>
+          expected.every((prop: string) => prop in actual)
+        )
+      );
 
       // Test assertions
       const emailResult = assertionRegistry.execute('isValidEmail', 'test@example.com', null);
@@ -489,7 +506,8 @@ describe('Testing Utilities', () => {
       const rangeResult = assertionRegistry.execute('isInRange', 25, { min: 18, max: 65 });
       expect(rangeResult.passes).toBe(true);
 
-      const structureResult = assertionRegistry.execute('hasValidStructure',
+      const structureResult = assertionRegistry.execute(
+        'hasValidStructure',
         { id: 1, name: 'test', email: 'test@example.com' },
         ['id', 'name', 'email']
       );
@@ -509,10 +527,11 @@ describe('Testing Utilities', () => {
             typeof user.username === 'string' &&
             typeof user.email === 'string' &&
             typeof user.age === 'number' &&
-            user.age >= 18 && user.age <= 120 &&
+            user.age >= 18 &&
+            user.age <= 120 &&
             (Array.isArray(user.roles) || true) && // roles is optional
             typeof user.isActive === 'boolean',
-          errors: []
+          errors: [],
         }),
 
         validateProductCatalog: (catalog: any) => {
@@ -538,7 +557,7 @@ describe('Testing Utilities', () => {
 
           return {
             isValid: errors.length === 0,
-            errors
+            errors,
           };
         },
 
@@ -547,15 +566,15 @@ describe('Testing Utilities', () => {
             hasStatus: typeof response.status === 'number',
             hasData: 'data' in response,
             hasMeta: typeof response.meta === 'object' && response.meta !== null,
-            hasTimestamp: typeof response.timestamp === 'string'
+            hasTimestamp: typeof response.timestamp === 'string',
           };
 
           return {
             isValid: Object.values(structure).every(Boolean),
             structure,
-            details: response
+            details: response,
           };
-        }
+        },
       };
 
       const validUser = MockTestingUtilities.generateTestData('user', 1)[0];
@@ -565,7 +584,7 @@ describe('Testing Utilities', () => {
       const validCatalog = {
         products: MockTestingUtilities.generateTestData('product', 3),
         totalCount: 3,
-        categories: ['Electronics', 'Clothing']
+        categories: ['Electronics', 'Clothing'],
       };
       const catalogValidation = complexDataValidator.validateProductCatalog(validCatalog);
       expect(catalogValidation.isValid).toBe(true);
@@ -574,7 +593,7 @@ describe('Testing Utilities', () => {
         status: 200,
         data: validUser,
         meta: { page: 1, total: 100 },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       const responseValidation = complexDataValidator.validateApiResponse(apiResponse);
       expect(responseValidation.isValid).toBe(true);
@@ -593,7 +612,7 @@ describe('Testing Utilities', () => {
             passes: duration <= maxTime,
             actualTime: duration,
             maxTime,
-            result
+            result,
           };
         },
 
@@ -608,11 +627,14 @@ describe('Testing Utilities', () => {
             actualMemory: memoryUsed,
             maxMemory: maxMemoryMB,
             initialMemory,
-            finalMemory
+            finalMemory,
           };
         },
 
-        assertThroughput: async (operations: Array<() => Promise<any>>, minOpsPerSecond: number) => {
+        assertThroughput: async (
+          operations: Array<() => Promise<any>>,
+          minOpsPerSecond: number
+        ) => {
           const startTime = performance.now();
           await Promise.all(operations);
           const duration = performance.now() / 1000; // Convert to seconds
@@ -623,15 +645,15 @@ describe('Testing Utilities', () => {
             actualThroughput: throughput,
             minThroughput: minOpsPerSecond,
             operations: operations.length,
-            duration
+            duration,
           };
-        }
+        },
       };
 
       // Test execution time assertion
       const timeResult = await performanceAssertions.assertExecutionTime(
         async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return 'completed';
         },
         50 // max 50ms
@@ -642,7 +664,10 @@ describe('Testing Utilities', () => {
       // Test memory usage assertion
       const memoryResult = performanceAssertions.assertMemoryUsage(
         () => {
-          const largeArray = Array.from({ length: 10000 }, (_, i) => ({ id: i, data: 'x'.repeat(100) }));
+          const largeArray = Array.from({ length: 10000 }, (_, i) => ({
+            id: i,
+            data: 'x'.repeat(100),
+          }));
           return largeArray.length;
         },
         10 // max 10MB
@@ -650,12 +675,10 @@ describe('Testing Utilities', () => {
       expect(memoryResult.passes).toBe(true);
 
       // Test throughput assertion
-      const operations = Array.from({ length: 10 }, () =>
-        async () => {
-          await new Promise(resolve => setTimeout(resolve, 1));
-          return 'done';
-        }
-      );
+      const operations = Array.from({ length: 10 }, () => async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        return 'done';
+      });
       const throughputResult = await performanceAssertions.assertThroughput(operations, 10); // Lower threshold
       expect(throughputResult.passes).toBe(true);
     });
@@ -687,13 +710,13 @@ describe('Testing Utilities', () => {
 
             visiting.add(testId);
             const deps = dependencyManager.dependencies.get(testId) || [];
-            deps.forEach(dep => visit(dep));
+            deps.forEach((dep) => visit(dep));
             visiting.delete(testId);
             visited.add(testId);
             order.push(testId);
           };
 
-          tests.forEach(test => {
+          tests.forEach((test) => {
             if (!visited.has(test)) {
               visit(test);
             }
@@ -709,7 +732,7 @@ describe('Testing Utilities', () => {
           } catch (error) {
             return error.message.includes('Circular dependency');
           }
-        }
+        },
       };
 
       const testExecutor: TestExecutor = {
@@ -723,7 +746,7 @@ describe('Testing Utilities', () => {
               status: 'passed',
               duration,
               result,
-              error: null
+              error: null,
             };
           } catch (error) {
             const duration = performance.now() - startTime;
@@ -732,12 +755,16 @@ describe('Testing Utilities', () => {
               status: 'failed',
               duration,
               result: null,
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             };
           }
         },
 
-        executeWithRetry: async (testId: string, testFn: () => Promise<any>, maxRetries: number) => {
+        executeWithRetry: async (
+          testId: string,
+          testFn: () => Promise<any>,
+          maxRetries: number
+        ) => {
           let lastError: Error | null = null;
 
           for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -746,7 +773,7 @@ describe('Testing Utilities', () => {
             } catch (error) {
               lastError = error instanceof Error ? error : new Error(String(error));
               if (attempt < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
+                await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
               }
             }
           }
@@ -756,9 +783,9 @@ describe('Testing Utilities', () => {
             status: 'failed',
             duration: 0,
             result: null,
-            error: lastError
+            error: lastError,
           };
-        }
+        },
       };
 
       // Set up test dependencies
@@ -770,15 +797,36 @@ describe('Testing Utilities', () => {
 
       // Get execution order
       const executionOrder = dependencyManager.getExecutionOrder(tests);
-      expect(executionOrder).toEqual(['setup', 'user-tests', 'product-tests', 'integration-tests', 'cleanup']);
+      expect(executionOrder).toEqual([
+        'setup',
+        'user-tests',
+        'product-tests',
+        'integration-tests',
+        'cleanup',
+      ]);
 
       // Execute tests
       const testFunctions = {
-        'setup': async () => { await new Promise(resolve => setTimeout(resolve, 10)); return 'setup done'; },
-        'user-tests': async () => { await new Promise(resolve => setTimeout(resolve, 15)); return 'user tests passed'; },
-        'product-tests': async () => { await new Promise(resolve => setTimeout(resolve, 12)); return 'product tests passed'; },
-        'integration-tests': async () => { await new Promise(resolve => setTimeout(resolve, 20)); return 'integration tests passed'; },
-        'cleanup': async () => { await new Promise(resolve => setTimeout(resolve, 5)); return 'cleanup done'; }
+        setup: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          return 'setup done';
+        },
+        'user-tests': async () => {
+          await new Promise((resolve) => setTimeout(resolve, 15));
+          return 'user tests passed';
+        },
+        'product-tests': async () => {
+          await new Promise((resolve) => setTimeout(resolve, 12));
+          return 'product tests passed';
+        },
+        'integration-tests': async () => {
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          return 'integration tests passed';
+        },
+        cleanup: async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          return 'cleanup done';
+        },
       };
 
       const results = [];
@@ -788,16 +836,22 @@ describe('Testing Utilities', () => {
       }
 
       expect(results).toHaveLength(5);
-      expect(results.every(r => r.status === 'passed')).toBe(true);
-      expect(results.map(r => r.result)).toEqual([
-        'setup done', 'user tests passed', 'product tests passed',
-        'integration tests passed', 'cleanup done'
+      expect(results.every((r) => r.status === 'passed')).toBe(true);
+      expect(results.map((r) => r.result)).toEqual([
+        'setup done',
+        'user tests passed',
+        'product tests passed',
+        'integration tests passed',
+        'cleanup done',
       ]);
     });
 
     it('should execute tests in parallel with proper isolation', async () => {
       const parallelExecutor = {
-        executeParallel: async (tests: Array<{ id: string; fn: () => Promise<any> }>, maxConcurrency: number = 4) => {
+        executeParallel: async (
+          tests: Array<{ id: string; fn: () => Promise<any> }>,
+          maxConcurrency: number = 4
+        ) => {
           const results: any[] = [];
           const executing: Promise<any>[] = [];
 
@@ -807,7 +861,7 @@ describe('Testing Utilities', () => {
               const isolatedContext = {
                 id: test.id,
                 startTime: performance.now(),
-                memory: process.memoryUsage().heapUsed
+                memory: process.memoryUsage().heapUsed,
               };
 
               try {
@@ -817,7 +871,7 @@ describe('Testing Utilities', () => {
                   status: 'passed',
                   result,
                   endTime: performance.now(),
-                  duration: performance.now() - isolatedContext.startTime
+                  duration: performance.now() - isolatedContext.startTime,
                 };
               } catch (error) {
                 return {
@@ -825,7 +879,7 @@ describe('Testing Utilities', () => {
                   status: 'failed',
                   error: error instanceof Error ? error : new Error(String(error)),
                   endTime: performance.now(),
-                  duration: performance.now() - isolatedContext.startTime
+                  duration: performance.now() - isolatedContext.startTime,
                 };
               }
             };
@@ -836,7 +890,10 @@ describe('Testing Utilities', () => {
             if (executing.length >= maxConcurrency) {
               const completed = await Promise.race(executing);
               results.push(completed);
-              executing.splice(executing.findIndex(p => p === completed), 1);
+              executing.splice(
+                executing.findIndex((p) => p === completed),
+                1
+              );
             }
           }
 
@@ -845,15 +902,15 @@ describe('Testing Utilities', () => {
           results.push(...remainingResults);
 
           return results;
-        }
+        },
       };
 
       const parallelTests = Array.from({ length: 8 }, (_, i) => ({
         id: `test-${i}`,
         fn: async () => {
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
           return `result-${i}`;
-        }
+        },
       }));
 
       const startTime = performance.now();
@@ -861,7 +918,7 @@ describe('Testing Utilities', () => {
       const totalTime = performance.now() - startTime;
 
       expect(results).toHaveLength(8);
-      expect(results.every(r => r.status === 'passed')).toBe(true);
+      expect(results.every((r) => r.status === 'passed')).toBe(true);
       expect(totalTime).toBeLessThan(200); // Should be faster than sequential execution
     });
 
@@ -887,7 +944,7 @@ describe('Testing Utilities', () => {
             } catch (error) {
               results.push({
                 status: 'failed',
-                error: error instanceof Error ? error : new Error(String(error))
+                error: error instanceof Error ? error : new Error(String(error)),
               });
             }
           }
@@ -905,28 +962,28 @@ describe('Testing Utilities', () => {
           }
 
           return allResults;
-        }
+        },
       };
 
       const testWithCleanup = async (testId: string) => {
         // Register cleanup tasks
         cleanupManager.registerCleanupTask(testId, async () => {
-          await new Promise(resolve => setTimeout(resolve, 5));
+          await new Promise((resolve) => setTimeout(resolve, 5));
           console.log(`Cleaned up database for ${testId}`);
         });
 
         cleanupManager.registerCleanupTask(testId, async () => {
-          await new Promise(resolve => setTimeout(resolve, 3));
+          await new Promise((resolve) => setTimeout(resolve, 3));
           console.log(`Cleaned up files for ${testId}`);
         });
 
         cleanupManager.registerCleanupTask(testId, async () => {
-          await new Promise(resolve => setTimeout(resolve, 2));
+          await new Promise((resolve) => setTimeout(resolve, 2));
           console.log(`Reset mocks for ${testId}`);
         });
 
         // Simulate test execution
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return `Test ${testId} completed`;
       };
 
@@ -948,7 +1005,7 @@ describe('Testing Utilities', () => {
       for (const [testId, results] of cleanupResults) {
         expect(testIds).toContain(testId);
         expect(results).toHaveLength(3);
-        expect(results.every(r => r.status === 'success')).toBe(true);
+        expect(results.every((r) => r.status === 'success')).toBe(true);
       }
     });
   });
@@ -982,14 +1039,14 @@ describe('Testing Utilities', () => {
             return {
               expectedCalls: mock?.expectations.length || 0,
               actualCalls: mock?.calls.length || 0,
-              satisfied: (mock?.expectations.length || 0) === (mock?.calls.length || 0)
+              satisfied: (mock?.expectations.length || 0) === (mock?.calls.length || 0),
             };
-          }
+          },
         }),
 
         resetAll: () => {
           mockRegistry.mocks.clear();
-        }
+        },
       };
 
       // Create a mock service
@@ -1000,12 +1057,12 @@ describe('Testing Utilities', () => {
           getUserById: vi.fn().mockImplementation((id: string) => ({
             id,
             username: `user-${id}`,
-            email: `user-${id}@example.com`
+            email: `user-${id}@example.com`,
           })),
           createUser: vi.fn().mockResolvedValue({ id: 'new-user-id' }),
           updateUser: vi.fn(),
-          deleteUser: vi.fn()
-        }
+          deleteUser: vi.fn(),
+        },
       });
 
       mockRegistry.registerMock('userService', userServiceMock);
@@ -1017,7 +1074,7 @@ describe('Testing Utilities', () => {
       expect(user).toEqual({
         id: '123',
         username: 'user-123',
-        email: 'user-123@example.com'
+        email: 'user-123@example.com',
       });
 
       expect(userService?.implementation.getUserById).toHaveBeenCalledWith('123');
@@ -1048,7 +1105,7 @@ describe('Testing Utilities', () => {
             getImplementation: () => {
               const implementation: any = {};
 
-              Object.keys(stub).forEach(key => {
+              Object.keys(stub).forEach((key) => {
                 if (typeof stub[key] === 'function') {
                   implementation[key] = (...args: any[]) => {
                     if (behavior.has(key)) {
@@ -1062,9 +1119,9 @@ describe('Testing Utilities', () => {
               });
 
               return implementation;
-            }
+            },
           };
-        }
+        },
       };
 
       const databaseStubTemplate = {
@@ -1073,16 +1130,19 @@ describe('Testing Utilities', () => {
         create: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
-        query: vi.fn()
+        query: vi.fn(),
       };
 
       const databaseStub = stubFactory.createStub(databaseStubTemplate);
 
       // Configure stub behavior
-      databaseStub.setBehavior('find', Promise.resolve([
-        { id: 1, name: 'Item 1' },
-        { id: 2, name: 'Item 2' }
-      ]));
+      databaseStub.setBehavior(
+        'find',
+        Promise.resolve([
+          { id: 1, name: 'Item 1' },
+          { id: 2, name: 'Item 2' },
+        ])
+      );
 
       databaseStub.setAsyncBehavior('findById', { id: 1, name: 'Item 1' });
 
@@ -1111,7 +1171,7 @@ describe('Testing Utilities', () => {
             url,
             response,
             status: 200,
-            headers: { 'content-type': 'application/json' }
+            headers: { 'content-type': 'application/json' },
           });
         },
 
@@ -1122,7 +1182,7 @@ describe('Testing Utilities', () => {
             url,
             error,
             status,
-            headers: { 'content-type': 'application/json' }
+            headers: { 'content-type': 'application/json' },
           });
         },
 
@@ -1143,26 +1203,26 @@ describe('Testing Utilities', () => {
           return {
             status: mock.status,
             headers: mock.headers,
-            data: mock.response
+            data: mock.response,
           };
         },
 
         clearMocks: () => {
           httpMocker.mocks.clear();
-        }
+        },
       };
 
       // Set up HTTP mocks
       httpMocker.mockRequest('GET', '/api/users', [
         { id: 1, name: 'John Doe', email: 'john@example.com' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
       ]);
 
       httpMocker.mockRequest('POST', '/api/users', {
         id: 3,
         name: 'New User',
         email: 'newuser@example.com',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
 
       httpMocker.mockErrorResponse('DELETE', '/api/users/1', 404, 'User not found');
@@ -1174,13 +1234,14 @@ describe('Testing Utilities', () => {
 
       const createResponse = await httpMocker.simulateRequest('POST', '/api/users', {
         name: 'New User',
-        email: 'newuser@example.com'
+        email: 'newuser@example.com',
       });
       expect(createResponse.status).toBe(200);
       expect(createResponse.data.id).toBe(3);
 
-      await expect(httpMocker.simulateRequest('DELETE', '/api/users/1'))
-        .rejects.toThrow('User not found');
+      await expect(httpMocker.simulateRequest('DELETE', '/api/users/1')).rejects.toThrow(
+        'User not found'
+      );
     });
 
     it('should support database mocking helpers', async () => {
@@ -1218,7 +1279,11 @@ describe('Testing Utilities', () => {
             const records = databaseMocker.data.get(table) || [];
             const index = records.findIndex((record: any) => record.id === id);
             if (index !== -1) {
-              records[index] = { ...records[index], ...updates, updatedAt: new Date().toISOString() };
+              records[index] = {
+                ...records[index],
+                ...updates,
+                updatedAt: new Date().toISOString(),
+              };
               return records[index];
             }
             return null;
@@ -1239,8 +1304,8 @@ describe('Testing Utilities', () => {
             } else {
               databaseMocker.data.clear();
             }
-          }
-        })
+          },
+        }),
       };
 
       const mockDb = databaseMocker.createMockDatabase({
@@ -1248,8 +1313,8 @@ describe('Testing Utilities', () => {
           id: 'number',
           name: 'string',
           email: 'string',
-          createdAt: 'string'
-        }
+          createdAt: 'string',
+        },
       });
 
       // Test database operations
@@ -1289,9 +1354,9 @@ describe('Testing Utilities', () => {
 
         generateReport: () => {
           const totalTests = testReporter.results.length;
-          const passedTests = testReporter.results.filter(r => r.status === 'passed').length;
-          const failedTests = testReporter.results.filter(r => r.status === 'failed').length;
-          const skippedTests = testReporter.results.filter(r => r.status === 'skipped').length;
+          const passedTests = testReporter.results.filter((r) => r.status === 'passed').length;
+          const failedTests = testReporter.results.filter((r) => r.status === 'failed').length;
+          const skippedTests = testReporter.results.filter((r) => r.status === 'skipped').length;
           const totalDuration = testReporter.results.reduce((sum, r) => sum + (r.duration || 0), 0);
 
           return {
@@ -1301,20 +1366,20 @@ describe('Testing Utilities', () => {
               failed: failedTests,
               skipped: skippedTests,
               successRate: totalTests > 0 ? (passedTests / totalTests) * 100 : 0,
-              totalDuration
+              totalDuration,
             },
             details: {
               tests: testReporter.results,
-              failures: testReporter.results.filter(r => r.status === 'failed'),
+              failures: testReporter.results.filter((r) => r.status === 'failed'),
               slowestTests: testReporter.results
                 .sort((a, b) => (b.duration || 0) - (a.duration || 0))
-                .slice(0, 5)
+                .slice(0, 5),
             },
             metadata: {
               generatedAt: new Date().toISOString(),
               environment: 'test',
-              version: '1.0.0'
-            }
+              version: '1.0.0',
+            },
           };
         },
 
@@ -1341,18 +1406,21 @@ describe('Testing Utilities', () => {
             case 'junit':
               return `<?xml version="1.0" encoding="UTF-8"?>
                 <testsuite tests="${report.summary.total}" failures="${report.summary.failed}" skipped="${report.summary.skipped}">
-                  ${report.details.tests.map(test =>
-                    `<testcase name="${test.name}" time="${(test.duration || 0) / 1000}">
+                  ${report.details.tests
+                    .map(
+                      (test) =>
+                        `<testcase name="${test.name}" time="${(test.duration || 0) / 1000}">
                       ${test.status === 'failed' ? `<failure message="${test.error?.message}"/>` : ''}
                       ${test.status === 'skipped' ? '<skipped/>' : ''}
                     </testcase>`
-                  ).join('')}
+                    )
+                    .join('')}
                 </testsuite>`;
 
             default:
               throw new Error(`Unsupported format: ${format}`);
           }
-        }
+        },
       };
 
       // Simulate test results
@@ -1362,32 +1430,32 @@ describe('Testing Utilities', () => {
           status: 'passed',
           duration: 45,
           result: { userId: '123' },
-          error: null
+          error: null,
         },
         {
           name: 'should validate email',
           status: 'passed',
           duration: 12,
           result: true,
-          error: null
+          error: null,
         },
         {
           name: 'should handle login',
           status: 'failed',
           duration: 123,
           result: null,
-          error: new Error('Authentication failed')
+          error: new Error('Authentication failed'),
         },
         {
           name: 'should update profile',
           status: 'skipped',
           duration: 0,
           result: null,
-          error: null
-        }
+          error: null,
+        },
       ];
 
-      testResults.forEach(result => testReporter.reportTestResult(result));
+      testResults.forEach((result) => testReporter.reportTestResult(result));
 
       const report = testReporter.generateReport();
 
@@ -1419,7 +1487,7 @@ describe('Testing Utilities', () => {
           lines: { covered: 850, total: 1000 },
           functions: { covered: 120, total: 150 },
           branches: { covered: 200, total: 250 },
-          statements: { covered: 900, total: 1100 }
+          statements: { covered: 900, total: 1100 },
         },
 
         calculateCoverage: () => {
@@ -1430,46 +1498,46 @@ describe('Testing Utilities', () => {
               coverage: (lines.covered / lines.total) * 100,
               covered: lines.covered,
               total: lines.total,
-              missed: lines.total - lines.covered
+              missed: lines.total - lines.covered,
             },
             functions: {
               coverage: (functions.covered / functions.total) * 100,
               covered: functions.covered,
               total: functions.total,
-              missed: functions.total - functions.covered
+              missed: functions.total - functions.covered,
             },
             branches: {
               coverage: (branches.covered / branches.total) * 100,
               covered: branches.covered,
               total: branches.total,
-              missed: branches.total - branches.covered
+              missed: branches.total - branches.covered,
             },
             statements: {
               coverage: (statements.covered / statements.total) * 100,
               covered: statements.covered,
               total: statements.total,
-              missed: statements.total - statements.covered
-            }
+              missed: statements.total - statements.covered,
+            },
           };
         },
 
         generateCoverageReport: () => {
           const coverage = coverageReporter.calculateCoverage();
-          const overallCoverage = (
-            coverage.lines.coverage +
-            coverage.functions.coverage +
-            coverage.branches.coverage +
-            coverage.statements.coverage
-          ) / 4;
+          const overallCoverage =
+            (coverage.lines.coverage +
+              coverage.functions.coverage +
+              coverage.branches.coverage +
+              coverage.statements.coverage) /
+            4;
 
           return {
             overall: {
               coverage: overallCoverage,
               threshold: 80,
-              passed: overallCoverage >= 80
+              passed: overallCoverage >= 80,
             },
             metrics: coverage,
-            recommendations: coverageReporter.generateRecommendations(coverage)
+            recommendations: coverageReporter.generateRecommendations(coverage),
           };
         },
 
@@ -1493,7 +1561,7 @@ describe('Testing Utilities', () => {
           }
 
           return recommendations;
-        }
+        },
       };
 
       const coverageReport = coverageReporter.generateCoverageReport();
@@ -1508,9 +1576,7 @@ describe('Testing Utilities', () => {
       expect(coverageReport.recommendations).toContain(
         'Add tests for conditional branches and decision points'
       );
-      expect(coverageReport.recommendations).toContain(
-        'Cover more statements in your test cases'
-      );
+      expect(coverageReport.recommendations).toContain('Cover more statements in your test cases');
     });
 
     it('should track test performance and provide analytics', async () => {
@@ -1522,7 +1588,7 @@ describe('Testing Utilities', () => {
             name,
             startTime: performance.now(),
             measurements: [],
-            memoryUsage: []
+            memoryUsage: [],
           });
         },
 
@@ -1539,7 +1605,7 @@ describe('Testing Utilities', () => {
           if (benchmark) {
             benchmark.measurements.push({
               value: measurement,
-              timestamp: performance.now()
+              timestamp: performance.now(),
             });
           }
         },
@@ -1550,7 +1616,7 @@ describe('Testing Utilities', () => {
             benchmark.memoryUsage.push({
               heapUsed: process.memoryUsage().heapUsed,
               heapTotal: process.memoryUsage().heapTotal,
-              timestamp: performance.now()
+              timestamp: performance.now(),
             });
           }
         },
@@ -1561,43 +1627,51 @@ describe('Testing Utilities', () => {
           return {
             summary: {
               totalBenchmarks: benchmarks.length,
-              averageDuration: benchmarks.reduce((sum, b) => sum + (b.duration || 0), 0) / benchmarks.length,
+              averageDuration:
+                benchmarks.reduce((sum, b) => sum + (b.duration || 0), 0) / benchmarks.length,
               slowestBenchmark: benchmarks.reduce((prev, current) =>
                 (prev.duration || 0) > (current.duration || 0) ? prev : current
               ),
               fastestBenchmark: benchmarks.reduce((prev, current) =>
                 (prev.duration || 0) < (current.duration || 0) ? prev : current
-              )
+              ),
             },
-            benchmarks: benchmarks.map(benchmark => ({
+            benchmarks: benchmarks.map((benchmark) => ({
               name: benchmark.name,
               duration: benchmark.duration,
               measurements: benchmark.measurements,
-              memoryPeak: Math.max(...benchmark.memoryUsage.map(m => m.heapUsed)),
-              memoryGrowth: benchmark.memoryUsage[benchmark.memoryUsage.length - 1]?.heapUsed -
-                           benchmark.memoryUsage[0]?.heapUsed || 0
+              memoryPeak: Math.max(...benchmark.memoryUsage.map((m) => m.heapUsed)),
+              memoryGrowth:
+                benchmark.memoryUsage[benchmark.memoryUsage.length - 1]?.heapUsed -
+                  benchmark.memoryUsage[0]?.heapUsed || 0,
             })),
-            recommendations: performanceTracker.generatePerformanceRecommendations(benchmarks)
+            recommendations: performanceTracker.generatePerformanceRecommendations(benchmarks),
           };
         },
 
         generatePerformanceRecommendations: (benchmarks: TestBenchmarkResult[]) => {
           const recommendations = [];
 
-          benchmarks.forEach(benchmark => {
+          benchmarks.forEach((benchmark) => {
             if (benchmark.duration && benchmark.duration > 1000) {
-              recommendations.push(`${benchmark.name}: Consider optimizing - duration over 1 second`);
+              recommendations.push(
+                `${benchmark.name}: Consider optimizing - duration over 1 second`
+              );
             }
 
-            const memoryGrowth = benchmark.memoryUsage[benchmark.memoryUsage.length - 1]?.heapUsed -
-                               benchmark.memoryUsage[0]?.heapUsed || 0;
-            if (memoryGrowth > 10 * 1024 * 1024) { // 10MB
-              recommendations.push(`${benchmark.name}: High memory usage detected - consider memory optimization`);
+            const memoryGrowth =
+              benchmark.memoryUsage[benchmark.memoryUsage.length - 1]?.heapUsed -
+                benchmark.memoryUsage[0]?.heapUsed || 0;
+            if (memoryGrowth > 10 * 1024 * 1024) {
+              // 10MB
+              recommendations.push(
+                `${benchmark.name}: High memory usage detected - consider memory optimization`
+              );
             }
           });
 
           return recommendations;
-        }
+        },
       };
 
       // Run performance benchmarks
@@ -1605,11 +1679,11 @@ describe('Testing Utilities', () => {
       performanceTracker.recordMemoryUsage('user-creation');
 
       // Simulate user creation process
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       performanceTracker.recordMeasurement('user-creation', 25);
       performanceTracker.recordMemoryUsage('user-creation');
 
-      await new Promise(resolve => setTimeout(resolve, 30));
+      await new Promise((resolve) => setTimeout(resolve, 30));
       performanceTracker.recordMeasurement('user-creation', 15);
       performanceTracker.recordMemoryUsage('user-creation');
 
@@ -1619,11 +1693,11 @@ describe('Testing Utilities', () => {
       performanceTracker.recordMemoryUsage('data-processing');
 
       // Simulate data processing (longer duration to trigger recommendations)
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await new Promise((resolve) => setTimeout(resolve, 600));
       performanceTracker.recordMeasurement('data-processing', 1000);
       performanceTracker.recordMemoryUsage('data-processing');
 
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await new Promise((resolve) => setTimeout(resolve, 600));
       performanceTracker.recordMeasurement('data-processing', 2000);
       performanceTracker.recordMemoryUsage('data-processing');
 
@@ -1637,10 +1711,12 @@ describe('Testing Utilities', () => {
       expect(analytics.summary.fastestBenchmark.name).toBe('user-creation');
 
       expect(analytics.benchmarks).toHaveLength(2);
-      expect(analytics.benchmarks.find(b => b.name === 'data-processing')?.duration).toBeGreaterThan(300);
+      expect(
+        analytics.benchmarks.find((b) => b.name === 'data-processing')?.duration
+      ).toBeGreaterThan(300);
 
       expect(analytics.recommendations.length).toBeGreaterThan(0);
-      expect(analytics.recommendations.some(r => r.includes('data-processing'))).toBe(true);
+      expect(analytics.recommendations.some((r) => r.includes('data-processing'))).toBe(true);
     });
   });
 
@@ -1658,19 +1734,19 @@ describe('Testing Utilities', () => {
                   click: vi.fn(),
                   type: vi.fn(),
                   waitFor: vi.fn().mockResolvedValue(true),
-                  screenshot: vi.fn()
-                })
-              })
+                  screenshot: vi.fn(),
+                }),
+              }),
             },
             server: {
               start: vi.fn().mockResolvedValue({ port: 3000 }),
-              stop: vi.fn()
+              stop: vi.fn(),
             },
             database: {
               migrate: vi.fn().mockResolvedValue(true),
               seed: vi.fn().mockResolvedValue(true),
-              cleanup: vi.fn()
-            }
+              cleanup: vi.fn(),
+            },
           };
 
           await environment.database.migrate();
@@ -1690,7 +1766,7 @@ describe('Testing Utilities', () => {
           } catch (error) {
             return {
               status: 'failed',
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             };
           } finally {
             await browser.close?.();
@@ -1700,7 +1776,7 @@ describe('Testing Utilities', () => {
         teardownE2EEnvironment: async (environment: any) => {
           await environment.database.cleanup();
           await environment.server.stop();
-        }
+        },
       };
 
       // Mock E2E test
@@ -1736,19 +1812,19 @@ describe('Testing Utilities', () => {
             const responses: Record<string, any> = {
               '/api/users': [
                 { id: 1, name: 'John Doe', email: 'john@example.com' },
-                { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
+                { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
               ],
               '/api/users/1': { id: 1, name: 'John Doe', email: 'john@example.com' },
               '/api/posts': [
                 { id: 1, title: 'Post 1', userId: 1 },
-                { id: 2, title: 'Post 2', userId: 2 }
-              ]
+                { id: 2, title: 'Post 2', userId: 2 },
+              ],
             };
 
             return {
               status: 200,
               data: responses[path] || null,
-              headers: { 'content-type': 'application/json' }
+              headers: { 'content-type': 'application/json' },
             };
           },
 
@@ -1756,7 +1832,7 @@ describe('Testing Utilities', () => {
             return {
               status: 201,
               data: { ...data, id: Math.floor(Math.random() * 1000) },
-              headers: { 'content-type': 'application/json' }
+              headers: { 'content-type': 'application/json' },
             };
           },
 
@@ -1764,7 +1840,7 @@ describe('Testing Utilities', () => {
             return {
               status: 200,
               data: { ...data, updatedAt: new Date().toISOString() },
-              headers: { 'content-type': 'application/json' }
+              headers: { 'content-type': 'application/json' },
             };
           },
 
@@ -1772,9 +1848,9 @@ describe('Testing Utilities', () => {
             return {
               status: 204,
               data: null,
-              headers: { 'content-type': 'application/json' }
+              headers: { 'content-type': 'application/json' },
             };
-          }
+          },
         }),
 
         runApiTest: async (client: any, test: any) => {
@@ -1784,10 +1860,10 @@ describe('Testing Utilities', () => {
           } catch (error) {
             return {
               status: 'failed',
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             };
           }
-        }
+        },
       };
 
       const apiClient = apiTestFramework.createApiClient('http://localhost:3000');
@@ -1809,7 +1885,7 @@ describe('Testing Utilities', () => {
         // Test POST user
         const newUserResponse = await client.post('/api/users', {
           name: 'Test User',
-          email: 'test@example.com'
+          email: 'test@example.com',
         });
         if (newUserResponse.status !== 201 || !newUserResponse.data.id) {
           throw new Error('Failed to create user');
@@ -1817,7 +1893,7 @@ describe('Testing Utilities', () => {
 
         // Test PUT user
         const updateUserResponse = await client.put('/api/users/1', {
-          name: 'Updated Name'
+          name: 'Updated Name',
         });
         if (updateUserResponse.status !== 200 || !updateUserResponse.data.updatedAt) {
           throw new Error('Failed to update user');
@@ -1832,19 +1908,19 @@ describe('Testing Utilities', () => {
       const databaseTestFramework = {
         createTestDatabase: async () => {
           return {
-            query: vi.fn().mockResolvedValue([
-              { id: 1, name: 'Test User', email: 'test@example.com' }
-            ]),
+            query: vi
+              .fn()
+              .mockResolvedValue([{ id: 1, name: 'Test User', email: 'test@example.com' }]),
             transaction: vi.fn().mockImplementation(async (callback) => {
               return await callback({
                 query: vi.fn().mockResolvedValue([{ id: 1, affectedRows: 1 }]),
                 commit: vi.fn(),
-                rollback: vi.fn()
+                rollback: vi.fn(),
               });
             }),
             migrate: vi.fn().mockResolvedValue(true),
             seed: vi.fn().mockResolvedValue(true),
-            cleanup: vi.fn().mockResolvedValue(true)
+            cleanup: vi.fn().mockResolvedValue(true),
           };
         },
 
@@ -1855,10 +1931,10 @@ describe('Testing Utilities', () => {
           } catch (error) {
             return {
               status: 'failed',
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             };
           }
-        }
+        },
       };
 
       const testDb = await databaseTestFramework.createTestDatabase();
@@ -1885,7 +1961,10 @@ describe('Testing Utilities', () => {
 
         // Test transactions
         const transactionResult = await db.transaction(async (trx) => {
-          const result = await trx.query('UPDATE users SET name = ? WHERE id = ?', ['Updated Name', 1]);
+          const result = await trx.query('UPDATE users SET name = ? WHERE id = ?', [
+            'Updated Name',
+            1,
+          ]);
           await trx.commit();
           return result;
         });
@@ -1921,7 +2000,7 @@ describe('Testing Utilities', () => {
 
           const userPromises = Array.from({ length: config.concurrentUsers }, async (_, index) => {
             // Stagger user start times
-            await new Promise(resolve => setTimeout(resolve, index * userInterval));
+            await new Promise((resolve) => setTimeout(resolve, index * userInterval));
 
             const userResults = [];
             while (Date.now() < endTime) {
@@ -1933,7 +2012,7 @@ describe('Testing Utilities', () => {
                   success: true,
                   duration: requestEnd - requestStart,
                   timestamp: requestStart,
-                  result
+                  result,
                 });
               } catch (error) {
                 const requestEnd = performance.now();
@@ -1941,7 +2020,7 @@ describe('Testing Utilities', () => {
                   success: false,
                   duration: requestEnd - requestStart,
                   timestamp: requestStart,
-                  error: error instanceof Error ? error : new Error(String(error))
+                  error: error instanceof Error ? error : new Error(String(error)),
                 });
               }
             }
@@ -1954,11 +2033,13 @@ describe('Testing Utilities', () => {
 
         analyzeLoadTestResults: (results: any[]) => {
           const totalRequests = results.length;
-          const successfulRequests = results.filter(r => r.success).length;
+          const successfulRequests = results.filter((r) => r.success).length;
           const failedRequests = totalRequests - successfulRequests;
-          const totalDuration = Math.max(...results.map(r => r.timestamp)) - Math.min(...results.map(r => r.timestamp));
+          const totalDuration =
+            Math.max(...results.map((r) => r.timestamp)) -
+            Math.min(...results.map((r) => r.timestamp));
 
-          const durations = results.map(r => r.duration);
+          const durations = results.map((r) => r.duration);
           const avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
           const minDuration = Math.min(...durations);
           const maxDuration = Math.max(...durations);
@@ -1974,19 +2055,19 @@ describe('Testing Utilities', () => {
               failedRequests,
               errorRate,
               duration: totalDuration,
-              throughput
+              throughput,
             },
             performance: {
               avgDuration,
               minDuration,
               maxDuration,
-              p95Duration
+              p95Duration,
             },
             recommendations: loadTester.generatePerformanceRecommendations({
               errorRate,
               avgDuration,
-              throughput
-            })
+              throughput,
+            }),
           };
         },
 
@@ -1998,7 +2079,9 @@ describe('Testing Utilities', () => {
           }
 
           if (metrics.avgDuration > 1000) {
-            recommendations.push('Average response time is high - consider performance optimizations');
+            recommendations.push(
+              'Average response time is high - consider performance optimizations'
+            );
           }
 
           if (metrics.throughput < 100) {
@@ -2006,15 +2089,16 @@ describe('Testing Utilities', () => {
           }
 
           return recommendations;
-        }
+        },
       };
 
       // Mock API request function
       const mockApiRequest = async () => {
         const delay = Math.random() * 100 + 50; // 50-150ms response time
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
 
-        if (Math.random() < 0.05) { // 5% error rate
+        if (Math.random() < 0.05) {
+          // 5% error rate
           throw new Error('Random API error');
         }
 
@@ -2026,7 +2110,7 @@ describe('Testing Utilities', () => {
         concurrentUsers: 10,
         duration: 2000, // 2 seconds
         rampUpTime: 1000, // 1 second ramp-up
-        requestFunction: mockApiRequest
+        requestFunction: mockApiRequest,
       });
 
       expect(loadTestResults.length).toBeGreaterThan(0);
@@ -2070,7 +2154,7 @@ describe('Testing Utilities', () => {
                   userResults.push({
                     success: true,
                     duration: requestEnd - requestStart,
-                    timestamp: requestStart
+                    timestamp: requestStart,
                   });
                 } catch (error) {
                   const requestEnd = performance.now();
@@ -2078,7 +2162,7 @@ describe('Testing Utilities', () => {
                     success: false,
                     duration: requestEnd - requestStart,
                     timestamp: requestStart,
-                    error: error instanceof Error ? error : new Error(String(error))
+                    error: error instanceof Error ? error : new Error(String(error)),
                   });
                 }
               }
@@ -2089,15 +2173,17 @@ describe('Testing Utilities', () => {
             const stepResultsFlat = allUserResults.flat();
 
             // Analyze step results
-            const successRate = stepResultsFlat.filter(r => r.success).length / stepResultsFlat.length;
-            const avgDuration = stepResultsFlat.reduce((sum, r) => sum + r.duration, 0) / stepResultsFlat.length;
+            const successRate =
+              stepResultsFlat.filter((r) => r.success).length / stepResultsFlat.length;
+            const avgDuration =
+              stepResultsFlat.reduce((sum, r) => sum + r.duration, 0) / stepResultsFlat.length;
 
             results.push({
               users: currentUsers,
               successRate,
               avgDuration,
               totalRequests: stepResultsFlat.length,
-              failedRequests: stepResultsFlat.filter(r => !r.success).length
+              failedRequests: stepResultsFlat.filter((r) => !r.success).length,
             });
 
             // Stop if success rate drops below 80%
@@ -2112,12 +2198,12 @@ describe('Testing Utilities', () => {
         },
 
         findBreakingPoint: (results: any[]) => {
-          const breakingPoint = results.find(r => r.successRate < 0.8);
+          const breakingPoint = results.find((r) => r.successRate < 0.8);
           if (breakingPoint) {
             return {
               users: breakingPoint.users,
               successRate: breakingPoint.successRate,
-              avgDuration: breakingPoint.avgDuration
+              avgDuration: breakingPoint.avgDuration,
             };
           }
 
@@ -2127,9 +2213,9 @@ describe('Testing Utilities', () => {
             users: lastResult.users,
             successRate: lastResult.successRate,
             avgDuration: lastResult.avgDuration,
-            note: 'No breaking point reached within test limits'
+            note: 'No breaking point reached within test limits',
           };
-        }
+        },
       };
 
       // Mock request function that degrades with load
@@ -2138,9 +2224,9 @@ describe('Testing Utilities', () => {
         requestCount++;
         const baseDelay = 50;
         const loadDelay = Math.min(requestCount * 2, 500); // Delay increases with load
-        const totalDelay = baseDelay + loadDelay + (Math.random() * 50);
+        const totalDelay = baseDelay + loadDelay + Math.random() * 50;
 
-        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        await new Promise((resolve) => setTimeout(resolve, totalDelay));
 
         // Simulate increased failure rate under load
         const errorRate = Math.min(requestCount * 0.01, 0.3); // Up to 30% error rate
@@ -2156,11 +2242,11 @@ describe('Testing Utilities', () => {
         maxUsers: 50,
         stepSize: 5,
         stepDuration: 1000,
-        requestFunction: degradingRequest
+        requestFunction: degradingRequest,
       });
 
       expect(stressTestResults.length).toBeGreaterThan(0);
-      expect(stressTestResults.every(r => r.users >= 5 && r.users <= 50)).toBe(true);
+      expect(stressTestResults.every((r) => r.users >= 5 && r.users <= 50)).toBe(true);
 
       const breakingPoint = stressTester.findBreakingPoint(stressTestResults);
       expect(breakingPoint.users).toBeGreaterThanOrEqual(5);
@@ -2189,7 +2275,7 @@ describe('Testing Utilities', () => {
               severity: 'high',
               description: 'Potential SQL injection in user input handling',
               location: '/api/users',
-              remediation: 'Use parameterized queries or prepared statements'
+              remediation: 'Use parameterized queries or prepared statements',
             },
             {
               id: 'XSS_001',
@@ -2197,7 +2283,7 @@ describe('Testing Utilities', () => {
               severity: 'medium',
               description: 'Reflected XSS in search functionality',
               location: '/api/search',
-              remediation: 'Sanitize and escape user input before rendering'
+              remediation: 'Sanitize and escape user input before rendering',
             },
             {
               id: 'CSRF_001',
@@ -2205,23 +2291,26 @@ describe('Testing Utilities', () => {
               severity: 'medium',
               description: 'Missing CSRF protection on form submissions',
               location: '/api/form-submit',
-              remediation: 'Implement CSRF tokens for all state-changing operations'
-            }
+              remediation: 'Implement CSRF tokens for all state-changing operations',
+            },
           ];
 
           // Simulate scanning process
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
-          return mockVulnerabilities.filter(v =>
-            Math.random() > 0.3 // 70% chance of detecting each vulnerability
+          return mockVulnerabilities.filter(
+            (v) => Math.random() > 0.3 // 70% chance of detecting each vulnerability
           );
         },
 
         generateSecurityReport: (vulnerabilities: any[]) => {
-          const severityCounts = vulnerabilities.reduce((counts, vuln) => {
-            counts[vuln.severity] = (counts[vuln.severity] || 0) + 1;
-            return counts;
-          }, {} as Record<string, number>);
+          const severityCounts = vulnerabilities.reduce(
+            (counts, vuln) => {
+              counts[vuln.severity] = (counts[vuln.severity] || 0) + 1;
+              return counts;
+            },
+            {} as Record<string, number>
+          );
 
           const riskScore = vulnerabilities.reduce((score, vuln) => {
             const severityWeights = { low: 1, medium: 5, high: 10, critical: 25 };
@@ -2232,34 +2321,45 @@ describe('Testing Utilities', () => {
             summary: {
               totalVulnerabilities: vulnerabilities.length,
               riskScore,
-              riskLevel: riskScore < 10 ? 'low' : riskScore < 50 ? 'medium' : riskScore < 100 ? 'high' : 'critical',
-              severityBreakdown: severityCounts
+              riskLevel:
+                riskScore < 10
+                  ? 'low'
+                  : riskScore < 50
+                    ? 'medium'
+                    : riskScore < 100
+                      ? 'high'
+                      : 'critical',
+              severityBreakdown: severityCounts,
             },
             vulnerabilities: vulnerabilities.sort((a, b) => {
               const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-              return (severityOrder[b.severity as keyof typeof severityOrder] || 0) -
-                     (severityOrder[a.severity as keyof typeof severityOrder] || 0);
+              return (
+                (severityOrder[b.severity as keyof typeof severityOrder] || 0) -
+                (severityOrder[a.severity as keyof typeof severityOrder] || 0)
+              );
             }),
-            recommendations: securityScanner.generateRecommendations(vulnerabilities)
+            recommendations: securityScanner.generateRecommendations(vulnerabilities),
           };
         },
 
         generateRecommendations: (vulnerabilities: any[]) => {
           const recommendations = new Set<string>();
 
-          vulnerabilities.forEach(vuln => {
+          vulnerabilities.forEach((vuln) => {
             recommendations.add(vuln.remediation);
           });
 
           // Add general recommendations based on severity
-          const hasHighSeverity = vulnerabilities.some(v => v.severity === 'high' || v.severity === 'critical');
+          const hasHighSeverity = vulnerabilities.some(
+            (v) => v.severity === 'high' || v.severity === 'critical'
+          );
           if (hasHighSeverity) {
             recommendations.add('Address high-severity vulnerabilities immediately');
             recommendations.add('Consider implementing a security incident response plan');
           }
 
           return Array.from(recommendations);
-        }
+        },
       };
 
       const vulnerabilities = await securityScanner.scanForVulnerabilities('http://localhost:3000');
@@ -2297,13 +2397,13 @@ describe('Testing Utilities', () => {
             tests.push({
               name: 'Valid credentials',
               passed: response.status === 200,
-              details: response
+              details: response,
             });
           } catch (error) {
             tests.push({
               name: 'Valid credentials',
               passed: false,
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             });
           }
 
@@ -2311,18 +2411,18 @@ describe('Testing Utilities', () => {
           try {
             const response = await authTester.mockApiCall(endpoint, {
               username: 'invalid',
-              password: 'invalid'
+              password: 'invalid',
             });
             tests.push({
               name: 'Invalid credentials',
               passed: response.status === 401,
-              details: response
+              details: response,
             });
           } catch (error) {
             tests.push({
               name: 'Invalid credentials',
               passed: true, // Error is expected for invalid credentials
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             });
           }
 
@@ -2332,13 +2432,13 @@ describe('Testing Utilities', () => {
             tests.push({
               name: 'Missing credentials',
               passed: response.status === 400 || response.status === 401,
-              details: response
+              details: response,
             });
           } catch (error) {
             tests.push({
               name: 'Missing credentials',
               passed: true, // Error is expected for missing credentials
-              error: error instanceof Error ? error : new Error(String(error))
+              error: error instanceof Error ? error : new Error(String(error)),
             });
           }
 
@@ -2350,9 +2450,13 @@ describe('Testing Utilities', () => {
 
           for (const role of userRoles) {
             try {
-              const response = await authTester.mockApiCall(endpoint, {}, {
-                'x-user-role': role
-              });
+              const response = await authTester.mockApiCall(
+                endpoint,
+                {},
+                {
+                  'x-user-role': role,
+                }
+              );
 
               const expectedAccess = authTester.shouldHaveAccess(role, endpoint);
               tests.push({
@@ -2360,7 +2464,7 @@ describe('Testing Utilities', () => {
                 passed: expectedAccess ? response.status < 400 : response.status >= 400,
                 expectedAccess,
                 actualStatus: response.status,
-                role
+                role,
               });
             } catch (error) {
               const expectedAccess = authTester.shouldHaveAccess(role, endpoint);
@@ -2369,7 +2473,7 @@ describe('Testing Utilities', () => {
                 passed: !expectedAccess, // Error is expected for unauthorized access
                 expectedAccess,
                 role,
-                error: error instanceof Error ? error : new Error(String(error))
+                error: error instanceof Error ? error : new Error(String(error)),
               });
             }
           }
@@ -2381,12 +2485,14 @@ describe('Testing Utilities', () => {
           const permissions: Record<string, string[]> = {
             admin: ['*'],
             user: ['/api/profile', '/api/posts'],
-            guest: ['/api/public']
+            guest: ['/api/public'],
           };
 
           const userPermissions = permissions[role] || [];
-          return userPermissions.includes('*') ||
-                 userPermissions.some(perm => endpoint.startsWith(perm));
+          return (
+            userPermissions.includes('*') ||
+            userPermissions.some((perm) => endpoint.startsWith(perm))
+          );
         },
 
         mockApiCall: async (endpoint: string, credentials: any, headers: any = {}) => {
@@ -2407,27 +2513,31 @@ describe('Testing Utilities', () => {
           } else {
             return { status: 401, error: 'Invalid credentials' };
           }
-        }
+        },
       };
 
       // Test authentication
       const authTests = await authTester.testAuthentication('/api/login', {
         username: 'admin',
-        password: 'admin123'
+        password: 'admin123',
       });
 
       expect(authTests).toHaveLength(3);
-      expect(authTests.some(t => t.name === 'Valid credentials' && t.passed)).toBe(true);
-      expect(authTests.some(t => t.name === 'Invalid credentials' && t.passed)).toBe(true);
-      expect(authTests.some(t => t.name === 'Missing credentials' && t.passed)).toBe(true);
+      expect(authTests.some((t) => t.name === 'Valid credentials' && t.passed)).toBe(true);
+      expect(authTests.some((t) => t.name === 'Invalid credentials' && t.passed)).toBe(true);
+      expect(authTests.some((t) => t.name === 'Missing credentials' && t.passed)).toBe(true);
 
       // Test authorization
-      const authzTests = await authTester.testAuthorization('/api/profile', ['admin', 'user', 'guest']);
+      const authzTests = await authTester.testAuthorization('/api/profile', [
+        'admin',
+        'user',
+        'guest',
+      ]);
 
       expect(authzTests).toHaveLength(3);
-      expect(authzTests.some(t => t.role === 'admin' && t.passed)).toBe(true);
-      expect(authzTests.some(t => t.role === 'user' && t.passed)).toBe(true);
-      expect(authzTests.some(t => t.role === 'guest' && !t.passed)).toBe(true);
+      expect(authzTests.some((t) => t.role === 'admin' && t.passed)).toBe(true);
+      expect(authzTests.some((t) => t.role === 'user' && t.passed)).toBe(true);
+      expect(authzTests.some((t) => t.role === 'guest' && !t.passed)).toBe(true);
     });
   });
 
@@ -2457,7 +2567,7 @@ describe('Testing Utilities', () => {
                 environment.services.set(serviceName, {
                   name: serviceName,
                   status: 'running',
-                  endpoint: `http://localhost:${Math.floor(Math.random() * 1000) + 3000}`
+                  endpoint: `http://localhost:${Math.floor(Math.random() * 1000) + 3000}`,
                 });
               }
               environment.state = 'ready';
@@ -2470,8 +2580,8 @@ describe('Testing Utilities', () => {
             config: {
               timeout: 30000,
               retries: 3,
-              parallel: config.type !== 'e2e'
-            }
+              parallel: config.type !== 'e2e',
+            },
           };
 
           environmentManager.environments.set(config.name, environment);
@@ -2502,7 +2612,7 @@ describe('Testing Utilities', () => {
 
         getEnvironment: (name: string) => {
           return environmentManager.environments.get(name);
-        }
+        },
       };
 
       // Create multiple environments
@@ -2510,21 +2620,21 @@ describe('Testing Utilities', () => {
         name: 'unit-test-env',
         type: 'unit',
         services: ['database'],
-        isolation: 'process'
+        isolation: 'process',
       });
 
       const integrationEnv = await environmentManager.createEnvironment({
         name: 'integration-test-env',
         type: 'integration',
         services: ['database', 'redis', 'api'],
-        isolation: 'container'
+        isolation: 'container',
       });
 
       const e2eEnv = await environmentManager.createEnvironment({
         name: 'e2e-test-env',
         type: 'e2e',
         services: ['database', 'redis', 'api', 'frontend'],
-        isolation: 'container'
+        isolation: 'container',
       });
 
       expect(environmentManager.listEnvironments()).toHaveLength(3);
@@ -2569,11 +2679,12 @@ describe('Testing Utilities', () => {
           const metrics = {
             execution: {
               totalTests: testResults.length,
-              passedTests: testResults.filter(t => t.status === 'passed').length,
-              failedTests: testResults.filter(t => t.status === 'failed').length,
-              skippedTests: testResults.filter(t => t.status === 'skipped').length,
+              passedTests: testResults.filter((t) => t.status === 'passed').length,
+              failedTests: testResults.filter((t) => t.status === 'failed').length,
+              skippedTests: testResults.filter((t) => t.status === 'skipped').length,
               totalDuration: testResults.reduce((sum, t) => sum + (t.duration || 0), 0),
-              averageDuration: testResults.reduce((sum, t) => sum + (t.duration || 0), 0) / testResults.length
+              averageDuration:
+                testResults.reduce((sum, t) => sum + (t.duration || 0), 0) / testResults.length,
             },
             performance: {
               slowestTests: testResults
@@ -2582,17 +2693,21 @@ describe('Testing Utilities', () => {
               fastestTests: testResults
                 .sort((a, b) => (a.duration || 0) - (b.duration || 0))
                 .slice(0, 5),
-              durationVariance: testAnalytics.calculateVariance(testResults.map(t => t.duration || 0))
+              durationVariance: testAnalytics.calculateVariance(
+                testResults.map((t) => t.duration || 0)
+              ),
             },
             failures: {
-              failureRate: (testResults.filter(t => t.status === 'failed').length / testResults.length) * 100,
+              failureRate:
+                (testResults.filter((t) => t.status === 'failed').length / testResults.length) *
+                100,
               commonFailures: testAnalytics.getCommonFailures(testResults),
-              failurePatterns: testAnalytics.analyzeFailurePatterns(testResults)
+              failurePatterns: testAnalytics.analyzeFailurePatterns(testResults),
             },
             trends: {
               testStability: testAnalytics.calculateTestStability(testResults),
-              executionTrend: testAnalytics.calculateExecutionTrend(testResults)
-            }
+              executionTrend: testAnalytics.calculateExecutionTrend(testResults),
+            },
           };
 
           return metrics;
@@ -2600,16 +2715,16 @@ describe('Testing Utilities', () => {
 
         calculateVariance: (values: number[]) => {
           const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-          const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+          const squaredDiffs = values.map((val) => Math.pow(val - mean, 2));
           return squaredDiffs.reduce((sum, diff) => sum + diff, 0) / values.length;
         },
 
         getCommonFailures: (testResults: TestResult[]) => {
-          const failures = testResults.filter(t => t.status === 'failed' && t.error);
-          const errorMessages = failures.map(f => f.error?.message || 'Unknown error');
+          const failures = testResults.filter((t) => t.status === 'failed' && t.error);
+          const errorMessages = failures.map((f) => f.error?.message || 'Unknown error');
           const errorCounts: Record<string, number> = {};
 
-          errorMessages.forEach(message => {
+          errorMessages.forEach((message) => {
             errorCounts[message] = (errorCounts[message] || 0) + 1;
           });
 
@@ -2620,19 +2735,20 @@ describe('Testing Utilities', () => {
         },
 
         analyzeFailurePatterns: (testResults: TestResult[]) => {
-          const failures = testResults.filter(t => t.status === 'failed');
+          const failures = testResults.filter((t) => t.status === 'failed');
           const patterns = {
             byTimeOfDay: {} as Record<string, number>,
             byTestDuration: {} as Record<string, number>,
-            byTestName: {} as Record<string, number>
+            byTestName: {} as Record<string, number>,
           };
 
-          failures.forEach(failure => {
+          failures.forEach((failure) => {
             const hour = new Date(failure.timestamp || Date.now()).getHours();
             patterns.byTimeOfDay[hour] = (patterns.byTimeOfDay[hour] || 0) + 1;
 
             const durationRange = testAnalytics.getDurationRange(failure.duration || 0);
-            patterns.byTestDuration[durationRange] = (patterns.byTestDuration[durationRange] || 0) + 1;
+            patterns.byTestDuration[durationRange] =
+              (patterns.byTestDuration[durationRange] || 0) + 1;
 
             const testNamePattern = testAnalytics.getTestNamePattern(failure.name);
             patterns.byTestName[testNamePattern] = (patterns.byTestName[testNamePattern] || 0) + 1;
@@ -2658,22 +2774,20 @@ describe('Testing Utilities', () => {
 
         calculateTestStability: (testResults: TestResult[]) => {
           const totalTests = testResults.length;
-          const passedTests = testResults.filter(t => t.status === 'passed').length;
+          const passedTests = testResults.filter((t) => t.status === 'passed').length;
           return totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
         },
 
         calculateExecutionTrend: (testResults: TestResult[]) => {
           // Mock trend calculation
-          const sortedResults = testResults.sort((a, b) =>
-            (a.timestamp || 0) - (b.timestamp || 0)
-          );
+          const sortedResults = testResults.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
           const windowSize = Math.max(5, Math.floor(sortedResults.length / 10));
           const trends = [];
 
           for (let i = windowSize; i < sortedResults.length; i += windowSize) {
             const window = sortedResults.slice(i - windowSize, i);
-            const passRate = window.filter(t => t.status === 'passed').length / window.length;
+            const passRate = window.filter((t) => t.status === 'passed').length / window.length;
             trends.push({ index: i, passRate });
           }
 
@@ -2690,7 +2804,7 @@ describe('Testing Utilities', () => {
               severity: 'high',
               title: 'Slow test execution detected',
               description: `Average test duration is ${metrics.execution.averageDuration}ms`,
-              recommendation: 'Consider optimizing test setup and teardown'
+              recommendation: 'Consider optimizing test setup and teardown',
             });
           }
 
@@ -2701,7 +2815,7 @@ describe('Testing Utilities', () => {
               severity: 'medium',
               title: 'High failure rate detected',
               description: `Test failure rate is ${metrics.failures.failureRate}%`,
-              recommendation: 'Review failing tests and fix underlying issues'
+              recommendation: 'Review failing tests and fix underlying issues',
             });
           }
 
@@ -2712,7 +2826,7 @@ describe('Testing Utilities', () => {
               severity: 'medium',
               title: 'Low test stability',
               description: `Test stability is ${metrics.trends.testStability}%`,
-              recommendation: 'Investigate flaky tests and improve test reliability'
+              recommendation: 'Investigate flaky tests and improve test reliability',
             });
           }
 
@@ -2723,12 +2837,12 @@ describe('Testing Utilities', () => {
               severity: 'low',
               title: 'Common failure patterns detected',
               description: `Most common failure: ${metrics.failures.commonFailures[0].message}`,
-              recommendation: 'Address the root cause of common failures'
+              recommendation: 'Address the root cause of common failures',
             });
           }
 
           return insights;
-        }
+        },
       };
 
       // Generate test data for analytics
@@ -2739,7 +2853,7 @@ describe('Testing Utilities', () => {
           duration: 45,
           timestamp: Date.now() - 10000,
           result: { success: true },
-          error: null
+          error: null,
         },
         {
           name: 'integration test 1',
@@ -2747,7 +2861,7 @@ describe('Testing Utilities', () => {
           duration: 2340,
           timestamp: Date.now() - 8000,
           result: null,
-          error: new Error('Connection timeout')
+          error: new Error('Connection timeout'),
         },
         {
           name: 'e2e test 1',
@@ -2755,7 +2869,7 @@ describe('Testing Utilities', () => {
           duration: 5670,
           timestamp: Date.now() - 6000,
           result: { success: true },
-          error: null
+          error: null,
         },
         {
           name: 'unit test 2',
@@ -2763,7 +2877,7 @@ describe('Testing Utilities', () => {
           duration: 23,
           timestamp: Date.now() - 4000,
           result: null,
-          error: new Error('Connection timeout')
+          error: new Error('Connection timeout'),
         },
         {
           name: 'integration test 2',
@@ -2771,8 +2885,8 @@ describe('Testing Utilities', () => {
           duration: 1234,
           timestamp: Date.now() - 2000,
           result: { success: true },
-          error: null
-        }
+          error: null,
+        },
       ];
 
       const analytics = testAnalytics.collectMetrics(testResults);
@@ -2793,9 +2907,9 @@ describe('Testing Utilities', () => {
       expect(analytics.performance.fastestTests[0].name).toBe('unit test 2');
 
       expect(insights.length).toBeGreaterThan(0);
-      expect(insights.some(i => i.type === 'reliability' && i.severity === 'medium')).toBe(true);
-      expect(insights.some(i => i.type === 'performance' && i.severity === 'high')).toBe(true);
-      expect(insights.some(i => i.type === 'stability' && i.severity === 'medium')).toBe(true);
+      expect(insights.some((i) => i.type === 'reliability' && i.severity === 'medium')).toBe(true);
+      expect(insights.some((i) => i.type === 'performance' && i.severity === 'high')).toBe(true);
+      expect(insights.some((i) => i.type === 'stability' && i.severity === 'medium')).toBe(true);
     });
   });
 });

@@ -22,7 +22,7 @@ import {
   validateMemoryFindInput,
   ValidationError,
   MemoryStoreInputSchema,
-  MemoryFindInputSchema
+  MemoryFindInputSchema,
 } from '../../../src/schemas/mcp-inputs.js';
 import { memoryStore } from '../../../src/services/memory-store.js';
 import { ChunkingService } from '../../../src/services/chunking/chunking-service.js';
@@ -32,7 +32,7 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   ToolExecutionContext,
-  ToolResult
+  ToolResult,
 } from '../../../src/types/core-interfaces.js';
 
 // Mock dependencies
@@ -70,7 +70,7 @@ const mockSecurityService = {
   validateExecutionContext: vi.fn(),
   logSecurityEvent: vi.fn(),
   enforceBusinessRules: vi.fn(),
-  checkScopePermissions: vi.fn()
+  checkScopePermissions: vi.fn(),
 };
 
 // Mock performance monitoring
@@ -83,7 +83,7 @@ const mockPerformanceMonitor = {
   analyzeQueryComplexity: vi.fn(),
   routeQuery: vi.fn(),
   checkThresholds: vi.fn(),
-  getResourceMetrics: vi.fn()
+  getResourceMetrics: vi.fn(),
 };
 
 // Mock rate limiter
@@ -91,7 +91,7 @@ const mockRateLimiter = {
   checkRateLimit: vi.fn(),
   getRateLimitHeaders: vi.fn(),
   recordUsage: vi.fn(),
-  getUsageStats: vi.fn()
+  getUsageStats: vi.fn(),
 };
 
 // ============================================================================
@@ -103,52 +103,53 @@ const createValidMemoryStoreItem = (overrides = {}) => ({
   scope: {
     project: 'test-project',
     branch: 'main',
-    org: 'test-org'
+    org: 'test-org',
   },
   data: {
     title: 'Test Entity',
     description: 'Test entity description',
-    type: 'component'
+    type: 'component',
   },
-  ...overrides
+  ...overrides,
 });
 
 const createValidMemoryFindQuery = (overrides = {}) => ({
   query: 'test query',
   scope: {
     project: 'test-project',
-    branch: 'main'
+    branch: 'main',
   },
   types: ['entity', 'relation'],
   mode: 'auto' as const,
   top_k: 10,
-  ...overrides
+  ...overrides,
 });
 
 const createLargeContent = (length = 3000) =>
-  'A'.repeat(length) + ' This is a test content that exceeds chunking threshold. '.repeat(Math.ceil(length / 100));
+  'A'.repeat(length) +
+  ' This is a test content that exceeds chunking threshold. '.repeat(Math.ceil(length / 100));
 
 const createBusinessRuleViolationItem = (ruleType: string) => {
   const violations: Record<string, any> = {
-    'missing_title': createValidMemoryStoreItem({
-      data: { description: 'Missing title' }
+    missing_title: createValidMemoryStoreItem({
+      data: { description: 'Missing title' },
     }),
-    'invalid_scope': createValidMemoryStoreItem({
-      scope: { project: '' } // Empty project name
+    invalid_scope: createValidMemoryStoreItem({
+      scope: { project: '' }, // Empty project name
     }),
-    'forbidden_content': createValidMemoryStoreItem({
+    forbidden_content: createValidMemoryStoreItem({
       data: {
         title: 'Malicious Content',
         content: '<script>alert("xss")</script>',
-        description: 'Contains forbidden patterns'
-      }
+        description: 'Contains forbidden patterns',
+      },
     }),
-    'excessive_size': createValidMemoryStoreItem({
+    excessive_size: createValidMemoryStoreItem({
       data: {
         title: 'Oversized',
-        content: createLargeContent(100000) // 100KB content
-      }
-    })
+        content: createLargeContent(100000), // 100KB content
+      },
+    }),
   };
   return violations[ruleType] || violations['missing_title'];
 };
@@ -218,10 +219,12 @@ describe('MCP Tool Input Schema Validation', () => {
   describe('Data Type Validation', () => {
     it('should reject invalid knowledge types', () => {
       const input = {
-        items: [{
-          ...createValidMemoryStoreItem(),
-          kind: 'invalid_type' as any
-        }]
+        items: [
+          {
+            ...createValidMemoryStoreItem(),
+            kind: 'invalid_type' as any,
+          },
+        ],
       };
 
       expect(() => validateMemoryStoreInput(input)).toThrow(ValidationError);
@@ -233,10 +236,10 @@ describe('MCP Tool Input Schema Validation', () => {
         { query: true },
         { query: null },
         { query: {} },
-        { query: [] }
+        { query: [] },
       ];
 
-      inputs.forEach(input => {
+      inputs.forEach((input) => {
         expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
       });
     });
@@ -249,10 +252,10 @@ describe('MCP Tool Input Schema Validation', () => {
         { scope: null },
         { scope: { project: 123 } },
         { scope: { branch: null } },
-        { scope: { org: {} } }
+        { scope: { org: {} } },
       ];
 
-      invalidScopes.forEach(scope => {
+      invalidScopes.forEach((scope) => {
         const input = { query: 'test', ...scope };
         expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
       });
@@ -263,10 +266,10 @@ describe('MCP Tool Input Schema Validation', () => {
         { query: 'test', types: 'string' },
         { query: 'test', types: 123 },
         { query: 'test', types: [123, true] },
-        { query: 'test', types: [null, undefined] }
+        { query: 'test', types: [null, undefined] },
       ];
 
-      invalidTypesInputs.forEach(input => {
+      invalidTypesInputs.forEach((input) => {
         expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
       });
     });
@@ -274,7 +277,7 @@ describe('MCP Tool Input Schema Validation', () => {
     it('should reject invalid mode values', () => {
       const invalidModes = ['invalid', 'AUTO', 'FAST', 'slow', undefined];
 
-      invalidModes.forEach(mode => {
+      invalidModes.forEach((mode) => {
         const input = { query: 'test', mode };
         if (mode !== undefined) {
           expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
@@ -285,7 +288,7 @@ describe('MCP Tool Input Schema Validation', () => {
     it('should reject invalid top_k values', () => {
       const invalidTopKs = [0, -1, 1.5, '10', true, null, 101];
 
-      invalidTopKs.forEach(top_k => {
+      invalidTopKs.forEach((top_k) => {
         const input = { query: 'test', top_k };
         expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
       });
@@ -297,7 +300,7 @@ describe('MCP Tool Input Schema Validation', () => {
       const input = {
         items: [createValidMemoryStoreItem()],
         unknownField: 'should not be here',
-        extraData: { something: 'else' }
+        extraData: { something: 'else' },
       };
 
       expect(() => validateMemoryStoreInput(input)).toThrow(ValidationError);
@@ -307,7 +310,7 @@ describe('MCP Tool Input Schema Validation', () => {
       const input = {
         query: 'test',
         unknownParam: 'invalid',
-        extraOption: true
+        extraOption: true,
       };
 
       expect(() => validateMemoryFindInput(input)).toThrow(ValidationError);
@@ -315,15 +318,17 @@ describe('MCP Tool Input Schema Validation', () => {
 
     it('should accept unknown fields in item data (data.record allows any)', () => {
       const input = {
-        items: [{
-          kind: 'entity' as const,
-          scope: { project: 'test' },
-          data: {
-            title: 'Test',
-            unknownField: 'invalid',
-            extraProp: 123
-          }
-        }]
+        items: [
+          {
+            kind: 'entity' as const,
+            scope: { project: 'test' },
+            data: {
+              title: 'Test',
+              unknownField: 'invalid',
+              extraProp: 123,
+            },
+          },
+        ],
       };
 
       // This should pass as data.record allows any fields
@@ -337,7 +342,7 @@ describe('MCP Tool Input Schema Validation', () => {
     it('should accept empty scope object', () => {
       const input = {
         query: 'test',
-        scope: {}
+        scope: {},
       };
 
       const result = validateMemoryFindInput(input);
@@ -347,7 +352,7 @@ describe('MCP Tool Input Schema Validation', () => {
     it('should accept partial scope with only project', () => {
       const input = {
         query: 'test',
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       };
 
       const result = validateMemoryFindInput(input);
@@ -359,7 +364,7 @@ describe('MCP Tool Input Schema Validation', () => {
     it('should accept partial scope with only org', () => {
       const input = {
         query: 'test',
-        scope: { org: 'test-org' }
+        scope: { org: 'test-org' },
       };
 
       const result = validateMemoryFindInput(input);
@@ -374,8 +379,8 @@ describe('MCP Tool Input Schema Validation', () => {
         scope: {
           project: 'test-project',
           branch: 'feature/test',
-          org: 'test-org'
-        }
+          org: 'test-org',
+        },
       };
 
       const result = validateMemoryFindInput(input);
@@ -390,8 +395,8 @@ describe('MCP Tool Input Schema Validation', () => {
         scope: {
           project: 'project-with-dashes_and_underscores',
           branch: 'feature/branch-with-slashes',
-          org: 'org.with.dots'
-        }
+          org: 'org.with.dots',
+        },
       };
 
       const result = validateMemoryFindInput(input);
@@ -405,11 +410,11 @@ describe('MCP Tool Input Schema Validation', () => {
       const invalidInputs = [
         { query: 'test', scope: { project: '' } },
         { query: 'test', scope: { branch: '' } },
-        { query: 'test', scope: { org: '' } }
+        { query: 'test', scope: { org: '' } },
       ];
 
       // This test is documenting current behavior - empty strings are currently allowed
-      invalidInputs.forEach(input => {
+      invalidInputs.forEach((input) => {
         const result = validateMemoryFindInput(input);
         expect(result).toBeDefined();
       });
@@ -425,10 +430,10 @@ describe('MCP Tool Input Schema Validation', () => {
         '🚀 emoji test',
         'émojis 🎨 and spëcial chars',
         'العربية',
-        'עברית'
+        'עברית',
       ];
 
-      queries.forEach(query => {
+      queries.forEach((query) => {
         const input = { query };
         const result = validateMemoryFindInput(input);
         expect(result.query).toBe(query);
@@ -441,8 +446,8 @@ describe('MCP Tool Input Schema Validation', () => {
         scope: {
           project: '项目名称',
           branch: '功能分支',
-          org: '组织机构'
-        }
+          org: '组织机构',
+        },
       };
 
       const result = validateMemoryFindInput(input);
@@ -489,41 +494,39 @@ describe('Business Rule Violations in MCP Context', () => {
       const invalidItems = [
         createBusinessRuleViolationItem('missing_title'),
         createBusinessRuleViolationItem('invalid_scope'),
-        createBusinessRuleViolationItem('forbidden_content')
+        createBusinessRuleViolationItem('forbidden_content'),
       ];
 
-      mockSecurityService.enforceBusinessRules.mockImplementation(
-        async (items: any[]) => {
-          const violations = [];
-          for (const [index, item] of items.entries()) {
-            if (!item.data.title) {
-              violations.push({
-                index,
-                rule: 'missing_title',
-                message: 'Entity must have a title',
-                severity: 'error'
-              });
-            }
-            if (item.scope?.project === '') {
-              violations.push({
-                index,
-                rule: 'invalid_scope',
-                message: 'Project name cannot be empty',
-                severity: 'error'
-              });
-            }
-            if (item.data.content?.includes('<script>')) {
-              violations.push({
-                index,
-                rule: 'forbidden_content',
-                message: 'Content contains forbidden patterns',
-                severity: 'error'
-              });
-            }
+      mockSecurityService.enforceBusinessRules.mockImplementation(async (items: any[]) => {
+        const violations = [];
+        for (const [index, item] of items.entries()) {
+          if (!item.data.title) {
+            violations.push({
+              index,
+              rule: 'missing_title',
+              message: 'Entity must have a title',
+              severity: 'error',
+            });
           }
-          return { violations, valid: violations.length === 0 };
+          if (item.scope?.project === '') {
+            violations.push({
+              index,
+              rule: 'invalid_scope',
+              message: 'Project name cannot be empty',
+              severity: 'error',
+            });
+          }
+          if (item.data.content?.includes('<script>')) {
+            violations.push({
+              index,
+              rule: 'forbidden_content',
+              message: 'Content contains forbidden patterns',
+              severity: 'error',
+            });
+          }
         }
-      );
+        return { violations, valid: violations.length === 0 };
+      });
 
       const result = await mockSecurityService.enforceBusinessRules(invalidItems);
 
@@ -538,26 +541,30 @@ describe('Business Rule Violations in MCP Context', () => {
       const businessRuleErrors = [
         { code: 'MISSING_REQUIRED_FIELD', field: 'title', message: 'Title is required' },
         { code: 'INVALID_SCOPE_VALUE', field: 'project', message: 'Project cannot be empty' },
-        { code: 'CONTENT_POLICY_VIOLATION', field: 'content', message: 'Contains forbidden patterns' },
-        { code: 'SIZE_LIMIT_EXCEEDED', field: 'content', message: 'Content exceeds maximum size' }
+        {
+          code: 'CONTENT_POLICY_VIOLATION',
+          field: 'content',
+          message: 'Contains forbidden patterns',
+        },
+        { code: 'SIZE_LIMIT_EXCEEDED', field: 'content', message: 'Content exceeds maximum size' },
       ];
 
       const mockErrorResponse: MemoryStoreResponse = {
         success: false,
         stored: [],
         duplicates: [],
-        errors: businessRuleErrors.map(error => ({
+        errors: businessRuleErrors.map((error) => ({
           item: createValidMemoryStoreItem(),
           error: error.message,
           code: error.code,
-          field: error.field
-        }))
+          field: error.field,
+        })),
       };
 
       mockMemoryStore.store.mockResolvedValue(mockErrorResponse);
 
       const result = await mockMemoryStore.store({
-        items: [createValidMemoryStoreItem()]
+        items: [createValidMemoryStoreItem()],
       });
 
       expect(result.success).toBe(false);
@@ -573,9 +580,9 @@ describe('Business Rule Violations in MCP Context', () => {
         createValidMemoryStoreItem({
           data: {
             title: 'Item with Warning',
-            description: 'This might be too verbose but is acceptable'
-          }
-        })
+            description: 'This might be too verbose but is acceptable',
+          },
+        }),
       ];
 
       mockSecurityService.enforceBusinessRules.mockResolvedValue({
@@ -585,17 +592,17 @@ describe('Business Rule Violations in MCP Context', () => {
             index: 0,
             rule: 'verbose_description',
             message: 'Description is quite long',
-            severity: 'warning'
-          }
+            severity: 'warning',
+          },
         ],
         warnings: [
           {
             index: 0,
             rule: 'verbose_description',
             message: 'Description is quite long',
-            severity: 'warning'
-          }
-        ]
+            severity: 'warning',
+          },
+        ],
       });
 
       const result = await mockSecurityService.enforceBusinessRules(itemsWithWarnings);
@@ -613,7 +620,7 @@ describe('Business Rule Violations in MCP Context', () => {
         createBusinessRuleViolationItem('missing_title'),
         createValidMemoryStoreItem({ data: { title: 'Valid Item 2' } }),
         createBusinessRuleViolationItem('invalid_scope'),
-        createValidMemoryStoreItem({ data: { title: 'Valid Item 3' } })
+        createValidMemoryStoreItem({ data: { title: 'Valid Item 3' } }),
       ];
 
       const mockPartialSuccessResponse: MemoryStoreResponse = {
@@ -625,23 +632,23 @@ describe('Business Rule Violations in MCP Context', () => {
             item: mixedItems[1],
             error: 'Missing required field: title',
             code: 'MISSING_REQUIRED_FIELD',
-            index: 1
+            index: 1,
           },
           {
             item: mixedItems[3],
             error: 'Invalid scope: project cannot be empty',
             code: 'INVALID_SCOPE_VALUE',
-            index: 3
-          }
+            index: 3,
+          },
         ],
         metadata: {
           batchOperation: {
             totalItems: 5,
             successfulItems: 3,
             failedItems: 2,
-            successRate: 0.6
-          }
-        }
+            successRate: 0.6,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockPartialSuccessResponse);
@@ -658,7 +665,7 @@ describe('Business Rule Violations in MCP Context', () => {
       const itemsWithCriticalViolation = [
         createValidMemoryStoreItem(),
         createBusinessRuleViolationItem('forbidden_content'),
-        createValidMemoryStoreItem()
+        createValidMemoryStoreItem(),
       ];
 
       const mockCriticalFailureResponse: MemoryStoreResponse = {
@@ -670,8 +677,8 @@ describe('Business Rule Violations in MCP Context', () => {
             item: itemsWithCriticalViolation[1],
             error: 'Critical security policy violation: malicious content detected',
             code: 'SECURITY_POLICY_VIOLATION',
-            critical: true
-          }
+            critical: true,
+          },
         ],
         metadata: {
           batchOperation: {
@@ -679,9 +686,9 @@ describe('Business Rule Violations in MCP Context', () => {
             successfulItems: 0,
             failedItems: 3,
             criticalViolation: true,
-            abortReason: 'Security policy violation'
-          }
-        }
+            abortReason: 'Security policy violation',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockCriticalFailureResponse);
@@ -697,7 +704,9 @@ describe('Business Rule Violations in MCP Context', () => {
 
     it('should track detailed error statistics in batch operations', async () => {
       const largeBatch = Array.from({ length: 100 }, (_, i) =>
-        i % 10 === 0 ? createBusinessRuleViolationItem('missing_title') : createValidMemoryStoreItem()
+        i % 10 === 0
+          ? createBusinessRuleViolationItem('missing_title')
+          : createValidMemoryStoreItem()
       );
 
       const mockStatsResponse: MemoryStoreResponse = {
@@ -708,7 +717,7 @@ describe('Business Rule Violations in MCP Context', () => {
           item: createBusinessRuleViolationItem('missing_title'),
           error: 'Missing required field: title',
           code: 'MISSING_REQUIRED_FIELD',
-          index: i * 10
+          index: i * 10,
         })),
         metadata: {
           batchOperation: {
@@ -717,13 +726,13 @@ describe('Business Rule Violations in MCP Context', () => {
             failedItems: 10,
             successRate: 0.9,
             errorBreakdown: {
-              'MISSING_REQUIRED_FIELD': 10,
-              'INVALID_SCOPE_VALUE': 0,
-              'CONTENT_POLICY_VIOLATION': 0
+              MISSING_REQUIRED_FIELD: 10,
+              INVALID_SCOPE_VALUE: 0,
+              CONTENT_POLICY_VIOLATION: 0,
             },
-            processingTime: 2500
-          }
-        }
+            processingTime: 2500,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockStatsResponse);
@@ -748,7 +757,7 @@ describe('Business Rule Violations in MCP Context', () => {
         'VALIDATION_ERROR',
         'SECURITY_POLICY_VIOLATION',
         'RATE_LIMIT_EXCEEDED',
-        'RESOURCE_LIMIT_EXCEEDED'
+        'RESOURCE_LIMIT_EXCEEDED',
       ];
 
       // This test ensures our error code standardization
@@ -764,7 +773,7 @@ describe('Business Rule Violations in MCP Context', () => {
         message: 'Title is required for entity type',
         severity: 'error',
         suggestion: 'Add a title field to the data object',
-        documentation: 'https://docs.cortex.ai/errors/missing-required-field'
+        documentation: 'https://docs.cortex.ai/errors/missing-required-field',
       };
 
       expect(errorContext.code).toBe('MISSING_REQUIRED_FIELD');
@@ -800,8 +809,8 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Large Section',
-          content: createLargeContent(2500) // Exceeds 2400 threshold
-        }
+          content: createLargeContent(2500), // Exceeds 2400 threshold
+        },
       });
 
       const shouldChunk = chunkingService.shouldChunkItem(largeContentItem);
@@ -813,8 +822,8 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Small Section',
-          content: 'This is a small content that should not be chunked'
-        }
+          content: 'This is a small content that should not be chunked',
+        },
       });
 
       const shouldChunk = chunkingService.shouldChunkItem(smallContentItem);
@@ -825,24 +834,24 @@ describe('Chunking Behavior Through MCP', () => {
       const chunkableTypes = ['section', 'runbook', 'incident'];
       const nonChunkableTypes = ['entity', 'relation', 'decision', 'observation'];
 
-      chunkableTypes.forEach(type => {
+      chunkableTypes.forEach((type) => {
         const item = createValidMemoryStoreItem({
           kind: type as any,
           data: {
             title: `Large ${type}`,
-            content: createLargeContent(2500) // Use longer content
-          }
+            content: createLargeContent(2500), // Use longer content
+          },
         });
         expect(chunkingService.shouldChunkItem(item)).toBe(true);
       });
 
-      nonChunkableTypes.forEach(type => {
+      nonChunkableTypes.forEach((type) => {
         const item = createValidMemoryStoreItem({
           kind: type as any,
           data: {
             title: `Large ${type}`,
-            content: createLargeContent(2500) // Even with long content, non-chunkable types should return false
-          }
+            content: createLargeContent(2500), // Even with long content, non-chunkable types should return false
+          },
         });
         expect(chunkingService.shouldChunkItem(item)).toBe(false);
       });
@@ -855,8 +864,8 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Large Section for Stats',
-          content: createLargeContent(500)
-        }
+          content: createLargeContent(500),
+        },
       });
 
       const stats = chunkingService.getChunkingStats(largeItem);
@@ -876,8 +885,8 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Test',
-          content: createLargeContent(3000) // 3000 > 2400 threshold
-        }
+          content: createLargeContent(3000), // 3000 > 2400 threshold
+        },
       });
 
       const stats = chunkingService.getChunkingStats(largeItem);
@@ -924,7 +933,7 @@ describe('Chunking Behavior Through MCP', () => {
           reconstructed += chunks[i];
         } else {
           // Add only non-overlapping part
-          const overlapSize = Math.min(20, chunks[i-1].length);
+          const overlapSize = Math.min(20, chunks[i - 1].length);
           reconstructed += chunks[i].slice(overlapSize);
         }
       }
@@ -939,8 +948,8 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Large Section for MCP',
-          content: createLargeContent(500)
-        }
+          content: createLargeContent(500),
+        },
       });
 
       const chunkedItems = chunkingService.processItemsForStorage([largeItem]);
@@ -956,10 +965,13 @@ describe('Chunking Behavior Through MCP', () => {
             originalItems: 1,
             chunkedItems: chunkedItems.length,
             chunkingApplied: true,
-            averageChunkSize: chunkedItems.reduce((sum, item) =>
-              sum + chunkingService.extractContent(item).length, 0) / chunkedItems.length
-          }
-        }
+            averageChunkSize:
+              chunkedItems.reduce(
+                (sum, item) => sum + chunkingService.extractContent(item).length,
+                0
+              ) / chunkedItems.length,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockChunkedResponse);
@@ -976,12 +988,12 @@ describe('Chunking Behavior Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Parent Section',
-          content: createLargeContent(400)
+          content: createLargeContent(400),
         },
         metadata: {
           parentId: 'parent-123',
-          sectionId: 'section-456'
-        }
+          sectionId: 'section-456',
+        },
       });
 
       const chunkedItems = chunkingService.processItemsForStorage([largeItem]);
@@ -1012,7 +1024,7 @@ describe('Chunking Behavior Through MCP', () => {
       const chunks = chunkingService.chunkContent(contentWithParagraphs);
 
       // Chunks should preferably break at paragraph boundaries
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         // Avoid breaking sentences in the middle
         const sentences = chunk.split('. ');
         expect(sentences[sentences.length - 1]).not.toMatch(/[a-z]$/);
@@ -1025,7 +1037,7 @@ describe('Chunking Behavior Through MCP', () => {
       const thresholdContent = 'a'.repeat(200); // Exactly at threshold for test configuration
       const item = createValidMemoryStoreItem({
         kind: 'section',
-        data: { content: thresholdContent }
+        data: { content: thresholdContent },
       });
 
       const stats = chunkingService.getChunkingStats(item);
@@ -1044,14 +1056,15 @@ describe('Chunking Behavior Through MCP', () => {
     });
 
     it('should handle content with special characters in chunking', () => {
-      const specialContent = 'émojis 🚨 and spëcial chars\n'.repeat(50) +
-                           '中文内容\n'.repeat(25) +
-                           'Code: `const test = "value";`\n'.repeat(30);
+      const specialContent =
+        'émojis 🚨 and spëcial chars\n'.repeat(50) +
+        '中文内容\n'.repeat(25) +
+        'Code: `const test = "value";`\n'.repeat(30);
 
       const chunks = chunkingService.chunkContent(specialContent);
 
       expect(chunks.length).toBeGreaterThan(1);
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         // Ensure no character corruption
         expect(chunk).toContain('émojis');
         expect(chunk).toContain('中文');
@@ -1082,8 +1095,8 @@ describe('TTL Functionality Through MCP', () => {
       const itemWithExpiry = createValidMemoryStoreItem({
         data: {
           title: 'Test Item',
-          expiry_at: '2024-12-31T23:59:59.999Z'
-        }
+          expiry_at: '2024-12-31T23:59:59.999Z',
+        },
       });
 
       const expiry = calculateItemExpiry(itemWithExpiry);
@@ -1092,7 +1105,7 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should apply default TTL when no expiry specified', () => {
       const itemWithoutExpiry = createValidMemoryStoreItem({
-        data: { title: 'Test Item' }
+        data: { title: 'Test Item' },
       });
 
       const expiry = calculateItemExpiry(itemWithoutExpiry);
@@ -1101,7 +1114,7 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should respect custom default TTL parameter', () => {
       const item = createValidMemoryStoreItem({
-        data: { title: 'Test Item' }
+        data: { title: 'Test Item' },
       });
 
       const shortTTLExpiry = calculateItemExpiry(item, '1h');
@@ -1118,11 +1131,11 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should handle different TTL policy types', () => {
       const item = createValidMemoryStoreItem({
-        data: { title: 'Test Item' }
+        data: { title: 'Test Item' },
       });
 
       const ttlPolicies = ['1h', '24h', '7d', '30d', '90d', '1y', 'default'];
-      const expiries = ttlPolicies.map(policy => calculateItemExpiry(item, policy as any));
+      const expiries = ttlPolicies.map((policy) => calculateItemExpiry(item, policy as any));
 
       expiries.forEach((expiry, index) => {
         expect(expiry).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
@@ -1138,9 +1151,9 @@ describe('TTL Functionality Through MCP', () => {
       const expiredItem = createValidMemoryStoreItem({
         data: {
           title: 'Expired Item',
-          expiry_at: '2020-01-01T00:00:00.000Z'
+          expiry_at: '2020-01-01T00:00:00.000Z',
         },
-        expiry_at: '2020-01-01T00:00:00.000Z'
+        expiry_at: '2020-01-01T00:00:00.000Z',
       });
 
       expect(isExpired(expiredItem)).toBe(true);
@@ -1150,9 +1163,9 @@ describe('TTL Functionality Through MCP', () => {
       const futureItem = createValidMemoryStoreItem({
         data: {
           title: 'Future Item',
-          expiry_at: '2030-01-01T00:00:00.000Z'
+          expiry_at: '2030-01-01T00:00:00.000Z',
         },
-        expiry_at: '2030-01-01T00:00:00.000Z'
+        expiry_at: '2030-01-01T00:00:00.000Z',
       });
 
       expect(isExpired(futureItem)).toBe(false);
@@ -1160,7 +1173,7 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should handle items without expiry as non-expired', () => {
       const noExpiryItem = createValidMemoryStoreItem({
-        data: { title: 'No Expiry Item' }
+        data: { title: 'No Expiry Item' },
       });
 
       expect(isExpired(noExpiryItem)).toBe(false);
@@ -1170,9 +1183,9 @@ describe('TTL Functionality Through MCP', () => {
       const invalidDateItem = createValidMemoryStoreItem({
         data: {
           title: 'Invalid Date Item',
-          expiry_at: 'not-a-date'
+          expiry_at: 'not-a-date',
         },
-        expiry_at: 'not-a-date'
+        expiry_at: 'not-a-date',
       });
 
       expect(isExpired(invalidDateItem)).toBe(false);
@@ -1187,9 +1200,9 @@ describe('TTL Functionality Through MCP', () => {
       const futureItem = createValidMemoryStoreItem({
         data: {
           title: 'Future Item',
-          expiry_at: futureDate.toISOString()
+          expiry_at: futureDate.toISOString(),
         },
-        expiry_at: futureDate.toISOString()
+        expiry_at: futureDate.toISOString(),
       });
 
       const ttl = getItemTTL(futureItem);
@@ -1201,9 +1214,9 @@ describe('TTL Functionality Through MCP', () => {
       const expiredItem = createValidMemoryStoreItem({
         data: {
           title: 'Expired Item',
-          expiry_at: '2020-01-01T00:00:00.000Z'
+          expiry_at: '2020-01-01T00:00:00.000Z',
         },
-        expiry_at: '2020-01-01T00:00:00.000Z'
+        expiry_at: '2020-01-01T00:00:00.000Z',
       });
 
       expect(getItemTTL(expiredItem)).toBe(0);
@@ -1211,7 +1224,7 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should return 0 for items without expiry', () => {
       const noExpiryItem = createValidMemoryStoreItem({
-        data: { title: 'No Expiry Item' }
+        data: { title: 'No Expiry Item' },
       });
 
       expect(getItemTTL(noExpiryItem)).toBe(0);
@@ -1221,21 +1234,23 @@ describe('TTL Functionality Through MCP', () => {
   describe('MCP Integration with TTL', () => {
     it('should store items with calculated expiry', async () => {
       const item = createValidMemoryStoreItem({
-        data: { title: 'Test Item with TTL' }
+        data: { title: 'Test Item with TTL' },
       });
 
       const calculatedExpiry = calculateItemExpiry(item, '7d');
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...item,
-          id: 'item-123',
-          expiry_at: calculatedExpiry,
-          created_at: new Date().toISOString()
-        }],
+        stored: [
+          {
+            ...item,
+            id: 'item-123',
+            expiry_at: calculatedExpiry,
+            created_at: new Date().toISOString(),
+          },
+        ],
         duplicates: [],
-        errors: []
+        errors: [],
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1250,17 +1265,17 @@ describe('TTL Functionality Through MCP', () => {
     it('should handle mixed TTL policies in batch', async () => {
       const items = [
         createValidMemoryStoreItem({
-          data: { title: 'Short TTL Item' }
+          data: { title: 'Short TTL Item' },
         }),
         createValidMemoryStoreItem({
           data: {
             title: 'Explicit TTL Item',
-            expiry_at: '2024-12-31T23:59:59.999Z'
-          }
+            expiry_at: '2024-12-31T23:59:59.999Z',
+          },
         }),
         createValidMemoryStoreItem({
-          data: { title: 'Long TTL Item' }
-        })
+          data: { title: 'Long TTL Item' },
+        }),
       ];
 
       const shortTTL = calculateItemExpiry(items[0], '1h');
@@ -1272,8 +1287,8 @@ describe('TTL Functionality Through MCP', () => {
         stored: items.map((item, index) => ({
           ...item,
           id: `item-${index}`,
-          expiry_at: index === 1 ? explicitTTL : (index === 0 ? shortTTL : longTTL),
-          created_at: new Date().toISOString()
+          expiry_at: index === 1 ? explicitTTL : index === 0 ? shortTTL : longTTL,
+          created_at: new Date().toISOString(),
         })),
         duplicates: [],
         errors: [],
@@ -1281,9 +1296,9 @@ describe('TTL Functionality Through MCP', () => {
           ttlOperation: {
             itemsProcessed: 3,
             ttlPoliciesApplied: ['1h', 'explicit', '30d'],
-            averageTTLSeconds: (3600 + 30 * 24 * 3600 + 7 * 24 * 3600) / 3
-          }
-        }
+            averageTTLSeconds: (3600 + 30 * 24 * 3600 + 7 * 24 * 3600) / 3,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1310,7 +1325,7 @@ describe('TTL Functionality Through MCP', () => {
             scope: { project: 'test' },
             data: { title: 'Expired Item' },
             expiry_at: expiredTime.toISOString(),
-            metadata: { created_at: expiredTime.toISOString(), expired: true }
+            metadata: { created_at: expiredTime.toISOString(), expired: true },
           },
           {
             id: 'valid-item',
@@ -1318,8 +1333,8 @@ describe('TTL Functionality Through MCP', () => {
             scope: { project: 'test' },
             data: { title: 'Valid Item' },
             expiry_at: futureTime.toISOString(),
-            metadata: { created_at: currentTime.toISOString(), expired: false }
-          }
+            metadata: { created_at: currentTime.toISOString(), expired: false },
+          },
         ],
         total: 2,
         searchTime: 45,
@@ -1327,16 +1342,16 @@ describe('TTL Functionality Through MCP', () => {
           ttlFiltering: {
             totalFound: 2,
             expiredFiltered: 1,
-            returnedAfterExpiryFilter: 1
-          }
-        }
+            returnedAfterExpiryFilter: 1,
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockSearchResults);
 
       const result = await mockMemoryStore.find({
         query: 'test',
-        filterExpired: true
+        filterExpired: true,
       });
 
       expect(result.results).toHaveLength(2); // Returns all but marks expired
@@ -1352,8 +1367,8 @@ describe('TTL Functionality Through MCP', () => {
         kind: 'section',
         data: {
           title: 'Large Section',
-          content: createLargeContent(500)
-        }
+          content: createLargeContent(500),
+        },
       });
 
       const chunkingService = new ChunkingService(100, 20);
@@ -1361,19 +1376,19 @@ describe('TTL Functionality Through MCP', () => {
 
       // Apply TTL to all chunks
       const ttl = calculateItemExpiry(largeItem, '7d');
-      chunkedItems.forEach(chunk => {
+      chunkedItems.forEach((chunk) => {
         chunk.expiry_at = ttl;
       });
 
       // All chunks should have the same expiry
-      chunkedItems.forEach(chunk => {
+      chunkedItems.forEach((chunk) => {
         expect(chunk.expiry_at).toBe(ttl);
       });
     });
 
     it('should handle very short TTL periods', () => {
       const item = createValidMemoryStoreItem({
-        data: { title: 'Short TTL Item' }
+        data: { title: 'Short TTL Item' },
       });
 
       const shortTTL = calculateItemExpiry(item, '1m'); // 1 minute
@@ -1386,7 +1401,7 @@ describe('TTL Functionality Through MCP', () => {
 
     it('should handle very long TTL periods', () => {
       const item = createValidMemoryStoreItem({
-        data: { title: 'Long TTL Item' }
+        data: { title: 'Long TTL Item' },
       });
 
       const longTTL = calculateItemExpiry(item, '10y'); // 10 years
@@ -1418,11 +1433,11 @@ describe('Dedupe Behavior Through MCP', () => {
   describe('Duplicate Detection', () => {
     it('should detect exact duplicates with high similarity', async () => {
       const originalItem = createValidMemoryStoreItem({
-        data: { title: 'Original Item', description: 'Same description' }
+        data: { title: 'Original Item', description: 'Same description' },
       });
 
       const duplicateItem = createValidMemoryStoreItem({
-        data: { title: 'Original Item', description: 'Same description' }
+        data: { title: 'Original Item', description: 'Same description' },
       });
 
       const mockDedupeResponse: MemoryStoreResponse = {
@@ -1434,8 +1449,8 @@ describe('Dedupe Behavior Through MCP', () => {
             similarity: 0.99,
             duplicateType: 'exact_match',
             reason: 'Content identical to existing item',
-            duplicateItem
-          }
+            duplicateItem,
+          },
         ],
         errors: [],
         metadata: {
@@ -1443,9 +1458,9 @@ describe('Dedupe Behavior Through MCP', () => {
             itemsProcessed: 2,
             duplicatesFound: 1,
             uniquenessRate: 0.5,
-            similarityThreshold: 0.95
-          }
-        }
+            similarityThreshold: 0.95,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockDedupeResponse);
@@ -1460,11 +1475,17 @@ describe('Dedupe Behavior Through MCP', () => {
 
     it('should detect semantic duplicates with moderate similarity', async () => {
       const originalItem = createValidMemoryStoreItem({
-        data: { title: 'User Authentication Service', description: 'Handles user login and password validation' }
+        data: {
+          title: 'User Authentication Service',
+          description: 'Handles user login and password validation',
+        },
       });
 
       const semanticDuplicate = createValidMemoryStoreItem({
-        data: { title: 'Authentication Service for Users', description: 'Manages user login and credential verification' }
+        data: {
+          title: 'Authentication Service for Users',
+          description: 'Manages user login and credential verification',
+        },
       });
 
       const mockSemanticDedupeResponse: MemoryStoreResponse = {
@@ -1476,8 +1497,8 @@ describe('Dedupe Behavior Through MCP', () => {
             similarity: 0.87,
             duplicateType: 'semantic_match',
             reason: 'Semantically similar content detected',
-            duplicateItem: semanticDuplicate
-          }
+            duplicateItem: semanticDuplicate,
+          },
         ],
         errors: [],
         metadata: {
@@ -1485,9 +1506,9 @@ describe('Dedupe Behavior Through MCP', () => {
             itemsProcessed: 2,
             duplicatesFound: 1,
             uniquenessRate: 0.5,
-            semanticThreshold: 0.8
-          }
-        }
+            semanticThreshold: 0.8,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockSemanticDedupeResponse);
@@ -1502,7 +1523,7 @@ describe('Dedupe Behavior Through MCP', () => {
 
     it('should skip dedupe for items below threshold', async () => {
       const distinctItem = createValidMemoryStoreItem({
-        data: { title: 'Completely Different Item', description: 'Nothing similar here' }
+        data: { title: 'Completely Different Item', description: 'Nothing similar here' },
       });
 
       const mockNoDedupeResponse: MemoryStoreResponse = {
@@ -1515,9 +1536,9 @@ describe('Dedupe Behavior Through MCP', () => {
             itemsProcessed: 1,
             duplicatesFound: 0,
             uniquenessRate: 1.0,
-            skippedDedupeReason: 'Below similarity threshold'
-          }
-        }
+            skippedDedupeReason: 'Below similarity threshold',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockNoDedupeResponse);
@@ -1535,28 +1556,34 @@ describe('Dedupe Behavior Through MCP', () => {
       const duplicateScenarios = [
         {
           item: createValidMemoryStoreItem({
-            data: { title: 'Exact Same Title', content: 'Exact same content' }
+            data: { title: 'Exact Same Title', content: 'Exact same content' },
           }),
           expectedReason: 'Content identical to existing item',
           expectedType: 'exact_match',
-          expectedSimilarity: 1.0
+          expectedSimilarity: 1.0,
         },
         {
           item: createValidMemoryStoreItem({
-            data: { title: 'Slightly Modified Title', content: 'Very similar content with minor changes' }
+            data: {
+              title: 'Slightly Modified Title',
+              content: 'Very similar content with minor changes',
+            },
           }),
           expectedReason: 'High similarity with minor modifications',
           expectedType: 'high_similarity',
-          expectedSimilarity: 0.92
+          expectedSimilarity: 0.92,
         },
         {
           item: createValidMemoryStoreItem({
-            data: { title: 'Related Concept', content: 'Semantically related but different phrasing' }
+            data: {
+              title: 'Related Concept',
+              content: 'Semantically related but different phrasing',
+            },
           }),
           expectedReason: 'Semantic similarity in meaning and context',
           expectedType: 'semantic_match',
-          expectedSimilarity: 0.78
-        }
+          expectedSimilarity: 0.78,
+        },
       ];
 
       for (const scenario of duplicateScenarios) {
@@ -1569,10 +1596,10 @@ describe('Dedupe Behavior Through MCP', () => {
               similarity: scenario.expectedSimilarity,
               duplicateType: scenario.expectedType,
               reason: scenario.expectedReason,
-              duplicateItem: scenario.item
-            }
+              duplicateItem: scenario.item,
+            },
           ],
-          errors: []
+          errors: [],
         };
 
         mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1591,22 +1618,22 @@ describe('Dedupe Behavior Through MCP', () => {
         {
           item: createValidMemoryStoreItem({ kind: 'decision' }),
           reason: 'Knowledge type exempt from deduplication',
-          exemptTypes: ['decision', 'incident', 'release']
+          exemptTypes: ['decision', 'incident', 'release'],
         },
         {
           item: createValidMemoryStoreItem({
-            data: { title: 'Small Content', content: 'Too short' }
+            data: { title: 'Small Content', content: 'Too short' },
           }),
           reason: 'Content too short for meaningful comparison',
-          minLength: 50
+          minLength: 50,
         },
         {
           item: createValidMemoryStoreItem({
-            scope: { project: 'special-project' }
+            scope: { project: 'special-project' },
           }),
           reason: 'Project configured to bypass deduplication',
-          bypassProjects: ['special-project']
-        }
+          bypassProjects: ['special-project'],
+        },
       ];
 
       for (const skipReason of skipReasons) {
@@ -1619,9 +1646,9 @@ describe('Dedupe Behavior Through MCP', () => {
             dedupeOperation: {
               itemsProcessed: 1,
               duplicatesFound: 0,
-              skippedDedupeReason: skipReason.reason
-            }
-          }
+              skippedDedupeReason: skipReason.reason,
+            },
+          },
         };
 
         mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1638,7 +1665,7 @@ describe('Dedupe Behavior Through MCP', () => {
   describe('Existing ID Linking', () => {
     it('should properly link duplicates to existing IDs', async () => {
       const duplicateItem = createValidMemoryStoreItem({
-        data: { title: 'Duplicate Item', description: 'Same as existing' }
+        data: { title: 'Duplicate Item', description: 'Same as existing' },
       });
 
       const mockLinkResponse: MemoryStoreResponse = {
@@ -1652,17 +1679,17 @@ describe('Dedupe Behavior Through MCP', () => {
             reason: 'Content identical to existing item',
             duplicateItem,
             linkCreated: true,
-            linkType: 'duplicates'
-          }
+            linkType: 'duplicates',
+          },
         ],
         errors: [],
         metadata: {
           dedupeOperation: {
             itemsProcessed: 1,
             linksCreated: 1,
-            linkType: 'duplicates'
-          }
-        }
+            linkType: 'duplicates',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockLinkResponse);
@@ -1677,7 +1704,7 @@ describe('Dedupe Behavior Through MCP', () => {
 
     it('should maintain bidirectional linking for related items', async () => {
       const relatedItem = createValidMemoryStoreItem({
-        data: { title: 'Related Item', description: 'Similar but distinct' }
+        data: { title: 'Related Item', description: 'Similar but distinct' },
       });
 
       const mockBidirectionalResponse: MemoryStoreResponse = {
@@ -1693,8 +1720,8 @@ describe('Dedupe Behavior Through MCP', () => {
             linkCreated: true,
             linkType: 'related_to',
             bidirectionalLink: true,
-            linkedItemId: 'related-item-456'
-          }
+            linkedItemId: 'related-item-456',
+          },
         ],
         errors: [],
         metadata: {
@@ -1702,9 +1729,9 @@ describe('Dedupe Behavior Through MCP', () => {
             itemsProcessed: 1,
             linksCreated: 2,
             linkType: 'related_to',
-            bidirectionalLinks: true
-          }
-        }
+            bidirectionalLinks: true,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockBidirectionalResponse);
@@ -1723,7 +1750,7 @@ describe('Dedupe Behavior Through MCP', () => {
         createValidMemoryStoreItem({ data: { title: 'Duplicate Item' } }),
         createValidMemoryStoreItem({ data: { title: 'Unique Item 2' } }),
         createValidMemoryStoreItem({ data: { title: 'Another Duplicate' } }),
-        createValidMemoryStoreItem({ data: { title: 'Unique Item 3' } })
+        createValidMemoryStoreItem({ data: { title: 'Unique Item 3' } }),
       ];
 
       const mockBatchDedupeResponse: MemoryStoreResponse = {
@@ -1735,15 +1762,15 @@ describe('Dedupe Behavior Through MCP', () => {
             similarity: 0.94,
             duplicateType: 'exact_match',
             reason: 'Content identical to existing item',
-            duplicateItem: batchItems[1]
+            duplicateItem: batchItems[1],
           },
           {
             originalId: 'existing-duplicate-2',
             similarity: 0.87,
             duplicateType: 'semantic_match',
             reason: 'Semantically similar content',
-            duplicateItem: batchItems[3]
-          }
+            duplicateItem: batchItems[3],
+          },
         ],
         errors: [],
         metadata: {
@@ -1752,9 +1779,9 @@ describe('Dedupe Behavior Through MCP', () => {
             duplicatesFound: 2,
             uniqueItemsStored: 3,
             uniquenessRate: 0.6,
-            processingTime: 850
-          }
-        }
+            processingTime: 850,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockBatchDedupeResponse);
@@ -1770,7 +1797,7 @@ describe('Dedupe Behavior Through MCP', () => {
     it('should track dedupe performance metrics', async () => {
       const largeBatch = Array.from({ length: 100 }, (_, i) =>
         createValidMemoryStoreItem({
-          data: { title: `Batch Item ${i}`, content: `Content for item ${i}` }
+          data: { title: `Batch Item ${i}`, content: `Content for item ${i}` },
         })
       );
 
@@ -1782,7 +1809,7 @@ describe('Dedupe Behavior Through MCP', () => {
           similarity: 0.8 + Math.random() * 0.19,
           duplicateType: Math.random() > 0.5 ? 'semantic_match' : 'exact_match',
           reason: 'Duplicate detected',
-          duplicateItem: largeBatch[i + 75]
+          duplicateItem: largeBatch[i + 75],
         })),
         errors: [],
         metadata: {
@@ -1793,9 +1820,9 @@ describe('Dedupe Behavior Through MCP', () => {
             uniquenessRate: 0.75,
             processingTime: 2500,
             averageSimilarityScore: 0.89,
-            dedupeEfficiency: 0.95 // 95% accuracy in duplicate detection
-          }
-        }
+            dedupeEfficiency: 0.95, // 95% accuracy in duplicate detection
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockPerformanceResponse);
@@ -1830,31 +1857,33 @@ describe('Scope Behavior Through MCP', () => {
       const itemWithoutOrg = createValidMemoryStoreItem({
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
           // org is missing
-        }
+        },
       });
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithoutOrg,
-          id: 'item-123',
-          scope: {
-            project: 'test-project',
-            branch: 'main',
-            org: 'default-org' // Default org applied
-          }
-        }],
+        stored: [
+          {
+            ...itemWithoutOrg,
+            id: 'item-123',
+            scope: {
+              project: 'test-project',
+              branch: 'main',
+              org: 'default-org', // Default org applied
+            },
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             defaultOrgApplied: true,
             defaultOrgName: 'default-org',
-            originalScope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            originalScope: { project: 'test-project', branch: 'main' },
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1871,29 +1900,31 @@ describe('Scope Behavior Through MCP', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          org: 'explicit-org'
-        }
+          org: 'explicit-org',
+        },
       });
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithOrg,
-          id: 'item-456',
-          scope: {
-            project: 'test-project',
-            branch: 'main',
-            org: 'explicit-org' // Preserved
-          }
-        }],
+        stored: [
+          {
+            ...itemWithOrg,
+            id: 'item-456',
+            scope: {
+              project: 'test-project',
+              branch: 'main',
+              org: 'explicit-org', // Preserved
+            },
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             defaultOrgApplied: false,
-            explicitOrgPreserved: true
-          }
-        }
+            explicitOrgPreserved: true,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1908,27 +1939,29 @@ describe('Scope Behavior Through MCP', () => {
     it('should handle items with no scope information', async () => {
       const itemWithoutScope = createValidMemoryStoreItem({
         // scope is completely missing
-        data: { title: 'No Scope Item' }
+        data: { title: 'No Scope Item' },
       });
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithoutScope,
-          id: 'item-789',
-          scope: {
-            org: 'default-org'
-            // project and branch remain undefined
-          }
-        }],
+        stored: [
+          {
+            ...itemWithoutScope,
+            id: 'item-789',
+            scope: {
+              org: 'default-org',
+              // project and branch remain undefined
+            },
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             defaultOrgApplied: true,
-            scopeInferred: true
-          }
-        }
+            scopeInferred: true,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -1945,38 +1978,40 @@ describe('Scope Behavior Through MCP', () => {
   describe('Explicit Scope Override Behavior', () => {
     it('should allow explicit scope override in query parameters', async () => {
       const itemWithDefaultScope = createValidMemoryStoreItem({
-        scope: { project: 'original-project' }
+        scope: { project: 'original-project' },
       });
 
       const overrideScope = {
         project: 'override-project',
         branch: 'override-branch',
-        org: 'override-org'
+        org: 'override-org',
       };
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithDefaultScope,
-          id: 'item-override',
-          scope: overrideScope // Override applied
-        }],
+        stored: [
+          {
+            ...itemWithDefaultScope,
+            id: 'item-override',
+            scope: overrideScope, // Override applied
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             scopeOverridden: true,
             originalScope: { project: 'original-project' },
-            overrideScope
-          }
-        }
+            overrideScope,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
 
       const result = await mockMemoryStore.store({
         items: [itemWithDefaultScope],
-        scope: overrideScope
+        scope: overrideScope,
       });
 
       expect(result.success).toBe(true);
@@ -1989,42 +2024,44 @@ describe('Scope Behavior Through MCP', () => {
         scope: {
           project: 'original-project',
           branch: 'original-branch',
-          org: 'original-org'
-        }
+          org: 'original-org',
+        },
       });
 
       const partialOverride = {
-        project: 'new-project'
+        project: 'new-project',
         // Only project is overridden
       };
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithFullScope,
-          id: 'item-partial',
-          scope: {
-            project: 'new-project',     // Overridden
-            branch: 'original-branch',  // Preserved
-            org: 'original-org'         // Preserved
-          }
-        }],
+        stored: [
+          {
+            ...itemWithFullScope,
+            id: 'item-partial',
+            scope: {
+              project: 'new-project', // Overridden
+              branch: 'original-branch', // Preserved
+              org: 'original-org', // Preserved
+            },
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             scopeOverridden: true,
             overrideFields: ['project'],
-            preservedFields: ['branch', 'org']
-          }
-        }
+            preservedFields: ['branch', 'org'],
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
 
       const result = await mockMemoryStore.store({
         items: [itemWithFullScope],
-        scope: partialOverride
+        scope: partialOverride,
       });
 
       expect(result.success).toBe(true);
@@ -2038,7 +2075,7 @@ describe('Scope Behavior Through MCP', () => {
     it('should filter search results by scope correctly', async () => {
       const searchScope = {
         project: 'test-project',
-        branch: 'main'
+        branch: 'main',
       };
 
       const mockSearchResults: MemoryFindResponse = {
@@ -2048,22 +2085,22 @@ describe('Scope Behavior Through MCP', () => {
             kind: 'entity',
             scope: { project: 'test-project', branch: 'main' }, // Match
             data: { title: 'Matching Item 1' },
-            metadata: { score: 0.95, scopeMatch: true }
+            metadata: { score: 0.95, scopeMatch: true },
           },
           {
             id: 'item-2',
             kind: 'entity',
             scope: { project: 'test-project', branch: 'main' }, // Match
             data: { title: 'Matching Item 2' },
-            metadata: { score: 0.87, scopeMatch: true }
+            metadata: { score: 0.87, scopeMatch: true },
           },
           {
             id: 'item-3',
             kind: 'entity',
             scope: { project: 'other-project', branch: 'main' }, // No match
             data: { title: 'Non-matching Item' },
-            metadata: { score: 0.92, scopeMatch: false }
-          }
+            metadata: { score: 0.92, scopeMatch: false },
+          },
         ],
         total: 2, // Only matching items counted
         searchTime: 67,
@@ -2074,20 +2111,20 @@ describe('Scope Behavior Through MCP', () => {
             totalItems: 3,
             matchedItems: 2,
             filteredItems: 1,
-            filterEfficiency: 0.67
-          }
-        }
+            filterEfficiency: 0.67,
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockSearchResults);
 
       const result = await mockMemoryStore.find({
         query: 'test',
-        scope: searchScope
+        scope: searchScope,
       });
 
       expect(result.results).toHaveLength(2);
-      expect(result.results.every(item => item.scope.project === 'test-project')).toBe(true);
+      expect(result.results.every((item) => item.scope.project === 'test-project')).toBe(true);
       expect(result.metadata?.scopeFiltering?.matchedItems).toBe(2);
       expect(result.metadata?.scopeFiltering?.filteredItems).toBe(1);
     });
@@ -2096,7 +2133,7 @@ describe('Scope Behavior Through MCP', () => {
       const hierarchicalScope = {
         org: 'test-org',
         project: 'test-project',
-        branch: 'feature/test'
+        branch: 'feature/test',
       };
 
       const mockHierarchicalResults: MemoryFindResponse = {
@@ -2106,22 +2143,22 @@ describe('Scope Behavior Through MCP', () => {
             kind: 'entity',
             scope: hierarchicalScope, // Exact match
             data: { title: 'Exact Match' },
-            metadata: { scopeMatchLevel: 'exact', score: 1.0 }
+            metadata: { scopeMatchLevel: 'exact', score: 1.0 },
           },
           {
             id: 'project-match',
             kind: 'entity',
             scope: { org: 'test-org', project: 'test-project' }, // Partial match
             data: { title: 'Project Match' },
-            metadata: { scopeMatchLevel: 'project', score: 0.85 }
+            metadata: { scopeMatchLevel: 'project', score: 0.85 },
           },
           {
             id: 'org-match',
             kind: 'entity',
             scope: { org: 'test-org' }, // Org-level match
             data: { title: 'Org Match' },
-            metadata: { scopeMatchLevel: 'org', score: 0.75 }
-          }
+            metadata: { scopeMatchLevel: 'org', score: 0.75 },
+          },
         ],
         total: 3,
         searchTime: 89,
@@ -2133,10 +2170,10 @@ describe('Scope Behavior Through MCP', () => {
             matchBreakdown: {
               exact: 1,
               project: 1,
-              org: 1
-            }
-          }
-        }
+              org: 1,
+            },
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockHierarchicalResults);
@@ -2144,7 +2181,7 @@ describe('Scope Behavior Through MCP', () => {
       const result = await mockMemoryStore.find({
         query: 'test',
         scope: hierarchicalScope,
-        hierarchicalScope: true
+        hierarchicalScope: true,
       });
 
       expect(result.results).toHaveLength(3);
@@ -2158,12 +2195,12 @@ describe('Scope Behavior Through MCP', () => {
         scope: {
           project: 'chunk-project',
           branch: 'main',
-          org: 'chunk-org'
+          org: 'chunk-org',
         },
         data: {
           title: 'Large Section',
-          content: createLargeContent(3000) // Longer content
-        }
+          content: createLargeContent(3000), // Longer content
+        },
       });
 
       // Mock chunked items that inherit scope
@@ -2176,8 +2213,8 @@ describe('Scope Behavior Through MCP', () => {
             is_chunk: true,
             chunk_index: 0,
             total_chunks: 3,
-            content: 'Chunk 1 content...'
-          }
+            content: 'Chunk 1 content...',
+          },
         },
         {
           ...largeItemWithScope,
@@ -2187,8 +2224,8 @@ describe('Scope Behavior Through MCP', () => {
             is_chunk: true,
             chunk_index: 1,
             total_chunks: 3,
-            content: 'Chunk 2 content...'
-          }
+            content: 'Chunk 2 content...',
+          },
         },
         {
           ...largeItemWithScope,
@@ -2198,13 +2235,13 @@ describe('Scope Behavior Through MCP', () => {
             is_chunk: true,
             chunk_index: 2,
             total_chunks: 3,
-            content: 'Chunk 3 content...'
-          }
-        }
+            content: 'Chunk 3 content...',
+          },
+        },
       ];
 
       // All chunks should inherit the same scope
-      mockChunkedItems.forEach(chunk => {
+      mockChunkedItems.forEach((chunk) => {
         expect(chunk.scope).toEqual(largeItemWithScope.scope);
       });
 
@@ -2212,7 +2249,7 @@ describe('Scope Behavior Through MCP', () => {
         success: true,
         stored: mockChunkedItems.map((chunk, index) => ({
           ...chunk,
-          id: `chunk-${index}`
+          id: `chunk-${index}`,
         })),
         duplicates: [],
         errors: [],
@@ -2221,10 +2258,10 @@ describe('Scope Behavior Through MCP', () => {
             scopeInheritance: {
               originalScope: largeItemWithScope.scope,
               inheritedChunks: mockChunkedItems.length,
-              scopePreservation: 'complete'
-            }
-          }
-        }
+              scopePreservation: 'complete',
+            },
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockChunkedResponse);
@@ -2232,34 +2269,38 @@ describe('Scope Behavior Through MCP', () => {
       const result = await mockMemoryStore.store({ items: [largeItemWithScope] });
 
       expect(result.stored).toHaveLength(mockChunkedItems.length);
-      expect(result.metadata?.chunkingOperation?.scopeInheritance?.scopePreservation).toBe('complete');
+      expect(result.metadata?.chunkingOperation?.scopeInheritance?.scopePreservation).toBe(
+        'complete'
+      );
     });
   });
 
   describe('Scope Edge Cases', () => {
     it('should handle empty scope objects', async () => {
       const itemWithEmptyScope = createValidMemoryStoreItem({
-        scope: {} // Empty scope
+        scope: {}, // Empty scope
       });
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithEmptyScope,
-          id: 'item-empty-scope',
-          scope: {
-            org: 'default-org' // Default org applied to empty scope
-          }
-        }],
+        stored: [
+          {
+            ...itemWithEmptyScope,
+            id: 'item-empty-scope',
+            scope: {
+              org: 'default-org', // Default org applied to empty scope
+            },
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             originalScope: {},
             defaultOrgApplied: true,
-            scopeTransformation: 'empty_to_default'
-          }
-        }
+            scopeTransformation: 'empty_to_default',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -2274,28 +2315,30 @@ describe('Scope Behavior Through MCP', () => {
       const specialScope = {
         project: 'project-with-dashes_and_underscores',
         branch: 'feature/branch-with/slashes',
-        org: 'org.with.dots-and@symbols'
+        org: 'org.with.dots-and@symbols',
       };
 
       const itemWithSpecialScope = createValidMemoryStoreItem({
-        scope: specialScope
+        scope: specialScope,
       });
 
       const mockResponse: MemoryStoreResponse = {
         success: true,
-        stored: [{
-          ...itemWithSpecialScope,
-          id: 'item-special-scope',
-          scope: specialScope // Preserved exactly
-        }],
+        stored: [
+          {
+            ...itemWithSpecialScope,
+            id: 'item-special-scope',
+            scope: specialScope, // Preserved exactly
+          },
+        ],
         duplicates: [],
         errors: [],
         metadata: {
           scopeOperation: {
             specialCharactersPreserved: true,
-            scopeValidation: 'passed'
-          }
-        }
+            scopeValidation: 'passed',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -2310,8 +2353,8 @@ describe('Scope Behavior Through MCP', () => {
       const itemWithInvalidScope = createValidMemoryStoreItem({
         scope: {
           project: '', // Empty project name - should fail validation
-          branch: 'main'
-        }
+          branch: 'main',
+        },
       });
 
       const mockErrorResponse: MemoryStoreResponse = {
@@ -2323,15 +2366,15 @@ describe('Scope Behavior Through MCP', () => {
             item: itemWithInvalidScope,
             error: 'Invalid scope: project name cannot be empty',
             code: 'INVALID_SCOPE_VALUE',
-            field: 'scope.project'
-          }
+            field: 'scope.project',
+          },
         ],
         metadata: {
           scopeOperation: {
             validationFailed: true,
-            validationErrors: ['project_empty']
-          }
-        }
+            validationErrors: ['project_empty'],
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockErrorResponse);
@@ -2371,7 +2414,9 @@ describe('Error Handling Robustness', () => {
 
       const item = createValidMemoryStoreItem();
 
-      await expect(mockMemoryStore.store({ items: [item] })).rejects.toThrow('Database connection timeout');
+      await expect(mockMemoryStore.store({ items: [item] })).rejects.toThrow(
+        'Database connection timeout'
+      );
     });
 
     it('should handle database disconnection during operation', async () => {
@@ -2382,7 +2427,9 @@ describe('Error Handling Robustness', () => {
 
       const item = createValidMemoryStoreItem();
 
-      await expect(mockMemoryStore.store({ items: [item] })).rejects.toThrow('Database disconnected');
+      await expect(mockMemoryStore.store({ items: [item] })).rejects.toThrow(
+        'Database disconnected'
+      );
     });
 
     it('should provide retry information for transient failures', async () => {
@@ -2422,14 +2469,16 @@ describe('Error Handling Robustness', () => {
 
       mockMemoryStore.find.mockRejectedValue(searchTimeoutError);
 
-      await expect(mockMemoryStore.find({ query: 'test' })).rejects.toThrow('Search operation timed out');
+      await expect(mockMemoryStore.find({ query: 'test' })).rejects.toThrow(
+        'Search operation timed out'
+      );
     });
 
     it('should implement progressive timeout for different operations', async () => {
       const timeoutScenarios = [
         { operation: 'store', timeout: 30000 },
         { operation: 'find', timeout: 10000 },
-        { operation: 'batch', timeout: 60000 }
+        { operation: 'batch', timeout: 60000 },
       ];
 
       for (const scenario of timeoutScenarios) {
@@ -2440,12 +2489,14 @@ describe('Error Handling Robustness', () => {
 
         if (scenario.operation === 'store') {
           mockMemoryStore.store.mockRejectedValueOnce(timeoutError);
-          await expect(mockMemoryStore.store({ items: [createValidMemoryStoreItem()] }))
-            .rejects.toThrow('operation timeout');
+          await expect(
+            mockMemoryStore.store({ items: [createValidMemoryStoreItem()] })
+          ).rejects.toThrow('operation timeout');
         } else if (scenario.operation === 'find') {
           mockMemoryStore.find.mockRejectedValueOnce(timeoutError);
-          await expect(mockMemoryStore.find({ query: 'test' }))
-            .rejects.toThrow('operation timeout');
+          await expect(mockMemoryStore.find({ query: 'test' })).rejects.toThrow(
+            'operation timeout'
+          );
         }
       }
     });
@@ -2461,7 +2512,7 @@ describe('Error Handling Robustness', () => {
         [],
         { invalidStructure: 'missing required fields' },
         { items: 'not-an-array' },
-        { items: [null, undefined, 123, 'invalid'] }
+        { items: [null, undefined, 123, 'invalid'] },
       ];
 
       for (const input of malformedInputs) {
@@ -2474,7 +2525,7 @@ describe('Error Handling Robustness', () => {
       circularObject.self = circularObject; // Create circular reference
 
       const itemWithCircularRef = createValidMemoryStoreItem({
-        data: circularObject
+        data: circularObject,
       });
 
       // Should detect and handle circular references
@@ -2488,8 +2539,8 @@ describe('Error Handling Robustness', () => {
       const largeItem = createValidMemoryStoreItem({
         data: {
           title: 'Oversized Item',
-          content: oversizedContent
-        }
+          content: oversizedContent,
+        },
       });
 
       const sizeLimitError = new Error('Input payload exceeds maximum size limit (10MB)');
@@ -2540,7 +2591,7 @@ describe('Error Handling Robustness', () => {
         type: 'warning',
         message: 'High memory usage detected',
         usagePercent: 85,
-        recommendation: 'Consider reducing batch size'
+        recommendation: 'Consider reducing batch size',
       };
 
       // Mock should return success but with memory warning
@@ -2554,9 +2605,9 @@ describe('Error Handling Robustness', () => {
           systemHealth: {
             memoryUsage: 85,
             status: 'warning',
-            recommendations: ['reduce_batch_size']
-          }
-        }
+            recommendations: ['reduce_batch_size'],
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -2574,8 +2625,8 @@ describe('Error Handling Robustness', () => {
       const item = createValidMemoryStoreItem({
         data: {
           title: 'Test Item',
-          content: createLargeContent(5000) // Large content for chunking
-        }
+          content: createLargeContent(5000), // Large content for chunking
+        },
       });
 
       // Mock chunking failure but basic store success
@@ -2589,16 +2640,16 @@ describe('Error Handling Robustness', () => {
             type: 'fallback',
             message: 'Chunking failed, stored as single item',
             failedFeature: 'chunking',
-            fallbackApplied: true
-          }
+            fallbackApplied: true,
+          },
         ],
         metadata: {
           fallbackOperation: {
             originalFeature: 'chunking',
             fallbackFeature: 'simple_store',
-            reason: 'chunking_service_unavailable'
-          }
-        }
+            reason: 'chunking_service_unavailable',
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockFallbackResponse);
@@ -2613,7 +2664,7 @@ describe('Error Handling Robustness', () => {
     it('should handle partial feature failures gracefully', async () => {
       const batchItems = Array.from({ length: 10 }, (_, i) =>
         createValidMemoryStoreItem({
-          data: { title: `Item ${i}` }
+          data: { title: `Item ${i}` },
         })
       );
 
@@ -2626,13 +2677,13 @@ describe('Error Handling Robustness', () => {
           {
             item: batchItems[5],
             error: 'Item processing failed: unknown error',
-            code: 'PROCESSING_ERROR'
+            code: 'PROCESSING_ERROR',
           },
           {
             item: batchItems[9],
             error: 'Item processing failed: timeout',
-            code: 'TIMEOUT_ERROR'
-          }
+            code: 'TIMEOUT_ERROR',
+          },
         ],
         metadata: {
           batchOperation: {
@@ -2640,9 +2691,9 @@ describe('Error Handling Robustness', () => {
             successfulItems: 8,
             failedItems: 2,
             partialSuccess: true,
-            continuedProcessing: true
-          }
-        }
+            continuedProcessing: true,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockPartialFailureResponse);
@@ -2677,9 +2728,9 @@ describe('Error Handling Robustness', () => {
             retryOperation: {
               retryCount: 2,
               retryDelay: [1000, 2000], // Exponential backoff
-              totalRetryTime: 3000
-            }
-          }
+              totalRetryTime: 3000,
+            },
+          },
         });
       });
 
@@ -2728,11 +2779,11 @@ describe('Rate Limiting', () => {
   describe('Per-Org Rate Limits', () => {
     it('should enforce rate limits per organization', async () => {
       const org1Item = createValidMemoryStoreItem({
-        scope: { org: 'org-1' }
+        scope: { org: 'org-1' },
       });
 
       const org2Item = createValidMemoryStoreItem({
-        scope: { org: 'org-2' }
+        scope: { org: 'org-2' },
       });
 
       // Mock rate limiter to allow org-1 but block org-2
@@ -2744,12 +2795,12 @@ describe('Rate Limiting', () => {
         .mockReturnValueOnce({
           'X-RateLimit-Limit': '100',
           'X-RateLimit-Remaining': '95',
-          'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString()
+          'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString(),
         })
         .mockReturnValueOnce({
           'X-RateLimit-Limit': '100',
           'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString()
+          'X-RateLimit-Reset': new Date(Date.now() + 60000).toISOString(),
         });
 
       // Org-1 request should succeed
@@ -2775,11 +2826,13 @@ describe('Rate Limiting', () => {
       const orgStats = {
         'org-1': { requests: 45, limit: 100, remaining: 55 },
         'org-2': { requests: 89, limit: 100, remaining: 11 },
-        'org-3': { requests: 100, limit: 100, remaining: 0 }
+        'org-3': { requests: 100, limit: 100, remaining: 0 },
       };
 
       mockRateLimiter.getUsageStats.mockImplementation((org: string) => {
-        return orgStats[org as keyof typeof orgStats] || { requests: 0, limit: 100, remaining: 100 };
+        return (
+          orgStats[org as keyof typeof orgStats] || { requests: 0, limit: 100, remaining: 100 }
+        );
       });
 
       const org1Usage = mockRateLimiter.getUsageStats('org-1');
@@ -2798,7 +2851,7 @@ describe('Rate Limiting', () => {
       const orgTiers = {
         'free-tier': { limit: 100, window: 3600 },
         'pro-tier': { limit: 1000, window: 3600 },
-        'enterprise-tier': { limit: 10000, window: 3600 }
+        'enterprise-tier': { limit: 10000, window: 3600 },
       };
 
       const tierChecks = Object.entries(orgTiers).map(([org, config]) => {
@@ -2806,7 +2859,7 @@ describe('Rate Limiting', () => {
           allowed: true,
           remaining: config.limit - 1,
           resetTime: Date.now() + config.window * 1000,
-          tier: org.replace('-tier', '')
+          tier: org.replace('-tier', ''),
         });
 
         return { org, config };
@@ -2814,7 +2867,7 @@ describe('Rate Limiting', () => {
 
       for (const { org, config } of tierChecks) {
         const item = createValidMemoryStoreItem({
-          scope: { org }
+          scope: { org },
         });
 
         const result = await mockMemoryStore.store({ items: [item] });
@@ -2835,7 +2888,7 @@ describe('Rate Limiting', () => {
           userId: 'user-1',
           remaining: 90,
           limit: 100,
-          window: 3600
+          window: 3600,
         })
         .mockResolvedValueOnce({
           allowed: false,
@@ -2843,13 +2896,13 @@ describe('Rate Limiting', () => {
           remaining: 0,
           limit: 50,
           window: 3600,
-          retryAfter: 300
+          retryAfter: 300,
         });
 
       // User 1 should succeed
       const user1Result = await mockMemoryStore.store({
         items: [user1Item],
-        userId: 'user-1'
+        userId: 'user-1',
       });
       expect(user1Result.success).toBe(true);
 
@@ -2864,7 +2917,7 @@ describe('Rate Limiting', () => {
       try {
         await mockMemoryStore.store({
           items: [user2Item],
-          userId: 'user-2'
+          userId: 'user-2',
         });
       } catch (error) {
         expect((error as any).code).toBe('USER_RATE_LIMIT_EXCEEDED');
@@ -2882,12 +2935,12 @@ describe('Rate Limiting', () => {
         remaining: 9,
         limit: 10, // Lower limit for anonymous users
         window: 3600,
-        anonymous: true
+        anonymous: true,
       });
 
       const result = await mockMemoryStore.store({
         items: [anonymousItem],
-        userId: undefined // No user ID provided
+        userId: undefined, // No user ID provided
       });
 
       expect(result.success).toBe(true);
@@ -2900,7 +2953,7 @@ describe('Rate Limiting', () => {
         { violationCount: 2, limit: 50, window: 3600 },
         { violationCount: 3, limit: 25, window: 7200 },
         { violationCount: 4, limit: 10, window: 14400 },
-        { violationCount: 5, limit: 1, window: 86400 }
+        { violationCount: 5, limit: 1, window: 86400 },
       ];
 
       for (const scenario of abuseScenarios) {
@@ -2910,7 +2963,7 @@ describe('Rate Limiting', () => {
           limit: scenario.limit,
           window: scenario.window,
           abuseLevel: scenario.violationCount,
-          progressiveLimiting: true
+          progressiveLimiting: true,
         });
 
         const item = createValidMemoryStoreItem();
@@ -2931,14 +2984,14 @@ describe('Rate Limiting', () => {
         allowed: true,
         remaining: 87,
         limit: 100,
-        resetTime: Date.now() + 45000
+        resetTime: Date.now() + 45000,
       });
 
       mockRateLimiter.getRateLimitHeaders.mockReturnValue({
         'X-RateLimit-Limit': '100',
         'X-RateLimit-Remaining': '87',
         'X-RateLimit-Reset': new Date(Date.now() + 45000).toISOString(),
-        'X-RateLimit-Retry-After': '0'
+        'X-RateLimit-Retry-After': '0',
       });
 
       const mockResponse: MemoryStoreResponse = {
@@ -2954,10 +3007,10 @@ describe('Rate Limiting', () => {
             headers: {
               'X-RateLimit-Limit': '100',
               'X-RateLimit-Remaining': '87',
-              'X-RateLimit-Reset': new Date(Date.now() + 45000).toISOString()
-            }
-          }
-        }
+              'X-RateLimit-Reset': new Date(Date.now() + 45000).toISOString(),
+            },
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockResponse);
@@ -2978,7 +3031,7 @@ describe('Rate Limiting', () => {
         'X-RateLimit-Remaining': '0',
         'X-RateLimit-Reset': new Date(Date.now() + 120000).toISOString(),
         'X-RateLimit-Retry-After': '120',
-        'Retry-After': '120'
+        'Retry-After': '120',
       };
 
       mockMemoryStore.store.mockRejectedValue(rateLimitError);
@@ -2995,9 +3048,9 @@ describe('Rate Limiting', () => {
     it('should handle burst rate limiting with token bucket algorithm', async () => {
       const burstScenarios = [
         { tokens: 10, capacity: 10, refillRate: 1 }, // Full bucket
-        { tokens: 5, capacity: 10, refillRate: 1 },  // Half full
-        { tokens: 0, capacity: 10, refillRate: 1 },  // Empty
-        { tokens: 1, capacity: 10, refillRate: 1 }   // Partially refilled
+        { tokens: 5, capacity: 10, refillRate: 1 }, // Half full
+        { tokens: 0, capacity: 10, refillRate: 1 }, // Empty
+        { tokens: 1, capacity: 10, refillRate: 1 }, // Partially refilled
       ];
 
       for (const scenario of burstScenarios) {
@@ -3007,7 +3060,7 @@ describe('Rate Limiting', () => {
           capacity: scenario.capacity,
           refillRate: scenario.refillRate,
           algorithm: 'token-bucket',
-          nextRefill: Date.now() + 1000
+          nextRefill: Date.now() + 1000,
         });
 
         const item = createValidMemoryStoreItem();
@@ -3025,7 +3078,7 @@ describe('Rate Limiting', () => {
     it('should handle concurrent requests within rate limits', async () => {
       const concurrentItems = Array.from({ length: 5 }, (_, i) =>
         createValidMemoryStoreItem({
-          data: { title: `Concurrent Item ${i}` }
+          data: { title: `Concurrent Item ${i}` },
         })
       );
 
@@ -3034,16 +3087,14 @@ describe('Rate Limiting', () => {
         remaining: 95,
         limit: 100,
         concurrentRequests: 5,
-        maxConcurrent: 10
+        maxConcurrent: 10,
       });
 
-      const promises = concurrentItems.map(item =>
-        mockMemoryStore.store({ items: [item] })
-      );
+      const promises = concurrentItems.map((item) => mockMemoryStore.store({ items: [item] }));
 
       const results = await Promise.all(promises);
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -3051,7 +3102,7 @@ describe('Rate Limiting', () => {
     it('should reject concurrent requests exceeding limits', async () => {
       const tooManyConcurrentItems = Array.from({ length: 15 }, (_, i) =>
         createValidMemoryStoreItem({
-          data: { title: `Item ${i}` }
+          data: { title: `Item ${i}` },
         })
       );
 
@@ -3060,7 +3111,7 @@ describe('Rate Limiting', () => {
         reason: 'Too many concurrent requests',
         concurrentRequests: 15,
         maxConcurrent: 10,
-        retryAfter: 5
+        retryAfter: 5,
       });
 
       const concurrencyError = new Error('Concurrent request limit exceeded');
@@ -3069,14 +3120,14 @@ describe('Rate Limiting', () => {
 
       mockMemoryStore.store.mockRejectedValue(concurrencyError);
 
-      const promises = tooManyConcurrentItems.map(item =>
+      const promises = tooManyConcurrentItems.map((item) =>
         mockMemoryStore.store({ items: [item] })
       );
 
       const results = await Promise.allSettled(promises);
 
       // All should fail due to concurrent limit
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.status).toBe('rejected');
       });
     });
@@ -3093,7 +3144,7 @@ describe('Rate Limiting', () => {
         windowStart,
         windowEnd,
         windowDuration: 3600,
-        requestsInWindow: 99
+        requestsInWindow: 99,
       });
 
       const item = createValidMemoryStoreItem();
@@ -3121,7 +3172,7 @@ describe('Phase 6 MCP Surface Tests - Summary', () => {
       'dedupe_behavior',
       'scope_behavior',
       'error_handling',
-      'rate_limiting'
+      'rate_limiting',
     ];
 
     expect(expectedFeatures).toHaveLength(9);
@@ -3134,52 +3185,52 @@ describe('Phase 6 MCP Surface Tests - Summary', () => {
         data_types: true,
         extra_fields: true,
         scope_validation: true,
-        unicode_support: true
+        unicode_support: true,
       },
       business_rules: {
         violation_detection: true,
         error_codes: true,
-        batch_mixed_results: true
+        batch_mixed_results: true,
       },
       chunking: {
         size_detection: true,
         statistics: true,
         content_splitting: true,
         mcp_integration: true,
-        edge_cases: true
+        edge_cases: true,
       },
       ttl: {
         calculation: true,
         expiry_detection: true,
         duration_calculation: true,
         mcp_integration: true,
-        edge_cases: true
+        edge_cases: true,
       },
       dedupe: {
         duplicate_detection: true,
         explicit_reasons: true,
         id_linking: true,
-        batch_processing: true
+        batch_processing: true,
       },
       scope: {
         default_org: true,
         explicit_override: true,
         filtering: true,
-        edge_cases: true
+        edge_cases: true,
       },
       error_handling: {
         database_failures: true,
         network_timeouts: true,
         invalid_inputs: true,
         resource_exhaustion: true,
-        graceful_degradation: true
+        graceful_degradation: true,
       },
       rate_limiting: {
         per_org: true,
         per_user: true,
         headers: true,
-        edge_cases: true
-      }
+        edge_cases: true,
+      },
     };
 
     // Validate all categories are covered

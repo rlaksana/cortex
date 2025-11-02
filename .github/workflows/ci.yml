@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
 
 jobs:
   quality-gates:
@@ -16,35 +16,35 @@ jobs:
         node-version: [20.x, 22.x]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Type Check
-      run: npm run type-check
+      - name: Type Check
+        run: npm run type-check
 
-    - name: Lint Code (Hard Gate)
-      run: npm run lint:hard
+      - name: Lint Code (Hard Gate)
+        run: npm run lint:hard
 
-    - name: Format Check
-      run: npm run format:check
+      - name: Format Check
+        run: npm run format:check
 
-    - name: Quality Check
-      run: npm run quality-check
+      - name: Quality Check
+        run: npm run quality-check
 
-    - name: Dead Code Analysis
-      run: npm run dead-code
+      - name: Dead Code Analysis
+        run: npm run dead-code
 
-    - name: Build Project
-      run: npm run build
+      - name: Build Project
+        run: npm run build
 
   test-suite:
     name: Test Suite
@@ -57,39 +57,39 @@ jobs:
         node-version: [20.x, 22.x]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Start Qdrant (for integration tests)
-      run: |
-        docker run -d --name qdrant -p 6333:6333 qdrant/qdrant:latest
-        sleep 10
+      - name: Start Qdrant (for integration tests)
+        run: |
+          docker run -d --name qdrant -p 6333:6333 qdrant/qdrant:latest
+          sleep 10
 
-    - name: Unit Tests
-      run: npm run test:unit
+      - name: Unit Tests
+        run: npm run test:unit
 
-    - name: Integration Tests
-      run: npm run test:integration
+      - name: Integration Tests
+        run: npm run test:integration
 
-    - name: Coverage Check
-      run: npm run test:coverage:ci
+      - name: Coverage Check
+        run: npm run test:coverage:ci
 
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
 
   security-and-performance:
     name: Security & Performance
@@ -98,23 +98,23 @@ jobs:
     needs: quality-gates
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Security Tests
-      run: npm run test:security
+      - name: Security Tests
+        run: npm run test:security
 
-    - name: Performance Tests
-      run: npm run test:performance:all || true # Allow performance tests to fail without blocking CI
+      - name: Performance Tests
+        run: npm run test:performance:all || true # Allow performance tests to fail without blocking CI
 
   deploy-check:
     name: Deployment Readiness
@@ -124,22 +124,22 @@ jobs:
     needs: [quality-gates, test-suite, security-and-performance]
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Full Build Test
-      run: |
-        npm run build
-        npm run test:connection
+      - name: Full Build Test
+        run: |
+          npm run build
+          npm run test:connection
 
-    - name: Verify Test Coverage
-      run: npm run verify-test-coverage
+      - name: Verify Test Coverage
+        run: npm run verify-test-coverage

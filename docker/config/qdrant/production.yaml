@@ -21,10 +21,10 @@ service:
 
   # CORS configuration for web access
   cors:
-    allow_origin: "*"
-    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers: "*"
-    expose_headers: ["Content-Length"]
+    allow_origin: '*'
+    allow_methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+    allow_headers: '*'
+    expose_headers: ['Content-Length']
     max_age: 3600
 
   # Telemetry (disabled for production)
@@ -55,8 +55,8 @@ storage:
   # Snapshots configuration
   snapshots:
     path: /qdrant/snapshots
-    creation_interval_sec: 3600  # Every hour
-    retention_count: 24  # Keep 24 snapshots
+    creation_interval_sec: 3600 # Every hour
+    retention_count: 24 # Keep 24 snapshots
 
   # Collection settings
   optimizers_config:

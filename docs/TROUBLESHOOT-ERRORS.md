@@ -5,6 +5,7 @@ This guide provides comprehensive documentation for the standardized error handl
 ## Overview
 
 The unified error handling framework provides:
+
 - **Consistent error classification** with standardized codes and categories
 - **Uniform error responses** across all service layers
 - **Graceful degradation** and recovery mechanisms
@@ -29,18 +30,18 @@ The unified error handling framework provides:
 
 3. **Error Categories**
 
-| Category | Description | Example Codes |
-|----------|-------------|---------------|
-| `VALIDATION` | Input validation failures | E1001-E1099 |
-| `AUTHENTICATION` | User authentication failures | E1100-E1199 |
-| `AUTHORIZATION` | Permission/access failures | E1200-E1299 |
-| `DATABASE` | Database operation failures | E1300-E1399 |
-| `NETWORK` | Network connectivity issues | E1400-E1499 |
-| `EXTERNAL_API` | Third-party service failures | E1500-E1599 |
-| `BUSINESS_LOGIC` | Business rule violations | E1600-E1699 |
-| `SYSTEM` | System-level failures | E1700-E1799 |
-| `CONFIGURATION` | Configuration errors | E1800-E1899 |
-| `RATE_LIMIT` | Rate limiting issues | E1900-E1999 |
+| Category         | Description                  | Example Codes |
+| ---------------- | ---------------------------- | ------------- |
+| `VALIDATION`     | Input validation failures    | E1001-E1099   |
+| `AUTHENTICATION` | User authentication failures | E1100-E1199   |
+| `AUTHORIZATION`  | Permission/access failures   | E1200-E1299   |
+| `DATABASE`       | Database operation failures  | E1300-E1399   |
+| `NETWORK`        | Network connectivity issues  | E1400-E1499   |
+| `EXTERNAL_API`   | Third-party service failures | E1500-E1599   |
+| `BUSINESS_LOGIC` | Business rule violations     | E1600-E1699   |
+| `SYSTEM`         | System-level failures        | E1700-E1799   |
+| `CONFIGURATION`  | Configuration errors         | E1800-E1899   |
+| `RATE_LIMIT`     | Rate limiting issues         | E1900-E1999   |
 
 ## Usage Patterns
 
@@ -62,7 +63,7 @@ this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Validate arguments with structured errors
 ApiErrorHandler.validateArguments(args, {
   content: { type: 'string', required: true },
-  kind: { type: 'string', required: true }
+  kind: { type: 'string', required: true },
 });
 ```
 
@@ -164,7 +165,11 @@ async generateEmbedding(text: string): Promise<number[]> {
 ```typescript
 // Extend BaseError for custom error types
 export class CustomBusinessError extends BaseError {
-  constructor(message: string, userMessage: string = 'Business rule violation', context?: Record<string, any>) {
+  constructor(
+    message: string,
+    userMessage: string = 'Business rule violation',
+    context?: Record<string, any>
+  ) {
     super({
       code: ErrorCode.BUSINESS_RULE_VIOLATION,
       category: ErrorCategory.BUSINESS_LOGIC,
@@ -172,7 +177,7 @@ export class CustomBusinessError extends BaseError {
       message,
       userMessage,
       context,
-      retryable: false
+      retryable: false,
     });
   }
 }
@@ -199,14 +204,11 @@ if (!isValidTransition(currentStatus, newStatus)) {
 ### Circuit Breaker Implementation
 
 ```typescript
-const circuitBreaker = ErrorRecovery.createCircuitBreaker(
-  () => externalApiCall(),
-  {
-    failureThreshold: 5,      // Open after 5 failures
-    recoveryTimeout: 60000,    // Try recovery after 1 minute
-    monitoringPeriod: 10000    // Monitor for 10 seconds
-  }
-);
+const circuitBreaker = ErrorRecovery.createCircuitBreaker(() => externalApiCall(), {
+  failureThreshold: 5, // Open after 5 failures
+  recoveryTimeout: 60000, // Try recovery after 1 minute
+  monitoringPeriod: 10000, // Monitor for 10 seconds
+});
 
 // Use in production
 try {
@@ -224,7 +226,7 @@ try {
 // Safe async wrapper that never throws
 const result = await AsyncErrorHandler.safe(
   () => riskyOperation(),
-  defaultValue  // Fallback value
+  defaultValue // Fallback value
 );
 
 if (result.success) {
@@ -261,14 +263,14 @@ All errors follow this standardized response format:
 ```typescript
 interface StandardErrorResponse {
   error: {
-    code: ErrorCode;           // e.g., 'E1101'
-    category: ErrorCategory;  // e.g., 'authentication'
-    severity: ErrorSeverity;  // e.g., 'high'
-    message: string;          // User-friendly message
-    technical_details?: string;  // Technical details
-    timestamp: string;        // ISO timestamp
-    retryable: boolean;       // Can be retried
-    context?: Record<string, any>;  // Additional context
+    code: ErrorCode; // e.g., 'E1101'
+    category: ErrorCategory; // e.g., 'authentication'
+    severity: ErrorSeverity; // e.g., 'high'
+    message: string; // User-friendly message
+    technical_details?: string; // Technical details
+    timestamp: string; // ISO timestamp
+    retryable: boolean; // Can be retried
+    context?: Record<string, any>; // Additional context
   };
 }
 ```
@@ -284,10 +286,10 @@ All errors are logged with structured context:
 const error = new ValidationError('Invalid input', 'Please check your input', {
   field: 'email',
   value: userInput,
-  operation: 'user_registration'
+  operation: 'user_registration',
 });
 
-error.log();  // Automatically logs with appropriate level
+error.log(); // Automatically logs with appropriate level
 ```
 
 ### Error Context
@@ -303,26 +305,31 @@ Always include relevant context when creating errors:
 ## Best Practices
 
 ### 1. Error Categories
+
 - Choose the most specific category for your error
 - Use business logic errors for domain-specific validations
 - Use system errors for infrastructure issues
 
 ### 2. User Messages
+
 - Always provide user-friendly messages
 - Avoid technical jargon in user messages
 - Include actionable guidance when possible
 
 ### 3. Context Information
+
 - Include relevant but non-sensitive context
 - Never log passwords, tokens, or PII
 - Use consistent context structure
 
 ### 4. Retry Logic
+
 - Mark retryable errors appropriately
 - Use exponential backoff for retries
 - Implement circuit breakers for external services
 
 ### 5. Graceful Degradation
+
 - Always provide fallback options
 - Implement feature flags for critical functionality
 - Return simplified responses when services are degraded
@@ -332,6 +339,7 @@ Always include relevant context when creating errors:
 ### Converting Existing Error Handling
 
 1. **Replace generic Error throws**:
+
    ```typescript
    // Before
    throw new Error('User not found');
@@ -341,6 +349,7 @@ Always include relevant context when creating errors:
    ```
 
 2. **Wrap service methods**:
+
    ```typescript
    // Before
    async getUser(id: string): Promise<User> {
@@ -363,6 +372,7 @@ Always include relevant context when creating errors:
    ```
 
 3. **Update API responses**:
+
    ```typescript
    // Before
    try {

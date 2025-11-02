@@ -43,7 +43,7 @@ const { configValidator } = await import('./src/config/validation.js');
 const {
   validateCompleteConfiguration,
   generateEnvironmentCoverageReport,
-  validateEnvironmentTsCoverage
+  validateEnvironmentTsCoverage,
 } = await import('./tests/validation/config-test-helper.js');
 
 /**
@@ -61,7 +61,7 @@ function printValidationResults(results, title) {
 
   if (results.errors && results.errors.length > 0) {
     console.log(chalk.red.bold('\n🚨 Errors:'));
-    results.errors.forEach(error => {
+    results.errors.forEach((error) => {
       if (typeof error === 'string') {
         console.log(chalk.red(`  • ${error}`));
       } else {
@@ -75,7 +75,7 @@ function printValidationResults(results, title) {
 
   if (results.warnings && results.warnings.length > 0) {
     console.log(chalk.yellow.bold('\n⚠️  Warnings:'));
-    results.warnings.forEach(warning => {
+    results.warnings.forEach((warning) => {
       if (typeof warning === 'string') {
         console.log(chalk.yellow(`  • ${warning}`));
       } else {
@@ -89,7 +89,7 @@ function printValidationResults(results, title) {
 
   if (results.info && results.info.length > 0) {
     console.log(chalk.blue.bold('\nℹ️  Info:'));
-    results.info.forEach(info => {
+    results.info.forEach((info) => {
       console.log(chalk.blue(`  • ${info.field}: ${info.message}`));
       if (info.suggestion) {
         console.log(chalk.dim(`    💡 ${info.suggestion}`));
@@ -112,12 +112,14 @@ function printCoverageReport(coverage) {
   console.log(chalk.bold('\nBy Category:'));
   Object.entries(coverage.byCategory).forEach(([category, stats]) => {
     const status = stats.missing === 0 ? chalk.green('✅') : chalk.red('❌');
-    console.log(`  ${status} ${category.padEnd(12)}: ${stats.configured}/${stats.total} configured`);
+    console.log(
+      `  ${status} ${category.padEnd(12)}: ${stats.configured}/${stats.total} configured`
+    );
   });
 
   if (coverage.missingVariables.length > 0) {
     console.log(chalk.red.bold('\n🚨 Missing Required Variables:'));
-    coverage.missingVariables.forEach(variable => {
+    coverage.missingVariables.forEach((variable) => {
       console.log(chalk.red(`  • ${variable}`));
     });
   }
@@ -131,8 +133,7 @@ function printEnvironmentSpecificConfig(env) {
   console.log(chalk.blue('─'.repeat(50)));
 
   const defaults = env.getEnvironmentSpecificDefaults();
-  const mode = env.isProductionMode() ? 'Production' :
-               env.isTestMode() ? 'Test' : 'Development';
+  const mode = env.isProductionMode() ? 'Production' : env.isTestMode() ? 'Test' : 'Development';
 
   console.log(`${chalk.bold('Mode:')} ${mode}`);
   console.log(`${chalk.bold('Log Level:')} ${defaults.LOG_LEVEL}`);
@@ -226,7 +227,6 @@ async function validateConfiguration() {
 
       process.exit(0);
     }
-
   } catch (error) {
     console.error(chalk.red.bold('\n💥 Configuration validation failed:'));
     console.error(chalk.red(error.message));

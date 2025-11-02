@@ -10,7 +10,7 @@ import { vi, beforeEach, afterEach } from 'vitest';
 // Setup global performance mock
 if (typeof global.performance === 'undefined') {
   (global as any).performance = {
-    now: () => Date.now()
+    now: () => Date.now(),
   };
 }
 
@@ -168,7 +168,9 @@ async function setupServiceMocks(): Promise<void> {
   // Mock embedding service
   testContext.mockServices.embeddings = {
     generateEmbedding: vi.fn().mockImplementation((text: string) => {
-      const index = Math.abs(text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % testContext.testData.sampleEmbeddings.length;
+      const index =
+        Math.abs(text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) %
+        testContext.testData.sampleEmbeddings.length;
       return Promise.resolve({
         vector: testContext.testData.sampleEmbeddings[index],
         dimensions: 1536,
@@ -177,7 +179,12 @@ async function setupServiceMocks(): Promise<void> {
     }),
     generateBatchEmbeddings: vi.fn().mockImplementation((texts: string[]) => {
       return Promise.resolve({
-        vectors: texts.map((_, index) => testContext.testData.sampleEmbeddings[index % testContext.testData.sampleEmbeddings.length]),
+        vectors: texts.map(
+          (_, index) =>
+            testContext.testData.sampleEmbeddings[
+              index % testContext.testData.sampleEmbeddings.length
+            ]
+        ),
         dimensions: 1536,
         model: 'test-model',
       });
@@ -228,7 +235,7 @@ export const testHelpers = {
   /**
    * Wait for async operations
    */
-  wait: (ms: number = 100) => new Promise(resolve => setTimeout(resolve, ms)),
+  wait: (ms: number = 100) => new Promise((resolve) => setTimeout(resolve, ms)),
 
   /**
    * Create a mock error
@@ -251,7 +258,9 @@ export const testHelpers = {
    * Create test embeddings for given text
    */
   createTestEmbedding: (text: string) => {
-    const index = Math.abs(text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % testContext.testData.sampleEmbeddings.length;
+    const index =
+      Math.abs(text.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) %
+      testContext.testData.sampleEmbeddings.length;
     return testContext.testData.sampleEmbeddings[index];
   },
 };

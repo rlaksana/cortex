@@ -63,9 +63,9 @@ describe('Dedupe Rules Test Suite', () => {
         data: {
           content: 'Test content for dedupe rules',
           name: 'Test Entity',
-          category: 'component'
+          category: 'component',
         },
-        created_at: '2025-10-15T10:00:00.000Z'
+        created_at: '2025-10-15T10:00:00.000Z',
       };
 
       // Store the first item
@@ -80,9 +80,9 @@ describe('Dedupe Rules Test Suite', () => {
         data: {
           content: 'Test content for dedupe rules',
           name: 'Test Entity',
-          category: 'component'
+          category: 'component',
         },
-        created_at: '2025-10-15T10:01:00.000Z'
+        created_at: '2025-10-15T10:01:00.000Z',
       };
 
       // Mock duplicate detection for the second item
@@ -90,7 +90,7 @@ describe('Dedupe Rules Test Suite', () => {
         isDuplicate: true,
         reason: 'Duplicate content detected (hash: abc123...)',
         similarityScore: 1.0,
-        existingItem: { id: 'item-001' }
+        existingItem: { id: 'item-001' },
       });
 
       // Mock store response showing duplicate was skipped
@@ -102,15 +102,17 @@ describe('Dedupe Rules Test Suite', () => {
           validation_error: 0,
           total: 1,
         },
-        items: [{
-          input_index: 0,
-          status: 'skipped_dedupe',
-          kind: 'entity',
-          id: 'item-002',
-          created_at: '2025-10-15T10:01:00.000Z',
-          reason: 'Duplicate content detected (hash: abc123...)',
-          existing_id: 'item-001'
-        }],
+        items: [
+          {
+            input_index: 0,
+            status: 'skipped_dedupe',
+            kind: 'entity',
+            id: 'item-002',
+            created_at: '2025-10-15T10:01:00.000Z',
+            reason: 'Duplicate content detected (hash: abc123...)',
+            existing_id: 'item-001',
+          },
+        ],
         stored: [],
         errors: [],
       });
@@ -132,7 +134,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'project-a' },
         data: { content: 'Entity content for project-a' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const item2: KnowledgeItem = {
@@ -140,7 +142,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'project-b' },
         data: { content: 'Entity content for project-b' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const storeResult = await mockOrchestrator.storeItems([item1, item2]);
@@ -154,7 +156,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'test-project', branch: 'main' },
         data: { content: 'Entity content' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const item2: KnowledgeItem = {
@@ -162,7 +164,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'decision',
         scope: { project: 'test-project', branch: 'main' },
         data: { content: 'Decision content' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const storeResult = await mockOrchestrator.storeItems([item1, item2]);
@@ -176,7 +178,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'project-a' },
         data: { content: 'Entity content for project-a' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const item2: KnowledgeItem = {
@@ -184,7 +186,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'decision',
         scope: { project: 'project-b' },
         data: { content: 'Decision content for project-b' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       const storeResult = await mockOrchestrator.storeItems([item1, item2]);
@@ -198,25 +200,61 @@ describe('Dedupe Rules Test Suite', () => {
       const testCases = [
         {
           name: 'Exact duplicate',
-          item1: { id: 'item-001', kind: 'entity', data: { content: 'Exact match test' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
-          item2: { id: 'item-002', kind: 'entity', data: { content: 'Exact match test' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
+          item1: {
+            id: 'item-001',
+            kind: 'entity',
+            data: { content: 'Exact match test' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
+          item2: {
+            id: 'item-002',
+            kind: 'entity',
+            data: { content: 'Exact match test' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
           expectedDuplicate: true,
-          expectedReason: 'Duplicate content detected (hash: abc123...)'
+          expectedReason: 'Duplicate content detected (hash: abc123...)',
         },
         {
           name: 'High similarity',
-          item1: { id: 'item-001', kind: 'entity', data: { content: 'Similar content with 90% similarity' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
-          item2: { id: 'item-002', kind: 'entity', data: { content: 'Similar content with 90% similarity' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
+          item1: {
+            id: 'item-001',
+            kind: 'entity',
+            data: { content: 'Similar content with 90% similarity' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
+          item2: {
+            id: 'item-002',
+            kind: 'entity',
+            data: { content: 'Similar content with 90% similarity' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
           expectedDuplicate: true,
-          expectedReason: 'High semantic similarity (90.0%)'
+          expectedReason: 'High semantic similarity (90.0%)',
         },
         {
           name: 'Medium similarity',
-          item1: { id: 'item-001', kind: 'entity', data: { content: 'Similar content with 75% similarity' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
-          item2: { id: 'item-002', kind: 'entity', data: { content: 'Similar content with 75% similarity' }, scope: {}, created_at: '2025-01-01T00:00:00.000Z' },
+          item1: {
+            id: 'item-001',
+            kind: 'entity',
+            data: { content: 'Similar content with 75% similarity' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
+          item2: {
+            id: 'item-002',
+            kind: 'entity',
+            data: { content: 'Similar content with 75% similarity' },
+            scope: {},
+            created_at: '2025-01-01T00:00:00.000Z',
+          },
           expectedDuplicate: false,
-          expectedReason: 'No significant similarity found'
-        }
+          expectedReason: 'No significant similarity found',
+        },
       ];
 
       for (const testCase of testCases) {
@@ -224,8 +262,11 @@ describe('Dedupe Rules Test Suite', () => {
         mockOrchestrator.detectDuplicates.mockResolvedValueOnce({
           isDuplicate: testCase.expectedDuplicate,
           reason: testCase.expectedReason,
-          similarityScore: testCase.name.includes('Exact') ? 1.0 :
-                         testCase.name.includes('High') ? 0.9 : 0.75,
+          similarityScore: testCase.name.includes('Exact')
+            ? 1.0
+            : testCase.name.includes('High')
+              ? 0.9
+              : 0.75,
         });
 
         const result = await mockOrchestrator.detectDuplicates(testCase.item1);
@@ -244,7 +285,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: {},
         data: { content: 'High similarity content' },
-        created_at: '2025-01-01T00:00:00.000Z'
+        created_at: '2025-01-01T00:00:00.000Z',
       };
 
       const lowSimilarityItem: KnowledgeItem = {
@@ -252,7 +293,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: {},
         data: { content: 'Low similarity content' },
-        created_at: '2025-01-01T00:00:00.000Z'
+        created_at: '2025-01-01T00:00:00.000Z',
       };
 
       // Mock high similarity detection
@@ -288,7 +329,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: {},
         data: { content: 'Test content', content_hash: 'invalid-hash' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       // Mock error response for malformed content hash
@@ -309,7 +350,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: undefined as any,
         data: { content: 'Test content' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       // Mock response for missing scope
@@ -331,7 +372,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'test' },
         data: { content: 'Test content' },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       // Mock error response for database connection issues
@@ -354,7 +395,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: 'entity',
         scope: { project: 'test-project' },
         data: { content: `Test content ${index}` },
-        created_at: new Date(Date.now() + Math.random() * 1000).toISOString()
+        created_at: new Date(Date.now() + Math.random() * 1000).toISOString(),
       }));
 
       // Mock response for large batch
@@ -376,7 +417,9 @@ describe('Dedupe Rules Test Suite', () => {
       const duration = Date.now() - startTime;
 
       expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
-      expect(result.summary.stored + result.summary.skipped_dedupe + result.errors.length).toBe(100);
+      expect(result.summary.stored + result.summary.skipped_dedupe + result.errors.length).toBe(
+        100
+      );
     });
 
     it('should track duplicate detection statistics accurately', async () => {
@@ -385,7 +428,7 @@ describe('Dedupe Rules Test Suite', () => {
         kind: index % 2 === 0 ? 'entity' : 'decision',
         scope: { project: 'test-project', branch: index % 3 === 0 ? 'main' : 'dev' },
         data: { content: `Test content ${index}` },
-        created_at: new Date(Date.now() + Math.random() * 1000).toISOString()
+        created_at: new Date(Date.now() + Math.random() * 1000).toISOString(),
       }));
 
       // Mock response for statistics tracking

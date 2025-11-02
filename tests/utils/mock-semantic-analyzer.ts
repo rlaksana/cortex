@@ -4,7 +4,11 @@
  * Provides deterministic semantic boundary detection for testing without requiring real embedding operations
  */
 
-import type { SemanticBoundary, SemanticChunkingConfig, SemanticAnalysisResult } from '../../src/services/chunking/semantic-analyzer.js';
+import type {
+  SemanticBoundary,
+  SemanticChunkingConfig,
+  SemanticAnalysisResult,
+} from '../../src/services/chunking/semantic-analyzer.js';
 import type { EmbeddingService } from '../../src/services/embeddings/embedding-service.js';
 
 export interface MockSemanticAnalyzerConfig {
@@ -83,9 +87,9 @@ export class MockSemanticAnalyzer {
     // Simple sentence splitting - can be enhanced for testing edge cases
     return content
       .split(/[.!?]+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0)
-      .map(s => s + (s.endsWith('.') ? '' : '.')); // Add period back if missing
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map((s) => s + (s.endsWith('.') ? '' : '.')); // Add period back if missing
   }
 
   /**
@@ -95,9 +99,10 @@ export class MockSemanticAnalyzer {
     const boundaries: SemanticBoundary[] = [];
 
     // Use provided boundary positions or calculate them
-    const positions = this.config.boundaryPositions.length > 0
-      ? this.config.boundaryPositions
-      : this.calculateBoundaryPositions(sentences);
+    const positions =
+      this.config.boundaryPositions.length > 0
+        ? this.config.boundaryPositions
+        : this.calculateBoundaryPositions(sentences);
 
     for (const position of positions) {
       if (position > 0 && position < sentences.length - 1) {
@@ -126,9 +131,13 @@ export class MockSemanticAnalyzer {
       const hasHeader = /^#+ |^## |^### /.test(sentence);
       const hasListStart = /^[-*+] |^\d+\. /.test(sentence);
       const hasCodeBlock = sentence.includes('```') || sentence.includes('`');
-      const hasTransition = /however|therefore|moreover|furthermore|consequently|in conclusion/.test(sentence.toLowerCase());
+      const hasTransition =
+        /however|therefore|moreover|furthermore|consequently|in conclusion/.test(
+          sentence.toLowerCase()
+        );
       const hasQuestion = sentence.includes('?');
-      const lengthChange = Math.abs(sentence.length - prevSentence.length) > prevSentence.length * 0.5;
+      const lengthChange =
+        Math.abs(sentence.length - prevSentence.length) > prevSentence.length * 0.5;
 
       // Score the boundary strength
       let score = 0;
@@ -178,11 +187,16 @@ export class MockSemanticAnalyzer {
     }
 
     const context_before = sentences.slice(Math.max(0, position - 2), position).join(' ');
-    const context_after = sentences.slice(position, Math.min(sentences.length, position + 3)).join(' ');
+    const context_after = sentences
+      .slice(position, Math.min(sentences.length, position + 3))
+      .join(' ');
 
     // Calculate boundary strength based on context changes
     const lengthRatio = sentences[position].length / (sentences[position - 1].length || 1);
-    const hasStructuralChange = this.hasStructuralChange(sentences[position - 1], sentences[position]);
+    const hasStructuralChange = this.hasStructuralChange(
+      sentences[position - 1],
+      sentences[position]
+    );
 
     let score = 0.5; // Base score
     if (hasStructuralChange) score += 0.3;
@@ -220,16 +234,18 @@ export class MockSemanticAnalyzer {
     const currHasCode = currSentence.includes('```') || currSentence.includes('`');
 
     return (
-      prevHasHeader !== currHasHeader ||
-      prevHasList !== currHasList ||
-      prevHasCode !== currHasCode
+      prevHasHeader !== currHasHeader || prevHasList !== currHasList || prevHasCode !== currHasCode
     );
   }
 
   /**
    * Generate a human-readable reason for the boundary
    */
-  private generateBoundaryReason(prevSentence: string, currSentence: string, type: 'strong' | 'medium' | 'weak'): string {
+  private generateBoundaryReason(
+    prevSentence: string,
+    currSentence: string,
+    type: 'strong' | 'medium' | 'weak'
+  ): string {
     if (currSentence.match(/^#+ /)) {
       return 'New section header detected';
     }
@@ -242,7 +258,11 @@ export class MockSemanticAnalyzer {
     if (currSentence.includes('?')) {
       return 'Question boundary';
     }
-    if (/however|therefore|moreover|furthermore|consequently|in conclusion/.test(currSentence.toLowerCase())) {
+    if (
+      /however|therefore|moreover|furthermore|consequently|in conclusion/.test(
+        currSentence.toLowerCase()
+      )
+    ) {
       return 'Transition phrase detected';
     }
     if (type === 'strong') {
@@ -265,11 +285,12 @@ export class MockSemanticAnalyzer {
         scores.push(1.0); // First sentence has full coherence with itself
       } else {
         // Calculate coherence based on length similarity and content overlap
-        const lengthRatio = Math.min(sentences[i].length, sentences[i-1].length) /
-                          Math.max(sentences[i].length, sentences[i-1].length);
-        const contentOverlap = this.calculateContentOverlap(sentences[i-1], sentences[i]);
+        const lengthRatio =
+          Math.min(sentences[i].length, sentences[i - 1].length) /
+          Math.max(sentences[i].length, sentences[i - 1].length);
+        const contentOverlap = this.calculateContentOverlap(sentences[i - 1], sentences[i]);
 
-        const coherence = (lengthRatio * 0.3 + contentOverlap * 0.7);
+        const coherence = lengthRatio * 0.3 + contentOverlap * 0.7;
         scores.push(Math.min(1.0, Math.max(0.0, coherence)));
       }
     }
@@ -281,14 +302,24 @@ export class MockSemanticAnalyzer {
    * Calculate simple content overlap between sentences
    */
   private calculateContentOverlap(sentence1: string, sentence2: string): number {
-    const words1 = new Set(sentence1.toLowerCase().split(/\s+/).filter(w => w.length > 3));
-    const words2 = new Set(sentence2.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+    const words1 = new Set(
+      sentence1
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3)
+    );
+    const words2 = new Set(
+      sentence2
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3)
+    );
 
     if (words1.size === 0 || words2.size === 0) {
       return 0.0;
     }
 
-    const intersection = new Set([...words1].filter(w => words2.has(w)));
+    const intersection = new Set([...words1].filter((w) => words2.has(w)));
     const union = new Set([...words1, ...words2]);
 
     return intersection.size / union.size;

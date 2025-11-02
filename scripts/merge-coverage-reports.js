@@ -58,7 +58,6 @@ class CoverageReportMerger {
 
           // Merge detailed JSON
           Object.assign(mergedJson, data);
-
         } catch (error) {
           console.warn(`⚠️  Could not process ${file}:`, error.message);
         }
@@ -88,7 +87,6 @@ class CoverageReportMerger {
           console.log(`  Statements: ${mergedSummary.total.statements.pct}%`);
         }
       }
-
     } catch (error) {
       console.error('❌ Error merging coverage reports:', error);
       throw error;
@@ -101,14 +99,14 @@ class CoverageReportMerger {
       'coverage/**/coverage-summary.json',
       'coverage/*/coverage-summary.json',
       'test-results/**/coverage-summary.json',
-      'coverage/reports/**/coverage-summary.json'
+      'coverage/reports/**/coverage-summary.json',
     ];
 
     const files = [];
     for (const pattern of patterns) {
       try {
         const matches = await glob(pattern, { cwd: this.projectRoot });
-        files.push(...matches.map(match => path.join(this.projectRoot, match)));
+        files.push(...matches.map((match) => path.join(this.projectRoot, match)));
       } catch (error) {
         console.warn(`⚠️  Could not glob pattern ${pattern}:`, error.message);
       }
@@ -180,7 +178,7 @@ class CoverageReportMerger {
             lcovContent += `FNDA:${hitCount},${funcName}\n`;
           }
           lcovContent += `FNF:${Object.keys(fileData.f).length}\n`;
-          lcovContent += `FNH:${Object.values(fileData.f).filter(h => h > 0).length}\n`;
+          lcovContent += `FNH:${Object.values(fileData.f).filter((h) => h > 0).length}\n`;
         }
 
         // Add branch coverage
@@ -189,7 +187,7 @@ class CoverageReportMerger {
           let branchHits = 0;
           for (const branches of Object.values(fileData.b)) {
             branchCount += branches.length;
-            branchHits += branches.filter(h => h > 0).length;
+            branchHits += branches.filter((h) => h > 0).length;
           }
           lcovContent += `BRF:${branchCount}\n`;
           lcovContent += `BRH:${branchHits}\n`;
@@ -197,17 +195,13 @@ class CoverageReportMerger {
 
         // End of file
         const linesFound = fileData.l ? Object.keys(fileData.l).length : 0;
-        const linesHit = fileData.l ? Object.values(fileData.l).filter(h => h > 0).length : 0;
+        const linesHit = fileData.l ? Object.values(fileData.l).filter((h) => h > 0).length : 0;
         lcovContent += `LF:${linesFound}\n`;
         lcovContent += `LH:${linesHit}\n`;
         lcovContent += `end_of_record\n`;
       }
 
-      await fs.writeFile(
-        path.join(this.coverageDir, 'lcov.info'),
-        lcovContent
-      );
-
+      await fs.writeFile(path.join(this.coverageDir, 'lcov.info'), lcovContent);
     } catch (error) {
       console.warn('⚠️  Could not generate LCOV report:', error.message);
     }

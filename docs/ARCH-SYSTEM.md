@@ -41,6 +41,7 @@ Cortex Memory MCP Server implements a **Qdrant-only architecture** that provides
 The `QdrantAdapter` class provides a single interface for all database operations using Qdrant as the sole storage backend.
 
 **Key Features**:
+
 - Single interface for vector-based storage
 - Semantic search and similarity matching
 - Type-safe TypeScript operations
@@ -49,6 +50,7 @@ The `QdrantAdapter` class provides a single interface for all database operation
 - Metadata filtering and retrieval
 
 **Qdrant Capabilities**:
+
 - Vector similarity search
 - Semantic understanding
 - Embedding storage and retrieval
@@ -60,6 +62,7 @@ The `QdrantAdapter` class provides a single interface for all database operation
 ### 2. Service Layer Architecture
 
 #### Memory Store Service
+
 Coordinates the storage of knowledge items through multiple specialized services:
 
 ```
@@ -72,6 +75,7 @@ Memory Store Service
 ```
 
 #### Memory Find Service
+
 Implements basic semantic search:
 
 ```
@@ -82,6 +86,7 @@ Memory Find Service
 ```
 
 **⚠️ Current Limitations:**
+
 - No strategy selector (only semantic search available)
 - No result ranker (basic similarity scoring only)
 - No autonomous context creation (basic metadata only)
@@ -92,16 +97,19 @@ Memory Find Service
 The system supports 16 comprehensive knowledge types, each with specific handling:
 
 **Core Types**:
+
 - `entity`: Graph nodes representing concepts or objects
 - `relation`: Graph edges connecting entities
 - `observation`: Fine-grained data attached to entities
 
 **Documentation Types**:
+
 - `section`: Document containers
 - `runbook`: Step-by-step procedures
 - `decision`: Architecture Decision Records (ADRs)
 
 **Tracking Types**:
+
 - `todo`: Tasks and action items
 - `issue`: Bug tracking and problems
 - `change`: Code change tracking
@@ -111,6 +119,7 @@ The system supports 16 comprehensive knowledge types, each with specific handlin
 - `assumption`: Business/technical assumptions
 
 **Metadata Types**:
+
 - `ddl`: Database schema changes
 - `pr_context`: Pull request metadata
 - `release_note`: Release documentation
@@ -159,6 +168,7 @@ Response with Basic Context
 ```
 
 **⚠️ Missing Components:**
+
 - No conflict resolution in deduplication
 - No relationship detection in similarity service
 - No comprehensive audit service
@@ -202,6 +212,7 @@ Results with Basic Context
 ```
 
 **⚠️ Missing Components:**
+
 - No user suggestions or recommendations
 - No advanced search analytics
 - No autonomous context generation
@@ -209,6 +220,7 @@ Results with Basic Context
 ## Search Strategies
 
 ### 1. Semantic Search (Primary)
+
 Vector-based similarity search using Qdrant:
 
 ```typescript
@@ -218,6 +230,7 @@ const results = await qdrant.similaritySearch(embedding);
 ```
 
 ### 2. Metadata Filtered Search
+
 Vector search with metadata filtering:
 
 ```typescript
@@ -226,14 +239,15 @@ const results = await qdrant.search({
   vector: embedding,
   filter: {
     must: [
-      { key: "kind", match: { value: "entity" }},
-      { key: "scope.project", match: { value: "project-name" }}
-    ]
-  }
+      { key: 'kind', match: { value: 'entity' } },
+      { key: 'scope.project', match: { value: 'project-name' } },
+    ],
+  },
 });
 ```
 
 ### 3. Hybrid Semantic Search
+
 Multi-factor semantic search with weighting:
 
 ```typescript
@@ -243,19 +257,20 @@ const results = await qdrant.search({
   payload: {
     title: item.title,
     content: item.content,
-    kind: item.kind
-  }
+    kind: item.kind,
+  },
 });
 ```
 
 ### 4. Fallback Search
+
 Basic text matching in metadata:
 
 ```typescript
 // Text matching in stored metadata
 const results = await qdrant.search({
-  query: "text search in metadata",
-  search_type: "text"
+  query: 'text search in metadata',
+  search_type: 'text',
 });
 ```
 
@@ -267,11 +282,11 @@ The similarity service provides sophisticated content analysis:
 
 ```typescript
 interface SimilarityFactors {
-  content: number;    // Jaccard similarity on content
-  title: number;      // Levenshtein distance on titles
-  kind: number;       // Type matching (exact or partial)
-  scope: number;      // Project/branch/org similarity
-  overall: number;    // Weighted combination
+  content: number; // Jaccard similarity on content
+  title: number; // Levenshtein distance on titles
+  kind: number; // Type matching (exact or partial)
+  scope: number; // Project/branch/org similarity
+  overall: number; // Weighted combination
 }
 ```
 
@@ -279,10 +294,10 @@ interface SimilarityFactors {
 
 ```typescript
 interface WeightingConfig {
-  content: 0.5;    // Primary factor
-  title: 0.2;      // Secondary factor
-  kind: 0.1;       // Type importance
-  scope: 0.2;      // Context relevance
+  content: 0.5; // Primary factor
+  title: 0.2; // Secondary factor
+  kind: 0.1; // Type importance
+  scope: 0.2; // Context relevance
 }
 ```
 
@@ -334,8 +349,8 @@ class Environment {
         apiKey: process.env.QDRANT_API_KEY,
         vectorSize: parseInt(process.env.VECTOR_SIZE || '1536'),
         timeout: parseInt(process.env.QDRANT_TIMEOUT || '5000'),
-        maxRetries: parseInt(process.env.QDRANT_MAX_RETRIES || '3')
-      }
+        maxRetries: parseInt(process.env.QDRANT_MAX_RETRIES || '3'),
+      },
     };
   }
 
@@ -343,7 +358,7 @@ class Environment {
     return {
       defaultLimit: parseInt(process.env.SEARCH_LIMIT || '50'),
       similarityThreshold: parseFloat(process.env.SIMILARITY_THRESHOLD || '0.7'),
-      enableCaching: process.env.ENABLE_CACHE === 'true'
+      enableCaching: process.env.ENABLE_CACHE === 'true',
     };
   }
 }
@@ -359,14 +374,14 @@ const qdrantClient = new QdrantClient({
   url: config.qdrantUrl,
   apiKey: config.qdrantApiKey,
   timeout: config.connectionTimeout,
-  maxRetries: config.maxRetries
+  maxRetries: config.maxRetries,
 });
 
 // Qdrant connection management
 const qdrantClient = new QdrantClient({
   url: config.qdrantUrl,
   timeout: config.connectionTimeout,
-  maxRetries: config.maxRetries
+  maxRetries: config.maxRetries,
 });
 ```
 
@@ -395,11 +410,11 @@ const optimizedSearch = await qdrantClient.search({
 ```typescript
 interface CacheConfig {
   searchResults: {
-    ttl: 3600;      // 1 hour
-    maxSize: 1000;  // Max cached results
+    ttl: 3600; // 1 hour
+    maxSize: 1000; // Max cached results
   };
   embeddings: {
-    ttl: 86400;     // 24 hours
+    ttl: 86400; // 24 hours
     maxSize: 10000; // Max cached embeddings
   };
 }
@@ -425,9 +440,9 @@ interface AuthConfig {
 
 ```typescript
 interface ScopePermissions {
-  project: string;    // Project-level access
-  branch?: string;    // Branch-level access
-  org?: string;       // Organization-level access
+  project: string; // Project-level access
+  branch?: string; // Branch-level access
+  org?: string; // Organization-level access
   permissions: string[]; // ['read', 'write', 'delete']
 }
 ```
@@ -438,10 +453,9 @@ interface ScopePermissions {
 class ValidationService {
   validateKnowledgeItem(item: KnowledgeItem): ValidationResult {
     return {
-      isValid: this.validateStructure(item) &&
-               this.validateContent(item) &&
-               this.validateScope(item),
-      errors: this.collectValidationErrors(item)
+      isValid:
+        this.validateStructure(item) && this.validateContent(item) && this.validateScope(item),
+      errors: this.collectValidationErrors(item),
     };
   }
 }
@@ -497,7 +511,7 @@ logger.info({
   correlationId: 'uuid',
   itemCount: items.length,
   duration: Date.now() - startTime,
-  result: 'success'
+  result: 'success',
 });
 ```
 
@@ -514,15 +528,15 @@ logger.info({
 ```typescript
 // Qdrant sharding and partitioning
 const collectionConfig = {
-  shard_number: 4,  // Number of shards
-  replication_factor: 2,  // Replicas per shard
+  shard_number: 4, // Number of shards
+  replication_factor: 2, // Replicas per shard
   write_consistency_factor: 2,
-  on_disk_payload: true,  // Store payloads on disk
+  on_disk_payload: true, // Store payloads on disk
   hnsw_config: {
-    m: 16,  // HNSW connectivity
-    ef_construct: 100,  // Index construction accuracy
-    full_scan_threshold: 10000
-  }
+    m: 16, // HNSW connectivity
+    ef_construct: 100, // Index construction accuracy
+    full_scan_threshold: 10000,
+  },
 };
 
 // Collections can be organized by project or scope
@@ -534,9 +548,9 @@ const projectCollection = `cortex-memory-${projectScope}`;
 ```typescript
 // Multi-level caching
 interface CacheHierarchy {
-  level1: 'in-memory';    // Application-level cache
-  level2: 'redis';       // Distributed cache
-  level3: 'database';    // Persistent storage
+  level1: 'in-memory'; // Application-level cache
+  level2: 'redis'; // Distributed cache
+  level3: 'database'; // Persistent storage
 }
 ```
 
@@ -559,7 +573,7 @@ FROM node:20-alpine AS runtime
 enum Environment {
   DEVELOPMENT = 'development',
   STAGING = 'staging',
-  PRODUCTION = 'production'
+  PRODUCTION = 'production',
 }
 
 interface ConfigProfile {
@@ -610,6 +624,7 @@ interface CompatibilityLayer {
 ### ✅ **What Exists Today (Current v1.0)**
 
 **Core Functionality:**
+
 - Qdrant vector database with semantic search
 - Basic MCP protocol implementation
 - 4 fully implemented knowledge types (section, decision, todo, issue)
@@ -618,6 +633,7 @@ interface CompatibilityLayer {
 - Comprehensive schema validation for 16 types
 
 **Service Layer:**
+
 - Memory Store Service with validation and deduplication
 - Memory Find Service with basic semantic search
 - Auto-Purge Service for maintenance operations
@@ -626,23 +642,27 @@ interface CompatibilityLayer {
 ### 🚧 **What's Missing (Target Features)**
 
 **Advanced Search:**
+
 - Multi-strategy search (semantic + keyword + hybrid)
 - Search mode selection (auto/fast/deep)
 - Confidence scoring and result ranking
 - Query expansion and suggestions
 
 **AI-Enhanced Features:**
+
 - Autonomous context generation
 - Natural language processing and intent analysis
 - Contradiction detection and merge suggestions
 - Smart recommendations and user insights
 
 **Graph Functionality:**
+
 - Entity relationship mapping
 - Graph traversal algorithms
 - Relationship-based search and discovery
 
 **Content Management:**
+
 - Document chunking and parent-child relationships
 - Large document handling (8k+ character content)
 - Content organization and hierarchical structures
@@ -650,12 +670,14 @@ interface CompatibilityLayer {
 ### 🚨 **Critical Architecture Issues**
 
 **Disconnected Implementation:**
+
 - Main server bypasses comprehensive service layer
 - Memory find has circular dependency on memory store
 - Advanced features exist in services but aren't accessible
 - Architecture documentation doesn't match actual implementation
 
 **Missing Knowledge Type Logic:**
+
 - 6 knowledge types are placeholders only (runbook, change, etc.)
 - 6 types have only basic storage without business rules
 - Only 4 types have complete validation and business logic

@@ -42,7 +42,7 @@ export async function getDocumentWithChunks(
     include_metadata = true,
     preserve_chunk_markers = false,
     filter_by_scope = true,
-    sort_by_position = true
+    sort_by_position = true,
   } = options;
 
   try {
@@ -51,7 +51,7 @@ export async function getDocumentWithChunks(
     // Step 1: Find the parent document
     const parentResult = await memoryFind({
       query: `id:${docId} kind:(section OR runbook OR incident)`,
-      limit: 1
+      limit: 1,
     });
 
     if (!parentResult.results || parentResult.results.length === 0) {
@@ -84,9 +84,7 @@ export async function getDocumentWithChunks(
     const chunks = chunkResult.results as KnowledgeItem[];
 
     // Step 3: Sort chunks by position
-    const sortedChunks = sort_by_position ?
-      sortChunksByPosition(chunks) :
-      chunks;
+    const sortedChunks = sort_by_position ? sortChunksByPosition(chunks) : chunks;
 
     // Step 4: Reassemble content
     const reassembled_content = reassembleContent(sortedChunks, preserve_chunk_markers);
@@ -98,7 +96,7 @@ export async function getDocumentWithChunks(
       parent,
       chunks: sortedChunks,
       reassembled_content,
-      chunking_metadata
+      chunking_metadata,
     };
 
     logger.info(
@@ -106,13 +104,12 @@ export async function getDocumentWithChunks(
         docId,
         chunkCount: sortedChunks.length,
         contentLength: reassembled_content.length,
-        hasMetadata: include_metadata
+        hasMetadata: include_metadata,
       },
       'Document reassembly completed successfully'
     );
 
     return result;
-
   } catch (error) {
     logger.error({ error, docId }, 'Document reassembly failed');
     return null;
@@ -132,7 +129,7 @@ export async function getDocumentByParentId(
     // Search for chunks with the specified parent_id
     const chunkResult = await memoryFind({
       query: `parent_id:${parentId}`,
-      limit: 100
+      limit: 100,
     });
 
     if (!chunkResult.results || chunkResult.results.length === 0) {
@@ -153,31 +150,31 @@ export async function getDocumentByParentId(
     const syntheticParent = createSyntheticParent(firstChunk, chunks);
 
     // Sort and reassemble
-    const sortedChunks = options.sort_by_position !== false ?
-      sortChunksByPosition(chunks) :
-      chunks;
+    const sortedChunks = options.sort_by_position !== false ? sortChunksByPosition(chunks) : chunks;
 
-    const reassembled_content = reassembleContent(sortedChunks, options.preserve_chunk_markers || false);
+    const reassembled_content = reassembleContent(
+      sortedChunks,
+      options.preserve_chunk_markers || false
+    );
     const chunking_metadata = extractChunkingMetadata(syntheticParent, sortedChunks);
 
     const result: DocumentWithChunks = {
       parent: syntheticParent,
       chunks: sortedChunks,
       reassembled_content,
-      chunking_metadata
+      chunking_metadata,
     };
 
     logger.info(
       {
         parentId,
         chunkCount: sortedChunks.length,
-        contentLength: reassembled_content.length
+        contentLength: reassembled_content.length,
       },
       'Document by parent ID reassembly completed'
     );
 
     return result;
-
   } catch (error) {
     logger.error({ error, parentId }, 'Document by parent ID reassembly failed');
     return null;
@@ -256,22 +253,27 @@ function reassembleContent(chunks: KnowledgeItem[], preserveMarkers: boolean): s
  * Clean chunk content by removing chunk markers and metadata
  */
 function cleanChunkContent(content: string): string {
-  return content
-    // Remove chunk position markers
-    .replace(/^CHUNK \d+ of \d+\n\n/gmi, '')
-    // Remove title prefixes if they're duplicates
-    .replace(/^TITLE: .+\n\n/gmi, '')
-    // Remove parent markers
-    .replace(/^PARENT: .+$/gmi, '')
-    // Clean up extra whitespace
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return (
+    content
+      // Remove chunk position markers
+      .replace(/^CHUNK \d+ of \d+\n\n/gim, '')
+      // Remove title prefixes if they're duplicates
+      .replace(/^TITLE: .+\n\n/gim, '')
+      // Remove parent markers
+      .replace(/^PARENT: .+$/gim, '')
+      // Clean up extra whitespace
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
 
 /**
  * Extract chunking metadata from parent and chunks
  */
-function extractChunkingMetadata(parent: KnowledgeItem, chunks: KnowledgeItem[]): DocumentWithChunks['chunking_metadata'] {
+function extractChunkingMetadata(
+  parent: KnowledgeItem,
+  chunks: KnowledgeItem[]
+): DocumentWithChunks['chunking_metadata'] {
   const parentMetadata = parent.metadata?.chunking_info || {};
   const firstChunkData = chunks[0]?.data || {};
 
@@ -281,7 +283,7 @@ function extractChunkingMetadata(parent: KnowledgeItem, chunks: KnowledgeItem[])
     chunk_size: parentMetadata.chunk_size || 1200,
     overlap_size: parentMetadata.overlap_size || 200,
     semantic_analysis_enabled: parentMetadata.semantic_analysis_enabled || false,
-    processing_timestamp: parentMetadata.processing_timestamp || new Date().toISOString()
+    processing_timestamp: parentMetadata.processing_timestamp || new Date().toISOString(),
   };
 }
 
@@ -301,7 +303,7 @@ function createSyntheticParent(firstChunk: KnowledgeItem, chunks: KnowledgeItem[
       total_chunks: chunks.length,
       original_length: chunkData.original_length || 0,
       content: `Synthetic parent for ${chunks.length} chunks`,
-      ...chunkData
+      ...chunkData,
     },
     metadata: {
       is_synthetic_parent: true,
@@ -310,10 +312,10 @@ function createSyntheticParent(firstChunk: KnowledgeItem, chunks: KnowledgeItem[
         was_chunked: true,
         is_parent: true,
         total_chunks: chunks.length,
-        processing_timestamp: new Date().toISOString()
-      }
+        processing_timestamp: new Date().toISOString(),
+      },
     },
-    created_at: firstChunk.created_at || new Date().toISOString()
+    created_at: firstChunk.created_at || new Date().toISOString(),
   };
 }
 
@@ -334,7 +336,7 @@ export async function getDocumentReassemblyStats(docId: string): Promise<{
         has_parent: false,
         chunk_count: 0,
         total_size: 0,
-        chunking_info: null
+        chunking_info: null,
       };
     }
 
@@ -342,16 +344,15 @@ export async function getDocumentReassemblyStats(docId: string): Promise<{
       has_parent: true,
       chunk_count: result.chunks.length,
       total_size: result.reassembled_content.length,
-      chunking_info: result.chunking_metadata
+      chunking_info: result.chunking_metadata,
     };
-
   } catch (error) {
     logger.error({ error, docId }, 'Failed to get reassembly stats');
     return {
       has_parent: false,
       chunk_count: 0,
       total_size: 0,
-      chunking_info: null
+      chunking_info: null,
     };
   }
 }

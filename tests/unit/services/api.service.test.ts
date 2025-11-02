@@ -22,7 +22,9 @@ import type {
   ApiRequest,
   ApiResponse,
   GraphQLSchema,
-  ApiMetrics
+  ApiMetrics,
+  RateLimitConfig,
+  ServiceEndpoint,
 } from '../../../src/types/api-interfaces';
 
 // Mock dependencies
@@ -31,23 +33,25 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/services/auth/api-key-service', () => ({
   ApiKeyService: vi.fn().mockImplementation(() => ({
     validateApiKey: vi.fn().mockResolvedValue({ valid: true }),
-    createApiKey: vi.fn().mockResolvedValue({ api_key: 'ck_test_key', key_info: { id: '1', name: 'Test Key' } }),
-    revokeApiKey: vi.fn().mockResolvedValue(true)
-  }))
+    createApiKey: vi
+      .fn()
+      .mockResolvedValue({ api_key: 'ck_test_key', key_info: { id: '1', name: 'Test Key' } }),
+    revokeApiKey: vi.fn().mockResolvedValue(true),
+  })),
 }));
 
 vi.mock('../../../src/services/monitoring.service', () => ({
   MonitoringService: vi.fn().mockImplementation(() => ({
     recordMetric: vi.fn(),
-    getMetrics: vi.fn().mockResolvedValue([])
-  }))
+    getMetrics: vi.fn().mockResolvedValue([]),
+  })),
 }));
 
 describe('ApiService - Core API Management Functionality', () => {
@@ -69,7 +73,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/users',
         method: 'GET',
         handler: async () => ({ users: [] }),
-        description: 'Get all users'
+        description: 'Get all users',
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -78,7 +82,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/users',
         method: 'GET',
         headers: { 'content-type': 'application/json' },
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -93,14 +97,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/users/:id',
         method: 'GET',
         handler: async (req) => ({ user: { id: req.params?.id } }),
-        description: 'Get user by ID'
+        description: 'Get user by ID',
       };
 
       const putEndpoint: ApiEndpoint = {
         path: '/api/v1/users/:id',
         method: 'PUT',
         handler: async (req) => ({ user: { id: req.params?.id, updated: true, data: req.body } }),
-        description: 'Update user by ID'
+        description: 'Update user by ID',
       };
 
       await apiService.registerEndpoint(getEndpoint);
@@ -111,7 +115,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         headers: {},
         params: { id: '1' },
-        body: null
+        body: null,
       };
 
       const putRequest: ApiRequest = {
@@ -119,7 +123,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         params: { id: '1' },
-        body: { name: 'Updated Name' }
+        body: { name: 'Updated Name' },
       };
 
       const getResponse = await apiService.processRequest(getRequest);
@@ -137,7 +141,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/nonexistent',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -153,13 +157,13 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async (req) => ({
           userId: req.params?.userId,
-          postId: req.params?.postId
+          postId: req.params?.postId,
         }),
         description: 'Get specific user post',
         parameters: [
           { name: 'userId', in: 'path', type: 'string', required: true },
-          { name: 'postId', in: 'path', type: 'string', required: true }
-        ]
+          { name: 'postId', in: 'path', type: 'string', required: true },
+        ],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -169,7 +173,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         headers: {},
         params: { userId: '123', postId: '456' },
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -187,8 +191,8 @@ describe('ApiService - Core API Management Functionality', () => {
         description: 'Create user',
         parameters: [
           { name: 'name', in: 'body', type: 'string', required: true },
-          { name: 'email', in: 'body', type: 'string', required: true, format: 'email' }
-        ]
+          { name: 'email', in: 'body', type: 'string', required: true, format: 'email' },
+        ],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -197,14 +201,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/users',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: { name: 'John Doe', email: 'john@example.com' }
+        body: { name: 'John Doe', email: 'john@example.com' },
       };
 
       const invalidRequest: ApiRequest = {
         path: '/api/v1/users',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: { name: 'John Doe' } // Missing required email
+        body: { name: 'John Doe' }, // Missing required email
       };
 
       const validResponse = await apiService.processRequest(validRequest);
@@ -228,8 +232,8 @@ describe('ApiService - Core API Management Functionality', () => {
             req.headers = req.headers || {};
             req.headers['x-middleware'] = 'executed';
             next();
-          }
-        ]
+          },
+        ],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -238,7 +242,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/protected',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -271,16 +275,20 @@ describe('ApiService - Core API Management Functionality', () => {
         resolvers: {
           Query: {
             users: () => [{ id: '1', name: 'John', email: 'john@example.com' }],
-            user: (_: any, { id }: { id: string }) => ({ id, name: 'John', email: 'john@example.com' })
+            user: (_: any, { id }: { id: string }) => ({
+              id,
+              name: 'John',
+              email: 'john@example.com',
+            }),
           },
           Mutation: {
-            createUser: (_: any, { name, email }: { name: string, email: string }) => ({
+            createUser: (_: any, { name, email }: { name: string; email: string }) => ({
               id: '2',
               name,
-              email
-            })
-          }
-        }
+              email,
+            }),
+          },
+        },
       };
 
       // This would integrate with a GraphQL service
@@ -308,9 +316,9 @@ describe('ApiService - Core API Management Functionality', () => {
           user: {
             id: '1',
             name: 'John Doe',
-            email: 'john@example.com'
-          }
-        }
+            email: 'john@example.com',
+          },
+        },
       };
 
       expect(mockResult.data.user.id).toBe('1');
@@ -336,9 +344,9 @@ describe('ApiService - Core API Management Functionality', () => {
           createUser: {
             id: '2',
             name: 'Jane Doe',
-            email: 'jane@example.com'
-          }
-        }
+            email: 'jane@example.com',
+          },
+        },
       };
 
       expect(mockResult.data.createUser.name).toBe('Jane Doe');
@@ -359,9 +367,9 @@ describe('ApiService - Core API Management Functionality', () => {
         errors: [
           {
             message: 'Cannot query field "nonexistentField" on type "User".',
-            locations: [{ line: 3, column: 13 }]
-          }
-        ]
+            locations: [{ line: 3, column: 13 }],
+          },
+        ],
       };
 
       expect(mockError.errors).toHaveLength(1);
@@ -384,8 +392,8 @@ describe('ApiService - Core API Management Functionality', () => {
         userCreated: {
           id: '3',
           name: 'Bob Smith',
-          email: 'bob@example.com'
-        }
+          email: 'bob@example.com',
+        },
       };
 
       expect(mockSubscription.userCreated.name).toBe('Bob Smith');
@@ -401,7 +409,7 @@ describe('ApiService - Core API Management Functionality', () => {
         status: 'stable',
         deprecationDate: null,
         sunsetDate: null,
-        migrationGuide: null
+        migrationGuide: null,
       };
 
       await apiService.registerVersion(version);
@@ -419,7 +427,7 @@ describe('ApiService - Core API Management Functionality', () => {
         status: 'deprecated',
         deprecationDate: new Date('2024-01-01'),
         sunsetDate: new Date('2024-06-01'),
-        migrationGuide: 'https://docs.example.com/migration/v0.9-to-v1'
+        migrationGuide: 'https://docs.example.com/migration/v0.9-to-v1',
       };
 
       await apiService.registerVersion(deprecatedVersion);
@@ -434,7 +442,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const versions: ApiVersion[] = [
         { version: 'v1', description: 'Stable version', status: 'stable' },
         { version: 'v2', description: 'Beta version', status: 'beta' },
-        { version: 'v3', description: 'Alpha version', status: 'alpha' }
+        { version: 'v3', description: 'Alpha version', status: 'alpha' },
       ];
 
       for (const version of versions) {
@@ -460,10 +468,10 @@ describe('ApiService - Core API Management Functionality', () => {
           toVersion: 'v2',
           breakingChanges: [
             { field: 'user.name', change: 'Renamed to user.full_name' },
-            { field: 'post.content', change: 'Split into title and body' }
+            { field: 'post.content', change: 'Split into title and body' },
           ],
-          automatedMigration: true
-        }
+          automatedMigration: true,
+        },
       };
 
       await apiService.registerVersion(oldVersion);
@@ -475,7 +483,7 @@ describe('ApiService - Core API Management Functionality', () => {
     it('should prevent registration of invalid versions', async () => {
       const invalidVersions = [
         { version: '', description: 'Empty version' },
-        { version: 'invalid-version-format', description: 'Invalid format' }
+        { version: 'invalid-version-format', description: 'Invalid format' },
       ];
 
       for (const invalidVersion of invalidVersions) {
@@ -491,7 +499,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/data',
         method: 'POST',
         handler: async (req) => ({ received: req.body }),
-        description: 'Process JSON data'
+        description: 'Process JSON data',
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -500,7 +508,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/data',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: { name: 'Test', value: 123, nested: { prop: 'value' } }
+        body: { name: 'Test', value: 123, nested: { prop: 'value' } },
       };
 
       const response = await apiService.processRequest(request);
@@ -515,7 +523,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/form',
         method: 'POST',
         handler: async (req) => ({ received: req.body }),
-        description: 'Process form data'
+        description: 'Process form data',
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -524,7 +532,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/form',
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: 'name=John+Doe&email=john%40example.com'
+        body: 'name=John+Doe&email=john%40example.com',
       };
 
       const response = await apiService.processRequest(request);
@@ -538,7 +546,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'Access granted' }),
         description: 'Protected endpoint',
-        requiredHeaders: ['authorization', 'x-api-version']
+        requiredHeaders: ['authorization', 'x-api-version'],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -548,16 +556,16 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         headers: {
           authorization: 'Bearer token123',
-          'x-api-version': 'v1'
+          'x-api-version': 'v1',
         },
-        body: null
+        body: null,
       };
 
       const invalidRequest: ApiRequest = {
         path: '/api/v1/protected',
         method: 'GET',
         headers: { authorization: 'Bearer token123' }, // Missing x-api-version
-        body: null
+        body: null,
       };
 
       const validResponse = await apiService.processRequest(validRequest);
@@ -576,8 +584,8 @@ describe('ApiService - Core API Management Functionality', () => {
         parameters: [
           { name: 'q', in: 'query', type: 'string', required: true, minLength: 3 },
           { name: 'limit', in: 'query', type: 'number', minimum: 1, maximum: 100 },
-          { name: 'sort', in: 'query', type: 'string', enum: ['relevance', 'date', 'name'] }
-        ]
+          { name: 'sort', in: 'query', type: 'string', enum: ['relevance', 'date', 'name'] },
+        ],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -587,7 +595,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         query: { q: 'test query', limit: '10', sort: 'relevance' },
         headers: {},
-        body: null
+        body: null,
       };
 
       const invalidRequest: ApiRequest = {
@@ -595,7 +603,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         query: { q: 'ab', limit: '200', sort: 'invalid' }, // Too short, over limit, invalid sort
         headers: {},
-        body: null
+        body: null,
       };
 
       const validResponse = await apiService.processRequest(validRequest);
@@ -614,8 +622,8 @@ describe('ApiService - Core API Management Functionality', () => {
         transformRequest: {
           trimStrings: true,
           removeNullFields: true,
-          convertToSnakeCase: true
-        }
+          convertToSnakeCase: true,
+        },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -626,10 +634,10 @@ describe('ApiService - Core API Management Functionality', () => {
         headers: { 'content-type': 'application/json' },
         body: {
           'userName ': ' John Doe ',
-          'email': null,
-          'firstName': 'John',
-          'lastName': 'Doe'
-        }
+          email: null,
+          firstName: 'John',
+          lastName: 'Doe',
+        },
       };
 
       const response = await apiService.processRequest(request);
@@ -643,12 +651,12 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'POST',
         handler: async (req) => ({
           filename: req.files?.[0]?.filename,
-          size: req.files?.[0]?.size
+          size: req.files?.[0]?.size,
         }),
         description: 'File upload endpoint',
         acceptsFiles: true,
         maxFileSize: 10485760, // 10MB
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf']
+        allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf'],
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -662,10 +670,10 @@ describe('ApiService - Core API Management Functionality', () => {
             filename: 'test.jpg',
             mimetype: 'image/jpeg',
             size: 1024,
-            buffer: Buffer.from('test image data')
-          }
+            buffer: Buffer.from('test image data'),
+          },
         ],
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -684,7 +692,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'Authenticated' }),
         description: 'Secure endpoint',
-        authentication: { type: 'api_key' }
+        authentication: { type: 'api_key' },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -693,14 +701,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/secure',
         method: 'GET',
         headers: { 'x-api-key': 'valid-api-key' },
-        body: null
+        body: null,
       };
 
       const invalidRequest: ApiRequest = {
         path: '/api/v1/secure',
         method: 'GET',
         headers: { 'x-api-key': 'invalid-api-key' },
-        body: null
+        body: null,
       };
 
       const isValid = await apiService.validateAuthentication(validRequest, 'api_key');
@@ -716,7 +724,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'JWT Authenticated' }),
         description: 'JWT secure endpoint',
-        authentication: { type: 'jwt' }
+        authentication: { type: 'jwt' },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -725,14 +733,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/jwt-secure',
         method: 'GET',
         headers: { authorization: 'Bearer valid.jwt.token' },
-        body: null
+        body: null,
       };
 
       const invalidRequest: ApiRequest = {
         path: '/api/v1/jwt-secure',
         method: 'GET',
         headers: { authorization: 'Invalid token format' },
-        body: null
+        body: null,
       };
 
       const isValid = await apiService.validateAuthentication(validRequest, 'jwt');
@@ -748,7 +756,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'OAuth Authenticated' }),
         description: 'OAuth secure endpoint',
-        authentication: { type: 'oauth', scopes: ['read', 'write'] }
+        authentication: { type: 'oauth', scopes: ['read', 'write'] },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -757,7 +765,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/oauth-secure',
         method: 'GET',
         headers: { authorization: 'Bearer oauth-access-token' },
-        body: null
+        body: null,
       };
 
       const isValid = await apiService.validateAuthentication(validRequest, 'oauth');
@@ -770,7 +778,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'Admin access' }),
         description: 'Admin only endpoint',
-        authorization: { roles: ['admin'] }
+        authorization: { roles: ['admin'] },
       };
 
       const userEndpoint: ApiEndpoint = {
@@ -778,7 +786,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ message: 'User access' }),
         description: 'User endpoint',
-        authorization: { roles: ['user', 'admin'] }
+        authorization: { roles: ['user', 'admin'] },
       };
 
       await apiService.registerEndpoint(adminEndpoint);
@@ -801,8 +809,8 @@ describe('ApiService - Core API Management Functionality', () => {
         description: 'Permission-controlled endpoint',
         authorization: {
           permissions: ['users:create', 'users:read'],
-          requireAll: false // Only need one of the permissions
-        }
+          requireAll: false, // Only need one of the permissions
+        },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -825,9 +833,9 @@ describe('ApiService - Core API Management Functionality', () => {
         handler: async (req) => ({
           accessToken: 'new-access-token',
           refreshToken: 'new-refresh-token',
-          expiresIn: 3600
+          expiresIn: 3600,
         }),
-        description: 'Refresh access token'
+        description: 'Refresh access token',
       };
 
       await apiService.registerEndpoint(refreshTokenEndpoint);
@@ -836,7 +844,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/auth/refresh',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: { refreshToken: 'valid-refresh-token' }
+        body: { refreshToken: 'valid-refresh-token' },
       };
 
       const response = await apiService.processRequest(request);
@@ -855,8 +863,8 @@ describe('ApiService - Core API Management Functionality', () => {
         description: 'MFA verification endpoint',
         authentication: {
           type: 'mfa',
-          methods: ['totp', 'sms', 'email']
-        }
+          methods: ['totp', 'sms', 'email'],
+        },
       };
 
       await apiService.registerEndpoint(mfaEndpoint);
@@ -865,7 +873,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/mfa/verify',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: { code: '123456', method: 'totp' }
+        body: { code: '123456', method: 'totp' },
       };
 
       const response = await apiService.processRequest(request);
@@ -884,7 +892,7 @@ describe('ApiService - Core API Management Functionality', () => {
         windowMs: 60000, // 1 minute
         message: 'Too many requests',
         skipSuccessfulRequests: false,
-        skipFailedRequests: false
+        skipFailedRequests: false,
       };
 
       await apiService.registerRateLimit(rateLimitConfig);
@@ -901,7 +909,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const configs: RateLimitConfig[] = [
         { endpoint: '/api/v1/search', limit: 100, windowMs: 60000 },
         { endpoint: '/api/v1/upload', limit: 10, windowMs: 60000 },
-        { endpoint: '/api/v1/admin', limit: 50, windowMs: 60000 }
+        { endpoint: '/api/v1/admin', limit: 50, windowMs: 60000 },
       ];
 
       for (const config of configs) {
@@ -922,7 +930,7 @@ describe('ApiService - Core API Management Functionality', () => {
         endpoint: '/api/v1/sliding',
         limit: 5,
         windowMs: 10000, // 10 seconds
-        algorithm: 'sliding-window'
+        algorithm: 'sliding-window',
       };
 
       await apiService.registerRateLimit(slidingWindowConfig);
@@ -933,7 +941,7 @@ describe('ApiService - Core API Management Functionality', () => {
         results.push(result);
       }
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.allowed).toBe(true);
         expect(result.remaining).toBeGreaterThanOrEqual(0);
       });
@@ -945,7 +953,7 @@ describe('ApiService - Core API Management Functionality', () => {
         limit: 10,
         windowMs: 60000,
         algorithm: 'token-bucket',
-        refillRate: 0.1 // 1 token per 10 seconds
+        refillRate: 0.1, // 1 token per 10 seconds
       };
 
       await apiService.registerRateLimit(tokenBucketConfig);
@@ -954,7 +962,7 @@ describe('ApiService - Core API Management Functionality', () => {
       expect(result1.allowed).toBe(true);
 
       // Simulate waiting for refill
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const result2 = await apiService.checkRateLimit('client-3', '/api/v1/bucket');
       expect(result2.allowed).toBe(true);
@@ -966,7 +974,7 @@ describe('ApiService - Core API Management Functionality', () => {
         limit: 100,
         windowMs: 60000,
         burstLimit: 20,
-        algorithm: 'burst'
+        algorithm: 'burst',
       };
 
       await apiService.registerRateLimit(burstConfig);
@@ -979,12 +987,12 @@ describe('ApiService - Core API Management Functionality', () => {
       }
 
       // First 20 should be allowed (burst limit)
-      burstResults.slice(0, 20).forEach(result => {
+      burstResults.slice(0, 20).forEach((result) => {
         expect(result.allowed).toBe(true);
       });
 
       // Remaining 5 should be rate limited
-      burstResults.slice(20).forEach(result => {
+      burstResults.slice(20).forEach((result) => {
         expect(result.allowed).toBe(false);
       });
     });
@@ -994,7 +1002,7 @@ describe('ApiService - Core API Management Functionality', () => {
         endpoint: '/api/v1/client-limited',
         limit: 5,
         windowMs: 60000,
-        keyGenerator: (req) => req.headers?.['x-client-id'] || 'anonymous'
+        keyGenerator: (req) => req.headers?.['x-client-id'] || 'anonymous',
       };
 
       await apiService.registerRateLimit(clientConfig);
@@ -1003,14 +1011,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/client-limited',
         method: 'GET',
         headers: { 'x-client-id': 'client-1' },
-        body: null
+        body: null,
       };
 
       const client2Request: ApiRequest = {
         path: '/api/v1/client-limited',
         method: 'GET',
         headers: { 'x-client-id': 'client-2' },
-        body: null
+        body: null,
       };
 
       // Each client should have independent rate limits
@@ -1028,7 +1036,7 @@ describe('ApiService - Core API Management Functionality', () => {
         endpoint: '/api/v1/global',
         limit: 1000,
         windowMs: 60000,
-        scope: 'global'
+        scope: 'global',
       };
 
       await apiService.registerRateLimit(globalConfig);
@@ -1045,7 +1053,7 @@ describe('ApiService - Core API Management Functionality', () => {
       }
 
       // All requests should be allowed within global limit
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.allowed).toBe(true);
       });
     });
@@ -1055,7 +1063,7 @@ describe('ApiService - Core API Management Functionality', () => {
         endpoint: '/api/v1/headers',
         limit: 10,
         windowMs: 60000,
-        addHeaders: true
+        addHeaders: true,
       };
 
       await apiService.registerRateLimit(config);
@@ -1071,7 +1079,7 @@ describe('ApiService - Core API Management Functionality', () => {
         endpoint: '/api/v1/exempt',
         limit: 10,
         windowMs: 60000,
-        skip: (req) => req.headers?.['x-trusted-client'] === 'true'
+        skip: (req) => req.headers?.['x-trusted-client'] === 'true',
       };
 
       await apiService.registerRateLimit(exemptConfig);
@@ -1080,14 +1088,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/exempt',
         method: 'GET',
         headers: { 'x-trusted-client': 'true' },
-        body: null
+        body: null,
       };
 
       const normalRequest: ApiRequest = {
         path: '/api/v1/exempt',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       // Exempt client should bypass rate limiting
@@ -1104,13 +1112,13 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/test',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response: ApiResponse = {
         status: 200,
         body: { message: 'Success' },
-        headers: {}
+        headers: {},
       };
 
       const duration = 150; // ms
@@ -1129,12 +1137,12 @@ describe('ApiService - Core API Management Functionality', () => {
     it('should track error rates', async () => {
       const errorRequests: ApiRequest[] = [
         { path: '/api/v1/error', method: 'GET', headers: {}, body: null },
-        { path: '/api/v1/error', method: 'GET', headers: {}, body: null }
+        { path: '/api/v1/error', method: 'GET', headers: {}, body: null },
       ];
 
       const errorResponses: ApiResponse[] = [
         { status: 500, body: { error: 'Internal error' }, headers: {} },
-        { status: 400, body: { error: 'Bad request' }, headers: {} }
+        { status: 400, body: { error: 'Bad request' }, headers: {} },
       ];
 
       for (let i = 0; i < errorRequests.length; i++) {
@@ -1156,13 +1164,13 @@ describe('ApiService - Core API Management Functionality', () => {
           path: '/api/v1/performance',
           method: 'GET',
           headers: {},
-          body: null
+          body: null,
         };
 
         const response: ApiResponse = {
           status: 200,
           body: {},
-          headers: {}
+          headers: {},
         };
 
         await apiService.logRequest(request, response, responseTimes[i]);
@@ -1183,13 +1191,13 @@ describe('ApiService - Core API Management Functionality', () => {
             path: '/api/v1/usage',
             method: 'GET',
             headers: { 'x-client-id': client },
-            body: null
+            body: null,
           };
 
           const response: ApiResponse = {
             status: 200,
             body: {},
-            headers: {}
+            headers: {},
           };
 
           await apiService.logRequest(request, response, 100);
@@ -1207,7 +1215,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ status: 'healthy' }),
         description: 'Health check endpoint',
-        healthCheck: true
+        healthCheck: true,
       };
 
       await apiService.registerEndpoint(healthEndpoint);
@@ -1216,7 +1224,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/health',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -1237,13 +1245,13 @@ describe('ApiService - Core API Management Functionality', () => {
               path: endpoint,
               method,
               headers: {},
-              body: null
+              body: null,
             };
 
             const response: ApiResponse = {
               status: Math.random() > 0.1 ? 200 : 400,
               body: {},
-              headers: {}
+              headers: {},
             };
 
             await apiService.logRequest(request, response, Math.random() * 500);
@@ -1271,21 +1279,21 @@ describe('ApiService - Core API Management Functionality', () => {
         { path: '/api/v1/secure', method: 'GET', success: true },
         { path: '/api/v1/secure', method: 'GET', success: false },
         { path: '/api/v1/secure', method: 'GET', success: true },
-        { path: '/api/v1/secure', method: 'GET', success: false }
+        { path: '/api/v1/secure', method: 'GET', success: false },
       ];
 
       for (const req of authRequests) {
         const request: ApiRequest = {
           path: req.path,
           method: req.method,
-          headers: { 'authorization': req.success ? 'Bearer valid' : 'Bearer invalid' },
-          body: null
+          headers: { authorization: req.success ? 'Bearer valid' : 'Bearer invalid' },
+          body: null,
         };
 
         const response: ApiResponse = {
           status: req.success ? 200 : 401,
           body: req.success ? { message: 'Success' } : { error: 'Unauthorized' },
-          headers: {}
+          headers: {},
         };
 
         await apiService.logRequest(request, response, 50);
@@ -1308,12 +1316,10 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => ({ users: [] }),
         description: 'Get users from user service',
-        parameters: [
-          { name: 'limit', in: 'query', type: 'number' }
-        ],
+        parameters: [{ name: 'limit', in: 'query', type: 'number' }],
         responses: {
-          200: { description: 'Success' }
-        }
+          200: { description: 'Success' },
+        },
       };
 
       await apiService.registerServiceEndpoint(userService);
@@ -1322,7 +1328,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/services/user-service/users',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -1337,7 +1343,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/validate',
         method: 'POST',
         handler: async (req) => ({ valid: true, userId: '123' }),
-        description: 'Validate authentication token'
+        description: 'Validate authentication token',
       };
 
       const userService: ServiceEndpoint = {
@@ -1346,7 +1352,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async (req) => ({ user: { id: '123', name: 'John Doe' } }),
         description: 'Get user profile',
-        requiresAuth: true
+        requiresAuth: true,
       };
 
       await apiService.registerServiceEndpoint(authService);
@@ -1357,7 +1363,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/services/auth-service/validate',
         method: 'POST',
         headers: { authorization: 'Bearer token' },
-        body: { token: 'user-token' }
+        body: { token: 'user-token' },
       };
 
       const authResponse = await apiService.processRequest(authRequest);
@@ -1369,7 +1375,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/services/user-service/profile',
         method: 'GET',
         headers: { authorization: 'Bearer token', 'x-user-id': '123' },
-        body: null
+        body: null,
       };
 
       const userResponse = await apiService.processRequest(userRequest);
@@ -1383,14 +1389,14 @@ describe('ApiService - Core API Management Functionality', () => {
           path: '/api/users/*',
           target: 'http://user-service:3000',
           rewrite: '^/api/users/(.*)$',
-          replacement: '/$1'
+          replacement: '/$1',
         },
         {
           path: '/api/posts/*',
           target: 'http://post-service:3000',
           rewrite: '^/api/posts/(.*)$',
-          replacement: '/$1'
-        }
+          replacement: '/$1',
+        },
       ];
 
       // Mock gateway route registration
@@ -1402,9 +1408,9 @@ describe('ApiService - Core API Management Functionality', () => {
             gateway: 'routed',
             target: route.target,
             originalPath: req.path,
-            rewrittenPath: req.path.replace(new RegExp(route.rewrite), route.replacement)
+            rewrittenPath: req.path.replace(new RegExp(route.rewrite), route.replacement),
           }),
-          description: `Gateway route to ${route.target}`
+          description: `Gateway route to ${route.target}`,
         };
 
         await apiService.registerEndpoint(endpoint);
@@ -1414,14 +1420,14 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/users/123',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const postRequest: ApiRequest = {
         path: '/api/posts/456',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const userResponse = await apiService.processRequest(userRequest);
@@ -1444,11 +1450,11 @@ describe('ApiService - Core API Management Functionality', () => {
           services: [
             { name: 'user-service', address: 'user-service:3000', healthy: true },
             { name: 'post-service', address: 'post-service:3000', healthy: true },
-            { name: 'comment-service', address: 'comment-service:3000', healthy: false }
-          ]
+            { name: 'comment-service', address: 'comment-service:3000', healthy: false },
+          ],
         }),
         description: 'Service discovery endpoint',
-        meshEnabled: true
+        meshEnabled: true,
       };
 
       await apiService.registerEndpoint(meshEndpoint);
@@ -1457,7 +1463,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/mesh/discovery',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -1476,25 +1482,21 @@ describe('ApiService - Core API Management Functionality', () => {
           const instances = [
             'http://service-1:3000',
             'http://service-2:3000',
-            'http://service-3:3000'
+            'http://service-3:3000',
           ];
 
           // Mock round-robin selection
           const index = Math.floor(Math.random() * instances.length);
           return {
             selectedInstance: instances[index],
-            strategy: 'round-robin'
+            strategy: 'round-robin',
           };
         },
         description: 'Load balanced endpoint',
         loadBalancing: {
           strategy: 'round-robin',
-          instances: [
-            'http://service-1:3000',
-            'http://service-2:3000',
-            'http://service-3:3000'
-          ]
-        }
+          instances: ['http://service-1:3000', 'http://service-2:3000', 'http://service-3:3000'],
+        },
       };
 
       await apiService.registerEndpoint(loadBalancerEndpoint);
@@ -1506,7 +1508,7 @@ describe('ApiService - Core API Management Functionality', () => {
           path: '/api/balanced',
           method: 'GET',
           headers: {},
-          body: null
+          body: null,
         };
 
         const response = await apiService.processRequest(request);
@@ -1534,8 +1536,8 @@ describe('ApiService - Core API Management Functionality', () => {
         circuitBreaker: {
           failureThreshold: 3,
           recoveryTimeout: 5000,
-          monitoringPeriod: 10000
-        }
+          monitoringPeriod: 10000,
+        },
       };
 
       await apiService.registerEndpoint(circuitBreakerEndpoint);
@@ -1546,7 +1548,7 @@ describe('ApiService - Core API Management Functionality', () => {
           path: '/api/circuit-test',
           method: 'GET',
           headers: {},
-          body: null
+          body: null,
         };
 
         try {
@@ -1561,7 +1563,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/circuit-test',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(requestDuringOpenCircuit);
@@ -1586,8 +1588,8 @@ describe('ApiService - Core API Management Functionality', () => {
           maxAttempts: 3,
           backoffStrategy: 'exponential',
           initialDelay: 100,
-          maxDelay: 1000
-        }
+          maxDelay: 1000,
+        },
       };
 
       await apiService.registerEndpoint(retryEndpoint);
@@ -1596,7 +1598,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/retry-test',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -1612,7 +1614,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const version: ApiVersion = {
         version: 'v1',
         description: 'API v1 Documentation',
-        status: 'stable'
+        status: 'stable',
       };
 
       await apiService.registerVersion(version);
@@ -1624,12 +1626,15 @@ describe('ApiService - Core API Management Functionality', () => {
           handler: async () => ({ users: [] }),
           description: 'Get all users',
           parameters: [
-            { name: 'limit', in: 'query', type: 'number', description: 'Limit results' }
+            { name: 'limit', in: 'query', type: 'number', description: 'Limit results' },
           ],
           responses: {
-            200: { description: 'Success', schema: { type: 'array', items: { $ref: '#/components/schemas/User' } } },
-            400: { description: 'Bad request' }
-          }
+            200: {
+              description: 'Success',
+              schema: { type: 'array', items: { $ref: '#/components/schemas/User' } },
+            },
+            400: { description: 'Bad request' },
+          },
         },
         {
           path: '/api/v1/users',
@@ -1637,13 +1642,18 @@ describe('ApiService - Core API Management Functionality', () => {
           handler: async () => ({ user: {} }),
           description: 'Create user',
           parameters: [
-            { name: 'user', in: 'body', required: true, schema: { $ref: '#/components/schemas/CreateUser' } }
+            {
+              name: 'user',
+              in: 'body',
+              required: true,
+              schema: { $ref: '#/components/schemas/CreateUser' },
+            },
           ],
           responses: {
             201: { description: 'Created', schema: { $ref: '#/components/schemas/User' } },
-            400: { description: 'Bad request' }
-          }
-        }
+            400: { description: 'Bad request' },
+          },
+        },
       ];
 
       for (const endpoint of endpoints) {
@@ -1668,7 +1678,7 @@ describe('ApiService - Core API Management Functionality', () => {
         handler: async () => ({ message: 'Secure data' }),
         description: 'Secure endpoint',
         authentication: { type: 'api_key' },
-        security: [{ api_key: [] }]
+        security: [{ api_key: [] }],
       };
 
       await apiService.registerEndpoint(secureEndpoint);
@@ -1676,7 +1686,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const version: ApiVersion = {
         version: 'v1',
         description: 'Secure API',
-        status: 'stable'
+        status: 'stable',
       };
 
       await apiService.registerVersion(version);
@@ -1691,7 +1701,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const version: ApiVersion = {
         version: 'v1',
         description: 'Multi-format documentation',
-        status: 'stable'
+        status: 'stable',
       };
 
       await apiService.registerVersion(version);
@@ -1719,15 +1729,15 @@ describe('ApiService - Core API Management Functionality', () => {
             name: 'data',
             in: 'body',
             required: true,
-            example: { name: 'John', email: 'john@example.com' }
-          }
+            example: { name: 'John', email: 'john@example.com' },
+          },
         ],
         responses: {
           200: {
             description: 'Success',
-            example: { result: 'success', id: '123', timestamp: '2024-01-01T00:00:00Z' }
-          }
-        }
+            example: { result: 'success', id: '123', timestamp: '2024-01-01T00:00:00Z' },
+          },
+        },
       };
 
       await apiService.registerEndpoint(exampleEndpoint);
@@ -1735,7 +1745,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const version: ApiVersion = {
         version: 'v1',
         description: 'API with examples',
-        status: 'stable'
+        status: 'stable',
       };
 
       await apiService.registerVersion(version);
@@ -1750,7 +1760,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const version: ApiVersion = {
         version: 'v1',
         description: 'Compliant API',
-        status: 'stable'
+        status: 'stable',
       };
 
       await apiService.registerVersion(version);
@@ -1761,8 +1771,8 @@ describe('ApiService - Core API Management Functionality', () => {
         handler: async () => ({ message: 'Compliant endpoint' }),
         description: 'OpenAPI compliant endpoint',
         responses: {
-          200: { description: 'Success' }
-        }
+          200: { description: 'Success' },
+        },
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -1873,7 +1883,7 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'POST',
         handler: async () => ({ success: true }),
         description: 'Validation endpoint',
-        validateBody: true
+        validateBody: true,
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -1882,7 +1892,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/validate',
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: '{"invalid": json}' // Invalid JSON
+        body: '{"invalid": json}', // Invalid JSON
       };
 
       const response = await apiService.processRequest(malformedRequest);
@@ -1897,11 +1907,11 @@ describe('ApiService - Core API Management Functionality', () => {
         method: 'GET',
         handler: async () => {
           // Simulate long-running operation
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           return { message: 'Delayed response' };
         },
         description: 'Timeout test endpoint',
-        timeout: 1000 // 1 second timeout
+        timeout: 1000, // 1 second timeout
       };
 
       await apiService.registerEndpoint(timeoutEndpoint);
@@ -1910,7 +1920,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/timeout',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -1926,7 +1936,7 @@ describe('ApiService - Core API Management Functionality', () => {
           const id = req.headers?.['x-request-id'] || 'unknown';
           return { requestId: id, timestamp: Date.now() };
         },
-        description: 'Concurrent processing test'
+        description: 'Concurrent processing test',
       };
 
       await apiService.registerEndpoint(endpoint);
@@ -1935,19 +1945,19 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/concurrent',
         method: 'GET',
         headers: { 'x-request-id': `request-${i}` },
-        body: null
+        body: null,
       }));
 
       const responses = await Promise.all(
-        concurrentRequests.map(req => apiService.processRequest(req))
+        concurrentRequests.map((req) => apiService.processRequest(req))
       );
 
       expect(responses).toHaveLength(100);
 
-      const requestIds = responses.map(res => res.body.requestId);
+      const requestIds = responses.map((res) => res.body.requestId);
       expect(new Set(requestIds).size).toBe(100); // All unique
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.requestId).toBeDefined();
         expect(response.body.timestamp).toBeDefined();
@@ -1960,13 +1970,11 @@ describe('ApiService - Core API Management Functionality', () => {
         path: `/api/v1/test-${i}`,
         method: 'GET',
         handler: async () => ({ endpoint: i }),
-        description: `Test endpoint ${i}`
+        description: `Test endpoint ${i}`,
       }));
 
       // Register endpoints concurrently
-      await Promise.all(
-        endpoints.map(endpoint => apiService.registerEndpoint(endpoint))
-      );
+      await Promise.all(endpoints.map((endpoint) => apiService.registerEndpoint(endpoint)));
 
       const healthStatus = await apiService.healthCheck();
 
@@ -1982,7 +1990,7 @@ describe('ApiService - Core API Management Functionality', () => {
           // Mock database failure
           throw new Error('Database connection failed');
         },
-        description: 'Database test endpoint'
+        description: 'Database test endpoint',
       };
 
       await apiService.registerEndpoint(dbEndpoint);
@@ -1991,7 +1999,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '/api/v1/db-test',
         method: 'GET',
         headers: {},
-        body: null
+        body: null,
       };
 
       const response = await apiService.processRequest(request);
@@ -2006,7 +2014,7 @@ describe('ApiService - Core API Management Functionality', () => {
         path: '', // Empty path
         method: 'INVALID_METHOD', // Invalid method
         handler: null, // Null handler
-        description: 'Invalid endpoint configuration'
+        description: 'Invalid endpoint configuration',
       };
 
       expect(async () => {
@@ -2018,7 +2026,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const invalidConfigs = [
         { endpoint: '', limit: -1, windowMs: 0 }, // Invalid parameters
         { endpoint: '/test', limit: 'not-a-number', windowMs: 60000 }, // Non-numeric limit
-        { endpoint: '/test', limit: 10, windowMs: 'not-a-number' } // Non-numeric window
+        { endpoint: '/test', limit: 10, windowMs: 'not-a-number' }, // Non-numeric window
       ];
 
       for (const config of invalidConfigs) {
@@ -2032,7 +2040,7 @@ describe('ApiService - Core API Management Functionality', () => {
       const invalidVersions = [
         { version: '', description: 'Empty version' },
         { version: 'v1.0.0', status: 'invalid-status' }, // Invalid status
-        { version: null, description: 'Null version' } // Null version
+        { version: null, description: 'Null version' }, // Null version
       ];
 
       for (const version of invalidVersions) {

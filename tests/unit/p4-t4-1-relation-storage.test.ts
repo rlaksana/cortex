@@ -12,16 +12,18 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { memoryStore } from '../../src/services/memory-store.js';
-import { coreMemoryFind } from '../../src/services/core-memory-find.js';
+import { memoryFind } from '../../src/services/memory-find.js';
 import type {
   MemoryStoreResponse,
-  MemoryFindResponse
+  MemoryFindResponse,
+  MemoryStoreRequest,
+  MemoryFindRequest,
 } from '../../src/types/core-interfaces.js';
 
 describe('P4-T4.1: Relation Storage System', () => {
   const testScope = {
     project: 'test-relation-storage',
-    branch: 'main'
+    branch: 'main',
   };
 
   beforeEach(() => {
@@ -35,18 +37,20 @@ describe('P4-T4.1: Relation Storage System', () => {
   describe('Store Relations - Basic Functionality', () => {
     it('should store a relation and return relation ID', async () => {
       // This test should FAIL initially - TDD approach
-      const items = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          from_entity_type: 'entity',
-          from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          to_entity_type: 'entity',
-          to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-          relation_type: 'relates_to',
-          metadata: { strength: 0.8 }
-        }
-      }];
+      const items = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            from_entity_type: 'entity',
+            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+            to_entity_type: 'entity',
+            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+            relation_type: 'relates_to',
+            metadata: { strength: 0.8 },
+          },
+        },
+      ];
 
       const result = await memoryStore(items);
 
@@ -67,8 +71,8 @@ describe('P4-T4.1: Relation Storage System', () => {
               from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
               to_entity_type: 'entity',
               to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-              relation_type: 'depends_on'
-            }
+              relation_type: 'depends_on',
+            },
           },
           {
             kind: 'relation',
@@ -78,17 +82,17 @@ describe('P4-T4.1: Relation Storage System', () => {
               from_entity_id: '550e8400-e29b-41d4-a716-446655440002',
               to_entity_type: 'entity',
               to_entity_id: '550e8400-e29b-41d4-a716-446655440003',
-              relation_type: 'implements'
-            }
-          }
-        ]
+              relation_type: 'implements',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
 
       expect(result.items).toHaveLength(2);
-      expect(result.items.every(item => item.status === 'stored')).toBe(true);
-      expect(result.items.every(item => item.id)).toBe(true);
+      expect(result.items.every((item) => item.status === 'stored')).toBe(true);
+      expect(result.items.every((item) => item.id)).toBe(true);
     });
   });
 
@@ -100,18 +104,20 @@ describe('P4-T4.1: Relation Storage System', () => {
     beforeEach(async () => {
       // Store a test relation for querying
       const storeRequest: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: fromEntityId,
-            to_entity_type: 'entity',
-            to_entity_id: toEntityId,
-            relation_type: 'relates_to',
-            metadata: { strength: 0.9 }
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: fromEntityId,
+              to_entity_type: 'entity',
+              to_entity_id: toEntityId,
+              relation_type: 'relates_to',
+              metadata: { strength: 0.9 },
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(storeRequest);
@@ -123,10 +129,10 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findParams = {
         query: `from_entity_id:${fromEntityId}`,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
-      const result = await coreMemoryFind(findParams);
+      const result = await memoryFind(findParams);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe(storedRelationId);
@@ -139,7 +145,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findRequest: MemoryFindRequest = {
         query: `to_entity_id:${toEntityId}`,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await memoryFind(findRequest);
@@ -155,7 +161,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findRequest: MemoryFindRequest = {
         query: `from_entity_id:${fromEntityId} to_entity_id:${toEntityId}`,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await memoryFind(findRequest);
@@ -170,7 +176,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findRequest: MemoryFindRequest = {
         query: `relation_type:relates_to`,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await memoryFind(findRequest);
@@ -183,7 +189,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findRequest: MemoryFindRequest = {
         query: `from_entity_id:550e8400-e29b-41d4-a716-44665544999`,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await memoryFind(findRequest);
@@ -195,17 +201,19 @@ describe('P4-T4.1: Relation Storage System', () => {
     it('should validate that from_entity exists before storing relation', async () => {
       // This test should FAIL initially - validation not implemented
       const request: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: '550e8400-e29b-41d4-a716-446655440999', // Non-existent entity
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: '550e8400-e29b-41d4-a716-446655440999', // Non-existent entity
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -219,17 +227,19 @@ describe('P4-T4.1: Relation Storage System', () => {
 
     it('should validate that to_entity exists before storing relation', async () => {
       const request: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-44665544999', // Non-existent entity
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-44665544999', // Non-existent entity
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -252,8 +262,8 @@ describe('P4-T4.1: Relation Storage System', () => {
             data: {
               entity_type: 'entity',
               name: 'Test Entity From',
-              data: { auto_created: true }
-            }
+              data: { auto_created: true },
+            },
           },
           {
             kind: 'entity',
@@ -261,8 +271,8 @@ describe('P4-T4.1: Relation Storage System', () => {
             data: {
               entity_type: 'entity',
               name: 'Test Entity To',
-              data: { auto_created: true }
-            }
+              data: { auto_created: true },
+            },
           },
           // Then create relation between them
           {
@@ -273,10 +283,10 @@ describe('P4-T4.1: Relation Storage System', () => {
               from_entity_id: 'auto-generated-or-existing',
               to_entity_type: 'entity',
               to_entity_id: 'auto-generated-or-existing',
-              relation_type: 'relates_to'
-            }
-          }
-        ]
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -304,8 +314,8 @@ describe('P4-T4.1: Relation Storage System', () => {
             data: {
               entity_type: 'test',
               name: 'Test Entity',
-              data: {}
-            }
+              data: {},
+            },
           },
           {
             kind: 'relation',
@@ -315,10 +325,10 @@ describe('P4-T4.1: Relation Storage System', () => {
               from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
               to_entity_type: 'entity',
               to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-              relation_type: 'relates_to'
-            }
-          }
-        ]
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -333,18 +343,18 @@ describe('P4-T4.1: Relation Storage System', () => {
       const entityQuery: MemoryFindRequest = {
         query: 'test',
         scope: testScope,
-        types: ['entity']
+        types: ['entity'],
       };
 
       const relationQuery: MemoryFindRequest = {
         query: 'relates_to',
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const [entityResult, relationResult] = await Promise.all([
         memoryFind(entityQuery),
-        memoryFind(relationQuery)
+        memoryFind(relationQuery),
       ]);
 
       expect(entityResult.items).toHaveLength(1);
@@ -358,17 +368,19 @@ describe('P4-T4.1: Relation Storage System', () => {
   describe('Error Handling and Edge Cases', () => {
     it('should handle invalid UUID format for entity IDs', async () => {
       const request: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: 'invalid-uuid-format',
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: 'invalid-uuid-format',
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -379,17 +391,19 @@ describe('P4-T4.1: Relation Storage System', () => {
 
     it('should handle missing required fields', async () => {
       const request: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            // Missing from_entity_id
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              // Missing from_entity_id
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const result = await memoryStore(request);
@@ -401,17 +415,19 @@ describe('P4-T4.1: Relation Storage System', () => {
     it('should enforce unique constraint on (from_entity_id, to_entity_id, relation_type)', async () => {
       // Store first relation
       const firstRequest: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const firstResult = await memoryStore(firstRequest);
@@ -419,17 +435,19 @@ describe('P4-T4.1: Relation Storage System', () => {
 
       // Try to store duplicate relation
       const duplicateRequest: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'relates_to'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'relates_to',
+            },
+          },
+        ],
       };
 
       const duplicateResult = await memoryStore(duplicateRequest);
@@ -443,17 +461,19 @@ describe('P4-T4.1: Relation Storage System', () => {
     it('should support graph match_type in search results', async () => {
       // Store relations first
       const storeRequest: MemoryStoreRequest = {
-        items: [{
-          kind: 'relation',
-          scope: testScope,
-          data: {
-            from_entity_type: 'entity',
-            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-            to_entity_type: 'entity',
-            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-            relation_type: 'implements'
-          }
-        }]
+        items: [
+          {
+            kind: 'relation',
+            scope: testScope,
+            data: {
+              from_entity_type: 'entity',
+              from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+              to_entity_type: 'entity',
+              to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+              relation_type: 'implements',
+            },
+          },
+        ],
       };
 
       await memoryStore(storeRequest);
@@ -463,7 +483,7 @@ describe('P4-T4.1: Relation Storage System', () => {
         query: 'implements',
         scope: testScope,
         types: ['relation'],
-        mode: 'graph'
+        mode: 'graph',
       };
 
       const result = await memoryFind(findRequest);

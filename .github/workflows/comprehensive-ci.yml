@@ -2,9 +2,9 @@ name: Comprehensive CI/CD Pipeline
 
 on:
   push:
-    branches: [ master, main, develop ]
+    branches: [master, main, develop]
   pull_request:
-    branches: [ master, main ]
+    branches: [master, main]
   schedule:
     # Run comprehensive tests daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -103,7 +103,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Gate 1: Type checking
+      - name: 'Gate 1: Type checking'
         run: |
           echo "📝 Gate 1: Type checking..."
           if ! npm run type-check; then
@@ -116,7 +116,7 @@ jobs:
           fi
           echo "✅ Type checking passed"
 
-      - name: Gate 2: Linting
+      - name: 'Gate 2: Linting'
         run: |
           echo "🧹 Gate 2: Linting..."
           if ! npm run lint; then
@@ -130,7 +130,7 @@ jobs:
           fi
           echo "✅ Linting passed"
 
-      - name: Gate 3: Format/Imports checking
+      - name: 'Gate 3: Format/Imports checking'
         run: |
           echo "✨ Gate 3: Format and Imports checking..."
           if ! npm run format:check; then
@@ -153,7 +153,7 @@ jobs:
           fi
           echo "✅ Format and Imports checking passed"
 
-      - name: Gate 4: Dead code detection
+      - name: 'Gate 4: Dead code detection'
         run: |
           echo "🧼 Gate 4: Dead code detection..."
           if ! npm run dead-code; then
@@ -166,7 +166,7 @@ jobs:
           fi
           echo "✅ Dead code detection completed"
 
-      - name: Gate 5: Complexity analysis
+      - name: 'Gate 5: Complexity analysis'
         run: |
           echo "📊 Gate 5: Complexity analysis..."
           if ! npm run complexity; then
@@ -216,11 +216,7 @@ jobs:
 
     strategy:
       matrix:
-        test-category: [
-          'smoke-tests',
-          'schema-mismatch-fix',
-          'test-data-factory-validation'
-        ]
+        test-category: ['smoke-tests', 'schema-mismatch-fix', 'test-data-factory-validation']
 
     steps:
       - name: Checkout code
@@ -324,11 +320,12 @@ jobs:
 
     strategy:
       matrix:
-        test-suite: [
-          'memory-store-comprehensive',
-          'memory-find-comprehensive',
-          'database-operations-comprehensive'
-        ]
+        test-suite:
+          [
+            'memory-store-comprehensive',
+            'memory-find-comprehensive',
+            'database-operations-comprehensive',
+          ]
 
     steps:
       - name: Checkout code
@@ -557,7 +554,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: all-results/
-          pattern: "*-test-results-*"
+          pattern: '*-test-results-*'
           merge-multiple: true
 
       - name: Generate comprehensive test summary

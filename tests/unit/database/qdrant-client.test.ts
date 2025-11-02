@@ -16,14 +16,18 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { QdrantAdapter } from '../../../src/db/adapters/qdrant-adapter';
-import { StandardTestUtils, MockFactory, TestPatterns } from '../../../tests/framework/standard-test-setup';
+import {
+  StandardTestUtils,
+  MockFactory,
+  TestPatterns,
+} from '../../../tests/framework/standard-test-setup';
 import type {
   KnowledgeItem,
   SearchQuery,
   StoreOptions,
   SearchOptions,
   DeleteOptions,
-  VectorConfig
+  VectorConfig,
 } from '../../src/types/core-interfaces';
 import type { IVectorAdapter } from '../../src/db/interfaces/vector-adapter.interface';
 
@@ -33,17 +37,17 @@ vi.mock('openai', () => ({
     constructor() {
       this.embeddings = {
         create: vi.fn().mockResolvedValue({
-          data: [{ embedding: [0.1, 0.2, 0.3, 0.4, 0.5] }]
-        })
+          data: [{ embedding: [0.1, 0.2, 0.3, 0.4, 0.5] }],
+        }),
       };
     }
-  }
+  },
 }));
 
 // Mock Qdrant client with comprehensive functionality
 const createMockQdrantClient = () => ({
   getCollections: vi.fn().mockResolvedValue({
-    collections: [{ name: 'knowledge_items' }]
+    collections: [{ name: 'knowledge_items' }],
   }),
   createCollection: vi.fn().mockResolvedValue(undefined),
   deleteCollection: vi.fn().mockResolvedValue(undefined),
@@ -57,7 +61,7 @@ const createMockQdrantClient = () => ({
     status: 'green',
     optimizer_status: 'ok',
     config: {},
-    payload_schema: {}
+    payload_schema: {},
   }),
   upsert: vi.fn().mockResolvedValue({ status: 'completed' }),
   search: vi.fn().mockResolvedValue([
@@ -68,9 +72,9 @@ const createMockQdrantClient = () => ({
         kind: 'entity',
         scope: { project: 'test-project' },
         data: { title: 'Test Entity', content: 'Test content' },
-        created_at: '2025-01-01T00:00:00.000Z'
-      }
-    }
+        created_at: '2025-01-01T00:00:00.000Z',
+      },
+    },
   ]),
   retrieve: vi.fn().mockResolvedValue([
     {
@@ -79,18 +83,18 @@ const createMockQdrantClient = () => ({
         kind: 'entity',
         scope: { project: 'test-project' },
         data: { title: 'Test Entity', content: 'Test content' },
-        created_at: '2025-01-01T00:00:00.000Z'
-      }
-    }
+        created_at: '2025-01-01T00:00:00.000Z',
+      },
+    },
   ]),
   delete: vi.fn().mockResolvedValue({ status: 'completed' }),
   scroll: vi.fn().mockResolvedValue({
     points: [],
-    next_page_offset: null
+    next_page_offset: null,
   }),
   updateCollection: vi.fn().mockResolvedValue(undefined),
   createSnapshot: vi.fn().mockResolvedValue({ name: 'test-snapshot' }),
-  count: vi.fn().mockResolvedValue({ count: 100 })
+  count: vi.fn().mockResolvedValue({ count: 100 }),
 });
 
 describe('QdrantAdapter - Client Initialization', () => {
@@ -106,7 +110,7 @@ describe('QdrantAdapter - Client Initialization', () => {
 
     // Mock the QdrantClient constructor
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
@@ -116,7 +120,7 @@ describe('QdrantAdapter - Client Initialization', () => {
       vectorSize: 1536,
       distance: 'Cosine',
       connectionTimeout: 30000,
-      maxConnections: 10
+      maxConnections: 10,
     };
 
     adapter = new QdrantAdapter(config);
@@ -193,13 +197,13 @@ describe('QdrantAdapter - Point Operations', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -211,7 +215,7 @@ describe('QdrantAdapter - Point Operations', () => {
       id: 'test-point-1',
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: 'Test Entity', content: 'Test content' }
+      data: { title: 'Test Entity', content: 'Test content' },
     };
 
     const result = await adapter.store([item]);
@@ -228,10 +232,10 @@ describe('QdrantAdapter - Point Operations', () => {
             vector: expect.any(Array),
             payload: expect.objectContaining({
               kind: 'entity',
-              scope: { project: 'test-project' }
-            })
-          })
-        ])
+              scope: { project: 'test-project' },
+            }),
+          }),
+        ]),
       })
     );
   });
@@ -244,10 +248,10 @@ describe('QdrantAdapter - Point Operations', () => {
     expect(results).toHaveLength(1);
     expect(results[0]).toHaveProperty('id', 'test-point-1');
     expect(results[0]).toHaveProperty('kind', 'entity');
-    expect(mockClient.retrieve).toHaveBeenCalledWith(
-      'knowledge_items',
-      { ids, with_payload: true }
-    );
+    expect(mockClient.retrieve).toHaveBeenCalledWith('knowledge_items', {
+      ids,
+      with_payload: true,
+    });
   });
 
   it('should handle missing point retrieval', async () => {
@@ -263,7 +267,7 @@ describe('QdrantAdapter - Point Operations', () => {
       id: 'test-point-1',
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: 'Updated Entity', content: 'Updated content' }
+      data: { title: 'Updated Entity', content: 'Updated content' },
     };
 
     const result = await adapter.update([item]);
@@ -276,22 +280,21 @@ describe('QdrantAdapter - Point Operations', () => {
     const ids = ['test-point-1'];
 
     // Setup retrieval mock for validation
-    mockClient.retrieve.mockResolvedValue([{
-      id: 'test-point-1',
-      payload: { kind: 'entity' }
-    }]);
+    mockClient.retrieve.mockResolvedValue([
+      {
+        id: 'test-point-1',
+        payload: { kind: 'entity' },
+      },
+    ]);
 
     const result = await adapter.delete(ids, { validate: true });
 
     expect(result.deleted).toBe(1);
     expect(result.errors).toHaveLength(0);
-    expect(mockClient.delete).toHaveBeenCalledWith(
-      'knowledge_items',
-      {
-        wait: true,
-        points: ids
-      }
-    );
+    expect(mockClient.delete).toHaveBeenCalledWith('knowledge_items', {
+      wait: true,
+      points: ids,
+    });
   });
 
   it('should handle deletion of non-existent point', async () => {
@@ -321,7 +324,7 @@ describe('QdrantAdapter - Point Operations', () => {
     const invalidItem = {
       id: 'invalid-point',
       kind: null, // Invalid kind
-      data: 'invalid data type' // Should be object
+      data: 'invalid data type', // Should be object
     } as any;
 
     const result = await adapter.store([invalidItem]);
@@ -333,7 +336,7 @@ describe('QdrantAdapter - Point Operations', () => {
     const item: KnowledgeItem = {
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: 'Test Entity' }
+      data: { title: 'Test Entity' },
     };
 
     const result = await adapter.store([item]);
@@ -349,13 +352,13 @@ describe('QdrantAdapter - Batch Operations', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -367,7 +370,7 @@ describe('QdrantAdapter - Batch Operations', () => {
       id: `batch-point-${i}`,
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: `Batch Entity ${i}`, content: `Batch content ${i}` }
+      data: { title: `Batch Entity ${i}`, content: `Batch content ${i}` },
     }));
 
     const result = await adapter.store(items, { batchSize: 5 });
@@ -380,12 +383,12 @@ describe('QdrantAdapter - Batch Operations', () => {
   it('should handle batch search with filters', async () => {
     const queries: SearchQuery[] = [
       { query: 'test query 1', limit: 10 },
-      { query: 'test query 2', limit: 20 }
+      { query: 'test query 2', limit: 20 },
     ];
 
     mockClient.search.mockResolvedValue([
       { id: 'result-1', score: 0.9, payload: { kind: 'entity' } },
-      { id: 'result-2', score: 0.8, payload: { kind: 'entity' } }
+      { id: 'result-2', score: 0.8, payload: { kind: 'entity' } },
     ]);
 
     const results = await adapter.bulkSearch(queries);
@@ -401,13 +404,13 @@ describe('QdrantAdapter - Batch Operations', () => {
     mockClient.scroll.mockResolvedValue({
       points: [
         { id: 'delete-1', payload: { kind: 'entity' } },
-        { id: 'delete-2', payload: { kind: 'entity' } }
-      ]
+        { id: 'delete-2', payload: { kind: 'entity' } },
+      ],
     });
 
     const result = await adapter.bulkDelete({
       kind: 'entity',
-      scope: { project: 'test-project' }
+      scope: { project: 'test-project' },
     });
 
     expect(result.deleted).toBe(2);
@@ -431,7 +434,7 @@ describe('QdrantAdapter - Batch Operations', () => {
     const items: KnowledgeItem[] = [
       { id: 'success-1', kind: 'entity', scope: {}, data: {} },
       { id: 'fail-1', kind: 'entity', scope: {}, data: {} },
-      { id: 'success-2', kind: 'entity', scope: {}, data: {} }
+      { id: 'success-2', kind: 'entity', scope: {}, data: {} },
     ];
 
     const result = await adapter.store(items);
@@ -446,7 +449,7 @@ describe('QdrantAdapter - Batch Operations', () => {
       id: `transaction-${i}`,
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: `Transaction ${i}` }
+      data: { title: `Transaction ${i}` },
     }));
 
     // All operations should use wait: true for consistency
@@ -464,7 +467,7 @@ describe('QdrantAdapter - Batch Operations', () => {
       id: `batch-size-${i}`,
       kind: 'entity',
       scope: {},
-      data: { title: `Item ${i}` }
+      data: { title: `Item ${i}` },
     }));
 
     const result = await adapter.store(items, { batchSize: 5 });
@@ -481,13 +484,13 @@ describe('QdrantAdapter - Search and Filtering', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -498,7 +501,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
     const query: SearchQuery = {
       query: 'test query',
       limit: 10,
-      types: ['entity']
+      types: ['entity'],
     };
 
     const result = await adapter.search(query);
@@ -512,7 +515,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
         vector: expect.any(Array),
         limit: 10,
         score_threshold: expect.any(Number),
-        with_payload: expect.any(Array)
+        with_payload: expect.any(Array),
       })
     );
   });
@@ -521,7 +524,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
     const query: SearchQuery = {
       query: 'test query',
       scope: { project: 'specific-project', branch: 'main' },
-      types: ['decision', 'entity']
+      types: ['decision', 'entity'],
     };
 
     await adapter.search(query);
@@ -533,14 +536,14 @@ describe('QdrantAdapter - Search and Filtering', () => {
           must: expect.arrayContaining([
             expect.objectContaining({
               key: 'scope.project',
-              match: { value: 'specific-project' }
+              match: { value: 'specific-project' },
             }),
             expect.objectContaining({
               key: 'scope.branch',
-              match: { value: 'main' }
-            })
-          ])
-        })
+              match: { value: 'main' },
+            }),
+          ]),
+        }),
       })
     );
   });
@@ -551,8 +554,8 @@ describe('QdrantAdapter - Search and Filtering', () => {
       scope: {
         project: 'test-project',
         branch: 'feature-branch',
-        org: 'test-org'
-      }
+        org: 'test-org',
+      },
     };
 
     await adapter.search(query);
@@ -564,18 +567,18 @@ describe('QdrantAdapter - Search and Filtering', () => {
           must: expect.arrayContaining([
             expect.objectContaining({
               key: 'scope.project',
-              match: { value: 'test-project' }
+              match: { value: 'test-project' },
             }),
             expect.objectContaining({
               key: 'scope.branch',
-              match: { value: 'feature-branch' }
+              match: { value: 'feature-branch' },
             }),
             expect.objectContaining({
               key: 'scope.org',
-              match: { value: 'test-org' }
-            })
-          ])
-        })
+              match: { value: 'test-org' },
+            }),
+          ]),
+        }),
       })
     );
   });
@@ -583,14 +586,14 @@ describe('QdrantAdapter - Search and Filtering', () => {
   it('should handle search result pagination', async () => {
     const query: SearchQuery = {
       query: 'paginated query',
-      limit: 5
+      limit: 5,
     };
 
     mockClient.search.mockResolvedValue(
       Array.from({ length: 10 }, (_, i) => ({
         id: `result-${i}`,
-        score: 0.9 - (i * 0.1),
-        payload: { kind: 'entity', data: { title: `Result ${i}` } }
+        score: 0.9 - i * 0.1,
+        payload: { kind: 'entity', data: { title: `Result ${i}` } },
       }))
     );
 
@@ -609,7 +612,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
       'knowledge_items',
       expect.objectContaining({
         vector: expect.any(Array),
-        score_threshold: 0.7
+        score_threshold: 0.7,
       })
     );
   });
@@ -623,7 +626,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
       'knowledge_items',
       expect.objectContaining({
         vector: { name: 'content_sparse', vector: expect.any(Object) },
-        score_threshold: 0.3
+        score_threshold: 0.3,
       })
     );
   });
@@ -651,10 +654,9 @@ describe('QdrantAdapter - Search and Filtering', () => {
   });
 
   it('should search by knowledge type', async () => {
-    const result = await adapter.searchByKind(
-      ['entity', 'decision'],
-      { query: 'type-specific query' }
-    );
+    const result = await adapter.searchByKind(['entity', 'decision'], {
+      query: 'type-specific query',
+    });
 
     expect(result).toHaveProperty('results');
     expect(result).toHaveProperty('total_count');
@@ -669,9 +671,9 @@ describe('QdrantAdapter - Search and Filtering', () => {
         payload: {
           kind: 'entity',
           scope,
-          data: { title: 'Scoped Item' }
-        }
-      }
+          data: { title: 'Scoped Item' },
+        },
+      },
     ]);
 
     const results = await adapter.findByScope(scope);
@@ -685,7 +687,7 @@ describe('QdrantAdapter - Search and Filtering', () => {
       id: 'reference-item',
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: 'Reference Item', content: 'Reference content' }
+      data: { title: 'Reference Item', content: 'Reference content' },
     };
 
     const similarItems = await adapter.findSimilar(item, 0.7);
@@ -695,8 +697,8 @@ describe('QdrantAdapter - Search and Filtering', () => {
       'knowledge_items',
       expect.objectContaining({
         filter: {
-          must_not: [{ key: 'id', match: { value: 'reference-item' } }]
-        }
+          must_not: [{ key: 'id', match: { value: 'reference-item' } }],
+        },
       })
     );
   });
@@ -709,13 +711,13 @@ describe('QdrantAdapter - Collection Operations', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -725,13 +727,13 @@ describe('QdrantAdapter - Collection Operations', () => {
   it('should create collection when it does not exist', async () => {
     // Mock collections to not include our collection
     mockClient.getCollections.mockResolvedValue({
-      collections: [{ name: 'other-collection' }]
+      collections: [{ name: 'other-collection' }],
     });
 
     const newAdapter = new QdrantAdapter({
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     });
 
     await newAdapter.initialize();
@@ -741,13 +743,13 @@ describe('QdrantAdapter - Collection Operations', () => {
       expect.objectContaining({
         vectors: {
           size: 1536,
-          distance: 'Cosine'
+          distance: 'Cosine',
         },
         sparse_vectors: {
           content_sparse: {
-            index: { type: 'keyword' }
-          }
-        }
+            index: { type: 'keyword' },
+          },
+        },
       })
     );
   });
@@ -755,13 +757,13 @@ describe('QdrantAdapter - Collection Operations', () => {
   it('should not create collection when it exists', async () => {
     // Mock collections to include our collection
     mockClient.getCollections.mockResolvedValue({
-      collections: [{ name: 'knowledge_items' }]
+      collections: [{ name: 'knowledge_items' }],
     });
 
     const newAdapter = new QdrantAdapter({
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     });
 
     await newAdapter.initialize();
@@ -799,16 +801,13 @@ describe('QdrantAdapter - Collection Operations', () => {
   it('should update collection schema', async () => {
     const schemaConfig = {
       optimizer_config: {
-        default_segment_number: 4
-      }
+        default_segment_number: 4,
+      },
     };
 
     await adapter.updateCollectionSchema(schemaConfig);
 
-    expect(mockClient.updateCollection).toHaveBeenCalledWith(
-      'knowledge_items',
-      schemaConfig
-    );
+    expect(mockClient.updateCollection).toHaveBeenCalledWith('knowledge_items', schemaConfig);
   });
 
   it('should optimize collection', async () => {
@@ -819,8 +818,8 @@ describe('QdrantAdapter - Collection Operations', () => {
       expect.objectContaining({
         optimizers_config: expect.objectContaining({
           deleted_threshold: 0.2,
-          vacuum_min_vector_number: 1000
-        })
+          vacuum_min_vector_number: 1000,
+        }),
       })
     );
   });
@@ -862,13 +861,13 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -885,7 +884,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
       id: 'rate-limit-test',
       kind: 'entity',
       scope: {},
-      data: { title: 'Rate Limit Test' }
+      data: { title: 'Rate Limit Test' },
     };
 
     const result = await adapter.store([item]);
@@ -901,7 +900,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
 
     mockClient.search.mockRejectedValueOnce(networkError);
     mockClient.search.mockResolvedValueOnce([
-      { id: 'recovery-result', score: 0.9, payload: { kind: 'entity' } }
+      { id: 'recovery-result', score: 0.9, payload: { kind: 'entity' } },
     ]);
 
     // First call fails
@@ -943,7 +942,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
       id: 'timeout-test',
       kind: 'entity',
       scope: {},
-      data: { title: 'Timeout Test' }
+      data: { title: 'Timeout Test' },
     };
 
     await expect(adapter.store([item])).rejects.toThrow('Operation timeout');
@@ -958,7 +957,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
     const newAdapter = new QdrantAdapter({
       type: 'qdrant',
       url: 'http://localhost:6333',
-      apiKey: 'invalid-key'
+      apiKey: 'invalid-key',
     });
 
     await expect(newAdapter.initialize()).rejects.toThrow('Authentication failed');
@@ -971,8 +970,8 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
       scope: { project: 'test' },
       data: {
         // Circular reference that can't be serialized
-        circular: null as any
-      }
+        circular: null as any,
+      },
     };
 
     itemWithInvalidPayload.data.circular = itemWithInvalidPayload.data;
@@ -1004,7 +1003,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
       id: 'retry-test',
       kind: 'entity',
       scope: {},
-      data: { title: 'Retry Test' }
+      data: { title: 'Retry Test' },
     };
 
     // Note: Actual retry logic would need to be implemented in the adapter
@@ -1022,13 +1021,13 @@ describe('QdrantAdapter - Advanced Features', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -1044,13 +1043,15 @@ describe('QdrantAdapter - Advanced Features', () => {
   });
 
   it('should store with pre-computed embeddings', async () => {
-    const items: Array<KnowledgeItem & { embedding: number[] }> = [{
-      id: 'pre-embedded',
-      kind: 'entity',
-      scope: {},
-      data: { title: 'Pre-embedded Item' },
-      embedding: [0.5, 0.4, 0.3, 0.2, 0.1]
-    }];
+    const items: Array<KnowledgeItem & { embedding: number[] }> = [
+      {
+        id: 'pre-embedded',
+        kind: 'entity',
+        scope: {},
+        data: { title: 'Pre-embedded Item' },
+        embedding: [0.5, 0.4, 0.3, 0.2, 0.1],
+      },
+    ];
 
     const result = await adapter.storeWithEmbeddings(items);
 
@@ -1060,9 +1061,9 @@ describe('QdrantAdapter - Advanced Features', () => {
       expect.objectContaining({
         points: expect.arrayContaining([
           expect.objectContaining({
-            vector: [0.5, 0.4, 0.3, 0.2, 0.1]
-          })
-        ])
+            vector: [0.5, 0.4, 0.3, 0.2, 0.1],
+          }),
+        ]),
       })
     );
   });
@@ -1078,7 +1079,7 @@ describe('QdrantAdapter - Advanced Features', () => {
       'knowledge_items',
       expect.objectContaining({
         vector: embedding,
-        limit: 10
+        limit: 10,
       })
     );
   });
@@ -1094,7 +1095,7 @@ describe('QdrantAdapter - Advanced Features', () => {
       expect.objectContaining({
         vector: embedding,
         limit: 5,
-        score_threshold: 0.7
+        score_threshold: 0.7,
       })
     );
   });
@@ -1105,14 +1106,14 @@ describe('QdrantAdapter - Advanced Features', () => {
         id: 'duplicate-1',
         kind: 'entity',
         scope: { project: 'test' },
-        data: { title: 'Duplicate Item', content: 'Same content' }
+        data: { title: 'Duplicate Item', content: 'Same content' },
       },
       {
         id: 'duplicate-2',
         kind: 'entity',
         scope: { project: 'test' },
-        data: { title: 'Duplicate Item', content: 'Same content' }
-      }
+        data: { title: 'Duplicate Item', content: 'Same content' },
+      },
     ];
 
     const result = await adapter.checkDuplicates(items);
@@ -1157,7 +1158,7 @@ describe('QdrantAdapter - Advanced Features', () => {
       id: `bulk-${i}`,
       kind: 'entity',
       scope: { project: 'bulk-test' },
-      data: { title: `Bulk Item ${i}` }
+      data: { title: `Bulk Item ${i}` },
     }));
 
     const startTime = Date.now();
@@ -1176,13 +1177,13 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
   beforeEach(async () => {
     mockClient = createMockQdrantClient();
     vi.doMock('@qdrant/js-client-rest', () => ({
-      QdrantClient: vi.fn().mockImplementation(() => mockClient)
+      QdrantClient: vi.fn().mockImplementation(() => mockClient),
     }));
 
     const config: VectorConfig = {
       type: 'qdrant',
       url: 'http://localhost:6333',
-      vectorSize: 1536
+      vectorSize: 1536,
     };
 
     adapter = new QdrantAdapter(config);
@@ -1219,7 +1220,7 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
       id: `max-batch-${i}`,
       kind: 'entity',
       scope: {},
-      data: { title: `Max Batch Item ${i}` }
+      data: { title: `Max Batch Item ${i}` },
     }));
 
     const result = await adapter.store(maxBatch, { batchSize: 100 });
@@ -1231,7 +1232,7 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
     const minimalItem: KnowledgeItem = {
       kind: 'section',
       scope: {},
-      data: {}
+      data: {},
     };
 
     const result = await adapter.store([minimalItem]);
@@ -1249,22 +1250,20 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
         level1: {
           level2: {
             level3: {
-              data: 'deep value'
-            }
-          }
+              data: 'deep value',
+            },
+          },
         },
         // Many properties
-        ...Object.fromEntries(
-          Array.from({ length: 100 }, (_, i) => [`prop${i}`, `value${i}`])
-        )
-      }
+        ...Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`prop${i}`, `value${i}`])),
+      },
     };
 
     const extensiveItem: KnowledgeItem = {
       id: 'extensive-item',
       kind: 'entity',
       scope: { project: 'extensive-test' },
-      data: extensiveData
+      data: extensiveData,
     };
 
     const result = await adapter.store([extensiveItem]);
@@ -1280,7 +1279,7 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
     const results = await Promise.all(concurrentPromises);
 
     expect(results).toHaveLength(10);
-    results.forEach(result => {
+    results.forEach((result) => {
       expect(result).toHaveProperty('items');
     });
   });
@@ -1293,8 +1292,8 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
       data: {
         title: 'Titre avec caractères spéciaux: éàêûöä',
         content: '内容包含中文和العربية characters',
-        description: 'Описание на русском языке'
-      }
+        description: 'Описание на русском языке',
+      },
     };
 
     const result = await adapter.store([unicodeItem]);
@@ -1307,7 +1306,7 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
       { project: '', branch: 'main', org: 'test-org' },
       { project: 'test-project', branch: '', org: undefined },
       { project: null as any, branch: 'test', org: 'test' },
-      { project: 'test', branch: 123 as any, org: true as any }
+      { project: 'test', branch: 123 as any, org: true as any },
     ];
 
     for (const scope of scopes) {
@@ -1315,7 +1314,7 @@ describe('QdrantAdapter - Edge Cases and Boundary Conditions', () => {
         id: `scope-test-${JSON.stringify(scope)}`,
         kind: 'entity',
         scope,
-        data: { title: 'Scope Test Item' }
+        data: { title: 'Scope Test Item' },
       };
 
       const result = await adapter.store([item]);

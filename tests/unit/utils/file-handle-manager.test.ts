@@ -19,7 +19,12 @@ import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } 
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { FileHandleManager, FileHandleManagerError, readFileManaged, writeFileManaged } from '../../../src/utils/file-handle-manager.js';
+import {
+  FileHandleManager,
+  FileHandleManagerError,
+  readFileManaged,
+  writeFileManaged,
+} from '../../../src/utils/file-handle-manager.js';
 
 // Mock logger to avoid test output pollution
 const mockLogger = {
@@ -259,9 +264,9 @@ describe('FileHandleManager', () => {
     it('should handle file not found errors', async () => {
       const nonExistentFile = join(testDir, 'non-existent.txt');
 
-      await expect(
-        manager.managedReadFile(nonExistentFile)
-      ).rejects.toThrow(FileHandleManagerError);
+      await expect(manager.managedReadFile(nonExistentFile)).rejects.toThrow(
+        FileHandleManagerError
+      );
 
       const stats = manager.getStats();
       expect(stats.totalOperations).toBe(1);
@@ -271,15 +276,13 @@ describe('FileHandleManager', () => {
 
     it('should handle permission errors gracefully', async () => {
       // This test might not work on all systems, so we'll mock it
-      const mockFs = vi.spyOn(fs, 'readFile').mockRejectedValue(
-        Object.assign(new Error('Permission denied'), { code: 'EACCES' })
-      );
+      const mockFs = vi
+        .spyOn(fs, 'readFile')
+        .mockRejectedValue(Object.assign(new Error('Permission denied'), { code: 'EACCES' }));
 
-      await expect(
-        manager.managedReadFile(testFile1)
-      ).rejects.toThrow(FileHandleManagerError);
+      await expect(manager.managedReadFile(testFile1)).rejects.toThrow(FileHandleManagerError);
 
-      const error = await manager.managedReadFile(testFile1).catch(e => e);
+      const error = await manager.managedReadFile(testFile1).catch((e) => e);
       expect(error).toBeInstanceOf(FileHandleManagerError);
       expect(error.code).toBe('EACCES');
 
@@ -291,9 +294,9 @@ describe('FileHandleManager', () => {
       await fs.writeFile(testFile1, testContent1, 'utf-8');
 
       // Use a very short timeout that should trigger
-      await expect(
-        manager.managedReadFile(testFile1, { timeout: 1 })
-      ).rejects.toThrow(FileHandleManagerError);
+      await expect(manager.managedReadFile(testFile1, { timeout: 1 })).rejects.toThrow(
+        FileHandleManagerError
+      );
     });
 
     it('should provide detailed error information', async () => {
@@ -322,7 +325,7 @@ describe('FileHandleManager', () => {
       const failingManager = new FileHandleManager({
         maxHandles: 0, // This should cause failures
         enableGracefulDegradation: true,
-        logLevel: 'error'
+        logLevel: 'error',
       });
 
       try {
@@ -523,9 +526,13 @@ describe('FileHandleManager', () => {
       // Run mixed operations
       const operations = [
         manager.managedReadFile(testFile1, { correlationId: 'mixed-read-1' }),
-        manager.managedWriteFile(join(testDir, 'mixed-1.txt'), testContent2, { correlationId: 'mixed-write-1' }),
+        manager.managedWriteFile(join(testDir, 'mixed-1.txt'), testContent2, {
+          correlationId: 'mixed-write-1',
+        }),
         manager.managedReadFile(testFile1, { correlationId: 'mixed-read-2' }),
-        manager.managedWriteFile(join(testDir, 'mixed-2.txt'), testContent1, { correlationId: 'mixed-write-2' }),
+        manager.managedWriteFile(join(testDir, 'mixed-2.txt'), testContent1, {
+          correlationId: 'mixed-write-2',
+        }),
       ];
 
       const results = await Promise.all(operations);
@@ -574,7 +581,7 @@ describe('FileHandleManager', () => {
 
     it('should handle binary data', async () => {
       const binaryFile = join(testDir, 'binary.bin');
-      const binaryContent = Buffer.from([0x00, 0x01, 0x02, 0xFF, 0xFE, 0xFD]);
+      const binaryContent = Buffer.from([0x00, 0x01, 0x02, 0xff, 0xfe, 0xfd]);
 
       await manager.managedWriteFile(binaryFile, binaryContent);
 
@@ -697,7 +704,7 @@ describe('Integration Scenarios', () => {
       }
 
       // Verify all files were processed
-      const successfulResults = results.filter(r => r.success);
+      const successfulResults = results.filter((r) => r.success);
       expect(successfulResults).toHaveLength(testFiles.length);
 
       // Verify processed files exist and have correct content
@@ -712,7 +719,6 @@ describe('Integration Scenarios', () => {
       expect(stats.totalOperations).toBe(testFiles.length * 2); // read + write for each
       expect(stats.successfulOperations).toBe(testFiles.length * 2);
       expect(stats.failedOperations).toBe(0);
-
     } finally {
       await manager.shutdown();
     }
@@ -740,7 +746,7 @@ describe('Integration Scenarios', () => {
 
       // All operations should succeed
       expect(results).toHaveLength(50);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBe(testContent1);
       });
 
@@ -749,7 +755,6 @@ describe('Integration Scenarios', () => {
       expect(stats.successfulOperations).toBe(50);
       expect(stats.failedOperations).toBe(0);
       expect(stats.currentHandles).toBe(0); // All should be cleaned up
-
     } finally {
       await manager.shutdown();
     }

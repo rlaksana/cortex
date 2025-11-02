@@ -20,20 +20,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Observation Knowledge Type - Comprehensive Testing', () => {
@@ -51,7 +51,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'decision',
@@ -61,15 +61,15 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
           metadata: {
             source: 'automated-check',
             confidence: 0.95,
-            timestamp: '2025-01-01T00:00:00Z'
-          }
+            timestamp: '2025-01-01T00:00:00Z',
+          },
         },
         tags: { verified: true, automated: true },
         source: {
           actor: 'system-monitor',
           tool: 'health-checker',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -88,13 +88,13 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'progress: 50%'
-        }
+          observation: 'progress: 50%',
+        },
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -115,8 +115,8 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing entity_type
             entity_id: '550e8400-e29b-41d4-a716-446655440000',
-            observation: 'test observation'
-          }
+            observation: 'test observation',
+          },
         },
         {
           kind: 'observation' as const,
@@ -124,18 +124,18 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'entity',
             // Missing entity_id
-            observation: 'test observation'
-          }
+            observation: 'test observation',
+          },
         },
         {
           kind: 'observation' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             entity_type: 'entity',
-            entity_id: '550e8400-e29b-41d4-a716-446655440000'
+            entity_id: '550e8400-e29b-41d4-a716-446655440000',
             // Missing observation
-          }
-        }
+          },
+        },
       ];
 
       invalidObservations.forEach((observation, index) => {
@@ -154,8 +154,8 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'entity',
           entity_id: 'invalid-uuid-format', // Invalid UUID
-          observation: 'test observation'
-        }
+          observation: 'test observation',
+        },
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -172,8 +172,8 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'x'.repeat(101), // Exceeds 100 character limit
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'test observation'
-        }
+          observation: 'test observation',
+        },
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -190,15 +190,15 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'decision',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
           observation: 'status: implemented',
-          observationType: 'status'
+          observationType: 'status',
         },
-        content: 'Observation: decision status implemented' // Required for embedding generation
+        content: 'Observation: decision status implemented', // Required for embedding generation
       };
 
       const result = await db.storeItems([observation]);
@@ -219,15 +219,15 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
           observation: `metric: cpu_usage_${i * 20}%`,
-          observationType: 'metric'
+          observationType: 'metric',
         },
-        content: `Observation: entity cpu usage ${i * 20}%`
+        content: `Observation: entity cpu usage ${i * 20}%`,
       }));
 
       const result = await db.storeItems(observations);
@@ -246,9 +246,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'runbook',
             entity_id: '550e8400-e29b-41d4-a716-446655440000',
             observation: 'status: verified',
-            observationType: 'status'
+            observationType: 'status',
           },
-          content: 'Valid observation'
+          content: 'Valid observation',
         },
         {
           kind: 'observation' as const,
@@ -256,9 +256,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'entity',
             // Missing entity_id
-            observation: 'invalid observation'
+            observation: 'invalid observation',
           },
-          content: 'Invalid observation'
+          content: 'Invalid observation',
         },
         {
           kind: 'observation' as const,
@@ -267,10 +267,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'decision',
             entity_id: '550e8400-e29b-41d4-a716-446655440001',
             observation: 'rationale: approved',
-            observationType: 'rationale'
+            observationType: 'rationale',
           },
-          content: 'Another valid observation'
-        }
+          content: 'Another valid observation',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -293,10 +293,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
               entity_type: 'decision',
               entity_id: '550e8400-e29b-41d4-a716-446655440000',
               observation: 'status: implemented',
-              observationType: 'status'
+              observationType: 'status',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'observation-id-2',
@@ -307,11 +307,11 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
               entity_type: 'entity',
               entity_id: '550e8400-e29b-41d4-a716-446655440001',
               observation: 'progress: 75%',
-              observationType: 'progress'
+              observationType: 'progress',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -347,7 +347,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         'validation',
         'performance',
         'error',
-        'warning'
+        'warning',
       ];
 
       for (const observationType of observationTypes) {
@@ -358,9 +358,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'entity',
             entity_id: '550e8400-e29b-41d4-a716-446655440000',
             observation: `${observationType}: test value`,
-            observationType
+            observationType,
           },
-          content: `Observation: ${observationType} test`
+          content: `Observation: ${observationType} test`,
         };
 
         const result = ObservationSchema.safeParse(observation);
@@ -378,10 +378,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'custom: unspecified observation'
+          observation: 'custom: unspecified observation',
           // No observationType specified
         },
-        content: 'Observation without type'
+        content: 'Observation without type',
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -395,9 +395,21 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
   describe('Entity-Attached Observations', () => {
     it('should handle observations for different entity types', async () => {
       const entityTypes = [
-        'decision', 'entity', 'relation', 'section', 'runbook',
-        'change', 'issue', 'todo', 'release_note', 'ddl',
-        'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'decision',
+        'entity',
+        'relation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       for (const entityType of entityTypes) {
@@ -407,9 +419,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: entityType,
             entity_id: '550e8400-e29b-41d4-a716-446655440000',
-            observation: `status: observed_${entityType}`
+            observation: `status: observed_${entityType}`,
           },
-          content: `Observation for ${entityType}`
+          content: `Observation for ${entityType}`,
         };
 
         const result = ObservationSchema.safeParse(observation);
@@ -430,9 +442,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'decision',
             entity_id: entityId,
             observation: 'status: proposed',
-            observationType: 'status'
+            observationType: 'status',
           },
-          content: 'First observation'
+          content: 'First observation',
         },
         {
           kind: 'observation' as const,
@@ -441,9 +453,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'decision',
             entity_id: entityId,
             observation: 'rationale: needs review',
-            observationType: 'rationale'
+            observationType: 'rationale',
           },
-          content: 'Second observation'
+          content: 'Second observation',
         },
         {
           kind: 'observation' as const,
@@ -452,14 +464,14 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'decision',
             entity_id: entityId,
             observation: 'status: accepted',
-            observationType: 'status'
+            observationType: 'status',
           },
-          content: 'Third observation'
-        }
+          content: 'Third observation',
+        },
       ];
 
-      const results = observations.map(obs => ObservationSchema.safeParse(obs));
-      results.forEach(result => {
+      const results = observations.map((obs) => ObservationSchema.safeParse(obs));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -471,28 +483,28 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'status: active'
+          observation: 'status: active',
         },
-        content: 'Observation in project-A'
+        content: 'Observation in project-A',
       };
 
       const observationProjectB = {
         kind: 'observation' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          observation: 'status: inactive'
+          observation: 'status: inactive',
         },
-        content: 'Observation in project-B'
+        content: 'Observation in project-B',
       };
 
       // Store both observations
@@ -521,16 +533,16 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
               cpu_usage: 45.2,
               memory_usage: 67.8,
               response_time: 150,
-              error_rate: 0.01
+              error_rate: 0.01,
             },
             context: {
               environment: 'production',
               version: '2.1.0',
-              region: 'us-west-2'
-            }
-          }
+              region: 'us-west-2',
+            },
+          },
         },
-        content: 'Complex observation with rich metadata'
+        content: 'Complex observation with rich metadata',
       };
 
       const result = await db.storeItems([complexObservation]);
@@ -549,9 +561,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'entity',
             entity_id: '550e8400-e29b-41d4-a716-446655440000',
             observation: 'error: Connection timeout after 30s (ETIMEDOUT)',
-            observationType: 'error'
+            observationType: 'error',
           },
-          content: 'Observation with error message and code'
+          content: 'Observation with error message and code',
         },
         {
           kind: 'observation' as const,
@@ -560,14 +572,14 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
             entity_type: 'entity',
             entity_id: '550e8400-e29b-41d4-a716-446655440001',
             observation: 'status: 🟢 Healthy (all systems operational)',
-            observationType: 'status'
+            observationType: 'status',
           },
-          content: 'Observation with emoji and parentheses'
-        }
+          content: 'Observation with emoji and parentheses',
+        },
       ];
 
-      const results = observations.map(obs => ObservationSchema.safeParse(obs));
-      results.forEach(result => {
+      const results = observations.map((obs) => ObservationSchema.safeParse(obs));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -580,9 +592,9 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: longObservationText
+          observation: longObservationText,
         },
-        content: `Observation: ${longObservationText.substring(0, 50)}...`
+        content: `Observation: ${longObservationText.substring(0, 50)}...`,
       };
 
       const result = ObservationSchema.safeParse(observation);
@@ -599,22 +611,22 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         kind: 'observation' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'incident',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
           observation: 'resolution_time: 2h 15m',
           observationType: 'metric',
-          metadata: { source: 'incident-tracking', automated: true }
+          metadata: { source: 'incident-tracking', automated: true },
         },
         tags: { verified: true, metric: true },
         source: {
           actor: 'incident-resolver',
           tool: 'incident-management',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'default' as const
+        ttl_policy: 'default' as const,
       };
 
       const result = validateKnowledgeItem(observation);
@@ -632,10 +644,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'temp-entity',
           entity_id: '550e8400-e29b-41d4-a716-446655440000',
-          observation: 'temporary_status: checking'
+          observation: 'temporary_status: checking',
         },
         ttl_policy: 'short' as const,
-        content: 'Temporary observation with short TTL'
+        content: 'Temporary observation with short TTL',
       };
 
       const result = await db.storeItems([observation]);

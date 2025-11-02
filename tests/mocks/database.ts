@@ -52,17 +52,20 @@ export const mockQdrantClient = {
   }),
   search: vi.fn().mockImplementation(async (collectionName: string, searchRequest: any) => {
     // Simulate search results
-    const mockResults = Array.from({ length: Math.min(searchRequest.limit || 10, 3) }, (_, index) => ({
-      id: `mock-point-${index}`,
-      score: 0.9 - index * 0.1,
-      payload: {
-        content: `Mock content ${index}`,
-        kind: 'entity',
-        scope: { project: 'test' },
-        created_at: new Date().toISOString(),
-      },
-      vector: Array.from({ length: 1536 }, () => Math.random()),
-    }));
+    const mockResults = Array.from(
+      { length: Math.min(searchRequest.limit || 10, 3) },
+      (_, index) => ({
+        id: `mock-point-${index}`,
+        score: 0.9 - index * 0.1,
+        payload: {
+          content: `Mock content ${index}`,
+          kind: 'entity',
+          scope: { project: 'test' },
+          created_at: new Date().toISOString(),
+        },
+        vector: Array.from({ length: 1536 }, () => Math.random()),
+      })
+    );
 
     return {
       result: mockResults,
@@ -72,7 +75,7 @@ export const mockQdrantClient = {
   }),
   retrieve: vi.fn().mockImplementation(async (collectionName: string, ids: string[]) => {
     // Simulate retrieve results
-    return ids.map(id => ({
+    return ids.map((id) => ({
       id,
       payload: {
         content: `Retrieved content for ${id}`,
@@ -123,7 +126,7 @@ export const mockQdrantClient = {
 export const mockUnifiedDatabaseLayer = {
   // Basic CRUD operations
   store: vi.fn().mockImplementation(async (items: any[]) => {
-    return items.map(item => ({
+    return items.map((item) => ({
       id: item.id || `generated-id-${Date.now()}`,
       status: 'stored',
       kind: item.kind,
@@ -284,12 +287,12 @@ export const databaseTestHelpers = {
    * Reset all database mocks
    */
   resetDatabaseMocks: () => {
-    Object.values(mockQdrantClient).forEach(method => {
+    Object.values(mockQdrantClient).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }
     });
-    Object.values(mockUnifiedDatabaseLayer).forEach(method => {
+    Object.values(mockUnifiedDatabaseLayer).forEach((method) => {
       if (vi.isMockFunction(method)) {
         vi.clearAllMocks();
       }

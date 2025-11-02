@@ -16,7 +16,7 @@ src/constants/supported-kinds.ts
 import {
   SUPPORTED_KINDS,
   getKnowledgeTypeMetadata,
-  getKnowledgeTypesByCategory
+  getKnowledgeTypesByCategory,
 } from './constants/supported-kinds';
 
 // Basic usage
@@ -28,14 +28,17 @@ const devTypes = getKnowledgeTypesByCategory('development-lifecycle');
 ## Knowledge Type Categories
 
 ### Core Graph Extension (3 types)
+
 - **entity**: Flexible entity storage with dynamic schemas
 - **relation**: Entity relationships with metadata
 - **observation**: Fine-grained fact storage (append-only)
 
 ### Core Document Types (1 type)
+
 - **section**: Document sections with markdown/text content
 
 ### Development Lifecycle (8 types)
+
 - **runbook**: Operational procedures with step-by-step instructions
 - **change**: Change tracking for features, bugfixes, refactoring
 - **issue**: Issue tracking with external system integration
@@ -46,6 +49,7 @@ const devTypes = getKnowledgeTypesByCategory('development-lifecycle');
 - **pr_context**: Pull request context (30-day TTL)
 
 ### 8-LOG SYSTEM (4 types)
+
 - **incident**: Comprehensive incident management
 - **release**: Release management with deployment strategies
 - **risk**: Risk management with probability assessment
@@ -54,49 +58,54 @@ const devTypes = getKnowledgeTypesByCategory('development-lifecycle');
 ## Core Exports
 
 ### Basic Arrays
+
 ```typescript
 import { SUPPORTED_KINDS } from './constants/supported-kinds';
 // ['entity', 'relation', 'observation', 'section', 'runbook', ...]
 ```
 
 ### Type Definitions
+
 ```typescript
 import type {
   KnowledgeCategory,
   ValidationFeatures,
   BusinessRules,
-  KnowledgeTypeMetadata
+  KnowledgeTypeMetadata,
 } from './constants/supported-kinds';
 ```
 
 ### Pre-defined Groupings
+
 ```typescript
 import {
-  CORE_GRAPH_EXTENSION_TYPES,      // ['entity', 'relation', 'observation']
-  DEVELOPMENT_LIFECYCLE_TYPES,      // 8 development types
-  EIGHT_LOG_SYSTEM_TYPES,           // ['incident', 'release', 'risk', 'assumption']
-  IMMUTABLE_TYPES,                  // Types with immutability constraints
-  DEDUPLICATED_TYPES,               // All types (all support deduplication)
-  SCOPE_ISOLATED_TYPES,             // All types (all support scope isolation)
-  TTL_SUPPORTED_TYPES,              // All types (all support TTL policies)
+  CORE_GRAPH_EXTENSION_TYPES, // ['entity', 'relation', 'observation']
+  DEVELOPMENT_LIFECYCLE_TYPES, // 8 development types
+  EIGHT_LOG_SYSTEM_TYPES, // ['incident', 'release', 'risk', 'assumption']
+  IMMUTABLE_TYPES, // Types with immutability constraints
+  DEDUPLICATED_TYPES, // All types (all support deduplication)
+  SCOPE_ISOLATED_TYPES, // All types (all support scope isolation)
+  TTL_SUPPORTED_TYPES, // All types (all support TTL policies)
 } from './constants/supported-kinds';
 ```
 
 ## Utility Functions
 
 ### Get Metadata for a Specific Type
+
 ```typescript
 import { getKnowledgeTypeMetadata } from './constants/supported-kinds';
 
 const entityMeta = getKnowledgeTypeMetadata('entity');
-console.log(entityMeta.displayName);        // "Entity"
-console.log(entityMeta.category);          // "core-graph-extension"
-console.log(entityMeta.description);       // Full description
-console.log(entityMeta.tableName);         // "knowledgeEntity"
-console.log(entityMeta.businessRules);     // Rules and constraints
+console.log(entityMeta.displayName); // "Entity"
+console.log(entityMeta.category); // "core-graph-extension"
+console.log(entityMeta.description); // Full description
+console.log(entityMeta.tableName); // "knowledgeEntity"
+console.log(entityMeta.businessRules); // Rules and constraints
 ```
 
 ### Get Types by Category
+
 ```typescript
 import { getKnowledgeTypesByCategory } from './constants/supported-kinds';
 
@@ -105,6 +114,7 @@ const coreGraphTypes = getKnowledgeTypesByCategory('core-graph-extension');
 ```
 
 ### Get Types by Validation Feature
+
 ```typescript
 import { getKnowledgeTypesByValidationFeature } from './constants/supported-kinds';
 
@@ -113,6 +123,7 @@ const immutableTypes = getKnowledgeTypesByValidationFeature('hasImmutabilityCons
 ```
 
 ### Get Related Types
+
 ```typescript
 import { getRelatedKnowledgeTypes } from './constants/supported-kinds';
 
@@ -121,6 +132,7 @@ const decisionRelated = getRelatedKnowledgeTypes('decision');
 ```
 
 ### Check Validation Features
+
 ```typescript
 import { supportsValidationFeature } from './constants/supported-kinds';
 
@@ -134,32 +146,34 @@ Each knowledge type has comprehensive metadata:
 
 ```typescript
 interface KnowledgeTypeMetadata {
-  kind: string;                    // Unique identifier
-  displayName: string;             // Human-readable name
-  category: KnowledgeCategory;     // Logical grouping
-  description: string;             // Purpose and use cases
-  useCases: string[];             // Example scenarios
-  validationFeatures: {           // Capabilities
+  kind: string; // Unique identifier
+  displayName: string; // Human-readable name
+  category: KnowledgeCategory; // Logical grouping
+  description: string; // Purpose and use cases
+  useCases: string[]; // Example scenarios
+  validationFeatures: {
+    // Capabilities
     hasSchemaValidation: boolean;
     supportsDeduplication: boolean;
     hasImmutabilityConstraints: boolean;
     supportsScopeIsolation: boolean;
     hasTTLPolicies: boolean;
   };
-  businessRules: {                // Rules and constraints
+  businessRules: {
+    // Rules and constraints
     rules: string[];
     constraints: string[];
     validTransitions?: string[];
     requiredFields: string[];
     optionalFields: string[];
   };
-  schemaType: z.ZodType;          // Zod schema reference
-  typescriptType: string;         // TypeScript type name
-  tableName: string;              // Database table name
-  isImplemented: boolean;         // Implementation status
-  introducedIn: string;           // Version introduced
-  relatedTypes: string[];         // Related knowledge types
-  tags: string[];                 // Search/filter tags
+  schemaType: z.ZodType; // Zod schema reference
+  typescriptType: string; // TypeScript type name
+  tableName: string; // Database table name
+  isImplemented: boolean; // Implementation status
+  introducedIn: string; // Version introduced
+  relatedTypes: string[]; // Related knowledge types
+  tags: string[]; // Search/filter tags
 }
 ```
 
@@ -180,19 +194,24 @@ if (isKnowledgeCategory(category)) {
 ## Integration with Existing Code
 
 ### Replacing Hardcoded Arrays
+
 **Before:**
+
 ```typescript
-const VALID_TYPES = ['entity', 'relation', 'observation', 'section', 'runbook', /* ... */];
+const VALID_TYPES = ['entity', 'relation', 'observation', 'section', 'runbook' /* ... */];
 ```
 
 **After:**
+
 ```typescript
 import { SUPPORTED_KINDS } from './constants/supported-kinds';
 const VALID_TYPES = SUPPORTED_KINDS;
 ```
 
 ### Table Name Mapping
+
 **Before:**
+
 ```typescript
 const kindToTableMap = {
   section: 'section',
@@ -203,6 +222,7 @@ const kindToTableMap = {
 ```
 
 **After:**
+
 ```typescript
 import { getKnowledgeTypeMetadata } from './constants/supported-kinds';
 
@@ -212,13 +232,16 @@ function getTableName(kind: string): string {
 ```
 
 ### Validation Logic
+
 **Before:**
+
 ```typescript
 const immutableTypes = ['decision', 'section', 'observation'];
 const isImmutable = immutableTypes.includes(kind);
 ```
 
 **After:**
+
 ```typescript
 import { supportsValidationFeature } from './constants/supported-kinds';
 const isImmutable = supportsValidationFeature(kind, 'hasImmutabilityConstraints');
@@ -249,18 +272,17 @@ const validationResult = schema.parse(inputData);
 ## Migration Guide
 
 ### Step 1: Update Imports
+
 ```typescript
 // Old
 import { SOME_TYPES } from '../some-file';
 
 // New
-import {
-  SUPPORTED_KINDS,
-  getKnowledgeTypesByCategory
-} from '../constants/supported-kinds';
+import { SUPPORTED_KINDS, getKnowledgeTypesByCategory } from '../constants/supported-kinds';
 ```
 
 ### Step 2: Replace Hardcoded Arrays
+
 ```typescript
 // Old
 if (['entity', 'relation', 'observation'].includes(type)) { ... }
@@ -271,9 +293,12 @@ if (CORE_GRAPH_EXTENSION_TYPES.includes(type)) { ... }
 ```
 
 ### Step 3: Use Metadata for Business Logic
+
 ```typescript
 // Old
-if (type === 'decision' && status === 'accepted') { /* immutability check */ }
+if (type === 'decision' && status === 'accepted') {
+  /* immutability check */
+}
 
 // New
 import { supportsValidationFeature } from '../constants/supported-kinds';
@@ -285,6 +310,7 @@ if (supportsValidationFeature(type, 'hasImmutabilityConstraints')) {
 ## Testing
 
 The module includes comprehensive tests covering:
+
 - Type safety and metadata structure
 - Function behavior and edge cases
 - Integration with Zod schemas
@@ -292,6 +318,7 @@ The module includes comprehensive tests covering:
 - Business rules validation
 
 Run tests with:
+
 ```bash
 npm test -- tests/unit/constants/supported-kinds.test.ts
 ```

@@ -25,14 +25,14 @@ describe('Chunk Reassembly Integration', () => {
     embeddingService = new MockEmbeddingService({
       shouldFail: false,
       failMethod: 'both',
-      latency: 0
+      latency: 0,
     });
 
     chunkingService = new ChunkingService(undefined, undefined, embeddingService as any);
 
     // Replace the semantic analyzer with our mock - ensure it's properly set
     const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
-      shouldFail: false
+      shouldFail: false,
     });
     (chunkingService as any).semanticAnalyzer = mockSemanticAnalyzer;
 
@@ -101,9 +101,9 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
           content: largeDocument,
           title: 'System Architecture Documentation',
           category: 'technical',
-          author: 'architecture-team'
+          author: 'architecture-team',
         },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       // Step 3: Apply chunking
@@ -113,8 +113,8 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
       expect(chunkedItems.length).toBeGreaterThan(1);
 
       // Find parent and chunks
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
 
       expect(parentItem).toBeDefined();
       expect(childChunks.length).toBeGreaterThan(0);
@@ -127,16 +127,16 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
         content: chunk.data.content,
         data: chunk.data,
         scope: chunk.scope,
-        confidence_score: 0.8 + (Math.random() * 0.2), // Random score between 0.8-1.0
+        confidence_score: 0.8 + Math.random() * 0.2, // Random score between 0.8-1.0
         created_at: chunk.created_at,
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       }));
 
       // Step 5: Group and reconstruct results
       const groupedResults = groupingService.groupResultsByParent(searchResults);
       expect(groupedResults.length).toBeGreaterThan(0);
 
-      const groupedResult = groupedResults.find(g => g.parent_id === parentItem!.id);
+      const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
       expect(groupedResult).toBeDefined();
 
       // Step 6: Reconstruct content
@@ -205,32 +205,32 @@ ${'Additional project plan content to ensure proper chunking for testing partial
         data: {
           content: document,
           title: 'Project Plan',
-          category: 'planning'
-        }
+          category: 'planning',
+        },
       };
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
 
       // Simulate finding only some chunks (not all)
       const partialChunks = childChunks.slice(0, Math.floor(childChunks.length * 0.7));
 
-      const searchResults = partialChunks.map(chunk => ({
+      const searchResults = partialChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.data.content,
         data: chunk.data,
         scope: chunk.scope,
-        confidence_score: 0.75 + (Math.random() * 0.2),
+        confidence_score: 0.75 + Math.random() * 0.2,
         created_at: chunk.created_at,
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       }));
 
       // Group and reconstruct
       const groupedResults = groupingService.groupResultsByParent(searchResults);
-      const groupedResult = groupedResults.find(g => g.parent_id === parentItem!.id);
+      const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
 
       if (!groupedResult) {
         // Skip reconstruction if no grouped result found
@@ -260,8 +260,8 @@ ${'Additional project plan content to ensure proper chunking for testing partial
           scope: { project: 'test-project' },
           data: {
             content: 'This is a small entity description that will not be chunked.',
-            name: 'Test Entity'
-          }
+            name: 'Test Entity',
+          },
         },
         {
           id: 'large-section-001',
@@ -269,51 +269,52 @@ ${'Additional project plan content to ensure proper chunking for testing partial
           scope: { project: 'test-project' },
           data: {
             content: 'A'.repeat(3000), // Large content to trigger chunking
-            title: 'Large Section Content'
-          }
+            title: 'Large Section Content',
+          },
         },
         {
           id: 'medium-observation-001',
           kind: 'observation', // This type is NOT chunked
           scope: { project: 'test-project' },
           data: {
-            content: 'Medium-sized observation that should not be chunked but provides important context.',
-            category: 'performance'
-          }
-        }
+            content:
+              'Medium-sized observation that should not be chunked but provides important context.',
+            category: 'performance',
+          },
+        },
       ];
 
       // Apply chunking
       const processedItems = await chunkingService.processItemsForStorage(items);
 
       // Simulate search results mixing chunked and non-chunked items
-      const searchResults = processedItems.map(item => ({
+      const searchResults = processedItems.map((item) => ({
         id: item.id,
         kind: item.kind,
         content: item.data.content,
         data: item.data,
         scope: item.scope,
-        confidence_score: 0.7 + (Math.random() * 0.3),
+        confidence_score: 0.7 + Math.random() * 0.3,
         created_at: item.created_at || new Date().toISOString(),
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       }));
 
       // Group and reconstruct
       const groupedResults = groupingService.groupResultsByParent(searchResults);
 
       // Should have both single items and grouped items
-      const singleItems = groupedResults.filter(g => g.is_single_item);
-      const groupedItems = groupedResults.filter(g => !g.is_single_item);
+      const singleItems = groupedResults.filter((g) => g.is_single_item);
+      const groupedItems = groupedResults.filter((g) => !g.is_single_item);
 
       expect(singleItems.length).toBeGreaterThan(0);
       expect(groupedItems.length).toBeGreaterThan(0);
 
       // Verify single items are preserved
-      const entityResult = singleItems.find(g => g.parent_id === 'small-entity-001');
+      const entityResult = singleItems.find((g) => g.parent_id === 'small-entity-001');
       expect(entityResult).toBeDefined();
 
       // Verify grouped items are reconstructed
-      const sectionResult = groupedItems.find(g => g.parent_id === 'large-section-001');
+      const sectionResult = groupedItems.find((g) => g.parent_id === 'large-section-001');
       expect(sectionResult).toBeDefined();
 
       const reconstructed = groupingService.reconstructGroupedContent(sectionResult!);
@@ -359,7 +360,7 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
         scope: {
           project: 'tech-project',
           branch: 'main',
-          org: 'engineering'
+          org: 'engineering',
         },
         data: {
           content: richContent,
@@ -369,20 +370,20 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
           priority: 'high',
           tags: ['authentication', 'security', 'specification'],
           review_status: 'approved',
-          last_reviewed: '2025-01-15T10:00:00Z'
+          last_reviewed: '2025-01-15T10:00:00Z',
         },
         metadata: {
           version: '1.2.0',
           reviewers: ['alice', 'bob'],
-          dependencies: ['database-schema', 'api-gateway']
-        }
+          dependencies: ['database-schema', 'api-gateway'],
+        },
       };
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
 
       // Find parent and verify metadata preservation
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
       expect(parentItem).toBeDefined();
       expect(parentItem?.data.category).toBe('technical');
       expect(parentItem?.data.author).toBe('security-team');
@@ -390,10 +391,10 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
       expect(parentItem?.metadata?.version).toBe('1.2.0');
 
       // Verify child chunks inherit important metadata
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
       expect(childChunks.length).toBeGreaterThan(0);
 
-      childChunks.forEach(chunk => {
+      childChunks.forEach((chunk) => {
         expect(chunk.data.category).toBe('technical');
         expect(chunk.data.author).toBe('security-team');
         expect(chunk.data.parent_id).toBe(parentItem!.id);
@@ -402,7 +403,7 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
       });
 
       // Simulate search and reassembly
-      const searchResults = childChunks.map(chunk => ({
+      const searchResults = childChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.data.content,
@@ -410,7 +411,7 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
         scope: chunk.scope,
         confidence_score: 0.8,
         created_at: chunk.created_at!,
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       }));
 
       const groupedResults = groupingService.groupResultsByParent(searchResults);
@@ -472,13 +473,13 @@ ${'Additional quarterly report content and detailed analysis to ensure proper ch
           content: structuredContent,
           title: 'Q4 2024 Performance Report',
           category: 'executive',
-          confidentiality: 'internal'
-        }
+          confidentiality: 'internal',
+        },
       };
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
 
       // Simulate realistic search with varying confidence scores
       const searchResults = childChunks.map((chunk, _index) => ({
@@ -487,9 +488,9 @@ ${'Additional quarterly report content and detailed analysis to ensure proper ch
         content: chunk.data.content,
         data: chunk.data,
         scope: chunk.scope,
-        confidence_score: 0.9 - (_index * 0.05), // Decreasing scores
+        confidence_score: 0.9 - _index * 0.05, // Decreasing scores
         created_at: chunk.created_at!,
-        match_type: 'semantic' as const
+        match_type: 'semantic' as const,
       }));
 
       // Group and reconstruct
@@ -515,7 +516,7 @@ ${'Additional quarterly report content and detailed analysis to ensure proper ch
 
       // Verify structural elements preserved
       const lines = reconstructed.content.split('\n');
-      const headerLines = lines.filter(line => line.startsWith('#'));
+      const headerLines = lines.filter((line) => line.startsWith('#'));
       expect(headerLines.length).toBeGreaterThan(0);
 
       // Verify metrics and data preserved (accounting for sentence splitting spacing)

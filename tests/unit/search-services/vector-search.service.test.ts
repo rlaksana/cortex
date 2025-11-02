@@ -21,9 +21,13 @@ import type {
   IVectorAdapter,
   SearchResult,
   KnowledgeItem,
-  SearchQuery
+  SearchQuery,
 } from '../../../src/db/interfaces/vector-adapter.interface';
-import type { MemoryStoreResponse, MemoryFindResponse, StoreError } from '../../../src/types/core-interfaces';
+import type {
+  MemoryStoreResponse,
+  MemoryFindResponse,
+  StoreError,
+} from '../../../src/types/core-interfaces';
 
 // Mock the vector adapter implementation
 class MockVectorAdapter implements IVectorAdapter {
@@ -33,7 +37,7 @@ class MockVectorAdapter implements IVectorAdapter {
     totalQueries: 0,
     totalOperations: 0,
     cacheHits: 0,
-    errors: 0
+    errors: 0,
   };
 
   async initialize(): Promise<void> {
@@ -70,7 +74,7 @@ class MockVectorAdapter implements IVectorAdapter {
       } catch (error) {
         errors.push({
           id: item.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -78,7 +82,7 @@ class MockVectorAdapter implements IVectorAdapter {
     return {
       stored: stored.length,
       errors,
-      items: stored
+      items: stored,
     };
   }
 
@@ -91,7 +95,7 @@ class MockVectorAdapter implements IVectorAdapter {
       try {
         // Find existing item and update it
         for (const [kind, collection] of this.collections.entries()) {
-          const index = collection.findIndex(existing => existing.id === item.id);
+          const index = collection.findIndex((existing) => existing.id === item.id);
           if (index !== -1) {
             const embedding = await this.generateEmbedding(JSON.stringify(item.data));
             collection[index] = { ...item, embedding };
@@ -103,7 +107,7 @@ class MockVectorAdapter implements IVectorAdapter {
       } catch (error) {
         errors.push({
           id: item.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -111,7 +115,7 @@ class MockVectorAdapter implements IVectorAdapter {
     return {
       stored: stored.length,
       errors,
-      items: stored
+      items: stored,
     };
   }
 
@@ -124,7 +128,7 @@ class MockVectorAdapter implements IVectorAdapter {
       this.embeddings.delete(id);
 
       for (const [kind, items] of this.collections.entries()) {
-        const index = items.findIndex(item => item.id === id);
+        const index = items.findIndex((item) => item.id === id);
         if (index !== -1) {
           items.splice(index, 1);
           deleted++;
@@ -162,7 +166,7 @@ class MockVectorAdapter implements IVectorAdapter {
       query,
       searchTime,
       hasMore: false,
-      fromCache: false
+      fromCache: false,
     };
   }
 
@@ -184,7 +188,7 @@ class MockVectorAdapter implements IVectorAdapter {
             data: item.data,
             created_at: item.created_at,
             confidence_score: similarity,
-            match_type: 'semantic'
+            match_type: 'semantic',
           });
         }
       }
@@ -204,7 +208,10 @@ class MockVectorAdapter implements IVectorAdapter {
     const uniqueResults = new Map<string, SearchResult>();
 
     for (const result of combinedResults) {
-      if (!uniqueResults.has(result.id) || result.confidence_score > (uniqueResults.get(result.id)?.confidence_score || 0)) {
+      if (
+        !uniqueResults.has(result.id) ||
+        result.confidence_score > (uniqueResults.get(result.id)?.confidence_score || 0)
+      ) {
         uniqueResults.set(result.id, result);
       }
     }
@@ -231,7 +238,7 @@ class MockVectorAdapter implements IVectorAdapter {
             data: item.data,
             created_at: item.created_at,
             confidence_score: 0.8,
-            match_type: 'exact'
+            match_type: 'exact',
           });
         }
       }
@@ -240,12 +247,20 @@ class MockVectorAdapter implements IVectorAdapter {
     return results.slice(0, options?.limit || 10);
   }
 
-  async storeByKind(kind: string, items: KnowledgeItem[], options?: StoreOptions): Promise<MemoryStoreResponse> {
-    const kindItems = items.map(item => ({ ...item, kind }));
+  async storeByKind(
+    kind: string,
+    items: KnowledgeItem[],
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse> {
+    const kindItems = items.map((item) => ({ ...item, kind }));
     return this.store(kindItems, options);
   }
 
-  async searchByKind(kinds: string[], query: SearchQuery, options?: SearchOptions): Promise<MemoryFindResponse> {
+  async searchByKind(
+    kinds: string[],
+    query: SearchQuery,
+    options?: SearchOptions
+  ): Promise<MemoryFindResponse> {
     const results: SearchResult[] = [];
 
     for (const kind of kinds) {
@@ -259,7 +274,7 @@ class MockVectorAdapter implements IVectorAdapter {
       query,
       searchTime: 0,
       hasMore: false,
-      fromCache: false
+      fromCache: false,
     };
   }
 
@@ -277,7 +292,11 @@ class MockVectorAdapter implements IVectorAdapter {
     return results;
   }
 
-  async findSimilar(item: KnowledgeItem, threshold?: number, options?: SearchOptions): Promise<SearchResult[]> {
+  async findSimilar(
+    item: KnowledgeItem,
+    threshold?: number,
+    options?: SearchOptions
+  ): Promise<SearchResult[]> {
     const itemEmbedding = await this.generateEmbedding(JSON.stringify(item.data));
     const results: SearchResult[] = [];
 
@@ -296,7 +315,7 @@ class MockVectorAdapter implements IVectorAdapter {
             data: candidate.data,
             created_at: candidate.created_at,
             confidence_score: similarity,
-            match_type: 'semantic'
+            match_type: 'semantic',
           });
         }
       }
@@ -307,7 +326,9 @@ class MockVectorAdapter implements IVectorAdapter {
       .slice(0, options?.limit || 10);
   }
 
-  async checkDuplicates(items: KnowledgeItem[]): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
+  async checkDuplicates(
+    items: KnowledgeItem[]
+  ): Promise<{ duplicates: KnowledgeItem[]; originals: KnowledgeItem[] }> {
     const duplicates: KnowledgeItem[] = [];
     const originals: KnowledgeItem[] = [];
 
@@ -315,11 +336,11 @@ class MockVectorAdapter implements IVectorAdapter {
       const similar = await this.findSimilar(item, 0.1); // Lower threshold for testing
       if (similar.length > 0) {
         duplicates.push(item);
-        similar.forEach(sim => {
+        similar.forEach((sim) => {
           const original = Array.from(this.collections.values())
             .flat()
-            .find(i => i.id === sim.id);
-          if (original && !originals.find(o => o.id === original.id)) {
+            .find((i) => i.id === sim.id);
+          if (original && !originals.find((o) => o.id === original.id)) {
             originals.push(original);
           }
         });
@@ -335,10 +356,12 @@ class MockVectorAdapter implements IVectorAdapter {
     let vectorCount = 0;
 
     for (const [kind, collection] of this.collections.entries()) {
-      const filteredItems = scope ? collection.filter(item => this.scopeMatches(item.scope, scope)) : collection;
+      const filteredItems = scope
+        ? collection.filter((item) => this.scopeMatches(item.scope, scope))
+        : collection;
       itemsByKind[kind] = filteredItems.length;
       totalItems += filteredItems.length;
-      vectorCount += filteredItems.filter(item => item.embedding).length;
+      vectorCount += filteredItems.filter((item) => item.embedding).length;
     }
 
     return {
@@ -346,7 +369,7 @@ class MockVectorAdapter implements IVectorAdapter {
       itemsByKind,
       storageSize: totalItems * 1024, // Mock size calculation
       lastUpdated: new Date().toISOString(),
-      vectorCount
+      vectorCount,
     };
   }
 
@@ -359,11 +382,14 @@ class MockVectorAdapter implements IVectorAdapter {
       results.push(await this.store(batch, options));
     }
 
-    return results.reduce((acc, result) => ({
-      stored: acc.stored + result.stored,
-      errors: [...acc.errors, ...result.errors],
-      items: [...acc.items, ...result.items]
-    }), { stored: 0, errors: [], items: [] });
+    return results.reduce(
+      (acc, result) => ({
+        stored: acc.stored + result.stored,
+        errors: [...acc.errors, ...result.errors],
+        items: [...acc.items, ...result.items],
+      }),
+      { stored: 0, errors: [], items: [] }
+    );
   }
 
   async bulkDelete(filter: any, options?: any): Promise<{ deleted: number }> {
@@ -371,7 +397,7 @@ class MockVectorAdapter implements IVectorAdapter {
 
     for (const [kind, collection] of this.collections.entries()) {
       const initialLength = collection.length;
-      const filtered = collection.filter(item => {
+      const filtered = collection.filter((item) => {
         if (filter.kind && item.kind !== filter.kind) return true;
         if (filter.scope && !this.scopeMatches(item.scope, filter.scope)) return true;
         if (filter.before && new Date(item.created_at) > new Date(filter.before)) return true;
@@ -400,14 +426,18 @@ class MockVectorAdapter implements IVectorAdapter {
     const hash = this.simpleHash(content);
     const embedding = [];
 
-    for (let i = 0; i < 384; i++) { // Standard embedding size
+    for (let i = 0; i < 384; i++) {
+      // Standard embedding size
       embedding.push(Math.sin(hash + i) * 0.5 + 0.5);
     }
 
     return embedding;
   }
 
-  async storeWithEmbeddings(items: Array<KnowledgeItem & { embedding: number[] }>, options?: StoreOptions): Promise<MemoryStoreResponse> {
+  async storeWithEmbeddings(
+    items: Array<KnowledgeItem & { embedding: number[] }>,
+    options?: StoreOptions
+  ): Promise<MemoryStoreResponse> {
     const stored: KnowledgeItem[] = [];
     const errors: StoreError[] = [];
 
@@ -421,7 +451,7 @@ class MockVectorAdapter implements IVectorAdapter {
       } catch (error) {
         errors.push({
           id: item.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -447,7 +477,7 @@ class MockVectorAdapter implements IVectorAdapter {
             data: item.data,
             created_at: item.created_at,
             confidence_score: similarity,
-            match_type: 'semantic'
+            match_type: 'semantic',
           });
         }
       }
@@ -458,7 +488,11 @@ class MockVectorAdapter implements IVectorAdapter {
       .slice(0, options?.limit || 10);
   }
 
-  async findNearest(embedding: number[], limit?: number, threshold?: number): Promise<SearchResult[]> {
+  async findNearest(
+    embedding: number[],
+    limit?: number,
+    threshold?: number
+  ): Promise<SearchResult[]> {
     return this.vectorSearch(embedding, { limit, score_threshold: threshold });
   }
 
@@ -487,7 +521,7 @@ class MockVectorAdapter implements IVectorAdapter {
       name: 'test-collection',
       size: this.embeddings.size,
       dimension: 384,
-      distance: 'Cosine'
+      distance: 'Cosine',
     };
   }
 
@@ -498,7 +532,7 @@ class MockVectorAdapter implements IVectorAdapter {
       supportsPayloadFiltering: true,
       maxBatchSize: 1000,
       supportedDistanceMetrics: ['Cosine', 'Euclidean', 'DotProduct'],
-      supportedOperations: ['search', 'store', 'update', 'delete']
+      supportedOperations: ['search', 'store', 'update', 'delete'],
     };
   }
 
@@ -547,7 +581,7 @@ class MockVectorAdapter implements IVectorAdapter {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return hash;
@@ -560,8 +594,8 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 describe('Vector Search Service - Comprehensive Vector Operations', () => {
@@ -580,9 +614,9 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         data: {
           title: 'User Authentication Service',
           description: 'Handles user login and authentication',
-          type: 'service'
+          type: 'service',
         },
-        created_at: '2024-01-01T00:00:00Z'
+        created_at: '2024-01-01T00:00:00Z',
       },
       {
         id: 'test-decision-1',
@@ -591,9 +625,9 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         data: {
           title: 'Use OAuth 2.0 for Authentication',
           description: 'Decision to implement OAuth 2.0',
-          rationale: 'Industry standard and secure'
+          rationale: 'Industry standard and secure',
         },
-        created_at: '2024-01-02T00:00:00Z'
+        created_at: '2024-01-02T00:00:00Z',
       },
       {
         id: 'test-observation-1',
@@ -602,10 +636,10 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         data: {
           title: 'Authentication Performance Metrics',
           content: 'Average login time is 200ms',
-          metrics: { avg_login_time: 200, success_rate: 0.95 }
+          metrics: { avg_login_time: 200, success_rate: 0.95 },
         },
-        created_at: '2024-01-03T00:00:00Z'
-      }
+        created_at: '2024-01-03T00:00:00Z',
+      },
     ];
   });
 
@@ -642,7 +676,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       expect(embeddings).toHaveLength(3);
 
       // Verify embedding dimensions
-      embeddings.forEach(embedding => {
+      embeddings.forEach((embedding) => {
         expect(embedding).toHaveLength(384); // Standard embedding size
         expect(embedding[0]).toBeGreaterThanOrEqual(0);
         expect(embedding[0]).toBeLessThanOrEqual(1);
@@ -700,12 +734,12 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       expect(results).toHaveLength(3);
 
       // Results should be sorted by confidence score (cosine similarity)
-      const scores = results.map(r => r.confidence_score);
+      const scores = results.map((r) => r.confidence_score);
       const sortedScores = [...scores].sort((a, b) => b - a);
       expect(scores).toEqual(sortedScores);
 
       // All scores should be between 0 and 1
-      scores.forEach(score => {
+      scores.forEach((score) => {
         expect(score).toBeGreaterThanOrEqual(0);
         expect(score).toBeLessThanOrEqual(1);
       });
@@ -747,13 +781,13 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         searchMode: 'hybrid',
         keyword_weight: 0.5,
         semantic_weight: 0.5,
-        score_threshold: 0.3
+        score_threshold: 0.3,
       };
 
       const results = await vectorAdapter.hybridSearch(query, options);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.confidence_score).toBeGreaterThanOrEqual(0.3);
       });
     });
@@ -770,7 +804,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         kind: 'entity',
         scope: { project: 'bulk-test' },
         data: { title: `Bulk Test Item ${i}`, content: `Test content ${i}` },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }));
 
       const result = await vectorAdapter.bulkStore(bulkItems, { batchSize: 50 });
@@ -784,14 +818,12 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       await vectorAdapter.initialize();
 
       // Store items in parallel
-      const storePromises = testItems.map(item =>
-        vectorAdapter.store([item])
-      );
+      const storePromises = testItems.map((item) => vectorAdapter.store([item]));
 
       const results = await Promise.all(storePromises);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.stored).toBe(1);
       });
 
@@ -806,13 +838,13 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const queries = [
         { query: 'authentication', types: [] },
         { query: 'user service', types: [] },
-        { query: 'performance metrics', types: [] }
+        { query: 'performance metrics', types: [] },
       ];
 
       const results = await vectorAdapter.bulkSearch(queries);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toHaveProperty('results');
         expect(result).toHaveProperty('totalCount');
       });
@@ -827,7 +859,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
 
       const [result1, result2] = await Promise.all([
         vectorAdapter.store(batch1),
-        vectorAdapter.store(batch2)
+        vectorAdapter.store(batch2),
       ]);
 
       expect(result1.stored + result2.stored).toBe(3);
@@ -857,7 +889,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       // Update an item
       const updatedItem = {
         ...testItems[0],
-        data: { title: 'Updated Authentication Service', description: 'Updated description' }
+        data: { title: 'Updated Authentication Service', description: 'Updated description' },
       };
 
       await vectorAdapter.update([updatedItem]);
@@ -898,7 +930,9 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       expect(Object.keys(stats.itemsByKind)).toHaveLength(3);
 
       // Search across specific types - filter to only get items from the specified kinds
-      const typeResults = await vectorAdapter.searchByKind(['component', 'service'], { query: 'test' });
+      const typeResults = await vectorAdapter.searchByKind(['component', 'service'], {
+        query: 'test',
+      });
       expect(typeResults.results.length).toBeGreaterThanOrEqual(2);
     });
   });
@@ -913,7 +947,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const results = await vectorAdapter.search({
         query: 'user authentication service performance',
         types: ['entity', 'observation'],
-        limit: 10
+        limit: 10,
       });
       const duration = Date.now() - startTime;
 
@@ -962,7 +996,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const [semantic, hybrid, exact] = await Promise.all([
         vectorAdapter.search({ query: 'authentication' }, semanticOptions),
         vectorAdapter.search({ query: 'authentication' }, hybridOptions),
-        vectorAdapter.search({ query: 'authentication' }, exactOptions)
+        vectorAdapter.search({ query: 'authentication' }, exactOptions),
       ]);
 
       expect(semantic.results.length).toBeGreaterThanOrEqual(0);
@@ -981,7 +1015,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       expect(storeResult.stored).toBe(3);
 
       // Find items by ID
-      const foundItems = await vectorAdapter.findById(testItems.map(item => item.id));
+      const foundItems = await vectorAdapter.findById(testItems.map((item) => item.id));
       expect(foundItems).toHaveLength(3);
 
       // Search using memory find interface
@@ -1016,7 +1050,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       // Store items with pre-computed embeddings
       const itemsWithEmbeddings = testItems.map((item, index) => ({
         ...item,
-        embedding: index % 2 === 0 ? embedding1 : embedding2
+        embedding: index % 2 === 0 ? embedding1 : embedding2,
       }));
 
       const storeResult = await vectorAdapter.storeWithEmbeddings(itemsWithEmbeddings);
@@ -1052,7 +1086,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const results = await vectorAdapter.vectorSearch(queryEmbedding);
 
       expect(results).toHaveLength(3);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.confidence_score).toBeGreaterThan(0);
         expect(result.match_type).toBe('semantic');
       });
@@ -1066,7 +1100,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const nearest = await vectorAdapter.findNearest(embedding, 2, 0.3);
 
       expect(nearest.length).toBeLessThanOrEqual(2);
-      nearest.forEach(item => {
+      nearest.forEach((item) => {
         expect(item.confidence_score).toBeGreaterThanOrEqual(0.3);
       });
     });
@@ -1077,7 +1111,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
 
       const scopeResults = await vectorAdapter.findByScope({
         project: 'test-project',
-        branch: 'main'
+        branch: 'main',
       });
 
       expect(scopeResults).toHaveLength(2); // Items 1 and 2 have branch 'main'
@@ -1088,7 +1122,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       await vectorAdapter.store(testItems);
 
       const deleteResult = await vectorAdapter.bulkDelete({
-        kind: 'entity'
+        kind: 'entity',
       });
 
       expect(deleteResult.deleted).toBe(1);
@@ -1132,9 +1166,9 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
         data: {
           title: `Large Dataset Item ${i}`,
           content: `Content for item ${i} with searchable text`,
-          category: `category-${i % 10}`
+          category: `category-${i % 10}`,
         },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }));
 
       const storeResult = await vectorAdapter.bulkStore(largeDataset, { batchSize: 100 });
@@ -1144,7 +1178,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       const startTime = Date.now();
       const searchResult = await vectorAdapter.search({
         query: 'searchable text category-5',
-        limit: 50
+        limit: 50,
       });
       const duration = Date.now() - startTime;
 
@@ -1168,7 +1202,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
       expect(results).toHaveLength(20);
       expect(duration).toBeLessThan(2000); // Should handle 20 concurrent queries quickly
 
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toHaveProperty('results');
         expect(result).toHaveProperty('totalCount');
       });
@@ -1184,7 +1218,7 @@ describe('Vector Search Service - Comprehensive Vector Operations', () => {
           kind: 'entity',
           scope: { project: 'memory-test' },
           data: { title: `Memory Test Item ${batchIndex}-${itemIndex}` },
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         }))
       );
 

@@ -151,7 +151,10 @@ export class QdrantAdapter implements IVectorAdapter {
 
       logger.info('Database clients initialized with key vault integration');
     } catch (error) {
-      logger.warn({ error }, 'Failed to initialize clients from key vault, using environment fallback');
+      logger.warn(
+        { error },
+        'Failed to initialize clients from key vault, using environment fallback'
+      );
 
       // Fallback to environment variables
       const fallbackApiKey = this.config.apiKey || process.env.QDRANT_API_KEY;

@@ -14,7 +14,7 @@ describe('StoreTelemetryService', () => {
       const item: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { content: longContent }
+        data: { content: longContent },
       };
 
       await service.recordStoreAttempt(item, 10000, 8000);
@@ -31,7 +31,7 @@ describe('StoreTelemetryService', () => {
       const item: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { content: shortContent }
+        data: { content: shortContent },
       };
 
       await service.recordStoreAttempt(item, 1000, 1000);
@@ -47,14 +47,14 @@ describe('StoreTelemetryService', () => {
       const item1: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { content: 'a'.repeat(10000) }
+        data: { content: 'a'.repeat(10000) },
       };
 
       // Second item: 12000 -> 8000 (truncated)
       const item2: KnowledgeItem = {
         kind: 'decision',
         scope: { project: 'test' },
-        data: { content: 'b'.repeat(12000) }
+        data: { content: 'b'.repeat(12000) },
       };
 
       await service.recordStoreAttempt(item1, 10000, 8000);
@@ -73,13 +73,13 @@ describe('StoreTelemetryService', () => {
       const observation: KnowledgeItem = {
         kind: 'observation',
         scope: { project: 'test' },
-        data: { content: 'test observation' }
+        data: { content: 'test observation' },
       };
 
       const decision: KnowledgeItem = {
         kind: 'decision',
         scope: { project: 'test' },
-        data: { title: 'test decision', rationale: 'test rationale' }
+        data: { title: 'test decision', rationale: 'test rationale' },
       };
 
       await service.recordSuccessfulStore(observation);

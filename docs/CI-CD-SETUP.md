@@ -6,7 +6,7 @@ This document provides a comprehensive overview of the CI/CD pipeline implemente
 
 The MCP Cortex project features a comprehensive testing and deployment pipeline that ensures:
 
-- **100% Test Coverage** across all 4 mcp__cortex tools
+- **100% Test Coverage** across all 4 mcp\_\_cortex tools
 - **Automated Quality Gates** with linting and type checking
 - **Pre-commit Verification** ensuring code changes are accompanied by tests
 - **Multi-environment Testing** with Qdrant database integration
@@ -19,11 +19,13 @@ The MCP Cortex project features a comprehensive testing and deployment pipeline 
 **Location:** `.husky/pre-commit`
 
 **Features:**
+
 - Code quality checks (ESLint + TypeScript)
 - Test coverage verification with `scripts/verify-test-coverage.js`
 - Automatic enforcement of test updates alongside code changes
 
 **Coverage Thresholds:**
+
 - Statements: 80%
 - Branches: 75%
 - Functions: 80%
@@ -36,22 +38,26 @@ The MCP Cortex project features a comprehensive testing and deployment pipeline 
 **Pipeline Stages:**
 
 #### Environment Setup
+
 - Node.js 24 installation
 - Dependency caching
 - Environment verification
 
 #### Code Quality Gates
+
 - TypeScript type checking
 - ESLint linting
 - Code formatting verification
 - Import optimization checks
 
 #### Qdrant Service Setup
+
 - Automated Qdrant database service initialization
 - Health checks and connection verification
 - Database isolation for test runs
 
 #### Testing Matrix
+
 - **Unit Tests** (3 categories)
   - Smoke tests
   - Schema mismatch fix validation
@@ -76,6 +82,7 @@ The MCP Cortex project features a comprehensive testing and deployment pipeline 
   - Vulnerability scanning
 
 #### Build and Package
+
 - TypeScript compilation
 - Build artifact generation
 - Artifact preservation
@@ -83,6 +90,7 @@ The MCP Cortex project features a comprehensive testing and deployment pipeline 
 ## Test Coverage Breakdown
 
 ### Knowledge Types (16 total)
+
 All knowledge types are systematically tested:
 
 1. **entity** - Person, organization, system entities
@@ -103,6 +111,7 @@ All knowledge types are systematically tested:
 16. **assumption** - Business and technical assumptions
 
 ### MCP Tools (4 total)
+
 All MCP Cortex tools are validated:
 
 1. **memory_store** - Knowledge storage with deduplication
@@ -113,6 +122,7 @@ All MCP Cortex tools are validated:
 ### Test Scenarios (~3,000+ total)
 
 #### Memory Store Scenarios (576+)
+
 - **Knowledge Type Coverage**: 16 types × 3 variants = 48 scenarios
 - **Batch Size Testing**: Single, small (5), medium (25), large (50) items
 - **Scope Variations**: Project-only, branch-only, org-only, complete scope
@@ -120,6 +130,7 @@ All MCP Cortex tools are validated:
 - **Error Handling**: Invalid types, missing fields, malformed data
 
 #### Memory Find Scenarios (1,200+)
+
 - **Query Types**: Short, medium, long, empty, special characters
 - **Search Modes**: Auto, fast, deep search
 - **Filtering**: Single type, multiple types, all types
@@ -127,6 +138,7 @@ All MCP Cortex tools are validated:
 - **Scope Filtering**: Project, branch, org, complete scope
 
 #### Database Operations (19+)
+
 - **Health Monitoring**: Empty database, populated database
 - **Statistics**: Various scope combinations and data volumes
 
@@ -135,16 +147,19 @@ All MCP Cortex tools are validated:
 ### Local Development
 
 1. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 2. **Run quality checks:**
+
    ```bash
    npm run quality-check
    ```
 
 3. **Verify test coverage:**
+
    ```bash
    npm run verify-test-coverage
    ```
@@ -157,11 +172,13 @@ All MCP Cortex tools are validated:
 ### GitHub Actions
 
 #### Automatic Triggers
+
 - **Push to master**: Full pipeline execution
 - **Pull Requests**: Comprehensive testing
 - **Daily Schedule**: Security and performance tests
 
 #### Manual Triggers
+
 ```bash
 # Run all tests
 gh workflow run "Comprehensive CI/CD Pipeline" --field test_type=all
@@ -184,6 +201,7 @@ gh workflow run "Comprehensive CI/CD Pipeline" --field test_type=security
 The pre-commit hook ensures code quality and test coverage:
 
 ### Protected Directories
+
 - `src/` - All source code
 - `src/services/` - Service implementations
 - `src/utils/` - Utility functions
@@ -191,11 +209,14 @@ The pre-commit hook ensures code quality and test coverage:
 - `src/orchestrators/` - Workflow orchestrators
 
 ### Test File Detection
+
 The system automatically detects corresponding test files:
+
 - `src/utils/example.ts` → `tests/unit/utils/example.test.ts`
 - `src/services/service.ts` → `tests/unit/services/service.test.ts`
 
 ### Coverage Enforcement
+
 - **Minimum thresholds** must be met
 - **Missing test files** block commits
 - **Failing tests** prevent commits
@@ -204,6 +225,7 @@ The system automatically detects corresponding test files:
 ## Configuration
 
 ### Coverage Thresholds
+
 ```json
 {
   "COVERAGE_THRESHOLDS": {
@@ -216,16 +238,18 @@ The system automatically detects corresponding test files:
 ```
 
 ### Test Patterns
+
 ```javascript
 const TEST_PATTERNS = [
   'tests/**/*.test.ts',
   'tests/**/*.spec.ts',
   'src/**/*.test.ts',
-  'src/**/*.spec.ts'
+  'src/**/*.spec.ts',
 ];
 ```
 
 ### Exempt Files
+
 - Configuration files (`*.json`, `*.yml`)
 - Type definitions (`src/types/*.ts`)
 - Documentation (`*.md`)
@@ -234,12 +258,14 @@ const TEST_PATTERNS = [
 ## Performance and Security
 
 ### Performance Testing
+
 - **Load Testing**: 100-1000 item storage/retrieval
 - **Concurrent Testing**: Multiple simultaneous operations
 - **Database Performance**: Query optimization validation
 - **Memory Profiling**: Memory usage analysis
 
 ### Security Testing
+
 - **Dependency Auditing**: npm security audit
 - **Vulnerability Scanning**: Automated security checks
 - **Code Security**: ESLint security rules
@@ -247,12 +273,14 @@ const TEST_PATTERNS = [
 ## Troubleshooting
 
 ### Pre-commit Hook Issues
+
 1. **Missing Test Files**: Create corresponding test files in `tests/unit/`
 2. **Coverage Thresholds**: Add tests to improve coverage
 3. **Failing Tests**: Fix failing test cases
 4. **TypeScript Errors**: Resolve type issues
 
 ### GitHub Actions Issues
+
 1. **Qdrant Connection**: Check service health and configuration
 2. **Dependency Installation**: Verify package-lock.json integrity
 3. **Test Timeouts**: Check test performance and complexity
@@ -261,12 +289,14 @@ const TEST_PATTERNS = [
 ## Monitoring and Reporting
 
 ### Test Results
+
 - **GitHub Actions UI**: Detailed test execution logs
 - **Coverage Reports**: HTML and JSON coverage reports
 - **Artifacts**: Test results and coverage data preservation
 - **Notifications**: Success/failure status reporting
 
 ### Performance Metrics
+
 - **Test Execution Time**: Performance regression detection
 - **Database Performance**: Qdrant query optimization
 - **Memory Usage**: Resource utilization monitoring
@@ -274,12 +304,14 @@ const TEST_PATTERNS = [
 ## Future Enhancements
 
 ### Planned Improvements
+
 1. **Parallel Test Execution**: Faster CI/CD pipeline
 2. **Test Environment Matrix**: Multiple Node.js versions
 3. **Advanced Coverage Analysis**: Branch coverage insights
 4. **Automated Test Generation**: AI-assisted test creation
 
 ### Integration Opportunities
+
 1. **SonarQube Integration**: Advanced code quality analysis
 2. **Security Scanning**: Comprehensive vulnerability assessment
 3. **Performance Monitoring**: Real-time performance tracking

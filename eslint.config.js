@@ -41,8 +41,8 @@ export default [
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
         URLSearchParams: 'readonly',
-       crypto: 'readonly',
-       QdrantClient: 'readonly',
+        crypto: 'readonly',
+        QdrantClient: 'readonly',
       },
     },
     plugins: {
@@ -59,7 +59,10 @@ export default [
       'no-unused-vars': 'off', // Use TypeScript version
 
       // TypeScript critical rules - make warnings for now
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
 
       // Code style (warnings)
       'prefer-const': 'warn',
@@ -69,6 +72,35 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/no-empty-function': 'off',
+    },
+  },
+  {
+    files: ['**/*.mjs', '**/*.js', 'scripts/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        global: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
+        fetch: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-undef': 'error',
+      'no-unused-vars': 'off',
     },
   },
   {

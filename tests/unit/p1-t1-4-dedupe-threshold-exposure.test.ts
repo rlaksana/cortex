@@ -13,14 +13,14 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
@@ -48,14 +48,14 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Test entity 1',
           data: { name: 'Entity 1' },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'entity',
           content: 'duplicate-content test item',
           data: { name: 'Duplicate Entity' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -73,14 +73,14 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Test entity 1',
           data: { name: 'Entity 1' },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'entity',
           content: 'duplicate-content test item',
           data: { name: 'Duplicate Entity' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -99,8 +99,8 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Test entity',
           data: { name: 'Entity' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -118,20 +118,20 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'New item',
           data: { name: 'New Entity' },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'entity',
           content: 'duplicate-content test item',
           data: { name: 'Duplicate Entity' },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'decision',
           content: 'Use OAuth 2.0 for authentication',
           data: { title: 'Auth Decision' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -149,14 +149,14 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Unique test entity',
           data: { name: 'Unique Entity' },
-          scope: { project: 'test-project', branch: 'main' }
+          scope: { project: 'test-project', branch: 'main' },
         },
         {
           kind: 'decision',
           content: 'Unique test decision',
           data: { title: 'Unique Decision' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -173,8 +173,8 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Test entity',
           data: { name: 'Entity' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);
@@ -212,8 +212,8 @@ describe('P1-T1.4: Dedupe Threshold Exposure', () => {
           kind: 'entity',
           content: 'Test entity',
           data: { name: 'Entity' },
-          scope: { project: 'test-project', branch: 'main' }
-        }
+          scope: { project: 'test-project', branch: 'main' },
+        },
       ];
 
       const result = await vectorDb.storeItems(items);

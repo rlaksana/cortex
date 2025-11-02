@@ -22,9 +22,9 @@ try {
         {
           name: 'test',
           description: 'Test tool',
-          inputSchema: { type: 'object', properties: {} }
-        }
-      ]
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ],
     };
   });
 
@@ -33,13 +33,15 @@ try {
   const transport = new StdioServerTransport();
   console.error('Transport created');
 
-  server.connect(transport).then(() => {
-    console.error('MCP Server connected and ready!');
-  }).catch(error => {
-    console.error('Failed to connect:', error.message);
-    process.exit(1);
-  });
-
+  server
+    .connect(transport)
+    .then(() => {
+      console.error('MCP Server connected and ready!');
+    })
+    .catch((error) => {
+      console.error('Failed to connect:', error.message);
+      process.exit(1);
+    });
 } catch (error) {
   console.error('Error:', error.message);
   console.error('Stack:', error.stack);

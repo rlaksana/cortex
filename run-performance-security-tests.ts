@@ -8,7 +8,7 @@
 
 import { PerformanceSecurityIntegrationTest } from './tests/integration/performance-security-integration.test.js';
 import { writeFileSync } from 'fs';
-import { logger } from './src/utils/logger.js';
+// import { logger } from './src/utils/logger.js';
 
 async function main() {
   console.log('🚀 Cortex MCP Performance & Security Integration Tests');
@@ -48,10 +48,11 @@ async function main() {
     console.log(`⚠️  Vulnerabilities: ${results.summary.vulnerabilities}`);
 
     // Production readiness
-    const isProductionReady = results.summary.avgResponseTime < 50 &&
-                             results.summary.maxResponseTime < 500 &&
-                             results.summary.vulnerabilities === 0 &&
-                             (results.summary.successfulPerformanceTests / results.summary.totalPerformanceTests) >= 0.95;
+    const isProductionReady =
+      results.summary.avgResponseTime < 50 &&
+      results.summary.maxResponseTime < 500 &&
+      results.summary.vulnerabilities === 0 &&
+      results.summary.successfulPerformanceTests / results.summary.totalPerformanceTests >= 0.95;
 
     console.log(`\n🎯 Production Readiness: ${isProductionReady ? '✅ READY' : '❌ NOT READY'}`);
 
@@ -63,7 +64,6 @@ async function main() {
     await tester.cleanup();
 
     process.exit(isProductionReady ? 0 : 1);
-
   } catch (error) {
     console.error('\n❌ Test execution failed:', error);
     await tester.cleanup();

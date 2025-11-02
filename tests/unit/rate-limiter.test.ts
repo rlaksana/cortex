@@ -57,18 +57,15 @@ describe('RateLimitService', () => {
       // Exhaust the burst capacity
       const requests = [];
       for (let i = 0; i < 101; i++) {
-        requests.push(rateLimiter.checkRateLimit(
-          'test-api-key',
-          'api_key',
-          OperationType.MEMORY_FIND,
-          1
-        ));
+        requests.push(
+          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1)
+        );
       }
 
       const results = await Promise.all(requests);
 
       // First 100 should be allowed, 101st should be blocked
-      expect(results.slice(0, 100).every(r => r.allowed)).toBe(true);
+      expect(results.slice(0, 100).every((r) => r.allowed)).toBe(true);
       expect(results[100].allowed).toBe(false);
       expect(results[100].reason).toBe('burst_exceeded');
       expect(results[100].retry_after_seconds).toBeGreaterThan(0);
@@ -117,18 +114,15 @@ describe('RateLimitService', () => {
       // Make many requests quickly
       const requests = [];
       for (let i = 0; i < 1001; i++) {
-        requests.push(rateLimiter.checkRateLimit(
-          'test-api-key',
-          'api_key',
-          OperationType.MEMORY_FIND,
-          1
-        ));
+        requests.push(
+          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1)
+        );
       }
 
       const results = await Promise.all(requests);
 
       // Should eventually hit sliding window limit
-      const blockedResults = results.filter(r => !r.allowed);
+      const blockedResults = results.filter((r) => !r.allowed);
       expect(blockedResults.length).toBeGreaterThan(0);
 
       const firstBlocked = blockedResults[0];

@@ -1,1 +1,7 @@
-__report = {"summary":{"total":{"jshint":0,"sloc":0,"maintainability":0},"average":{"sloc":0,"maintainability":"NaN","jshint":"NaN"}},"reports":[]}
+__report = {
+  summary: {
+    total: { jshint: 0, sloc: 0, maintainability: 0 },
+    average: { sloc: 0, maintainability: 'NaN', jshint: 'NaN' },
+  },
+  reports: [],
+};

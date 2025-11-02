@@ -15,7 +15,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListResourcesRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { ValidationError } from '../../../src/utils/error-handler.js';
 import { memoryStore } from '../../../src/services/memory-store.js';
 import type {
@@ -23,7 +26,7 @@ import type {
   MemoryStoreResponse,
   MemoryFindResponse,
   ToolExecutionContext,
-  ToolResult
+  ToolResult,
 } from '../../../src/types/core-interfaces.js';
 
 // Mock dependencies
@@ -65,7 +68,7 @@ const mockResourceService = {
   cacheResource: vi.fn(),
   invalidateResourceCache: vi.fn(),
   getResourceAnalytics: vi.fn(),
-  optimizeResourceDelivery: vi.fn()
+  optimizeResourceDelivery: vi.fn(),
 };
 
 // Mock access control functions
@@ -77,7 +80,7 @@ const mockAccessControl = {
   analyzeResourceAccess: vi.fn(),
   getResourceUsageMetrics: vi.fn(),
   checkResourceQuotas: vi.fn(),
-  applyResourcePolicies: vi.fn()
+  applyResourcePolicies: vi.fn(),
 };
 
 // Mock performance monitoring functions
@@ -88,7 +91,7 @@ const mockPerformanceMonitor = {
   analyzeResourceUsage: vi.fn(),
   monitorResourceThroughput: vi.fn(),
   trackResourceLatency: vi.fn(),
-  generateResourceMetrics: vi.fn()
+  generateResourceMetrics: vi.fn(),
 };
 
 // Import mocked modules
@@ -223,24 +226,24 @@ const validKnowledgeResource: ResourceDefinition = {
     size: 15360,
     checksum: 'sha256:abc123def456',
     encoding: 'utf-8',
-    compression: 'gzip'
+    compression: 'gzip',
   },
   access: {
     permissions: {
       read: ['admin', 'developer', 'viewer'],
       write: ['admin', 'developer'],
-      admin: ['admin']
+      admin: ['admin'],
     },
     scope: {
       project: 'test-project',
-      org: 'test-org'
+      org: 'test-org',
     },
     authentication: true,
     authorization: true,
     rateLimits: {
       requests: 100,
-      window: 3600
-    }
+      window: 3600,
+    },
   },
   lifecycle: {
     status: 'active',
@@ -249,27 +252,27 @@ const validKnowledgeResource: ResourceDefinition = {
     version: '1.2.0',
     retention: {
       policy: 'standard',
-      duration: 365
-    }
+      duration: 365,
+    },
   },
   performance: {
     cache: {
       enabled: true,
       ttl: 3600,
       maxSize: 1048576,
-      strategy: 'LRU'
+      strategy: 'LRU',
     },
     optimization: {
       compression: true,
       minification: false,
-      transformation: true
+      transformation: true,
     },
     delivery: {
       streaming: true,
       chunking: false,
-      cdn: false
-    }
-  }
+      cdn: false,
+    },
+  },
 };
 
 const validDocumentResource: ResourceDefinition = {
@@ -287,24 +290,24 @@ const validDocumentResource: ResourceDefinition = {
     version: '2.1.0',
     author: 'team-lead',
     size: 2097152,
-    checksum: 'sha256:def789ghi012'
+    checksum: 'sha256:def789ghi012',
   },
   access: {
     permissions: {
       read: ['admin', 'developer'],
       write: ['admin', 'team-lead'],
-      admin: ['admin']
+      admin: ['admin'],
     },
     scope: {
       project: 'test-project',
-      org: 'test-org'
+      org: 'test-org',
     },
     authentication: true,
     authorization: true,
     rateLimits: {
       requests: 50,
-      window: 3600
-    }
+      window: 3600,
+    },
   },
   lifecycle: {
     status: 'active',
@@ -313,35 +316,35 @@ const validDocumentResource: ResourceDefinition = {
     version: '2.1.0',
     retention: {
       policy: 'document',
-      duration: 1825
-    }
+      duration: 1825,
+    },
   },
   performance: {
     cache: {
       enabled: true,
       ttl: 7200,
       maxSize: 10485760,
-      strategy: 'LFU'
+      strategy: 'LFU',
     },
     optimization: {
       compression: false,
       minification: false,
-      transformation: false
+      transformation: false,
     },
     delivery: {
       streaming: true,
       chunking: true,
-      cdn: true
-    }
-  }
+      cdn: true,
+    },
+  },
 };
 
 const createMockResourceRequest = (uri: string, userRole: string = 'viewer'): ResourceRequest => ({
   uri,
   method: 'GET',
   headers: {
-    'Authorization': `Bearer mock-token-${userRole}`,
-    'User-Agent': 'MCP-Client/1.0'
+    Authorization: `Bearer mock-token-${userRole}`,
+    'User-Agent': 'MCP-Client/1.0',
   },
   context: {
     toolName: 'read_resource',
@@ -349,8 +352,8 @@ const createMockResourceRequest = (uri: string, userRole: string = 'viewer'): Re
     userId: `user-${userRole}`,
     sessionId: 'session-123',
     timestamp: new Date().toISOString(),
-    requestId: 'req-456'
-  }
+    requestId: 'req-456',
+  },
 });
 
 // ============================================================================
@@ -395,8 +398,8 @@ describe('Resource Definition and Registration', () => {
         category: 'invalid_category' as any,
         access: {
           ...validKnowledgeResource.access,
-          authentication: 'not_boolean' as any
-        }
+          authentication: 'not_boolean' as any,
+        },
       };
 
       expect(invalidResource.category).not.toBe('knowledge');
@@ -417,8 +420,8 @@ describe('Resource Definition and Registration', () => {
   describe('Resource Metadata Management', () => {
     it('should handle version information correctly', () => {
       const resourceVersions = {
-        'knowledge_entities': ['1.0.0', '1.1.0', '1.2.0'],
-        'project_specification': ['1.0.0', '2.0.0', '2.1.0']
+        knowledge_entities: ['1.0.0', '1.1.0', '1.2.0'],
+        project_specification: ['1.0.0', '2.0.0', '2.1.0'],
       };
 
       expect(resourceVersions.knowledge_entities).toHaveLength(3);
@@ -429,7 +432,7 @@ describe('Resource Definition and Registration', () => {
     it('should manage resource tags and categorization', () => {
       const resourceTags = {
         knowledge: ['knowledge', 'entities', 'graph'],
-        document: ['specification', 'document', 'pdf']
+        document: ['specification', 'document', 'pdf'],
       };
 
       expect(resourceTags.knowledge).toContain('knowledge');
@@ -448,11 +451,11 @@ describe('Resource Definition and Registration', () => {
   describe('Resource Lifecycle Management', () => {
     it('should handle resource status transitions', () => {
       const statusTransitions = {
-        'draft': ['active', 'deleted'],
-        'active': ['inactive', 'archived'],
-        'inactive': ['active', 'archived'],
-        'archived': ['active', 'deleted'],
-        'deleted': []
+        draft: ['active', 'deleted'],
+        active: ['inactive', 'archived'],
+        inactive: ['active', 'archived'],
+        archived: ['active', 'deleted'],
+        deleted: [],
       };
 
       expect(statusTransitions.active).toContain('inactive');
@@ -462,10 +465,10 @@ describe('Resource Definition and Registration', () => {
 
     it('should manage retention policies', () => {
       const retentionPolicies = {
-        'standard': { duration: 365, autoDelete: true },
-        'document': { duration: 1825, autoDelete: false },
-        'archive': { duration: 3650, autoDelete: false },
-        'temporary': { duration: 30, autoDelete: true }
+        standard: { duration: 365, autoDelete: true },
+        document: { duration: 1825, autoDelete: false },
+        archive: { duration: 3650, autoDelete: false },
+        temporary: { duration: 30, autoDelete: true },
       };
 
       expect(validKnowledgeResource.lifecycle.retention.duration).toBe(365);
@@ -481,8 +484,8 @@ describe('Resource Definition and Registration', () => {
         ...validKnowledgeResource,
         lifecycle: {
           ...validKnowledgeResource.lifecycle,
-          expires_at: futureDate.toISOString()
-        }
+          expires_at: futureDate.toISOString(),
+        },
       };
 
       const expiredResource = {
@@ -490,8 +493,8 @@ describe('Resource Definition and Registration', () => {
         lifecycle: {
           ...validKnowledgeResource.lifecycle,
           expires_at: pastDate.toISOString(),
-          status: 'archived' as const
-        }
+          status: 'archived' as const,
+        },
       };
 
       expect(expiringResource.lifecycle.expires_at).toBeDefined();
@@ -505,7 +508,7 @@ describe('Resource Definition and Registration', () => {
         success: true,
         resourceId: 'resource-123',
         uri: validKnowledgeResource.uri,
-        registeredAt: new Date().toISOString()
+        registeredAt: new Date().toISOString(),
       });
 
       const result = await mockResourceService.registerResource(validKnowledgeResource);
@@ -522,8 +525,8 @@ describe('Resource Definition and Registration', () => {
         error: {
           code: 'DUPLICATE_RESOURCE',
           message: 'Resource with this URI already exists',
-          existingResourceId: 'resource-456'
-        }
+          existingResourceId: 'resource-456',
+        },
       });
 
       const result = await mockResourceService.registerResource(validKnowledgeResource);
@@ -537,7 +540,7 @@ describe('Resource Definition and Registration', () => {
         'knowledge://entities/project/test',
         'document://specs/project/test/specification.pdf',
         'media://images/project/test/logo.png',
-        'archive://backups/project/test/backup-2024-01-01.tar.gz'
+        'archive://backups/project/test/backup-2024-01-01.tar.gz',
       ];
 
       const uniqueUris = [...new Set(resourceUris)];
@@ -567,7 +570,7 @@ describe('Knowledge Base Resources', () => {
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: []
+        restrictions: [],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -581,29 +584,29 @@ describe('Knowledge Base Resources', () => {
               data: {
                 title: 'User Service',
                 type: 'microservice',
-                description: 'Handles user authentication and profiles'
+                description: 'Handles user authentication and profiles',
               },
               metadata: {
                 created_at: '2024-01-01',
                 confidence: 0.9,
-                version: '1.0.0'
-              }
-            }
+                version: '1.0.0',
+              },
+            },
           ],
           total: 1,
           metadata: {
             queryTime: 45,
             cacheHit: false,
-            searchStrategy: 'semantic'
-          }
+            searchStrategy: 'semantic',
+          },
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 1024,
           duration: 67,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       });
 
       const result = await mockResourceService.readResource(entityRequest.uri);
@@ -618,16 +621,16 @@ describe('Knowledge Base Resources', () => {
       const scopedEntities = {
         'project:alpha': {
           entities: ['service-a', 'service-b'],
-          count: 2
+          count: 2,
         },
         'project:beta': {
           entities: ['service-c', 'service-d', 'service-e'],
-          count: 3
+          count: 3,
         },
         'org:global': {
           entities: ['shared-service-1', 'shared-service-2'],
-          count: 2
-        }
+          count: 2,
+        },
       };
 
       expect(scopedEntities['project:alpha'].count).toBe(2);
@@ -641,14 +644,14 @@ describe('Knowledge Base Resources', () => {
           depends_on: ['database', 'auth-service'],
           connects_to: ['notification-service', 'analytics-service'],
           type: 'microservice',
-          relationships: 4
+          relationships: 4,
         },
-        'database': {
+        database: {
           depends_on: [],
           connects_to: ['user-service', 'order-service'],
           type: 'infrastructure',
-          relationships: 2
-        }
+          relationships: 2,
+        },
       };
 
       expect(entityRelationships['user-service'].depends_on).toContain('database');
@@ -663,7 +666,7 @@ describe('Knowledge Base Resources', () => {
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: ['confidential']
+        restrictions: ['confidential'],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -680,40 +683,42 @@ describe('Knowledge Base Resources', () => {
                 alternatives: ['Monolithic architecture', 'Modular monolith'],
                 consequences: {
                   positive: ['Independent deployment', 'Technology diversity'],
-                  negative: ['Operational complexity', 'Network latency']
+                  negative: ['Operational complexity', 'Network latency'],
                 },
                 status: 'implemented',
                 decisionMaker: 'Architecture Team',
-                date: '2024-01-15'
+                date: '2024-01-15',
               },
               metadata: {
                 created_at: '2024-01-15',
                 confidence: 0.95,
-                priority: 'high'
-              }
-            }
+                priority: 'high',
+              },
+            },
           ],
           total: 1,
           metadata: {
             category: 'architecture',
             impact: 'high',
-            implementationStatus: 'completed'
-          }
+            implementationStatus: 'completed',
+          },
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 2048,
           duration: 89,
-          cacheHit: true
-        }
+          cacheHit: true,
+        },
       });
 
       const result = await mockResourceService.readResource(decisionRequest.uri);
 
       expect(result.success).toBe(true);
       expect(result.data.decisions[0].data.title).toBe('Use Microservices Architecture');
-      expect(result.data.decisions[0].data.consequences.positive).toContain('Independent deployment');
+      expect(result.data.decisions[0].data.consequences.positive).toContain(
+        'Independent deployment'
+      );
       expect(result.metadata.cacheHit).toBe(true);
     });
 
@@ -721,16 +726,16 @@ describe('Knowledge Base Resources', () => {
       const decisionCategories = {
         'high-impact-implemented': {
           count: 12,
-          examples: ['microservices-architecture', 'postgresql-selection']
+          examples: ['microservices-architecture', 'postgresql-selection'],
         },
         'medium-impact-planned': {
           count: 8,
-          examples: ['caching-strategy', 'api-gateway']
+          examples: ['caching-strategy', 'api-gateway'],
         },
         'low-impact-deprecated': {
           count: 3,
-          examples: ['old-auth-method', 'deprecated-queue']
-        }
+          examples: ['old-auth-method', 'deprecated-queue'],
+        },
       };
 
       expect(decisionCategories['high-impact-implemented'].count).toBe(12);
@@ -743,23 +748,23 @@ describe('Knowledge Base Resources', () => {
           date: '2024-01-15',
           decision: 'Microservices Architecture',
           status: 'implemented',
-          impact: 'high'
+          impact: 'high',
         },
         {
           date: '2024-01-20',
           decision: 'PostgreSQL Selection',
           status: 'implemented',
-          impact: 'high'
+          impact: 'high',
         },
         {
           date: '2024-02-01',
           decision: 'Redis Caching',
           status: 'planned',
-          impact: 'medium'
-        }
+          impact: 'medium',
+        },
       ];
 
-      const januaryDecisions = decisionTimeline.filter(d => d.date.startsWith('2024-01'));
+      const januaryDecisions = decisionTimeline.filter((d) => d.date.startsWith('2024-01'));
       expect(januaryDecisions).toHaveLength(2);
       expect(decisionTimeline[2].status).toBe('planned');
     });
@@ -767,12 +772,14 @@ describe('Knowledge Base Resources', () => {
 
   describe('Relationship Resource Queries', () => {
     it('should query relationship resources efficiently', async () => {
-      const relationshipRequest = createMockResourceRequest('knowledge://relationships/project/test');
+      const relationshipRequest = createMockResourceRequest(
+        'knowledge://relationships/project/test'
+      );
 
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: []
+        restrictions: [],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -792,35 +799,35 @@ describe('Knowledge Base Resources', () => {
                 metadata: {
                   dependency_type: 'runtime',
                   criticality: 'high',
-                  impact_score: 0.9
-                }
+                  impact_score: 0.9,
+                },
               },
               metadata: {
                 created_at: '2024-01-01',
                 confidence: 0.95,
-                verified: true
-              }
-            }
+                verified: true,
+              },
+            },
           ],
           total: 1,
           analytics: {
             totalRelations: 45,
             relationTypes: {
-              'depends_on': 18,
-              'connects_to': 15,
-              'implements': 7,
-              'conflicts_with': 5
+              depends_on: 18,
+              connects_to: 15,
+              implements: 7,
+              conflicts_with: 5,
             },
-            networkDensity: 0.34
-          }
+            networkDensity: 0.34,
+          },
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 1536,
           duration: 123,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       });
 
       const result = await mockResourceService.readResource(relationshipRequest.uri);
@@ -837,7 +844,7 @@ describe('Knowledge Base Resources', () => {
         path: ['user-service', 'database', 'backup-service'],
         relationships: ['depends_on', 'backed_up_by'],
         depth: 2,
-        totalNodes: 3
+        totalNodes: 3,
       };
 
       expect(graphTraversal.path).toHaveLength(3);
@@ -847,19 +854,19 @@ describe('Knowledge Base Resources', () => {
 
     it('should analyze relationship patterns', async () => {
       const relationshipPatterns = {
-        'hub_nodes': [
+        hub_nodes: [
           { node: 'api-gateway', connections: 12 },
           { node: 'database', connections: 8 },
-          { node: 'cache-service', connections: 6 }
+          { node: 'cache-service', connections: 6 },
         ],
-        'bridge_nodes': [
+        bridge_nodes: [
           { node: 'auth-service', bridges: ['frontend', 'backend'] },
-          { node: 'message-queue', bridges: ['producers', 'consumers'] }
+          { node: 'message-queue', bridges: ['producers', 'consumers'] },
         ],
-        'isolated_nodes': [
+        isolated_nodes: [
           { node: 'legacy-service', connections: 1 },
-          { node: 'test-service', connections: 0 }
-        ]
+          { node: 'test-service', connections: 0 },
+        ],
       };
 
       expect(relationshipPatterns.hub_nodes[0].connections).toBe(12);
@@ -875,7 +882,7 @@ describe('Knowledge Base Resources', () => {
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: []
+        restrictions: [],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -893,26 +900,26 @@ describe('Knowledge Base Resources', () => {
                 metrics: {
                   avg_response_time: '2500ms',
                   baseline_response_time: '600ms',
-                  impact_severity: 'high'
+                  impact_severity: 'high',
                 },
                 evidence: [
                   'Grafana dashboard screenshots',
                   'Log samples showing slow queries',
-                  'User complaints timestamp'
+                  'User complaints timestamp',
                 ],
                 recommendations: [
                   'Implement response caching',
                   'Database query optimization',
-                  'Consider auto-scaling'
-                ]
+                  'Consider auto-scaling',
+                ],
               },
               metadata: {
                 created_at: '2024-01-20',
                 confidence: 0.91,
                 category: 'performance',
-                severity: 'high'
-              }
-            }
+                severity: 'high',
+              },
+            },
           ],
           total: 1,
           insights: {
@@ -920,24 +927,26 @@ describe('Knowledge Base Resources', () => {
             trends: ['gradual-degradation-over-week'],
             recommendations_summary: {
               immediate: ['caching', 'query-optimization'],
-              long_term: ['architecture-review', 'capacity-planning']
-            }
-          }
+              long_term: ['architecture-review', 'capacity-planning'],
+            },
+          },
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 3072,
           duration: 156,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       });
 
       const result = await mockResourceService.readResource(observationRequest.uri);
 
       expect(result.success).toBe(true);
       expect(result.data.observations[0].data.category).toBe('performance');
-      expect(result.data.observations[0].data.recommendations).toContain('Implement response caching');
+      expect(result.data.observations[0].data.recommendations).toContain(
+        'Implement response caching'
+      );
       expect(result.data.insights.patterns).toContain('peak-hour-slowdown');
     });
 
@@ -946,18 +955,18 @@ describe('Knowledge Base Resources', () => {
         'performance-high': {
           count: 7,
           avgConfidence: 0.89,
-          examples: ['api-response-time', 'memory-leak']
+          examples: ['api-response-time', 'memory-leak'],
         },
         'security-critical': {
           count: 3,
           avgConfidence: 0.95,
-          examples: ['unauthorized-access', 'data-exposure']
+          examples: ['unauthorized-access', 'data-exposure'],
         },
         'usability-medium': {
           count: 12,
           avgConfidence: 0.82,
-          examples: ['ui-confusion', 'workflow-issues']
-        }
+          examples: ['ui-confusion', 'workflow-issues'],
+        },
       };
 
       expect(observationCategories['performance-high'].count).toBe(7);
@@ -987,7 +996,7 @@ describe('File and Document Resources', () => {
         method: 'POST' as const,
         headers: {
           'Content-Type': 'multipart/form-data',
-          'Authorization': 'Bearer admin-token'
+          Authorization: 'Bearer admin-token',
         },
         body: {
           file: Buffer.from('test document content'),
@@ -996,10 +1005,10 @@ describe('File and Document Resources', () => {
             description: 'REST API documentation for the project',
             tags: ['api', 'documentation', 'technical'],
             category: 'documentation',
-            version: '1.0.0'
-          }
+            version: '1.0.0',
+          },
         },
-        context: createMockResourceRequest('document://upload').context
+        context: createMockResourceRequest('document://upload').context,
       };
 
       mockResourceService.registerResource.mockResolvedValue({
@@ -1011,8 +1020,8 @@ describe('File and Document Resources', () => {
           size: 1024,
           contentType: 'application/pdf',
           checksum: 'sha256:uploaded123',
-          processed: true
-        }
+          processed: true,
+        },
       });
 
       const result = await mockResourceService.registerResource(uploadRequest.body.metadata);
@@ -1027,12 +1036,12 @@ describe('File and Document Resources', () => {
         documents: ['.pdf', '.docx', '.md', '.txt', '.rst'],
         images: ['.png', '.jpg', '.jpeg', '.gif', '.svg'],
         data: ['.json', '.yaml', '.yml', '.csv', '.xml'],
-        archives: ['.zip', '.tar.gz', '.rar', '.7z']
+        archives: ['.zip', '.tar.gz', '.rar', '.7z'],
       };
 
       const pdfFile = 'specification.pdf';
       const fileType = Object.entries(supportedFormats).find(([_, extensions]) =>
-        extensions.some(ext => pdfFile.endsWith(ext))
+        extensions.some((ext) => pdfFile.endsWith(ext))
       );
 
       expect(fileType?.[0]).toBe('documents');
@@ -1044,18 +1053,18 @@ describe('File and Document Resources', () => {
         original: {
           name: 'architecture-diagram.png',
           size: 2048576,
-          type: 'image/png'
+          type: 'image/png',
         },
         thumbnails: [
           { size: 'small', dimensions: '150x150', fileSize: 8192 },
           { size: 'medium', dimensions: '300x300', fileSize: 16384 },
-          { size: 'large', dimensions: '600x600', fileSize: 32768 }
+          { size: 'large', dimensions: '600x600', fileSize: 32768 },
         ],
         preview: {
           type: 'html',
           generated: true,
-          embeddable: true
-        }
+          embeddable: true,
+        },
       };
 
       expect(documentProcessing.thumbnails).toHaveLength(3);
@@ -1066,12 +1075,15 @@ describe('File and Document Resources', () => {
 
   describe('File Resource Access', () => {
     it('should provide secure file download access', async () => {
-      const downloadRequest = createMockResourceRequest('document://specs/project/test/specification.pdf', 'developer');
+      const downloadRequest = createMockResourceRequest(
+        'document://specs/project/test/specification.pdf',
+        'developer'
+      );
 
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: ['watermark']
+        restrictions: ['watermark'],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -1083,7 +1095,7 @@ describe('File and Document Resources', () => {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'attachment; filename="specification.pdf"',
             'Content-Length': '2097152',
-            'Accept-Ranges': 'bytes'
+            'Accept-Ranges': 'bytes',
           },
           size: 2097152,
           duration: 234,
@@ -1091,9 +1103,9 @@ describe('File and Document Resources', () => {
           downloadInfo: {
             url: 'https://cdn.example.com/files/specification.pdf',
             expiresAt: new Date(Date.now() + 3600000).toISOString(),
-            accessType: 'signed-url'
-          }
-        }
+            accessType: 'signed-url',
+          },
+        },
       });
 
       const result = await mockResourceService.readResource(downloadRequest.uri);
@@ -1109,10 +1121,10 @@ describe('File and Document Resources', () => {
         uri: 'document://large-dataset.csv',
         method: 'GET' as const,
         headers: {
-          'Range': 'bytes=1024-2047',
-          'Authorization': 'Bearer viewer-token'
+          Range: 'bytes=1024-2047',
+          Authorization: 'Bearer viewer-token',
         },
-        context: createMockResourceRequest('document://large-dataset.csv').context
+        context: createMockResourceRequest('document://large-dataset.csv').context,
       };
 
       const rangeResponse = {
@@ -1124,7 +1136,7 @@ describe('File and Document Resources', () => {
             'Content-Type': 'text/csv',
             'Content-Range': 'bytes 1024-2047/10485760',
             'Accept-Ranges': 'bytes',
-            'Content-Length': '1024'
+            'Content-Length': '1024',
           },
           size: 1024,
           duration: 89,
@@ -1133,9 +1145,9 @@ describe('File and Document Resources', () => {
             start: 1024,
             end: 2047,
             totalSize: 10485760,
-            requestedRange: '1024-2047'
-          }
-        }
+            requestedRange: '1024-2047',
+          },
+        },
       };
 
       expect(rangeResponse.metadata.statusCode).toBe(206);
@@ -1154,7 +1166,7 @@ describe('File and Document Resources', () => {
         userAgent: 'MCP-Client/1.0',
         downloadSize: 2097152,
         duration: 234,
-        cacheHit: true
+        cacheHit: true,
       };
 
       mockAccessControl.logAccessAttempt.mockResolvedValue(accessLog);
@@ -1169,12 +1181,14 @@ describe('File and Document Resources', () => {
 
   describe('Media Resource Handling', () => {
     it('should handle image resource transformations', async () => {
-      const imageRequest = createMockResourceRequest('media://images/project/test/architecture-diagram.png');
+      const imageRequest = createMockResourceRequest(
+        'media://images/project/test/architecture-diagram.png'
+      );
 
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: []
+        restrictions: [],
       });
 
       mockResourceService.readResource.mockResolvedValue({
@@ -1185,37 +1199,37 @@ describe('File and Document Resources', () => {
             width: 1920,
             height: 1080,
             format: 'PNG',
-            size: 2048576
+            size: 2048576,
           },
           transformations: {
             thumbnail: {
               url: 'media://images/project/test/architecture-diagram-thumb.png',
               width: 150,
               height: 150,
-              size: 8192
+              size: 8192,
             },
             medium: {
               url: 'media://images/project/test/architecture-diagram-medium.png',
               width: 600,
               height: 400,
-              size: 98304
+              size: 98304,
             },
             optimized: {
               url: 'media://images/project/test/architecture-diagram-opt.jpg',
               width: 1920,
               height: 1080,
               format: 'JPEG',
-              size: 512000
-            }
-          }
+              size: 512000,
+            },
+          },
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 512,
           duration: 456,
-          cacheHit: false
-        }
+          cacheHit: false,
+        },
       });
 
       const result = await mockResourceService.readResource(imageRequest.uri);
@@ -1232,7 +1246,7 @@ describe('File and Document Resources', () => {
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['read'],
-        restrictions: []
+        restrictions: [],
       });
 
       const streamingResponse = {
@@ -1244,26 +1258,26 @@ describe('File and Document Resources', () => {
             resolution: '1920x1080',
             bitrate: '5000k',
             format: 'H.264',
-            adaptive: true
+            adaptive: true,
           },
           qualityLevels: [
             { resolution: '1920x1080', bitrate: '5000k', url: '1080p.mp4' },
             { resolution: '1280x720', bitrate: '2500k', url: '720p.mp4' },
             { resolution: '854x480', bitrate: '1000k', url: '480p.mp4' },
-            { resolution: '640x360', bitrate: '500k', url: '360p.mp4' }
+            { resolution: '640x360', bitrate: '500k', url: '360p.mp4' },
           ],
           captions: [
             { language: 'en', format: 'vtt', url: 'en.vtt' },
-            { language: 'es', format: 'vtt', url: 'es.vtt' }
-          ]
+            { language: 'es', format: 'vtt', url: 'es.vtt' },
+          ],
         },
         metadata: {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
           size: 2048,
           duration: 78,
-          cacheHit: true
-        }
+          cacheHit: true,
+        },
       };
 
       const result = streamingResponse;
@@ -1285,17 +1299,17 @@ describe('File and Document Resources', () => {
         size: 4320000,
         waveform: {
           peaks: [0.1, 0.8, 0.3, 0.9, 0.2], // Sample waveform data
-          resolution: 1000
+          resolution: 1000,
         },
         transcription: {
           available: true,
           language: 'en',
           confidence: 0.92,
           segments: [
-            { start: 0, end: 5, text: "Welcome to our podcast" },
-            { start: 5, end: 10, text: "Today we'll discuss..." }
-          ]
-        }
+            { start: 0, end: 5, text: 'Welcome to our podcast' },
+            { start: 5, end: 10, text: "Today we'll discuss..." },
+          ],
+        },
       };
 
       expect(audioMetadata.duration).toBe(180);
@@ -1312,7 +1326,7 @@ describe('File and Document Resources', () => {
       mockAccessControl.checkResourcePermissions.mockResolvedValue({
         allowed: true,
         permissions: ['write'],
-        restrictions: []
+        restrictions: [],
       });
 
       const archiveCreation = {
@@ -1327,7 +1341,7 @@ describe('File and Document Resources', () => {
           compressedSize: 31457280, // 30MB
           compressionRatio: 0.3,
           created_at: new Date().toISOString(),
-          checksum: 'sha256:archive123456'
+          checksum: 'sha256:archive123456',
         },
         contents: {
           directories: ['src/', 'docs/', 'tests/', 'config/'],
@@ -1336,9 +1350,9 @@ describe('File and Document Resources', () => {
             '.js': 45,
             '.json': 20,
             '.md': 15,
-            '.yml': 8
-          }
-        }
+            '.yml': 8,
+          },
+        },
       };
 
       const result = archiveCreation;
@@ -1358,26 +1372,26 @@ describe('File and Document Resources', () => {
             type: 'file',
             size: 5120,
             modified: '2024-01-29T10:30:00Z',
-            permissions: 'rw-r--r--'
+            permissions: 'rw-r--r--',
           },
           {
             path: 'docs/api-spec.yaml',
             type: 'file',
             size: 2048,
             modified: '2024-01-28T15:45:00Z',
-            permissions: 'rw-r--r--'
+            permissions: 'rw-r--r--',
           },
           {
             path: 'config/',
             type: 'directory',
             size: 0,
             modified: '2024-01-30T09:00:00Z',
-            permissions: 'rwxr-xr-x'
-          }
+            permissions: 'rwxr-xr-x',
+          },
         ],
         totalFiles: 2,
         totalDirectories: 1,
-        totalSize: 7168
+        totalSize: 7168,
       };
 
       expect(archiveBrowse.contents).toHaveLength(3);
@@ -1397,16 +1411,16 @@ describe('File and Document Resources', () => {
           corruptedFiles: 0,
           missingFiles: 0,
           integrityPassed: true,
-          checksumVerified: true
+          checksumVerified: true,
         },
         performance: {
           duration: 45000, // 45 seconds
           throughput: '5.5 MB/s',
           resourcesUsed: {
             cpu: 25,
-            memory: 128
-          }
-        }
+            memory: 128,
+          },
+        },
       };
 
       expect(integrityCheck.results.integrityPassed).toBe(true);
@@ -1436,35 +1450,40 @@ describe('Resource Access Control', () => {
           userRole: 'admin',
           resourceUri: 'knowledge://entities/project/test',
           expectedPermission: 'admin',
-          allowed: true
+          allowed: true,
         },
         {
           userRole: 'developer',
           resourceUri: 'document://specs/project/test/specification.pdf',
           expectedPermission: 'read',
-          allowed: true
+          allowed: true,
         },
         {
           userRole: 'viewer',
           resourceUri: 'document://specs/project/test/specification.pdf',
           expectedPermission: 'denied',
-          allowed: false
-        }
+          allowed: false,
+        },
       ];
 
       mockAccessControl.checkResourcePermissions.mockImplementation(
         async (userRole: string, resourceUri: string) => {
-          const scenario = accessScenarios.find(s => s.userRole === userRole && s.resourceUri === resourceUri);
+          const scenario = accessScenarios.find(
+            (s) => s.userRole === userRole && s.resourceUri === resourceUri
+          );
           return {
             allowed: scenario?.allowed || false,
             permissions: scenario?.allowed ? [scenario?.expectedPermission] : [],
-            restrictions: scenario?.allowed ? [] : ['access_denied']
+            restrictions: scenario?.allowed ? [] : ['access_denied'],
           };
         }
       );
 
       for (const scenario of accessScenarios) {
-        const result = await mockAccessControl.checkResourcePermissions(scenario.userRole, scenario.resourceUri);
+        const result = await mockAccessControl.checkResourcePermissions(
+          scenario.userRole,
+          scenario.resourceUri
+        );
         expect(result.allowed).toBe(scenario.allowed);
         if (scenario.allowed) {
           expect(result.permissions[0]).toBe(scenario.expectedPermission);
@@ -1476,34 +1495,34 @@ describe('Resource Access Control', () => {
       const permissionHierarchy = {
         'project:test': {
           permissions: {
-            'admin': ['read', 'write', 'delete', 'admin'],
-            'developer': ['read', 'write'],
-            'viewer': ['read']
+            admin: ['read', 'write', 'delete', 'admin'],
+            developer: ['read', 'write'],
+            viewer: ['read'],
           },
-          inherits: ['org:test-org']
+          inherits: ['org:test-org'],
         },
         'org:test-org': {
           permissions: {
-            'admin': ['read', 'write', 'delete', 'admin'],
-            'developer': ['read'],
-            'viewer': ['read']
+            admin: ['read', 'write', 'delete', 'admin'],
+            developer: ['read'],
+            viewer: ['read'],
           },
-          inherits: ['global']
+          inherits: ['global'],
         },
-        'global': {
+        global: {
           permissions: {
-            'system': ['read', 'write', 'delete', 'admin'],
-            'auditor': ['read']
+            system: ['read', 'write', 'delete', 'admin'],
+            auditor: ['read'],
           },
-          inherits: []
-        }
+          inherits: [],
+        },
       };
 
       const effectivePermissions = {
         'admin-project': ['read', 'write', 'delete', 'admin'],
         'developer-project': ['read', 'write'],
         'viewer-project': ['read'],
-        'auditor-org': ['read']
+        'auditor-org': ['read'],
       };
 
       expect(effectivePermissions['admin-project']).toContain('admin');
@@ -1525,9 +1544,9 @@ describe('Resource Access Control', () => {
           deviceFingerprint: 'device-abc123',
           timeRestrictions: {
             allowedHours: ['09:00-17:00'],
-            timezone: 'UTC'
-          }
-        }
+            timezone: 'UTC',
+          },
+        },
       };
 
       const isExpired = new Date() > new Date(temporaryAccess.expiresAt);
@@ -1546,18 +1565,18 @@ describe('Resource Access Control', () => {
           resources: [
             'knowledge://entities/project/alpha',
             'document://specs/project/alpha/requirements.pdf',
-            'media://images/project/alpha/architecture.png'
+            'media://images/project/alpha/architecture.png',
           ],
-          authorizedUsers: ['admin-alpha', 'dev-alpha-1', 'dev-alpha-2']
+          authorizedUsers: ['admin-alpha', 'dev-alpha-1', 'dev-alpha-2'],
         },
         'project-beta': {
           resources: [
             'knowledge://entities/project/beta',
             'document://specs/project/beta/api-design.pdf',
-            'media://videos/project/beta/demo.mp4'
+            'media://videos/project/beta/demo.mp4',
           ],
-          authorizedUsers: ['admin-beta', 'dev-beta-1']
-        }
+          authorizedUsers: ['admin-beta', 'dev-beta-1'],
+        },
       };
 
       mockAccessControl.validateScopeAccess.mockImplementation(
@@ -1566,12 +1585,17 @@ describe('Resource Access Control', () => {
           return {
             allowed: project?.authorizedUsers.includes(userId) || false,
             scope: projectId,
-            restrictions: project?.authorizedUsers.includes(userId) ? [] : ['project_access_denied']
+            restrictions: project?.authorizedUsers.includes(userId)
+              ? []
+              : ['project_access_denied'],
           };
         }
       );
 
-      const alphaAccess = await mockAccessControl.validateScopeAccess('dev-alpha-1', 'project-alpha');
+      const alphaAccess = await mockAccessControl.validateScopeAccess(
+        'dev-alpha-1',
+        'project-alpha'
+      );
       const betaAccess = await mockAccessControl.validateScopeAccess('dev-alpha-1', 'project-beta');
 
       expect(alphaAccess.allowed).toBe(true);
@@ -1585,31 +1609,31 @@ describe('Resource Access Control', () => {
           subUnits: ['division-engineering', 'division-product', 'division-ops'],
           resources: [
             'knowledge://policies/org/corp',
-            'document://handbooks/org/corp/employee-handbook.pdf'
+            'document://handbooks/org/corp/employee-handbook.pdf',
           ],
-          inheritedByAll: true
+          inheritedByAll: true,
         },
         'division-engineering': {
           parent: 'org-corp',
           subUnits: ['team-frontend', 'team-backend', 'team-platform'],
           resources: [
             'knowledge://standards/division/engineering',
-            'document://guides/division/engineering/coding-standards.md'
-          ]
+            'document://guides/division/engineering/coding-standards.md',
+          ],
         },
         'team-backend': {
           parent: 'division-engineering',
           resources: [
             'knowledge://entities/team/backend',
-            'document://specs/team/backend/api-design.yaml'
-          ]
-        }
+            'document://specs/team/backend/api-design.yaml',
+          ],
+        },
       };
 
       const accessibleResources = {
         'corp-user': ['org-corp', 'division-engineering', 'team-backend'], // Inherits access
         'engineering-user': ['division-engineering', 'team-backend'], // Inherits from parent
-        'backend-user': ['team-backend'] // Only direct access
+        'backend-user': ['team-backend'], // Only direct access
       };
 
       expect(accessibleResources['corp-user']).toHaveLength(3);
@@ -1619,31 +1643,31 @@ describe('Resource Access Control', () => {
 
     it('should implement branch-level access control', async () => {
       const branchAccess = {
-        'main': {
+        main: {
           protection: 'protected',
           allowedRoles: ['admin', 'senior-developer'],
           requiresApproval: true,
-          allowedOperations: ['read', 'create-branch']
+          allowedOperations: ['read', 'create-branch'],
         },
-        'develop': {
+        develop: {
           protection: 'standard',
           allowedRoles: ['admin', 'developer', 'senior-developer'],
           requiresApproval: false,
-          allowedOperations: ['read', 'write', 'create-branch']
+          allowedOperations: ['read', 'write', 'create-branch'],
         },
         'feature/*': {
           protection: 'open',
           allowedRoles: ['admin', 'developer', 'senior-developer', 'contractor'],
           requiresApproval: false,
-          allowedOperations: ['read', 'write']
-        }
+          allowedOperations: ['read', 'write'],
+        },
       };
 
       const userBranchAccess = {
-        'admin': ['main', 'develop', 'feature/*'],
+        admin: ['main', 'develop', 'feature/*'],
         'senior-developer': ['main', 'develop', 'feature/*'],
-        'developer': ['develop', 'feature/*'],
-        'contractor': ['feature/*']
+        developer: ['develop', 'feature/*'],
+        contractor: ['feature/*'],
       };
 
       expect(branchAccess.main.protection).toBe('protected');
@@ -1659,20 +1683,20 @@ describe('Resource Access Control', () => {
           level: 'standard',
           methods: ['jwt', 'api-key'],
           mfaRequired: false,
-          sessionTimeout: 3600
+          sessionTimeout: 3600,
         },
         'document://confidential/': {
           level: 'high',
           methods: ['jwt', 'mfa'],
           mfaRequired: true,
-          sessionTimeout: 1800
+          sessionTimeout: 1800,
         },
         'admin://': {
           level: 'critical',
           methods: ['jwt', 'mfa', 'hardware-token'],
           mfaRequired: true,
-          sessionTimeout: 900
-        }
+          sessionTimeout: 900,
+        },
       };
 
       expect(authRequirements['knowledge://'].mfaRequired).toBe(false);
@@ -1689,9 +1713,9 @@ describe('Resource Access Control', () => {
             userId: 'user-123',
             role: 'developer',
             scope: ['project:test'],
-            expiresAt: new Date(Date.now() + 3600000).toISOString()
+            expiresAt: new Date(Date.now() + 3600000).toISOString(),
           },
-          permissions: ['read', 'write']
+          permissions: ['read', 'write'],
         },
         apiToken: {
           type: 'API_KEY',
@@ -1699,14 +1723,14 @@ describe('Resource Access Control', () => {
           keyId: 'key-456',
           userId: 'service-account-789',
           permissions: ['read'],
-          restrictions: ['no-delete', 'rate-limited']
+          restrictions: ['no-delete', 'rate-limited'],
         },
         expiredToken: {
           type: 'JWT',
           valid: false,
           error: 'TOKEN_EXPIRED',
-          expiredAt: new Date(Date.now() - 3600000).toISOString()
-        }
+          expiredAt: new Date(Date.now() - 3600000).toISOString(),
+        },
       };
 
       expect(tokenValidation.jwtToken.valid).toBe(true);
@@ -1722,20 +1746,20 @@ describe('Resource Access Control', () => {
         permissions: {
           resources: ['knowledge://', 'document://'],
           operations: ['read', 'write', 'delete'],
-          scopes: ['org:test-org']
+          scopes: ['org:test-org'],
         },
         authentication: {
           method: 'service-account-key',
           keyId: 'sa-key-123',
           createdAt: new Date().toISOString(),
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-          autoRotation: true
+          autoRotation: true,
         },
         usage: {
           lastUsed: new Date().toISOString(),
           requestCount: 1250,
-          errorRate: 0.001
-        }
+          errorRate: 0.001,
+        },
       };
 
       expect(serviceAccount.permissions.operations).toContain('delete');
@@ -1754,24 +1778,24 @@ describe('Resource Access Control', () => {
             count: 245,
             uniqueResources: 18,
             avgResponseTime: 67,
-            cacheHitRate: 0.73
+            cacheHitRate: 0.73,
           },
           'document://specs': {
             count: 89,
             uniqueResources: 12,
             avgResponseTime: 234,
-            cacheHitRate: 0.91
+            cacheHitRate: 0.91,
           },
           'media://images': {
             count: 156,
             uniqueResources: 34,
             avgResponseTime: 125,
-            cacheHitRate: 0.85
-          }
+            cacheHitRate: 0.85,
+          },
         },
         totalBandwidth: 204857600, // 200MB
         totalRequests: 490,
-        errorRate: 0.002
+        errorRate: 0.002,
       };
 
       expect(usageTracking.resourceAccess['knowledge://entities'].count).toBe(245);
@@ -1781,24 +1805,24 @@ describe('Resource Access Control', () => {
 
     it('should enforce resource usage quotas', async () => {
       const usageQuotas = {
-        'viewer': {
+        viewer: {
           dailyRequests: 100,
           monthlyBandwidth: 1073741824, // 1GB
           maxFileSize: 10485760, // 10MB
-          resourceTypes: ['knowledge://', 'document://public/', 'media://images/']
+          resourceTypes: ['knowledge://', 'document://public/', 'media://images/'],
         },
-        'developer': {
+        developer: {
           dailyRequests: 1000,
           monthlyBandwidth: 10737418240, // 10GB
           maxFileSize: 104857600, // 100MB
-          resourceTypes: ['knowledge://', 'document://', 'media://', 'archive://']
+          resourceTypes: ['knowledge://', 'document://', 'media://', 'archive://'],
         },
-        'admin': {
+        admin: {
           dailyRequests: 10000,
           monthlyBandwidth: 107374182400, // 100GB
           maxFileSize: 1073741824, // 1GB
-          resourceTypes: ['*'] // All resources
-        }
+          resourceTypes: ['*'], // All resources
+        },
       };
 
       mockAccessControl.checkResourceQuotas.mockImplementation(
@@ -1807,16 +1831,17 @@ describe('Resource Access Control', () => {
           const currentUsage = {
             dailyRequests: 50,
             monthlyBandwidth: 536870912, // 512MB
-            lastFileSize: 5242880 // 5MB
+            lastFileSize: 5242880, // 5MB
           };
 
           return {
-            allowed: currentUsage.dailyRequests < quota.dailyRequests &&
-                     currentUsage.monthlyBandwidth < quota.monthlyBandwidth &&
-                     currentUsage.lastFileSize < quota.maxFileSize,
+            allowed:
+              currentUsage.dailyRequests < quota.dailyRequests &&
+              currentUsage.monthlyBandwidth < quota.monthlyBandwidth &&
+              currentUsage.lastFileSize < quota.maxFileSize,
             quota,
             currentUsage,
-            restrictions: []
+            restrictions: [],
           };
         }
       );
@@ -1833,21 +1858,21 @@ describe('Resource Access Control', () => {
         windows: [
           { size: '1m', limit: 60, current: 45, resetIn: 15 },
           { size: '5m', limit: 250, current: 180, resetIn: 75 },
-          { size: '1h', limit: 3000, current: 2100, resetIn: 2700 }
+          { size: '1h', limit: 3000, current: 2100, resetIn: 2700 },
         ],
         strategy: 'sliding_window',
         penalties: {
           exceeded: {
             delayMs: 1000,
             statusCode: 429,
-            retryAfter: 60
+            retryAfter: 60,
           },
-         严重Exceeded: {
+          严重Exceeded: {
             delayMs: 5000,
             statusCode: 429,
-            retryAfter: 300
-          }
-        }
+            retryAfter: 300,
+          },
+        },
       };
 
       mockAccessControl.enforceRateLimits.mockImplementation(
@@ -1859,7 +1884,7 @@ describe('Resource Access Control', () => {
             allowed: !isExceeded,
             window,
             resetIn: window.resetIn,
-            penalty: isExceeded ? rateLimiting.penalties.exceeded : null
+            penalty: isExceeded ? rateLimiting.penalties.exceeded : null,
           };
         }
       );
@@ -1900,8 +1925,8 @@ describe('Resource Delivery', () => {
           supportsSeeking: true,
           supportedFormats: ['csv', 'json', 'parquet'],
           compression: 'gzip',
-          encoding: 'utf-8'
-        }
+          encoding: 'utf-8',
+        },
       });
 
       const result = await mockResourceService.streamResourceContent(streamingRequest.uri);
@@ -1919,20 +1944,20 @@ describe('Resource Delivery', () => {
           video: [
             { resolution: '1080p', bitrate: '5000k', codec: 'H.264' },
             { resolution: '720p', bitrate: '2500k', codec: 'H.264' },
-            { resolution: '480p', bitrate: '1000k', codec: 'H.264' }
+            { resolution: '480p', bitrate: '1000k', codec: 'H.264' },
           ],
           audio: [
             { bitrate: '320k', codec: 'AAC' },
-            { bitrate: '128k', codec: 'AAC' }
-          ]
+            { bitrate: '128k', codec: 'AAC' },
+          ],
         },
         streamingProtocol: 'HLS',
         manifestUrl: 'https://cdn.example.com/hls/manifest.m3u8',
         adaptiveLogic: {
           networkBased: true,
           deviceBased: true,
-          userPreference: true
-        }
+          userPreference: true,
+        },
       };
 
       expect(adaptiveStreaming.formats.video).toHaveLength(3);
@@ -1948,24 +1973,24 @@ describe('Resource Delivery', () => {
             sequence: 1,
             size: 8192,
             checksum: 'sha256:chunk1-abc',
-            received: true
+            received: true,
           },
           {
             sequence: 2,
             size: 8192,
             checksum: 'sha256:chunk2-def',
-            received: true
+            received: true,
           },
           {
             sequence: 3,
             size: 4096,
             checksum: 'sha256:chunk3-ghi',
-            received: false
-          }
+            received: false,
+          },
         ],
         totalSize: 20480,
         progress: 0.8,
-        transferRate: '1.2 MB/s'
+        transferRate: '1.2 MB/s',
       };
 
       expect(chunkedTransfer.chunks).toHaveLength(3);
@@ -1977,33 +2002,33 @@ describe('Resource Delivery', () => {
   describe('Format Conversion', () => {
     it('should convert between different document formats', async () => {
       const formatConversions = {
-        'pdf_to_docx': {
+        pdf_to_docx: {
           supported: true,
           quality: 'high',
           processingTime: 30, // seconds
           maxSize: 52428800, // 50MB
           preservesFormatting: true,
           preservesImages: true,
-          preservesTables: true
+          preservesTables: true,
         },
-        'docx_to_markdown': {
+        docx_to_markdown: {
           supported: true,
           quality: 'medium',
           processingTime: 10,
           maxSize: 10485760, // 10MB
           preservesFormatting: false,
           preservesImages: false,
-          preservesTables: true
+          preservesTables: true,
         },
-        'json_to_yaml': {
+        json_to_yaml: {
           supported: true,
           quality: 'perfect',
           processingTime: 1,
           maxSize: 1048576, // 1MB
           preservesFormatting: true,
           preservesImages: false,
-          preservesTables: false
-        }
+          preservesTables: false,
+        },
       };
 
       mockResourceService.transformResourceFormat.mockImplementation(
@@ -2023,14 +2048,22 @@ describe('Resource Delivery', () => {
               targetFormat,
               quality: conversion.quality,
               processingTime: conversion.processingTime,
-              size: content.length * 0.8 // Simulated size reduction
-            }
+              size: content.length * 0.8, // Simulated size reduction
+            },
           };
         }
       );
 
-      const pdfToDocx = await mockResourceService.transformResourceFormat('pdf', 'docx', 'PDF content');
-      const jsonToYaml = await mockResourceService.transformResourceFormat('json', 'yaml', '{"key": "value"}');
+      const pdfToDocx = await mockResourceService.transformResourceFormat(
+        'pdf',
+        'docx',
+        'PDF content'
+      );
+      const jsonToYaml = await mockResourceService.transformResourceFormat(
+        'json',
+        'yaml',
+        '{"key": "value"}'
+      );
 
       expect(pdfToDocx.success).toBe(true);
       expect(pdfToDocx.metadata.quality).toBe('high');
@@ -2040,27 +2073,27 @@ describe('Resource Delivery', () => {
 
     it('should handle image format conversions', async () => {
       const imageConversions = {
-        'png_to_jpeg': {
+        png_to_jpeg: {
           supported: true,
           quality: 'high',
           transparency: 'lost',
           compression: 'lossy',
-          sizeReduction: 0.3
+          sizeReduction: 0.3,
         },
-        'svg_to_png': {
+        svg_to_png: {
           supported: true,
           quality: 'perfect',
           scalability: 'rasterized',
           resolution: 'user-defined',
-          sizeIncrease: 2.5
+          sizeIncrease: 2.5,
         },
-        'jpeg_to_webp': {
+        jpeg_to_webp: {
           supported: true,
           quality: 'high',
           compression: 'better',
           sizeReduction: 0.25,
-          browserSupport: 'modern'
-        }
+          browserSupport: 'modern',
+        },
       };
 
       expect(imageConversions['png_to_jpeg'].transparency).toBe('lost');
@@ -2090,7 +2123,7 @@ describe('Resource Delivery', () => {
         `,
         estimatedFullSize: 15360,
         conversionQuality: 'high',
-        processingTime: 15
+        processingTime: 15,
       };
 
       expect(conversionPreview.previewContent).toContain('Project Specification');
@@ -2102,27 +2135,27 @@ describe('Resource Delivery', () => {
   describe('Compression and Optimization', () => {
     it('should compress resource content for faster delivery', async () => {
       const compressionOptions = {
-        'gzip': {
+        gzip: {
           algorithm: 'gzip',
           level: 6,
           supported: true,
           compressionRatio: 0.65,
-          processingTime: 0.5
+          processingTime: 0.5,
         },
-        'brotli': {
+        brotli: {
           algorithm: 'br',
           level: 4,
           supported: true,
           compressionRatio: 0.55,
-          processingTime: 1.2
+          processingTime: 1.2,
         },
-        'zstd': {
+        zstd: {
           algorithm: 'zstd',
           level: 3,
           supported: true,
-          compressionRatio: 0.50,
-          processingTime: 0.8
-        }
+          compressionRatio: 0.5,
+          processingTime: 0.8,
+        },
       };
 
       mockResourceService.compressResourceContent.mockImplementation(
@@ -2143,15 +2176,21 @@ describe('Resource Delivery', () => {
             algorithm,
             metadata: {
               processingTime: options.processingTime,
-              level: options.level
-            }
+              level: options.level,
+            },
           };
         }
       );
 
       const originalContent = Buffer.alloc(102400); // 100KB
-      const gzipCompression = await mockResourceService.compressResourceContent(originalContent, 'gzip');
-      const brotliCompression = await mockResourceService.compressResourceContent(originalContent, 'brotli');
+      const gzipCompression = await mockResourceService.compressResourceContent(
+        originalContent,
+        'gzip'
+      );
+      const brotliCompression = await mockResourceService.compressResourceContent(
+        originalContent,
+        'brotli'
+      );
 
       expect(gzipCompression.success).toBe(true);
       expect(gzipCompression.compressionRatio).toBe(0.65);
@@ -2166,7 +2205,7 @@ describe('Resource Delivery', () => {
           width: 1920,
           height: 1080,
           size: 2048576, // 2MB
-          quality: 'lossless'
+          quality: 'lossless',
         },
         optimized: {
           format: 'JPEG',
@@ -2174,7 +2213,7 @@ describe('Resource Delivery', () => {
           height: 1080,
           size: 327680, // 320KB
           quality: 85,
-          optimization: 'web-optimized'
+          optimization: 'web-optimized',
         },
         thumbnail: {
           format: 'JPEG',
@@ -2182,13 +2221,13 @@ describe('Resource Delivery', () => {
           height: 169,
           size: 8192, // 8KB
           quality: 75,
-          optimization: 'thumbnail-optimized'
+          optimization: 'thumbnail-optimized',
         },
         savings: {
           space: 83.8, // percentage
           bandwidth: 83.8,
-          loadTime: 78.5 // percentage reduction estimate
-        }
+          loadTime: 78.5, // percentage reduction estimate
+        },
       };
 
       expect(imageOptimization.optimized.size).toBeLessThan(imageOptimization.original.size);
@@ -2198,34 +2237,34 @@ describe('Resource Delivery', () => {
 
     it('should minify text-based resources', async () => {
       const minificationResults = {
-        'css': {
+        css: {
           originalSize: 25600,
           minifiedSize: 18944,
           savings: 26.0,
           processingTime: 0.2,
-          preserved: true
+          preserved: true,
         },
-        'javascript': {
+        javascript: {
           originalSize: 51200,
           minifiedSize: 34816,
           savings: 32.0,
           processingTime: 0.5,
-          preserved: true
+          preserved: true,
         },
-        'html': {
+        html: {
           originalSize: 15360,
           minifiedSize: 12288,
           savings: 20.0,
           processingTime: 0.1,
-          preserved: true
+          preserved: true,
         },
-        'json': {
+        json: {
           originalSize: 8192,
           minifiedSize: 6554,
           savings: 20.0,
           processingTime: 0.05,
-          preserved: true
-        }
+          preserved: true,
+        },
       };
 
       expect(minificationResults['javascript'].savings).toBe(32.0);
@@ -2237,30 +2276,30 @@ describe('Resource Delivery', () => {
   describe('Caching Strategies', () => {
     it('should implement multi-level caching', async () => {
       const cacheLevels = {
-        'browser': {
+        browser: {
           enabled: true,
           ttl: 3600,
           maxSize: 1048576, // 1MB
-          strategy: 'LRU'
+          strategy: 'LRU',
         },
-        'cdn': {
+        cdn: {
           enabled: true,
           ttl: 86400,
           maxSize: 10737418240, // 10GB
-          strategy: 'LFU'
+          strategy: 'LFU',
         },
-        'application': {
+        application: {
           enabled: true,
           ttl: 1800,
           maxSize: 1073741824, // 1GB
-          strategy: 'LRU'
+          strategy: 'LRU',
         },
-        'database': {
+        database: {
           enabled: true,
           ttl: 7200,
           maxSize: 536870912, // 512MB
-          strategy: 'adaptive'
-        }
+          strategy: 'adaptive',
+        },
       };
 
       mockResourceService.cacheResource.mockImplementation(
@@ -2275,13 +2314,17 @@ describe('Resource Delivery', () => {
             size: content.length,
             metadata: {
               strategy: cacheConfig.strategy,
-              maxSize: cacheConfig.maxSize
-            }
+              maxSize: cacheConfig.maxSize,
+            },
           };
         }
       );
 
-      const browserCache = await mockResourceService.cacheResource('resource-123', 'content', 'browser');
+      const browserCache = await mockResourceService.cacheResource(
+        'resource-123',
+        'content',
+        'browser'
+      );
       const cdnCache = await mockResourceService.cacheResource('resource-123', 'content', 'cdn');
 
       expect(browserCache.ttl).toBe(3600);
@@ -2291,24 +2334,24 @@ describe('Resource Delivery', () => {
 
     it('should handle cache invalidation properly', async () => {
       const invalidationStrategies = {
-        'time_based': {
+        time_based: {
           ttl: 3600,
           autoExpiry: true,
-          gracePeriod: 300
+          gracePeriod: 300,
         },
-        'tag_based': {
+        tag_based: {
           tags: ['v1.2.0', 'production', 'api-spec'],
-          invalidationPatterns: ['tag:v1.2.1', 'env:staging']
+          invalidationPatterns: ['tag:v1.2.1', 'env:staging'],
         },
-        'dependency_based': {
+        dependency_based: {
           dependsOn: ['user-config', 'permissions'],
-          invalidateOn: ['config-change', 'permission-update']
+          invalidateOn: ['config-change', 'permission-update'],
         },
-        'manual': {
+        manual: {
           requiresApproval: true,
           approvers: ['admin', 'lead-developer'],
-          auditRequired: true
-        }
+          auditRequired: true,
+        },
       };
 
       mockResourceService.invalidateResourceCache.mockImplementation(
@@ -2320,13 +2363,19 @@ describe('Resource Delivery', () => {
             strategy,
             invalidatedAt: new Date().toISOString(),
             affectedKeys: [resourceId, `${resourceId}:derived`, `${resourceId}:transformed`],
-            metadata: config
+            metadata: config,
           };
         }
       );
 
-      const timeBasedInvalidation = await mockResourceService.invalidateResourceCache('resource-123', 'time_based');
-      const tagBasedInvalidation = await mockResourceService.invalidateResourceCache('resource-123', 'tag_based');
+      const timeBasedInvalidation = await mockResourceService.invalidateResourceCache(
+        'resource-123',
+        'time_based'
+      );
+      const tagBasedInvalidation = await mockResourceService.invalidateResourceCache(
+        'resource-123',
+        'tag_based'
+      );
 
       expect(timeBasedInvalidation.affectedKeys).toHaveLength(3);
       expect(tagBasedInvalidation.metadata.tags).toContain('v1.2.0');
@@ -2342,19 +2391,19 @@ describe('Resource Delivery', () => {
         performance: {
           avgResponseTime: 45, // with cache
           avgResponseTimeWithoutCache: 234,
-          performanceImprovement: 0.808
+          performanceImprovement: 0.808,
         },
         byLevel: {
           browser: { hits: 45123, misses: 12345, hitRate: 0.785 },
           cdn: { hits: 23456, misses: 5678, hitRate: 0.805 },
           application: { hits: 7890, misses: 2345, hitRate: 0.771 },
-          database: { hits: 1963, misses: 1200, hitRate: 0.621 }
+          database: { hits: 1963, misses: 1200, hitRate: 0.621 },
         },
         topCachedResources: [
           { resource: 'knowledge://entities/project/test', hits: 5432 },
           { resource: 'document://specs/project/test/api.pdf', hits: 3421 },
-          { resource: 'media://images/project/test/arch.png', hits: 2109 }
-        ]
+          { resource: 'media://images/project/test/arch.png', hits: 2109 },
+        ],
       };
 
       expect(cacheAnalytics.hitRate).toBeGreaterThan(0.7);
@@ -2389,22 +2438,22 @@ describe('Integration and Performance', () => {
             type: 'HNSW',
             parameters: {
               m: 16,
-              ef_construct: 100
-            }
-          }
+              ef_construct: 100,
+            },
+          },
         },
         performance: {
           indexingTime: 1200, // ms
           searchTime: 45, // ms average
           storageUsage: 536870912, // 512MB
-          totalVectors: 50000
+          totalVectors: 50000,
         },
         features: {
           semanticSearch: true,
           filtering: true,
           faceting: true,
-          aggregation: true
-        }
+          aggregation: true,
+        },
       };
 
       mockPerformanceMonitor.trackResourceOperation.mockResolvedValue({
@@ -2413,7 +2462,7 @@ describe('Integration and Performance', () => {
         vectorCount: 50000,
         resultsFound: 23,
         indexingUsed: true,
-        filtersApplied: ['project:test', 'type:entity']
+        filtersApplied: ['project:test', 'type:entity'],
       });
 
       const operation = await mockPerformanceMonitor.trackResourceOperation('semantic_search', {});
@@ -2434,14 +2483,14 @@ describe('Integration and Performance', () => {
         performance: {
           avgConnectionTime: 5, // ms
           avgQueryTime: 25, // ms
-          throughput: 1000 // queries/second
+          throughput: 1000, // queries/second
         },
         health: {
           status: 'healthy',
           lastError: null,
           uptime: 86400, // seconds
-          reconnects: 0
-        }
+          reconnects: 0,
+        },
       };
 
       expect(connectionPool.utilization).toBeLessThan(0.5);
@@ -2452,23 +2501,19 @@ describe('Integration and Performance', () => {
     it('should optimize database queries for resources', async () => {
       const queryOptimization = {
         originalQuery: 'SELECT * FROM knowledge_items WHERE content LIKE ?',
-        optimizedQuery: 'SELECT id, kind, scope, data FROM knowledge_items WHERE to_tsvector(content) @@ to_tsquery(?)',
+        optimizedQuery:
+          'SELECT id, kind, scope, data FROM knowledge_items WHERE to_tsvector(content) @@ to_tsquery(?)',
         improvements: {
           executionTime: 78, // percentage improvement
           memoryUsage: 45,
-          resultAccuracy: 12
+          resultAccuracy: 12,
         },
-        strategies: [
-          'index-usage',
-          'full-text-search',
-          'result-limiting',
-          'column-selection'
-        ],
+        strategies: ['index-usage', 'full-text-search', 'result-limiting', 'column-selection'],
         indexes: [
           { name: 'idx_content_fts', type: 'full-text', columns: ['content'] },
           { name: 'idx_scope_project', type: 'btree', columns: ['scope->>project'] },
-          { name: 'idx_kind_created', type: 'composite', columns: ['kind', 'created_at'] }
-        ]
+          { name: 'idx_kind_created', type: 'composite', columns: ['kind', 'created_at'] },
+        ],
       };
 
       expect(queryOptimization.improvements.executionTime).toBeGreaterThan(50);
@@ -2485,31 +2530,31 @@ describe('Integration and Performance', () => {
             enabled: true,
             coverage: 'global',
             cacheHitRate: 0.85,
-            avgLatency: 45 // ms
+            avgLatency: 45, // ms
           },
           compression: {
             enabled: true,
             algorithm: 'brotli',
             compressionRatio: 0.55,
-            processingOverhead: 5 // ms
+            processingOverhead: 5, // ms
           },
           prefetching: {
             enabled: true,
             hitRate: 0.65,
-            bandwidthSavings: 0.30
+            bandwidthSavings: 0.3,
           },
           parallelDownloads: {
             enabled: true,
             maxConnections: 6,
-            throughput: '15 MB/s'
-          }
+            throughput: '15 MB/s',
+          },
         },
         overallPerformance: {
           avgLoadTime: 234, // ms
           p95LoadTime: 450,
           p99LoadTime: 780,
-          errorRate: 0.001
-        }
+          errorRate: 0.001,
+        },
       };
 
       mockPerformanceMonitor.optimizeResourceDelivery = vi.fn().mockResolvedValue({
@@ -2517,10 +2562,10 @@ describe('Integration and Performance', () => {
         estimatedImprovement: 65, // percentage
         implementationTime: 120, // minutes
         resourceSavings: {
-          bandwidth: 0.40,
+          bandwidth: 0.4,
           serverLoad: 0.25,
-          userExperience: 0.60
-        }
+          userExperience: 0.6,
+        },
       });
 
       const optimization = await mockPerformanceMonitor.optimizeResourceDelivery({});
@@ -2538,35 +2583,35 @@ describe('Integration and Performance', () => {
             avgResponseTime: 67,
             p95ResponseTime: 145,
             errorRate: 0.0005,
-            cacheHitRate: 0.78
+            cacheHitRate: 0.78,
           },
           'document:specs': {
             requestCount: 8934,
             avgResponseTime: 234,
             p95ResponseTime: 567,
             errorRate: 0.001,
-            cacheHitRate: 0.91
+            cacheHitRate: 0.91,
           },
           'media:images': {
             requestCount: 12456,
             avgResponseTime: 125,
             p95ResponseTime: 289,
             errorRate: 0.002,
-            cacheHitRate: 0.85
-          }
+            cacheHitRate: 0.85,
+          },
         },
         systemMetrics: {
           cpu: { usage: 45.2, peak: 78.9 },
           memory: { usage: 68.5, peak: 85.3 },
           disk: { readOps: 1250, writeOps: 890 },
-          network: { bandwidth: '125 MB/s', connections: 450 }
+          network: { bandwidth: '125 MB/s', connections: 450 },
         },
         trends: {
           responseTime: 'improving', // 15% improvement over last month
           errorRate: 'stable',
           throughput: 'increasing', // 25% increase
-          cacheEfficiency: 'improving' // 8% improvement
-        }
+          cacheEfficiency: 'improving', // 8% improvement
+        },
       };
 
       mockPerformanceMonitor.generateResourceMetrics.mockResolvedValue(performanceMetrics);
@@ -2584,23 +2629,35 @@ describe('Integration and Performance', () => {
           cpu: { threshold: 70, scaleUpCooldown: 300, scaleDownCooldown: 600 },
           memory: { threshold: 80, scaleUpCooldown: 300, scaleDownCooldown: 600 },
           responseTime: { threshold: 1000, scaleUpCooldown: 180, scaleDownCooldown: 900 },
-          queueDepth: { threshold: 100, scaleUpCooldown: 120, scaleDownCooldown: 600 }
+          queueDepth: { threshold: 100, scaleUpCooldown: 120, scaleDownCooldown: 600 },
         },
         currentScale: {
           instances: 4,
           cpu: 45.2,
           memory: 68.5,
-          avgResponseTime: 234
+          avgResponseTime: 234,
         },
         scalingHistory: [
-          { timestamp: '2024-01-30T10:00:00Z', action: 'scale_up', instances: 2, to: 4, reason: 'cpu_high' },
-          { timestamp: '2024-01-30T08:30:00Z', action: 'scale_down', instances: 6, to: 4, reason: 'low_load' }
+          {
+            timestamp: '2024-01-30T10:00:00Z',
+            action: 'scale_up',
+            instances: 2,
+            to: 4,
+            reason: 'cpu_high',
+          },
+          {
+            timestamp: '2024-01-30T08:30:00Z',
+            action: 'scale_down',
+            instances: 6,
+            to: 4,
+            reason: 'low_load',
+          },
         ],
         predictions: {
           nextHourLoad: 'medium',
           probability: 0.75,
-          recommendedInstances: 4
-        }
+          recommendedInstances: 4,
+        },
       };
 
       expect(autoScaling.triggers.cpu.threshold).toBe(70);
@@ -2617,41 +2674,41 @@ describe('Integration and Performance', () => {
         totalRequests: 125000,
         uniqueUsers: 450,
         resourceBreakdown: {
-          'knowledge': {
+          knowledge: {
             requests: 45600,
             users: 380,
             bandwidth: 204857600, // 200MB
-            avgSize: 4096
+            avgSize: 4096,
           },
-          'documents': {
+          documents: {
             requests: 32400,
             users: 290,
             bandwidth: 1073741824, // 1GB
-            avgSize: 32768
+            avgSize: 32768,
           },
-          'media': {
+          media: {
             requests: 35200,
             users: 410,
             bandwidth: 2147483648, // 2GB
-            avgSize: 65536
+            avgSize: 65536,
           },
-          'archives': {
+          archives: {
             requests: 11800,
             users: 120,
             bandwidth: 536870912, // 512MB
-            avgSize: 524288
-          }
+            avgSize: 524288,
+          },
         },
         performanceMetrics: {
           avgResponseTime: 156,
           p95ResponseTime: 450,
           cacheHitRate: 0.73,
-          errorRate: 0.0015
+          errorRate: 0.0015,
         },
         topUsers: [
           { userId: 'user-123', requests: 2340, resourceTypes: ['knowledge', 'documents'] },
-          { userId: 'user-456', requests: 1890, resourceTypes: ['media', 'documents'] }
-        ]
+          { userId: 'user-456', requests: 1890, resourceTypes: ['media', 'documents'] },
+        ],
       };
 
       mockResourceService.getResourceAnalytics.mockResolvedValue(resourceAnalytics);
@@ -2670,34 +2727,34 @@ describe('Integration and Performance', () => {
           hourlyDistribution: [
             { hour: 9, requests: 1250, peak: true },
             { hour: 14, requests: 1890, peak: true },
-            { hour: 22, requests: 340, low: true }
+            { hour: 22, requests: 340, low: true },
           ],
           dailyPatterns: {
             weekday: { avg: 4500, peak: 'Wednesday' },
-            weekend: { avg: 1200, peak: 'Saturday' }
-          }
+            weekend: { avg: 1200, peak: 'Saturday' },
+          },
         },
         resourcePatterns: {
           mostAccessed: [
             { resource: 'knowledge://entities/project/test', count: 2340 },
-            { resource: 'document://specs/project/test/api.pdf', count: 1560 }
+            { resource: 'document://specs/project/test/api.pdf', count: 1560 },
           ],
           fastestGrowing: [
             { resource: 'media://videos/project/tutorials/', growth: 156 }, // percentage
-            { resource: 'knowledge://decisions/project/', growth: 89 }
-          ]
+            { resource: 'knowledge://decisions/project/', growth: 89 },
+          ],
         },
         userBehaviorPatterns: {
           sessionDuration: {
             avg: 450, // seconds
             p75: 600,
-            p95: 1200
+            p95: 1200,
           },
           resourceSequences: [
             ['knowledge://entities', 'knowledge://relations', 'document://specs'],
-            ['media://images', 'media://videos', 'knowledge://observations']
-          ]
-        }
+            ['media://images', 'media://videos', 'knowledge://observations'],
+          ],
+        },
       };
 
       expect(accessPatterns.temporalPatterns.hourlyDistribution[1].peak).toBe(true);
@@ -2715,14 +2772,14 @@ describe('Integration and Performance', () => {
               action: 'increase_ttl',
               currentTtl: 1800,
               recommendedTtl: 7200,
-              estimatedImpact: '45% cache hit rate improvement'
+              estimatedImpact: '45% cache hit rate improvement',
             },
             {
               resource: 'media://images/project/test/',
               action: 'enable_cdn',
-              estimatedImpact: '60% latency reduction'
-            }
-          ]
+              estimatedImpact: '60% latency reduction',
+            },
+          ],
         },
         performance: {
           priority: 'medium',
@@ -2731,9 +2788,9 @@ describe('Integration and Performance', () => {
               resource: 'knowledge://entities/project/test',
               action: 'enable_compression',
               algorithm: 'brotli',
-              estimatedSavings: '35% bandwidth reduction'
-            }
-          ]
+              estimatedSavings: '35% bandwidth reduction',
+            },
+          ],
         },
         storage: {
           priority: 'low',
@@ -2741,15 +2798,17 @@ describe('Integration and Performance', () => {
             {
               resource: 'archive://backups/project/test/',
               action: 'implement_lifecycle_policy',
-              estimatedSavings: '20% storage cost reduction'
-            }
-          ]
-        }
+              estimatedSavings: '20% storage cost reduction',
+            },
+          ],
+        },
       };
 
       expect(optimizationRecommendations.cache.priority).toBe('high');
       expect(optimizationRecommendations.cache.recommendations).toHaveLength(2);
-      expect(optimizationRecommendations.performance.recommendations[0].estimatedSavings).toContain('35%');
+      expect(optimizationRecommendations.performance.recommendations[0].estimatedSavings).toContain(
+        '35%'
+      );
     });
   });
 
@@ -2762,33 +2821,33 @@ describe('Integration and Performance', () => {
             status: 'healthy',
             responseTime: 45,
             lastCheck: new Date().toISOString(),
-            uptime: 0.999
+            uptime: 0.999,
           },
           storageBackend: {
             status: 'healthy',
             responseTime: 23,
             lastCheck: new Date().toISOString(),
-            uptime: 0.998
+            uptime: 0.998,
           },
           cacheLayer: {
             status: 'healthy',
             responseTime: 2,
             lastCheck: new Date().toISOString(),
-            uptime: 0.999
+            uptime: 0.999,
           },
           cdnService: {
             status: 'degraded',
             responseTime: 234,
             lastCheck: new Date().toISOString(),
             uptime: 0.995,
-            issues: ['Increased latency in Asia Pacific region']
-          }
+            issues: ['Increased latency in Asia Pacific region'],
+          },
         },
         metrics: {
           totalRequests: 125000,
           errorRate: 0.0015,
           avgResponseTime: 156,
-          activeConnections: 45
+          activeConnections: 45,
         },
         alerts: [
           {
@@ -2796,9 +2855,9 @@ describe('Integration and Performance', () => {
             component: 'cdnService',
             message: 'CDN latency increased in Asia Pacific',
             timestamp: new Date().toISOString(),
-            acknowledged: true
-          }
-        ]
+            acknowledged: true,
+          },
+        ],
       };
 
       expect(healthMonitoring.overall).toBe('healthy');
@@ -2815,25 +2874,25 @@ describe('Integration and Performance', () => {
         systemInfo: {
           node: 'app-server-03',
           region: 'us-west-2',
-          availabilityZone: 'us-west-2a'
+          availabilityZone: 'us-west-2a',
         },
         resourceStates: {
           database: {
             connections: { active: 8, idle: 12, max: 50 },
             performance: { avgQueryTime: 25, slowQueries: 2 },
-            storage: { used: '450GB', available: '550GB' }
+            storage: { used: '450GB', available: '550GB' },
           },
           cache: {
             hitRate: 0.78,
             memoryUsage: 0.65,
             evictionRate: 0.02,
-            keyCount: 125000
+            keyCount: 125000,
           },
           fileSystem: {
             diskUsage: 0.45,
             iops: { read: 1250, write: 890 },
-            latency: { read: 5, write: 8 }
-          }
+            latency: { read: 5, write: 8 },
+          },
         },
         recentErrors: [
           {
@@ -2841,9 +2900,9 @@ describe('Integration and Performance', () => {
             type: 'timeout',
             resource: 'document://large-file.pdf',
             message: 'Resource access timeout',
-            resolved: true
-          }
-        ]
+            resolved: true,
+          },
+        ],
       };
 
       expect(diagnostics.resourceStates.cache.hitRate).toBeGreaterThan(0.7);

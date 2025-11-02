@@ -15,24 +15,26 @@ import { coreMemoryFind } from '../../src/services/core-memory-find.js';
 describe('P4-T4.1: Relation Storage System', () => {
   const testScope = {
     project: 'test-relation-storage',
-    branch: 'main'
+    branch: 'main',
   };
 
   describe('Basic Relation Storage', () => {
     it('should store a relation and return success', async () => {
       // This test should FAIL initially - TDD approach
-      const items = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          from_entity_type: 'entity',
-          from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
-          to_entity_type: 'entity',
-          to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-          relation_type: 'relates_to',
-          metadata: { strength: 0.8 }
-        }
-      }];
+      const items = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            from_entity_type: 'entity',
+            from_entity_id: '550e8400-e29b-41d4-a716-446655440001',
+            to_entity_type: 'entity',
+            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+            relation_type: 'relates_to',
+            metadata: { strength: 0.8 },
+          },
+        },
+      ];
 
       const result = await memoryStore(items);
 
@@ -43,15 +45,17 @@ describe('P4-T4.1: Relation Storage System', () => {
     });
 
     it('should validate required relation fields', async () => {
-      const items = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          // Missing required fields
-          from_entity_type: 'entity',
-          relation_type: 'relates_to'
-        }
-      }];
+      const items = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            // Missing required fields
+            from_entity_type: 'entity',
+            relation_type: 'relates_to',
+          },
+        },
+      ];
 
       const result = await memoryStore(items);
 
@@ -60,17 +64,19 @@ describe('P4-T4.1: Relation Storage System', () => {
     });
 
     it('should validate UUID format for entity IDs', async () => {
-      const items = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          from_entity_type: 'entity',
-          from_entity_id: 'invalid-uuid-format',
-          to_entity_type: 'entity',
-          to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
-          relation_type: 'relates_to'
-        }
-      }];
+      const items = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            from_entity_type: 'entity',
+            from_entity_id: 'invalid-uuid-format',
+            to_entity_type: 'entity',
+            to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
+            relation_type: 'relates_to',
+          },
+        },
+      ];
 
       const result = await memoryStore(items);
 
@@ -85,18 +91,20 @@ describe('P4-T4.1: Relation Storage System', () => {
 
     beforeEach(async () => {
       // Store a test relation for querying
-      const storeItems = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          from_entity_type: 'entity',
-          from_entity_id: fromEntityId,
-          to_entity_type: 'entity',
-          to_entity_id: toEntityId,
-          relation_type: 'relates_to',
-          metadata: { strength: 0.9 }
-        }
-      }];
+      const storeItems = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            from_entity_type: 'entity',
+            from_entity_id: fromEntityId,
+            to_entity_type: 'entity',
+            to_entity_id: toEntityId,
+            relation_type: 'relates_to',
+            metadata: { strength: 0.9 },
+          },
+        },
+      ];
 
       const result = await memoryStore(storeItems);
       storedRelationId = result.items[0].id!;
@@ -107,7 +115,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findParams = {
         query: fromEntityId,
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await coreMemoryFind(findParams);
@@ -121,7 +129,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findParams = {
         query: 'relates_to',
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await coreMemoryFind(findParams);
@@ -134,7 +142,7 @@ describe('P4-T4.1: Relation Storage System', () => {
       const findParams = {
         query: '550e8400-e29b-41d4-a716-44665544999',
         scope: testScope,
-        types: ['relation']
+        types: ['relation'],
       };
 
       const result = await coreMemoryFind(findParams);
@@ -146,17 +154,19 @@ describe('P4-T4.1: Relation Storage System', () => {
   describe('Entity Validation', () => {
     it('should handle relations with non-existent entities gracefully', async () => {
       // This test should either create entity stubs or fail gracefully
-      const items = [{
-        kind: 'relation',
-        scope: testScope,
-        data: {
-          from_entity_type: 'entity',
-          from_entity_id: '550e8400-e29b-41d4-a716-44665544999', // Non-existent
-          to_entity_type: 'entity',
-          to_entity_id: '550e8400-e29b-41d4-a716-44665544998', // Non-existent
-          relation_type: 'relates_to'
-        }
-      }];
+      const items = [
+        {
+          kind: 'relation',
+          scope: testScope,
+          data: {
+            from_entity_type: 'entity',
+            from_entity_id: '550e8400-e29b-41d4-a716-44665544999', // Non-existent
+            to_entity_type: 'entity',
+            to_entity_id: '550e8400-e29b-41d4-a716-44665544998', // Non-existent
+            relation_type: 'relates_to',
+          },
+        },
+      ];
 
       const result = await memoryStore(items);
 

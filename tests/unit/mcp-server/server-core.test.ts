@@ -13,15 +13,7 @@
  * Comprehensive coverage with 20+ test cases covering all MCP server core functionality.
  */
 
-import {
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach,
-  vi,
-  type MockedFunction
-} from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -61,14 +53,14 @@ interface MemoryFindResponse {
 // Mock Qdrant Client
 const mockQdrant = {
   getCollections: vi.fn().mockResolvedValue({
-    collections: [{ name: 'test-collection' }]
+    collections: [{ name: 'test-collection' }],
   }),
   createCollection: vi.fn().mockResolvedValue(undefined),
   upsert: vi.fn().mockResolvedValue(undefined),
   search: vi.fn().mockResolvedValue([]),
   getCollection: vi.fn().mockResolvedValue({
     points_count: 0,
-    status: 'green'
+    status: 'green',
   }),
   delete: vi.fn().mockResolvedValue({ status: 'completed' }),
 };
@@ -222,7 +214,7 @@ class MockVectorDatabase {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(16);
@@ -235,7 +227,7 @@ const mockEnv = {
   NODE_ENV: 'test',
   QDRANT_URL: 'http://localhost:6333',
   QDRANT_COLLECTION_NAME: 'test-collection',
-  LOG_LEVEL: 'error'
+  LOG_LEVEL: 'error',
 };
 
 describe('MCP Server Core Functionality', () => {
@@ -323,8 +315,14 @@ describe('MCP Server Core Functionality', () => {
       server.setRequestHandler(CallToolRequestSchema, vi.fn());
 
       // Assert
-      expect(server.setRequestHandler).toHaveBeenCalledWith(ListToolsRequestSchema, expect.any(Function));
-      expect(server.setRequestHandler).toHaveBeenCalledWith(CallToolRequestSchema, expect.any(Function));
+      expect(server.setRequestHandler).toHaveBeenCalledWith(
+        ListToolsRequestSchema,
+        expect.any(Function)
+      );
+      expect(server.setRequestHandler).toHaveBeenCalledWith(
+        CallToolRequestSchema,
+        expect.any(Function)
+      );
     });
 
     test('should define correct tool schemas', () => {
@@ -332,7 +330,8 @@ describe('MCP Server Core Functionality', () => {
       const tools = [
         {
           name: 'memory_store',
-          description: 'Store knowledge items in the Cortex memory system with semantic deduplication',
+          description:
+            'Store knowledge items in the Cortex memory system with semantic deduplication',
           inputSchema: {
             type: 'object',
             properties: {
@@ -344,9 +343,22 @@ describe('MCP Server Core Functionality', () => {
                     kind: {
                       type: 'string',
                       enum: [
-                        'entity', 'relation', 'observation', 'section', 'runbook',
-                        'change', 'issue', 'decision', 'todo', 'release_note',
-                        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+                        'entity',
+                        'relation',
+                        'observation',
+                        'section',
+                        'runbook',
+                        'change',
+                        'issue',
+                        'decision',
+                        'todo',
+                        'release_note',
+                        'ddl',
+                        'pr_context',
+                        'incident',
+                        'release',
+                        'risk',
+                        'assumption',
                       ],
                       description: 'Knowledge type (16 supported types)',
                     },
@@ -371,7 +383,8 @@ describe('MCP Server Core Functionality', () => {
         },
         {
           name: 'memory_find',
-          description: 'Search knowledge items using intelligent semantic search with multiple strategies',
+          description:
+            'Search knowledge items using intelligent semantic search with multiple strategies',
           inputSchema: {
             type: 'object',
             properties: {
@@ -421,7 +434,7 @@ describe('MCP Server Core Functionality', () => {
             },
             required: [],
           },
-        }
+        },
       ];
 
       // Assert
@@ -491,7 +504,7 @@ describe('MCP Server Core Functionality', () => {
     test('should provide health check functionality', async () => {
       // Arrange
       mockQdrant.getCollections.mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
 
       // Act
@@ -519,7 +532,7 @@ describe('MCP Server Core Functionality', () => {
       mockQdrant.getCollection.mockResolvedValue({
         points_count: 150,
         status: 'green',
-        optimizer_status: 'ok'
+        optimizer_status: 'ok',
       });
 
       // Act
@@ -534,11 +547,13 @@ describe('MCP Server Core Functionality', () => {
   describe('Tool Management and Execution', () => {
     test('should execute memory_store tool successfully', async () => {
       // Arrange
-      const items = [{
-        kind: 'entity',
-        content: 'Test entity',
-        metadata: { test: true }
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test entity',
+          metadata: { test: true },
+        },
+      ];
 
       // Act
       const result = await vectorDB.storeItems(items);
@@ -560,9 +575,9 @@ describe('MCP Server Core Functionality', () => {
           payload: {
             kind: 'entity',
             content: 'Test content',
-            metadata: { test: true }
-          }
-        }
+            metadata: { test: true },
+          },
+        },
       ];
       mockQdrant.search.mockResolvedValue(mockSearchResults);
 
@@ -581,7 +596,7 @@ describe('MCP Server Core Functionality', () => {
       const items = Array.from({ length: 10 }, (_, i) => ({
         kind: 'entity',
         content: `Test item ${i}`,
-        metadata: { batch: true, index: i }
+        metadata: { batch: true, index: i },
       }));
 
       // Act
@@ -594,10 +609,12 @@ describe('MCP Server Core Functionality', () => {
 
     test('should handle storage errors gracefully', async () => {
       // Arrange
-      const items = [{
-        kind: 'entity',
-        content: 'Test item'
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test item',
+        },
+      ];
 
       mockQdrant.upsert.mockRejectedValue(new Error('Connection failed'));
 
@@ -636,9 +653,22 @@ describe('MCP Server Core Functionality', () => {
     test('should handle all 16 knowledge types', async () => {
       // Arrange
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
       // Act & Assert
@@ -657,8 +687,8 @@ describe('MCP Server Core Functionality', () => {
         {
           kind: 'decision',
           content: 'Technical decision',
-          metadata: { alternatives: ['Option A', 'Option B'], rationale: 'Performance' }
-        }
+          metadata: { alternatives: ['Option A', 'Option B'], rationale: 'Performance' },
+        },
       ];
 
       // Act
@@ -667,7 +697,7 @@ describe('MCP Server Core Functionality', () => {
       // Assert
       expect(result.stored[0].metadata).toEqual({
         alternatives: ['Option A', 'Option B'],
-        rationale: 'Performance'
+        rationale: 'Performance',
       });
     });
 
@@ -680,9 +710,9 @@ describe('MCP Server Core Functionality', () => {
           payload: {
             kind: 'entity',
             content: 'Test content',
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ];
       mockQdrant.search.mockResolvedValue(mockSearchResults);
 
@@ -700,7 +730,7 @@ describe('MCP Server Core Functionality', () => {
       const item = {
         kind: 'entity',
         content: largeContent,
-        metadata: { size: largeContent.length }
+        metadata: { size: largeContent.length },
       };
 
       // Act
@@ -715,12 +745,7 @@ describe('MCP Server Core Functionality', () => {
   describe('Error Handling and Edge Cases', () => {
     test('should handle invalid knowledge items', async () => {
       // Arrange
-      const items = [
-        null,
-        undefined,
-        {},
-        { kind: 'invalid-kind' }
-      ] as any;
+      const items = [null, undefined, {}, { kind: 'invalid-kind' }] as any;
 
       // Act
       const result = await vectorDB.storeItems(items);
@@ -735,7 +760,7 @@ describe('MCP Server Core Functionality', () => {
       const items = [
         { content: 'Missing kind' },
         { kind: 'entity' }, // Missing content
-        { kind: 'entity', content: 'test' } // Valid item
+        { kind: 'entity', content: 'test' }, // Valid item
       ] as any;
 
       // Act
@@ -748,10 +773,12 @@ describe('MCP Server Core Functionality', () => {
 
     test('should handle network timeouts', async () => {
       // Arrange
-      const items = [{
-        kind: 'entity',
-        content: 'Test item'
-      }];
+      const items = [
+        {
+          kind: 'entity',
+          content: 'Test item',
+        },
+      ];
 
       mockQdrant.upsert.mockRejectedValue(new Error('ETIMEDOUT'));
 
@@ -766,10 +793,12 @@ describe('MCP Server Core Functionality', () => {
     test('should handle concurrent database operations', async () => {
       // Arrange
       const operations = Array.from({ length: 5 }, (_, i) =>
-        vectorDB.storeItems([{
-          kind: 'entity',
-          content: `Concurrent item ${i}`
-        }])
+        vectorDB.storeItems([
+          {
+            kind: 'entity',
+            content: `Concurrent item ${i}`,
+          },
+        ])
       );
 
       // Act
@@ -777,7 +806,7 @@ describe('MCP Server Core Functionality', () => {
 
       // Assert
       expect(results).toHaveLength(5);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.stored).toHaveLength(1);
       });
     });
@@ -807,7 +836,7 @@ describe('MCP Server Core Functionality', () => {
       const largeBatch = Array.from({ length: 100 }, (_, i) => ({
         kind: 'entity',
         content: `Item ${i}`,
-        metadata: { index: i }
+        metadata: { index: i },
       }));
 
       // Act
@@ -827,7 +856,7 @@ describe('MCP Server Core Functionality', () => {
         undefined,
         {},
         { content: 'Missing kind' },
-        { kind: 'entity' } // Missing content
+        { kind: 'entity' }, // Missing content
       ] as any;
 
       // Act & Assert
@@ -842,7 +871,7 @@ describe('MCP Server Core Functionality', () => {
       const maliciousInput = {
         kind: 'entity',
         content: '<script>alert("xss")</script>',
-        metadata: { malicious: 'javascript:alert("xss")' }
+        metadata: { malicious: 'javascript:alert("xss")' },
       };
 
       // Act
@@ -868,10 +897,7 @@ describe('MCP Server Core Functionality', () => {
     test('should provide resource metadata', async () => {
       // Arrange
       mockQdrant.getCollections.mockResolvedValue({
-        collections: [
-          { name: 'test-collection' },
-          { name: 'another-collection' }
-        ]
+        collections: [{ name: 'test-collection' }, { name: 'another-collection' }],
       });
 
       // Act

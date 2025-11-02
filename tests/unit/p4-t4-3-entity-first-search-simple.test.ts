@@ -16,7 +16,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
     it('should handle entity-first search integration in searchByMode', async () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       // This test verifies that searchByMode doesn't crash and returns a valid result
@@ -40,13 +40,13 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
         'Test Entity AND Something',
         '"Test Entity"',
         'Test Entity OR Something',
-        ''
+        '',
       ];
 
       for (const query of complexQueries) {
         const testQuery: SearchQuery = {
           query,
-          limit: 10
+          limit: 10,
         };
 
         const result = await searchService.searchByMode(testQuery);
@@ -62,7 +62,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
         expand: 'relations',
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -77,7 +77,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
         expand: 'none',
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -95,7 +95,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
         const testQuery: SearchQuery = {
           query: 'Test Entity',
           mode,
-          limit: 10
+          limit: 10,
         };
 
         const result = await searchService.searchByMode(testQuery);
@@ -113,9 +113,9 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          org: 'test-org'
+          org: 'test-org',
         },
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -130,7 +130,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
         types: ['entity'],
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -144,7 +144,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
     it('should handle limit parameter', async () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
-        limit: 5
+        limit: 5,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -160,7 +160,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
         mode: 'invalid' as any, // Invalid mode
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -174,7 +174,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
     it('should handle empty query gracefully', async () => {
       const testQuery: SearchQuery = {
         query: '',
-        limit: 10
+        limit: 10,
       };
 
       const result = await searchService.searchByMode(testQuery);
@@ -191,7 +191,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       // This test verifies that the method exists and can be called
       const testQuery: SearchQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       // The method should exist on the service instance
@@ -209,7 +209,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
     it('should handle errors in performEntityFirstSearch gracefully', async () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       // The method should handle database errors gracefully
@@ -228,7 +228,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       // Test basic search
       const basicQuery: SearchQuery = {
         query: 'simple search term',
-        limit: 10
+        limit: 10,
       };
 
       const basicResult = await searchService.searchByMode(basicQuery);
@@ -238,7 +238,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
       // Test entity-like query (may trigger entity-first if database is available)
       const entityQuery: SearchQuery = {
         query: 'User Service',
-        limit: 10
+        limit: 10,
       };
 
       const entityResult = await searchService.searchByMode(entityQuery);
@@ -251,7 +251,7 @@ describe('P4-T4.3: Entity-First Search (Simple)', () => {
     it('should complete search operations in reasonable time', async () => {
       const testQuery: SearchQuery = {
         query: 'Test Entity',
-        limit: 10
+        limit: 10,
       };
 
       const startTime = Date.now();

@@ -5,8 +5,7 @@
  * to use mock embedding services and prevents accidental usage of real APIs.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('CI Mock Embedding Service Validation', () => {
   let originalEnv: NodeJS.ProcessEnv;

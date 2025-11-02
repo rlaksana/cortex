@@ -13,12 +13,12 @@ describe('Test Relation Service Directly', () => {
       to_entity_type: 'entity',
       to_entity_id: '550e8400-e29b-41d4-a716-446655440002',
       relation_type: 'relates_to',
-      metadata: { strength: 0.8 }
+      metadata: { strength: 0.8 },
     };
 
     const scope = {
       project: 'test-relation-storage',
-      branch: 'main'
+      branch: 'main',
     };
 
     try {

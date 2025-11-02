@@ -20,7 +20,7 @@ describe('SearchService - P3-T3.1', () => {
         query: 'database connection pooling',
         limit: 10,
         types: ['decision'],
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       };
 
       // Act
@@ -51,7 +51,7 @@ describe('SearchService - P3-T3.1', () => {
       const query: SearchQuery = {
         query: 'xyz123nonexistentterm456',
         limit: 5,
-        types: ['observation']
+        types: ['observation'],
       };
 
       // Act
@@ -69,8 +69,8 @@ describe('SearchService - P3-T3.1', () => {
         limit: 10,
         scope: {
           project: 'specific-project',
-          branch: 'feature-branch'
-        }
+          branch: 'feature-branch',
+        },
       };
 
       // Act
@@ -92,7 +92,7 @@ describe('SearchService - P3-T3.1', () => {
       const query: SearchQuery = {
         query: 'error handling timeout',
         limit: 10,
-        types: ['issue', 'incident']
+        types: ['issue', 'incident'],
       };
 
       // Act
@@ -119,11 +119,13 @@ describe('SearchService - P3-T3.1', () => {
         // Verify that results contain the search terms when data exists
         const hasKeywordMatches = result.results.some((item: SearchResult) => {
           const content = JSON.stringify(item.data).toLowerCase();
-          return content.includes('error') || content.includes('handling') || content.includes('timeout');
+          return (
+            content.includes('error') || content.includes('handling') || content.includes('timeout')
+          );
         });
 
         // Only assert this if we have actual data (which we might not in test environment)
-        if (result.results.some(item => Object.keys(item.data).length > 0)) {
+        if (result.results.some((item) => Object.keys(item.data).length > 0)) {
           expect(hasKeywordMatches).toBe(true);
         }
       } else {
@@ -136,7 +138,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: '"database connection" pooling',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -147,8 +149,12 @@ describe('SearchService - P3-T3.1', () => {
 
       // Verify exact phrase matching gets higher scores
       if (result.results.length > 0) {
-        const sortedByConfidence = [...result.results].sort((a, b) => b.confidence_score - a.confidence_score);
-        expect(sortedByConfidence[0].confidence_score).toBeGreaterThanOrEqual(sortedByConfidence[sortedByConfidence.length - 1].confidence_score);
+        const sortedByConfidence = [...result.results].sort(
+          (a, b) => b.confidence_score - a.confidence_score
+        );
+        expect(sortedByConfidence[0].confidence_score).toBeGreaterThanOrEqual(
+          sortedByConfidence[sortedByConfidence.length - 1].confidence_score
+        );
       }
     });
 
@@ -156,7 +162,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'api endpoint rest',
-        limit: 15
+        limit: 15,
       };
 
       // Act
@@ -166,7 +172,9 @@ describe('SearchService - P3-T3.1', () => {
       if (result.results.length > 1) {
         // Results should be ordered by confidence score (relevance)
         for (let i = 0; i < result.results.length - 1; i++) {
-          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(result.results[i + 1].confidence_score);
+          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(
+            result.results[i + 1].confidence_score
+          );
         }
       }
     });
@@ -178,7 +186,7 @@ describe('SearchService - P3-T3.1', () => {
       const query: SearchQuery = {
         query: 'performance optimization database',
         limit: 10,
-        types: ['decision', 'runbook']
+        types: ['decision', 'runbook'],
       };
 
       // Act
@@ -205,14 +213,14 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'security authentication',
-        limit: 20
+        limit: 20,
       };
 
       // Act
       const result = await searchService.hybrid(query);
 
       // Assert
-      const ids = result.results.map(item => item.id);
+      const ids = result.results.map((item) => item.id);
       const uniqueIds = new Set(ids);
       expect(uniqueIds.size).toBe(ids.length); // No duplicates
 
@@ -226,7 +234,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'caching strategy memory',
-        limit: 15
+        limit: 15,
       };
 
       // Act
@@ -242,7 +250,9 @@ describe('SearchService - P3-T3.1', () => {
 
         // Results should be ordered by hybrid relevance
         for (let i = 0; i < result.results.length - 1; i++) {
-          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(result.results[i + 1].confidence_score);
+          expect(result.results[i].confidence_score).toBeGreaterThanOrEqual(
+            result.results[i + 1].confidence_score
+          );
         }
       }
     });
@@ -251,7 +261,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'test query for fallback',
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -269,7 +279,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'testing query',
-        limit: 5
+        limit: 5,
       };
 
       // Act & Assert - All three methods should work with the same query interface
@@ -282,7 +292,7 @@ describe('SearchService - P3-T3.1', () => {
       expect(hybridResult.results).toBeDefined();
 
       // All should have the same response structure
-      [semanticResult, keywordResult, hybridResult].forEach(result => {
+      [semanticResult, keywordResult, hybridResult].forEach((result) => {
         expect(result).toHaveProperty('results');
         expect(result).toHaveProperty('totalCount');
         expect(typeof result.totalCount).toBe('number');
@@ -294,7 +304,7 @@ describe('SearchService - P3-T3.1', () => {
       const query: SearchQuery = {
         query: 'search mode test',
         limit: 10,
-        mode: 'auto' // This will be used in P3-T3.2
+        mode: 'auto', // This will be used in P3-T3.2
       };
 
       // Act
@@ -312,7 +322,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'match type test',
-        limit: 5
+        limit: 5,
       };
 
       // Act
@@ -321,15 +331,15 @@ describe('SearchService - P3-T3.1', () => {
       const hybridResult = await searchService.hybrid(query);
 
       // Assert
-      semanticResult.results.forEach(item => {
+      semanticResult.results.forEach((item) => {
         expect(item.match_type).toBe('semantic');
       });
 
-      keywordResult.results.forEach(item => {
+      keywordResult.results.forEach((item) => {
         expect(item.match_type).toBe('keyword');
       });
 
-      hybridResult.results.forEach(item => {
+      hybridResult.results.forEach((item) => {
         expect(['semantic', 'keyword', 'hybrid']).toContain(item.match_type);
       });
     });
@@ -340,7 +350,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const invalidQuery = {
         query: '',
-        limit: -1
+        limit: -1,
       } as SearchQuery;
 
       // Act & Assert
@@ -353,7 +363,7 @@ describe('SearchService - P3-T3.1', () => {
       // Arrange
       const query: SearchQuery = {
         query: 'test query',
-        limit: 5
+        limit: 5,
       };
 
       // Act & Assert - Should not crash, but return empty results or throw gracefully

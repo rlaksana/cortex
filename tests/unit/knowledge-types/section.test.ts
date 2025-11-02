@@ -21,20 +21,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Section Knowledge Type - Comprehensive Testing', () => {
@@ -52,22 +52,23 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           id: '550e8400-e29b-41d4-a716-446655440000',
           title: 'Authentication System Overview',
-          body_md: '# Authentication System\n\nThis section provides an overview of the authentication system architecture.',
+          body_md:
+            '# Authentication System\n\nThis section provides an overview of the authentication system architecture.',
           heading: 'Authentication Overview',
           document_id: '550e8400-e29b-41d4-a716-446655440001',
-          citation_count: 5
+          citation_count: 5,
         },
         tags: { documentation: true, architecture: true },
         source: {
           actor: 'technical-writer',
           tool: 'documentation-system',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = SectionSchema.safeParse(section);
@@ -86,13 +87,13 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'API Reference',
           body_text: 'This section contains comprehensive API reference documentation.',
-          heading: 'API Documentation'
-        }
+          heading: 'API Documentation',
+        },
       };
 
       const result = SectionSchema.safeParse(section);
@@ -113,8 +114,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             // Missing title
             body_text: 'Test content',
-            heading: 'Test heading'
-          }
+            heading: 'Test heading',
+          },
         },
         {
           kind: 'section' as const,
@@ -122,18 +123,18 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Test section',
             // Missing both body_md and body_text
-            heading: 'Test heading'
-          }
+            heading: 'Test heading',
+          },
         },
         {
           kind: 'section' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             title: 'Test section',
-            body_text: 'Test content'
+            body_text: 'Test content',
             // Missing heading
-          }
-        }
+          },
+        },
       ];
 
       invalidSections.forEach((section, index) => {
@@ -153,8 +154,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           title: 'Test Section',
           body_md: '# Markdown content',
           body_text: 'Plain text content', // Both present is allowed
-          heading: 'Test Heading'
-        }
+          heading: 'Test Heading',
+        },
       };
 
       const sectionWithNeither = {
@@ -163,8 +164,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'Test Section',
           // Missing both body_md and body_text
-          heading: 'Test Heading'
-        }
+          heading: 'Test Heading',
+        },
       };
 
       const resultWithBoth = SectionSchema.safeParse(sectionWithBoth);
@@ -181,8 +182,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'x'.repeat(501), // Exceeds 500 character limit
           body_text: 'Test content',
-          heading: 'Test heading'
-        }
+          heading: 'Test heading',
+        },
       };
 
       const result = SectionSchema.safeParse(section);
@@ -199,8 +200,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'Test Section',
           body_text: 'Test content',
-          heading: 'x'.repeat(301) // Exceeds 300 character limit
-        }
+          heading: 'x'.repeat(301), // Exceeds 300 character limit
+        },
       };
 
       const result = SectionSchema.safeParse(section);
@@ -217,14 +218,14 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Installation Guide',
           body_md: '## Installation\n\nFollow these steps to install the application.',
-          heading: 'Installation'
+          heading: 'Installation',
         },
-        content: 'Section: Installation Guide with installation steps' // Required for embedding generation
+        content: 'Section: Installation Guide with installation steps', // Required for embedding generation
       };
 
       const result = await db.storeItems([section]);
@@ -245,14 +246,14 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: `Section ${i + 1}`,
           body_text: `Content for section ${i + 1}`,
-          heading: `Heading ${i + 1}`
+          heading: `Heading ${i + 1}`,
         },
-        content: `Section: ${i + 1} content overview`
+        content: `Section: ${i + 1} content overview`,
       }));
 
       const result = await db.storeItems(sections);
@@ -270,9 +271,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Valid Section',
             body_text: 'Valid content',
-            heading: 'Valid Heading'
+            heading: 'Valid Heading',
           },
-          content: 'Valid section content'
+          content: 'Valid section content',
         },
         {
           kind: 'section' as const,
@@ -280,9 +281,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Invalid Section',
             // Missing body content
-            heading: 'Invalid Heading'
+            heading: 'Invalid Heading',
           },
-          content: 'Invalid section content'
+          content: 'Invalid section content',
         },
         {
           kind: 'section' as const,
@@ -290,10 +291,10 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Another Valid Section',
             body_md: '# Valid Markdown',
-            heading: 'Another Valid Heading'
+            heading: 'Another Valid Heading',
           },
-          content: 'Another valid section content'
-        }
+          content: 'Another valid section content',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -316,10 +317,10 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
               title: 'User Authentication',
               body_md: '# Authentication Flow\n\nDetailed authentication process.',
               heading: 'Authentication Flow',
-              document_id: 'doc-123'
+              document_id: 'doc-123',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'section-id-2',
@@ -329,11 +330,11 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
             data: {
               title: 'API Reference',
               body_text: 'Comprehensive API documentation.',
-              heading: 'API Documentation'
+              heading: 'API Documentation',
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -364,16 +365,18 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const markdownSections = [
         {
           title: 'Markdown Overview',
-          body_md: '# Overview\n\nThis is a **markdown** section with `code` and [links](http://example.com).'
+          body_md:
+            '# Overview\n\nThis is a **markdown** section with `code` and [links](http://example.com).',
         },
         {
           title: 'Complex Markdown',
-          body_md: '```javascript\nconsole.log("Hello World");\n```\n\n- Item 1\n- Item 2\n- Item 3'
+          body_md:
+            '```javascript\nconsole.log("Hello World");\n```\n\n- Item 1\n- Item 2\n- Item 3',
         },
         {
           title: 'Mathematical Content',
-          body_md: 'E = mc²\n\nInline math: $x^2 + y^2 = z^2$'
-        }
+          body_md: 'E = mc²\n\nInline math: $x^2 + y^2 = z^2$',
+        },
       ];
 
       for (const sectionData of markdownSections) {
@@ -382,9 +385,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           scope: { project: 'test-project', branch: 'main' },
           data: {
             ...sectionData,
-            heading: sectionData.title
+            heading: sectionData.title,
           },
-          content: `Section: ${sectionData.title}`
+          content: `Section: ${sectionData.title}`,
         };
 
         const result = SectionSchema.safeParse(section);
@@ -399,16 +402,16 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const textSections = [
         {
           title: 'Plain Text Overview',
-          body_text: 'This is a plain text section with no markdown formatting.'
+          body_text: 'This is a plain text section with no markdown formatting.',
         },
         {
           title: 'Technical Documentation',
-          body_text: 'The system uses RESTful APIs with JSON responses.'
+          body_text: 'The system uses RESTful APIs with JSON responses.',
         },
         {
           title: 'User Guide',
-          body_text: 'Follow these steps: 1. Login 2. Navigate 3. Complete action'
-        }
+          body_text: 'Follow these steps: 1. Login 2. Navigate 3. Complete action',
+        },
       ];
 
       for (const sectionData of textSections) {
@@ -417,9 +420,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           scope: { project: 'test-project', branch: 'main' },
           data: {
             ...sectionData,
-            heading: sectionData.title
+            heading: sectionData.title,
           },
-          content: `Section: ${sectionData.title}`
+          content: `Section: ${sectionData.title}`,
         };
 
         const result = SectionSchema.safeParse(section);
@@ -438,9 +441,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           title: 'Dual Format Section',
           body_md: '# Dual Format\n\n**Markdown** content here.',
           body_text: 'Plain text content here.',
-          heading: 'Dual Format Example'
+          heading: 'Dual Format Example',
         },
-        content: 'Section with both markdown and text'
+        content: 'Section with both markdown and text',
       };
 
       const result = SectionSchema.safeParse(section);
@@ -462,9 +465,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
             title: 'Chapter 1',
             body_text: 'First chapter content',
             heading: 'Chapter 1',
-            document_id: '550e8400-e29b-41d4-a716-446655440000'
+            document_id: '550e8400-e29b-41d4-a716-446655440000',
           },
-          content: 'Section with document reference'
+          content: 'Section with document reference',
         },
         {
           kind: 'section' as const,
@@ -473,14 +476,14 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
             title: 'Appendix A',
             body_text: 'Appendix content',
             heading: 'Appendix',
-            document_id: '550e8400-e29b-41d4-a716-446655440001'
+            document_id: '550e8400-e29b-41d4-a716-446655440001',
           },
-          content: 'Section with different document reference'
-        }
+          content: 'Section with different document reference',
+        },
       ];
 
-      const results = sections.map(section => SectionSchema.safeParse(section));
-      results.forEach(result => {
+      const results = sections.map((section) => SectionSchema.safeParse(section));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -496,9 +499,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
             title: `Section with ${count} citations`,
             body_text: `Content cited ${count} times`,
             heading: `Citation Example ${count}`,
-            citation_count: count
+            citation_count: count,
           },
-          content: `Section with ${count} citations`
+          content: `Section with ${count} citations`,
         };
 
         const result = SectionSchema.safeParse(section);
@@ -514,18 +517,18 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         {
           title: '1.0 Introduction',
           heading: 'Introduction',
-          level: 1
+          level: 1,
         },
         {
           title: '1.1 Background',
           heading: 'Background',
-          level: 2
+          level: 2,
         },
         {
           title: '1.1.1 Historical Context',
           heading: 'Historical Context',
-          level: 3
-        }
+          level: 3,
+        },
       ];
 
       for (const sectionData of hierarchicalSections) {
@@ -534,9 +537,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           scope: { project: 'test-project', branch: 'main' },
           data: {
             ...sectionData,
-            body_text: `Content for ${sectionData.title}`
+            body_text: `Content for ${sectionData.title}`,
           },
-          content: `Section: ${sectionData.title}`
+          content: `Section: ${sectionData.title}`,
         };
 
         const result = SectionSchema.safeParse(section);
@@ -554,28 +557,28 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Project A Documentation',
           body_text: 'Content for Project A',
-          heading: 'Project A'
+          heading: 'Project A',
         },
-        content: 'Section in project-A'
+        content: 'Section in project-A',
       };
 
       const sectionProjectB = {
         kind: 'section' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'Project B Documentation',
           body_text: 'Content for Project B',
-          heading: 'Project B'
+          heading: 'Project B',
         },
-        content: 'Section in project-B'
+        content: 'Section in project-B',
       };
 
       // Store both sections
@@ -591,28 +594,28 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           kind: 'section' as const,
           scope: {
             project: 'test-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             title: 'Main Branch Documentation',
             body_text: 'Stable documentation',
-            heading: 'Main Branch'
+            heading: 'Main Branch',
           },
-          content: 'Section in main branch'
+          content: 'Section in main branch',
         },
         {
           kind: 'section' as const,
           scope: {
             project: 'test-project',
-            branch: 'develop'
+            branch: 'develop',
           },
           data: {
             title: 'Development Documentation',
             body_text: 'Work in progress',
-            heading: 'Development'
+            heading: 'Development',
           },
-          content: 'Section in develop branch'
-        }
+          content: 'Section in develop branch',
+        },
       ];
 
       await db.storeItems(sections);
@@ -629,9 +632,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'API Endpoint: /api/v1/users/{userId}',
             body_text: 'Handles user operations with special characters: !@#$%^&*()',
-            heading: 'API Reference'
+            heading: 'API Reference',
           },
-          content: 'Section with special characters'
+          content: 'Section with special characters',
         },
         {
           kind: 'section' as const,
@@ -639,14 +642,14 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
           data: {
             title: 'Multi-language Section: English, 中文, 日本語, Español',
             body_text: 'Content in multiple languages with Unicode support',
-            heading: 'Internationalization'
+            heading: 'Internationalization',
           },
-          content: 'Section with Unicode content'
-        }
+          content: 'Section with Unicode content',
+        },
       ];
 
-      const results = sections.map(section => SectionSchema.safeParse(section));
-      results.forEach(result => {
+      const results = sections.map((section) => SectionSchema.safeParse(section));
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
     });
@@ -659,9 +662,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'Long Section Content',
           body_text: longBodyText,
-          heading: 'Long Content Example'
+          heading: 'Long Content Example',
         },
-        content: `Section with ${longBodyText.length} characters`
+        content: `Section with ${longBodyText.length} characters`,
       };
 
       const result = SectionSchema.safeParse(section);
@@ -678,9 +681,9 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'Test Section',
           body_text: 'Test content',
-          heading: 'Test heading'
+          heading: 'Test heading',
         },
-        content: 'Test section'
+        content: 'Test section',
       };
 
       // Mock upsert to throw an error
@@ -700,22 +703,22 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         kind: 'section' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           title: 'System Architecture',
           body_md: '# Architecture Overview\n\nDetailed system architecture documentation.',
           heading: 'Architecture',
           document_id: 'doc-architecture',
-          citation_count: 12
+          citation_count: 12,
         },
         tags: { documentation: true, architecture: true, reviewed: true },
         source: {
           actor: 'senior-architect',
           tool: 'documentation-platform',
-          timestamp: '2025-01-01T00:00:00Z'
+          timestamp: '2025-01-01T00:00:00Z',
         },
-        ttl_policy: 'long' as const
+        ttl_policy: 'long' as const,
       };
 
       const result = validateKnowledgeItem(section);
@@ -733,10 +736,10 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         data: {
           title: 'Temporary Documentation',
           body_text: 'Temporary section content',
-          heading: 'Temporary'
+          heading: 'Temporary',
         },
         ttl_policy: 'short' as const,
-        content: 'Temporary section with short TTL'
+        content: 'Temporary section with short TTL',
       };
 
       const result = await db.storeItems([section]);

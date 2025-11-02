@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { KnowledgeItem } from '../../../types/core-interfaces';
-import { ValidatorRegistry, type BusinessValidator } from '../../src/services/validation/validator-registry';
+import {
+  ValidatorRegistry,
+  type BusinessValidator,
+} from '../../src/services/validation/validator-registry';
 
 describe('ValidatorRegistry', () => {
   let validatorRegistry: ValidatorRegistry;

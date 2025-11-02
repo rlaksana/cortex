@@ -50,10 +50,11 @@ export class TestValidator {
         const hasMocks = content.includes('vi.fn(') || content.includes('vi.mock(');
         const hasBeforeEach = content.includes('beforeEach(');
         const hasAfterEach = content.includes('afterEach(');
-        const hasCleanup = content.includes('vi.clearAllMocks()') ||
-                          content.includes('vi.restoreAllMocks()') ||
-                          content.includes('MockManager') ||
-                          content.includes('StandardTestUtils.cleanupTestEnvironment');
+        const hasCleanup =
+          content.includes('vi.clearAllMocks()') ||
+          content.includes('vi.restoreAllMocks()') ||
+          content.includes('MockManager') ||
+          content.includes('StandardTestUtils.cleanupTestEnvironment');
 
         if (hasMocks && !hasCleanup) {
           result.valid = false;
@@ -65,7 +66,7 @@ export class TestValidator {
         }
 
         return result;
-      }
+      },
     },
 
     // Standardized setup validation
@@ -76,20 +77,24 @@ export class TestValidator {
       validate: (content: string) => {
         const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
 
-        const hasStandardImport = content.includes('StandardTestUtils') ||
-                                content.includes('TestPatterns') ||
-                                content.includes('MockManager');
+        const hasStandardImport =
+          content.includes('StandardTestUtils') ||
+          content.includes('TestPatterns') ||
+          content.includes('MockManager');
 
-        const hasOldPattern = content.includes('beforeEach(() => {') &&
-                           !content.includes('TestPatterns') &&
-                           !content.includes('StandardTestUtils');
+        const hasOldPattern =
+          content.includes('beforeEach(() => {') &&
+          !content.includes('TestPatterns') &&
+          !content.includes('StandardTestUtils');
 
         if (!hasStandardImport && hasOldPattern) {
-          result.suggestions.push('Consider using standardized test patterns from framework/standard-test-setup.ts');
+          result.suggestions.push(
+            'Consider using standardized test patterns from framework/standard-test-setup.ts'
+          );
         }
 
         return result;
-      }
+      },
     },
 
     // Test isolation validation
@@ -116,7 +121,7 @@ export class TestValidator {
         }
 
         return result;
-      }
+      },
     },
 
     // Async/await validation
@@ -136,13 +141,15 @@ export class TestValidator {
         if (asyncBlocks) {
           asyncBlocks.forEach((block, index) => {
             if (!block.includes('await ') && !block.includes('return ')) {
-              result.errors.push(`Async test block ${index + 1} should use await or return a promise`);
+              result.errors.push(
+                `Async test block ${index + 1} should use await or return a promise`
+              );
             }
           });
         }
 
         return result;
-      }
+      },
     },
 
     // Mock validation
@@ -169,16 +176,18 @@ export class TestValidator {
         // Check for proper mock naming
         const mockAssignments = content.match(/(?:const|let|var)\s+(\w+)\s*=\s*vi\.fn/g);
         if (mockAssignments) {
-          mockAssignments.forEach(assignment => {
+          mockAssignments.forEach((assignment) => {
             const match = assignment.match(/(?:const|let|var)\s+(\w+)/);
             if (match && !match[1].includes('mock') && !match[1].includes('Mock')) {
-              result.suggestions.push(`Consider prefixing mock variable names with 'mock': ${match[1]} -> mock${match[1].charAt(0).toUpperCase() + match[1].slice(1)}`);
+              result.suggestions.push(
+                `Consider prefixing mock variable names with 'mock': ${match[1]} -> mock${match[1].charAt(0).toUpperCase() + match[1].slice(1)}`
+              );
             }
           });
         }
 
         return result;
-      }
+      },
     },
 
     // Error handling validation
@@ -190,17 +199,18 @@ export class TestValidator {
         const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
 
         const hasTestBlocks = content.match(/(?:it|test)\s*\(\s*['"][^'"]*['"]/g);
-        const hasErrorTests = content.includes('toThrow') ||
-                            content.includes('rejects') ||
-                            content.includes('catch') ||
-                            content.includes('error');
+        const hasErrorTests =
+          content.includes('toThrow') ||
+          content.includes('rejects') ||
+          content.includes('catch') ||
+          content.includes('error');
 
         if (hasTestBlocks && hasTestBlocks.length > 3 && !hasErrorTests) {
           result.suggestions.push('Consider adding error case tests for better coverage');
         }
 
         return result;
-      }
+      },
     },
 
     // Performance test validation
@@ -211,14 +221,16 @@ export class TestValidator {
       validate: (content: string) => {
         const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
 
-        const isPerformanceTest = content.includes('performance') ||
-                                 content.includes('Performance') ||
-                                 content.includes('measurePerformance');
+        const isPerformanceTest =
+          content.includes('performance') ||
+          content.includes('Performance') ||
+          content.includes('measurePerformance');
 
         if (isPerformanceTest) {
-          const hasThreshold = content.includes('expect.*toBeLessThan') ||
-                             content.includes('maxDuration') ||
-                             content.includes('timeout');
+          const hasThreshold =
+            content.includes('expect.*toBeLessThan') ||
+            content.includes('maxDuration') ||
+            content.includes('timeout');
 
           if (!hasThreshold) {
             result.warnings.push('Performance tests should include duration thresholds');
@@ -226,8 +238,8 @@ export class TestValidator {
         }
 
         return result;
-      }
-    }
+      },
+    },
   ];
 
   /**
@@ -239,14 +251,19 @@ export class TestValidator {
         valid: false,
         errors: [`File not found: ${filePath}`],
         warnings: [],
-        suggestions: []
+        suggestions: [],
       };
     }
 
     const content = readFileSync(filePath, 'utf-8');
-    const combinedResult: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
+    const combinedResult: ValidationResult = {
+      valid: true,
+      errors: [],
+      warnings: [],
+      suggestions: [],
+    };
 
-    this.rules.forEach(rule => {
+    this.rules.forEach((rule) => {
       const result = rule.validate(content, filePath);
 
       if (!result.valid) {
@@ -267,7 +284,7 @@ export class TestValidator {
   static validateFiles(filePaths: string[]): { [filePath: string]: ValidationResult } {
     const results: { [filePath: string]: ValidationResult } = {};
 
-    filePaths.forEach(filePath => {
+    filePaths.forEach((filePath) => {
       results[filePath] = this.validateFile(filePath);
     });
 
@@ -310,9 +327,10 @@ export class TestMetrics {
       mockCount: (content.match(/vi\.fn|vi\.mock/g) || []).length,
       hasGlobalSetup: content.includes('beforeAll('),
       hasGlobalCleanup: content.includes('afterAll('),
-      usesStandardizedSetup: content.includes('StandardTestUtils') ||
-                            content.includes('TestPatterns') ||
-                            content.includes('MockManager'),
+      usesStandardizedSetup:
+        content.includes('StandardTestUtils') ||
+        content.includes('TestPatterns') ||
+        content.includes('MockManager'),
     };
   }
 
@@ -328,16 +346,18 @@ export class TestMetrics {
     filesWithMocks: number;
     filesWithProperCleanup: number;
   } {
-    const metrics = filePaths.map(path => this.calculateMetrics(path));
+    const metrics = filePaths.map((path) => this.calculateMetrics(path));
 
     return {
       totalFiles: metrics.length,
       totalTests: metrics.reduce((sum, m) => sum + m.testCount, 0),
       totalLines: metrics.reduce((sum, m) => sum + m.lines, 0),
-      averageTestsPerFile: metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.testCount, 0) / metrics.length : 0,
-      filesWithStandardizedSetup: metrics.filter(m => m.usesStandardizedSetup).length,
-      filesWithMocks: metrics.filter(m => m.mockCount > 0).length,
-      filesWithProperCleanup: metrics.filter(m => m.afterEachCount > 0 || m.hasGlobalCleanup).length,
+      averageTestsPerFile:
+        metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.testCount, 0) / metrics.length : 0,
+      filesWithStandardizedSetup: metrics.filter((m) => m.usesStandardizedSetup).length,
+      filesWithMocks: metrics.filter((m) => m.mockCount > 0).length,
+      filesWithProperCleanup: metrics.filter((m) => m.afterEachCount > 0 || m.hasGlobalCleanup)
+        .length,
     };
   }
 }
@@ -391,7 +411,9 @@ export const TestLintingRules = {
     const result: ValidationResult = { valid: true, errors: [], warnings: [], suggestions: [] };
 
     // Check for async functions without proper handling
-    const asyncTestBlocks = content.match(/(?:it|test)\s*\(\s*['"][^'"]*['"]\s*,\s*async\s*\([^)]*\)\s*=>\s*{([^}]*)}/g);
+    const asyncTestBlocks = content.match(
+      /(?:it|test)\s*\(\s*['"][^'"]*['"]\s*,\s*async\s*\([^)]*\)\s*=>\s*{([^}]*)}/g
+    );
 
     if (asyncTestBlocks) {
       asyncTestBlocks.forEach((block, index) => {
@@ -415,7 +437,7 @@ export class ValidationReporter {
    */
   static generateReport(results: { [filePath: string]: ValidationResult }): string {
     let report = '\n📋 Test Validation Report\n';
-    report += '=' .repeat(50) + '\n\n';
+    report += '='.repeat(50) + '\n\n';
 
     let totalErrors = 0;
     let totalWarnings = 0;
@@ -427,21 +449,21 @@ export class ValidationReporter {
 
       if (result.errors.length > 0) {
         totalErrors += result.errors.length;
-        result.errors.forEach(error => {
+        result.errors.forEach((error) => {
           report += `  ❌ Error: ${error}\n`;
         });
       }
 
       if (result.warnings.length > 0) {
         totalWarnings += result.warnings.length;
-        result.warnings.forEach(warning => {
+        result.warnings.forEach((warning) => {
           report += `  ⚠️  Warning: ${warning}\n`;
         });
       }
 
       if (result.suggestions.length > 0) {
         totalSuggestions += result.suggestions.length;
-        result.suggestions.forEach(suggestion => {
+        result.suggestions.forEach((suggestion) => {
           report += `  💡 Suggestion: ${suggestion}\n`;
         });
       }
@@ -449,7 +471,7 @@ export class ValidationReporter {
       report += '\n';
     });
 
-    report += '=' .repeat(50) + '\n';
+    report += '='.repeat(50) + '\n';
     report += `Summary: ${totalErrors} errors, ${totalWarnings} warnings, ${totalSuggestions} suggestions\n`;
 
     return report;

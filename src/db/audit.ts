@@ -102,7 +102,10 @@ class AuditLogger {
 
       return config;
     } catch (error) {
-      logger.warn({ error }, 'Failed to get Qdrant config from key vault, using environment fallback');
+      logger.warn(
+        { error },
+        'Failed to get Qdrant config from key vault, using environment fallback'
+      );
 
       // Fallback to environment variables
       const config: any = {

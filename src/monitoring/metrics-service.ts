@@ -57,14 +57,17 @@ export interface RealTimeMetrics {
  */
 export interface HistoricalMetrics {
   time_window_minutes: number;
-  operation_metrics: Record<string, {
-    count: number;
-    average_latency: number;
-    p95_latency: number;
-    p99_latency: number;
-    error_rate: number;
-    qps: number;
-  }>;
+  operation_metrics: Record<
+    string,
+    {
+      count: number;
+      average_latency: number;
+      p95_latency: number;
+      p99_latency: number;
+      error_rate: number;
+      qps: number;
+    }
+  >;
   quality_metrics: {
     dedupe_rate: number;
     ttl_deleted_rate: number;
@@ -288,11 +291,15 @@ export class MetricsService extends EventEmitter {
         return this.exportCsvMetrics(realTimeMetrics, historicalMetrics);
       case 'json':
       default:
-        return JSON.stringify({
-          real_time: realTimeMetrics,
-          historical: historicalMetrics,
-          timestamp: Date.now(),
-        }, null, 2);
+        return JSON.stringify(
+          {
+            real_time: realTimeMetrics,
+            historical: historicalMetrics,
+            timestamp: Date.now(),
+          },
+          null,
+          2
+        );
     }
   }
 
@@ -336,7 +343,7 @@ export class MetricsService extends EventEmitter {
 
     // Error rate alerts
     const storeSummary = performanceCollector.getSummary('memory_store');
-    const errorRate = storeSummary ? (100 - storeSummary.successRate) : 0;
+    const errorRate = storeSummary ? 100 - storeSummary.successRate : 0;
     if (errorRate > this.config.alert_thresholds.error_rate_threshold) {
       alerts.push({
         type: 'high_error_rate',
@@ -412,18 +419,14 @@ export class MetricsService extends EventEmitter {
 
       // Keep only entries within the window
       const cutoff = now - this.config.qps_window_seconds * 1000;
-      const index = tracker.findIndex(timestamp => timestamp > cutoff);
+      const index = tracker.findIndex((timestamp) => timestamp > cutoff);
       if (index > 0) {
         tracker.splice(0, index);
       }
     }
   }
 
-  private trackQualityMetrics(
-    operation: OperationType,
-    metadata: any,
-    success: boolean
-  ): void {
+  private trackQualityMetrics(operation: OperationType, metadata: any, success: boolean): void {
     // Track deduplication rate
     if (metadata.duplicates_found !== undefined) {
       const tracker = this.qualityMetrics.get('dedupe_rate')!;
@@ -453,7 +456,7 @@ export class MetricsService extends EventEmitter {
     const tracker = this.qpsTrackers.get(operation);
     if (!tracker) return 0;
 
-    const recentTimestamps = tracker.filter(timestamp => timestamp > windowStart);
+    const recentTimestamps = tracker.filter((timestamp) => timestamp > windowStart);
     const windowSeconds = this.config.qps_window_seconds;
     return recentTimestamps.length / windowSeconds;
   }
@@ -465,7 +468,7 @@ export class MetricsService extends EventEmitter {
     // Calculate rate based on recent entries
     const recent = tracker.slice(-100); // Last 100 entries
     if (metricName === 'cache_hit_rate') {
-      return recent.filter(Boolean).length / recent.length * 100;
+      return (recent.filter(Boolean).length / recent.length) * 100;
     }
 
     // For other metrics, calculate average
@@ -502,7 +505,8 @@ export class MetricsService extends EventEmitter {
       this.metricsHistory.push(metrics);
 
       // Keep only recent history
-      const maxHistory = (this.config.retention_hours * 60 * 60) / this.config.export_interval_seconds;
+      const maxHistory =
+        (this.config.retention_hours * 60 * 60) / this.config.export_interval_seconds;
       if (this.metricsHistory.length > maxHistory) {
         this.metricsHistory = this.metricsHistory.slice(-Math.floor(maxHistory));
       }
@@ -511,7 +515,10 @@ export class MetricsService extends EventEmitter {
     }, this.config.export_interval_seconds * 1000);
   }
 
-  private exportPrometheusMetrics(realTime: RealTimeMetrics, _historical: HistoricalMetrics): string {
+  private exportPrometheusMetrics(
+    realTime: RealTimeMetrics,
+    _historical: HistoricalMetrics
+  ): string {
     let output = '';
 
     // QPS metrics

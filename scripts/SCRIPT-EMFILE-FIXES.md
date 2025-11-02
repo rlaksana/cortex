@@ -48,6 +48,7 @@ The EMFILE prevention suite includes:
 **Requirements**: Administrator privileges
 
 **Key Features**:
+
 - Increases system-wide handle limits from default to optimized values
 - Configures Windows 10/11 specific optimizations
 - Creates automatic registry backups before making changes
@@ -55,11 +56,13 @@ The EMFILE prevention suite includes:
 - Supports -WhatIf mode for safe testing
 
 **Parameters**:
+
 - `-Force`: Apply optimizations even if current limits appear adequate
 - `-SkipRestart`: Skip system restart requirement notification
 - `-WhatIf`: Show what changes would be made without applying them
 
 **Example Usage**:
+
 ```powershell
 # Standard application
 .\scripts\increase-handles.ps1
@@ -72,6 +75,7 @@ The EMFILE prevention suite includes:
 ```
 
 **What it Changes**:
+
 - System-wide handle limits: 262,144 handles
 - User handle limits: 131,072 handles
 - Long path support: Enabled
@@ -85,6 +89,7 @@ The EMFILE prevention suite includes:
 **Requirements**: Administrator privileges for system-wide changes
 
 **Key Features**:
+
 - Sets up environment variables for EMFILE prevention
 - Configures PowerShell profiles with test shortcuts
 - Optimizes Node.js settings for development
@@ -92,12 +97,14 @@ The EMFILE prevention suite includes:
 - Configures Windows performance settings for testing
 
 **Parameters**:
+
 - `-Force`: Overwrite existing configurations
 - `-SkipNodeCheck`: Skip Node.js version validation
 - `-ValidateAfterSetup`: Run validation after setup
 - `-ProjectRoot`: Specify project root directory (default: current directory)
 
 **Example Usage**:
+
 ```powershell
 # Standard setup
 .\scripts\setup-test-environment.ps1
@@ -110,6 +117,7 @@ The EMFILE prevention suite includes:
 ```
 
 **Environment Variables Set**:
+
 - `EMFILE_HANDLES_LIMIT=131072`
 - `UV_THREADPOOL_SIZE=16`
 - `NODE_OPTIONS=--max-old-space-size=4096 --max-semi-space-size=256 --optimize-for-size --gc-interval=100`
@@ -123,6 +131,7 @@ The EMFILE prevention suite includes:
 **Requirements**: User-level privileges (optional admin for registry access)
 
 **Key Features**:
+
 - Analyzes current system handle usage
 - Validates registry settings
 - Checks environment variable configuration
@@ -132,12 +141,14 @@ The EMFILE prevention suite includes:
 - Can fix common issues automatically
 
 **Parameters**:
+
 - `-Detailed`: Show detailed analysis and top processes
 - `-Benchmark`: Run performance benchmarks
 - `-FixIssues`: Automatically fix common configuration issues
 - `-ProjectRoot`: Specify project root directory (default: current directory)
 
 **Example Usage**:
+
 ```powershell
 # Quick validation
 .\scripts\validate-emfile-fixes.ps1
@@ -150,6 +161,7 @@ The EMFILE prevention suite includes:
 ```
 
 **Validation Checks**:
+
 - System handle usage analysis
 - Registry settings verification
 - Environment variable validation
@@ -160,34 +172,35 @@ The EMFILE prevention suite includes:
 
 ### EMFILE Prevention Variables
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `EMFILE_HANDLES_LIMIT` | `131072` | Maximum handles for Node.js processes |
-| `UV_THREADPOOL_SIZE` | `16` | Node.js libuv thread pool size |
-| `NODE_OPTIONS` | Optimized flags | Node.js runtime optimizations |
+| Variable               | Value           | Purpose                               |
+| ---------------------- | --------------- | ------------------------------------- |
+| `EMFILE_HANDLES_LIMIT` | `131072`        | Maximum handles for Node.js processes |
+| `UV_THREADPOOL_SIZE`   | `16`            | Node.js libuv thread pool size        |
+| `NODE_OPTIONS`         | Optimized flags | Node.js runtime optimizations         |
 
 ### Test Environment Variables
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
+| Variable       | Value   | Purpose                      |
+| -------------- | ------- | ---------------------------- |
 | `TEST_TIMEOUT` | `30000` | Test timeout in milliseconds |
-| `TEST_WORKERS` | `4` | Number of test workers |
-| `NODE_ENV` | `test` | Test environment indicator |
-| `LOG_LEVEL` | `error` | Minimum log level for tests |
+| `TEST_WORKERS` | `4`     | Number of test workers       |
+| `NODE_ENV`     | `test`  | Test environment indicator   |
+| `LOG_LEVEL`    | `error` | Minimum log level for tests  |
 
 ### Windows-Specific Variables
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `FORCE_COLOR` | `1` | Force colored output |
-| `NO_COLOR` | `0` | Don't disable colors |
-| `DEBUG` | `test:*` | Debug test-related modules |
+| Variable      | Value    | Purpose                    |
+| ------------- | -------- | -------------------------- |
+| `FORCE_COLOR` | `1`      | Force colored output       |
+| `NO_COLOR`    | `0`      | Don't disable colors       |
+| `DEBUG`       | `test:*` | Debug test-related modules |
 
 ## Registry Changes
 
 The scripts modify the following registry keys:
 
 ### System-Wide Handle Limits
+
 ```
 HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem
 - MaxUserHandles = 131072
@@ -196,6 +209,7 @@ HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem
 ```
 
 ### Memory Management
+
 ```
 HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management
 - LargeSystemCache = 1
@@ -204,6 +218,7 @@ HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management
 ```
 
 ### Performance Optimizations
+
 ```
 HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl
 - Win32PrioritySeparation = 38
@@ -242,18 +257,21 @@ After applying fixes, monitor the following metrics:
 ### Validation Scenarios
 
 **Healthy System Indicators**:
+
 - Total handle usage < 80% of limits
 - No Node.js processes with > 2000 handles
 - Test suite completes without EMFILE errors
 - Performance benchmarks pass within expected timeframes
 
 **Warning Indicators**:
+
 - Handle usage > 80% of limits
 - Individual processes with > 2000 handles
 - Intermittent EMFILE errors
 - Slow performance benchmarks
 
 **Critical Indicators**:
+
 - Handle usage > 90% of limits
 - Frequent EMFILE errors
 - System instability

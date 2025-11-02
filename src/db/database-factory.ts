@@ -415,7 +415,8 @@ export class DatabaseFactory implements IDatabaseFactory {
 
     // Validate OpenAI configuration (required for embeddings)
     // Check if OpenAI API key is available in environment or key vault
-    const hasOpenAIKey = process.env.OPENAI_API_KEY || await checkKeyVaultForKey('openai_api_key');
+    const hasOpenAIKey =
+      process.env.OPENAI_API_KEY || (await checkKeyVaultForKey('openai_api_key'));
     if (!hasOpenAIKey) {
       errors.push(
         'OpenAI API key is required for Qdrant vector operations (set OPENAI_API_KEY or configure in key vault)'

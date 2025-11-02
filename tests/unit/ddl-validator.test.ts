@@ -46,9 +46,7 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'DDL requires checksum verification'
-      );
+      expect(result.errors).toContain('DDL requires checksum verification');
     });
 
     it('should ACCEPT DDL with valid checksum when checksum is required', async () => {
@@ -84,10 +82,10 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
       const ddlNoChecksumRequired: KnowledgeItem = {
         id: 'ddl-789',
         kind: 'ddl',
-        content: 'COMMENT ON TABLE users IS \'User accounts table\';',
+        content: "COMMENT ON TABLE users IS 'User accounts table';",
         data: {
           title: 'Add comment to users table',
-          sql: 'COMMENT ON TABLE users IS \'User accounts table\';',
+          sql: "COMMENT ON TABLE users IS 'User accounts table';",
           database: 'production_db',
           migration_id: '003_comment_users_table',
           checksum_required: false, // Checksum not required
@@ -176,7 +174,8 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
       const uniqueMigrationDDL: KnowledgeItem = {
         id: 'ddl-unique',
         kind: 'ddl',
-        content: 'CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id));',
+        content:
+          'CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id));',
         data: {
           title: 'Create orders table',
           sql: 'CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id));',
@@ -288,9 +287,7 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
       // Assert: Should pass with warning
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(result.warnings).toContain(
-        'Destructive migrations should require backup'
-      );
+      expect(result.warnings).toContain('Destructive migrations should require backup');
     });
 
     it('should REJECT DDL with rollback requirement but no rollback SQL', async () => {
@@ -298,10 +295,10 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
       const ddlWithRollbackRequirement: KnowledgeItem = {
         id: 'ddl-rollback-required',
         kind: 'ddl',
-        content: 'DELETE FROM users WHERE created_at < \'2023-01-01\';',
+        content: "DELETE FROM users WHERE created_at < '2023-01-01';",
         data: {
           title: 'Delete old user data',
-          sql: 'DELETE FROM users WHERE created_at < \'2023-01-01\';',
+          sql: "DELETE FROM users WHERE created_at < '2023-01-01';",
           database: 'production_db',
           migration_id: '010_delete_old_users',
           checksum_required: true,
@@ -320,9 +317,7 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
 
       // Assert: Should fail validation
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain(
-        'DDL requires rollback SQL when rollback is required'
-      );
+      expect(result.errors).toContain('DDL requires rollback SQL when rollback is required');
     });
 
     it('should ACCEPT DDL with proper rollback SQL when rollback is required', async () => {
@@ -330,16 +325,16 @@ describe('DDLValidator - P5-T5.1 Business Rules', () => {
       const ddlWithRollback: KnowledgeItem = {
         id: 'ddl-with-rollback',
         kind: 'ddl',
-        content: 'UPDATE users SET status = \'inactive\' WHERE last_login < \'2023-01-01\';',
+        content: "UPDATE users SET status = 'inactive' WHERE last_login < '2023-01-01';",
         data: {
           title: 'Deactivate old users',
-          sql: 'UPDATE users SET status = \'inactive\' WHERE last_login < \'2023-01-01\';',
+          sql: "UPDATE users SET status = 'inactive' WHERE last_login < '2023-01-01';",
           database: 'production_db',
           migration_id: '011_deactivate_old_users',
           checksum_required: true,
           checksum: 'sha256:rollback1234567890abcdef1234567890abcdef',
           rollback_required: true,
-          rollback_sql: 'UPDATE users SET status = \'active\' WHERE last_login < \'2023-01-01\';', // Proper rollback
+          rollback_sql: "UPDATE users SET status = 'active' WHERE last_login < '2023-01-01';", // Proper rollback
         },
         metadata: { created_at: '2024-01-20T20:00:00Z' },
         scope: { project: 'test-project' },

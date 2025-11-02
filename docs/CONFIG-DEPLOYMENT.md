@@ -49,15 +49,15 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
-      - "9229:9229"  # Node.js debugger
+      - '3000:3000'
+      - '9229:9229' # Node.js debugger
     environment:
       - NODE_ENV=development
       - QDRANT_URL=http://qdrant:6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEBUG=cortex:*
       - HOT_RELOAD=true
-      - # NO DATABASE_URL NEEDED - QDRANT ONLY!
+      -  # NO DATABASE_URL NEEDED - QDRANT ONLY!
     volumes:
       - .:/app
       - /app/node_modules
@@ -71,8 +71,8 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.7.0
     ports:
-      - "6333:6333"  # HTTP API
-      - "6334:6334"  # gRPC API
+      - '6333:6333' # HTTP API
+      - '6334:6334' # gRPC API
     environment:
       - QDRANT__SERVICE__HTTP_PORT=6333
       - QDRANT__SERVICE__GRPC_PORT=6334
@@ -80,7 +80,7 @@ services:
     volumes:
       - qdrant_dev_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
+      test: ['CMD-SHELL', 'curl -f http://localhost:6333/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -121,14 +121,14 @@ services:
       - ENABLE_METRICS=true
       - LOG_LEVEL=warn
       - API_KEY_ENABLED=true
-      - # NO DATABASE_URL - QDRANT ONLY!
+      -  # NO DATABASE_URL - QDRANT ONLY!
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       qdrant:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -154,7 +154,7 @@ services:
     volumes:
       - qdrant_prod_data:/qdrant/storage
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
+      test: ['CMD-SHELL', 'curl -f http://localhost:6333/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -163,8 +163,8 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/ssl:/etc/nginx/ssl
@@ -282,15 +282,15 @@ metadata:
   name: cortex-config
   namespace: cortex-mcp
 data:
-  NODE_ENV: "production"
-  LOG_LEVEL: "warn"
-  DB_POOL_SIZE: "20"
-  ENABLE_CACHE: "true"
-  ENABLE_METRICS: "true"
-  SEARCH_LIMIT: "50"
-  SIMILARITY_THRESHOLD: "0.7"
-  API_KEY_ENABLED: "true"
-  RATE_LIMIT_ENABLED: "true"
+  NODE_ENV: 'production'
+  LOG_LEVEL: 'warn'
+  DB_POOL_SIZE: '20'
+  ENABLE_CACHE: 'true'
+  ENABLE_METRICS: 'true'
+  SEARCH_LIMIT: '50'
+  SIMILARITY_THRESHOLD: '0.7'
+  API_KEY_ENABLED: 'true'
+  RATE_LIMIT_ENABLED: 'true'
 
 ---
 # k8s/secrets.yaml
@@ -329,67 +329,67 @@ spec:
         app: cortex-mcp
     spec:
       containers:
-      - name: cortex-mcp
-        image: your-registry/cortex-memory-mcp:latest
-        ports:
-        - containerPort: 3000
-          name: http
-        - containerPort: 9090
-          name: metrics
-        envFrom:
-        - configMapRef:
-            name: cortex-config
-        - secretRef:
-            name: cortex-secrets
-        resources:
-          requests:
-            cpu: 1000m
-            memory: 1Gi
-          limits:
-            cpu: 2000m
-            memory: 2Gi
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        startupProbe:
-          httpGet:
-            path: /startup
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 30
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 1001
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-            - ALL
-        volumeMounts:
-        - name: tmp
-          mountPath: /tmp
-        - name: logs
-          mountPath: /app/logs
+        - name: cortex-mcp
+          image: your-registry/cortex-memory-mcp:latest
+          ports:
+            - containerPort: 3000
+              name: http
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: cortex-config
+            - secretRef:
+                name: cortex-secrets
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
       volumes:
-      - name: tmp
-        emptyDir: {}
-      - name: logs
-        emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
       securityContext:
         fsGroup: 1001
 ```
@@ -408,14 +408,14 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 80
-    targetPort: 3000
-    protocol: TCP
-    name: http
-  - port: 9090
-    targetPort: 9090
-    protocol: TCP
-    name: metrics
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
   selector:
     app: cortex-mcp
 
@@ -429,25 +429,25 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/rate-limit: "100"
-    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/rate-limit: '100'
+    nginx.ingress.kubernetes.io/rate-limit-window: '1m'
 spec:
   tls:
-  - hosts:
-    - api.cortex-memory.com
-    secretName: cortex-mcp-tls
+    - hosts:
+        - api.cortex-memory.com
+      secretName: cortex-mcp-tls
   rules:
-  - host: api.cortex-memory.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: cortex-mcp-service
-            port:
-              number: 80
+    - host: api.cortex-memory.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cortex-mcp-service
+                port:
+                  number: 80
 ```
 
 ### 4. Horizontal Pod Autoscaler
@@ -467,34 +467,34 @@ spec:
   minReplicas: 3
   maxReplicas: 10
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300
       policies:
-      - type: Percent
-        value: 10
-        periodSeconds: 60
+        - type: Percent
+          value: 10
+          periodSeconds: 60
     scaleUp:
       stabilizationWindowSeconds: 0
       policies:
-      - type: Percent
-        value: 50
-        periodSeconds: 60
-      - type: Pods
-        value: 2
-        periodSeconds: 60
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
       selectPolicy: Max
 ```
 
@@ -652,46 +652,46 @@ spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/cpu-throttling: "false"
-        run.googleapis.com/memory: "2Gi"
-        run.googleapis.com/cpu: "1000m"
-        autoscaling.knative.dev/maxScale: "10"
-        autoscaling.knative.dev/minScale: "3"
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/memory: '2Gi'
+        run.googleapis.com/cpu: '1000m'
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '3'
     spec:
       containerConcurrency: 100
       timeoutSeconds: 300
       containers:
-      - image: gcr.io/project-id/cortex-mcp:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: OPENAI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: cortex-secrets
-              key: OPENAI_API_KEY
-        # NO DATABASE_URL ENVIRONMENT VARIABLE - QDRANT ONLY
-        resources:
-          limits:
-            cpu: 2000m
-            memory: 2Gi
-          requests:
-            cpu: 1000m
-            memory: 1Gi
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - image: gcr.io/project-id/cortex-mcp:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cortex-secrets
+                  key: OPENAI_API_KEY
+          # NO DATABASE_URL ENVIRONMENT VARIABLE - QDRANT ONLY
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ```
 
 ## Monitoring and Observability
@@ -705,7 +705,7 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  - "cortex-rules.yml"
+  - 'cortex-rules.yml'
 
 scrape_configs:
   - job_name: 'cortex-mcp'
@@ -727,7 +727,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - alertmanager:9093
+            - alertmanager:9093
 ```
 
 ### 2. Grafana Dashboard
@@ -787,43 +787,43 @@ alerting:
 ```yaml
 # monitoring/cortex-rules.yml
 groups:
-- name: cortex-mcp.rules
-  rules:
-  - alert: HighErrorRate
-    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
-    for: 5m
-    labels:
-      severity: critical
-    annotations:
-      summary: "High error rate detected"
-      description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+  - name: cortex-mcp.rules
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'High error rate detected'
+          description: 'Error rate is {{ $value | humanizePercentage }} for the last 5 minutes'
 
-  - alert: HighResponseTime
-    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High response time detected"
-      description: "95th percentile response time is {{ $value }}s"
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High response time detected'
+          description: '95th percentile response time is {{ $value }}s'
 
-  - alert: DatabaseConnectionHigh
-    expr: pg_stat_activity_count > 80
-    for: 2m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High database connection count"
-      description: "Database has {{ $value }} active connections"
+      - alert: DatabaseConnectionHigh
+        expr: pg_stat_activity_count > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'High database connection count'
+          description: 'Database has {{ $value }} active connections'
 
-  - alert: PodCrashLooping
-    expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
-    for: 5m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Pod is crash looping"
-      description: "Pod {{ $labels.pod }} is restarting frequently"
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'Pod is crash looping'
+          description: 'Pod {{ $labels.pod }} is restarting frequently'
 ```
 
 ## Deployment Scripts
@@ -1007,31 +1007,31 @@ spec:
     matchLabels:
       app: cortex-mcp
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    ports:
-    - protocol: TCP
-      port: 3000
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
   egress:
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: cortex-mcp
-    ports:
-    - protocol: TCP
-      port: 6333  # Qdrant
-    # NO POSTGRESQL - QDRANT ONLY
-  - to: []
-    ports:
-    - protocol: TCP
-      port: 443   # HTTPS for external APIs
-    - protocol: TCP
-      port: 53    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: cortex-mcp
+      ports:
+        - protocol: TCP
+          port: 6333 # Qdrant
+      # NO POSTGRESQL - QDRANT ONLY
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443 # HTTPS for external APIs
+        - protocol: TCP
+          port: 53 # DNS
 ```
 
 ### 2. Pod Security Policy

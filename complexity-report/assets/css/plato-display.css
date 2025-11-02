@@ -1,4 +1,3 @@
-
 body {
   background: #222222;
   margin: 20px;
@@ -15,14 +14,16 @@ body {
   width: 100%;
   height: 300px;
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   z-index: 0;
 }
 
 .reportContent {
   z-index: 10;
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   width: 100%;
 }
 
@@ -30,7 +31,7 @@ h2.reportTitle {
   position: absolute;
   top: 0;
   left: 0;
-  color: #7F8181;
+  color: #7f8181;
   font-size: 14px;
   font-weight: 200;
   padding: 10px;
@@ -39,12 +40,16 @@ h2.reportTitle {
   letter-spacing: 1px;
 }
 
-.reportBlock.lineCount { background-color: #272727; }
-.reportBlock.maintainability { background-color: #272727; }
+.reportBlock.lineCount {
+  background-color: #272727;
+}
+.reportBlock.maintainability {
+  background-color: #272727;
+}
 .reportBlock.maintainabilityList,
 .reportBlock.locList,
 .reportBlock.lintList {
-  background-color: #2A2A2A;
+  background-color: #2a2a2a;
   margin-top: 15px;
   padding: 20px 5px;
 }
@@ -53,7 +58,7 @@ h2.reportTitle {
   display: block;
   padding-top: 100px;
   text-align: center;
-  color: #7F8181;
+  color: #7f8181;
   font-size: 14px;
   font-weight: 200;
   text-transform: uppercase;

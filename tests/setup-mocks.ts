@@ -6,7 +6,11 @@
  */
 
 import { vi, beforeEach, afterEach } from 'vitest';
-import { createMockTestEnvironment, createMockEnvironment, MockDataGenerators } from './utils/mock-templates';
+import {
+  createMockTestEnvironment,
+  createMockEnvironment,
+  MockDataGenerators,
+} from './utils/mock-templates';
 
 // Set additional test environment variables
 process.env.MOCK_EXTERNAL_SERVICES = 'true';
@@ -30,7 +34,7 @@ global.testUtils = {
     }),
 
   // Helper to wait for async operations in tests
-  waitFor: (ms = 0) => new Promise(resolve => setTimeout(resolve, ms)),
+  waitFor: (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms)),
 
   // Helper to create fake timers for time-dependent tests
   useFakeTimers: () => {
@@ -45,11 +49,10 @@ global.testUtils = {
 
   // Common mock patterns
   mocks: {
-    createSuccessfulQdrantClient: () =>
-      createMockTestEnvironment().qdrantClient,
+    createSuccessfulQdrantClient: () => createMockTestEnvironment().qdrantClient,
     createFailingQdrantClient: (failMethods = ['search']) =>
       createMockTestEnvironment({
-        qdrant: { shouldFail: true, failMethods }
+        qdrant: { shouldFail: true, failMethods },
       }).qdrantClient,
     createMockAuthService: (overrides = {}) =>
       createMockTestEnvironment({ auth: overrides }).authService,
@@ -65,31 +68,35 @@ global.testUtils = {
   // Test helpers for common scenarios
   scenarios: {
     // Successful memory operations
-    successfulMemoryStore: () => createMockTestEnvironment({
-      qdrant: { healthStatus: true },
-      database: { connectionStatus: 'connected' },
-      memoryStore: { shouldFail: false },
-    }),
+    successfulMemoryStore: () =>
+      createMockTestEnvironment({
+        qdrant: { healthStatus: true },
+        database: { connectionStatus: 'connected' },
+        memoryStore: { shouldFail: false },
+      }),
 
     // Failing Qdrant client
-    failingQdrant: (failMethods = ['search', 'upsert']) => createMockTestEnvironment({
-      qdrant: { shouldFail: true, failMethods },
-      database: { connectionStatus: 'error' },
-    }),
+    failingQdrant: (failMethods = ['search', 'upsert']) =>
+      createMockTestEnvironment({
+        qdrant: { shouldFail: true, failMethods },
+        database: { connectionStatus: 'error' },
+      }),
 
     // Authentication failures
-    authFailure: () => createMockTestEnvironment({
-      auth: {
-        shouldFail: true,
-        failOperations: ['validateUserWithDatabase', 'validateApiKeyWithDatabase'],
-      },
-    }),
+    authFailure: () =>
+      createMockTestEnvironment({
+        auth: {
+          shouldFail: true,
+          failOperations: ['validateUserWithDatabase', 'validateApiKeyWithDatabase'],
+        },
+      }),
 
     // Network latency simulation
-    highLatency: (ms = 100) => createMockTestEnvironment({
-      qdrant: { searchResults: [], latency: ms },
-      database: { latency: ms },
-    }),
+    highLatency: (ms = 100) =>
+      createMockTestEnvironment({
+        qdrant: { searchResults: [], latency: ms },
+        database: { latency: ms },
+      }),
   },
 
   // Assertion helpers
@@ -139,10 +146,6 @@ afterEach(() => {
 });
 
 // Export for convenience in test files
-export {
-  createMockEnvironment,
-  createMockTestEnvironment,
-  MockDataGenerators,
-};
+export { createMockEnvironment, createMockTestEnvironment, MockDataGenerators };
 
 export default global.testUtils;

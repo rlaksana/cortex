@@ -22,7 +22,7 @@ import type {
   PredictiveAnalytics,
   AnalyticsReport,
   AnalyticsQuery,
-  AnalyticsFilter
+  AnalyticsFilter,
 } from '../../../src/types/core-interfaces';
 
 // Mock dependencies
@@ -31,80 +31,80 @@ vi.mock('../../../src/utils/logger', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 vi.mock('../../../src/db/qdrant', () => ({
-  getQdrantClient: () => mockQdrantClient
+  getQdrantClient: () => mockQdrantClient,
 }));
 
 // Mock Qdrant client with comprehensive analytics data
 const mockQdrantClient = {
   section: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   adrDecision: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   issueLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   todoLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   runbook: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   changeLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   releaseNote: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   ddlHistory: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   prContext: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   knowledgeEntity: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   knowledgeRelation: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   knowledgeObservation: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   incidentLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   releaseLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   riskLog: {
     findMany: vi.fn(),
-    count: vi.fn()
+    count: vi.fn(),
   },
   assumptionLog: {
     findMany: vi.fn(),
-    count: vi.fn()
-  }
+    count: vi.fn(),
+  },
 };
 
 describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
@@ -147,7 +147,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         incidents: 20,
         releases: 15,
         risks: 40,
-        assumptions: 30
+        assumptions: 30,
       };
 
       // Setup mock counts for each knowledge type
@@ -185,7 +185,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const aggregation = {
         interval: 'day' as const,
         startDate: new Date('2024-01-01'),
-        endDate: new Date('2024-01-07')
+        endDate: new Date('2024-01-07'),
       };
 
       // Mock time-based data
@@ -201,7 +201,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
             kind: 'section',
             data: { title: `Section from ${d.toDateString()}` },
             tags: { project: 'test-project' },
-            created_at: new Date(d)
+            created_at: new Date(d),
           });
         }
 
@@ -224,8 +224,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: { project: 'test-project' },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
-        }
+          endDate: new Date('2024-01-31'),
+        },
       };
 
       const usageAnalytics = await analyticsService.getUsageAnalytics(filter);
@@ -243,14 +243,14 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: {
           project: 'complex-project',
           org: 'test-org',
-          branch: 'main'
+          branch: 'main',
         },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-12-31')
+          endDate: new Date('2024-12-31'),
         },
         types: ['entity', 'relation', 'decision', 'issue'],
-        tags: { category: 'critical', priority: 'high' }
+        tags: { category: 'critical', priority: 'high' },
       };
 
       mockQdrantClient.knowledgeEntity.count.mockResolvedValue(85);
@@ -271,13 +271,13 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
             tags: expect.objectContaining({
               project: 'complex-project',
               org: 'test-org',
-              branch: 'main'
+              branch: 'main',
             }),
             created_at: expect.objectContaining({
               gte: complexFilter.dateRange?.startDate,
-              lte: complexFilter.dateRange?.endDate
-            })
-          })
+              lte: complexFilter.dateRange?.endDate,
+            }),
+          }),
         })
       );
     });
@@ -287,17 +287,18 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         {
           id: 'entity-1',
           data: { title: 'Simple Entity', content: 'Short content' },
-          created_at: new Date('2024-01-01')
+          created_at: new Date('2024-01-01'),
         },
         {
           id: 'entity-2',
           data: {
             title: 'Complex Entity',
-            content: 'This is a much longer and more complex content piece that would be classified as having higher complexity due to its length and structure.',
-            details: { sections: ['intro', 'body', 'conclusion'], complexity: 'high' }
+            content:
+              'This is a much longer and more complex content piece that would be classified as having higher complexity due to its length and structure.',
+            details: { sections: ['intro', 'body', 'conclusion'], complexity: 'high' },
           },
-          created_at: new Date('2024-01-02')
-        }
+          created_at: new Date('2024-01-02'),
+        },
       ]);
 
       const analytics = await analyticsService.getKnowledgeBaseMetrics();
@@ -310,9 +311,13 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should handle knowledge analytics errors gracefully', async () => {
       // Mock database error
-      mockQdrantClient.knowledgeEntity.count.mockRejectedValue(new Error('Database connection failed'));
+      mockQdrantClient.knowledgeEntity.count.mockRejectedValue(
+        new Error('Database connection failed')
+      );
 
-      await expect(analyticsService.getKnowledgeBaseMetrics()).rejects.toThrow('Failed to retrieve knowledge metrics');
+      await expect(analyticsService.getKnowledgeBaseMetrics()).rejects.toThrow(
+        'Failed to retrieve knowledge metrics'
+      );
     });
   });
 
@@ -324,26 +329,26 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
           id: 'rel-1',
           relation_type: 'depends_on',
           source_entity_id: 'entity-1',
-          target_entity_id: 'entity-2'
+          target_entity_id: 'entity-2',
         },
         {
           id: 'rel-2',
           relation_type: 'implements',
           source_entity_id: 'entity-2',
-          target_entity_id: 'entity-3'
+          target_entity_id: 'entity-3',
         },
         {
           id: 'rel-3',
           relation_type: 'relates_to',
           source_entity_id: 'entity-1',
-          target_entity_id: 'entity-3'
+          target_entity_id: 'entity-3',
         },
         {
           id: 'rel-4',
           relation_type: 'depends_on',
           source_entity_id: 'entity-4',
-          target_entity_id: 'entity-1'
-        }
+          target_entity_id: 'entity-1',
+        },
       ];
 
       mockQdrantClient.knowledgeRelation.findMany.mockResolvedValue(mockRelations);
@@ -362,7 +367,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should identify network insights and patterns', async () => {
       const filter: AnalyticsFilter = {
-        scope: { project: 'network-analysis' }
+        scope: { project: 'network-analysis' },
       };
 
       const insights = await analyticsService.getNetworkInsights(filter);
@@ -374,7 +379,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(insights.networkEvolution).toBeInstanceOf(Array);
 
       // Verify key influencers have expected structure
-      insights.keyInfluencers.forEach(influencer => {
+      insights.keyInfluencers.forEach((influencer) => {
         expect(influencer).toHaveProperty('id');
         expect(influencer).toHaveProperty('influenceScore');
         expect(influencer).toHaveProperty('type');
@@ -389,7 +394,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         { relation_type: 'connects', source_entity_id: 'central', target_entity_id: 'node-2' },
         { relation_type: 'connects', source_entity_id: 'central', target_entity_id: 'node-3' },
         { relation_type: 'connects', source_entity_id: 'node-1', target_entity_id: 'node-2' },
-        { relation_type: 'connects', source_entity_id: 'node-2', target_entity_id: 'node-3' }
+        { relation_type: 'connects', source_entity_id: 'node-2', target_entity_id: 'node-3' },
       ];
 
       mockQdrantClient.knowledgeRelation.findMany.mockResolvedValue(mockRelations);
@@ -408,7 +413,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should handle sparse relationship graphs', async () => {
       // Mock sparse graph with minimal relationships
       const sparseRelations = [
-        { relation_type: 'relates_to', source_entity_id: 'entity-1', target_entity_id: 'entity-2' }
+        { relation_type: 'relates_to', source_entity_id: 'entity-1', target_entity_id: 'entity-2' },
       ];
 
       mockQdrantClient.knowledgeRelation.findMany.mockResolvedValue(sparseRelations);
@@ -426,8 +431,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: { project: 'filtered-project' },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-06-30')
-        }
+          endDate: new Date('2024-06-30'),
+        },
       };
 
       const mockRelations = [
@@ -437,8 +442,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
           source_entity_id: 'src-1',
           target_entity_id: 'tgt-1',
           tags: { project: 'filtered-project' },
-          created_at: new Date('2024-03-15')
-        }
+          created_at: new Date('2024-03-15'),
+        },
       ];
 
       mockQdrantClient.knowledgeRelation.findMany.mockResolvedValue(mockRelations);
@@ -448,8 +453,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(mockQdrantClient.knowledgeRelation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            tags: expect.objectContaining({ project: 'filtered-project' })
-          })
+            tags: expect.objectContaining({ project: 'filtered-project' }),
+          }),
         })
       );
     });
@@ -461,8 +466,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const filter: AnalyticsFilter = {
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
-        }
+          endDate: new Date('2024-01-31'),
+        },
       };
 
       const analytics = await analyticsService.getPerformanceAnalytics(filter);
@@ -495,7 +500,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const analytics = await analyticsService.getPerformanceAnalytics();
 
       expect(analytics.bottlenecks).toBeInstanceOf(Array);
-      analytics.bottlenecks.forEach(bottleneck => {
+      analytics.bottlenecks.forEach((bottleneck) => {
         expect(bottleneck).toHaveProperty('type');
         expect(bottleneck).toHaveProperty('severity');
         expect(bottleneck).toHaveProperty('description');
@@ -504,7 +509,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       });
 
       expect(analytics.optimizationSuggestions).toBeInstanceOf(Array);
-      analytics.optimizationSuggestions.forEach(suggestion => {
+      analytics.optimizationSuggestions.forEach((suggestion) => {
         expect(typeof suggestion).toBe('string');
         expect(suggestion.length).toBeGreaterThan(0);
       });
@@ -523,7 +528,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should handle performance analytics with real-time monitoring', async () => {
       const realTimeConfig = {
         enableRealTimeAnalytics: true,
-        enableCaching: false
+        enableCaching: false,
       };
 
       const realTimeService = new AnalyticsService(realTimeConfig);
@@ -540,24 +545,30 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       // Should provide suggestions when performance issues are detected
       if (analytics.queryPerformance.averageResponseTime > 1000) {
         expect(analytics.optimizationSuggestions.length).toBeGreaterThan(0);
-        expect(analytics.optimizationSuggestions.some(s =>
-          s.toLowerCase().includes('cache')
-        )).toBe(true);
+        expect(
+          analytics.optimizationSuggestions.some((s) => s.toLowerCase().includes('cache'))
+        ).toBe(true);
       }
 
       if (analytics.storageUtilization.growthRate > 0.2) {
-        expect(analytics.optimizationSuggestions.some(s =>
-          s.toLowerCase().includes('storage') || s.toLowerCase().includes('archiving')
-        )).toBe(true);
+        expect(
+          analytics.optimizationSuggestions.some(
+            (s) => s.toLowerCase().includes('storage') || s.toLowerCase().includes('archiving')
+          )
+        ).toBe(true);
       }
     });
 
     it('should handle performance analytics errors gracefully', async () => {
       // Mock performance monitoring service error
       const originalGetRecentQueryPerformance = analyticsService['getRecentQueryPerformance'];
-      analyticsService['getRecentQueryPerformance'] = vi.fn().mockRejectedValue(new Error('Performance monitoring service unavailable'));
+      analyticsService['getRecentQueryPerformance'] = vi
+        .fn()
+        .mockRejectedValue(new Error('Performance monitoring service unavailable'));
 
-      await expect(analyticsService.getPerformanceAnalytics()).rejects.toThrow('Failed to retrieve performance analytics');
+      await expect(analyticsService.getPerformanceAnalytics()).rejects.toThrow(
+        'Failed to retrieve performance analytics'
+      );
 
       // Restore original method
       analyticsService['getRecentQueryPerformance'] = originalGetRecentQueryPerformance;
@@ -570,8 +581,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const filter: AnalyticsFilter = {
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
-        }
+          endDate: new Date('2024-01-31'),
+        },
       };
 
       const analytics = await analyticsService.getUserBehaviorAnalytics(filter);
@@ -585,7 +596,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.searchPatterns.filtersUsage).toBeDefined();
 
       // Verify common queries structure
-      analytics.searchPatterns.commonQueries.forEach(query => {
+      analytics.searchPatterns.commonQueries.forEach((query) => {
         expect(query).toHaveProperty('query');
         expect(query).toHaveProperty('frequency');
         expect(query.frequency).toBeGreaterThan(0);
@@ -635,7 +646,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.engagementMetrics.peakActivityHours).toBeInstanceOf(Array);
 
       // Verify peak activity hours
-      analytics.engagementMetrics.peakActivityHours.forEach(hour => {
+      analytics.engagementMetrics.peakActivityHours.forEach((hour) => {
         expect(hour).toBeGreaterThanOrEqual(0);
         expect(hour).toBeLessThan(24);
       });
@@ -646,8 +657,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: { project: 'user-behavior-study' },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-03-31')
-        }
+          endDate: new Date('2024-03-31'),
+        },
       };
 
       const analytics = await analyticsService.getUserBehaviorAnalytics(filter);
@@ -662,8 +673,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const filter: AnalyticsFilter = {
         tags: {
           user_type: 'power_user',
-          department: 'engineering'
-        }
+          department: 'engineering',
+        },
       };
 
       const analytics = await analyticsService.getUserBehaviorAnalytics(filter);
@@ -678,7 +689,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
   describe('Predictive Analytics', () => {
     it('should generate growth predictions', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       const analytics = await analyticsServiceWithPrediction.getPredictiveAnalytics();
@@ -689,8 +700,9 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.growthPredictions.nextYear).toBeDefined();
 
       // Verify prediction structure
-      ['nextMonth', 'nextQuarter', 'nextYear'].forEach(period => {
-        const prediction = analytics.growthPredictions[period as keyof typeof analytics.growthPredictions];
+      ['nextMonth', 'nextQuarter', 'nextYear'].forEach((period) => {
+        const prediction =
+          analytics.growthPredictions[period as keyof typeof analytics.growthPredictions];
         expect(prediction.entities).toBeGreaterThan(0);
         expect(prediction.relations).toBeGreaterThan(0);
         expect(prediction.observations).toBeGreaterThan(0);
@@ -699,7 +711,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should predict knowledge trends and patterns', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       const analytics = await analyticsServiceWithPrediction.getPredictiveAnalytics();
@@ -707,7 +719,9 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.trendPredictions).toBeDefined();
       expect(analytics.trendPredictions.knowledgeTypes).toBeDefined();
       expect(analytics.trendPredictions.scopes).toBeDefined();
-      expect(['increasing', 'decreasing', 'stable']).toContain(analytics.trendPredictions.contentComplexity);
+      expect(['increasing', 'decreasing', 'stable']).toContain(
+        analytics.trendPredictions.contentComplexity
+      );
 
       // Verify trend predictions structure
       Object.entries(analytics.trendPredictions.knowledgeTypes).forEach(([type, prediction]) => {
@@ -722,7 +736,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should detect anomalies and unusual patterns', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       const analytics = await analyticsServiceWithPrediction.getPredictiveAnalytics();
@@ -733,7 +747,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.anomalyDetection.recommendedActions).toBeInstanceOf(Array);
 
       // Verify anomaly detection structure
-      analytics.anomalyDetection.detectedAnomalies.forEach(anomaly => {
+      analytics.anomalyDetection.detectedAnomalies.forEach((anomaly) => {
         expect(anomaly).toHaveProperty('type');
         expect(anomaly).toHaveProperty('timestamp');
         expect(anomaly).toHaveProperty('severity');
@@ -751,7 +765,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should generate predictive insights and recommendations', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       const analytics = await analyticsServiceWithPrediction.getPredictiveAnalytics();
@@ -762,17 +776,17 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(analytics.insights.riskFactors).toBeInstanceOf(Array);
 
       // Verify insights structure
-      analytics.insights.keyInsights.forEach(insight => {
+      analytics.insights.keyInsights.forEach((insight) => {
         expect(typeof insight).toBe('string');
         expect(insight.length).toBeGreaterThan(0);
       });
 
-      analytics.insights.recommendations.forEach(recommendation => {
+      analytics.insights.recommendations.forEach((recommendation) => {
         expect(typeof recommendation).toBe('string');
         expect(recommendation.length).toBeGreaterThan(0);
       });
 
-      analytics.insights.riskFactors.forEach(risk => {
+      analytics.insights.riskFactors.forEach((risk) => {
         expect(typeof risk).toBe('string');
         expect(risk.length).toBeGreaterThan(0);
       });
@@ -780,15 +794,15 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should handle predictive analytics with filters', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       const filter: AnalyticsFilter = {
         scope: { project: 'prediction-study' },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-12-31')
-        }
+          endDate: new Date('2024-12-31'),
+        },
       };
 
       const analytics = await analyticsServiceWithPrediction.getPredictiveAnalytics(filter);
@@ -801,22 +815,28 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should throw error when predictive analytics is disabled', async () => {
       const analyticsServiceWithoutPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: false
+        enablePredictiveAnalytics: false,
       });
 
-      await expect(analyticsServiceWithoutPrediction.getPredictiveAnalytics()).rejects.toThrow('Predictive analytics is disabled in configuration');
+      await expect(analyticsServiceWithoutPrediction.getPredictiveAnalytics()).rejects.toThrow(
+        'Predictive analytics is disabled in configuration'
+      );
     });
 
     it('should handle prediction calculation errors gracefully', async () => {
       const analyticsServiceWithPrediction = new AnalyticsService({
-        enablePredictiveAnalytics: true
+        enablePredictiveAnalytics: true,
       });
 
       // Mock prediction method to throw error
       const originalPredictGrowth = analyticsServiceWithPrediction['predictGrowth'];
-      analyticsServiceWithPrediction['predictGrowth'] = vi.fn().mockRejectedValue(new Error('Prediction calculation failed'));
+      analyticsServiceWithPrediction['predictGrowth'] = vi
+        .fn()
+        .mockRejectedValue(new Error('Prediction calculation failed'));
 
-      await expect(analyticsServiceWithPrediction.getPredictiveAnalytics()).rejects.toThrow('Failed to retrieve predictive analytics');
+      await expect(analyticsServiceWithPrediction.getPredictiveAnalytics()).rejects.toThrow(
+        'Failed to retrieve predictive analytics'
+      );
 
       // Restore original method
       analyticsServiceWithPrediction['predictGrowth'] = originalPredictGrowth;
@@ -831,11 +851,11 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         title: 'Knowledge Base Analytics Report',
         timeRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
+          endDate: new Date('2024-01-31'),
         },
         filters: {
-          scope: { project: 'report-project' }
-        }
+          scope: { project: 'report-project' },
+        },
       };
 
       const report = await analyticsService.generateReport(query);
@@ -857,12 +877,18 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     });
 
     it('should generate different types of analytics reports', async () => {
-      const reportTypes: AnalyticsQuery['type'][] = ['knowledge', 'relationships', 'performance', 'user_behavior', 'predictive'];
+      const reportTypes: AnalyticsQuery['type'][] = [
+        'knowledge',
+        'relationships',
+        'performance',
+        'user_behavior',
+        'predictive',
+      ];
 
       for (const type of reportTypes) {
         const query: AnalyticsQuery = {
           type,
-          title: `${type.charAt(0).toUpperCase() + type.slice(1)} Analytics Report`
+          title: `${type.charAt(0).toUpperCase() + type.slice(1)} Analytics Report`,
         };
 
         if (type === 'predictive') {
@@ -886,14 +912,14 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should generate appropriate visualizations for report data', async () => {
       const query: AnalyticsQuery = {
         type: 'knowledge',
-        title: 'Visualization Test Report'
+        title: 'Visualization Test Report',
       };
 
       const report = await analyticsService.generateReport(query);
 
       expect(report.visualizations.length).toBeGreaterThan(0);
 
-      report.visualizations.forEach(viz => {
+      report.visualizations.forEach((viz) => {
         expect(viz).toHaveProperty('type');
         expect(viz).toHaveProperty('title');
         expect(viz).toHaveProperty('data');
@@ -906,7 +932,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should export reports in different formats', async () => {
       const query: AnalyticsQuery = {
         type: 'knowledge',
-        title: 'Export Test Report'
+        title: 'Export Test Report',
       };
 
       const report = await analyticsService.generateReport(query);
@@ -929,24 +955,30 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should handle PDF export request appropriately', async () => {
       const query: AnalyticsQuery = {
         type: 'knowledge',
-        title: 'PDF Test Report'
+        title: 'PDF Test Report',
       };
 
       const report = await analyticsService.generateReport(query);
 
-      await expect(analyticsService.exportReport(report.id, 'pdf')).rejects.toThrow('PDF export not yet implemented');
+      await expect(analyticsService.exportReport(report.id, 'pdf')).rejects.toThrow(
+        'PDF export not yet implemented'
+      );
     });
 
     it('should handle report export errors gracefully', async () => {
-      await expect(analyticsService.exportReport('non-existent-report', 'json')).rejects.toThrow('Report not found: non-existent-report');
+      await expect(analyticsService.exportReport('non-existent-report', 'json')).rejects.toThrow(
+        'Report not found: non-existent-report'
+      );
 
-      await expect(analyticsService.exportReport('test-report', 'unsupported' as any)).rejects.toThrow('Unsupported export format: unsupported');
+      await expect(
+        analyticsService.exportReport('test-report', 'unsupported' as any)
+      ).rejects.toThrow('Unsupported export format: unsupported');
     });
 
     it('should cache reports for performance', async () => {
       const query: AnalyticsQuery = {
         type: 'knowledge',
-        title: 'Cache Test Report'
+        title: 'Cache Test Report',
       };
 
       // Generate first report
@@ -967,24 +999,24 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         title: 'Complex Performance Report',
         timeRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-12-31')
+          endDate: new Date('2024-12-31'),
         },
         filters: {
           scope: { project: 'complex-project' },
-          types: ['entity', 'relation']
+          types: ['entity', 'relation'],
         },
         aggregations: [
           {
             field: 'response_time',
-            operation: 'average'
+            operation: 'average',
           },
           {
             field: 'storage_usage',
             operation: 'sum',
-            groupBy: 'type'
-          }
+            groupBy: 'type',
+          },
         ],
-        limit: 1000
+        limit: 1000,
       };
 
       const report = await analyticsService.generateReport(complexQuery);
@@ -999,7 +1031,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
   describe('Caching and Performance', () => {
     it('should cache analytics results correctly', async () => {
       const filter: AnalyticsFilter = {
-        scope: { project: 'cache-test' }
+        scope: { project: 'cache-test' },
       };
 
       // First call should hit database
@@ -1016,19 +1048,19 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should respect cache timeout', async () => {
       const shortTimeoutConfig = {
         enableCaching: true,
-        cacheTimeoutMs: 100 // 100ms timeout
+        cacheTimeoutMs: 100, // 100ms timeout
       };
 
       const shortTimeoutService = new AnalyticsService(shortTimeoutConfig);
       const filter: AnalyticsFilter = {
-        scope: { project: 'timeout-test' }
+        scope: { project: 'timeout-test' },
       };
 
       // First call
       await shortTimeoutService.getKnowledgeBaseMetrics(filter);
 
       // Wait for cache to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Second call should hit database again
       await shortTimeoutService.getKnowledgeBaseMetrics(filter);
@@ -1040,7 +1072,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const promises = [];
       for (let i = 0; i < 1100; i++) {
         const filter: AnalyticsFilter = {
-          scope: { project: `cache-test-${i}` }
+          scope: { project: `cache-test-${i}` },
         };
         promises.push(analyticsService.getKnowledgeBaseMetrics(filter));
       }
@@ -1049,7 +1081,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
       // Cache should still be functional
       const finalAnalytics = await analyticsService.getKnowledgeBaseMetrics({
-        scope: { project: 'cache-test-1099' }
+        scope: { project: 'cache-test-1099' },
       });
 
       expect(finalAnalytics).toBeDefined();
@@ -1068,7 +1100,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should clear cache on demand', async () => {
       const filter: AnalyticsFilter = {
-        scope: { project: 'clear-cache-test' }
+        scope: { project: 'clear-cache-test' },
       };
 
       // Generate cached result
@@ -1082,12 +1114,12 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should work with caching disabled', async () => {
       const noCacheConfig = {
-        enableCaching: false
+        enableCaching: false,
       };
 
       const noCacheService = new AnalyticsService(noCacheConfig);
       const filter: AnalyticsFilter = {
-        scope: { project: 'no-cache-test' }
+        scope: { project: 'no-cache-test' },
       };
 
       // Multiple calls should always hit database
@@ -1106,7 +1138,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         cacheTimeoutMs: 600000,
         maxReportItems: 20000,
         enablePredictiveAnalytics: false,
-        enableRealTimeAnalytics: false
+        enableRealTimeAnalytics: false,
       };
 
       const customService = new AnalyticsService(customConfig);
@@ -1125,7 +1157,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
       analyticsService.updateConfig({
         enablePredictiveAnalytics: false,
-        cacheTimeoutMs: 600000
+        cacheTimeoutMs: 600000,
       });
 
       const updatedConfig = analyticsService.getConfig();
@@ -1140,7 +1172,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         { kind: 'relation', expected: 'knowledgeRelation' },
         { kind: 'decision', expected: 'adrDecision' },
         { kind: 'observation', expected: 'knowledgeObservation' },
-        { kind: 'unknown', expected: 'unknown' }
+        { kind: 'unknown', expected: 'unknown' },
       ];
 
       testCases.forEach(({ kind, expected }) => {
@@ -1153,36 +1185,36 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const testCases = [
         {
           filter: undefined,
-          expected: {}
+          expected: {},
         },
         {
           filter: { scope: { project: 'test' } },
-          expected: { tags: { project: 'test' } }
+          expected: { tags: { project: 'test' } },
         },
         {
           filter: {
             scope: { project: 'test', org: 'org', branch: 'main' },
-            types: ['entity', 'relation']
+            types: ['entity', 'relation'],
           },
           expected: {
             tags: { project: 'test', org: 'org', branch: 'main' },
-            kind: { in: ['entity', 'relation'] }
-          }
+            kind: { in: ['entity', 'relation'] },
+          },
         },
         {
           filter: {
             dateRange: {
               startDate: new Date('2024-01-01'),
-              endDate: new Date('2024-12-31')
-            }
+              endDate: new Date('2024-12-31'),
+            },
           },
           expected: {
             created_at: {
               gte: new Date('2024-01-01'),
-              lte: new Date('2024-12-31')
-            }
-          }
-        }
+              lte: new Date('2024-12-31'),
+            },
+          },
+        },
       ];
 
       testCases.forEach(({ filter, expected }) => {
@@ -1197,26 +1229,26 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
           aggregation: {
             interval: 'day' as const,
             startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-03')
+            endDate: new Date('2024-01-03'),
           },
-          expectedSlots: 3
+          expectedSlots: 3,
         },
         {
           aggregation: {
             interval: 'hour' as const,
             startDate: new Date('2024-01-01T00:00:00'),
-            endDate: new Date('2024-01-01T02:00:00')
+            endDate: new Date('2024-01-01T02:00:00'),
           },
-          expectedSlots: 2
+          expectedSlots: 2,
         },
         {
           aggregation: {
             interval: 'month' as const,
             startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-03-01')
+            endDate: new Date('2024-03-01'),
           },
-          expectedSlots: 2
-        }
+          expectedSlots: 2,
+        },
       ];
 
       testCases.forEach(({ aggregation, expectedSlots }) => {
@@ -1258,7 +1290,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         { source_entity_id: 'entity-1', target_entity_id: 'entity-2' },
         { source_entity_id: 'entity-1', target_entity_id: 'entity-3' },
         { source_entity_id: 'entity-2', target_entity_id: 'entity-3' },
-        { source_entity_id: 'entity-3', target_entity_id: 'entity-1' }
+        { source_entity_id: 'entity-3', target_entity_id: 'entity-1' },
       ];
 
       const degrees = analyticsService['calculateEntityDegrees'](relations);
@@ -1270,21 +1302,21 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
     it('should generate proper cache keys', async () => {
       const filter1: AnalyticsFilter = {
-        scope: { project: 'test' }
+        scope: { project: 'test' },
       };
 
       const filter2: AnalyticsFilter = {
         scope: { project: 'test' },
         dateRange: {
-          startDate: new Date('2024-01-01')
-        }
+          startDate: new Date('2024-01-01'),
+        },
       };
 
       const filter3: AnalyticsFilter = {
         scope: { project: 'test' },
         dateRange: {
-          startDate: new Date('2024-01-01')
-        }
+          startDate: new Date('2024-01-01'),
+        },
       };
 
       // Different filters should generate different cache keys
@@ -1303,7 +1335,9 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       // Mock database connection failure
       mockQdrantClient.knowledgeEntity.count.mockRejectedValue(new Error('Connection timeout'));
 
-      await expect(analyticsService.getKnowledgeBaseMetrics()).rejects.toThrow('Failed to retrieve knowledge metrics');
+      await expect(analyticsService.getKnowledgeBaseMetrics()).rejects.toThrow(
+        'Failed to retrieve knowledge metrics'
+      );
     });
 
     it('should handle malformed filter objects', async () => {
@@ -1311,14 +1345,14 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: {
           project: null,
           org: undefined,
-          branch: ''
+          branch: '',
         },
         dateRange: {
           startDate: 'invalid-date',
-          endDate: new Date('invalid-date')
+          endDate: new Date('invalid-date'),
         },
         types: 'not-an-array',
-        tags: { '': 'empty-key' }
+        tags: { '': 'empty-key' },
       } as any;
 
       // Should handle gracefully or throw appropriate error
@@ -1359,14 +1393,14 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
     it('should handle concurrent analytics requests', async () => {
       const concurrentRequests = Array.from({ length: 10 }, (_, i) =>
         analyticsService.getKnowledgeBaseMetrics({
-          scope: { project: `concurrent-test-${i}` }
+          scope: { project: `concurrent-test-${i}` },
         })
       );
 
       const results = await Promise.all(concurrentRequests);
 
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
         expect(result.totalEntities).toBeGreaterThanOrEqual(0);
       });
@@ -1377,11 +1411,11 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const services = Array.from({ length: 100 }, () => new AnalyticsService());
 
       // All services should be functional
-      const promises = services.map(service => service.getKnowledgeBaseMetrics());
+      const promises = services.map((service) => service.getKnowledgeBaseMetrics());
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(100);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result).toBeDefined();
       });
     });
@@ -1390,7 +1424,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       const invalidQueries = [
         { type: 'invalid-type' as any },
         { type: 'knowledge', timeRange: { startDate: 'invalid' } as any },
-        { type: 'performance', filters: { invalidFilter: 'value' } as any }
+        { type: 'performance', filters: { invalidFilter: 'value' } as any },
       ];
 
       for (const query of invalidQueries) {
@@ -1413,18 +1447,18 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         {
           interval: 'day' as const,
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-01') // Same day
+          endDate: new Date('2024-01-01'), // Same day
         },
         {
           interval: 'hour' as const,
           startDate: new Date('2024-01-01T00:00:00'),
-          endDate: new Date('2024-01-01T00:59:59') // Less than one hour
+          endDate: new Date('2024-01-01T00:59:59'), // Less than one hour
         },
         {
           interval: 'month' as const,
           startDate: new Date('2024-01-31'),
-          endDate: new Date('2024-02-01') // Cross month boundary
-        }
+          endDate: new Date('2024-02-01'), // Cross month boundary
+        },
       ];
 
       for (const aggregation of edgeCases) {
@@ -1439,7 +1473,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         scope: { project: null as any },
         dateRange: { startDate: null as any, endDate: undefined as any },
         types: null as any,
-        tags: null as any
+        tags: null as any,
       };
 
       try {
@@ -1459,15 +1493,15 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       analyticsService.updateConfig({
         enableCaching: true,
         enablePredictiveAnalytics: true,
-        enableRealTimeAnalytics: true
+        enableRealTimeAnalytics: true,
       });
 
       const filter: AnalyticsFilter = {
         scope: { project: 'integration-test' },
         dateRange: {
           startDate: new Date('2024-01-01'),
-          endDate: new Date('2024-01-31')
-        }
+          endDate: new Date('2024-01-31'),
+        },
       };
 
       // Get all types of analytics
@@ -1489,7 +1523,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
         type: 'knowledge',
         title: 'Integration Test Report',
         timeRange: filter.dateRange,
-        filters: filter
+        filters: filter,
       };
 
       const report = await analyticsService.generateReport(reportQuery);
@@ -1519,7 +1553,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       // Step 4: Generate insights report
       const insightsReport = await analyticsService.generateReport({
         type: 'performance',
-        title: 'Performance Insights Report'
+        title: 'Performance Insights Report',
       });
 
       expect(insightsReport.summary.length).toBeGreaterThan(0);

@@ -15,16 +15,16 @@ import {
 describe('MCP 2025 Compliance Tests', () => {
   describe('Error Codes', () => {
     test('Should use correct JSON-RPC error codes', () => {
-      expect(MCPErrorCode.PARSE_ERROR).toBe(-32700);
-      expect(MCPErrorCode.INVALID_REQUEST).toBe(-32600);
-      expect(MCPErrorCode.METHOD_NOT_FOUND).toBe(-32601);
-      expect(MCPErrorCode.INVALID_PARAMS).toBe(-32602);
-      expect(MCPErrorCode.INTERNAL_ERROR).toBe(-32603);
+      expect(MCPErrorCode._PARSE_ERROR).toBe(-32700);
+      expect(MCPErrorCode._INVALID_REQUEST).toBe(-32600);
+      expect(MCPErrorCode._METHOD_NOT_FOUND).toBe(-32601);
+      expect(MCPErrorCode._INVALID_PARAMS).toBe(-32602);
+      expect(MCPErrorCode._INTERNAL_ERROR).toBe(-32603);
 
       // MCP-specific codes
-      expect(MCPErrorCode.TOOL_EXECUTION_ERROR).toBe(32000);
-      expect(MCPErrorCode.VALIDATION_ERROR).toBe(32001);
-      expect(MCPErrorCode.DATABASE_ERROR).toBe(32002);
+      expect(MCPErrorCode._TOOL_EXECUTION_ERROR).toBe(32000);
+      expect(MCPErrorCode._VALIDATION_ERROR).toBe(32001);
+      expect(MCPErrorCode._DATABASE_ERROR).toBe(32002);
     });
   });
 

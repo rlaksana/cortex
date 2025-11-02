@@ -6,7 +6,7 @@ import {
   generateSanitizationFeedback,
   generateSanitizationOptions,
   type SanitizationLevel,
-  type SanitizationResult
+  type SanitizationResult,
 } from '../../../src/utils/query-sanitizer';
 
 describe('Query Sanitizer', () => {
@@ -36,7 +36,9 @@ describe('Query Sanitizer', () => {
 
       expect(result.cleaned).toBe('T008 T021 task completion');
       expect(result.patterns_detected).toContain('task_id_range');
-      expect(result.auto_fixes_applied).toContain('Convert task ID ranges to space-separated format');
+      expect(result.auto_fixes_applied).toContain(
+        'Convert task ID ranges to space-separated format'
+      );
     });
 
     it('should handle version/phase numbers', () => {
@@ -159,7 +161,7 @@ describe('Query Sanitizer', () => {
         transformations: ['normalized_whitespace'],
         level: 'basic',
         patterns_detected: [],
-        auto_fixes_applied: []
+        auto_fixes_applied: [],
       };
 
       const feedback = generateSanitizationFeedback(result);
@@ -174,7 +176,7 @@ describe('Query Sanitizer', () => {
         transformations: ['moderate_sanitization'],
         level: 'moderate',
         patterns_detected: ['task_id_range'],
-        auto_fixes_applied: ['Convert task ID ranges to space-separated format']
+        auto_fixes_applied: ['Convert task ID ranges to space-separated format'],
       };
 
       const feedback = generateSanitizationFeedback(result);

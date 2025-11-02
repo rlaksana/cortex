@@ -20,20 +20,20 @@ vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {
       this.getCollections = vi.fn().mockResolvedValue({
-        collections: [{ name: 'test-collection' }]
+        collections: [{ name: 'test-collection' }],
       });
       this.createCollection = vi.fn().mockResolvedValue(undefined);
       this.upsert = vi.fn().mockResolvedValue(undefined);
       this.search = vi.fn().mockResolvedValue([]);
       this.getCollection = vi.fn().mockResolvedValue({
         points_count: 0,
-        status: 'green'
+        status: 'green',
       });
       this.delete = vi.fn().mockResolvedValue({ status: 'completed' });
       this.count = vi.fn().mockResolvedValue({ count: 0 });
       this.healthCheck = vi.fn().mockResolvedValue(true);
     }
-  }
+  },
 }));
 
 describe('Entity Knowledge Type - Comprehensive Testing', () => {
@@ -51,7 +51,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'user',
@@ -59,15 +59,15 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             email: 'john@example.com',
             role: 'developer',
-            preferences: { theme: 'dark', language: 'en' }
-          }
+            preferences: { theme: 'dark', language: 'en' },
+          },
         },
         tags: { verified: true },
         source: {
           actor: 'test-actor',
           tool: 'test-tool',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = EntitySchema.safeParse(entity);
@@ -79,7 +79,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         expect(result.data.data.data).toEqual({
           email: 'john@example.com',
           role: 'developer',
-          preferences: { theme: 'dark', language: 'en' }
+          preferences: { theme: 'dark', language: 'en' },
         });
       }
     });
@@ -89,13 +89,13 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'organization',
           name: 'Acme Corp',
-          data: {}
-        }
+          data: {},
+        },
       };
 
       const result = EntitySchema.safeParse(entity);
@@ -113,33 +113,33 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           scope: { project: 'test-project', branch: 'main' },
           data: {
             // Missing entity_type
-            name: 'test'
-          }
-        },
-        {
-          kind: 'entity' as const,
-          scope: { project: 'test-project', branch: 'main' },
-          data: {
-            entity_type: 'user'
-            // Missing name
-          }
-        },
-        {
-          kind: 'entity' as const,
-          scope: { project: 'test-project', branch: 'main' },
-          data: {
-            entity_type: '',
-            name: 'test' // Empty entity_type
-          }
+            name: 'test',
+          },
         },
         {
           kind: 'entity' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             entity_type: 'user',
-            name: '' // Empty name
-          }
-        }
+            // Missing name
+          },
+        },
+        {
+          kind: 'entity' as const,
+          scope: { project: 'test-project', branch: 'main' },
+          data: {
+            entity_type: '',
+            name: 'test', // Empty entity_type
+          },
+        },
+        {
+          kind: 'entity' as const,
+          scope: { project: 'test-project', branch: 'main' },
+          data: {
+            entity_type: 'user',
+            name: '', // Empty name
+          },
+        },
       ];
 
       invalidEntities.forEach((entity, index) => {
@@ -158,8 +158,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'x'.repeat(101), // Exceeds 100 character limit
           name: 'test',
-          data: {}
-        }
+          data: {},
+        },
       };
 
       const result = EntitySchema.safeParse(entity);
@@ -176,8 +176,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'user',
           name: 'x'.repeat(501), // Exceeds 500 character limit
-          data: {}
-        }
+          data: {},
+        },
       };
 
       const result = EntitySchema.safeParse(entity);
@@ -194,14 +194,14 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'user',
           name: 'test_user',
-          data: { email: 'test@example.com' }
+          data: { email: 'test@example.com' },
         },
-        content: 'Entity: user named test_user with email test@example.com' // Required for embedding generation
+        content: 'Entity: user named test_user with email test@example.com', // Required for embedding generation
       };
 
       const result = await db.storeItems([entity]);
@@ -222,14 +222,14 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'user',
           name: `user_${i}`,
-          data: { index: i, active: i % 2 === 0 }
+          data: { index: i, active: i % 2 === 0 },
         },
-        content: `Entity: user named user_${i} with index ${i}`
+        content: `Entity: user named user_${i} with index ${i}`,
       }));
 
       const result = await db.storeItems(entities);
@@ -247,18 +247,18 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'user',
             name: 'valid_user',
-            data: {}
+            data: {},
           },
-          content: 'Entity: user named valid_user'
+          content: 'Entity: user named valid_user',
         },
         {
           kind: 'entity' as const,
           scope: { project: 'test-project', branch: 'main' },
           data: {
             // Missing entity_type
-            name: 'invalid_entity'
+            name: 'invalid_entity',
           },
-          content: 'Entity: invalid entity missing type'
+          content: 'Entity: invalid entity missing type',
         },
         {
           kind: 'entity' as const,
@@ -266,10 +266,10 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'organization',
             name: 'valid_org',
-            data: { employees: 100 }
+            data: { employees: 100 },
           },
-          content: 'Entity: organization named valid_org with 100 employees'
-        }
+          content: 'Entity: organization named valid_org with 100 employees',
+        },
       ];
 
       const result = await db.storeItems(items);
@@ -291,10 +291,10 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
             data: {
               entity_type: 'user',
               name: 'john_doe',
-              data: { email: 'john@example.com' }
+              data: { email: 'john@example.com' },
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
+            scope: { project: 'test-project', branch: 'main' },
+          },
         },
         {
           id: 'entity-id-2',
@@ -304,11 +304,11 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
             data: {
               entity_type: 'organization',
               name: 'Acme Corp',
-              data: { industry: 'technology' }
+              data: { industry: 'technology' },
             },
-            scope: { project: 'test-project', branch: 'main' }
-          }
-        }
+            scope: { project: 'test-project', branch: 'main' },
+          },
+        },
       ]);
     });
 
@@ -341,28 +341,28 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'project-A',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'user',
           name: 'user_A',
-          data: {}
+          data: {},
         },
-        content: 'Entity: user named user_A in project-A'
+        content: 'Entity: user named user_A in project-A',
       };
 
       const entityProjectB = {
         kind: 'entity' as const,
         scope: {
           project: 'project-B',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'user',
           name: 'user_B',
-          data: {}
+          data: {},
         },
-        content: 'Entity: user named user_B in project-B'
+        content: 'Entity: user named user_B in project-B',
       };
 
       // Store both entities
@@ -384,28 +384,28 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           kind: 'entity' as const,
           scope: {
             project: 'test-project',
-            branch: 'main'
+            branch: 'main',
           },
           data: {
             entity_type: 'feature',
             name: 'main_feature',
-            data: {}
+            data: {},
           },
-          content: 'Entity: feature named main_feature in main branch'
+          content: 'Entity: feature named main_feature in main branch',
         },
         {
           kind: 'entity' as const,
           scope: {
             project: 'test-project',
-            branch: 'develop'
+            branch: 'develop',
           },
           data: {
             entity_type: 'feature',
             name: 'dev_feature',
-            data: {}
+            data: {},
           },
-          content: 'Entity: feature named dev_feature in develop branch'
-        }
+          content: 'Entity: feature named dev_feature in develop branch',
+        },
       ];
 
       await db.storeItems(entities);
@@ -423,7 +423,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'configuration',
@@ -434,18 +434,18 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
                 level2: {
                   level3: {
                     deep_value: 'found',
-                    array: [1, 2, 3, { nested: true }]
-                  }
-                }
-              }
+                    array: [1, 2, 3, { nested: true }],
+                  },
+                },
+              },
             },
             large_object: {
               // Test with large object
               keys: Array.from({ length: 100 }, (_, i) => `key_${i}`),
-              values: Array.from({ length: 100 }, (_, i) => ({ value: i, active: i % 2 === 0 }))
-            }
-          }
-        }
+              values: Array.from({ length: 100 }, (_, i) => ({ value: i, active: i % 2 === 0 })),
+            },
+          },
+        },
       };
 
       const result = await db.storeItems([complexEntity]);
@@ -462,8 +462,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'user',
             name: 'user-with-dashes',
-            data: {}
-          }
+            data: {},
+          },
         },
         {
           kind: 'entity' as const,
@@ -471,8 +471,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'user',
             name: 'user_with_underscores',
-            data: {}
-          }
+            data: {},
+          },
         },
         {
           kind: 'entity' as const,
@@ -480,9 +480,9 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             entity_type: 'user',
             name: 'user.with.dots',
-            data: {}
-          }
-        }
+            data: {},
+          },
+        },
       ];
 
       const result = await db.storeItems(entities);
@@ -498,8 +498,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'user',
           name: 'test_user',
-          data: {}
-        }
+          data: {},
+        },
       };
 
       // Mock upsert to throw an error
@@ -519,7 +519,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         kind: 'entity' as const,
         scope: {
           project: 'test-project',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           entity_type: 'goal',
@@ -527,15 +527,15 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
           data: {
             target: '20%',
             timeline: 'Q2 2025',
-            metrics: ['daily_active_users', 'session_duration']
-          }
+            metrics: ['daily_active_users', 'session_duration'],
+          },
         },
         tags: { priority: 'high', category: 'business' },
         source: {
           actor: 'product-manager',
           tool: 'planning-system',
-          timestamp: '2025-01-01T00:00:00Z'
-        }
+          timestamp: '2025-01-01T00:00:00Z',
+        },
       };
 
       const result = validateKnowledgeItem(entity);
@@ -552,9 +552,9 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
         data: {
           entity_type: 'preference',
           name: 'user_session_data',
-          data: { theme: 'dark', language: 'en' }
+          data: { theme: 'dark', language: 'en' },
         },
-        ttl_policy: 'short' as const
+        ttl_policy: 'short' as const,
       };
 
       const result = await db.storeItems([entity]);

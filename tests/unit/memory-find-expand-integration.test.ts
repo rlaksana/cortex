@@ -11,6 +11,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { VectorDatabase } from '../../src/index';
+import { searchService } from '../../src/services/search/search-service';
 
 // Mock dependencies
 vi.mock('../../src/services/search/search-service', () => ({
@@ -29,13 +30,12 @@ describe('Memory Find Expand Integration', () => {
   let mockSearchByMode: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Create VectorDatabase instance
     vectorDB = new VectorDatabase();
 
     // Get mock function
-    const { searchService } = require('../../src/services/search/search-service');
     mockSearchByMode = searchService.searchByMode;
   });
 
@@ -67,7 +67,7 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Test Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
+            match_type: 'semantic',
           },
           {
             id: 'expanded-id-1',
@@ -76,12 +76,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Related Issue' },
             created_at: '2024-01-02T00:00:00Z',
             confidence_score: 0.72,
-            match_type: 'graph'
-          }
+            match_type: 'graph',
+          },
         ],
         totalCount: 2,
         strategy: 'hybrid',
-        executionTime: 250
+        executionTime: 250,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -94,7 +94,7 @@ describe('Memory Find Expand Integration', () => {
         mode: 'auto' as const,
         limit: 10,
         types: ['decision'],
-        scope: { project: 'test', branch: 'main' }
+        scope: { project: 'test', branch: 'main' },
       };
 
       // This simulates what happens in handleMemoryFind
@@ -108,7 +108,7 @@ describe('Memory Find Expand Integration', () => {
           mode: 'auto',
           limit: 10,
           types: ['decision'],
-          scope: { project: 'test', branch: 'main' }
+          scope: { project: 'test', branch: 'main' },
         })
       );
 
@@ -127,12 +127,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Test Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
-          }
+            match_type: 'semantic',
+          },
         ],
         totalCount: 1,
         strategy: 'auto',
-        executionTime: 100
+        executionTime: 100,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -141,7 +141,7 @@ describe('Memory Find Expand Integration', () => {
       const query = {
         query: 'test query',
         mode: 'auto' as const,
-        limit: 10
+        limit: 10,
         // No expand parameter
       };
 
@@ -153,7 +153,7 @@ describe('Memory Find Expand Integration', () => {
           query: 'test query',
           expand: 'none', // Should default to 'none'
           mode: 'auto',
-          limit: 10
+          limit: 10,
         })
       );
     });
@@ -171,7 +171,7 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Original Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
+            match_type: 'semantic',
           },
           {
             id: 'expanded-id',
@@ -180,12 +180,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Expanded Issue' },
             created_at: '2024-01-02T00:00:00Z',
             confidence_score: 0.72, // 0.9 * 0.8
-            match_type: 'graph'
-          }
+            match_type: 'graph',
+          },
         ],
         totalCount: 2,
         strategy: 'hybrid',
-        executionTime: 300
+        executionTime: 300,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -195,7 +195,7 @@ describe('Memory Find Expand Integration', () => {
         query: 'test query',
         expand: 'relations',
         mode: 'auto' as const,
-        limit: 10
+        limit: 10,
       };
 
       const searchResult = await mockSearchByMode(query);
@@ -204,10 +204,12 @@ describe('Memory Find Expand Integration', () => {
       const mcpResponse = {
         query: query.query,
         strategy: searchResult.strategy,
-        confidence: searchResult.results.reduce((sum: number, r: any) => sum + r.confidence_score, 0) / searchResult.results.length,
+        confidence:
+          searchResult.results.reduce((sum: number, r: any) => sum + r.confidence_score, 0) /
+          searchResult.results.length,
         total: searchResult.results.length,
         executionTime: searchResult.executionTime,
-        items: searchResult.results
+        items: searchResult.results,
       };
 
       // Assert
@@ -221,14 +223,14 @@ describe('Memory Find Expand Integration', () => {
           expect.objectContaining({
             id: 'original-id',
             match_type: 'semantic',
-            confidence_score: 0.9
+            confidence_score: 0.9,
           }),
           expect.objectContaining({
             id: 'expanded-id',
             match_type: 'graph',
-            confidence_score: 0.72
-          })
-        ])
+            confidence_score: 0.72,
+          }),
+        ]),
       });
     });
 
@@ -243,12 +245,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Test Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
-          }
+            match_type: 'semantic',
+          },
         ],
         totalCount: 1,
         strategy: 'semantic',
-        executionTime: 200 // Search time + expansion time
+        executionTime: 200, // Search time + expansion time
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -258,7 +260,7 @@ describe('Memory Find Expand Integration', () => {
         query: 'test query',
         expand: 'relations',
         mode: 'deep' as const,
-        limit: 10
+        limit: 10,
       };
 
       const result = await mockSearchByMode(query);
@@ -278,7 +280,7 @@ describe('Memory Find Expand Integration', () => {
         query: 'test query',
         expand: 'relations',
         mode: 'auto' as const,
-        limit: 10
+        limit: 10,
       };
 
       // Act & Assert
@@ -292,7 +294,7 @@ describe('Memory Find Expand Integration', () => {
         results: [],
         totalCount: 0,
         strategy: 'auto',
-        executionTime: 50
+        executionTime: 50,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -303,7 +305,7 @@ describe('Memory Find Expand Integration', () => {
         query: 'test query',
         expand: 'invalid' as any, // Invalid expand value
         mode: 'auto' as const,
-        limit: 10
+        limit: 10,
       };
 
       // Act
@@ -328,12 +330,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Test Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
-          }
+            match_type: 'semantic',
+          },
         ],
         totalCount: 1,
         strategy: 'hybrid',
-        executionTime: 150
+        executionTime: 150,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -348,8 +350,8 @@ describe('Memory Find Expand Integration', () => {
         scope: {
           project: 'test-project',
           branch: 'main',
-          org: 'test-org'
-        }
+          org: 'test-org',
+        },
       };
 
       const result = await mockSearchByMode(query);
@@ -365,8 +367,8 @@ describe('Memory Find Expand Integration', () => {
           scope: {
             project: 'test-project',
             branch: 'main',
-            org: 'test-org'
-          }
+            org: 'test-org',
+          },
         })
       );
 
@@ -385,12 +387,12 @@ describe('Memory Find Expand Integration', () => {
             data: { title: 'Test Decision' },
             created_at: '2024-01-01T00:00:00Z',
             confidence_score: 0.9,
-            match_type: 'semantic'
-          }
+            match_type: 'semantic',
+          },
         ],
         totalCount: 1,
         strategy: 'auto',
-        executionTime: 100
+        executionTime: 100,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -403,7 +405,7 @@ describe('Memory Find Expand Integration', () => {
           query: 'test query',
           expand: expandMode as any,
           mode: 'auto' as const,
-          limit: 10
+          limit: 10,
         };
 
         const result = await mockSearchByMode(query);
@@ -411,7 +413,7 @@ describe('Memory Find Expand Integration', () => {
         // Assert
         expect(mockSearchByMode).toHaveBeenLastCalledWith(
           expect.objectContaining({
-            expand: expandMode
+            expand: expandMode,
           })
         );
 
@@ -434,12 +436,12 @@ describe('Memory Find Expand Integration', () => {
           scope: { project: 'test', branch: 'main' },
           data: { title: `Test Decision ${i}` },
           created_at: '2024-01-01T00:00:00Z',
-          confidence_score: 0.9 - (i * 0.01),
-          match_type: i < 10 ? 'semantic' : 'graph' as const
+          confidence_score: 0.9 - i * 0.01,
+          match_type: i < 10 ? 'semantic' : ('graph' as const),
         })),
         totalCount: 20,
         strategy: 'auto',
-        executionTime: 300
+        executionTime: 300,
       };
 
       mockSearchByMode.mockResolvedValue(mockSearchResults);
@@ -449,7 +451,7 @@ describe('Memory Find Expand Integration', () => {
         query: 'test query',
         expand: 'relations',
         mode: 'auto' as const,
-        limit: 100
+        limit: 100,
       };
 
       const result = await mockSearchByMode(query);
@@ -460,7 +462,7 @@ describe('Memory Find Expand Integration', () => {
       expect(result.strategy).toBe('auto');
 
       // Verify that some results have graph match_type
-      const graphResults = result.results.filter(r => r.match_type === 'graph');
+      const graphResults = result.results.filter((r) => r.match_type === 'graph');
       expect(graphResults.length).toBeGreaterThan(0);
     });
   });

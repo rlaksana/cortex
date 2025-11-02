@@ -24,14 +24,14 @@ metadata:
   namespace: cortex-mcp
 spec:
   hard:
-    requests.cpu: "8"
+    requests.cpu: '8'
     requests.memory: 16Gi
-    limits.cpu: "12"
+    limits.cpu: '12'
     limits.memory: 24Gi
-    persistentvolumeclaims: "10"
-    services: "20"
-    secrets: "10"
-    configmaps: "10"
+    persistentvolumeclaims: '10'
+    services: '20'
+    secrets: '10'
+    configmaps: '10'
 
 ---
 # Network policies for security
@@ -43,33 +43,33 @@ metadata:
 spec:
   podSelector: {}
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: ingress-nginx
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/part-of: cortex-memory
-    - namespaceSelector:
-        matchLabels:
-          name: monitoring
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: cortex-memory
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app.kubernetes.io/part-of: cortex-memory
-  - to: []
-    ports:
-    - protocol: TCP
-      port: 53
-    - protocol: UDP
-      port: 53
-  - to: []
-    ports:
-    - protocol: TCP
-      port: 443
-    - protocol: TCP
-      port: 80
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: cortex-memory
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80

@@ -43,7 +43,7 @@ function jsToTsResolution() {
         }
       }
       return null;
-    }
+    },
   };
 }
 ```
