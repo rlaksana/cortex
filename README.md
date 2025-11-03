@@ -1,14 +1,27 @@
 # Cortex Memory MCP Server
 
+## 🔒 **CRITICAL: CORTEX MCP CONFIGURATION RESTRICTION**
+
+⚠️ **STRICTLY PROHIBITED**: Multiple **Cortex** MCP configurations
+✅ **MANDATORY**: Only ONE **Cortex** configuration allowed
+
+**RULE**: Use only `[mcp_servers.cortex]` - no alternatives, backups, or multiples for **Cortex only**
+
+**Check**: Run `npm run mcp:check-config` to verify compliance
+
+See: `MCP-CONFIGURATION-RULES.md` for detailed restrictions
+
+---
+
 ## Overview
 
-Cortex Memory MCP Server is a knowledge management system that provides semantic search, memory storage, and basic deduplication through the Model Context Protocol (MCP). The system uses Qdrant vector database for knowledge operations with a focus on reliable core functionality.
+Cortex Memory MCP Server v2.0.0 is an AI-optimized knowledge management system that provides semantic search, memory storage, and intelligent deduplication through the Model Context Protocol (MCP). The system uses Qdrant vector database for knowledge operations with a streamlined 3-tool interface designed specifically for AI agent integration.
 
 `★ Insight ─────────────────────────────────────`
 **Current Status**: Cortex Memory MCP provides solid core functionality (storage, search, basic deduplication) with ambitious architectural goals. This documentation separates what exists today from what we're building towards.
 `─────────────────────────────────────────────────`
 
-## 🚀 **Current Capabilities (v1.0 - What Works Today)**
+## 🚀 **Current Capabilities (v2.0 - What Works Today)**
 
 **✅ Core Features:**
 
@@ -18,6 +31,25 @@ Cortex Memory MCP Server is a knowledge management system that provides semantic
 - 🛡️ **Advanced Deduplication** - Content similarity detection (85% threshold, 7-day window)
 - 🚀 **Production Ready** - Comprehensive error handling and EMFILE prevention
 - 📊 **Scope Isolation** - Project, branch, and organization-based knowledge separation
+- 🤖 **AI-Optimized 3-Tool Interface** - Consolidated from 14 tools to 3 AI-friendly tools with contextual descriptions
+
+**🔧 AI Agent Interface (v2.0):**
+
+The Cortex MCP server now provides a streamlined 3-tool interface optimized for AI agents:
+
+1. **memory_store** - Store knowledge items with intelligent deduplication
+   - *"Think of this as a smart knowledge base that automatically prevents duplicate entries"*
+   - Supports all 16 knowledge types with automatic validation
+   - Returns detailed feedback on stored vs duplicate items
+
+2. **memory_find** - Search knowledge items with semantic understanding
+   - *"This is like having a research assistant that comprehends meaning, not just keywords"*
+   - Three search modes: fast (exact match), auto (balanced), deep (comprehensive)
+   - Graph expansion options for related knowledge discovery
+
+3. **system_status** - System administration and monitoring toolkit
+   - *"This is your system dashboard for database health, performance metrics, and maintenance"*
+   - Consolidates 11 essential operations: health checks, statistics, telemetry, metrics, document management, and cleanup operations
 
 **⚠️ Current System Limits:**
 
@@ -25,6 +57,47 @@ Cortex Memory MCP Server is a knowledge management system that provides semantic
 - **Chunking**: Not yet implemented → single vector per item (chunking service exists but not wired)
 - **Search**: Semantic-only by default (keyword/hybrid available but experimental)
 - **🚨 Service Layer**: Comprehensive service layer exists but main server bypasses full orchestration (see Architecture section for details)
+
+## 🚀 **Getting Started (v2.0)**
+
+### **Prerequisites**
+- Node.js 20+
+- Qdrant server running (default: http://localhost:6333)
+
+### **Installation**
+```bash
+npm install cortex-memory-mcp
+```
+
+### **MCP Configuration**
+```toml
+[mcp_servers.cortex]
+command = "cortex"
+args = []
+env = {}
+```
+
+### **AI Agent Quick Start**
+```javascript
+// 1. Store knowledge
+await call_tool('memory_store', {
+  items: [{
+    kind: 'observation',
+    content: 'User prefers TypeScript over JavaScript',
+    scope: { project: 'my-app' }
+  }]
+})
+
+// 2. Search knowledge
+await call_tool('memory_find', {
+  query: 'TypeScript preferences',
+  mode: 'auto',  // fast, auto, deep
+  limit: 5
+})
+
+// 3. System health check
+await call_tool('system_status', { operation: 'health' })
+```
 
 ## 🎯 **Target Vision (What We're Building Towards)**
 

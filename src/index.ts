@@ -649,7 +649,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'memory_store',
         description:
-          'Store knowledge items in the Cortex memory system with semantic deduplication',
+          'Store knowledge items in Cortex memory with intelligent deduplication. Think of this as a smart knowledge base that automatically prevents duplicate entries (85% similarity threshold). Use for storing user preferences, decisions, observations, tasks, incidents, risks, and assumptions. Returns success status and details of what was stored vs skipped due to deduplication.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -678,18 +678,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                       'risk',
                       'assumption',
                     ],
-                    description: 'Knowledge type (16 supported types)',
+                    description:
+                      'Knowledge type - use entity=concepts, relation=relationships, observation=data points, decision=architecture decisions, todo=tasks, incident=problems, risk=assessments',
                   },
-                  content: { type: 'string', description: 'Content of the knowledge item' },
-                  metadata: { type: 'object', description: 'Additional metadata' },
+                  content: { type: 'string', description: 'The actual knowledge content to store' },
+                  metadata: {
+                    type: 'object',
+                    description: 'Additional context like timestamps, sources, priorities',
+                  },
                   scope: {
                     type: 'object',
                     properties: {
-                      project: { type: 'string' },
-                      branch: { type: 'string' },
-                      org: { type: 'string' },
+                      project: { type: 'string', description: 'Project name for organization' },
+                      branch: { type: 'string', description: 'Git branch or environment' },
+                      org: { type: 'string', description: 'Organization name' },
                     },
-                    description: 'Scope context',
+                    description: 'Organizational scope - helps isolate knowledge by context',
                   },
                 },
                 required: ['kind', 'content'],
@@ -702,235 +706,174 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'memory_find',
         description:
-          'Search knowledge items using intelligent semantic search with multiple strategies and graph expansion',
+          'Search Cortex memory using intelligent semantic understanding. This is like having a research assistant that comprehends meaning, not just keywords. Use to find relevant knowledge items, decisions, patterns, or related concepts. Choose search strategy: fast=quick keyword matches, auto=balanced approach (recommended), deep=comprehensive with relationship expansion. Returns ranked results with confidence scores.',
         inputSchema: {
           type: 'object',
           properties: {
-            query: { type: 'string', description: 'Search query' },
-            limit: { type: 'integer', default: 10, minimum: 1, maximum: 100 },
+            query: { type: 'string', description: 'Search query - natural language works best' },
+            limit: {
+              type: 'integer',
+              default: 10,
+              minimum: 1,
+              maximum: 100,
+              description: 'Maximum results to return',
+            },
             types: {
               type: 'array',
               items: { type: 'string' },
-              description: 'Filter by knowledge types',
+              description: 'Filter by specific knowledge types (e.g., ["decision", "risk"])',
             },
             scope: {
               type: 'object',
               properties: {
-                project: { type: 'string' },
-                branch: { type: 'string' },
-                org: { type: 'string' },
+                project: { type: 'string', description: 'Filter to specific project' },
+                branch: { type: 'string', description: 'Filter to specific branch' },
+                org: { type: 'string', description: 'Filter to specific organization' },
               },
-              description: 'Scope filter',
+              description: 'Scope filter - narrows search to specific context',
             },
             mode: {
               type: 'string',
               enum: ['fast', 'auto', 'deep'],
               default: 'auto',
               description:
-                'Search mode: fast (keyword-only, ≤20 results), auto (hybrid, ≤50 results), deep (semantic+expansion, ≤100 results)',
+                'Search strategy: fast=keyword-only (quick), auto=balanced (recommended), deep=comprehensive with relationships',
             },
             expand: {
               type: 'string',
               enum: ['relations', 'parents', 'children', 'none'],
               default: 'none',
               description:
-                'P4-T4.2: Graph expansion options - relations (both parents+children), parents (incoming only), children (outgoing only), none (no expansion)',
+                'Graph expansion: relations=related items, parents=what references this, children=what this references, none=no expansion',
             },
           },
           required: ['query'],
         },
       },
       {
-        name: 'memory_get_document',
-        description: 'Retrieve a complete document including all chunks using chunk_info metadata',
+        name: 'system_status',
+        description:
+          'System administration and monitoring toolkit for Cortex memory. This is your system dashboard - use for database health checks, performance metrics, document management, and maintenance tasks. Consolidates 11 essential operations into one tool: health monitoring, statistics gathering, telemetry reports, system metrics, document retrieval/reassembly, and cleanup operations. Each operation returns targeted information for system management and troubleshooting.',
         inputSchema: {
           type: 'object',
           properties: {
-            id: {
+            operation: {
               type: 'string',
-              description: 'Document ID (parent ID of chunked document)',
+              enum: [
+                'health',
+                'stats',
+                'telemetry',
+                'metrics',
+                'get_document',
+                'reassemble_document',
+                'get_document_with_chunks',
+                'run_purge',
+                'get_purge_reports',
+                'get_purge_statistics',
+                'upsert_merge',
+              ],
+              description:
+                'System operation to perform. Use health=check database status, stats=get database statistics, telemetry=performance report, metrics=system summary (use summary=true for concise), get_document=retrieve document by ID, reassemble_document=reconstruct from chunks, get_document_with_chunks=get document with all chunks, run_purge=cleanup expired items (use dry_run=true to preview), get_purge_reports=recent cleanup reports, get_purge_statistics=period statistics, upsert_merge=store with intelligent duplicate merging',
             },
             scope: {
               type: 'object',
               properties: {
-                project: { type: 'string' },
-                branch: { type: 'string' },
-                org: { type: 'string' },
+                project: { type: 'string', description: 'Project context for operations' },
+                branch: { type: 'string', description: 'Branch context for operations' },
+                org: { type: 'string', description: 'Organization context for operations' },
               },
-              description: 'Scope filter (optional)',
+              description:
+                'Scope filter - applies to stats, get_document, reassemble_document operations',
             },
-          },
-          required: ['id'],
-        },
-      },
-      {
-        name: 'database_health',
-        description: 'Check the health and status of the Qdrant database connection',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: 'database_stats',
-        description: 'Get comprehensive statistics about the database and knowledge base',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            scope: {
-              type: 'object',
-              properties: {
-                project: { type: 'string' },
-                branch: { type: 'string' },
-                org: { type: 'string' },
-              },
-            },
-          },
-          required: [],
-        },
-      },
-      {
-        name: 'telemetry_report',
-        description:
-          'Get baseline telemetry report showing store/find metrics and system performance',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: 'system_metrics',
-        description:
-          'P8-T8.3: Get comprehensive system metrics including store_count, find_count, dedupe_rate, validator_fail_rate, purge_count',
-        inputSchema: {
-          type: 'object',
-          properties: {
             summary: {
               type: 'boolean',
               default: false,
-              description: 'Return simplified metrics summary instead of full detailed metrics',
+              description:
+                'Return simplified summary instead of detailed data (for metrics operation)',
             },
-          },
-          required: [],
-        },
-      },
-      {
-        name: 'reassemble_document',
-        description:
-          'Reassemble a full document from its chunks using parent_id and chunk ordering',
-        inputSchema: {
-          type: 'object',
-          properties: {
             parent_id: {
               type: 'string',
-              description: 'The ID of the parent document to reassemble from chunks',
+              description: 'Document parent ID (for get_document, reassemble_document operations)',
             },
-            scope: {
-              type: 'object',
-              properties: {
-                project: { type: 'string' },
-                branch: { type: 'string' },
-                org: { type: 'string' },
-              },
-              description: 'Scope filter for chunk search',
+            item_id: {
+              type: 'string',
+              description: 'Alternative document ID (for get_document operation)',
+            },
+            include_metadata: {
+              type: 'boolean',
+              default: true,
+              description: 'Include detailed metadata in response (for document operations)',
             },
             min_completeness: {
               type: 'number',
               minimum: 0,
               maximum: 1,
               default: 0.5,
-              description: 'Minimum completeness ratio (0.0-1.0) required for reassembly',
+              description: 'Minimum completeness ratio 0.0-1.0 for document reassembly',
             },
-          },
-          required: ['parent_id'],
-        },
-      },
-      {
-        name: 'get_document_with_chunks',
-        description:
-          'Get a document with all its chunks reassembled in order, with detailed metadata and parent information',
-        inputSchema: {
-          type: 'object',
-          properties: {
             doc_id: {
               type: 'string',
-              description:
-                'The ID of the document to retrieve (can be parent ID or chunk parent ID)',
+              description: 'Document ID (for get_document_with_chunks operation)',
             },
             options: {
               type: 'object',
               properties: {
+                dry_run: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Preview cleanup without deleting (for run_purge)',
+                },
+                batch_size: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 1000,
+                  default: 100,
+                  description: 'Items per batch (for run_purge)',
+                },
+                max_batches: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 100,
+                  default: 50,
+                  description: 'Maximum batches to process (for run_purge)',
+                },
                 include_metadata: {
                   type: 'boolean',
                   default: true,
-                  description: 'Include detailed metadata in response',
+                  description: 'Include metadata in response (for get_document_with_chunks)',
                 },
                 preserve_chunk_markers: {
                   type: 'boolean',
                   default: false,
-                  description: 'Keep CHUNK X of Y markers in reassembled content',
+                  description: 'Keep chunk markers in content (for get_document_with_chunks)',
                 },
                 filter_by_scope: {
                   type: 'boolean',
                   default: true,
-                  description: 'Filter chunks by parent document scope',
+                  description: 'Filter chunks by scope (for get_document_with_chunks)',
                 },
                 sort_by_position: {
                   type: 'boolean',
                   default: true,
-                  description: 'Sort chunks by their position index',
+                  description: 'Sort chunks by position (for get_document_with_chunks)',
                 },
               },
-              description: 'Reassembly options',
+              description: 'Operation-specific configuration options',
             },
-          },
-          required: ['doc_id'],
-        },
-      },
-      {
-        name: 'memory_get_document',
-        description:
-          'Get a document with parent and all its chunks reassembled in proper order (alias for get_document_with_chunks)',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            parent_id: {
-              type: 'string',
-              description: 'The ID of the parent document or chunk to retrieve and reassemble',
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              default: 10,
+              description: 'Maximum reports to retrieve (for get_purge_reports)',
             },
-            item_id: {
-              type: 'string',
-              description:
-                'Alternative to parent_id - the ID of any chunk or parent item to retrieve and reassemble',
+            days: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 365,
+              default: 30,
+              description: 'Period in days for statistics (for get_purge_statistics)',
             },
-            scope: {
-              type: 'object',
-              properties: {
-                project: { type: 'string' },
-                branch: { type: 'string' },
-                org: { type: 'string' },
-              },
-              description: 'Scope filter for chunk search',
-            },
-            include_metadata: {
-              type: 'boolean',
-              default: true,
-              description: 'Include detailed metadata in response',
-            },
-          },
-          required: [],
-          oneOf: [{ required: ['parent_id'] }, { required: ['item_id'] }],
-        },
-      },
-      {
-        name: 'memory_upsert_with_merge',
-        description:
-          'Store knowledge items with intelligent merge-if-similar functionality (≥0.85 similarity)',
-        inputSchema: {
-          type: 'object',
-          properties: {
             items: {
               type: 'array',
               items: {
@@ -956,10 +899,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                       'risk',
                       'assumption',
                     ],
-                    description: 'Knowledge type (16 supported types)',
+                    description: 'Knowledge type for storage (same as memory_store)',
                   },
-                  content: { type: 'string', description: 'Content of the knowledge item' },
-                  metadata: { type: 'object', description: 'Additional metadata' },
+                  content: {
+                    type: 'string',
+                    description: 'Knowledge content to store (same as memory_store)',
+                  },
+                  metadata: {
+                    type: 'object',
+                    description: 'Additional metadata (same as memory_store)',
+                  },
                   scope: {
                     type: 'object',
                     properties: {
@@ -967,98 +916,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                       branch: { type: 'string' },
                       org: { type: 'string' },
                     },
-                    description: 'Scope context',
+                    description: 'Scope context (same as memory_store)',
                   },
                 },
                 required: ['kind', 'content'],
               },
+              description:
+                'Knowledge items to store with intelligent merge (for upsert_merge operation)',
             },
             similarity_threshold: {
               type: 'number',
               minimum: 0.5,
               maximum: 1.0,
               default: 0.85,
-              description:
-                'Similarity threshold for merging (0.85 = merge items with 85%+ similarity)',
+              description: 'Similarity threshold for merging 0.5-1.0 (for upsert_merge)',
             },
             merge_strategy: {
               type: 'string',
               enum: ['intelligent', 'prefer_newer', 'prefer_existing', 'combine'],
               default: 'intelligent',
-              description: 'Strategy for merging similar items',
+              description:
+                'Merge strategy: intelligent=smart merging, prefer_newer=keep newest, prefer_existing=keep oldest, combine=merge both (for upsert_merge)',
             },
           },
-          required: ['items'],
-        },
-      },
-      {
-        name: 'ttl_worker_run_with_report',
-        description: 'Run the TTL worker with comprehensive purge reporting and logging',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            options: {
-              type: 'object',
-              properties: {
-                dry_run: {
-                  type: 'boolean',
-                  default: false,
-                  description:
-                    'Run in dry-run mode to see what would be deleted without actually deleting',
-                },
-                batch_size: {
-                  type: 'integer',
-                  minimum: 1,
-                  maximum: 1000,
-                  default: 100,
-                  description: 'Number of items to process in each batch',
-                },
-                max_batches: {
-                  type: 'integer',
-                  minimum: 1,
-                  maximum: 100,
-                  default: 50,
-                  description: 'Maximum number of batches to process in one run',
-                },
-              },
-              description: 'TTL worker configuration options',
-            },
-          },
-          required: [],
-        },
-      },
-      {
-        name: 'get_purge_reports',
-        description: 'Get recent TTL worker purge reports with detailed statistics',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 100,
-              default: 10,
-              description: 'Maximum number of recent reports to retrieve',
-            },
-          },
-          required: [],
-        },
-      },
-      {
-        name: 'get_purge_statistics',
-        description: 'Get TTL worker purge statistics for a specified time period',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            days: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 365,
-              default: 30,
-              description: 'Number of days to calculate statistics for',
-            },
-          },
-          required: [],
+          required: ['operation'],
         },
       },
     ],
@@ -1112,51 +993,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
       case 'memory_find':
         result = await handleMemoryFind(
-          args as { query: string; limit?: number; types?: string[]; scope?: any }
-        );
-        break;
-      case 'database_health':
-        result = await handleDatabaseHealth();
-        break;
-      case 'database_stats':
-        result = await handleDatabaseStats(args as { scope?: any });
-        break;
-      case 'telemetry_report':
-        result = await handleTelemetryReport();
-        break;
-      case 'system_metrics':
-        result = await handleSystemMetrics(args as { summary?: boolean });
-        break;
-      case 'reassemble_document':
-        result = await handleReassembleDocument(
-          args as { parent_id: string; scope?: any; min_completeness?: number }
-        );
-        break;
-      case 'get_document_with_chunks':
-        result = await handleGetDocumentWithChunks(args as { doc_id: string; options?: any });
-        break;
-      case 'memory_get_document':
-        result = await handleMemoryGetDocument(
-          args as { parent_id?: string; item_id?: string; scope?: any; include_metadata?: boolean }
-        );
-        break;
-      case 'memory_upsert_with_merge':
-        result = await handleMemoryUpsertWithMerge(
           args as {
-            items: any[];
-            similarity_threshold?: number;
-            merge_strategy?: string;
+            query: string;
+            limit?: number;
+            types?: string[];
+            scope?: any;
+            mode?: 'fast' | 'auto' | 'deep';
+            expand?: 'relations' | 'parents' | 'children' | 'none';
           }
         );
         break;
-      case 'ttl_worker_run_with_report':
-        result = await handleTTLWorkerRunWithReport(args as { options?: any });
-        break;
-      case 'get_purge_reports':
-        result = await handleGetPurgeReports(args as { limit?: number });
-        break;
-      case 'get_purge_statistics':
-        result = await handleGetPurgeStatistics(args as { days?: number });
+      case 'system_status':
+        result = await handleSystemStatus(args);
         break;
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -1280,7 +1128,9 @@ async function processMemoryStore(transformedItems: any[]) {
 }
 
 async function processWithMerge(transformedItems: any[], memoryStoreOrchestrator: any) {
-  logger.info(`Using DEDUP_ACTION=merge, performing upsert with merge for ${transformedItems.length} items`);
+  logger.info(
+    `Using DEDUP_ACTION=merge, performing upsert with merge for ${transformedItems.length} items`
+  );
 
   const { deduplicationService } = await import(
     './services/deduplication/deduplication-service.js'
@@ -1313,7 +1163,12 @@ async function processWithMerge(transformedItems: any[], memoryStoreOrchestrator
   return response;
 }
 
-async function updateMetrics(response: any, transformedItems: any[], originalItems: any[], startTime: number) {
+async function updateMetrics(
+  response: any,
+  transformedItems: any[],
+  originalItems: any[],
+  startTime: number
+) {
   const duration = Date.now() - startTime;
   const success = response.errors.length === 0;
 
@@ -1692,7 +1547,7 @@ async function handleReassembleDocument(args: {
     // Search for chunks belonging to the parent document
     const chunkSearchQuery = `parent_id:${parentId} is_chunk:true`;
 
-        //   query: chunkSearchQuery,
+    //   query: chunkSearchQuery,
     //   limit: 100, // Reasonable limit for chunks
     //   types: ['section', 'runbook', 'incident'], // Chunkable types
     //   scope: scope || {},
@@ -2370,6 +2225,61 @@ process.on('SIGTERM', () => {
   stopExpiryWorkerScheduler();
   process.exit(0);
 });
+
+async function handleSystemStatus(args: any) {
+  const { operation } = args;
+
+  try {
+    switch (operation) {
+      case 'health':
+        return await handleDatabaseHealth();
+
+      case 'stats':
+        return await handleDatabaseStats(args);
+
+      case 'telemetry':
+        return await handleTelemetryReport();
+
+      case 'metrics':
+        return await handleSystemMetrics(args);
+
+      case 'get_document':
+        return await handleMemoryGetDocument(args);
+
+      case 'reassemble_document':
+        return await handleReassembleDocument(args);
+
+      case 'get_document_with_chunks':
+        return await handleGetDocumentWithChunks(args);
+
+      case 'run_purge':
+        return await handleTTLWorkerRunWithReport(args);
+
+      case 'get_purge_reports':
+        return await handleGetPurgeReports(args);
+
+      case 'get_purge_statistics':
+        return await handleGetPurgeStatistics(args);
+
+      case 'upsert_merge':
+        return await handleMemoryUpsertWithMerge(args);
+
+      default:
+        throw new Error(`Unknown system operation: ${operation}`);
+    }
+  } catch (error) {
+    logger.error(`System operation failed: ${operation}`, { error, args });
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `System operation '${operation}' failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+  }
+}
 
 // Export VectorDatabase and KeyVaultService for testing
 export { VectorDatabase, getKeyVaultService };

@@ -1,8 +1,8 @@
-# Cortex Memory MCP API Documentation
+# Cortex Memory MCP API Documentation v2.0
 
 ## Overview
 
-The Cortex Memory MCP Server provides a basic API for knowledge storage, retrieval, and management through the Model Context Protocol (MCP). This document covers currently implemented API endpoints, their parameters, responses, and usage examples.
+The Cortex Memory MCP Server v2.0 provides an AI-optimized API for knowledge storage, retrieval, and management through the Model Context Protocol (MCP). This document covers the streamlined 3-tool interface, their parameters, responses, and usage examples designed specifically for AI agent integration.
 
 ## Base Architecture
 
@@ -12,13 +12,15 @@ The system uses a Qdrant-only database layer:
 
 ⚠️ **Important**: This system uses Qdrant exclusively. PostgreSQL is not used or configured.
 
-## Core API Methods
+## Core API Methods (v2.0 - 3-Tool Interface)
 
 ### 1. memory_store
 
-Store knowledge items in the database with automatic deduplication and validation.
+Store knowledge items in Cortex memory with intelligent deduplication. Think of this as a smart knowledge base that automatically prevents duplicate entries (85% similarity threshold). Use for storing user preferences, decisions, observations, tasks, incidents, risks, and assumptions. Returns success status and details of what was stored vs skipped due to deduplication.
 
 **Endpoint**: `memory_store`
+
+**AI-Friendly Description**: Store knowledge items with intelligent deduplication and automatic validation.
 
 **Parameters**:
 
