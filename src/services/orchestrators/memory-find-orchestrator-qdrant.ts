@@ -35,6 +35,7 @@ import {
   type SearchOptions,
 } from '../../db/database-interface.js';
 import { ResultGroupingService } from '../search/result-grouping-service.js';
+import { createFindObservability } from '../../utils/observability-helper.js';
 
 /**
  * Search strategy configuration
@@ -208,6 +209,7 @@ export class MemoryFindOrchestratorQdrant {
    * Legacy find operation for backward compatibility
    */
   async findItemsLegacy(query: SearchQuery): Promise<MemoryFindResponse> {
+    const startTime = Date.now();
     // Convert legacy query to smart find format
     const smartQuery: SmartFindRequest = {
       query: query.query,
@@ -246,6 +248,22 @@ export class MemoryFindOrchestratorQdrant {
         results_found: result.hits.length,
         confidence_average: Number(result.autonomous_metadata.confidence) || 0,
         user_message_suggestion: result.autonomous_metadata.recommendation,
+      },
+      observability: createFindObservability(
+        result.autonomous_metadata.strategy_used as any,
+        true, // vector_used - Qdrant always uses vectors
+        false, // degraded - assume not degraded unless error occurs
+        Date.now() - startTime,
+        Number(result.autonomous_metadata.confidence) || 0
+      ),
+      meta: {
+        strategy: result.autonomous_metadata.strategy_used,
+        vector_used: true,
+        degraded: false,
+        source: 'memory-find-orchestrator-qdrant',
+        execution_time_ms: Date.now() - startTime,
+        confidence_score: Number(result.autonomous_metadata.confidence) || 0,
+        truncated: false,
       },
     };
   }

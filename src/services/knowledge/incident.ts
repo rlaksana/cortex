@@ -2,7 +2,7 @@
 import type { IncidentData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeIncident(data: IncidentData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -37,7 +37,7 @@ export async function findIncidents(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<IncidentData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -89,7 +89,7 @@ export async function updateIncident(
   data: Partial<IncidentData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

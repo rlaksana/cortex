@@ -239,7 +239,7 @@ export class IdempotentStoreService {
     // Convert StoreResult to KnowledgeItem
     const knowledgeItem: KnowledgeItem = {
       id: result.id,
-      kind: result.kind,
+      kind: result.kind || item.kind,
       scope: item.scope,
       data: {
         ...item.data,

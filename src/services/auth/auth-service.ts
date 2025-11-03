@@ -3,9 +3,9 @@
  * Implements JWT-based authentication with RBAC and scope-based authorization
  */
 
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import crypto from 'node:crypto';
+import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import { getKeyVaultService } from '../security/key-vault-service.js';
@@ -797,7 +797,7 @@ export class AuthService {
   }
 
   revokeAllUserSessions(userId: string): void {
-    for (const [sessionId, session] of this.activeSessions) {
+    for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
       if (session.user_id === userId) {
         this.revokeSession(sessionId);
       }
@@ -829,7 +829,7 @@ export class AuthService {
         const nowDate = new Date(now);
 
         // Clean up expired sessions
-        for (const [sessionId, session] of this.activeSessions) {
+        for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
           if (nowDate > new Date(session.expires_at)) {
             this.activeSessions.delete(sessionId);
           }
@@ -839,7 +839,7 @@ export class AuthService {
         const expiryMs = 7 * 24 * 60 * 60 * 1000; // 7 days
         let cacheCleanupCount = 0;
 
-        for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
+        for (const [jti, entry] of Array.from(this.tokenBlacklistCache.entries())) {
           if (now - entry.timestamp > expiryMs) {
             this.tokenBlacklistCache.delete(jti);
             this.tokenBlacklist.delete(jti);
@@ -883,7 +883,7 @@ export class AuthService {
           const oneHourMs = 60 * 60 * 1000;
           const beforeCount = this.tokenBlacklistCache.size;
 
-          for (const [jti, entry] of this.tokenBlacklistCache.entries()) {
+          for (const [jti, entry] of Array.from(this.tokenBlacklistCache.entries())) {
             if (now - entry.timestamp > oneHourMs) {
               this.tokenBlacklistCache.delete(jti);
               this.tokenBlacklist.delete(jti);

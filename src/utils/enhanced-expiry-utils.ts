@@ -1,0 +1,671 @@
+/**
+ * Enhanced Expiry Utilities
+ *
+ * Advanced expiry timestamp handling with timezone awareness,
+ * validation, and safety mechanisms.
+ *
+ * Features:
+ * - Timezone-aware expiry calculations
+ * - Comprehensive validation and error handling
+ * - Safety mechanisms to prevent data loss
+ * - Format conversion and normalization
+ * - Expiry checking with grace periods
+ *
+ * @author Cortex Team
+ * @version 1.0.0
+ * @since 2025
+ */
+
+import { logger } from './logger.js';
+import type { KnowledgeItem } from '../types/core-interfaces.js';
+
+/**
+ * Timezone configuration interface
+ */
+export interface TimezoneConfig {
+  timezone: string;
+  applyDST: boolean;
+  businessHoursOnly?: boolean;
+  gracePeriodMinutes?: number;
+}
+
+/**
+ * Expiry validation result interface
+ */
+export interface ExpiryValidationResult {
+  isValid: boolean;
+  normalizedExpiry?: string;
+  errors: string[];
+  warnings: string[];
+  suggestedCorrection?: string;
+}
+
+/**
+ * Expiry calculation options interface
+ */
+export interface ExpiryCalculationOptions {
+  /** Timezone configuration */
+  timezone?: TimezoneConfig;
+  /** Enable strict validation */
+  strictMode?: boolean;
+  /** Apply grace period before expiry */
+  gracePeriodMinutes?: number;
+  /** Prevent setting expiry in the past */
+  preventPastExpiry?: boolean;
+  /** Maximum allowed expiry duration (in days) */
+  maxExpiryDays?: number;
+  /** Minimum required expiry duration (in days) */
+  minExpiryDays?: number;
+  /** Allow business hours only for expiry */
+  businessHoursOnly?: boolean;
+  /** Format preference for output */
+  outputFormat?: 'iso' | 'unix' | 'readable';
+}
+
+/**
+ * Default timezone configurations
+ */
+const DEFAULT_TIMEZONES: Record<string, TimezoneConfig> = {
+  UTC: {
+    timezone: 'UTC',
+    applyDST: false,
+  },
+  'US/Eastern': {
+    timezone: 'America/New_York',
+    applyDST: true,
+    businessHoursOnly: false,
+    gracePeriodMinutes: 15,
+  },
+  'US/Pacific': {
+    timezone: 'America/Los_Angeles',
+    applyDST: true,
+    businessHoursOnly: false,
+    gracePeriodMinutes: 15,
+  },
+  'Europe/London': {
+    timezone: 'Europe/London',
+    applyDST: true,
+    businessHoursOnly: true,
+    gracePeriodMinutes: 30,
+  },
+  'Asia/Tokyo': {
+    timezone: 'Asia/Tokyo',
+    applyDST: false,
+    businessHoursOnly: true,
+    gracePeriodMinutes: 15,
+  },
+};
+
+/**
+ * Business hours configuration
+ */
+const BUSINESS_HOURS = {
+  start: { hour: 9, minute: 0 },
+  end: { hour: 17, minute: 0 },
+  daysOfWeek: [1, 2, 3, 4, 5], // Monday - Friday
+  holidays: [], // Can be populated with holiday dates
+};
+
+/**
+ * Enhanced expiry utilities class
+ */
+export class EnhancedExpiryUtils {
+  private static instance: EnhancedExpiryUtils;
+  private timezoneCache: Map<string, Intl.DateTimeFormat> = new Map();
+
+  private constructor() {}
+
+  /**
+   * Get singleton instance
+   */
+  static getInstance(): EnhancedExpiryUtils {
+    if (!EnhancedExpiryUtils.instance) {
+      EnhancedExpiryUtils.instance = new EnhancedExpiryUtils();
+    }
+    return EnhancedExpiryUtils.instance;
+  }
+
+  /**
+   * Calculate expiry timestamp with advanced options
+   */
+  calculateExpiry(
+    baseTime: Date,
+    durationMs: number,
+    options: ExpiryCalculationOptions = {}
+  ): string {
+    try {
+      let expiryTime = new Date(baseTime.getTime() + durationMs);
+
+      // Apply timezone adjustments
+      if (options.timezone) {
+        expiryTime = this.applyTimezoneAdjustment(expiryTime, options.timezone);
+      }
+
+      // Apply business hours restriction
+      if (options.businessHoursOnly || options.timezone?.businessHoursOnly) {
+        expiryTime = this.adjustForBusinessHours(expiryTime, options.timezone);
+      }
+
+      // Apply minimum/maximum constraints
+      expiryTime = this.applyExpiryConstraints(expiryTime, baseTime, options);
+
+      // Prevent past expiry
+      if (options.preventPastExpiry !== false && expiryTime <= new Date()) {
+        logger.warn('Prevented setting expiry in the past', {
+          requestedExpiry: expiryTime.toISOString(),
+          currentTime: new Date().toISOString(),
+        });
+        expiryTime = new Date(Date.now() + 60 * 60 * 1000); // Minimum 1 hour in future
+      }
+
+      // Format output
+      return this.formatExpiryOutput(expiryTime, options.outputFormat);
+    } catch (error) {
+      logger.error('Enhanced expiry calculation failed', { error, baseTime, durationMs, options });
+      // Fallback to simple calculation
+      const fallbackExpiry = new Date(baseTime.getTime() + durationMs);
+      return fallbackExpiry.toISOString();
+    }
+  }
+
+  /**
+   * Validate and normalize expiry timestamp
+   */
+  validateExpiry(
+    expiryInput: string | number | Date,
+    options: ExpiryCalculationOptions = {}
+  ): ExpiryValidationResult {
+    const result: ExpiryValidationResult = {
+      isValid: false,
+      errors: [],
+      warnings: [],
+    };
+
+    try {
+      // Parse input to Date object
+      let expiryDate: Date;
+
+      if (typeof expiryInput === 'string') {
+        expiryDate = new Date(expiryInput);
+      } else if (typeof expiryInput === 'number') {
+        expiryDate = new Date(expiryInput);
+      } else if (expiryInput instanceof Date) {
+        expiryDate = new Date(expiryInput.getTime());
+      } else {
+        result.errors.push('Invalid expiry input type');
+        return result;
+      }
+
+      // Check if date is valid
+      if (isNaN(expiryDate.getTime())) {
+        result.errors.push('Invalid date format');
+        return result;
+      }
+
+      // Check if expiry is in the future
+      const now = new Date();
+      const gracePeriodMs = (options.gracePeriodMinutes || 0) * 60 * 1000;
+      const effectiveNow = new Date(now.getTime() - gracePeriodMs);
+
+      if (expiryDate < effectiveNow) {
+        if (options.strictMode) {
+          result.errors.push('Expiry date is in the past');
+        } else {
+          result.warnings.push('Expiry date is in the past');
+
+          // Suggest correction
+          const suggestedExpiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          result.suggestedCorrection = suggestedExpiry.toISOString();
+        }
+      }
+
+      // Check for reasonable future dates
+      const maxFutureDate = new Date(now.getTime() + 10 * 365 * 24 * 60 * 60 * 1000); // 10 years
+      if (expiryDate > maxFutureDate) {
+        if (options.strictMode) {
+          result.errors.push('Expiry date is too far in the future (more than 10 years)');
+        } else {
+          result.warnings.push('Expiry date is very far in the future');
+        }
+      }
+
+      // Apply timezone validation if specified
+      if (options.timezone) {
+        const timezoneValidation = this.validateTimezone(expiryDate, options.timezone);
+        if (!timezoneValidation.isValid) {
+          result.errors.push(...timezoneValidation.errors);
+        }
+        result.warnings.push(...timezoneValidation.warnings);
+      }
+
+      // Validate business hours if required
+      if (options.businessHoursOnly || options.timezone?.businessHoursOnly) {
+        const businessHoursValidation = this.validateBusinessHours(expiryDate);
+        if (!businessHoursValidation.isValid) {
+          if (options.strictMode) {
+            result.errors.push(...businessHoursValidation.errors);
+          } else {
+            result.warnings.push(...businessHoursValidation.warnings);
+            // Suggest next business hours
+            const nextBusinessHours = this.getNextBusinessHours(expiryDate);
+            result.suggestedCorrection = nextBusinessHours.toISOString();
+          }
+        }
+      }
+
+      // Normalize the expiry timestamp
+      result.normalizedExpiry = this.normalizeExpiryTimestamp(expiryDate, options);
+
+      // Final validation result
+      result.isValid = result.errors.length === 0;
+    } catch (error) {
+      result.errors.push(
+        `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+
+    return result;
+  }
+
+  /**
+   * Check if item has expired with grace period
+   */
+  isExpiredWithGrace(
+    item: KnowledgeItem,
+    gracePeriodMinutes: number = 0
+  ): {
+    isExpired: boolean;
+    expiresAt: string | null;
+    timeRemaining: number; // milliseconds
+    gracePeriodRemaining: number; // milliseconds
+  } {
+    const expiryTime = item.expiry_at || item.data?.expiry_at;
+
+    if (!expiryTime) {
+      return {
+        isExpired: false,
+        expiresAt: null,
+        timeRemaining: Number.POSITIVE_INFINITY,
+        gracePeriodRemaining: Number.POSITIVE_INFINITY,
+      };
+    }
+
+    try {
+      const expiryDate = new Date(expiryTime);
+      const now = new Date();
+      const gracePeriodMs = gracePeriodMinutes * 60 * 1000;
+
+      const timeRemaining = expiryDate.getTime() - now.getTime();
+      const gracePeriodRemaining = timeRemaining + gracePeriodMs;
+
+      return {
+        isExpired: timeRemaining <= 0,
+        expiresAt: expiryTime,
+        timeRemaining,
+        gracePeriodRemaining,
+      };
+    } catch (error) {
+      logger.error('Error checking expiry with grace period', {
+        error,
+        itemId: item.id,
+        expiryTime,
+      });
+
+      return {
+        isExpired: false,
+        expiresAt: expiryTime,
+        timeRemaining: Number.POSITIVE_INFINITY,
+        gracePeriodRemaining: Number.POSITIVE_INFINITY,
+      };
+    }
+  }
+
+  /**
+   * Get time remaining until expiry in human-readable format
+   */
+  getTimeRemainingExpiry(item: KnowledgeItem): {
+    formatted: string;
+    raw: {
+      days: number;
+      hours: number;
+      minutes: number;
+      seconds: number;
+      totalMilliseconds: number;
+    };
+    isExpired: boolean;
+  } {
+    const expiryTime = item.expiry_at || item.data?.expiry_at;
+
+    if (!expiryTime) {
+      return {
+        formatted: 'Never expires',
+        raw: {
+          days: Number.POSITIVE_INFINITY,
+          hours: Number.POSITIVE_INFINITY,
+          minutes: Number.POSITIVE_INFINITY,
+          seconds: Number.POSITIVE_INFINITY,
+          totalMilliseconds: Number.POSITIVE_INFINITY,
+        },
+        isExpired: false,
+      };
+    }
+
+    try {
+      const expiryDate = new Date(expiryTime);
+      const now = new Date();
+      const diff = expiryDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        return {
+          formatted: 'Expired',
+          raw: {
+            days: 0,
+            hours: 0,
+            minutes: 0,
+            seconds: 0,
+            totalMilliseconds: 0,
+          },
+          isExpired: true,
+        };
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      let formatted = '';
+      if (days > 0) formatted += `${days}d `;
+      if (hours > 0 || days > 0) formatted += `${hours}h `;
+      if (minutes > 0 || hours > 0 || days > 0) formatted += `${minutes}m `;
+      formatted += `${seconds}s`;
+
+      return {
+        formatted: formatted.trim(),
+        raw: {
+          days,
+          hours,
+          minutes,
+          seconds,
+          totalMilliseconds: diff,
+        },
+        isExpired: false,
+      };
+    } catch (error) {
+      logger.error('Error calculating time remaining', {
+        error,
+        itemId: item.id,
+        expiryTime,
+      });
+
+      return {
+        formatted: 'Unknown',
+        raw: {
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          totalMilliseconds: 0,
+        },
+        isExpired: false,
+      };
+    }
+  }
+
+  /**
+   * Apply timezone adjustment to expiry date
+   */
+  private applyTimezoneAdjustment(date: Date, timezoneConfig: TimezoneConfig): Date {
+    try {
+      const formatter = this.getDateTimeFormatter(timezoneConfig.timezone);
+      const parts = formatter.formatToParts(date);
+
+      // Extract date components and reconstruct in target timezone
+      const year = parseInt(parts.find((p) => p.type === 'year')?.value || '0');
+      const month = parseInt(parts.find((p) => p.type === 'month')?.value || '1') - 1;
+      const day = parseInt(parts.find((p) => p.type === 'day')?.value || '1');
+      const hour = parseInt(parts.find((p) => p.type === 'hour')?.value || '0');
+      const minute = parseInt(parts.find((p) => p.type === 'minute')?.value || '0');
+
+      return new Date(Date.UTC(year, month, day, hour, minute));
+    } catch (error) {
+      logger.warn('Timezone adjustment failed, using original date', {
+        error,
+        timezone: timezoneConfig.timezone,
+      });
+      return date;
+    }
+  }
+
+  /**
+   * Adjust expiry time for business hours
+   */
+  private adjustForBusinessHours(date: Date, timezoneConfig?: TimezoneConfig): Date {
+    let adjustedDate = new Date(date);
+
+    // Continue adjusting until we hit business hours
+    while (!this.isDuringBusinessHours(adjustedDate)) {
+      // Move to next day at business hours start
+      adjustedDate = new Date(adjustedDate);
+      adjustedDate.setUTCDate(adjustedDate.getUTCDate() + 1);
+      adjustedDate.setUTCHours(BUSINESS_HOURS.start.hour, BUSINESS_HOURS.start.minute, 0, 0);
+
+      // Skip weekends
+      const dayOfWeek = adjustedDate.getUTCDay();
+      if (dayOfWeek === 0) {
+        // Sunday
+        adjustedDate.setUTCDate(adjustedDate.getUTCDate() + 1); // Move to Monday
+      } else if (dayOfWeek === 6) {
+        // Saturday
+        adjustedDate.setUTCDate(adjustedDate.getUTCDate() + 2); // Move to Monday
+      }
+    }
+
+    return adjustedDate;
+  }
+
+  /**
+   * Check if a date is during business hours
+   */
+  private isDuringBusinessHours(date: Date): boolean {
+    const dayOfWeek = date.getUTCDay();
+    const hour = date.getUTCHours();
+
+    // Check if it's a weekday
+    if (!BUSINESS_HOURS.daysOfWeek.includes(dayOfWeek)) {
+      return false;
+    }
+
+    // Check if it's within business hours
+    const startHour = BUSINESS_HOURS.start.hour;
+    const endHour = BUSINESS_HOURS.end.hour;
+
+    return hour >= startHour && hour < endHour;
+  }
+
+  /**
+   * Get next business hours after given date
+   */
+  private getNextBusinessHours(date: Date): Date {
+    let nextDate = new Date(date);
+
+    // Move to next business day if needed
+    while (!this.isDuringBusinessHours(nextDate)) {
+      nextDate = new Date(nextDate);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      nextDate.setUTCHours(BUSINESS_HOURS.start.hour, BUSINESS_HOURS.start.minute, 0, 0);
+
+      const dayOfWeek = nextDate.getUTCDay();
+      if (dayOfWeek === 0) {
+        // Sunday
+        nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      } else if (dayOfWeek === 6) {
+        // Saturday
+        nextDate.setUTCDate(nextDate.getUTCDate() + 2);
+      }
+    }
+
+    return nextDate;
+  }
+
+  /**
+   * Apply expiry constraints (min/max duration)
+   */
+  private applyExpiryConstraints(
+    expiryDate: Date,
+    baseTime: Date,
+    options: ExpiryCalculationOptions
+  ): Date {
+    const now = baseTime;
+    let adjustedDate = new Date(expiryDate);
+
+    // Apply maximum expiry constraint
+    if (options.maxExpiryDays) {
+      const maxExpiryDate = new Date(now.getTime() + options.maxExpiryDays * 24 * 60 * 60 * 1000);
+      if (adjustedDate > maxExpiryDate) {
+        logger.warn('Expiry date exceeds maximum, applying constraint', {
+          originalExpiry: adjustedDate.toISOString(),
+          constrainedExpiry: maxExpiryDate.toISOString(),
+          maxExpiryDays: options.maxExpiryDays,
+        });
+        adjustedDate = maxExpiryDate;
+      }
+    }
+
+    // Apply minimum expiry constraint
+    if (options.minExpiryDays) {
+      const minExpiryDate = new Date(now.getTime() + options.minExpiryDays * 24 * 60 * 60 * 1000);
+      if (adjustedDate < minExpiryDate) {
+        logger.warn('Expiry date below minimum, applying constraint', {
+          originalExpiry: adjustedDate.toISOString(),
+          constrainedExpiry: minExpiryDate.toISOString(),
+          minExpiryDays: options.minExpiryDays,
+        });
+        adjustedDate = minExpiryDate;
+      }
+    }
+
+    return adjustedDate;
+  }
+
+  /**
+   * Validate timezone configuration
+   */
+  private validateTimezone(
+    date: Date,
+    timezoneConfig: TimezoneConfig
+  ): {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
+    const result: { isValid: boolean; errors: string[]; warnings: string[] } = {
+      isValid: true,
+      errors: [],
+      warnings: [],
+    };
+
+    try {
+      // Test if timezone is valid
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezoneConfig.timezone,
+      });
+      formatter.format(date);
+    } catch (error) {
+      result.isValid = false;
+      result.errors.push(`Invalid timezone: ${timezoneConfig.timezone}`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate business hours
+   */
+  private validateBusinessHours(date: Date): {
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+  } {
+    const result: { isValid: boolean; errors: string[]; warnings: string[] } = {
+      isValid: true,
+      errors: [],
+      warnings: [],
+    };
+
+    if (!this.isDuringBusinessHours(date)) {
+      result.isValid = false;
+      result.errors.push('Expiry time is outside business hours');
+    }
+
+    return result;
+  }
+
+  /**
+   * Normalize expiry timestamp
+   */
+  private normalizeExpiryTimestamp(date: Date, options: ExpiryCalculationOptions): string {
+    return this.formatExpiryOutput(date, options.outputFormat);
+  }
+
+  /**
+   * Format expiry output
+   */
+  private formatExpiryOutput(date: Date, format: 'iso' | 'unix' | 'readable' = 'iso'): string {
+    switch (format) {
+      case 'unix':
+        return Math.floor(date.getTime() / 1000).toString();
+      case 'readable':
+        return date.toLocaleString();
+      case 'iso':
+      default:
+        return date.toISOString();
+    }
+  }
+
+  /**
+   * Get cached DateTimeFormat instance
+   */
+  private getDateTimeFormatter(timezone: string): Intl.DateTimeFormat {
+    if (!this.timezoneCache.has(timezone)) {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      this.timezoneCache.set(timezone, formatter);
+    }
+    return this.timezoneCache.get(timezone)!;
+  }
+
+  /**
+   * Get available timezone configurations
+   */
+  getAvailableTimezones(): Record<string, TimezoneConfig> {
+    return { ...DEFAULT_TIMEZONES };
+  }
+
+  /**
+   * Add custom timezone configuration
+   */
+  addTimezoneConfig(name: string, config: TimezoneConfig): void {
+    DEFAULT_TIMEZONES[name] = config;
+    logger.info('Custom timezone configuration added', { name, config });
+  }
+
+  /**
+   * Clear timezone cache
+   */
+  clearTimezoneCache(): void {
+    this.timezoneCache.clear();
+    logger.info('Timezone cache cleared');
+  }
+}
+
+// Export singleton instance
+export const enhancedExpiryUtils = EnhancedExpiryUtils.getInstance();

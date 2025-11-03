@@ -221,7 +221,7 @@ export class ConfigurationTester {
     try {
       const env = Environment.getInstance();
       const envConfig = env.getRawConfig();
-      const hasRequiredVars = !!(envConfig.DB_HOST && envConfig.DB_NAME && envConfig.DB_USER);
+      const hasRequiredVars = !!(envConfig.QDRANT_URL && envConfig.QDRANT_COLLECTION_NAME);
 
       tests.push({
         name: 'environment-variables',
@@ -231,7 +231,7 @@ export class ConfigurationTester {
           ? 'Environment variables present'
           : 'Missing required environment variables',
         details: {
-          missing: hasRequiredVars ? undefined : ['DB_HOST', 'DB_NAME', 'DB_USER'],
+          missing: hasRequiredVars ? undefined : ['QDRANT_URL', 'QDRANT_COLLECTION_NAME'],
           recommendation: hasRequiredVars
             ? undefined
             : 'Set required environment variables in .env file',
@@ -526,17 +526,19 @@ export class ConfigurationTester {
     const dbConfig = databaseConfig.getConfiguration();
 
     // Test for secrets in configuration
-    const hasSecurePassword = Boolean(envConfig.DB_PASSWORD && envConfig.DB_PASSWORD.length >= 8);
+    const hasSecurePassword = Boolean(
+      envConfig.QDRANT_API_KEY && envConfig.QDRANT_API_KEY.length >= 8
+    );
 
     tests.push({
       name: 'database-password-security',
       passed: hasSecurePassword,
       duration: 0,
       message: hasSecurePassword
-        ? 'Database password meets security requirements'
-        : 'Database password may be weak',
+        ? 'Qdrant API key meets security requirements'
+        : 'Qdrant API key may be weak',
       details: {
-        passwordLength: envConfig.DB_PASSWORD?.length || 0,
+        passwordLength: envConfig.QDRANT_API_KEY?.length || 0,
         recommendation: hasSecurePassword
           ? undefined
           : 'Use a strong password (minimum 8 characters)',

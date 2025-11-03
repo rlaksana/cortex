@@ -1,0 +1,244 @@
+name: Quality Gate Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+      strict_mode:
+        description: 'Run in strict mode (fail on any issues)'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  QDRANT_URL: 'http://localhost:6333'
+  QDRANT_API_KEY: ''
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20]
+
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Wait for Qdrant
+      run: |
+        echo "Waiting for Qdrant to be ready..."
+        timeout 60 bash -c 'until curl -f http://localhost:6333/health; do sleep 2; done'
+        echo "Qdrant is ready!"
+
+    - name: Run Quality Gate Pipeline
+      id: quality-gate
+      run: |
+        STRICT_MODE="${{ github.event.inputs.strict_mode || 'true' }}"
+        if [ "$STRICT_MODE" = "true" ]; then
+          npm run quality-gate -- --strict
+        else
+          npm run quality-gate
+        fi
+      env:
+        CI: true
+        NODE_ENV: test
+
+    - name: Upload Quality Gate Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: quality-gate-report-${{ matrix.node-version }}
+        path: |
+          quality-gate-report.json
+          quality-gate-badge.svg
+        retention-days: 30
+
+    - name: Upload Coverage Reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports-${{ matrix.node-version }}
+        path: |
+          coverage/
+          coverage-final.json
+          lcov.info
+        retention-days: 30
+
+    - name: Update Coverage Badge
+      if: success()
+      run: |
+        # Generate coverage badge if coverage data exists
+        if [ -f "coverage/coverage-summary.json" ]; then
+          node scripts/generate-coverage-badge.js
+        fi
+
+    - name: Comment PR with Results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const report = JSON.parse(fs.readFileSync('quality-gate-report.json', 'utf8'));
+            const status = report.passed ? '✅ PASSED' : '❌ FAILED';
+            const color = report.passed ? '28a745' : 'dc3545';
+
+            let comment = `## 🚀 Quality Gate Results\n\n`;
+            comment += `**Status:** ${status}\n`;
+            comment += `**Version:** ${report.version}\n`;
+            comment += `**Duration:** ${(report.totalDuration / 1000).toFixed(2)}s\n\n`;
+
+            comment += `### 📊 Quality Metrics\n`;
+            comment += `- Typecheck Errors: ${report.qualityMetrics.typecheckErrors}\n`;
+            comment += `- Lint Errors: ${report.qualityMetrics.lintErrors}\n`;
+            comment += `- Unit Test Pass Rate: ${report.qualityMetrics.unitTestPassRate.toFixed(1)}%\n`;
+            comment += `- Integration Test Pass Rate: ${report.qualityMetrics.integrationTestPassRate.toFixed(1)}%\n`;
+            comment += `- Coverage: ${report.qualityMetrics.coverageThreshold.toFixed(1)}%\n\n`;
+
+            if (report.performanceMetrics) {
+              comment += `### ⚡ Performance Metrics\n`;
+              comment += `- Operations: ${report.performanceMetrics.totalOperations}/100\n`;
+              comment += `- Total Time: ${report.performanceMetrics.totalTime}ms\n`;
+              comment += `- Avg Time/Op: ${report.performanceMetrics.avgTimePerOperation.toFixed(2)}ms\n`;
+              comment += `- Ops/Second: ${report.performanceMetrics.operationsPerSecond.toFixed(0)}\n`;
+              comment += `- Performance Test: ${report.performanceMetrics.passedThreshold ? '✅ PASSED' : '❌ FAILED'}\n\n`;
+            }
+
+            comment += `### 📋 Stage Breakdown\n`;
+            report.stages.forEach((stage, index) => {
+              const icon = stage.passed ? '✅' : '❌';
+              const time = (stage.duration / 1000).toFixed(2);
+              comment += `${index + 1}. ${icon} ${stage.stage}: ${time}s\n`;
+            });
+
+            if (report.passed) {
+              comment += `\n🎉 **Quality gate passed! Ready for merge.**`;
+            } else {
+              comment += `\n🔧 **Quality gate failed! Please fix the issues above.**`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not read quality gate report:', error.message);
+          }
+
+    - name: Set Quality Gate Status
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+
+          try {
+            const report = JSON.parse(fs.readFileSync('quality-gate-report.json', 'utf8'));
+            const status = report.passed ? 'success' : 'failure';
+            const description = report.passed
+              ? `Quality gate passed (${(report.totalDuration / 1000).toFixed(1)}s)`
+              : `Quality gate failed - check logs`;
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: status,
+              target_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              description: description,
+              context: 'quality-gate'
+            });
+          } catch (error) {
+            console.log('Could not set quality gate status:', error.message);
+          }
+
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    needs: quality-gate
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    services:
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+        options: >-
+          --health-cmd "curl -f http://localhost:6333/health || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build project
+      run: npm run build
+
+    - name: Wait for Qdrant
+      run: |
+        echo "Waiting for Qdrant to be ready..."
+        timeout 60 bash -c 'until curl -f http://localhost:6333/health; do sleep 2; done'
+        echo "Qdrant is ready!"
+
+    - name: Run Performance Benchmarks
+      run: npm run test:performance:all
+
+    - name: Upload Benchmark Results
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-benchmarks
+        path: |
+          benchmark-results/
+          performance-metrics.json
+        retention-days: 90
+
+    - name: Store Performance Metrics
+      if: always()
+      run: |
+        # Store performance metrics for trend analysis
+        echo "Storing performance metrics for commit ${{ github.sha }}"
+        # This would integrate with Cortex Memory or external metrics system

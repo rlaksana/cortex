@@ -147,39 +147,224 @@ export class SemanticAnalyzer {
   }
 
   /**
-   * Split content into sentences while preserving structure
+   * Split content into sentences while preserving structure and handling edge cases
    */
   private splitIntoSentences(content: string): string[] {
-    // Normalize whitespace first
-    const normalized = content.replace(/\s+/g, ' ').trim();
+    // Normalize whitespace but preserve important structure
+    const normalized = content.replace(/[ \t]+/g, ' ').trim();
 
-    // Split by sentence boundaries, but preserve abbreviations and common patterns
-    const sentencePatterns = [
-      // End of sentence markers (., !, ?) followed by space and uppercase letter
-      /([.!?])\s+([A-Z])/g,
-      // Line breaks that indicate sentence separation
-      /\n\s*\n/g,
-      // List item separators
-      /[;]\s+/g,
+    // Enhanced sentence splitting with better edge case handling
+    const sentences = this.extractSentencesWithEdgeCaseHandling(normalized);
+
+    // Filter and clean sentences
+    return this.filterAndCleanSentences(sentences);
+  }
+
+  /**
+   * Extract sentences with comprehensive edge case handling
+   */
+  private extractSentencesWithEdgeCaseHandling(content: string): string[] {
+    const sentences: string[] = [];
+    let currentPosition = 0;
+
+    // Common abbreviations and patterns that should NOT end sentences
+    const abbreviations = [
+      'Mr',
+      'Mrs',
+      'Ms',
+      'Dr',
+      'Prof',
+      'Sr',
+      'Jr',
+      'St',
+      'Mt',
+      'Ave',
+      'Blvd',
+      'Rd',
+      'etc',
+      'e.g',
+      'i.e',
+      'vs',
+      'al',
+      'et',
+      'cf',
+      'viz',
+      'ff',
+      'p',
+      'pp',
+      'vol',
+      'fig',
+      'figs',
+      'tab',
+      'tabs',
+      'eq',
+      'eqs',
+      'ref',
+      'refs',
     ];
 
-    let sentences: string[] = [normalized];
+    const abbreviationPattern = new RegExp(`\\b(?:${abbreviations.join('|')})[.!?]\\s`, 'gi');
 
-    // Apply each pattern progressively
-    for (const pattern of sentencePatterns) {
-      const newSentences: string[] = [];
-      for (const sentence of sentences) {
-        const parts = sentence.split(pattern);
-        newSentences.push(...parts.map((part) => part.trim()).filter((part) => part.length > 0));
+    while (currentPosition < content.length) {
+      // Find next potential sentence ending
+      const nextEnd = this.findNextSentenceEnd(content, currentPosition, abbreviationPattern);
+
+      if (nextEnd === -1 || nextEnd === content.length) {
+        // No more sentence endings, add remaining content
+        const remaining = content.substring(currentPosition).trim();
+        if (remaining.length > 0) {
+          sentences.push(remaining);
+        }
+        break;
       }
-      sentences = newSentences;
+
+      // Extract sentence
+      let sentence = content.substring(currentPosition, nextEnd + 1).trim();
+
+      // Handle special cases
+      sentence = this.handleSpecialSentenceCases(sentence);
+
+      if (sentence.length > 0) {
+        sentences.push(sentence);
+      }
+
+      currentPosition = nextEnd + 1;
+
+      // Skip whitespace between sentences
+      while (currentPosition < content.length && /\s/.test(content[currentPosition])) {
+        currentPosition++;
+      }
     }
 
-    // Filter out very short fragments and clean up
-    return sentences
-      .filter((sentence) => sentence.length > 10) // Minimum 10 characters
-      .map((sentence) => sentence.replace(/^\s+|\s+$/g, '')) // Trim whitespace
-      .filter((sentence) => sentence.length > 0); // Remove empty strings
+    return sentences;
+  }
+
+  /**
+   * Find the next sentence ending position
+   */
+  private findNextSentenceEnd(
+    content: string,
+    startPos: number,
+    abbreviationPattern: RegExp
+  ): number {
+    let position = startPos;
+
+    while (position < content.length) {
+      // Look for sentence ending punctuation
+      const punctuationMatch = content.slice(position).match(/[.!?]/);
+      if (!punctuationMatch) {
+        return content.length;
+      }
+
+      const punctuationPos = position + punctuationMatch.index!;
+
+      // Check if this is within an abbreviation
+      const beforePunctuation = content.slice(Math.max(0, punctuationPos - 10), punctuationPos);
+      if (abbreviationPattern.test(beforePunctuation + content[punctuationPos] + ' ')) {
+        position = punctuationPos + 1;
+        continue;
+      }
+
+      // Check if followed by appropriate context (space, newline, or end)
+      const afterPunctuation = content.slice(punctuationPos + 1);
+      if (afterPunctuation.match(/^\s/) || afterPunctuation.length === 0) {
+        // Additional checks to avoid splitting inappropriately
+        if (this.isValidSentenceEnding(content, punctuationPos)) {
+          return punctuationPos;
+        }
+      }
+
+      position = punctuationPos + 1;
+    }
+
+    return content.length;
+  }
+
+  /**
+   * Validate that a punctuation mark is a valid sentence ending
+   */
+  private isValidSentenceEnding(content: string, punctuationPos: number): boolean {
+    const beforePunctuation = content.slice(Math.max(0, punctuationPos - 20), punctuationPos);
+    const afterPunctuation = content.slice(
+      punctuationPos + 1,
+      Math.min(content.length, punctuationPos + 10)
+    );
+
+    // Don't split after single letters (like in "A. B. C.")
+    if (beforePunctuation.match(/\b[A-Za-z]\s*$/)) {
+      return false;
+    }
+
+    // Don't split within numbers or decimals
+    if (beforePunctuation.match(/\d+$/) && afterPunctuation.match(/^\d/)) {
+      return false;
+    }
+
+    // Don't split within URLs or email addresses
+    if (beforePunctuation.match(/https?:\/\//) || beforePunctuation.match(/[\w.-]+@[\w.-]/)) {
+      return false;
+    }
+
+    // Don't split within file paths
+    if (beforePunctuation.match(/[\/\\][\w.-]*$/)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Handle special cases in sentence processing
+   */
+  private handleSpecialSentenceCases(sentence: string): string {
+    // Remove artificial line breaks within sentences
+    sentence = sentence.replace(/([a-zA-Z])\n([a-zA-Z])/g, '$1 $2');
+
+    // Preserve important formatting in code blocks
+    if (sentence.includes('```')) {
+      return sentence;
+    }
+
+    // Handle bullet points and numbered lists
+    if (sentence.match(/^\s*[-*+•]\s/) || sentence.match(/^\s*\d+\.\s/)) {
+      return sentence;
+    }
+
+    // Clean up extra whitespace but preserve single spaces
+    sentence = sentence.replace(/\s{2,}/g, ' ').trim();
+
+    return sentence;
+  }
+
+  /**
+   * Filter and clean sentences to ensure quality
+   */
+  private filterAndCleanSentences(sentences: string[]): string[] {
+    const filtered: string[] = [];
+
+    for (const sentence of sentences) {
+      const cleaned = sentence.trim();
+
+      // Skip very short fragments
+      if (cleaned.length < 5) {
+        continue;
+      }
+
+      // Skip sentences that are just punctuation or whitespace
+      if (/^[^\w]*$/.test(cleaned)) {
+        continue;
+      }
+
+      // Skip duplicate sentences (case-insensitive)
+      const normalized = cleaned.toLowerCase();
+      const isDuplicate = filtered.some((existing) => existing.toLowerCase() === normalized);
+
+      if (!isDuplicate) {
+        filtered.push(cleaned);
+      }
+    }
+
+    return filtered;
   }
 
   /**
@@ -253,9 +438,35 @@ export class SemanticAnalyzer {
   }
 
   /**
-   * Identify semantic boundaries based on similarity patterns
+   * Identify semantic boundaries based on similarity patterns with enhanced detection
    */
   private identifyBoundaries(sentences: string[], similarities: number[]): SemanticBoundary[] {
+    const boundaries: SemanticBoundary[] = [];
+
+    // Apply multiple detection strategies
+    const similarityBoundaries = this.detectSimilarityBoundaries(sentences, similarities);
+    const structuralBoundaries = this.detectStructuralBoundaries(sentences);
+    const topicBoundaries = this.detectTopicBoundaries(sentences, similarities);
+
+    // Combine and score boundaries
+    const combinedBoundaries = this.combineBoundaries(
+      similarityBoundaries,
+      structuralBoundaries,
+      topicBoundaries,
+      sentences
+    );
+
+    // Apply final filtering to ensure quality boundaries
+    return this.filterQualityBoundaries(combinedBoundaries, sentences, similarities);
+  }
+
+  /**
+   * Detect boundaries based on semantic similarity patterns
+   */
+  private detectSimilarityBoundaries(
+    sentences: string[],
+    similarities: number[]
+  ): SemanticBoundary[] {
     const boundaries: SemanticBoundary[] = [];
 
     for (let i = 0; i < similarities.length; i++) {
@@ -276,7 +487,7 @@ export class SemanticAnalyzer {
         continue; // No significant boundary
       }
 
-      // Apply sliding window analysis to confirm boundary
+      // Apply enhanced sliding window analysis
       if (this.confirmBoundaryWithWindow(similarities, i)) {
         boundaries.push({
           index: i + 1, // Boundary is after this sentence
@@ -290,6 +501,299 @@ export class SemanticAnalyzer {
     }
 
     return boundaries;
+  }
+
+  /**
+   * Detect boundaries based on structural cues (headings, lists, code blocks)
+   */
+  private detectStructuralBoundaries(sentences: string[]): SemanticBoundary[] {
+    const boundaries: SemanticBoundary[] = [];
+
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i];
+      let boundaryType: 'strong' | 'medium' | 'weak';
+      let reason = '';
+      let score = 0.5;
+
+      // Check for heading patterns
+      if (this.isHeading(sentence)) {
+        boundaryType = 'strong';
+        score = 0.2; // Very low similarity indicates strong boundary
+        reason = 'Structural boundary: heading detected';
+      }
+      // Check for list item patterns
+      else if (this.isListItem(sentence)) {
+        boundaryType = 'medium';
+        score = 0.4;
+        reason = 'Structural boundary: list item detected';
+      }
+      // Check for code block markers
+      else if (this.isCodeBlock(sentence)) {
+        boundaryType = 'strong';
+        score = 0.2;
+        reason = 'Structural boundary: code block detected';
+      }
+      // Check for paragraph breaks (empty or very short sentences)
+      else if (this.isParagraphBreak(sentence)) {
+        boundaryType = 'weak';
+        score = 0.6;
+        reason = 'Structural boundary: paragraph break detected';
+      } else {
+        continue;
+      }
+
+      boundaries.push({
+        index: i,
+        score,
+        type: boundaryType,
+        context_before: i > 0 ? sentences[i - 1] : '',
+        context_after: i < sentences.length - 1 ? sentences[i + 1] : '',
+        reason,
+      });
+    }
+
+    return boundaries;
+  }
+
+  /**
+   * Detect boundaries based on topic clustering and shifts
+   */
+  private detectTopicBoundaries(sentences: string[], similarities: number[]): SemanticBoundary[] {
+    const boundaries: SemanticBoundary[] = [];
+
+    // Look for significant similarity drops that indicate topic shifts
+    for (let i = 1; i < similarities.length - 1; i++) {
+      const prev = similarities[i - 1];
+      const current = similarities[i];
+      const next = similarities[i + 1];
+
+      // A topic shift is indicated by a significant drop followed by recovery
+      const dropRatio = prev > 0 ? (prev - current) / prev : 0;
+      const recoveryRatio = next > current ? (next - current) / current : 0;
+
+      if (dropRatio > 0.4 && recoveryRatio > 0.2) {
+        boundaries.push({
+          index: i + 1, // Shift occurs after sentence i
+          score: current,
+          type: 'medium',
+          context_before: sentences[i],
+          context_after: sentences[i + 1],
+          reason: `Topic shift detected: ${Math.round(dropRatio * 100)}% drop with recovery`,
+        });
+      }
+    }
+
+    return boundaries;
+  }
+
+  /**
+   * Combine boundaries from different detection methods
+   */
+  private combineBoundaries(
+    similarityBoundaries: SemanticBoundary[],
+    structuralBoundaries: SemanticBoundary[],
+    topicBoundaries: SemanticBoundary[],
+    sentences: string[]
+  ): SemanticBoundary[] {
+    const combinedBoundaries: Map<number, SemanticBoundary> = new Map();
+
+    // Add all boundaries with their indices
+    [...similarityBoundaries, ...structuralBoundaries, ...topicBoundaries].forEach((boundary) => {
+      const existing = combinedBoundaries.get(boundary.index);
+
+      if (!existing) {
+        combinedBoundaries.set(boundary.index, boundary);
+      } else {
+        // Combine boundary evidence
+        const combinedType = this.combineBoundaryTypes(existing.type, boundary.type);
+        const combinedScore = Math.min(existing.score, boundary.score); // Lower score = stronger boundary
+        const combinedReason = `${existing.reason}; ${boundary.reason}`;
+
+        combinedBoundaries.set(boundary.index, {
+          ...existing,
+          type: combinedType,
+          score: combinedScore,
+          reason: combinedReason,
+        });
+      }
+    });
+
+    return Array.from(combinedBoundaries.values());
+  }
+
+  /**
+   * Filter boundaries to ensure quality and prevent over-chunking
+   */
+  private filterQualityBoundaries(
+    boundaries: SemanticBoundary[],
+    sentences: string[],
+    similarities: number[]
+  ): SemanticBoundary[] {
+    if (boundaries.length === 0) return boundaries;
+
+    // Sort by index
+    boundaries.sort((a, b) => a.index - b.index);
+
+    const filtered: SemanticBoundary[] = [];
+    let lastBoundaryIndex = -1;
+
+    for (const boundary of boundaries) {
+      // Ensure minimum distance between boundaries
+      const minDistance = Math.max(2, Math.floor(sentences.length * 0.05)); // At least 5% of content
+
+      if (boundary.index - lastBoundaryIndex < minDistance) {
+        // Too close to previous boundary, skip or merge
+        continue;
+      }
+
+      // Ensure we have enough content after boundary for meaningful chunk
+      const remainingSentences = sentences.length - boundary.index;
+      if (remainingSentences < this.config.min_chunk_sentences) {
+        continue;
+      }
+
+      // Validate boundary quality
+      if (this.validateBoundaryQuality(boundary, sentences, similarities)) {
+        filtered.push(boundary);
+        lastBoundaryIndex = boundary.index;
+      }
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Combine boundary types when multiple detection methods agree
+   */
+  private combineBoundaryTypes(
+    type1: 'strong' | 'medium' | 'weak',
+    type2: 'strong' | 'medium' | 'weak'
+  ): 'strong' | 'medium' | 'weak' {
+    const typeStrength = { strong: 3, medium: 2, weak: 1 };
+    const strength1 = typeStrength[type1];
+    const strength2 = typeStrength[type2];
+
+    const combinedStrength = Math.max(strength1, strength2);
+
+    switch (combinedStrength) {
+      case 3:
+        return 'strong';
+      case 2:
+        return 'medium';
+      case 1:
+        return 'weak';
+      default:
+        return 'weak';
+    }
+  }
+
+  /**
+   * Validate boundary quality using multiple criteria
+   */
+  private validateBoundaryQuality(
+    boundary: SemanticBoundary,
+    sentences: string[],
+    similarities: number[]
+  ): boolean {
+    const index = boundary.index;
+
+    // Check if we're at document boundaries
+    if (index <= 0 || index >= sentences.length - 1) {
+      return false;
+    }
+
+    // Validate context quality
+    const beforeText = boundary.context_before.trim();
+    const afterText = boundary.context_after.trim();
+
+    if (beforeText.length < 10 || afterText.length < 10) {
+      return false;
+    }
+
+    // Check semantic consistency
+    if (index > 0 && index < similarities.length) {
+      const surroundingSimilarities = similarities.slice(
+        Math.max(0, index - 2),
+        Math.min(similarities.length, index + 2)
+      );
+
+      const avgSimilarity =
+        surroundingSimilarities.reduce((a, b) => a + b, 0) / surroundingSimilarities.length;
+
+      // If surrounding area has very high similarity, this might not be a good boundary
+      if (avgSimilarity > 0.9 && boundary.type === 'weak') {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if sentence is a heading
+   */
+  private isHeading(sentence: string): boolean {
+    const trimmed = sentence.trim();
+
+    // Markdown headings
+    if (trimmed.startsWith('#')) return true;
+
+    // All caps or title case followed by colon
+    if (/^[A-Z][A-Z\s]*:/.test(trimmed)) return true;
+
+    // Short, capitalized phrases (likely section headers)
+    if (trimmed.length < 50 && /^[A-Z]/.test(trimmed) && !trimmed.includes('.')) return true;
+
+    return false;
+  }
+
+  /**
+   * Check if sentence is a list item
+   */
+  private isListItem(sentence: string): boolean {
+    const trimmed = sentence.trim();
+
+    // Numbered list items
+    if (/^\d+\.\s/.test(trimmed)) return true;
+
+    // Bulleted list items
+    if (/^[•\-\*]\s/.test(trimmed)) return true;
+
+    // Lettered list items
+    if (/^[a-zA-Z]\.\s/.test(trimmed)) return true;
+
+    return false;
+  }
+
+  /**
+   * Check if sentence is a code block marker
+   */
+  private isCodeBlock(sentence: string): boolean {
+    const trimmed = sentence.trim();
+
+    // Code block markers
+    if (trimmed.startsWith('```')) return true;
+
+    // Code-like patterns
+    if (/^\s*(function|class|const|let|var|import|export|def|if|for|while)\s/.test(trimmed))
+      return true;
+
+    return false;
+  }
+
+  /**
+   * Check if sentence represents a paragraph break
+   */
+  private isParagraphBreak(sentence: string): boolean {
+    const trimmed = sentence.trim();
+
+    // Very short fragments or single words
+    if (trimmed.length < 10 && !trimmed.includes(' ')) return true;
+
+    // Punctuation-only fragments
+    if (/^[^\w\s]*$/.test(trimmed)) return true;
+
+    return false;
   }
 
   /**

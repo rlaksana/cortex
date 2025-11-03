@@ -41,7 +41,7 @@ export async function storeEntity(
   data: EntityItem['data'],
   scope: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -121,7 +121,7 @@ function generateContentHash(data: any): string {
  * @returns True if entity was deleted, false if not found
  */
 export async function softDeleteEntity(id: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -168,7 +168,7 @@ export async function getEntity(
   id: string,
   scope?: Record<string, unknown>
 ): Promise<EntityItem | null> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -232,7 +232,7 @@ export async function searchEntities(
     offset?: number;
   } = {}
 ): Promise<EntityItem[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

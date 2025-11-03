@@ -2,7 +2,7 @@
 import type { AssumptionData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeAssumption(data: AssumptionData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -25,7 +25,7 @@ export async function storeAssumption(data: AssumptionData, scope: ScopeFilter):
     },
   });
 
-  return result.id;
+  return result.id || '';
 }
 
 export async function findAssumptions(
@@ -33,7 +33,7 @@ export async function findAssumptions(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<AssumptionData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -95,7 +95,7 @@ export async function updateAssumption(
   data: Partial<AssumptionData>,
   scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -134,5 +134,5 @@ export async function updateAssumption(
     },
   ]);
 
-  return result.id;
+  return result.id || '';
 }

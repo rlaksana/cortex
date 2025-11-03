@@ -3,7 +3,42 @@
  * Provides contracts for knowledge management operations
  */
 
+// Local KnowledgeItem interface to avoid circular imports
 export interface KnowledgeItem {
+  id?: string;
+  kind: string;
+  content?: string;
+  scope: {
+    project?: string;
+    branch?: string;
+    org?: string;
+  };
+  data: Record<string, any>;
+  metadata?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+  expiry_at?: string;
+}
+
+// Import unified contracts to maintain consistency (excluding KnowledgeItem to avoid circular imports)
+import type {
+  StoreResult,
+  StoreError,
+  CortexResponseMeta,
+  CortexOperation,
+  PerformanceMetrics,
+} from './contracts';
+
+// Re-export for backward compatibility
+export type {
+  StoreResult,
+  StoreError,
+  CortexResponseMeta,
+  CortexOperation,
+  PerformanceMetrics,
+} from './contracts';
+
+export interface KnowledgeItemForStorage {
   id?: string;
   kind: string;
   content?: string; // Add content property for compatibility
@@ -17,34 +52,6 @@ export interface KnowledgeItem {
   created_at?: string;
   updated_at?: string;
   expiry_at?: string; // P6-T6.1: Add expiry timestamp
-}
-
-export interface KnowledgeItemForStorage {
-  kind: string;
-  content?: string;
-  scope: {
-    project?: string;
-    branch?: string;
-    org?: string;
-  };
-  data: Record<string, any>;
-  metadata?: Record<string, any>;
-}
-
-export interface StoreResult {
-  id: string;
-  status: 'inserted' | 'updated' | 'skipped_dedupe' | 'deleted';
-  kind: string;
-  created_at: string;
-}
-
-export interface StoreError {
-  index: number;
-  error_code: string;
-  message: string;
-  field?: string;
-  stack?: string;
-  timestamp?: string;
 }
 
 export interface AutonomousContext {
@@ -123,6 +130,53 @@ export interface MemoryStoreResponse {
   stored: StoreResult[];
   errors: StoreError[];
   autonomous_context: AutonomousContext;
+
+  // Observability metadata
+  observability: {
+    source: 'cortex_memory';
+    strategy: 'autonomous_deduplication';
+    vector_used: boolean;
+    degraded: boolean;
+    execution_time_ms: number;
+    confidence_score: number;
+  };
+
+  // P0-3: Unified response metadata
+  meta: {
+    // Core unified fields (P0-3)
+    strategy: string;
+    vector_used: boolean;
+    degraded: boolean;
+    source: string;
+    execution_time_ms?: number;
+    confidence_score?: number;
+
+    // P1-2: Truncation metadata
+    truncated: boolean;
+    truncation_details?: Array<{
+      item_index: number;
+      item_id?: string;
+      original_length: number;
+      truncated_length: number;
+      truncation_type: 'character' | 'token' | 'both';
+      limit_applied: number;
+      strategy: string;
+      content_type?: string;
+    }>;
+    total_chars_removed?: number;
+    total_tokens_removed?: number;
+    warnings?: string[];
+
+    // P6-1: Insight generation metadata
+    insights?: {
+      enabled: boolean;
+      total_insights: number;
+      insights_by_type: Record<string, number>;
+      average_confidence: number;
+      processing_time_ms: number;
+      performance_impact: number;
+    };
+  };
 }
 
 export interface MemoryFindResponse {
@@ -135,6 +189,93 @@ export interface MemoryFindResponse {
     results_found: number;
     confidence_average: number;
     user_message_suggestion: string;
+  };
+
+  // Observability metadata
+  observability: {
+    source: 'cortex_memory';
+    strategy: 'semantic' | 'keyword' | 'hybrid' | 'fallback' | 'auto' | 'fast' | 'deep' | 'error';
+    vector_used: boolean;
+    degraded: boolean;
+    execution_time_ms: number;
+    confidence_average: number;
+    search_id: string;
+  };
+
+  // P2-2: Enhanced graph expansion metadata
+  graph_expansion?: {
+    enabled: boolean;
+    expansion_type?: 'relations' | 'parents' | 'children' | 'none';
+    parent_entities: Array<{
+      entity_id: string;
+      entity_type: string;
+      child_count: number;
+      relationship_types: string[];
+    }>;
+    child_entities: Array<{
+      entity_id: string;
+      entity_type: string;
+      parent_id: string;
+      depth_from_parent: number;
+      relationship_metadata: {
+        relation_type: string;
+        direction: 'parent' | 'child' | 'sibling';
+        confidence: number;
+      };
+    }>;
+    traversal_metadata: {
+      total_entities_traversed: number;
+      max_depth_reached: number;
+      circular_references_detected: string[];
+      scope_filtered: boolean;
+      ranking_algorithm: string;
+      traversal_time_ms: number;
+    };
+  };
+
+  // P0-3: Unified response metadata (combines truncation and operational metadata)
+  meta: {
+    // Core operational metadata
+    strategy: string;
+    vector_used: boolean;
+    degraded: boolean;
+    source: string;
+    execution_time_ms?: number;
+    confidence_score?: number;
+
+    // Truncation metadata
+    truncated: boolean;
+    truncation_details?: Array<{
+      result_index: number;
+      result_id: string;
+      original_length: number;
+      truncated_length: number;
+      truncation_type: 'character' | 'token' | 'both';
+      limit_applied: number;
+      strategy: string;
+      content_type?: string;
+    }>;
+    total_chars_removed?: number;
+    total_tokens_removed?: number;
+    warnings?: string[];
+  };
+}
+
+// System status response interface
+export interface SystemStatusResponse {
+  operation: string;
+  status: 'success' | 'error';
+  data?: any;
+  error?: string;
+
+  // Observability metadata
+  observability: {
+    source: 'cortex_memory';
+    strategy: 'system_operation';
+    vector_used: false;
+    degraded: boolean;
+    execution_time_ms: number;
+    timestamp: string;
   };
 }
 

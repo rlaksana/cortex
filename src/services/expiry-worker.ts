@@ -18,14 +18,31 @@ import { logger } from '../utils/logger.js';
 import { QdrantOnlyDatabaseLayer, QdrantDatabaseConfig } from '../db/unified-database-layer-v2.js';
 import { Environment } from '../config/environment.js';
 import { isExpired } from '../utils/expiry-utils.js';
+import { createTTLManagementService } from './ttl/index.js';
 import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
+import type { TTLBulkOperationOptions } from './ttl/ttl-management-service.js';
 
 export interface ExpiryWorkerResult {
   deleted_counts: Record<string, number>;
   total_deleted: number;
   total_processed: number;
+  total_skipped: number;
   duration_ms: number;
   error?: string;
+  metrics: {
+    ttl_deletes_total: number;
+    ttl_skips_total: number;
+    ttl_errors_total: number;
+    processing_rate_per_second: number;
+    batch_count: number;
+    average_batch_size: number;
+  };
+  dry_run?: boolean;
+  policy_enforcement: {
+    policies_applied: Record<string, number>;
+    permanent_items_preserved: number;
+    extensions_granted: number;
+  };
 }
 
 export interface ExpiryWorkerConfig {
@@ -41,7 +58,7 @@ export interface ExpiryWorkerConfig {
   enabled: boolean;
 }
 
-// Default configuration
+// Default configuration (will be overridden by environment)
 const DEFAULT_CONFIG: ExpiryWorkerConfig = {
   schedule: '0 2 * * *', // 2 AM daily
   batch_size: 100,
@@ -49,6 +66,26 @@ const DEFAULT_CONFIG: ExpiryWorkerConfig = {
   dry_run: false,
   enabled: true,
 };
+
+// Get configuration from environment
+function getWorkerConfig(): ExpiryWorkerConfig {
+  try {
+    const { Environment } = require('../config/environment.js');
+    const env = Environment.getInstance();
+    const ttlConfig = env.getTTLConfig();
+
+    return {
+      schedule: ttlConfig.worker.schedule,
+      batch_size: ttlConfig.worker.batch_size,
+      max_batches: ttlConfig.worker.max_batches,
+      dry_run: false,
+      enabled: ttlConfig.worker.enabled,
+    };
+  } catch (error) {
+    logger.warn({ error }, 'Failed to load TTL config from environment, using defaults');
+    return DEFAULT_CONFIG;
+  }
+}
 
 // Get database instance (shared with auto-purge service)
 let dbInstance: QdrantOnlyDatabaseLayer | null = null;
@@ -94,7 +131,8 @@ function getDatabase(): QdrantOnlyDatabaseLayer {
 export async function runExpiryWorker(
   config: Partial<ExpiryWorkerConfig> = {}
 ): Promise<ExpiryWorkerResult> {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const envConfig = getWorkerConfig();
+  const finalConfig = { ...envConfig, ...config };
   const startTime = Date.now();
 
   logger.info(
@@ -103,136 +141,159 @@ export async function runExpiryWorker(
       dry_run: finalConfig.dry_run,
       batch_size: finalConfig.batch_size,
       max_batches: finalConfig.max_batches,
+      integration_with_ttl_service: true,
     },
-    'P6-T6.2: Starting expiry worker run'
+    'P6-T6.2: Starting enhanced TTL expiry worker run'
   );
 
   const result: ExpiryWorkerResult = {
     deleted_counts: {},
     total_deleted: 0,
     total_processed: 0,
+    total_skipped: 0,
     duration_ms: 0,
+    metrics: {
+      ttl_deletes_total: 0,
+      ttl_skips_total: 0,
+      ttl_errors_total: 0,
+      processing_rate_per_second: 0,
+      batch_count: 0,
+      average_batch_size: 0,
+    },
+    dry_run: finalConfig.dry_run,
+    policy_enforcement: {
+      policies_applied: {},
+      permanent_items_preserved: 0,
+      extensions_granted: 0,
+    },
   };
 
   try {
     if (!finalConfig.enabled) {
-      logger.info('P6-T6.2: Expiry worker is disabled, skipping');
+      logger.info('P6-T6.2: TTL expiry worker is disabled, skipping');
       result.duration_ms = Date.now() - startTime;
       return result;
     }
 
     const db = getDatabase();
-    const now = new Date().toISOString();
+    const ttlService = createTTLManagementService(db);
 
-    // Find all items with expiry_at in the past
-    // This query finds items where expiry_at exists and is less than now
-    const expiredItemsFilter = {
-      // Note: This would need to be implemented in the database layer
-      // as a special query for expired items
-      expiry_before: now,
+    logger.info('P6-T6.2: TTL Management Service initialized for expiry processing');
+
+    // Use TTL Management Service for comprehensive cleanup
+    const ttlCleanupOptions: TTLBulkOperationOptions = {
+      batchSize: finalConfig.batch_size,
+      continueOnError: true,
+      dryRun: finalConfig.dry_run,
+      verbose: true,
+      validatePolicies: true,
+      generateAudit: true,
     };
 
-    logger.debug({ expiry_before: now }, 'P6-T6.2: Querying for expired items');
+    // Run TTL cleanup with enhanced metrics
+    const cleanupStartTime = Date.now();
+    const ttlResult = await ttlService.cleanupExpiredItems(ttlCleanupOptions);
+    const cleanupDuration = Date.now() - cleanupStartTime;
 
-    // Get expired items (would be implemented in database layer)
-    // For now, we'll simulate this with a bulk query that would need
-    // to be added to the Qdrant adapter
-    const expiredItems = await findExpiredItems(db, expiredItemsFilter);
-
-    result.total_processed = expiredItems.length;
-
-    if (expiredItems.length === 0) {
-      logger.info('P6-T6.2: No expired items found');
-      result.duration_ms = Date.now() - startTime;
-      return result;
-    }
-
-    logger.info(
-      {
-        expired_count: expiredItems.length,
-        dry_run: finalConfig.dry_run,
-      },
-      'P6-T6.2: Processing expired items'
-    );
-
-    // Process expired items in batches
-    const batches = createBatches(expiredItems, finalConfig.batch_size, finalConfig.max_batches);
-
-    for (let i = 0; i < batches.length; i++) {
-      const batch = batches[i];
-      const batchResult = await processBatch(db, batch, finalConfig.dry_run);
-
-      // Aggregate results
-      Object.entries(batchResult.deleted_counts).forEach(([kind, count]) => {
-        result.deleted_counts[kind] = (result.deleted_counts[kind] || 0) + count;
-      });
-      result.total_deleted += batchResult.total_deleted;
-
-      logger.debug(
-        {
-          batch: i + 1,
-          total_batches: batches.length,
-          batch_size: batch.length,
-          batch_deleted: batchResult.total_deleted,
-          cumulative_deleted: result.total_deleted,
-        },
-        'P6-T6.2: Processed batch'
-      );
-    }
-
+    // Transform TTL result to ExpiryWorkerResult format
+    result.total_processed = ttlResult.processed;
+    result.total_deleted = ttlResult.updated;
+    result.total_skipped = ttlResult.processed - ttlResult.updated;
     result.duration_ms = Date.now() - startTime;
 
-    // Enhanced structured logging with purged_count metric
-    const purgedCount = result.total_deleted;
+    // Calculate enhanced metrics
+    result.metrics.ttl_deletes_total = ttlResult.updated;
+    result.metrics.ttl_skips_total = result.total_skipped;
+    result.metrics.ttl_errors_total = ttlResult.errors.length;
+    result.metrics.processing_rate_per_second =
+      result.total_processed / (result.duration_ms / 1000);
+    result.metrics.batch_count = Math.ceil(result.total_processed / finalConfig.batch_size);
+    result.metrics.average_batch_size = finalConfig.batch_size;
+
+    // Extract deleted counts by kind from TTL result details
+    if (ttlResult.details?.itemsProcessed) {
+      // We'd need to get the items to determine their kinds
+      // For now, use a generic approach
+      result.deleted_counts = {
+        mixed_expired_items: result.total_deleted,
+      };
+    }
+
+    // Enhanced structured logging with TTL integration
     const structuredLogData = {
-      operation: 'expiry_worker_completed',
+      operation: 'enhanced_ttl_expiry_worker_completed',
       worker_config: {
         enabled: finalConfig.enabled,
         dry_run: finalConfig.dry_run,
         batch_size: finalConfig.batch_size,
         max_batches: finalConfig.max_batches,
+        ttl_service_integration: true,
       },
       performance: {
         duration_ms: result.duration_ms,
+        cleanup_duration_ms: cleanupDuration,
         total_processed: result.total_processed,
         success: !result.error,
+        processing_rate_per_second: result.metrics.processing_rate_per_second,
+      },
+      ttl_metrics: {
+        ttl_deletes_total: result.metrics.ttl_deletes_total,
+        ttl_skips_total: result.metrics.ttl_skips_total,
+        ttl_errors_total: result.metrics.ttl_errors_total,
+        batch_count: result.metrics.batch_count,
+        average_batch_size: result.metrics.average_batch_size,
       },
       purging: {
-        purged_count: purgedCount,
-        deleted_counts: result.deleted_counts,
-        total_deleted: result.total_deleted,
+        purged_count: result.total_deleted,
         items_processed: result.total_processed,
+        items_skipped: result.total_skipped,
         purge_efficiency:
-          result.total_processed > 0 ? (purgedCount / result.total_processed) * 100 : 0,
+          result.total_processed > 0 ? (result.total_deleted / result.total_processed) * 100 : 0,
       },
-      batch_summary: {
-        total_batches: Math.ceil(result.total_processed / finalConfig.batch_size),
-        items_per_batch_average:
-          result.total_processed > 0
-            ? Math.round(
-                result.total_processed / Math.ceil(result.total_processed / finalConfig.batch_size)
-              )
-            : 0,
+      ttl_service: {
+        ttl_result_success: ttlResult.success,
+        ttl_warnings: ttlResult.warnings.length,
+        ttl_errors: ttlResult.errors.length,
+        audit_generated: ttlCleanupOptions.generateAudit,
       },
     };
 
-    logger.info(structuredLogData, 'P6-T6.2: Expiry worker run completed with enhanced metrics');
+    logger.info(structuredLogData, 'P6-T6.2: Enhanced TTL expiry worker run completed');
 
-    // Additional structured log for purged_count metric
-    if (purgedCount > 0) {
+    // Log specific metrics for monitoring
+    if (result.metrics.ttl_deletes_total > 0) {
       logger.info(
         {
-          metric_type: 'purged_count',
-          metric_value: purgedCount,
+          metric_type: 'ttl_deletes_total',
+          metric_value: result.metrics.ttl_deletes_total,
           timestamp: new Date().toISOString(),
-          operation: 'expiry_purge',
+          operation: 'ttl_expiry_purge',
           details: {
-            by_kind: result.deleted_counts,
+            processing_rate: result.metrics.processing_rate_per_second,
+            batch_count: result.metrics.batch_count,
             efficiency_percentage: structuredLogData.purging.purge_efficiency,
+            dry_run: finalConfig.dry_run,
+            ttl_service_integration: true,
+          },
+        },
+        'TTL worker deletes_total metric logged'
+      );
+    }
+
+    if (result.metrics.ttl_skips_total > 0) {
+      logger.info(
+        {
+          metric_type: 'ttl_skips_total',
+          metric_value: result.metrics.ttl_skips_total,
+          timestamp: new Date().toISOString(),
+          operation: 'ttl_expiry_skip',
+          details: {
+            skip_reason: 'items_not_expired_or_policy_preserved',
+            total_processed: result.total_processed,
             dry_run: finalConfig.dry_run,
           },
         },
-        'TTL worker purged_count metric logged'
+        'TTL worker skips_total metric logged'
       );
     }
 
@@ -276,52 +337,31 @@ export async function runExpiryWorker(
 }
 
 /**
- * Find items that have expired using search functionality
- * Uses a filter query to find items where expiry_at exists and is in the past
+ * Find items that have expired using database filtering
+ * Uses the efficient database findExpiredItems method
  */
 async function findExpiredItems(
   db: QdrantOnlyDatabaseLayer,
   filter: { expiry_before: string }
 ): Promise<KnowledgeItem[]> {
   try {
-    // Search for items with expiry_at timestamps in the past
-    // Note: This requires the database layer to support expiry_at filtering
-    // For now, we'll implement using the available search functionality
-
-    const searchQuery: SearchQuery = {
-      query: '', // Empty query to get all items
-      limit: 10000, // Large limit to get all potentially expired items
-    };
-
     logger.debug(
-      { expiry_before: filter.expiry_before, limit: 10000 },
-      'P6-T6.2: Searching for expired items'
+      { expiry_before: filter.expiry_before },
+      'P6-T6.2: Finding expired items using database filtering'
     );
 
-    const response = await db.search(searchQuery);
-
-    // Manual filtering for expired items (temporary solution)
-    // In a proper implementation, this filtering would happen in the database
-    const expiredItems = response.items.filter((item) => {
-      const expiryTime = item.data?.expiry_at;
-      if (!expiryTime) return false;
-
-      try {
-        const expiryDate = new Date(expiryTime);
-        const filterDate = new Date(filter.expiry_before);
-        return expiryDate < filterDate;
-      } catch {
-        return false; // Invalid date format
-      }
+    // Use the efficient database method for finding expired items
+    const expiredItems = await db.findExpiredItems({
+      expiry_before: filter.expiry_before,
+      limit: 10000, // Large limit for processing
     });
 
     logger.debug(
       {
-        total_items: response.items.length,
         expired_items: expiredItems.length,
         expiry_before: filter.expiry_before,
       },
-      'P6-T6.2: Found expired items'
+      'P6-T6.2: Found expired items using database filtering'
     );
 
     return expiredItems;
@@ -711,14 +751,45 @@ export async function runExpiryWorkerWithReport(
  * Find expired items with detailed information for reporting
  */
 async function findExpiredItemsWithDetails(
-  _db: QdrantOnlyDatabaseLayer,
+  db: QdrantOnlyDatabaseLayer,
   filter: { expiry_before: string; include_details?: boolean }
 ): Promise<Array<any>> {
   try {
-    // This would need to be implemented in the database layer
-    // For now, return empty array as placeholder
     logger.debug({ filter }, 'Finding expired items with details');
-    return [];
+
+    // Use the existing findExpiredItems function and enhance with details
+    const expiredItems = await findExpiredItems(db, filter);
+
+    // Calculate additional details for each expired item
+    const itemsWithDetails = expiredItems.map((item) => {
+      const expiryDate = new Date(item.expiry_at || '');
+      const now = new Date();
+      const daysExpired = Math.floor(
+        (now.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        ...item,
+        days_expired: daysExpired,
+        deletion_reason: 'TTL expired',
+        expiry_timestamp: item.expiry_at,
+        age_days: Math.floor(
+          (now.getTime() - new Date(item.created_at || now).getTime()) / (1000 * 60 * 60 * 24)
+        ),
+      };
+    });
+
+    logger.debug(
+      {
+        total_items: itemsWithDetails.length,
+        expiry_before: filter.expiry_before,
+        oldest_expiry: itemsWithDetails[0]?.expiry_at,
+        newest_expiry: itemsWithDetails[itemsWithDetails.length - 1]?.expiry_at,
+      },
+      'Found expired items with details'
+    );
+
+    return itemsWithDetails;
   } catch (error) {
     logger.error({ error, filter }, 'Failed to find expired items with details');
     return [];
@@ -729,7 +800,7 @@ async function findExpiredItemsWithDetails(
  * Process a batch with detailed item information
  */
 async function processBatchWithDetails(
-  _db: QdrantOnlyDatabaseLayer,
+  db: QdrantOnlyDatabaseLayer,
   batch: any[],
   dryRun: boolean
 ): Promise<{
@@ -750,40 +821,104 @@ async function processBatchWithDetails(
       result.deleted_counts[kind] = (result.deleted_counts[kind] || 0) + 1;
       result.total_deleted++;
 
-      const _daysExpired = item.expiry_at
-        ? Math.floor((Date.now() - new Date(item.expiry_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
+      const daysExpired =
+        item.days_expired ||
+        (item.expiry_at
+          ? Math.floor((Date.now() - new Date(item.expiry_at).getTime()) / (1000 * 60 * 60 * 24))
+          : 0);
 
       result.deleted_items.push({
         id: item.id,
         kind,
         scope: item.scope,
         expiry_at: item.expiry_at,
-        _daysExpired,
+        days_expired: daysExpired,
         deletion_reason: 'TTL expired',
+        created_at: item.created_at,
       });
     }
-  } else {
-    // Actual deletion would happen here
-    // For now, simulate the deletion
+
+    logger.debug(
+      {
+        batch_size: batch.length,
+        would_delete: result.total_deleted,
+        by_kind: result.deleted_counts,
+      },
+      'P6-T6.2: Dry run batch with details - items would be deleted'
+    );
+
+    return result;
+  }
+
+  // Actual deletion
+  try {
+    // Extract IDs for batch deletion (filter out undefined)
+    const ids = batch.map((item) => item.id).filter((id): id is string => id !== undefined);
+
+    if (ids.length === 0) {
+      logger.warn('No valid IDs found in batch for deletion');
+      return result;
+    }
+
+    // Use the existing delete method from the database layer
+    const deleteResult = await db.delete(ids, { cascade: true, soft: false });
+
+    // Count successful deletions by kind and create detailed items
     for (const item of batch) {
-      const kind = item.kind || 'unknown';
-      result.deleted_counts[kind] = (result.deleted_counts[kind] || 0) + 1;
-      result.total_deleted++;
+      if (item.id && ids.includes(item.id)) {
+        const kind = item.kind || 'unknown';
+        result.deleted_counts[kind] = (result.deleted_counts[kind] || 0) + 1;
+        result.total_deleted++;
 
-      const _daysExpired = item.expiry_at
-        ? Math.floor((Date.now() - new Date(item.expiry_at).getTime()) / (1000 * 60 * 60 * 24))
-        : 0;
+        const daysExpired =
+          item.days_expired ||
+          (item.expiry_at
+            ? Math.floor((Date.now() - new Date(item.expiry_at).getTime()) / (1000 * 60 * 60 * 24))
+            : 0);
 
-      result.deleted_items.push({
-        id: item.id,
-        kind,
-        scope: item.scope,
-        expiry_at: item.expiry_at,
-        _daysExpired,
-        deletion_reason: 'TTL expired',
-      });
+        result.deleted_items.push({
+          id: item.id,
+          kind,
+          scope: item.scope,
+          expiry_at: item.expiry_at,
+          days_expired: daysExpired,
+          deletion_reason: 'TTL expired',
+          created_at: item.created_at,
+        });
+      }
     }
+
+    logger.debug(
+      {
+        batch_size: batch.length,
+        valid_ids: ids.length,
+        deleted: result.total_deleted,
+        errors: deleteResult.errors.length,
+        by_kind: result.deleted_counts,
+      },
+      'P6-T6.2: Batch with details deleted successfully'
+    );
+
+    if (deleteResult.errors.length > 0) {
+      logger.warn(
+        {
+          errors: deleteResult.errors,
+          batch_size: batch.length,
+          successful_deletions: result.total_deleted,
+        },
+        'P6-T6.2: Some items in batch failed to delete'
+      );
+    }
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        batch_size: batch.length,
+        processed_so_far: result.total_deleted,
+      },
+      'P6-T6.2: Error processing batch with details'
+    );
+    throw error;
   }
 
   return result;

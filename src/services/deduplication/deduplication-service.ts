@@ -141,114 +141,167 @@ export class DeduplicationService implements IDeduplicationService {
 
   /**
    * Check if a single item is a duplicate of existing records
+   * REFACTORED: Simplified orchestration with extracted helper methods
    */
   async isDuplicate(item: KnowledgeItem): Promise<DuplicateAnalysis> {
+    // Check if deduplication is enabled
     if (!this.config.enabled) {
-      return {
-        isDuplicate: false,
-        similarityScore: 0,
-        matchType: 'none',
-        reason: 'Deduplication is disabled',
-      };
+      return this.createDisabledAnalysis();
     }
 
     try {
-      // Enhanced scope matching
+      // Analyze scope matching
       const scopeAnalysis = this.analyzeScopeMatch(item);
 
-      // Check for exact matches first
+      // Check for exact match first
       const exactMatch = await this.findExactMatch(item);
       if (exactMatch) {
-        let isNewerVersion = false;
-        let reason = 'Exact match found in database';
-        let isDuplicate = true;
-
-        // Check if this is a newer version
-        if (this.config.allowNewerVersions && exactMatch.createdAt) {
-          isNewerVersion = this.isNewerVersion(item, exactMatch.createdAt);
-          if (isNewerVersion) {
-            isDuplicate = false;
-            reason = 'Newer version of existing content - not deduped';
-          }
-        }
-
-        const analysis: DuplicateAnalysis = {
-          isDuplicate,
-          existingId: exactMatch.id,
-          similarityScore: 1.0,
-          matchType: 'exact' as const,
-          reason,
-          isNewerVersion,
-          existingCreatedAt: exactMatch.createdAt,
-          scopeMatch: scopeAnalysis,
-        };
-
-        // Log audit information
-        if (this.config.enableAuditLogging) {
-          await this.logDedupeDecision(item, analysis);
-        }
-
+        const analysis = this.analyzeExactMatch(item, exactMatch, scopeAnalysis);
+        await this.logAuditIfNeeded(item, analysis);
         return analysis;
       }
 
       // Check for content similarity
       const contentMatch = await this.findContentMatch(item);
       if (contentMatch) {
-        let isNewerVersion = false;
-        let reason = `Content similarity ${contentMatch.similarity.toFixed(2)} exceeds threshold`;
-        let isDuplicate = true;
-
-        // Check if this is a newer version
-        if (this.config.allowNewerVersions && contentMatch.createdAt) {
-          isNewerVersion = this.isNewerVersion(item, contentMatch.createdAt);
-          if (isNewerVersion) {
-            isDuplicate = false;
-            reason = 'Newer version of existing content - not deduped';
-          }
-        }
-
-        const analysis: DuplicateAnalysis = {
-          isDuplicate,
-          existingId: contentMatch.id,
-          similarityScore: contentMatch.similarity,
-          matchType: 'content' as const,
-          reason,
-          isNewerVersion,
-          existingCreatedAt: contentMatch.createdAt,
-          scopeMatch: scopeAnalysis,
-        };
-
-        // Log audit information
-        if (this.config.enableAuditLogging) {
-          await this.logDedupeDecision(item, analysis);
-        }
-
+        const analysis = this.analyzeContentMatch(item, contentMatch, scopeAnalysis);
+        await this.logAuditIfNeeded(item, analysis);
         return analysis;
       }
 
-      const analysis = {
-        isDuplicate: false,
-        similarityScore: 0,
-        matchType: 'none' as const,
-        reason: 'No significant matches found',
-        scopeMatch: scopeAnalysis,
-      };
-
-      // Log audit information
-      if (this.config.enableAuditLogging) {
-        await this.logDedupeDecision(item, analysis);
-      }
-
+      // No matches found
+      const analysis = this.createNoMatchAnalysis(scopeAnalysis);
+      await this.logAuditIfNeeded(item, analysis);
       return analysis;
     } catch (error) {
-      logger.error({ error, item }, 'Error checking for duplicates');
+      return this.handleError(error, item);
+    }
+  }
+
+  /**
+   * Create analysis when deduplication is disabled
+   */
+  private createDisabledAnalysis(): DuplicateAnalysis {
+    return {
+      isDuplicate: false,
+      similarityScore: 0,
+      matchType: 'none',
+      reason: 'Deduplication is disabled',
+    };
+  }
+
+  /**
+   * Analyze exact match and determine version status
+   */
+  private analyzeExactMatch(
+    item: KnowledgeItem,
+    exactMatch: any,
+    scopeAnalysis: any
+  ): DuplicateAnalysis {
+    const versionAnalysis = this.analyzeVersionStatus(item, exactMatch.createdAt);
+
+    return {
+      isDuplicate: versionAnalysis.isDuplicate,
+      existingId: exactMatch.id,
+      similarityScore: 1.0,
+      matchType: 'exact' as const,
+      reason: versionAnalysis.reason,
+      isNewerVersion: versionAnalysis.isNewerVersion,
+      existingCreatedAt: exactMatch.createdAt,
+      scopeMatch: scopeAnalysis,
+    };
+  }
+
+  /**
+   * Analyze content similarity match and determine version status
+   */
+  private analyzeContentMatch(
+    item: KnowledgeItem,
+    contentMatch: any,
+    scopeAnalysis: any
+  ): DuplicateAnalysis {
+    const versionAnalysis = this.analyzeVersionStatus(item, contentMatch.createdAt);
+
+    return {
+      isDuplicate: versionAnalysis.isDuplicate,
+      existingId: contentMatch.id,
+      similarityScore: contentMatch.similarity,
+      matchType: 'content' as const,
+      reason: versionAnalysis.reason,
+      isNewerVersion: versionAnalysis.isNewerVersion,
+      existingCreatedAt: contentMatch.createdAt,
+      scopeMatch: scopeAnalysis,
+    };
+  }
+
+  /**
+   * Analyze version status for matches
+   */
+  private analyzeVersionStatus(
+    item: KnowledgeItem,
+    existingCreatedAt?: string
+  ): {
+    isDuplicate: boolean;
+    isNewerVersion: boolean;
+    reason: string;
+  } {
+    if (!this.config.allowNewerVersions || !existingCreatedAt) {
       return {
-        isDuplicate: false,
-        similarityScore: 0,
-        matchType: 'none',
-        reason: 'Error during duplicate check',
+        isDuplicate: true,
+        isNewerVersion: false,
+        reason: 'Exact match found in database',
       };
     }
+
+    const isNewerVersion = this.isNewerVersion(item, existingCreatedAt);
+    if (isNewerVersion) {
+      return {
+        isDuplicate: false,
+        isNewerVersion: true,
+        reason: 'Newer version of existing content - not deduped',
+      };
+    }
+
+    return {
+      isDuplicate: true,
+      isNewerVersion: false,
+      reason: 'Exact match found in database',
+    };
+  }
+
+  /**
+   * Create analysis when no matches are found
+   */
+  private createNoMatchAnalysis(scopeAnalysis: any): DuplicateAnalysis {
+    return {
+      isDuplicate: false,
+      similarityScore: 0,
+      matchType: 'none' as const,
+      reason: 'No significant matches found',
+      scopeMatch: scopeAnalysis,
+    };
+  }
+
+  /**
+   * Log audit information if enabled
+   */
+  private async logAuditIfNeeded(item: KnowledgeItem, analysis: DuplicateAnalysis): Promise<void> {
+    if (this.config.enableAuditLogging) {
+      await this.logDedupeDecision(item, analysis);
+    }
+  }
+
+  /**
+   * Handle errors during duplicate checking
+   */
+  private handleError(error: unknown, item: KnowledgeItem): DuplicateAnalysis {
+    logger.error({ error, item }, 'Error checking for duplicates');
+    return {
+      isDuplicate: false,
+      similarityScore: 0,
+      matchType: 'none',
+      reason: 'Error during duplicate check',
+    };
   }
 
   /**

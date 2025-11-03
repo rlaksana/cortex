@@ -234,7 +234,7 @@ export class AuthorizationService {
 
     // Combine and deduplicate scopes
     const allScopes = [...baseScopes, ...customScopes];
-    return [...new Set(allScopes)];
+    return Array.from(new Set(allScopes));
   }
 
   /**
@@ -536,7 +536,7 @@ export class AuthorizationService {
     // Check if all required scopes are defined in AuthScope enum
     const definedScopes = Object.values(AuthScope);
 
-    for (const [key, rules] of this.resourceRules) {
+    for (const [key, rules] of Array.from(this.resourceRules.entries())) {
       for (const rule of rules) {
         for (const scope of rule.required_scopes) {
           if (!definedScopes.includes(scope)) {

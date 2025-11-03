@@ -443,14 +443,14 @@ export class RateLimitService extends EventEmitter {
    */
   resetEntityLimits(entityId: string, entityType: 'api_key' | 'organization'): void {
     // Remove token buckets
-    for (const [key] of this.tokenBuckets) {
+    for (const key of Array.from(this.tokenBuckets.keys())) {
       if (key.startsWith(`${entityType}:${entityId}:`)) {
         this.tokenBuckets.delete(key);
       }
     }
 
     // Remove sliding windows
-    for (const [key] of this.slidingWindows) {
+    for (const key of Array.from(this.slidingWindows.keys())) {
       if (key.startsWith(`${entityType}:${entityId}:`)) {
         this.slidingWindows.delete(key);
       }
@@ -644,7 +644,7 @@ export class RateLimitService extends EventEmitter {
       const now = Date.now();
 
       // Clean sliding windows
-      for (const [_key, window] of this.slidingWindows) {
+      for (const [key, window] of Array.from(this.slidingWindows.entries())) {
         const windowStart = now - window.window_seconds * 1000;
         window.requests = window.requests.filter((timestamp) => timestamp > windowStart);
       }

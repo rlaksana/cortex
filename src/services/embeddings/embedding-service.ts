@@ -174,9 +174,25 @@ export class EmbeddingService {
   }
 
   /**
-   * Generate embedding for a single text
+   * Generate embedding for a single text with optional chunking context
    */
   async generateEmbedding(request: EmbeddingRequest | string): Promise<EmbeddingResult> {
+    return this.generateEmbeddingWithContext(request);
+  }
+
+  /**
+   * Generate embedding for a single text with chunking context
+   */
+  async generateEmbeddingWithContext(
+    request: EmbeddingRequest | string,
+    context?: {
+      is_chunk?: boolean;
+      chunk_index?: number;
+      total_chunks?: number;
+      parent_id?: string;
+      extracted_title?: string;
+    }
+  ): Promise<EmbeddingResult> {
     const startTime = Date.now();
 
     // Handle string input
@@ -211,8 +227,12 @@ export class EmbeddingService {
       // Validate input
       this.validateInput(request.text);
 
-      // Generate embedding
-      const response = await this.generateEmbeddingWithRetry(request.text);
+      // Generate embedding with context-aware preprocessing
+      const processedText = context
+        ? this.preprocessTextWithContext(request.text, context)
+        : this.preprocessText(request.text);
+
+      const response = await this.generateEmbeddingWithRetry(processedText);
 
       // Validate response has embedding
       if (!response.embedding || !Array.isArray(response.embedding)) {
@@ -461,6 +481,40 @@ export class EmbeddingService {
         { originalLength: text.length, truncatedLength: processed.length },
         'Text truncated for embedding'
       );
+    }
+
+    return processed;
+  }
+
+  /**
+   * Preprocess text for embedding generation with chunking context
+   */
+  preprocessTextWithContext(
+    text: string,
+    context?: {
+      is_chunk?: boolean;
+      chunk_index?: number;
+      total_chunks?: number;
+      parent_id?: string;
+      extracted_title?: string;
+    }
+  ): string {
+    let processed = this.preprocessText(text);
+
+    // Add context for chunks to improve embedding quality
+    if (context?.is_chunk && context.extracted_title) {
+      const prefix = `TITLE: ${context.extracted_title}`;
+      if (!processed.includes(prefix)) {
+        processed = `${prefix} ${processed}`;
+      }
+    }
+
+    // Add positional context for chunks
+    if (context?.is_chunk && context.chunk_index !== undefined && context.total_chunks) {
+      const positionInfo = `CHUNK ${context.chunk_index + 1} of ${context.total_chunks}`;
+      if (!processed.includes('CHUNK')) {
+        processed = `${positionInfo} ${processed}`;
+      }
     }
 
     return processed;

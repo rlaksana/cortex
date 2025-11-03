@@ -8,7 +8,7 @@
  * @deprecated Use UnifiedSimilarityService directly for new code
  */
 
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { UnifiedSimilarityService } from './similarity/unified-similarity-service.js';
 import { logger } from '../utils/logger.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';

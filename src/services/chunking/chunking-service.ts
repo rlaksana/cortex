@@ -18,9 +18,10 @@ export interface ChunkingStats {
 }
 
 export class ChunkingService {
-  private readonly CHUNK_SIZE = 1200; // Target characters per chunk
-  private readonly OVERLAP_SIZE = 200; // Characters overlap between chunks
-  private readonly CHUNKING_THRESHOLD = 2400; // Minimum length to trigger chunking (2x chunk size)
+  private readonly CHUNK_SIZE: number; // Target characters per chunk
+  private readonly OVERLAP_SIZE: number; // Characters overlap between chunks
+  private readonly CHUNKING_THRESHOLD: number; // Minimum length to trigger chunking
+  private readonly CONTENT_TRUNCATION_LIMIT: number; // Fallback truncation limit
 
   // Types that should be chunked
   private readonly CHUNKABLE_TYPES = ['section', 'runbook', 'incident'];
@@ -39,13 +40,12 @@ export class ChunkingService {
   };
 
   constructor(chunkSize?: number, overlapSize?: number, embeddingService?: EmbeddingService) {
-    // Allow configuration for testing
-    if (chunkSize) {
-      (this as any).CHUNK_SIZE = chunkSize;
-    }
-    if (overlapSize) {
-      (this as any).OVERLAP_SIZE = overlapSize;
-    }
+    // Initialize from environment configuration
+    const chunkingConfig = environment.getChunkingConfig();
+    this.CHUNK_SIZE = chunkSize || chunkingConfig.maxCharsPerChunk;
+    this.OVERLAP_SIZE = overlapSize || chunkingConfig.chunkOverlapSize;
+    this.CHUNKING_THRESHOLD = chunkingConfig.chunkingThreshold;
+    this.CONTENT_TRUNCATION_LIMIT = chunkingConfig.contentTruncationLimit;
 
     // Initialize semantic analyzer if embedding service is available
     // This is completely optional - the service works fine without it
@@ -444,54 +444,144 @@ export class ChunkingService {
 
   /**
    * Create chunked knowledge items from a base item
+   * REFACTORED: Simplified orchestration with extracted helper methods
    */
   async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
     const content = this.extractContent(item);
     const extractedTitle = this.extractTitle(item);
 
+    // Check if chunking is needed
     if (!this.shouldChunk(content)) {
-      // Return single item with chunking metadata and TTL inheritance
-      const ttlInfo = inheritTTLFromParent(item);
-      return [
-        {
-          ...item,
-          // Ensure scope inheritance
-          scope: item.scope || {},
-          data: {
-            ...item.data,
-            is_chunk: false,
-            total_chunks: 1,
-            chunk_index: 0,
-            original_length: content.length,
-            chunk_overlap: 0,
-            extracted_title: extractedTitle,
-            // Inherit TTL policy
-            ...ttlInfo,
-          },
-          metadata: {
-            ...item.metadata,
-            chunking_info: {
-              was_chunked: false,
-              total_chunks: 1,
-              processing_timestamp: new Date().toISOString(),
-              title_carried: extractedTitle !== '',
-            },
-          },
-        },
-      ];
+      return this.createSingleChunkedItem(item, content, extractedTitle);
     }
 
-    const chunkResult = await this.chunkContent(content);
-    const chunks = chunkResult.chunks;
-    const fallback_used = chunkResult.fallback_used;
+    // Perform chunking
+    const chunkResult = await this.performChunking(content);
+
+    // Create parent and child items
+    return this.createChunkedItemHierarchy(item, content, extractedTitle, chunkResult);
+  }
+
+  /**
+   * Create a single non-chunked item with metadata
+   */
+  private createSingleChunkedItem(
+    item: KnowledgeItem,
+    content: string,
+    extractedTitle: string
+  ): KnowledgeItem[] {
     const ttlInfo = inheritTTLFromParent(item);
+
+    return [
+      {
+        ...item,
+        // Ensure scope inheritance
+        scope: item.scope || {},
+        data: {
+          ...item.data,
+          is_chunk: false,
+          total_chunks: 1,
+          chunk_index: 0,
+          original_length: content.length,
+          chunk_overlap: 0,
+          extracted_title: extractedTitle,
+          // Inherit TTL policy
+          ...ttlInfo,
+        },
+        metadata: {
+          ...item.metadata,
+          chunking_info: {
+            was_chunked: false,
+            total_chunks: 1,
+            processing_timestamp: new Date().toISOString(),
+            title_carried: extractedTitle !== '',
+          },
+        },
+      },
+    ];
+  }
+
+  /**
+   * Perform the actual chunking operation
+   */
+  private async performChunking(content: string): Promise<{
+    chunks: string[];
+    fallback_used: boolean;
+    semanticAnalysisEnabled: boolean;
+    originalContentHash: string;
+  }> {
+    const chunkResult = await this.chunkContent(content);
     const semanticAnalysisEnabled = this.shouldUseSemanticAnalysis(content);
 
     // Calculate original content hash for deduplication purposes
     const originalContentHash = createHash('sha256').update(content).digest('hex');
 
-    // Create parent item with enhanced metadata
-    const parentItem: KnowledgeItem = {
+    return {
+      chunks: chunkResult.chunks,
+      fallback_used: chunkResult.fallback_used,
+      semanticAnalysisEnabled,
+      originalContentHash,
+    };
+  }
+
+  /**
+   * Create parent and child chunked items with proper hierarchy
+   */
+  private createChunkedItemHierarchy(
+    item: KnowledgeItem,
+    content: string,
+    extractedTitle: string,
+    chunkResult: {
+      chunks: string[];
+      fallback_used: boolean;
+      semanticAnalysisEnabled: boolean;
+      originalContentHash: string;
+    }
+  ): KnowledgeItem[] {
+    const { chunks, fallback_used, semanticAnalysisEnabled, originalContentHash } = chunkResult;
+    const ttlInfo = inheritTTLFromParent(item);
+
+    // Create parent item
+    const parentItem = this.createParentChunkedItem(
+      item,
+      content,
+      extractedTitle,
+      chunks,
+      ttlInfo,
+      semanticAnalysisEnabled,
+      fallback_used,
+      originalContentHash
+    );
+
+    // Create child items
+    const childItems = this.createChildChunkedItems(
+      item,
+      parentItem,
+      extractedTitle,
+      chunks,
+      ttlInfo,
+      semanticAnalysisEnabled,
+      fallback_used,
+      content
+    );
+
+    return [parentItem, ...childItems];
+  }
+
+  /**
+   * Create the parent chunked item with enhanced metadata
+   */
+  private createParentChunkedItem(
+    item: KnowledgeItem,
+    content: string,
+    extractedTitle: string,
+    chunks: string[],
+    ttlInfo: any,
+    semanticAnalysisEnabled: boolean,
+    fallback_used: boolean,
+    originalContentHash: string
+  ): KnowledgeItem {
+    return {
       ...item,
       // Ensure parent has an ID for child chunks to reference
       id: item.id || randomUUID(),
@@ -528,12 +618,35 @@ export class ChunkingService {
         },
       },
     };
+  }
 
-    // Create child items with enhanced metadata and proper inheritance
-    const childItems: KnowledgeItem[] = chunks.map((chunk, index) => {
+  /**
+   * Create child chunked items with proper inheritance and metadata
+   * ENHANCED: Added deterministic links and reassembly metadata
+   */
+  private createChildChunkedItems(
+    item: KnowledgeItem,
+    parentItem: KnowledgeItem,
+    extractedTitle: string,
+    chunks: string[],
+    ttlInfo: any,
+    semanticAnalysisEnabled: boolean,
+    fallback_used: boolean,
+    originalContent: string
+  ): KnowledgeItem[] {
+    return chunks.map((chunk, index) => {
       const chunkWithContext = this.addContextToChunk(chunk, extractedTitle, index, chunks.length);
       const chunkLength = chunk.length;
       const positionRatio = index / (chunks.length - 1); // 0.0 to 1.0
+
+      // Calculate chunk boundaries for deterministic reassembly
+      const chunkBoundaries = this.calculateChunkBoundaries(originalContent, chunks, index);
+      const chunkHash = createHash('sha256').update(chunk).digest('hex');
+      const reassemblyKey = this.generateReassemblyKey(
+        parentItem.id || 'unknown',
+        index,
+        chunkHash
+      );
 
       return {
         id: randomUUID(),
@@ -546,12 +659,20 @@ export class ChunkingService {
           parent_id: parentItem.id,
           chunk_index: index,
           total_chunks: chunks.length,
-          original_length: content.length,
+          original_length: originalContent.length,
           chunk_overlap: this.OVERLAP_SIZE,
           content: chunkWithContext,
           extracted_title: extractedTitle,
           chunk_length: chunkLength,
           position_ratio: positionRatio,
+          // ENHANCED: Deterministic reassembly metadata
+          chunk_hash: chunkHash,
+          reassembly_key: reassemblyKey,
+          chunk_start_pos: chunkBoundaries.start,
+          chunk_end_pos: chunkBoundaries.end,
+          chunk_prefix: chunkBoundaries.prefix,
+          chunk_suffix: chunkBoundaries.suffix,
+          reassembly_order: index,
           // Inherit TTL policy from parent
           ...ttlInfo,
         },
@@ -570,43 +691,60 @@ export class ChunkingService {
             chunk_fallback_used: fallback_used,
             title_carried: extractedTitle !== '',
             has_context: chunkWithContext !== chunk,
-            size_ratio: chunkLength / content.length,
+            size_ratio: chunkLength / originalContent.length,
+            // ENHANCED: Reassembly metadata
+            chunk_hash: chunkHash,
+            reassembly_key: reassemblyKey,
+            deterministic_order: true,
+            reassembly_validation: {
+              start_boundary: chunkBoundaries.start,
+              end_boundary: chunkBoundaries.end,
+              prefix_hash: createHash('sha256').update(chunkBoundaries.prefix).digest('hex'),
+              suffix_hash: createHash('sha256').update(chunkBoundaries.suffix).digest('hex'),
+            },
           },
         },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
     });
-
-    return [parentItem, ...childItems];
   }
 
   /**
    * Extract content from knowledge item for chunking
    */
   private extractContent(item: KnowledgeItem): string {
+    let content = '';
+
     // Try different content fields
     if (item.data.content) {
-      return item.data.content;
-    }
+      content = item.data.content;
+    } else {
+      // Try other common content fields
+      const contentFields = ['body_text', 'body_md', 'description', 'rationale', 'summary'];
+      let found = false;
+      for (const field of contentFields) {
+        if (item.data[field] && typeof item.data[field] === 'string') {
+          content = item.data[field];
+          found = true;
+          break;
+        }
+      }
 
-    // Try other common content fields
-    const contentFields = ['body_text', 'body_md', 'description', 'rationale', 'summary'];
-    for (const field of contentFields) {
-      if (item.data[field] && typeof item.data[field] === 'string') {
-        return item.data[field];
+      if (!found) {
+        // Fallback: combine all string fields
+        const contentParts: string[] = [];
+        for (const [_key, value] of Object.entries(item.data)) {
+          if (typeof value === 'string' && value.length > 0) {
+            contentParts.push(value);
+          }
+        }
+        content = contentParts.join('\n\n');
       }
     }
 
-    // Fallback: combine all string fields
-    const contentParts: string[] = [];
-    for (const [_key, value] of Object.entries(item.data)) {
-      if (typeof value === 'string' && value.length > 0) {
-        contentParts.push(value);
-      }
-    }
-
-    return contentParts.join('\n\n');
+    // Apply truncation limit if needed (this should be rare with proper chunking)
+    return this.applyContentTruncation(content || '');
   }
 
   /**
@@ -715,7 +853,79 @@ export class ChunkingService {
   }
 
   /**
+   * Apply content truncation limit with logging when triggered
+   */
+  private applyContentTruncation(content: string): string {
+    if (content.length <= this.CONTENT_TRUNCATION_LIMIT) {
+      return content;
+    }
+
+    const originalLength = content.length;
+    const truncatedContent = content.substring(0, this.CONTENT_TRUNCATION_LIMIT);
+
+    logger.warn(
+      {
+        original_length: originalLength,
+        truncated_length: truncatedContent.length,
+        truncation_limit: this.CONTENT_TRUNCATION_LIMIT,
+        characters_removed: originalLength - truncatedContent.length,
+        removal_percentage: (
+          ((originalLength - truncatedContent.length) / originalLength) *
+          100
+        ).toFixed(1),
+      },
+      'Content truncated due to length limit - chunking should normally prevent this'
+    );
+
+    return truncatedContent;
+  }
+
+  /**
+   * Calculate chunk boundaries for deterministic reassembly
+   */
+  private calculateChunkBoundaries(
+    originalContent: string,
+    chunks: string[],
+    chunkIndex: number
+  ): { start: number; end: number; prefix: string; suffix: string } {
+    // Find approximate boundaries in original content
+    const chunkContent = chunks[chunkIndex];
+    const chunkLength = chunkContent.length;
+
+    // For more accurate boundary detection, we would need to track positions during chunking
+    // For now, calculate approximate boundaries based on chunk size and overlap
+    const approxStart = Math.max(0, chunkIndex * (this.CHUNK_SIZE - this.OVERLAP_SIZE));
+    const approxEnd = Math.min(originalContent.length, approxStart + chunkLength);
+
+    // Extract prefix and suffix for validation
+    const prefix = originalContent.substring(
+      approxStart,
+      Math.min(approxStart + 100, originalContent.length)
+    );
+    const suffix = originalContent.substring(
+      Math.max(0, approxEnd - 100),
+      Math.min(approxEnd, originalContent.length)
+    );
+
+    return {
+      start: approxStart,
+      end: approxEnd,
+      prefix,
+      suffix,
+    };
+  }
+
+  /**
+   * Generate deterministic reassembly key
+   */
+  private generateReassemblyKey(parentId: string, chunkIndex: number, chunkHash: string): string {
+    const keyData = `${parentId}:${chunkIndex}:${chunkHash}`;
+    return createHash('sha256').update(keyData).digest('hex').substring(0, 16);
+  }
+
+  /**
    * Validate chunks to ensure they meet quality standards
+   * ENHANCED: Added deterministic validation
    */
   private validateChunks(chunks: string[], originalContent: string): boolean {
     // Basic validation checks

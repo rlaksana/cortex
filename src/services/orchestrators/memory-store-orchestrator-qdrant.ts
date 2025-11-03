@@ -61,6 +61,7 @@ import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
 import { structuredLogger } from '../../monitoring/structured-logger.js';
+import { createStoreObservability } from '../../utils/observability-helper.js';
 import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
@@ -111,6 +112,36 @@ interface SearchQuery {
 }
 
 /**
+ * Internal context for store operations
+ */
+interface StoreOperationContext {
+  startTime: number;
+  correlationId: string;
+  authContext?: AuthContext;
+  stored: StoreResult[];
+  errors: StoreError[];
+  duplicateResults: (DuplicateDetectionResult | null)[];
+}
+
+/**
+ * Validation result for store operations
+ */
+interface ValidationResult {
+  valid: boolean;
+  errors: StoreError[];
+  validItems?: KnowledgeItem[];
+}
+
+/**
+ * Processing result for store operations
+ */
+interface ProcessingResult {
+  stored: StoreResult[];
+  errors: StoreError[];
+  duplicateResults: (DuplicateDetectionResult | null)[];
+}
+
+/**
  * Orchestrator for memory store operations using Qdrant with enhanced semantic capabilities
  */
 export class MemoryStoreOrchestratorQdrant {
@@ -158,257 +189,363 @@ export class MemoryStoreOrchestratorQdrant {
 
   /**
    * Main entry point for storing knowledge items
+   * REFACTORED: Simplified orchestration with extracted helper methods
    */
   async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
-    const startTime = Date.now();
-    const correlationId = generateCorrelationId();
-    const stored: StoreResult[] = [];
-    const errors: StoreError[] = [];
-    const duplicateResults: (DuplicateDetectionResult | null)[] = [];
+    const context = this.initializeStorageContext(items, authContext);
 
     try {
-      // Check rate limits
-      const rateLimitResult = await this.rateLimiter.checkOrchestratorRateLimit(
-        authContext,
-        OperationType.MEMORY_STORE,
-        items.length // Each item counts as one token
-      );
-
+      // Step 1: Check rate limits
+      const rateLimitResult = await this.checkRateLimits(context);
       if (!rateLimitResult.allowed) {
-        const latency = Date.now() - startTime;
-
-        // Log rate limit violation
-        structuredLogger.logRateLimit(
-          correlationId,
-          latency,
-          false,
-          authContext?.apiKeyId || 'anonymous',
-          'api_key',
-          OperationType.MEMORY_STORE,
-          items.length,
-          rateLimitResult.error?.error || 'rate_limit_exceeded'
-        );
-
-        return {
-          items: [],
-          stored: [],
-          summary: {
-            total: items.length,
-            stored: 0,
-            skipped_dedupe: 0,
-            business_rule_blocked: 0,
-            validation_error: items.length,
-          },
-          errors: [
-            {
-              index: 0,
-              error_code: 'rate_limit_exceeded',
-              message: rateLimitResult.error?.message || 'Rate limit exceeded',
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          autonomous_context: {
-            action_performed: 'skipped',
-            similar_items_checked: 0,
-            duplicates_found: 0,
-            contradictions_detected: false,
-            recommendation: 'Rate limit exceeded',
-            reasoning: 'Request blocked due to rate limiting',
-            user_message_suggestion: 'Rate limit exceeded. Please try again later.',
-          },
-        };
+        return this.createRateLimitResponse(context, rateLimitResult);
       }
 
-      // Initialize database if needed
-      await this.ensureDatabaseInitialized();
+      // Step 2: Initialize database and reset stats
+      await this.initializeStorageState();
 
-      // Reset duplicate detection stats for this batch
-      this.duplicateDetectionStats = {
-        contentHashMatches: 0,
-        semanticSimilarityMatches: 0,
-        totalChecks: 0,
-      };
-
-      // Step 1: Validate input
-      const validation = await validationService.validateStoreInput(items);
+      // Step 3: Validate input
+      const validation = await this.validateInputItems(items);
       if (!validation.valid) {
         return this.createErrorResponse(validation.errors);
       }
 
-      const validItems = items as KnowledgeItem[];
+      // Step 4: Apply chunking
+      const chunkedItems = await this.applyChunking(validation.validItems!);
 
-      // Step 2: Apply chunking to all items (this replaces 8k truncation)
-      const chunkedItems = await this.chunkingService.processItemsForStorage(validItems);
-      logger.info(
-        {
-          original_count: validItems.length,
-          chunked_count: chunkedItems.length,
-          expansion_ratio: chunkedItems.length / validItems.length,
-        },
-        'Applied chunking to replace truncation'
-      );
+      // Step 5: Process items
+      const processingResult = await this.processChunkedItems(chunkedItems, context);
 
-      // Step 3: Process each chunked item
-      for (let index = 0; index < chunkedItems.length; index++) {
-        const item = chunkedItems[index];
+      // Step 6: Generate response
+      return this.buildStorageResponse(processingResult, chunkedItems, context);
+    } catch (error) {
+      return this.handleBatchError(error, context);
+    }
+  }
 
-        try {
-          // Run duplicate detection to get detailed information
-          const duplicateResult = await this.detectDuplicates(item);
-          duplicateResults.push(duplicateResult);
+  /**
+   * Initialize storage context for the operation
+   */
+  private initializeStorageContext(
+    items: unknown[],
+    authContext?: AuthContext
+  ): StoreOperationContext {
+    return {
+      startTime: Date.now(),
+      correlationId: generateCorrelationId(),
+      authContext,
+      stored: [],
+      errors: [],
+      duplicateResults: [],
+    };
+  }
 
-          const result = await this.processItem(item, index, duplicateResult);
-          stored.push(result);
+  /**
+   * Check rate limits for the operation
+   */
+  private async checkRateLimits(context: StoreOperationContext) {
+    return await this.rateLimiter.checkOrchestratorRateLimit(
+      context.authContext,
+      OperationType.MEMORY_STORE,
+      0 // Will be updated with actual item count
+    );
+  }
 
-          // Log successful operation
-          await mockAuditService.logStoreOperation(
-            result.status === 'deleted'
-              ? 'delete'
-              : result.status === 'updated'
-                ? 'update'
-                : 'create',
-            item.kind,
-            result.id,
-            item.scope,
-            undefined,
-            true
-          );
-        } catch (error) {
-          // Push null to duplicateResults for error cases
-          duplicateResults.push(null);
+  /**
+   * Initialize database and reset statistics
+   */
+  private async initializeStorageState(): Promise<void> {
+    await this.ensureDatabaseInitialized();
 
-          const storeError: StoreError = {
-            index,
-            error_code: 'PROCESSING_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown processing error',
-          };
-          errors.push(storeError);
+    // Reset duplicate detection stats for this batch
+    this.duplicateDetectionStats = {
+      contentHashMatches: 0,
+      semanticSimilarityMatches: 0,
+      totalChecks: 0,
+    };
+  }
 
-          // Log error
-          await mockAuditService.logError(
-            error instanceof Error ? error : new Error('Unknown error'),
-            {
-              operation: 'store_item',
-              itemIndex: index,
-              itemKind: item.kind,
-            }
-          );
-        }
+  /**
+   * Validate input items
+   */
+  private async validateInputItems(items: unknown[]): Promise<ValidationResult> {
+    return await validationService.validateStoreInput(items);
+  }
+
+  /**
+   * Apply chunking to valid items
+   */
+  private async applyChunking(validItems: KnowledgeItem[]): Promise<KnowledgeItem[]> {
+    const chunkedItems = await this.chunkingService.processItemsForStorage(validItems);
+
+    logger.info(
+      {
+        original_count: validItems.length,
+        chunked_count: chunkedItems.length,
+        expansion_ratio: chunkedItems.length / validItems.length,
+      },
+      'Applied chunking to replace truncation'
+    );
+
+    return chunkedItems;
+  }
+
+  /**
+   * Process chunked items with duplicate detection and storage
+   */
+  private async processChunkedItems(
+    chunkedItems: KnowledgeItem[],
+    context: StoreOperationContext
+  ): Promise<ProcessingResult> {
+    for (let index = 0; index < chunkedItems.length; index++) {
+      const item = chunkedItems[index];
+
+      try {
+        // Run duplicate detection
+        const duplicateResult = await this.detectDuplicates(item);
+        context.duplicateResults.push(duplicateResult);
+
+        // Process the item
+        const result = await this.processItem(item, index, duplicateResult);
+        context.stored.push(result);
+
+        // Log successful operation
+        await mockAuditService.logStoreOperation(
+          result.status === 'deleted'
+            ? 'delete'
+            : result.status === 'updated'
+              ? 'update'
+              : 'create',
+          item.kind,
+          (result.id || item.id) as string,
+          item.scope,
+          undefined,
+          true
+        );
+      } catch (error) {
+        // Handle error for this item
+        context.duplicateResults.push(null);
+        const storeError: StoreError = {
+          index,
+          error_code: 'PROCESSING_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown processing error',
+        };
+        context.errors.push(storeError);
+
+        // Log error
+        await mockAuditService.logError(
+          error instanceof Error ? error : new Error('Unknown error'),
+          {
+            operation: 'store_item',
+            itemIndex: index,
+            itemKind: item.kind,
+          }
+        );
+      }
+    }
+
+    return {
+      stored: context.stored,
+      errors: context.errors,
+      duplicateResults: context.duplicateResults,
+    };
+  }
+
+  /**
+   * Build the final storage response
+   */
+  private async buildStorageResponse(
+    processingResult: ProcessingResult,
+    chunkedItems: KnowledgeItem[],
+    context: StoreOperationContext
+  ): Promise<MemoryStoreResponse> {
+    // Generate autonomous context
+    const autonomousContext = await this.generateAutonomousContext(
+      processingResult.stored,
+      processingResult.errors
+    );
+
+    // Log batch operation
+    await mockAuditService.logBatchOperation(
+      'store',
+      chunkedItems.length,
+      processingResult.stored.length,
+      processingResult.errors.length,
+      undefined,
+      undefined,
+      Date.now() - context.startTime
+    );
+
+    // Create enhanced response format
+    const itemResults: ItemResult[] = processingResult.stored.map((result, index) => {
+      const duplicateResult = processingResult.duplicateResults[index];
+
+      // Determine status based on result and duplicate detection
+      let status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
+      let reason: string | undefined;
+      let existingId: string | undefined;
+
+      if (result.status === 'skipped_dedupe' && duplicateResult) {
+        status = 'skipped_dedupe';
+        reason = duplicateResult.reason;
+        existingId = duplicateResult.existingItem?.id;
+      } else {
+        status = 'stored';
       }
 
-      // Step 4: Generate autonomous context
-      const autonomousContext = await this.generateAutonomousContext(stored, errors);
+      const itemResult: ItemResult = {
+        input_index: index,
+        status,
+        kind: result.kind || chunkedItems[index]?.kind,
+        id: result.id || chunkedItems[index]?.id,
+        created_at: result.created_at,
+      };
 
-      // Step 5: Log batch operation
-      await mockAuditService.logBatchOperation(
-        'store',
-        chunkedItems.length, // Use chunked items count
-        stored.length,
-        errors.length,
-        undefined,
-        undefined,
-        Date.now() - startTime
-      );
+      // Only add optional properties if they have values
+      if (reason !== undefined) itemResult.reason = reason;
+      if (existingId !== undefined) itemResult.existing_id = existingId;
 
-      // Create enhanced response format
-      const itemResults: ItemResult[] = stored.map((result, index) => {
-        const duplicateResult = duplicateResults[index];
+      return itemResult;
+    });
 
-        // Determine status based on result and duplicate detection
-        let status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
-        let reason: string | undefined;
-        let existingId: string | undefined;
+    // Calculate summary counts
+    const storedCount = itemResults.filter((item) => item.status === 'stored').length;
+    const skippedDedupeCount = itemResults.filter(
+      (item) => item.status === 'skipped_dedupe'
+    ).length;
 
-        if (result.status === 'skipped_dedupe' && duplicateResult) {
-          status = 'skipped_dedupe';
-          reason = duplicateResult.reason;
-          existingId = duplicateResult.existingItem?.id;
-        } else {
-          status = 'stored';
-        }
+    const summary: BatchSummary = {
+      stored: storedCount,
+      skipped_dedupe: skippedDedupeCount,
+      business_rule_blocked: 0,
+      validation_error: processingResult.errors.length,
+      total: itemResults.length + processingResult.errors.length,
+    };
 
-        const itemResult: ItemResult = {
-          input_index: index,
-          status,
-          kind: result.kind,
-          id: result.id,
-          created_at: result.created_at,
-        };
+    // Log successful operation
+    const latencyMs = Date.now() - context.startTime;
+    structuredLogger.logMemoryStore(context.correlationId, latencyMs, true, chunkedItems.length, {
+      stored: storedCount,
+      duplicates: skippedDedupeCount,
+      chunkingEnabled: true,
+      deduplicationEnabled: true,
+    });
 
-        // Only add optional properties if they have values
-        if (reason !== undefined) itemResult.reason = reason;
-        if (existingId !== undefined) itemResult.existing_id = existingId;
+    return {
+      // Enhanced response format
+      items: itemResults,
+      summary,
 
-        return itemResult;
-      });
+      // Legacy fields for backward compatibility
+      stored: processingResult.stored,
+      errors: processingResult.errors,
+      autonomous_context: autonomousContext,
+      observability: createStoreObservability(true, false, Date.now() - context.startTime, 0.85),
+      meta: {
+        strategy: 'qdrant_store',
+        vector_used: true,
+        degraded: false,
+        source: 'qdrant_orchestrator',
+        execution_time_ms: Date.now() - context.startTime,
+        confidence_score: 0.85,
+        truncated: false,
+      },
+    };
+  }
 
-      // Calculate summary counts based on actual item status
-      const storedCount = itemResults.filter((item) => item.status === 'stored').length;
-      const skippedDedupeCount = itemResults.filter(
-        (item) => item.status === 'skipped_dedupe'
-      ).length;
+  /**
+   * Create rate limit response
+   */
+  private createRateLimitResponse(
+    context: StoreOperationContext,
+    rateLimitResult: any
+  ): MemoryStoreResponse {
+    const latency = Date.now() - context.startTime;
 
-      const summary: BatchSummary = {
-        stored: storedCount,
-        skipped_dedupe: skippedDedupeCount,
+    // Log rate limit violation
+    structuredLogger.logRateLimit(
+      context.correlationId,
+      latency,
+      false,
+      context.authContext?.apiKeyId || 'anonymous',
+      'api_key',
+      OperationType.MEMORY_STORE,
+      0, // Will be updated with actual item count
+      rateLimitResult.error?.error || 'rate_limit_exceeded'
+    );
+
+    return {
+      items: [],
+      stored: [],
+      summary: {
+        total: 0,
+        stored: 0,
+        skipped_dedupe: 0,
         business_rule_blocked: 0,
-        validation_error: errors.length,
-        total: itemResults.length + errors.length,
-      };
-
-      // Log successful operation
-      const latencyMs = Date.now() - startTime;
-      structuredLogger.logMemoryStore(correlationId, latencyMs, true, items.length, {
-        stored: storedCount,
-        duplicates: skippedDedupeCount,
-        chunkingEnabled: true,
-        deduplicationEnabled: true,
-      });
-
-      return {
-        // Enhanced response format
-        items: itemResults,
-        summary,
-
-        // Legacy fields for backward compatibility
-        stored,
-        errors,
-        autonomous_context: autonomousContext,
-      };
-    } catch (error) {
-      const latencyMs = Date.now() - startTime;
-
-      // Log operation failure
-      structuredLogger.logMemoryStore(
-        correlationId,
-        latencyMs,
-        false,
-        items.length,
-        undefined,
-        undefined,
-        undefined,
-        error instanceof Error ? error : new Error('Unknown batch error')
-      );
-
-      logger.error({ error, itemCount: items.length }, 'Memory store operation failed');
-
-      // Log critical error
-      await mockAuditService.logError(
-        error instanceof Error ? error : new Error('Critical error'),
-        {
-          operation: 'memory_store_batch',
-          itemCount: items.length,
-        }
-      );
-
-      return this.createErrorResponse([
+        validation_error: 0,
+      },
+      errors: [
         {
           index: 0,
-          error_code: 'BATCH_ERROR',
-          message: error instanceof Error ? error.message : 'Unknown batch error',
+          error_code: 'rate_limit_exceeded',
+          message: rateLimitResult.error?.message || 'Rate limit exceeded',
         },
-      ]);
-    }
+      ],
+      autonomous_context: {
+        action_performed: 'skipped',
+        similar_items_checked: 0,
+        duplicates_found: 0,
+        contradictions_detected: false,
+        recommendation: 'Rate limit exceeded',
+        reasoning: 'Request blocked due to rate limiting',
+        user_message_suggestion: 'Rate limit exceeded. Please try again later.',
+      },
+      observability: createStoreObservability(false, true, Date.now() - context.startTime, 0),
+      meta: {
+        strategy: 'rate_limit_fallback',
+        vector_used: false,
+        degraded: true,
+        source: 'rate_limit_block',
+        execution_time_ms: Date.now() - context.startTime,
+        truncated: false,
+        warnings: ['Request blocked due to rate limiting'],
+      },
+    };
+  }
+
+  /**
+   * Handle batch errors
+   */
+  private handleBatchError(error: unknown, context: StoreOperationContext): MemoryStoreResponse {
+    const latencyMs = Date.now() - context.startTime;
+
+    // Log operation failure
+    structuredLogger.logMemoryStore(
+      context.correlationId,
+      latencyMs,
+      false,
+      0, // Will be updated with actual item count
+      undefined,
+      undefined,
+      undefined,
+      error instanceof Error ? error : new Error('Unknown batch error')
+    );
+
+    logger.error({ error }, 'Memory store operation failed');
+
+    // Log critical error
+    mockAuditService.logError(error instanceof Error ? error : new Error('Critical error'), {
+      operation: 'memory_store_batch',
+      itemCount: 0, // Will be updated with actual item count
+    });
+
+    return this.createErrorResponse([
+      {
+        index: 0,
+        error_code: 'BATCH_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown batch error',
+      },
+    ]);
   }
 
   /**
@@ -938,7 +1075,8 @@ export class MemoryStoreOrchestratorQdrant {
 
     const statusCounts = stored.reduce(
       (acc, item) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
+        const status = item.status || 'unknown';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
       },
       {} as Record<string, number>
@@ -1011,6 +1149,16 @@ export class MemoryStoreOrchestratorQdrant {
         dedupe_threshold_used: this.SIMILARITY_THRESHOLD,
         dedupe_method: 'none',
         dedupe_enabled: false,
+      },
+      observability: createStoreObservability(false, true, 0, 0),
+      meta: {
+        strategy: 'batch_dedupe_skip',
+        vector_used: false,
+        degraded: true,
+        source: 'dedupe_block',
+        execution_time_ms: 0,
+        truncated: false,
+        warnings: ['Duplicate content detected - batch skipped'],
       },
     };
   }

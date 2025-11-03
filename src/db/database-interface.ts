@@ -39,7 +39,7 @@ export interface DatabaseConfig {
   maxConnections?: number;
   // Qdrant-specific
   vectorSize?: number;
-  distance?: 'Cosine' | 'Euclidean' | 'DotProduct';
+  distance?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
   collectionName?: string;
 }
 

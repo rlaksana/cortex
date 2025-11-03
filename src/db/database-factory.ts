@@ -19,11 +19,12 @@
 
 import { logger } from '../utils/logger.js';
 import { getKeyVaultService } from '../services/security/key-vault-service.js';
-import { createHash } from 'node:crypto';
+import * as crypto from 'node:crypto';
 import type { IDatabase, IDatabaseFactory, DatabaseConfig } from './database-interface.js';
 import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
 import { ValidationError } from '../utils/error-handler.js';
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
+import { createFindObservability } from '../utils/observability-helper.js';
 
 /**
  * Check if a key exists in the key vault
@@ -98,6 +99,7 @@ class VectorToDatabaseAdapter implements IDatabase {
   }
 
   async hybridSearch(query: string, options?: any): Promise<MemoryFindResponse> {
+    const startTime = Date.now();
     // Convert SearchResult[] to MemoryFindResponse
     const searchResults = await this.vectorAdapter.hybridSearch(query, options);
 
@@ -117,6 +119,22 @@ class VectorToDatabaseAdapter implements IDatabase {
         results_found: searchResults.length,
         confidence_average: confidenceAverage,
         user_message_suggestion: `Found ${searchResults.length} results matching your query`,
+      },
+      observability: createFindObservability(
+        'hybrid',
+        true,
+        false,
+        Date.now() - startTime,
+        confidenceAverage
+      ),
+      meta: {
+        strategy: 'hybrid_search',
+        vector_used: true,
+        degraded: false,
+        source: 'database_factory',
+        execution_time_ms: Date.now() - startTime,
+        confidence_score: confidenceAverage,
+        truncated: false,
       },
     };
   }
@@ -446,7 +464,7 @@ export class DatabaseFactory implements IDatabaseFactory {
 
     // Validate distance metric
     if (config.distance) {
-      const validDistances = ['Cosine', 'Euclidean', 'DotProduct'];
+      const validDistances = ['Cosine', 'Euclid', 'Dot', 'Manhattan'];
       if (!validDistances.includes(config.distance)) {
         errors.push(`Distance must be one of: ${validDistances.join(', ')}`);
       }
@@ -621,7 +639,7 @@ export class DatabaseFactory implements IDatabaseFactory {
       config.maxConnections?.toString() || '10',
     ];
 
-    return createHash('md5').update(keyParts.join('|')).digest('hex');
+    return crypto.createHash('md5').update(keyParts.join('|')).digest('hex');
   }
 
   /**

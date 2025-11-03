@@ -13,7 +13,7 @@
 import { promises as fs } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'url';
-import { createHash } from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { qdrantConnectionManager } from './pool.js';
 import { logger } from '../utils/logger.js';
 
@@ -539,7 +539,7 @@ class QdrantMigrationManager {
    * Calculate checksum of a string
    */
   private calculateChecksum(content: string): string {
-    return createHash('sha256').update(content).digest('hex');
+    return crypto.createHash('sha256').update(content).digest('hex');
   }
 }
 
@@ -576,7 +576,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           logger.info('Migration Status', {
             available: status.available.length,
             applied: status.applied.length,
-            pending: status.pending.length
+            pending: status.pending.length,
           });
           break;
         }

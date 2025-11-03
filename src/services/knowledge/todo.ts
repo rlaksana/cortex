@@ -2,7 +2,7 @@
 import type { TodoData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeTodo(data: TodoData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -29,7 +29,7 @@ export async function updateTodo(
   _data: Partial<TodoData>,
   _scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

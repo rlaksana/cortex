@@ -69,7 +69,7 @@ export async function storeIssue(data: IssueData, scope: ScopeFilter): Promise<s
   // ENFORCE qdrant SCHEMA COMPLIANCE
   validateQdrantSchemaCompliance(data);
 
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

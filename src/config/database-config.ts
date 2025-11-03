@@ -43,9 +43,15 @@ export interface QdrantConfig {
 export interface VectorConfig {
   openaiApiKey?: string;
   size: number;
-  distance: 'Cosine' | 'Euclidean' | 'DotProduct';
+  distance: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
   embeddingModel: string;
   batchSize: number;
+  // Qdrant-specific nested config to match vector-adapter interface
+  qdrant?: {
+    url: string;
+    apiKey?: string;
+    timeout?: number;
+  };
 }
 
 export interface MigrationConfig {
@@ -116,9 +122,15 @@ export class DatabaseConfigManager {
       vector: {
         ...(rawConfig.OPENAI_API_KEY && { openaiApiKey: rawConfig.OPENAI_API_KEY }),
         size: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
-        distance: (rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclidean' | 'DotProduct') || 'Cosine',
+        distance:
+          (rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan') || 'Cosine',
         embeddingModel: rawConfig.EMBEDDING_MODEL || 'text-embedding-ada-002',
         batchSize: parseInt(String(rawConfig.EMBEDDING_BATCH_SIZE || '10')),
+        qdrant: {
+          url: rawConfig.QDRANT_URL || 'http://localhost:6333',
+          ...(rawConfig.QDRANT_API_KEY && { apiKey: rawConfig.QDRANT_API_KEY }),
+          timeout: parseInt(String(rawConfig.QDRANT_TIMEOUT || '30000')),
+        },
       },
       migration: {
         mode: 'validate',

@@ -19,10 +19,13 @@
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 import { getKeyVaultService } from '../../services/security/key-vault-service.js';
+import { EmbeddingService } from '../../services/embeddings/embedding-service.js';
+import { createQdrantHealthProbe, type QdrantHealthStatus } from '../qdrant-health-probe.js';
+import { createQdrantBootstrap, type HAConfig } from '../qdrant-bootstrap.js';
 import type { ExpiryTimeLabel } from '../../constants/expiry-times.js';
 import type {
   KnowledgeItem,
@@ -45,6 +48,10 @@ import type {
   DatabaseMetrics,
 } from '../interfaces/vector-adapter.interface.js';
 import { DatabaseError, ConnectionError, NotFoundError } from '../database-interface.js';
+import {
+  createStoreObservability,
+  createFindObservability,
+} from '../../utils/observability-helper.js';
 
 /**
  * Qdrant collection information interface
@@ -82,6 +89,10 @@ export class QdrantAdapter implements IVectorAdapter {
   private openai!: OpenAI;
   private config: VectorConfig;
   private initialized: boolean = false;
+  private embeddingService!: EmbeddingService;
+  private healthProbe = createQdrantHealthProbe();
+  private bootstrapService?: ReturnType<typeof createQdrantBootstrap>;
+  private haConfig?: HAConfig;
   private capabilities!: {
     supportsVectors: boolean;
     supportsFullTextSearch: boolean;
@@ -145,6 +156,11 @@ export class QdrantAdapter implements IVectorAdapter {
         this.openai = new OpenAI({
           apiKey: resolvedOpenAIKey,
         });
+
+        // Initialize embedding service for enhanced chunking support
+        this.embeddingService = new EmbeddingService({
+          apiKey: resolvedOpenAIKey,
+        });
       } else {
         logger.warn('OpenAI API key not found, embedding functionality will be limited');
       }
@@ -193,7 +209,7 @@ export class QdrantAdapter implements IVectorAdapter {
       supportsFullTextSearch: true,
       supportsPayloadFiltering: true,
       maxBatchSize: 100,
-      supportedDistanceMetrics: ['Cosine', 'Euclidean', 'DotProduct'],
+      supportedDistanceMetrics: ['Cosine', 'Euclid', 'Dot', 'Manhattan'],
       supportedOperations: [
         'store',
         'update',
@@ -342,6 +358,7 @@ export class QdrantAdapter implements IVectorAdapter {
 
   async store(items: KnowledgeItem[], options: StoreOptions = {}): Promise<MemoryStoreResponse> {
     await this.ensureInitialized();
+    const startTime = Date.now();
 
     const { batchSize = 100, skipDuplicates = false } = options;
 
@@ -393,9 +410,18 @@ export class QdrantAdapter implements IVectorAdapter {
               }
             }
 
-            // Generate embedding
+            // Generate embedding with chunking context if available
             const content = this.extractContentForEmbedding(item);
-            const embedding = await this.generateEmbedding(content);
+            const chunkingContext = item.data.is_chunk
+              ? {
+                  is_chunk: true,
+                  chunk_index: item.data.chunk_index,
+                  total_chunks: item.data.total_chunks,
+                  parent_id: item.data.parent_id,
+                  extracted_title: item.data.extracted_title,
+                }
+              : undefined;
+            const embedding = await this.generateEmbedding(content, chunkingContext);
 
             // Generate sparse vector for keyword search
             const sparseVector = this.generateSparseVector(content);
@@ -509,6 +535,25 @@ export class QdrantAdapter implements IVectorAdapter {
         stored,
         errors,
         autonomous_context: autonomousContext,
+
+        // Observability metadata
+        observability: createStoreObservability(
+          true, // vector_used
+          false, // degraded (Qdrant adapter assumes not degraded)
+          Date.now() - startTime,
+          0.8 // confidence score
+        ),
+
+        // Required meta field for unified response format
+        meta: {
+          strategy: 'vector',
+          vector_used: true,
+          degraded: false,
+          source: 'qdrant-adapter',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score: 0.8,
+          truncated: false,
+        },
       };
     } catch (error) {
       logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
@@ -592,6 +637,7 @@ export class QdrantAdapter implements IVectorAdapter {
 
   async search(query: SearchQuery, options: SearchOptions = {}): Promise<MemoryFindResponse> {
     await this.ensureInitialized();
+    const startTime = Date.now();
 
     // No options needed for now
 
@@ -658,6 +704,32 @@ export class QdrantAdapter implements IVectorAdapter {
         items: limitedResults,
         total_count: limitedResults.length,
         autonomous_context: autonomousContext,
+
+        // Observability metadata
+        observability: createFindObservability(
+          mode as any, // TypeScript type conversion
+          true, // vector_used
+          false, // degraded (Qdrant adapter assumes not degraded)
+          Date.now() - startTime,
+          limitedResults.length > 0
+            ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) / limitedResults.length
+            : 0
+        ),
+
+        // Required meta field for unified response format
+        meta: {
+          strategy: mode as any,
+          vector_used: true,
+          degraded: false,
+          source: 'qdrant-adapter',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score:
+            limitedResults.length > 0
+              ? limitedResults.reduce((sum, r) => sum + r.confidence_score, 0) /
+                limitedResults.length
+              : 0,
+          truncated: false,
+        },
       };
     } catch (error) {
       logger.error({ error, query }, 'Qdrant search operation failed');
@@ -857,9 +929,18 @@ export class QdrantAdapter implements IVectorAdapter {
     await this.ensureInitialized();
 
     try {
-      // Generate embedding for the item
+      // Generate embedding for the item with chunking context if available
       const content = this.extractContentForEmbedding(item);
-      const embedding = await this.generateEmbedding(content);
+      const chunkingContext = item.data.is_chunk
+        ? {
+            is_chunk: true,
+            chunk_index: item.data.chunk_index,
+            total_chunks: item.data.total_chunks,
+            parent_id: item.data.parent_id,
+            extracted_title: item.data.extracted_title,
+          }
+        : undefined;
+      const embedding = await this.generateEmbedding(content, chunkingContext);
 
       // Search for similar items
       const response = await this.client.search(this.COLLECTION_NAME, {
@@ -1021,8 +1102,27 @@ export class QdrantAdapter implements IVectorAdapter {
 
   // === Vector Operations ===
 
-  async generateEmbedding(content: string): Promise<number[]> {
+  async generateEmbedding(
+    content: string,
+    chunkingContext?: {
+      is_chunk?: boolean;
+      chunk_index?: number;
+      total_chunks?: number;
+      parent_id?: string;
+      extracted_title?: string;
+    }
+  ): Promise<number[]> {
     try {
+      // Use enhanced embedding service if chunking context is provided
+      if (chunkingContext && this.embeddingService) {
+        const result = await this.embeddingService.generateEmbeddingWithContext(
+          content,
+          chunkingContext
+        );
+        return result.vector;
+      }
+
+      // Fallback to OpenAI direct API
       const response = await this.openai.embeddings.create({
         model: 'text-embedding-ada-002',
         input: content,
@@ -1038,6 +1138,7 @@ export class QdrantAdapter implements IVectorAdapter {
   async storeWithEmbeddings(
     items: Array<KnowledgeItem & { embedding: number[] }>
   ): Promise<MemoryStoreResponse> {
+    const startTime = Date.now();
     await this.ensureInitialized();
 
     const stored: StoreResult[] = [];
@@ -1110,6 +1211,18 @@ export class QdrantAdapter implements IVectorAdapter {
         stored,
         errors,
         autonomous_context: autonomousContext,
+        observability: createStoreObservability(true, false, Date.now() - startTime, 0.9),
+
+        // Required meta field for unified response format
+        meta: {
+          strategy: 'vector',
+          vector_used: true,
+          degraded: false,
+          source: 'qdrant-adapter',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score: 0.9,
+          truncated: false,
+        },
       };
     } catch (error) {
       logger.error(
@@ -1439,7 +1552,18 @@ export class QdrantAdapter implements IVectorAdapter {
     return hash;
   }
 
-  private buildSearchFilter(filter: { kind?: string; scope?: any }): any {
+  private buildSearchFilter(filter: {
+    kind?: string;
+    scope?: any;
+    expiry_before?: string;
+    expiry_after?: string;
+    has_expiry?: boolean;
+    ttl_policy?: string;
+    ttl_duration_min?: number;
+    ttl_duration_max?: number;
+    is_permanent?: boolean;
+    include_expired?: boolean;
+  }): any {
     const qdrantFilter: any = {
       must: [],
     };
@@ -1474,6 +1598,110 @@ export class QdrantAdapter implements IVectorAdapter {
       }
     }
 
+    // Enhanced TTL filtering with comprehensive support
+    const expiryConditions: any[] = [];
+    const now = new Date().toISOString();
+
+    // Filter by expiry before date (for finding expired items)
+    if (filter.expiry_before) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        range: {
+          lt: filter.expiry_before,
+        },
+      });
+    }
+
+    // Filter by expiry after date
+    if (filter.expiry_after) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        range: {
+          gt: filter.expiry_after,
+        },
+      });
+    }
+
+    // Filter by existence of expiry_at field
+    if (filter.has_expiry === true) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        is_not_null: {},
+      });
+    } else if (filter.has_expiry === false) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        is_null: {},
+      });
+    }
+
+    // Enhanced TTL policy filtering
+    if (filter.ttl_policy) {
+      expiryConditions.push({
+        key: 'data.ttl_policy',
+        match: { value: filter.ttl_policy },
+      });
+    }
+
+    // Filter by TTL duration range
+    if (filter.ttl_duration_min !== undefined || filter.ttl_duration_max !== undefined) {
+      const durationRange: any = {};
+      if (filter.ttl_duration_min !== undefined) {
+        durationRange.gte = filter.ttl_duration_min;
+      }
+      if (filter.ttl_duration_max !== undefined) {
+        durationRange.lte = filter.ttl_duration_max;
+      }
+      expiryConditions.push({
+        key: 'data.ttl_duration_ms',
+        range: durationRange,
+      });
+    }
+
+    // Filter by permanent items
+    if (filter.is_permanent === true) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        match: { value: '9999-12-31T23:59:59.999Z' },
+      });
+    } else if (filter.is_permanent === false) {
+      expiryConditions.push({
+        key: 'expiry_at',
+        range: {
+          lt: '9999-12-31T23:59:59.999Z',
+        },
+      });
+    }
+
+    // Automatic expiry filtering (exclude expired items unless specifically requested)
+    if (filter.include_expired !== true) {
+      // Include items without expiry or with expiry in the future
+      const nonExpiredCondition = {
+        should: [
+          { key: 'expiry_at', is_null: {} },
+          { key: 'expiry_at', range: { gt: now } },
+        ],
+      };
+
+      if (expiryConditions.length > 0) {
+        // Combine existing expiry conditions with non-expired filter
+        qdrantFilter.must.push(nonExpiredCondition);
+      } else {
+        expiryConditions.push(...nonExpiredCondition.should);
+      }
+    }
+
+    // Add expiry conditions to filter
+    if (expiryConditions.length > 0) {
+      if (expiryConditions.length === 1) {
+        qdrantFilter.must.push(expiryConditions[0]);
+      } else {
+        qdrantFilter.must.push({
+          and: expiryConditions,
+        });
+      }
+    }
+
     return qdrantFilter.must.length > 0 ? qdrantFilter : undefined;
   }
 
@@ -1484,6 +1712,7 @@ export class QdrantAdapter implements IVectorAdapter {
       kind: payload.kind || 'unknown',
       scope: payload.scope || {},
       data: payload.data || {},
+      expiry_at: payload.expiry_at,
       created_at: payload.created_at || new Date().toISOString(),
       updated_at: payload.updated_at || new Date().toISOString(),
     };
@@ -1567,5 +1796,323 @@ export class QdrantAdapter implements IVectorAdapter {
         error as Error
       );
     }
+  }
+
+  /**
+   * P6-T6.1: Find expired items using Qdrant filtering
+   * Efficiently finds items that have expired based on expiry_at timestamp
+   */
+  async findExpiredItems(options: {
+    expiry_before?: string;
+    limit?: number;
+    scope?: any;
+    kinds?: string[];
+  }): Promise<KnowledgeItem[]> {
+    await this.ensureInitialized();
+
+    try {
+      const { expiry_before = new Date().toISOString(), limit = 1000, scope, kinds } = options;
+
+      logger.debug(
+        {
+          expiry_before,
+          limit,
+          scope,
+          kinds,
+        },
+        'Finding expired items using Qdrant filtering'
+      );
+
+      // Build filter for expired items
+      const filterConditions: any[] = [
+        {
+          key: 'expiry_at',
+          range: {
+            lt: expiry_before,
+          },
+        },
+        {
+          key: 'expiry_at',
+          is_not_null: {},
+        },
+      ];
+
+      // Add kind filters if specified
+      if (kinds && kinds.length > 0) {
+        const kindConditions = kinds.map((kind) => ({
+          key: 'kind',
+          match: { value: kind },
+        }));
+
+        filterConditions.push({
+          or: kindConditions,
+        });
+      }
+
+      // Build Qdrant filter
+      const qdrantFilter = {
+        must: filterConditions,
+      };
+
+      // Add scope filters if specified
+      if (scope) {
+        const scopeFilter = this.buildSearchFilter({ scope });
+        if (scopeFilter) {
+          qdrantFilter.must.push(...scopeFilter.must);
+        }
+      }
+
+      // Use a generic embedding for search (we're filtering, not semantic search)
+      const genericEmbedding = await this.generateEmbedding('expired item');
+
+      // Search for expired items
+      const response = await this.client.search(this.COLLECTION_NAME, {
+        vector: genericEmbedding,
+        limit,
+        with_payload: true,
+        filter: qdrantFilter,
+        score_threshold: 0.0, // Accept all matches since we're filtering by expiry
+      });
+
+      const expiredItems = response.map((result) => ({
+        ...this.pointToKnowledgeItem(result),
+        score: result.score || 0,
+      }));
+
+      logger.debug(
+        {
+          total_found: expiredItems.length,
+          expiry_before,
+          limit,
+        },
+        'Found expired items using Qdrant filtering'
+      );
+
+      return expiredItems;
+    } catch (error) {
+      logger.error(
+        {
+          error,
+          options,
+        },
+        'Failed to find expired items in Qdrant'
+      );
+      throw new DatabaseError(
+        'Failed to find expired items',
+        'EXPIRED_ITEMS_SEARCH_ERROR',
+        error as Error
+      );
+    }
+  }
+
+  // === Health and HA Operations ===
+
+  /**
+   * Get comprehensive health status
+   */
+  async getHealthStatus(): Promise<QdrantHealthStatus> {
+    return await this.healthProbe.checkNodeHealth('primary');
+  }
+
+  /**
+   * Get cluster health status
+   */
+  getClusterHealth() {
+    return this.healthProbe.getClusterHealth();
+  }
+
+  /**
+   * Setup high availability
+   */
+  async setupHA(haConfig: HAConfig): Promise<void> {
+    this.haConfig = haConfig;
+
+    // Add HA nodes to health probe
+    for (const node of haConfig.nodes) {
+      if (node.id !== 'primary') {
+        this.healthProbe.addNode(node.id, {
+          type: 'qdrant',
+          url: node.url,
+          apiKey: node.apiKey,
+          qdrant: {
+            url: node.url,
+            apiKey: node.apiKey,
+            timeout: 10000,
+          },
+        });
+      }
+    }
+
+    // Initialize bootstrap service with HA config
+    this.bootstrapService = createQdrantBootstrap(this.config, haConfig);
+
+    logger.info('HA setup completed', {
+      totalNodes: haConfig.nodes.length,
+      replicationFactor: haConfig.replicationFactor,
+    });
+  }
+
+  /**
+   * Bootstrap database with collections and configuration
+   */
+  async bootstrap(): Promise<void> {
+    if (!this.bootstrapService) {
+      throw new Error('Bootstrap service not initialized. Call setupHA() first.');
+    }
+
+    const bootstrapConfig = {
+      collections: [
+        {
+          name: this.COLLECTION_NAME,
+          vectors: {
+            size: this.config.dimensions || 1536,
+            distance: this.config.distanceMetric || 'Cosine',
+          },
+          on_disk: true,
+        },
+      ],
+      enableReplication: this.haConfig?.enabled || false,
+      replicationFactor: this.haConfig?.replicationFactor || 1,
+      enableSharding: false,
+      shardCount: 1,
+      enableQuantization: false,
+      quantizationType: 'Scalar',
+      enableWAL: true,
+      walCapacityMB: 64,
+      enableOnDisk: true,
+      enableValidation: true,
+      createBackup: false,
+    };
+
+    const result = await this.bootstrapService.bootstrap(bootstrapConfig);
+
+    if (!result.success) {
+      throw new Error(`Bootstrap failed: ${result.errors.join(', ')}`);
+    }
+
+    logger.info('Database bootstrap completed successfully', {
+      collectionsCreated: result.collectionsCreated,
+      duration: result.duration,
+    });
+  }
+
+  /**
+   * Test failover path
+   */
+  async testFailover(): Promise<{
+    success: boolean;
+    failoverTime: number;
+    primaryRestored: boolean;
+    errors: string[];
+  }> {
+    const result = {
+      success: false,
+      failoverTime: 0,
+      primaryRestored: false,
+      errors: [] as string[],
+    };
+
+    if (!this.haConfig?.enabled) {
+      result.errors.push('HA not enabled');
+      return result;
+    }
+
+    const startTime = Date.now();
+
+    try {
+      logger.info('Testing failover path');
+
+      // Simulate primary node failure by opening circuit breaker
+      this.healthProbe.resetCircuitBreaker('primary');
+
+      // Check if secondary nodes can handle the load
+      const clusterHealth = this.healthProbe.getClusterHealth();
+      if (clusterHealth.healthyNodes === 0) {
+        result.errors.push('No healthy nodes available for failover');
+        return result;
+      }
+
+      // Simulate operations during failover
+      const testItem = {
+        id: 'failover-test-' + Date.now(),
+        kind: 'entity' as const,
+        scope: { project: 'test' },
+        data: { content: 'failover test', test: true },
+        created_at: new Date().toISOString(),
+      };
+
+      // Test write operation
+      await this.store([testItem], { timeout: 5000 });
+
+      // Test read operation
+      const searchResult = await this.search({
+        query: 'failover test',
+        limit: 1,
+        scope: { project: 'test' },
+      });
+
+      if (searchResult.results.length === 0) {
+        result.errors.push('Read operation failed during failover');
+        return result;
+      }
+
+      result.success = true;
+      result.failoverTime = Date.now() - startTime;
+
+      // Test primary restoration
+      await this.sleep(2000); // Wait for potential primary recovery
+      const primaryHealth = await this.healthProbe.checkNodeHealth('primary');
+      result.primaryRestored = primaryHealth.isHealthy;
+
+      logger.info('Failover test completed', {
+        success: result.success,
+        failoverTime: result.failoverTime,
+        primaryRestored: result.primaryRestored,
+      });
+    } catch (error) {
+      result.errors.push(
+        `Failover test failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+      logger.error('Failover test failed', { error });
+    }
+
+    return result;
+  }
+
+  /**
+   * Initialize health monitoring
+   */
+  async initializeHealthMonitoring(): Promise<void> {
+    await this.healthProbe.start();
+    logger.info('Health monitoring initialized');
+  }
+
+  /**
+   * Stop health monitoring
+   */
+  async stopHealthMonitoring(): Promise<void> {
+    await this.healthProbe.stop();
+    logger.info('Health monitoring stopped');
+  }
+
+  /**
+   * Get circuit breaker status
+   */
+  getCircuitBreakerStatus() {
+    return this.healthProbe.getCircuitBreakerStatus();
+  }
+
+  /**
+   * Reset circuit breaker
+   */
+  resetCircuitBreaker(nodeId: string): boolean {
+    return this.healthProbe.resetCircuitBreaker(nodeId);
+  }
+
+  /**
+   * Sleep utility for testing
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

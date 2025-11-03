@@ -7,7 +7,7 @@ import { logger } from '../../utils/logger.js';
  * Store a new section in the database
  */
 export async function storeSection(data: SectionData, scope?: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -38,7 +38,7 @@ export async function updateSection(
   data: Partial<SectionData>,
   scope?: ScopeFilter
 ): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Check write-lock before allowing update
@@ -108,7 +108,7 @@ export async function findSections(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

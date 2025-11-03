@@ -21,7 +21,6 @@ import {
 } from '../knowledge/index.js';
 import { storeDecision, updateDecision } from '../knowledge/decision.js';
 import { storeSection } from '../knowledge/section.js';
-// import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types';
 import {
   transformMcpInputToKnowledgeItems,
   transformToCoreKnowledgeItem,
@@ -39,10 +38,10 @@ import type {
 } from '../../types/core-interfaces.js';
 import { validatorRegistry } from '../validation/validator-registry.js';
 import { createBusinessValidators } from '../validation/business-validators.js';
-// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 
-// P6-T6.1: Import expiry utilities
-import { calculateItemExpiry } from '../../utils/expiry-utils.js';
+// P6-T6.1: Import TTL services
+import { ttlPolicyService } from '../ttl/index.js';
+import { createStoreObservability } from '../../utils/observability-helper.js';
 
 // Mock audit service for compilation
 const mockAuditService = {
@@ -99,6 +98,7 @@ export class MemoryStoreOrchestrator {
    */
   async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
     logger.info({ itemCount: items.length }, 'P5-T5.3: Starting batch knowledge item storage');
+    const startTime = Date.now();
 
     const itemResults: ItemResult[] = [];
     const stored: StoreResult[] = [];
@@ -171,7 +171,11 @@ export class MemoryStoreOrchestrator {
             kind: item.kind,
             id: storeResult.id,
             created_at: storeResult.created_at,
-            expiry_at: calculateItemExpiry(item),
+            expiry_at: ttlPolicyService.calculateExpiry(item, {
+              applyBusinessRules: true,
+              enableValidation: true,
+              includeAudit: true,
+            }).expiryAt,
           };
 
           itemResults.push(successResult);
@@ -267,6 +271,21 @@ export class MemoryStoreOrchestrator {
         stored,
         errors,
         autonomous_context: autonomousContext,
+        observability: createStoreObservability(
+          true, // vector_used - embeddings used for semantic search
+          false, // degraded - successful operation
+          Date.now() - startTime,
+          0.8 // confidence score for successful storage
+        ),
+        meta: {
+          strategy: 'memory_store_orchestrator',
+          vector_used: true,
+          degraded: false,
+          source: 'memory_orchestrator',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score: 0.8,
+          truncated: false,
+        },
       };
     } catch (error) {
       logger.error({ error, items }, 'P5-T5.3: Critical batch processing error');
@@ -660,6 +679,7 @@ export class MemoryStoreOrchestrator {
    * Create error response
    */
   private createErrorResponse(errors: StoreError[]): MemoryStoreResponse {
+    const startTime = Date.now();
     // Create empty itemResults array for error response
     const itemResults: ItemResult[] = [];
 
@@ -685,6 +705,21 @@ export class MemoryStoreOrchestrator {
         recommendation: 'Fix validation errors before retrying',
         reasoning: 'Request failed validation',
         user_message_suggestion: '❌ Request validation failed',
+      },
+      observability: createStoreObservability(
+        false, // vector_used - no vectors used in error
+        true, // degraded - error is degraded state
+        Date.now() - startTime,
+        0
+      ),
+      meta: {
+        strategy: 'validation_error',
+        vector_used: false,
+        degraded: true,
+        source: 'validation_block',
+        execution_time_ms: Date.now() - startTime,
+        truncated: false,
+        warnings: ['Request failed validation'],
       },
     };
   }

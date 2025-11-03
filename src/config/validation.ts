@@ -95,7 +95,7 @@ export class ConfigurationValidator {
       })
     );
 
-    this.schemas.set('vectorDistance', z.enum(['Cosine', 'Euclidean', 'DotProduct']));
+    this.schemas.set('vectorDistance', z.enum(['Cosine', 'Euclid', 'Dot', 'Manhattan']));
 
     // Pool configuration validation
     this.schemas.set(
@@ -666,7 +666,7 @@ export class ConfigurationValidator {
         field: 'vector.distance',
         message: 'Invalid vector distance metric',
         severity: 'error',
-        suggestion: 'Use one of: Cosine, Euclidean, DotProduct',
+        suggestion: 'Use one of: Cosine, Euclid, Dot, Manhattan',
         code: 'SCHEMA005',
       });
     }

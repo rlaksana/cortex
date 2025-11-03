@@ -4,10 +4,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { logger } from '../utils/logger.js';
 import { AuthService } from '../services/auth/auth-service.js';
-// import { AuditService } from '../services/audit/audit-service.js'; // REMOVED: Service file deleted
 import {
   AuthContext,
   AuthError,
@@ -33,10 +32,7 @@ export interface AuthenticatedRequest extends Request {
 }
 
 export class AuthMiddleware {
-  constructor(
-    private _authService: AuthService
-    // private _auditService: AuditService // REMOVED: Service file deleted
-  ) {}
+  constructor(private _authService: AuthService) {}
 
   /**
    * Main authentication middleware that handles both JWT tokens and API keys
@@ -116,17 +112,6 @@ export class AuthMiddleware {
               },
               severity: 'medium',
             });
-
-            // Additional audit logging for rate limiting
-            // await this._auditService.logRateLimitExceeded(
-            //   identifier,
-            //   req.path,
-            //   config.rate_limit.requests,
-            //   config.rate_limit.window_ms,
-            //   clientInfo.ipAddress,
-            //   clientInfo.userAgent,
-            //   authContext.user.id
-            // ); // REMOVED: audit-service deleted
 
             throw this.createAuthError('RATE_LIMITED', 'Too many requests');
           }
@@ -411,7 +396,7 @@ export class AuthMiddleware {
           user_agent: clientInfo.userAgent,
         },
         scopes,
-        token_jti: randomUUID(),
+        token_jti: crypto.randomUUID(),
       };
 
       // Store API key info in the request for later use if needed
@@ -1084,7 +1069,6 @@ export class AuthMiddleware {
    */
   private async logAuthEvent(event: Omit<SecurityAuditLog, 'id' | 'created_at'>): Promise<void> {
     try {
-      // await this._auditService.logSecurityAuditEvent(event as SecurityAuditLog); // REMOVED: audit-service deleted
       // Logging disabled temporarily due to missing audit service
       logger.debug({ event }, 'Auth event (logging disabled)');
     } catch (error) {

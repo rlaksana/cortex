@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import * as dotenv from 'dotenv';
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { logger } from '../utils/logger.js';
+import { DEFAULT_TRUNCATION_CONFIG, type TruncationConfig } from './truncation-config.js';
 
 // Load environment variables
 void dotenv.config();
@@ -23,10 +24,14 @@ const DatabaseConfigSchema = z.object({
   QDRANT_COLLECTION_PREFIX: z.string().default('cortex'),
   QDRANT_COLLECTION_NAME: z.string().default('cortex-memory'),
 
-  // Database connection pooling (from env.ts for compatibility)
-  DB_POOL_MIN: z.string().transform(Number).pipe(z.number().int().min(1)).default('5'),
-  DB_POOL_MAX: z.string().transform(Number).pipe(z.number().int().min(2).max(100)).default('20'),
-  DB_IDLE_TIMEOUT_MS: z
+  // Database connection pooling (Qdrant-specific)
+  QDRANT_POOL_MIN: z.string().transform(Number).pipe(z.number().int().min(1)).default('5'),
+  QDRANT_POOL_MAX: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(2).max(100))
+    .default('20'),
+  QDRANT_IDLE_TIMEOUT_MS: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1000))
@@ -42,7 +47,7 @@ const DatabaseConfigSchema = z.object({
       message: 'VECTOR_SIZE must be one of: 384, 768, 1024, 1536, 2048, 3072',
     })
     .default('1536'),
-  VECTOR_DISTANCE: z.enum(['Cosine', 'Euclidean', 'DotProduct']).default('Cosine'),
+  VECTOR_DISTANCE: z.enum(['Cosine', 'Euclid', 'Dot', 'Manhattan']).default('Cosine'),
   EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
   EMBEDDING_BATCH_SIZE: z
     .string()
@@ -50,23 +55,23 @@ const DatabaseConfigSchema = z.object({
     .pipe(z.number().int().min(1).max(100))
     .default('10'),
 
-  // Connection configuration
-  DB_CONNECTION_TIMEOUT: z
+  // Connection configuration (Qdrant-specific)
+  QDRANT_CONNECTION_TIMEOUT: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1000))
     .default('30000'),
-  DB_MAX_CONNECTIONS: z
+  QDRANT_MAX_CONNECTIONS: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(1).max(100))
     .default('20'),
-  DB_RETRY_ATTEMPTS: z
+  QDRANT_RETRY_ATTEMPTS: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(0).max(10))
     .default('3'),
-  DB_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).default('1000'),
+  QDRANT_RETRY_DELAY: z.string().transform(Number).pipe(z.number().int().min(100)).default('1000'),
 
   // Environment configuration
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -92,6 +97,27 @@ const DatabaseConfigSchema = z.object({
   BATCH_SIZE: z.string().transform(Number).pipe(z.number().int().min(1).max(100)).default('50'),
   BATCH_TIMEOUT: z.string().transform(Number).pipe(z.number().int().min(1000)).default('30000'),
 
+  // P6-T6.1: TTL configuration for knowledge expiry
+  TTL_DEFAULT_DAYS: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(365))
+    .default('30'),
+  TTL_SHORT_DAYS: z.string().transform(Number).pipe(z.number().int().min(1).max(30)).default('1'),
+  TTL_LONG_DAYS: z.string().transform(Number).pipe(z.number().int().min(30).max(365)).default('90'),
+  TTL_WORKER_ENABLED: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TTL_WORKER_SCHEDULE: z.string().default('0 2 * * *'), // Daily at 2 AM
+  TTL_WORKER_BATCH_SIZE: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(1000))
+    .default('100'),
+  TTL_WORKER_MAX_BATCHES: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(100))
+    .default('50'),
+
   // Monitoring configuration
   METRICS_ENABLED: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
   HEALTH_CHECK_INTERVAL: z
@@ -107,35 +133,10 @@ const DatabaseConfigSchema = z.object({
   // MCP configuration (from env.ts for compatibility)
   MCP_TRANSPORT: z.enum(['stdio', 'http']).default('stdio'),
 
-  // Scope inference (from env.ts for compatibility)
+  // Scope inference configuration
   CORTEX_ORG: z.string().optional(),
   CORTEX_PROJECT: z.string().optional(),
   CORTEX_BRANCH: z.string().optional(),
-
-  // Additional database connection variables (missing from current config)
-  DB_HOST: z.string().default('localhost'),
-  DB_PORT: z.string().transform(Number).pipe(z.number().int().min(1).max(65535)).default('5433'),
-  DB_NAME: z.string().default('cortex_prod'),
-  DB_USER: z.string().default('cortex'),
-  DB_PASSWORD: z.string().optional(),
-
-  // Database performance and connection variables
-  DB_QUERY_TIMEOUT: z.string().transform(Number).pipe(z.number().int().min(1000)).default('30000'),
-  DB_STATEMENT_TIMEOUT: z
-    .string()
-    .transform(Number)
-    .pipe(z.number().int().min(1000))
-    .default('30000'),
-  DB_MAX_USES: z.string().transform(Number).pipe(z.number().int().min(1)).default('7500'),
-  DB_SSL: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
-  DB_CONNECTION_TIMEOUT_MS: z
-    .string()
-    .transform(Number)
-    .pipe(z.number().int().min(1000))
-    .default('10000'),
-
-  // Testing configuration
-  // TEST_DATABASE_URL removed - PostgreSQL no longer supported
 
   // CI/CD configuration
   CODECOV_TOKEN: z.string().optional(),
@@ -173,6 +174,145 @@ const AppConfigSchema = z.object({
   ENABLE_LOGGING: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
   SEMANTIC_CHUNKING_OPTIONAL: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
   DEDUP_ACTION: z.enum(['skip', 'merge']).default('skip'),
+
+  // Chunking and content processing configuration
+  MAX_CHARS_PER_CHUNK: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(100).max(10000))
+    .default('1200'),
+  CHUNK_OVERLAP_SIZE: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(0).max(1000))
+    .default('200'),
+  CHUNKING_THRESHOLD: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(500).max(10000))
+    .default('2400'),
+  CONTENT_TRUNCATION_LIMIT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(50000))
+    .default('8000'),
+
+  // P1-2: Enhanced truncation configuration
+  TRUNCATION_ENABLED: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_MODE: z.enum(['hard', 'soft', 'intelligent']).default('intelligent'),
+  TRUNCATION_PRESERVE_STRUCTURE: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_ADD_INDICATORS: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_SAFETY_MARGIN: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(0).max(50))
+    .default('5'),
+  TRUNCATION_MAX_CHARS_DEFAULT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(100000))
+    .default('8000'),
+  TRUNCATION_MAX_CHARS_TEXT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(100000))
+    .default('10000'),
+  TRUNCATION_MAX_CHARS_JSON: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(150000))
+    .default('15000'),
+  TRUNCATION_MAX_CHARS_CODE: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(100000))
+    .default('8000'),
+  TRUNCATION_MAX_CHARS_MARKDOWN: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(120000))
+    .default('12000'),
+  TRUNCATION_MAX_TOKENS_DEFAULT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(100).max(10000))
+    .default('2000'),
+  TRUNCATION_MAX_TOKENS_INPUT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(100).max(20000))
+    .default('4000'),
+  TRUNCATION_MAX_TOKENS_CONTEXT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(50000))
+    .default('8000'),
+  TRUNCATION_LOG_WARNINGS: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_INCLUDE_IN_RESPONSE: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_LOG_LEVEL: z.enum(['warn', 'info', 'debug']).default('warn'),
+  TRUNCATION_ENFORCE_LIMITS: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_ALLOW_OVERRIDE: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
+  TRUNCATION_AUTO_DETECT_TYPE: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+  TRUNCATION_ENABLE_SMART: z.string().transform(Boolean).pipe(z.boolean()).default('true'),
+
+  // P6-1: Insight generation configuration
+  INSIGHT_GENERATION_ENABLED: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
+  INSIGHT_GENERATION_ENV_ENABLED: z.string().transform(Boolean).pipe(z.boolean()).default('false'),
+  INSIGHT_GENERATION_MAX_INSIGHTS_PER_ITEM: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(10))
+    .default('3'),
+  INSIGHT_GENERATION_MAX_INSIGHTS_PER_BATCH: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1).max(50))
+    .default('10'),
+  INSIGHT_GENERATION_CONFIDENCE_THRESHOLD: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().min(0).max(1))
+    .default('0.6'),
+  INSIGHT_GENERATION_PROCESSING_TIMEOUT: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(1000).max(30000))
+    .default('5000'),
+  INSIGHT_GENERATION_PERFORMANCE_THRESHOLD: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().min(1).max(50))
+    .default('5'),
+  INSIGHT_GENERATION_CACHE_TTL: z
+    .string()
+    .transform(Number)
+    .pipe(z.number().int().min(60).max(86400))
+    .default('3600'),
+  INSIGHT_GENERATION_PATTERNS_ENABLED: z
+    .string()
+    .transform(Boolean)
+    .pipe(z.boolean())
+    .default('true'),
+  INSIGHT_GENERATION_CONNECTIONS_ENABLED: z
+    .string()
+    .transform(Boolean)
+    .pipe(z.boolean())
+    .default('true'),
+  INSIGHT_GENERATION_RECOMMENDATIONS_ENABLED: z
+    .string()
+    .transform(Boolean)
+    .pipe(z.boolean())
+    .default('true'),
+  INSIGHT_GENERATION_ANOMALIES_ENABLED: z
+    .string()
+    .transform(Boolean)
+    .pipe(z.boolean())
+    .default('false'),
+  INSIGHT_GENERATION_TRENDS_ENABLED: z
+    .string()
+    .transform(Boolean)
+    .pipe(z.boolean())
+    .default('false'),
 });
 
 /**
@@ -226,11 +366,11 @@ export class Environment {
       distance: this.config.VECTOR_DISTANCE,
       collectionName: this.config.QDRANT_COLLECTION_NAME,
       logQueries: this.isDevelopment,
-      connectionTimeout: this.config.DB_CONNECTION_TIMEOUT,
-      maxConnections: this.config.DB_MAX_CONNECTIONS,
-      poolMin: this.config.DB_POOL_MIN,
-      poolMax: this.config.DB_POOL_MAX,
-      idleTimeoutMs: this.config.DB_IDLE_TIMEOUT_MS,
+      connectionTimeout: this.config.QDRANT_CONNECTION_TIMEOUT,
+      maxConnections: this.config.QDRANT_MAX_CONNECTIONS,
+      poolMin: this.config.QDRANT_POOL_MIN,
+      poolMax: this.config.QDRANT_POOL_MAX,
+      idleTimeoutMs: this.config.QDRANT_IDLE_TIMEOUT_MS,
     };
   }
 
@@ -297,8 +437,25 @@ export class Environment {
     return {
       size: this.config.BATCH_SIZE,
       timeout: this.config.BATCH_TIMEOUT,
-      retryAttempts: this.config.DB_RETRY_ATTEMPTS,
-      retryDelay: this.config.DB_RETRY_DELAY,
+      retryAttempts: this.config.QDRANT_RETRY_ATTEMPTS,
+      retryDelay: this.config.QDRANT_RETRY_DELAY,
+    };
+  }
+
+  /**
+   * P6-T6.1: Get TTL configuration for knowledge expiry
+   */
+  getTTLConfig() {
+    return {
+      default_days: this.config.TTL_DEFAULT_DAYS,
+      short_days: this.config.TTL_SHORT_DAYS,
+      long_days: this.config.TTL_LONG_DAYS,
+      worker: {
+        enabled: this.config.TTL_WORKER_ENABLED,
+        schedule: this.config.TTL_WORKER_SCHEDULE,
+        batch_size: this.config.TTL_WORKER_BATCH_SIZE,
+        max_batches: this.config.TTL_WORKER_MAX_BATCHES,
+      },
     };
   }
 
@@ -448,24 +605,6 @@ export class Environment {
   }
 
   /**
-   * Get database connection configuration
-   */
-  getDatabaseConnectionConfig() {
-    return {
-      host: this.config.DB_HOST,
-      port: this.config.DB_PORT,
-      database: this.config.DB_NAME,
-      user: this.config.DB_USER,
-      password: this.config.DB_PASSWORD,
-      ssl: this.config.DB_SSL,
-      queryTimeout: this.config.DB_QUERY_TIMEOUT,
-      statementTimeout: this.config.DB_STATEMENT_TIMEOUT,
-      maxUses: this.config.DB_MAX_USES,
-      connectionTimeoutMs: this.config.DB_CONNECTION_TIMEOUT_MS,
-    };
-  }
-
-  /**
    * Get testing configuration
    */
   getTestingConfig() {
@@ -484,6 +623,136 @@ export class Environment {
   getChunkingConfig() {
     return {
       semanticChunkingOptional: this.config.SEMANTIC_CHUNKING_OPTIONAL,
+      maxCharsPerChunk: this.config.MAX_CHARS_PER_CHUNK,
+      chunkOverlapSize: this.config.CHUNK_OVERLAP_SIZE,
+      chunkingThreshold: this.config.CHUNKING_THRESHOLD,
+      contentTruncationLimit: this.config.CONTENT_TRUNCATION_LIMIT,
+    };
+  }
+
+  /**
+   * P1-2: Get truncation configuration
+   */
+  getTruncationConfig(): TruncationConfig {
+    return {
+      maxChars: {
+        default: this.config.TRUNCATION_MAX_CHARS_DEFAULT,
+        text: this.config.TRUNCATION_MAX_CHARS_TEXT,
+        json: this.config.TRUNCATION_MAX_CHARS_JSON,
+        code: this.config.TRUNCATION_MAX_CHARS_CODE,
+        markdown: this.config.TRUNCATION_MAX_CHARS_MARKDOWN,
+        html: this.config.TRUNCATION_MAX_CHARS_JSON, // Use JSON limit for HTML
+        xml: this.config.TRUNCATION_MAX_CHARS_JSON, // Use JSON limit for XML
+        csv: this.config.TRUNCATION_MAX_CHARS_TEXT, // Use text limit for CSV
+        log: this.config.TRUNCATION_MAX_CHARS_DEFAULT * 2, // Double limit for logs
+      },
+      maxTokens: {
+        default: this.config.TRUNCATION_MAX_TOKENS_DEFAULT,
+        input: this.config.TRUNCATION_MAX_TOKENS_INPUT,
+        output: this.config.TRUNCATION_MAX_TOKENS_DEFAULT,
+        context: this.config.TRUNCATION_MAX_TOKENS_CONTEXT,
+      },
+      behavior: {
+        mode: this.config.TRUNCATION_MODE,
+        preserveStructure: this.config.TRUNCATION_PRESERVE_STRUCTURE,
+        addIndicators: this.config.TRUNCATION_ADD_INDICATORS,
+        indicator: DEFAULT_TRUNCATION_CONFIG.behavior.indicator,
+        safetyMargin: this.config.TRUNCATION_SAFETY_MARGIN,
+      },
+      contentTypes: {
+        autoDetect: this.config.TRUNCATION_AUTO_DETECT_TYPE,
+        preservePriority: DEFAULT_TRUNCATION_CONFIG.contentTypes.preservePriority,
+        enableSmart: this.config.TRUNCATION_ENABLE_SMART,
+      },
+      warnings: {
+        logTruncation: this.config.TRUNCATION_LOG_WARNINGS,
+        includeInResponse: this.config.TRUNCATION_INCLUDE_IN_RESPONSE,
+        logLevel: this.config.TRUNCATION_LOG_LEVEL,
+        emitMetrics: true, // Always emit metrics for observability
+      },
+      enabled: this.config.TRUNCATION_ENABLED,
+      enforceLimits: this.config.TRUNCATION_ENFORCE_LIMITS,
+      allowOverride: this.config.TRUNCATION_ALLOW_OVERRIDE,
+    };
+  }
+
+  /**
+   * P6-1: Get insight generation configuration
+   */
+  getInsightConfig() {
+    return {
+      // Feature toggles
+      enabled: this.config.INSIGHT_GENERATION_ENABLED,
+      environment_enabled: this.config.INSIGHT_GENERATION_ENV_ENABLED,
+      runtime_override: false, // Set via request parameter
+
+      // Generation settings
+      max_insights_per_item: this.config.INSIGHT_GENERATION_MAX_INSIGHTS_PER_ITEM,
+      max_insights_per_batch: this.config.INSIGHT_GENERATION_MAX_INSIGHTS_PER_BATCH,
+      min_confidence_threshold: this.config.INSIGHT_GENERATION_CONFIDENCE_THRESHOLD,
+      processing_timeout_ms: this.config.INSIGHT_GENERATION_PROCESSING_TIMEOUT,
+      parallel_processing: true,
+
+      // Insight types
+      insight_types: {
+        patterns: {
+          id: 'patterns',
+          name: 'Pattern Recognition',
+          description: 'Identify recurring patterns in knowledge items',
+          enabled: this.config.INSIGHT_GENERATION_PATTERNS_ENABLED,
+          confidence_threshold: this.config.INSIGHT_GENERATION_CONFIDENCE_THRESHOLD,
+          priority: 1,
+          max_insights_per_batch: 3,
+        },
+        connections: {
+          id: 'connections',
+          name: 'Connection Analysis',
+          description: 'Find relationships and connections between items',
+          enabled: this.config.INSIGHT_GENERATION_CONNECTIONS_ENABLED,
+          confidence_threshold: this.config.INSIGHT_GENERATION_CONFIDENCE_THRESHOLD,
+          priority: 2,
+          max_insights_per_batch: 2,
+        },
+        recommendations: {
+          id: 'recommendations',
+          name: 'Action Recommendations',
+          description: 'Suggest actions based on stored knowledge',
+          enabled: this.config.INSIGHT_GENERATION_RECOMMENDATIONS_ENABLED,
+          confidence_threshold: this.config.INSIGHT_GENERATION_CONFIDENCE_THRESHOLD,
+          priority: 3,
+          max_insights_per_batch: 2,
+        },
+        anomalies: {
+          id: 'anomalies',
+          name: 'Anomaly Detection',
+          description: 'Detect unusual or unexpected patterns',
+          enabled: this.config.INSIGHT_GENERATION_ANOMALIES_ENABLED,
+          confidence_threshold: 0.9, // Higher threshold for anomalies
+          priority: 4,
+          max_insights_per_batch: 1,
+        },
+        trends: {
+          id: 'trends',
+          name: 'Trend Analysis',
+          description: 'Identify trends in knowledge changes over time',
+          enabled: this.config.INSIGHT_GENERATION_TRENDS_ENABLED,
+          confidence_threshold: this.config.INSIGHT_GENERATION_CONFIDENCE_THRESHOLD,
+          priority: 5,
+          max_insights_per_batch: 2,
+        },
+      },
+
+      // Performance settings
+      performance_impact_threshold: this.config.INSIGHT_GENERATION_PERFORMANCE_THRESHOLD,
+      enable_caching: true,
+      cache_ttl_seconds: this.config.INSIGHT_GENERATION_CACHE_TTL,
+      enable_metrics: this.config.METRICS_ENABLED,
+
+      // Filtering and prioritization
+      max_insight_length: 280,
+      include_metadata: true,
+      filter_duplicates: true,
+      prioritize_by_confidence: true,
     };
   }
 
@@ -562,8 +831,8 @@ export class Environment {
           METRICS_ENABLED: true,
           ENABLE_AUTH: true,
           ENABLE_CACHING: true,
-          DB_POOL_MIN: 5,
-          DB_POOL_MAX: 20,
+          QDRANT_POOL_MIN: 5,
+          QDRANT_POOL_MAX: 20,
           BATCH_SIZE: 100,
         };
 
@@ -574,8 +843,8 @@ export class Environment {
           METRICS_ENABLED: false,
           ENABLE_AUTH: false,
           ENABLE_CACHING: false,
-          DB_POOL_MIN: 1,
-          DB_POOL_MAX: 5,
+          QDRANT_POOL_MIN: 1,
+          QDRANT_POOL_MAX: 5,
           BATCH_SIZE: 10,
           SEARCH_LIMIT: 20,
           MOCK_EXTERNAL_SERVICES: true,
@@ -589,8 +858,8 @@ export class Environment {
           METRICS_ENABLED: true,
           ENABLE_AUTH: false,
           ENABLE_CACHING: true,
-          DB_POOL_MIN: 2,
-          DB_POOL_MAX: 10,
+          QDRANT_POOL_MIN: 2,
+          QDRANT_POOL_MAX: 10,
           BATCH_SIZE: 50,
           DEBUG_MODE: true,
           HOT_RELOAD: true,
@@ -615,7 +884,6 @@ export class Environment {
       batch: this.getBatchConfig(),
       security: this.getSecurityConfig(),
       testing: this.getTestingConfig(),
-      databaseConnection: this.getDatabaseConnectionConfig(),
     };
   }
 
@@ -715,11 +983,10 @@ export function isTest() {
 export function loadEnv() {
   const _config = environment.getRawConfig();
   return {
-    // DATABASE_URL removed - only QDRANT_URL is supported
     QDRANT_URL: _config.QDRANT_URL,
-    DB_POOL_MIN: _config.DB_POOL_MIN,
-    DB_POOL_MAX: _config.DB_POOL_MAX,
-    DB_IDLE_TIMEOUT_MS: _config.DB_IDLE_TIMEOUT_MS,
+    QDRANT_POOL_MIN: _config.QDRANT_POOL_MIN,
+    QDRANT_POOL_MAX: _config.QDRANT_POOL_MAX,
+    QDRANT_IDLE_TIMEOUT_MS: _config.QDRANT_IDLE_TIMEOUT_MS,
     LOG_LEVEL: _config.LOG_LEVEL,
     NODE_ENV: _config.NODE_ENV,
     MCP_TRANSPORT: _config.MCP_TRANSPORT,

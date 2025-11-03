@@ -3,7 +3,7 @@
  * Handles creation, validation, and management of API keys for MCP clients
  */
 
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { logger } from '../../utils/logger.js';
 import { AuthService } from './auth-service.js';
 // import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
@@ -141,7 +141,7 @@ export class ApiKeyService {
       let foundApiKey: ApiKey | null = null;
       let keyId: string | null = null;
 
-      for (const [keyIdCandidate, apiKeyRecord] of this.apiKeys) {
+      for (const [keyIdCandidate, apiKeyRecord] of Array.from(this.apiKeys.entries())) {
         const isValid = await this._authService.verifyApiKey(apiKey, apiKeyRecord.key_hash);
         if (isValid) {
           foundApiKey = apiKeyRecord;
@@ -454,7 +454,7 @@ export class ApiKeyService {
     const now = new Date();
     let cleanedCount = 0;
 
-    for (const [keyId, apiKey] of this.apiKeys) {
+    for (const [keyId, apiKey] of Array.from(this.apiKeys.entries())) {
       const isExpired = apiKey.expires_at && new Date(apiKey.expires_at) <= now;
       const isInactive = !apiKey.is_active;
       const isOld =
@@ -463,7 +463,7 @@ export class ApiKeyService {
       if ((isExpired || isInactive) && isOld) {
         this.apiKeys.delete(keyId);
         // Also remove from keyHashes if it exists
-        for (const [hash, id] of this.keyHashes) {
+        for (const [hash, id] of Array.from(this.keyHashes.entries())) {
           if (id === keyId) {
             this.keyHashes.delete(hash);
             break;

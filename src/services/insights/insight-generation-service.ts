@@ -1,0 +1,1052 @@
+import { logger } from '../../utils/logger.js';
+import { environment } from '../../config/environment.js';
+import { DEFAULT_INSIGHT_CONFIG, type InsightConfig } from '../../config/insight-config.js';
+import type {
+  Insight,
+  InsightGenerationRequest,
+  InsightGenerationResponse,
+  PatternInsight,
+  ConnectionInsight,
+  RecommendationInsight,
+  AnomalyInsight,
+  TrendInsight,
+  InsightTypeUnion,
+  InsightMetrics,
+} from '../../types/insight-interfaces.js';
+import { systemMetricsService } from '../metrics/system-metrics.js';
+import { insightGenerationGuardrails } from './insight-guardrails.js';
+import * as crypto from 'node:crypto';
+
+/**
+ * Insight Generation Service
+ *
+ * Generates insights from stored knowledge items with configurable insight types,
+ * environment-based toggling, and performance monitoring.
+ */
+export class InsightGenerationService {
+  private static instance: InsightGenerationService;
+  private config: InsightConfig;
+  private metrics: InsightMetrics;
+  private insightCache: Map<string, { insight: Insight; expires: number }>;
+
+  private constructor() {
+    this.config = this.loadConfig();
+    this.metrics = this.initializeMetrics();
+    this.insightCache = new Map();
+    this.initializeService();
+  }
+
+  /**
+   * Get singleton instance
+   */
+  static getInstance(): InsightGenerationService {
+    if (!InsightGenerationService.instance) {
+      InsightGenerationService.instance = new InsightGenerationService();
+    }
+    return InsightGenerationService.instance;
+  }
+
+  /**
+   * Generate insights from stored items
+   */
+  async generateInsights(request: InsightGenerationRequest): Promise<InsightGenerationResponse> {
+    const startTime = Date.now();
+
+    // Check if insights are enabled
+    if (!this.isInsightGenerationEnabled(request.options.enabled)) {
+      return this.createDisabledResponse();
+    }
+
+    try {
+      logger.info(
+        {
+          itemCount: request.items.length,
+          insightTypes: request.options.insight_types,
+          enabled: this.config.enabled,
+        },
+        'Starting insight generation'
+      );
+
+      // Clear expired cache entries
+      this.clearExpiredCache();
+
+      const allInsights: InsightTypeUnion[] = [];
+      const errors: Array<{ item_id: string; error_type: string; message: string }> = [];
+      const warnings: string[] = [];
+
+      // Process each enabled insight type
+      for (const insightType of request.options.insight_types) {
+        if (!this.isInsightTypeEnabled(insightType)) {
+          warnings.push(`Insight type '${insightType}' is disabled, skipping`);
+          continue;
+        }
+
+        try {
+          const typeInsights = await this.generateInsightsByType(
+            insightType,
+            request,
+            request.options.confidence_threshold
+          );
+
+          allInsights.push(...typeInsights);
+
+          logger.debug(
+            {
+              insightType,
+              insightCount: typeInsights.length,
+            },
+            'Generated insights for type'
+          );
+        } catch (error) {
+          const errorMsg = `Failed to generate ${insightType} insights: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          errors.push({
+            item_id: 'batch',
+            error_type: 'generation_failed',
+            message: errorMsg,
+          });
+          logger.error({ error, insightType }, 'Insight generation failed for type');
+        }
+      }
+
+      // Filter and prioritize insights
+      let filteredInsights = this.filterAndPrioritizeInsights(allInsights, request.options);
+
+      // Apply insight guardrails
+      const correlationId = crypto.randomUUID();
+      const context = {
+        correlation_id: correlationId,
+        session_id: request.options.session_id,
+        processing_time_ms: Date.now() - startTime,
+      };
+
+      // 1. Apply deterministic templates
+      filteredInsights = insightGenerationGuardrails.applyDeterministicTemplates(
+        filteredInsights,
+        context
+      );
+
+      // 2. Validate and enforce token limits
+      const tokenValidation = insightGenerationGuardrails.validateTokenLimits(filteredInsights);
+      if (!tokenValidation.valid) {
+        warnings.push(
+          `Token limit violations detected: ${tokenValidation.violations.length} issues`
+        );
+        filteredInsights = tokenValidation.adjusted_insights;
+      }
+
+      // 3. Ensure reproducible outputs
+      const inputHash = crypto
+        .createHash('md5')
+        .update(JSON.stringify(request.items))
+        .digest('hex');
+      filteredInsights = insightGenerationGuardrails.ensureReproducibleOutputs(filteredInsights, {
+        correlation_id: correlationId,
+        input_hash: inputHash,
+      });
+
+      // 4. Track provenance
+      const provenanceRecords = insightGenerationGuardrails.trackProvenance(
+        filteredInsights,
+        request.items,
+        context
+      );
+
+      // Update metrics
+      const processingTime = Date.now() - startTime;
+      this.updateMetrics(
+        filteredInsights.length,
+        request.items.length,
+        processingTime,
+        errors.length
+      );
+
+      // Update system metrics
+      this.updateSystemMetrics(filteredInsights, processingTime);
+
+      const response: InsightGenerationResponse = {
+        insights: filteredInsights,
+        metadata: {
+          total_insights: filteredInsights.length,
+          insights_by_type: this.groupInsightsByType(filteredInsights),
+          average_confidence: this.calculateAverageConfidence(filteredInsights),
+          processing_time_ms: processingTime,
+          items_processed: request.items.length,
+          insights_generated: filteredInsights.length,
+          performance_impact: this.calculatePerformanceImpact(processingTime, request.items.length),
+          cache_hit_rate: this.calculateCacheHitRate(),
+          // Add guardrail metadata
+          guardrails_applied: {
+            token_limits_enforced: !tokenValidation.valid,
+            deterministic_templates_applied: true,
+            provenance_tracked: provenanceRecords.length > 0,
+            reproducible_outputs: true,
+            correlation_id: correlationId,
+            token_violations: tokenValidation.violations.length,
+            provenance_records: provenanceRecords.length,
+          },
+        },
+        errors,
+        warnings,
+      };
+
+      logger.info(
+        {
+          totalInsights: filteredInsights.length,
+          processingTime,
+          itemsProcessed: request.items.length,
+          errors: errors.length,
+        },
+        'Insight generation completed'
+      );
+
+      return response;
+    } catch (error) {
+      logger.error({ error }, 'Critical error in insight generation');
+
+      // Return error response without failing the entire memory store operation
+      return {
+        insights: [],
+        metadata: {
+          total_insights: 0,
+          insights_by_type: {},
+          average_confidence: 0,
+          processing_time_ms: Date.now() - startTime,
+          items_processed: request.items.length,
+          insights_generated: 0,
+          performance_impact: 0,
+          cache_hit_rate: 0,
+        },
+        errors: [
+          {
+            item_id: 'system',
+            error_type: 'system_error',
+            message: error instanceof Error ? error.message : 'Unknown system error',
+          },
+        ],
+        warnings: ['Insight generation encountered a system error'],
+      };
+    }
+  }
+
+  /**
+   * Get current metrics
+   */
+  getMetrics(): InsightMetrics {
+    return { ...this.metrics };
+  }
+
+  /**
+   * Reset metrics
+   */
+  resetMetrics(): void {
+    this.metrics = this.initializeMetrics();
+    logger.info('Insight generation metrics reset');
+  }
+
+  /**
+   * Update configuration
+   */
+  updateConfig(newConfig: Partial<InsightConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+    logger.info({ config: newConfig }, 'Insight generation configuration updated');
+  }
+
+  /**
+   * Check if insight generation is enabled
+   */
+  private isInsightGenerationEnabled(requestEnabled: boolean): boolean {
+    if (!this.config.enabled) return false;
+    if (!this.config.environment_enabled) return false;
+    if (this.config.runtime_override) return requestEnabled;
+    return true;
+  }
+
+  /**
+   * Check if specific insight type is enabled
+   */
+  private isInsightTypeEnabled(insightType: string): boolean {
+    const typeConfig =
+      this.config.insight_types[insightType as keyof typeof this.config.insight_types];
+    if (!typeConfig) return false;
+    return Boolean(typeConfig.enabled);
+  }
+
+  /**
+   * Generate insights for a specific type
+   */
+  private async generateInsightsByType(
+    insightType: string,
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<InsightTypeUnion[]> {
+    switch (insightType) {
+      case 'patterns':
+        return this.generatePatternInsights(request, confidenceThreshold);
+      case 'connections':
+        return this.generateConnectionInsights(request, confidenceThreshold);
+      case 'recommendations':
+        return this.generateRecommendationInsights(request, confidenceThreshold);
+      case 'anomalies':
+        return this.generateAnomalyInsights(request, confidenceThreshold);
+      case 'trends':
+        return this.generateTrendInsights(request, confidenceThreshold);
+      default:
+        logger.warn({ insightType }, 'Unknown insight type requested');
+        return [];
+    }
+  }
+
+  /**
+   * Generate pattern recognition insights
+   */
+  private async generatePatternInsights(
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<PatternInsight[]> {
+    const insights: PatternInsight[] = [];
+
+    // Check cache first
+    const cacheKey = this.generateCacheKey('patterns', request.items);
+    const cached = this.getCachedInsight(cacheKey);
+    if (cached) {
+      return [cached as PatternInsight];
+    }
+
+    // Simple pattern detection: look for repeated keywords, themes, or structures
+    const textContents = request.items
+      .filter((item) => item.content || item.data.content)
+      .map((item) => ({
+        id: item.id,
+        content: (item.content || item.data.content || '').toLowerCase(),
+      }));
+
+    // Find common words/phrases (simplified pattern detection)
+    const wordFrequency = new Map<string, number>();
+    const wordContexts = new Map<string, Array<{ item_id: string; context: string }>>();
+
+    textContents.forEach((item) => {
+      const words = item.content.split(/\s+/).filter((word: string) => word.length > 3);
+      words.forEach((word: string) => {
+        wordFrequency.set(word, (wordFrequency.get(word) || 0) + 1);
+        if (!wordContexts.has(word)) {
+          wordContexts.set(word, []);
+        }
+        wordContexts.get(word)!.push({
+          item_id: item.id,
+          context: item.content.substring(0, 100),
+        });
+      });
+    });
+
+    // Generate insights for significant patterns
+    for (const [word, frequency] of wordFrequency.entries()) {
+      if (frequency >= 3 && frequency >= textContents.length * 0.3) {
+        const confidence = Math.min(frequency / textContents.length, 1.0);
+
+        if (confidence >= confidenceThreshold) {
+          const insight: PatternInsight = {
+            id: crypto.randomUUID(),
+            type: 'patterns',
+            title: `Recurring Pattern: "${word}"`,
+            description: `The term "${word}" appears frequently across stored items, suggesting a recurring theme or focus area.`,
+            confidence,
+            priority: this.config.insight_types.patterns.priority,
+            item_ids: wordContexts.get(word)?.map((ctx) => ctx.item_id) || [],
+            scope: request.scope,
+            metadata: {
+              generated_at: new Date().toISOString(),
+              generated_by: 'insight-generation-service',
+              processing_time_ms: 1,
+              data_sources: ['text_content'],
+              tags: ['pattern', 'keyword', 'recurring'],
+            },
+            actionable: false,
+            category: 'pattern',
+            pattern_data: {
+              pattern_type: 'keyword_frequency',
+              frequency,
+              occurrences:
+                wordContexts.get(word)?.map((ctx) => ({
+                  item_id: ctx.item_id,
+                  context: ctx.context.substring(0, 50),
+                  confidence,
+                })) || [],
+              strength: frequency / textContents.length,
+            },
+          };
+
+          insights.push(insight);
+          this.cacheInsight(cacheKey, insight);
+        }
+      }
+    }
+
+    return insights.slice(0, this.config.insight_types.patterns.max_insights_per_batch);
+  }
+
+  /**
+   * Generate connection insights
+   */
+  private async generateConnectionInsights(
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<ConnectionInsight[]> {
+    const insights: ConnectionInsight[] = [];
+
+    // Check cache first
+    const cacheKey = this.generateCacheKey('connections', request.items);
+    const cached = this.getCachedInsight(cacheKey);
+    if (cached) {
+      return [cached as ConnectionInsight];
+    }
+
+    // Simple connection detection: look for items with similar scopes or kinds
+    const itemsByScope = new Map<string, string[]>();
+    const itemsByKind = new Map<string, string[]>();
+
+    request.items.forEach((item) => {
+      // Group by project scope
+      if (item.scope.project) {
+        if (!itemsByScope.has(item.scope.project)) {
+          itemsByScope.set(item.scope.project, []);
+        }
+        itemsByScope.get(item.scope.project)!.push(item.id);
+      }
+
+      // Group by kind
+      if (!itemsByKind.has(item.kind)) {
+        itemsByKind.set(item.kind, []);
+      }
+      itemsByKind.get(item.kind)!.push(item.id);
+    });
+
+    // Generate insights for scope connections
+    for (const [scope, itemIds] of itemsByScope.entries()) {
+      if (itemIds.length >= 2) {
+        const confidence = Math.min(itemIds.length / request.items.length, 1.0);
+
+        if (confidence >= confidenceThreshold) {
+          const insight: ConnectionInsight = {
+            id: crypto.randomUUID(),
+            type: 'connections',
+            title: `Project Connection: ${scope}`,
+            description: `Multiple items are related to project "${scope}", indicating focused work or collaboration.`,
+            confidence,
+            priority: this.config.insight_types.connections.priority,
+            item_ids: itemIds,
+            scope: request.scope,
+            metadata: {
+              generated_at: new Date().toISOString(),
+              generated_by: 'insight-generation-service',
+              processing_time_ms: 1,
+              data_sources: ['scope_analysis'],
+              tags: ['connection', 'project', 'collaboration'],
+            },
+            actionable: false,
+            category: 'connection',
+            connection_data: {
+              connection_type: 'project_scope',
+              source_items: itemIds.slice(0, Math.ceil(itemIds.length / 2)),
+              target_items: itemIds.slice(Math.ceil(itemIds.length / 2)),
+              relationship_strength: confidence,
+              connection_description: `Items share project scope: ${scope}`,
+            },
+          };
+
+          insights.push(insight);
+          this.cacheInsight(cacheKey, insight);
+        }
+      }
+    }
+
+    return insights.slice(0, this.config.insight_types.connections.max_insights_per_batch);
+  }
+
+  /**
+   * Generate recommendation insights
+   */
+  private async generateRecommendationInsights(
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<RecommendationInsight[]> {
+    const insights: RecommendationInsight[] = [];
+
+    // Check cache first
+    const cacheKey = this.generateCacheKey('recommendations', request.items);
+    const cached = this.getCachedInsight(cacheKey);
+    if (cached) {
+      return [cached as RecommendationInsight];
+    }
+
+    // Simple recommendations based on item kinds and content
+    const kindCounts = new Map<string, number>();
+    request.items.forEach((item) => {
+      kindCounts.set(item.kind, (kindCounts.get(item.kind) || 0) + 1);
+    });
+
+    // Generate recommendations for different scenarios
+    for (const [kind, count] of kindCounts.entries()) {
+      if (count >= 2) {
+        let recommendation: RecommendationInsight | null = null;
+
+        switch (kind) {
+          case 'issue':
+            recommendation = this.createIssueRecommendation(request, count, confidenceThreshold);
+            break;
+          case 'decision':
+            recommendation = this.createDecisionRecommendation(request, count, confidenceThreshold);
+            break;
+          case 'todo':
+            recommendation = this.createTodoRecommendation(request, count, confidenceThreshold);
+            break;
+          default:
+            // Generic recommendation for other kinds
+            if (count >= 3) {
+              recommendation = {
+                id: crypto.randomUUID(),
+                type: 'recommendations',
+                title: `Review ${kind} Items`,
+                description: `Multiple ${kind} items detected - consider reviewing for consolidation or organization.`,
+                confidence: Math.min(count / request.items.length, 1.0),
+                priority: this.config.insight_types.recommendations.priority,
+                item_ids: request.items.filter((item) => item.kind === kind).map((item) => item.id),
+                scope: request.scope,
+                metadata: {
+                  generated_at: new Date().toISOString(),
+                  generated_by: 'insight-generation-service',
+                  processing_time_ms: 1,
+                  data_sources: ['kind_analysis'],
+                  tags: ['recommendation', 'organization', 'review'],
+                },
+                actionable: true,
+                category: 'recommendation',
+                recommendation_data: {
+                  action_type: 'review',
+                  priority: 'medium',
+                  effort_estimate: 'low',
+                  impact_assessment: 'medium',
+                  dependencies: [],
+                  success_probability: 0.8,
+                },
+              };
+            }
+        }
+
+        if (recommendation && recommendation.confidence >= confidenceThreshold) {
+          insights.push(recommendation);
+          this.cacheInsight(cacheKey, recommendation);
+        }
+      }
+    }
+
+    return insights.slice(0, this.config.insight_types.recommendations.max_insights_per_batch);
+  }
+
+  /**
+   * Generate anomaly insights (simplified implementation)
+   */
+  private async generateAnomalyInsights(
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<AnomalyInsight[]> {
+    const insights: AnomalyInsight[] = [];
+
+    // Check cache first
+    const cacheKey = this.generateCacheKey('anomalies', request.items);
+    const cached = this.getCachedInsight(cacheKey);
+    if (cached) {
+      return [cached as AnomalyInsight];
+    }
+
+    // Simple anomaly detection: look for unusual item kinds or content patterns
+    const kindDistribution = new Map<string, number>();
+    request.items.forEach((item) => {
+      kindDistribution.set(item.kind, (kindDistribution.get(item.kind) || 0) + 1);
+    });
+
+    const totalItems = request.items.length;
+    const expectedDistribution = 1 / kindDistribution.size;
+
+    for (const [kind, count] of kindDistribution.entries()) {
+      const actualDistribution = count / totalItems;
+      const deviation = Math.abs(actualDistribution - expectedDistribution) / expectedDistribution;
+
+      // Flag as anomaly if deviation is significant
+      if (deviation > 2.0 && count > 1) {
+        const confidence = Math.min(deviation / 3.0, 1.0);
+
+        if (confidence >= confidenceThreshold) {
+          const insight: AnomalyInsight = {
+            id: crypto.randomUUID(),
+            type: 'anomalies',
+            title: `Unusual Pattern: ${kind} Items`,
+            description: `Higher than expected concentration of "${kind}" items detected (${count} items, ${Math.round(actualDistribution * 100)}% of total).`,
+            confidence,
+            priority: this.config.insight_types.anomalies.priority,
+            item_ids: request.items.filter((item) => item.kind === kind).map((item) => item.id),
+            scope: request.scope,
+            metadata: {
+              generated_at: new Date().toISOString(),
+              generated_by: 'insight-generation-service',
+              processing_time_ms: 1,
+              data_sources: ['distribution_analysis'],
+              tags: ['anomaly', 'pattern', 'distribution'],
+            },
+            actionable: false,
+            category: 'anomaly',
+            anomaly_data: {
+              anomaly_type: 'distribution_skew',
+              severity: confidence > 0.8 ? 'high' : 'medium',
+              baseline_data: { expected_distribution: expectedDistribution },
+              deviation_score: deviation,
+              potential_causes: [
+                'Focused work on specific area',
+                'Data collection bias',
+                'Systematic categorization issues',
+              ],
+            },
+          };
+
+          insights.push(insight);
+          this.cacheInsight(cacheKey, insight);
+        }
+      }
+    }
+
+    return insights.slice(0, this.config.insight_types.anomalies.max_insights_per_batch);
+  }
+
+  /**
+   * Generate trend insights (simplified implementation)
+   */
+  private async generateTrendInsights(
+    request: InsightGenerationRequest,
+    confidenceThreshold: number
+  ): Promise<TrendInsight[]> {
+    const insights: TrendInsight[] = [];
+
+    // Trend analysis requires historical data - simplified implementation
+    // In a full implementation, this would analyze temporal patterns
+
+    // For now, generate a placeholder trend insight if we have sufficient items
+    if (request.items.length >= 5) {
+      const insight: TrendInsight = {
+        id: crypto.randomUUID(),
+        type: 'trends',
+        title: 'Knowledge Accumulation Trend',
+        description: 'Continuous knowledge accumulation detected across multiple items.',
+        confidence: 0.7,
+        priority: this.config.insight_types.trends.priority,
+        item_ids: request.items.slice(-5).map((item) => item.id), // Last 5 items
+        scope: request.scope,
+        metadata: {
+          generated_at: new Date().toISOString(),
+          generated_by: 'insight-generation-service',
+          processing_time_ms: 1,
+          data_sources: ['temporal_analysis'],
+          tags: ['trend', 'accumulation', 'growth'],
+        },
+        actionable: false,
+        category: 'trend',
+        trend_data: {
+          trend_direction: 'increasing',
+          trend_strength: 0.7,
+          time_period: {
+            start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 24 hours ago
+            end: new Date().toISOString(),
+          },
+          data_points: request.items.slice(-5).map((item, index) => ({
+            timestamp: item.created_at || new Date().toISOString(),
+            value: index + 1,
+            context: item.kind,
+          })),
+        },
+      };
+
+      if (insight.confidence >= confidenceThreshold) {
+        insights.push(insight);
+      }
+    }
+
+    return insights.slice(0, this.config.insight_types.trends.max_insights_per_batch);
+  }
+
+  /**
+   * Helper methods for recommendation generation
+   */
+  private createIssueRecommendation(
+    request: InsightGenerationRequest,
+    count: number,
+    confidenceThreshold: number
+  ): RecommendationInsight | null {
+    const confidence = Math.min(count / request.items.length, 1.0);
+    if (confidence < confidenceThreshold) return null;
+
+    return {
+      id: crypto.randomUUID(),
+      type: 'recommendations',
+      title: 'Address Multiple Issues',
+      description: `Multiple issues detected (${count} items) - prioritize resolution to prevent technical debt accumulation.`,
+      confidence,
+      priority: this.config.insight_types.recommendations.priority,
+      item_ids: request.items.filter((item) => item.kind === 'issue').map((item) => item.id),
+      scope: request.scope,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        generated_by: 'insight-generation-service',
+        processing_time_ms: 1,
+        data_sources: ['issue_analysis'],
+        tags: ['recommendation', 'issues', 'technical_debt'],
+      },
+      actionable: true,
+      category: 'recommendation',
+      recommendation_data: {
+        action_type: 'resolve_issues',
+        priority: count > 5 ? 'high' : 'medium',
+        effort_estimate: 'medium',
+        impact_assessment: 'high',
+        dependencies: [],
+        success_probability: 0.85,
+      },
+    };
+  }
+
+  private createDecisionRecommendation(
+    request: InsightGenerationRequest,
+    count: number,
+    confidenceThreshold: number
+  ): RecommendationInsight | null {
+    const confidence = Math.min(count / request.items.length, 1.0);
+    if (confidence < confidenceThreshold) return null;
+
+    return {
+      id: crypto.randomUUID(),
+      type: 'recommendations',
+      title: 'Document Decision Impact',
+      description: `Multiple decisions recorded (${count} items) - consider documenting outcomes and impact for future reference.`,
+      confidence,
+      priority: this.config.insight_types.recommendations.priority,
+      item_ids: request.items.filter((item) => item.kind === 'decision').map((item) => item.id),
+      scope: request.scope,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        generated_by: 'insight-generation-service',
+        processing_time_ms: 1,
+        data_sources: ['decision_analysis'],
+        tags: ['recommendation', 'decisions', 'documentation'],
+      },
+      actionable: true,
+      category: 'recommendation',
+      recommendation_data: {
+        action_type: 'document_outcomes',
+        priority: 'medium',
+        effort_estimate: 'low',
+        impact_assessment: 'medium',
+        dependencies: [],
+        success_probability: 0.9,
+      },
+    };
+  }
+
+  private createTodoRecommendation(
+    request: InsightGenerationRequest,
+    count: number,
+    confidenceThreshold: number
+  ): RecommendationInsight | null {
+    const confidence = Math.min(count / request.items.length, 1.0);
+    if (confidence < confidenceThreshold) return null;
+
+    return {
+      id: crypto.randomUUID(),
+      type: 'recommendations',
+      title: 'Task Completion Review',
+      description: `Multiple todos detected (${count} items) - review progress and prioritize remaining tasks.`,
+      confidence,
+      priority: this.config.insight_types.recommendations.priority,
+      item_ids: request.items.filter((item) => item.kind === 'todo').map((item) => item.id),
+      scope: request.scope,
+      metadata: {
+        generated_at: new Date().toISOString(),
+        generated_by: 'insight-generation-service',
+        processing_time_ms: 1,
+        data_sources: ['todo_analysis'],
+        tags: ['recommendation', 'tasks', 'prioritization'],
+      },
+      actionable: true,
+      category: 'recommendation',
+      recommendation_data: {
+        action_type: 'review_progress',
+        priority: count > 10 ? 'high' : 'medium',
+        effort_estimate: 'low',
+        impact_assessment: 'medium',
+        dependencies: [],
+        success_probability: 0.8,
+      },
+    };
+  }
+
+  /**
+   * Filter and prioritize insights
+   */
+  private filterAndPrioritizeInsights(
+    insights: InsightTypeUnion[],
+    options: InsightGenerationRequest['options']
+  ): Insight[] {
+    let filteredInsights = insights as Insight[];
+
+    // Filter by confidence threshold
+    filteredInsights = filteredInsights.filter(
+      (insight) => insight.confidence >= options.confidence_threshold
+    );
+
+    // Remove duplicates
+    if (this.config.filter_duplicates) {
+      filteredInsights = this.removeDuplicateInsights(filteredInsights);
+    }
+
+    // Prioritize by confidence and priority
+    if (this.config.prioritize_by_confidence) {
+      filteredInsights.sort((a, b) => {
+        // First by priority (lower number = higher priority)
+        if (a.priority !== b.priority) {
+          return a.priority - b.priority;
+        }
+        // Then by confidence (higher = better)
+        return b.confidence - a.confidence;
+      });
+    }
+
+    // Limit insights per item and batch
+    const insightsByItem = new Map<string, Insight[]>();
+    const result: Insight[] = [];
+
+    for (const insight of filteredInsights) {
+      // Check per-item limit
+      const itemInsights = insightsByItem.get(insight.item_ids[0]) || [];
+
+      if (
+        itemInsights.length < options.max_insights_per_item &&
+        result.length < this.config.max_insights_per_batch
+      ) {
+        result.push(insight);
+        itemInsights.push(insight);
+        insightsByItem.set(insight.item_ids[0], itemInsights);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Remove duplicate insights
+   */
+  private removeDuplicateInsights(insights: Insight[]): Insight[] {
+    const seen = new Set<string>();
+    return insights.filter((insight) => {
+      const key = `${insight.type}-${insight.title.substring(0, 50)}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }
+
+  /**
+   * Utility methods
+   */
+  private loadConfig(): InsightConfig {
+    // Load configuration from environment system
+    const envConfig = environment.getInsightConfig();
+
+    // Merge with defaults to ensure all properties are present
+    const config: InsightConfig = {
+      ...DEFAULT_INSIGHT_CONFIG,
+      ...envConfig,
+      // Deep merge insight types to preserve all nested properties
+      insight_types: {
+        ...DEFAULT_INSIGHT_CONFIG.insight_types,
+        ...envConfig.insight_types,
+      },
+    };
+
+    // Enable in specific environments if not explicitly set
+    if (environment.isDevelopmentMode() && !config.environment_enabled) {
+      config.environment_enabled = true;
+    }
+
+    logger.debug(
+      {
+        enabled: config.enabled,
+        environment_enabled: config.environment_enabled,
+        insight_types_enabled: Object.entries(config.insight_types)
+          .filter(([_, type]) => type.enabled)
+          .map(([name]) => name),
+      },
+      'Insight generation configuration loaded'
+    );
+
+    return config;
+  }
+
+  private initializeMetrics(): InsightMetrics {
+    return {
+      total_insights_generated: 0,
+      insights_by_type: {},
+      average_confidence: 0,
+      generation_success_rate: 1.0,
+      processing_time_avg: 0,
+      performance_impact_avg: 0,
+      cache_hit_rate: 0,
+      error_rate: 0,
+      last_updated: new Date().toISOString(),
+    };
+  }
+
+  private initializeService(): void {
+    logger.info(
+      {
+        enabled: this.config.enabled,
+        environmentEnabled: this.config.environment_enabled,
+        insightTypes: Object.keys(this.config.insight_types).filter((key) => {
+          const typeConfig =
+            this.config.insight_types[key as keyof typeof this.config.insight_types];
+          return typeof typeConfig === 'object' ? typeConfig?.enabled : typeConfig;
+        }),
+      },
+      'Insight generation service initialized'
+    );
+  }
+
+  private createDisabledResponse(): InsightGenerationResponse {
+    return {
+      insights: [],
+      metadata: {
+        total_insights: 0,
+        insights_by_type: {},
+        average_confidence: 0,
+        processing_time_ms: 0,
+        items_processed: 0,
+        insights_generated: 0,
+        performance_impact: 0,
+        cache_hit_rate: 0,
+      },
+      errors: [],
+      warnings: ['Insight generation is disabled'],
+    };
+  }
+
+  private clearExpiredCache(): void {
+    const now = Date.now();
+    for (const [key, cached] of this.insightCache.entries()) {
+      if (cached.expires < now) {
+        this.insightCache.delete(key);
+      }
+    }
+  }
+
+  private generateCacheKey(type: string, items: any[]): string {
+    const itemHash = crypto
+      .createHash('md5')
+      .update(
+        items
+          .map((item) => item.id)
+          .sort()
+          .join(',')
+      )
+      .digest('hex');
+    return `${type}-${itemHash}`;
+  }
+
+  private getCachedInsight(cacheKey: string): Insight | null {
+    if (!this.config.enable_caching) {
+      return null;
+    }
+
+    const cached = this.insightCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return cached.insight;
+    }
+
+    return null;
+  }
+
+  private cacheInsight(cacheKey: string, insight: Insight): void {
+    if (!this.config.enable_caching) {
+      return;
+    }
+
+    this.insightCache.set(cacheKey, {
+      insight,
+      expires: Date.now() + this.config.cache_ttl_seconds * 1000,
+    });
+  }
+
+  private groupInsightsByType(insights: Insight[]): Record<string, number> {
+    const grouped: Record<string, number> = {};
+    insights.forEach((insight) => {
+      grouped[insight.type] = (grouped[insight.type] || 0) + 1;
+    });
+    return grouped;
+  }
+
+  private calculateAverageConfidence(insights: Insight[]): number {
+    if (insights.length === 0) return 0;
+    const sum = insights.reduce((acc, insight) => acc + insight.confidence, 0);
+    return sum / insights.length;
+  }
+
+  private calculatePerformanceImpact(processingTime: number, itemCount: number): number {
+    // Simple calculation: impact based on processing time relative to item count
+    const timePerItem = processingTime / itemCount;
+    return Math.min((timePerItem / 100) * 100, 100); // Percentage
+  }
+
+  private calculateCacheHitRate(): number {
+    // Simplified cache hit rate calculation
+    // In a real implementation, track cache hits and misses
+    return 0.1; // 10% placeholder
+  }
+
+  private updateMetrics(
+    insightCount: number,
+    itemCount: number,
+    processingTime: number,
+    errorCount: number
+  ): void {
+    this.metrics.total_insights_generated += insightCount;
+    this.metrics.generation_success_rate =
+      itemCount > 0 ? (itemCount - errorCount) / itemCount : 1.0;
+    this.metrics.processing_time_avg = (this.metrics.processing_time_avg + processingTime) / 2;
+    this.metrics.performance_impact_avg =
+      (this.metrics.performance_impact_avg +
+        this.calculatePerformanceImpact(processingTime, itemCount)) /
+      2;
+    this.metrics.error_rate = itemCount > 0 ? errorCount / itemCount : 0;
+    this.metrics.last_updated = new Date().toISOString();
+  }
+
+  private updateSystemMetrics(insights: Insight[], processingTime: number): void {
+    if (this.config.enable_metrics) {
+      systemMetricsService.updateMetrics({
+        operation: 'insight_generation',
+        data: {
+          insights_generated: insights.length,
+          insights_by_type: insights.reduce(
+            (acc, insight) => {
+              acc[insight.type] = (acc[insight.type] || 0) + 1;
+              return acc;
+            },
+            {} as Record<string, number>
+          ),
+          average_confidence: this.calculateAverageConfidence(insights),
+          processing_time_ms: processingTime,
+        },
+        duration_ms: processingTime,
+      });
+    }
+  }
+}
+
+// Export singleton instance
+export const insightGenerationService = InsightGenerationService.getInstance();

@@ -13,6 +13,7 @@ import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
 import type { AuthContext } from '../../types/auth-types.js';
+import { createFindObservability } from '../../utils/observability-helper.js';
 
 // Placeholder types for missing services
 interface ParsedQuery {
@@ -381,7 +382,23 @@ export class MemoryFindOrchestrator {
             search_mode_used: 'rate_limited',
             results_found: 0,
             confidence_average: 0,
-            user_message_suggestion: 'Rate limit exceeded',
+            user_message_suggestion: 'Rate limit exceeded. Please try again later.',
+          },
+          observability: createFindObservability(
+            'fallback',
+            false, // vector_used - no vectors used in rate limit error
+            true, // degraded - rate limit is degraded state
+            Date.now() - startTime,
+            0
+          ),
+          meta: {
+            strategy: 'rate_limited',
+            vector_used: false,
+            degraded: true,
+            source: 'memory-find-orchestrator',
+            execution_time_ms: Date.now() - startTime,
+            confidence_score: 0,
+            truncated: false,
           },
         };
       }
@@ -1010,6 +1027,7 @@ export class MemoryFindOrchestrator {
     rankedResults: any[],
     searchResult: SearchExecutionResult
   ): MemoryFindResponse {
+    const startTime = Date.now();
     // Convert ranked results back to SearchResult format
     const results = rankedResults.map((rr) => ({
       id: rr.id,
@@ -1033,6 +1051,27 @@ export class MemoryFindOrchestrator {
             ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
             : 0,
         user_message_suggestion: this.generateUserMessage(results, searchResult),
+      },
+      observability: createFindObservability(
+        'auto', // Use valid strategy type
+        searchResult.strategy.primary.name.includes('vector'),
+        false,
+        Date.now() - startTime,
+        results.length > 0
+          ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
+          : 0
+      ),
+      meta: {
+        strategy: searchResult.strategy.primary.name,
+        vector_used: searchResult.strategy.primary.name.includes('vector'),
+        degraded: false,
+        source: 'memory-find-orchestrator',
+        execution_time_ms: Date.now() - startTime,
+        confidence_score:
+          results.length > 0
+            ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
+            : 0,
+        truncated: false,
       },
     };
   }
@@ -1082,6 +1121,7 @@ export class MemoryFindOrchestrator {
    * Create validation error response
    */
   private createValidationErrorResponse(errors: string[]): MemoryFindResponse {
+    const startTime = Date.now();
     return {
       results: [],
       items: [],
@@ -1092,6 +1132,16 @@ export class MemoryFindOrchestrator {
         confidence_average: 0,
         user_message_suggestion: `❌ Invalid query: ${errors.join(', ')}`,
       },
+      observability: createFindObservability('error', false, true, Date.now() - startTime, 0),
+      meta: {
+        strategy: 'validation_failed',
+        vector_used: false,
+        degraded: true,
+        source: 'memory-find-orchestrator',
+        execution_time_ms: Date.now() - startTime,
+        confidence_score: 0,
+        truncated: false,
+      },
     };
   }
 
@@ -1099,15 +1149,32 @@ export class MemoryFindOrchestrator {
    * Create error response
    */
   private createErrorResponse(_error: any): MemoryFindResponse {
+    const startTime = Date.now();
     return {
       results: [],
       items: [],
       total_count: 0,
       autonomous_context: {
-        search_mode_used: 'error',
+        search_mode_used: 'validation_failed',
         results_found: 0,
         confidence_average: 0,
-        user_message_suggestion: '❌ Search failed - please try again',
+        user_message_suggestion: `❌ Search error: ${_error?.message || 'Unknown error'}`,
+      },
+      observability: createFindObservability(
+        'error',
+        false, // vector_used - no vectors used in validation error
+        true, // degraded - validation error is degraded state
+        Date.now() - startTime,
+        0
+      ),
+      meta: {
+        strategy: 'validation_failed',
+        vector_used: false,
+        degraded: true,
+        source: 'memory-find-orchestrator',
+        execution_time_ms: Date.now() - startTime,
+        confidence_score: 0,
+        truncated: false,
       },
     };
   }

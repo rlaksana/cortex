@@ -5,7 +5,7 @@
  * Handles the conversion between {content, metadata} and {data} fields
  */
 
-import { randomUUID } from 'node:crypto';
+import * as crypto from 'node:crypto';
 
 // Define KnowledgeItem interface to match index.ts requirements
 interface KnowledgeItem {
@@ -67,7 +67,7 @@ export function transformMcpInputToKnowledgeItems(items: any[]): KnowledgeItem[]
 
     // Return knowledge item in index.ts format
     const knowledgeItem: KnowledgeItem = {
-      id: randomUUID(),
+      id: crypto.randomUUID(),
       kind,
       content: finalContent,
       metadata: finalMetadata,

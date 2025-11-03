@@ -36,7 +36,7 @@ export async function addObservation(
   data: ObservationItem['data'],
   _scope?: Record<string, unknown>
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Use UnifiedDatabaseLayer to store observation
@@ -63,7 +63,7 @@ export async function addObservation(
  * @returns true if deleted, false if not found
  */
 export async function deleteObservation(_observationId: string): Promise<boolean> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.knowledgeObservation.updateMany();
@@ -87,7 +87,7 @@ export async function deleteObservationsByText(
   _entity_id: string,
   _observationText: string
 ): Promise<number> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.knowledgeObservation.updateMany();
@@ -117,7 +117,7 @@ export async function getObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -177,7 +177,7 @@ export async function searchObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   // Use FTS if query looks like search terms, otherwise use LIKE
@@ -238,7 +238,7 @@ export async function getObservationCount(
   _entity_type: string,
   _entity_id: string
 ): Promise<number> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const result = await qdrant.$queryRaw();
@@ -274,7 +274,7 @@ export async function getRecentObservations(
     created_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

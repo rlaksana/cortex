@@ -80,10 +80,100 @@ export interface SystemMetrics {
     expired_items_cleaned: number;
     memory_usage_kb: number;
   };
+
+  // Observability metrics
+  observability: {
+    responses_with_metadata: number;
+    vector_operations: number;
+    degraded_operations: number;
+    avg_response_time_ms: number;
+    search_strategies_used: Record<string, number>;
+  };
+
+  // P1-2: Truncation metrics
+  truncation: {
+    store_truncated_total: number;
+    store_truncated_chars_total: number;
+    store_truncated_tokens_total: number;
+    truncation_processing_time_ms: number;
+    truncation_by_type: Record<string, number>;
+    truncation_by_strategy: Record<string, number>;
+    truncation_rate: number; // percentage of operations truncated
+  };
+
+  // P4-1: Chunking metrics
+  chunking: {
+    items_chunked: number;
+    chunks_generated: number;
+    avg_chunks_per_item: number;
+    chunking_duration_ms: number;
+    chunking_success_rate: number;
+    semantic_analysis_used: number;
+    semantic_boundaries_found: number;
+    chunk_reassembly_accuracy: number;
+    chunking_by_type: Record<string, number>;
+    chunking_errors: number;
+    average_chunk_size: number;
+    overlap_utilization: number;
+  };
+
+  // P4-1: Enhanced cleanup metrics
+  cleanup: {
+    cleanup_operations_run: number;
+    items_deleted_total: number;
+    items_dryrun_identified: number;
+    cleanup_duration_ms: number;
+    cleanup_success_rate: number;
+    backup_operations: number;
+    backup_size_total_bytes: number;
+    cleanup_by_operation: Record<string, number>;
+    cleanup_by_type: Record<string, number>;
+    cleanup_errors: number;
+    average_items_per_second: number;
+    confirmations_required: number;
+    confirmations_completed: number;
+  };
+
+  // P4-1: Enhanced dedupe_hits metrics
+  dedupe_hits: {
+    duplicates_detected: number;
+    similarity_scores: number[];
+    avg_similarity_score: number;
+    merge_operations: number;
+    skip_operations: number;
+    intelligent_merges: number;
+    combine_merges: number;
+    dedupe_hits_by_strategy: Record<string, number>;
+    false_positives: number;
+    merge_conflicts_resolved: number;
+    dedupe_processing_time_ms: number;
+  };
+
+  // P6-1: Insight generation metrics
+  insight_generation: {
+    insights_generated: number;
+    avg_processing_time_ms: number;
+    avg_confidence: number;
+    insights_by_type: Record<string, number>;
+    performance_impact: number;
+  };
 }
 
 export interface MetricUpdate {
-  operation: 'store' | 'find' | 'purge' | 'validate' | 'dedupe' | 'error' | 'rate_limit';
+  operation:
+    | 'store'
+    | 'find'
+    | 'purge'
+    | 'validate'
+    | 'dedupe'
+    | 'error'
+    | 'rate_limit'
+    | 'truncation'
+    | 'chunking'
+    | 'cleanup'
+    | 'dedupe_hits'
+    | 'insight_generation'
+    | 'insight_generation_summary';
   data: Record<string, any>;
   duration_ms?: number;
 }
@@ -144,6 +234,76 @@ export class SystemMetricsService {
       expired_items_cleaned: 0,
       memory_usage_kb: 0,
     },
+    observability: {
+      responses_with_metadata: 0,
+      vector_operations: 0,
+      degraded_operations: 0,
+      avg_response_time_ms: 0,
+      search_strategies_used: {},
+    },
+    // P1-2: Initialize truncation metrics
+    truncation: {
+      store_truncated_total: 0,
+      store_truncated_chars_total: 0,
+      store_truncated_tokens_total: 0,
+      truncation_processing_time_ms: 0,
+      truncation_by_type: {},
+      truncation_by_strategy: {},
+      truncation_rate: 0,
+    },
+    // P4-1: Initialize chunking metrics
+    chunking: {
+      items_chunked: 0,
+      chunks_generated: 0,
+      avg_chunks_per_item: 0,
+      chunking_duration_ms: 0,
+      chunking_success_rate: 100,
+      semantic_analysis_used: 0,
+      semantic_boundaries_found: 0,
+      chunk_reassembly_accuracy: 100,
+      chunking_by_type: {},
+      chunking_errors: 0,
+      average_chunk_size: 0,
+      overlap_utilization: 0,
+    },
+    // P4-1: Initialize cleanup metrics
+    cleanup: {
+      cleanup_operations_run: 0,
+      items_deleted_total: 0,
+      items_dryrun_identified: 0,
+      cleanup_duration_ms: 0,
+      cleanup_success_rate: 100,
+      backup_operations: 0,
+      backup_size_total_bytes: 0,
+      cleanup_by_operation: {},
+      cleanup_by_type: {},
+      cleanup_errors: 0,
+      average_items_per_second: 0,
+      confirmations_required: 0,
+      confirmations_completed: 0,
+    },
+    // P4-1: Initialize dedupe_hits metrics
+    dedupe_hits: {
+      duplicates_detected: 0,
+      similarity_scores: [],
+      avg_similarity_score: 0,
+      merge_operations: 0,
+      skip_operations: 0,
+      intelligent_merges: 0,
+      combine_merges: 0,
+      dedupe_hits_by_strategy: {},
+      false_positives: 0,
+      merge_conflicts_resolved: 0,
+      dedupe_processing_time_ms: 0,
+    },
+    // P6-1: Initialize insight generation metrics
+    insight_generation: {
+      insights_generated: 0,
+      avg_processing_time_ms: 0,
+      avg_confidence: 0,
+      insights_by_type: {},
+      performance_impact: 0,
+    },
   };
 
   private startTime: number = Date.now();
@@ -182,6 +342,24 @@ export class SystemMetricsService {
         case 'rate_limit':
           this.updateRateLimitMetrics(update.data);
           break;
+        case 'truncation':
+          this.updateTruncationMetrics(update.data, update.duration_ms);
+          break;
+        case 'chunking':
+          this.updateChunkingMetrics(update.data, update.duration_ms);
+          break;
+        case 'cleanup':
+          this.updateCleanupMetrics(update.data, update.duration_ms);
+          break;
+        case 'dedupe_hits':
+          this.updateDedupeHitsMetrics(update.data, update.duration_ms);
+          break;
+        case 'insight_generation':
+          this.updateInsightGenerationMetrics(update.data, update.duration_ms);
+          break;
+        case 'insight_generation_summary':
+          this.updateInsightGenerationSummaryMetrics(update.data, update.duration_ms);
+          break;
       }
 
       // Update uptime
@@ -213,6 +391,14 @@ export class SystemMetricsService {
     if (duration) {
       this.updatePerformanceMetric('avg_store_duration_ms', duration);
     }
+
+    // Update observability metrics
+    this.metrics.observability.responses_with_metadata++;
+    this.metrics.observability.vector_operations++;
+
+    if (duration) {
+      this.updateObservabilityMetric('avg_response_time_ms', duration);
+    }
   }
 
   /**
@@ -236,6 +422,15 @@ export class SystemMetricsService {
     // Update performance
     if (duration) {
       this.updatePerformanceMetric('avg_find_duration_ms', duration);
+    }
+
+    // Update observability metrics
+    this.metrics.observability.responses_with_metadata++;
+    this.metrics.observability.search_strategies_used[data.mode] =
+      (this.metrics.observability.search_strategies_used[data.mode] || 0) + 1;
+
+    if (duration) {
+      this.updateObservabilityMetric('avg_response_time_ms', duration);
     }
   }
 
@@ -337,6 +532,41 @@ export class SystemMetricsService {
   }
 
   /**
+   * P1-2: Update truncation metrics
+   */
+  private updateTruncationMetrics(data: Record<string, any>, duration?: number): void {
+    if (data.truncationOccurred) {
+      this.metrics.truncation.store_truncated_total++;
+    }
+
+    this.metrics.truncation.store_truncated_chars_total += Number(data.charsRemoved || 0);
+    this.metrics.truncation.store_truncated_tokens_total += Number(data.tokensRemoved || 0);
+
+    if (duration) {
+      this.metrics.truncation.truncation_processing_time_ms += duration;
+    }
+
+    // Track by content type
+    if (data.contentType) {
+      this.metrics.truncation.truncation_by_type[data.contentType] =
+        (this.metrics.truncation.truncation_by_type[data.contentType] || 0) + 1;
+    }
+
+    // Track by strategy
+    if (data.strategy) {
+      this.metrics.truncation.truncation_by_strategy[data.strategy] =
+        (this.metrics.truncation.truncation_by_strategy[data.strategy] || 0) + 1;
+    }
+
+    // Calculate truncation rate
+    const totalStoreOps = this.metrics.store_count.total;
+    if (totalStoreOps > 0) {
+      this.metrics.truncation.truncation_rate =
+        (this.metrics.truncation.store_truncated_total / totalStoreOps) * 100;
+    }
+  }
+
+  /**
    * Update performance metric with running average
    */
   private updatePerformanceMetric(metric: keyof SystemMetrics['performance'], value: number): void {
@@ -350,6 +580,253 @@ export class SystemMetricsService {
     const avg =
       this.performanceBuffer.reduce((sum, val) => sum + val, 0) / this.performanceBuffer.length;
     (this.metrics.performance as any)[metric] = Math.round(avg * 100) / 100; // Round to 2 decimal places
+  }
+
+  /**
+   * Update observability metrics
+   */
+  private updateObservabilityMetric(
+    metric: keyof SystemMetrics['observability'],
+    value: number
+  ): void {
+    if (metric === 'avg_response_time_ms') {
+      const current = this.metrics.observability.avg_response_time_ms;
+      const total = this.metrics.observability.responses_with_metadata;
+      this.metrics.observability.avg_response_time_ms =
+        Math.round(((current * (total - 1) + value) / total) * 100) / 100;
+    } else {
+      (this.metrics.observability as any)[metric] = value;
+    }
+  }
+
+  /**
+   * P4-1: Update chunking metrics
+   */
+  private updateChunkingMetrics(data: Record<string, any>, duration?: number): void {
+    if (data.items_chunked) {
+      this.metrics.chunking.items_chunked += Number(data.items_chunked);
+    }
+    if (data.chunks_generated) {
+      this.metrics.chunking.chunks_generated += Number(data.chunks_generated);
+    }
+    if (duration) {
+      this.metrics.chunking.chunking_duration_ms += duration;
+    }
+
+    // Update success rate
+    if (data.success !== undefined) {
+      const total = this.metrics.chunking.items_chunked || 1;
+      const successful = data.success
+        ? this.metrics.chunking.items_chunked - (this.metrics.chunking.chunking_errors || 0)
+        : this.metrics.chunking.chunking_errors + 1;
+      this.metrics.chunking.chunking_success_rate = (successful / total) * 100;
+    }
+
+    // Track by type
+    if (data.type) {
+      this.metrics.chunking.chunking_by_type[data.type] =
+        (this.metrics.chunking.chunking_by_type[data.type] || 0) + 1;
+    }
+
+    // Semantic analysis metrics
+    if (data.semantic_analysis_used) {
+      this.metrics.chunking.semantic_analysis_used += Number(data.semantic_analysis_used);
+    }
+    if (data.semantic_boundaries_found) {
+      this.metrics.chunking.semantic_boundaries_found += Number(data.semantic_boundaries_found);
+    }
+
+    // Reassembly accuracy
+    if (data.reassembly_accuracy) {
+      this.metrics.chunking.chunk_reassembly_accuracy = data.reassembly_accuracy;
+    }
+
+    // Average chunk size
+    if (data.average_chunk_size) {
+      this.metrics.chunking.average_chunk_size = data.average_chunk_size;
+    }
+
+    // Overlap utilization
+    if (data.overlap_utilization) {
+      this.metrics.chunking.overlap_utilization = data.overlap_utilization;
+    }
+
+    // Calculate average chunks per item
+    if (this.metrics.chunking.items_chunked > 0) {
+      this.metrics.chunking.avg_chunks_per_item =
+        this.metrics.chunking.chunks_generated / this.metrics.chunking.items_chunked;
+    }
+  }
+
+  /**
+   * P4-1: Update cleanup metrics
+   */
+  private updateCleanupMetrics(data: Record<string, any>, duration?: number): void {
+    this.metrics.cleanup.cleanup_operations_run++;
+
+    if (data.items_deleted) {
+      this.metrics.cleanup.items_deleted_total += Number(data.items_deleted);
+    }
+    if (data.items_dryrun_identified) {
+      this.metrics.cleanup.items_dryrun_identified += Number(data.items_dryrun_identified);
+    }
+    if (duration) {
+      this.metrics.cleanup.cleanup_duration_ms += duration;
+    }
+
+    // Update success rate
+    if (data.success !== undefined) {
+      const total = this.metrics.cleanup.cleanup_operations_run;
+      const successful = data.success
+        ? total - this.metrics.cleanup.cleanup_errors
+        : this.metrics.cleanup.cleanup_errors + 1;
+      this.metrics.cleanup.cleanup_success_rate = (successful / total) * 100;
+    }
+
+    // Track by operation type
+    if (data.operation_type) {
+      this.metrics.cleanup.cleanup_by_operation[data.operation_type] =
+        (this.metrics.cleanup.cleanup_by_operation[data.operation_type] || 0) + 1;
+    }
+
+    // Track by knowledge type
+    if (data.knowledge_type) {
+      this.metrics.cleanup.cleanup_by_type[data.knowledge_type] =
+        (this.metrics.cleanup.cleanup_by_type[data.knowledge_type] || 0) + 1;
+    }
+
+    // Backup metrics
+    if (data.backup_created) {
+      this.metrics.cleanup.backup_operations += 1;
+    }
+    if (data.backup_size) {
+      this.metrics.cleanup.backup_size_total_bytes += Number(data.backup_size);
+    }
+
+    // Performance metrics
+    if (data.items_per_second) {
+      this.metrics.cleanup.average_items_per_second = data.items_per_second;
+    }
+
+    // Confirmation metrics
+    if (data.confirmation_required) {
+      this.metrics.cleanup.confirmations_required += 1;
+    }
+    if (data.confirmation_completed) {
+      this.metrics.cleanup.confirmations_completed += 1;
+    }
+  }
+
+  /**
+   * P4-1: Update dedupe_hits metrics
+   */
+  private updateDedupeHitsMetrics(data: Record<string, any>, duration?: number): void {
+    if (data.duplicates_detected) {
+      this.metrics.dedupe_hits.duplicates_detected += Number(data.duplicates_detected);
+    }
+    if (duration) {
+      this.metrics.dedupe_hits.dedupe_processing_time_ms += duration;
+    }
+
+    // Similarity scores tracking
+    if (data.similarity_score) {
+      this.metrics.dedupe_hits.similarity_scores.push(Number(data.similarity_score));
+      // Keep only last 1000 scores to prevent memory growth
+      if (this.metrics.dedupe_hits.similarity_scores.length > 1000) {
+        this.metrics.dedupe_hits.similarity_scores =
+          this.metrics.dedupe_hits.similarity_scores.slice(-1000);
+      }
+      // Calculate average similarity score
+      const sum = this.metrics.dedupe_hits.similarity_scores.reduce((a, b) => a + b, 0);
+      this.metrics.dedupe_hits.avg_similarity_score =
+        sum / this.metrics.dedupe_hits.similarity_scores.length;
+    }
+
+    // Merge operations
+    if (data.merge_operation) {
+      this.metrics.dedupe_hits.merge_operations += 1;
+    }
+    if (data.skip_operation) {
+      this.metrics.dedupe_hits.skip_operations += 1;
+    }
+
+    // Strategy-specific metrics
+    if (data.strategy) {
+      this.metrics.dedupe_hits.dedupe_hits_by_strategy[data.strategy] =
+        (this.metrics.dedupe_hits.dedupe_hits_by_strategy[data.strategy] || 0) + 1;
+
+      // Track specific merge types
+      if (data.strategy === 'intelligent') {
+        this.metrics.dedupe_hits.intelligent_merges += 1;
+      } else if (data.strategy === 'combine') {
+        this.metrics.dedupe_hits.combine_merges += 1;
+      }
+    }
+
+    // False positive tracking
+    if (data.false_positive) {
+      this.metrics.dedupe_hits.false_positives += 1;
+    }
+
+    // Merge conflicts resolved
+    if (data.merge_conflicts_resolved) {
+      this.metrics.dedupe_hits.merge_conflicts_resolved += Number(data.merge_conflicts_resolved);
+    }
+  }
+
+  /**
+   * Update insight generation metrics
+   */
+  private updateInsightGenerationMetrics(data: Record<string, any>, duration?: number): void {
+    // Track insight generation counts
+    if (data.insights_generated) {
+      this.metrics.insight_generation.insights_generated += Number(data.insights_generated);
+    }
+
+    // Track processing time
+    if (duration) {
+      this.metrics.insight_generation.avg_processing_time_ms =
+        (this.metrics.insight_generation.avg_processing_time_ms + duration) / 2;
+    }
+
+    // Track insight types
+    if (data.insights_by_type) {
+      Object.entries(data.insights_by_type).forEach(([type, count]) => {
+        if (!this.metrics.insight_generation.insights_by_type[type]) {
+          this.metrics.insight_generation.insights_by_type[type] = 0;
+        }
+        this.metrics.insight_generation.insights_by_type[type] += Number(count);
+      });
+    }
+
+    // Track confidence scores
+    if (data.average_confidence) {
+      this.metrics.insight_generation.avg_confidence =
+        (this.metrics.insight_generation.avg_confidence + Number(data.average_confidence)) / 2;
+    }
+  }
+
+  /**
+   * Update insight generation summary metrics
+   */
+  private updateInsightGenerationSummaryMetrics(
+    data: Record<string, any>,
+    duration?: number
+  ): void {
+    // Similar to insight_generation but for batch summaries
+    if (data.total_insights) {
+      this.metrics.insight_generation.insights_generated += Number(data.total_insights);
+    }
+
+    if (duration) {
+      this.metrics.insight_generation.avg_processing_time_ms =
+        (this.metrics.insight_generation.avg_processing_time_ms + duration) / 2;
+    }
+
+    if (data.performance_impact) {
+      this.metrics.insight_generation.performance_impact =
+        (this.metrics.insight_generation.performance_impact + Number(data.performance_impact)) / 2;
+    }
   }
 
   /**
@@ -425,6 +902,76 @@ export class SystemMetricsService {
       errors: { total_errors: 0, by_error_type: {}, by_tool: {} },
       rate_limiting: { total_requests: 0, blocked_requests: 0, block_rate: 0, active_actors: 0 },
       memory: { active_knowledge_items: 0, expired_items_cleaned: 0, memory_usage_kb: 0 },
+      observability: {
+        responses_with_metadata: 0,
+        vector_operations: 0,
+        degraded_operations: 0,
+        avg_response_time_ms: 0,
+        search_strategies_used: {},
+      },
+      // P1-2: Reset truncation metrics
+      truncation: {
+        store_truncated_total: 0,
+        store_truncated_chars_total: 0,
+        store_truncated_tokens_total: 0,
+        truncation_processing_time_ms: 0,
+        truncation_by_type: {},
+        truncation_by_strategy: {},
+        truncation_rate: 0,
+      },
+      // P4-1: Reset chunking metrics
+      chunking: {
+        items_chunked: 0,
+        chunks_generated: 0,
+        avg_chunks_per_item: 0,
+        chunking_duration_ms: 0,
+        chunking_success_rate: 100,
+        semantic_analysis_used: 0,
+        semantic_boundaries_found: 0,
+        chunk_reassembly_accuracy: 100,
+        chunking_by_type: {},
+        chunking_errors: 0,
+        average_chunk_size: 0,
+        overlap_utilization: 0,
+      },
+      // P4-1: Reset cleanup metrics
+      cleanup: {
+        cleanup_operations_run: 0,
+        items_deleted_total: 0,
+        items_dryrun_identified: 0,
+        cleanup_duration_ms: 0,
+        cleanup_success_rate: 100,
+        backup_operations: 0,
+        backup_size_total_bytes: 0,
+        cleanup_by_operation: {},
+        cleanup_by_type: {},
+        cleanup_errors: 0,
+        average_items_per_second: 0,
+        confirmations_required: 0,
+        confirmations_completed: 0,
+      },
+      // P4-1: Reset dedupe_hits metrics
+      dedupe_hits: {
+        duplicates_detected: 0,
+        similarity_scores: [],
+        avg_similarity_score: 0,
+        merge_operations: 0,
+        skip_operations: 0,
+        intelligent_merges: 0,
+        combine_merges: 0,
+        dedupe_hits_by_strategy: {},
+        false_positives: 0,
+        merge_conflicts_resolved: 0,
+        dedupe_processing_time_ms: 0,
+      },
+      // P6-1: Reset insight generation metrics
+      insight_generation: {
+        insights_generated: 0,
+        avg_processing_time_ms: 0,
+        avg_confidence: 0,
+        insights_by_type: {},
+        performance_impact: 0,
+      },
     };
 
     this.startTime = Date.now();

@@ -21,13 +21,21 @@ export type { DatabaseMetrics };
 
 export interface VectorConfig extends DatabaseConfig {
   vectorSize?: number;
-  distance?: 'Cosine' | 'Euclidean' | 'DotProduct';
+  dimensions?: number;
+  distance?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
+  distanceMetric?: 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan';
   collectionName?: string;
   apiKey?: string;
   logQueries?: boolean;
   connectionTimeout?: number;
   maxConnections?: number;
   maxRetries?: number;
+  timeout?: number;
+  qdrant?: {
+    url: string;
+    apiKey?: string;
+    timeout?: number;
+  };
 }
 
 export interface SearchOptions {
@@ -48,6 +56,7 @@ export interface StoreOptions {
   batchSize?: number;
   skipDuplicates?: boolean;
   generateEmbeddings?: boolean;
+  timeout?: number;
 }
 
 export interface DeleteOptions {
@@ -274,6 +283,17 @@ export interface IVectorAdapter {
    * Get collection information
    */
   getCollectionInfo(): Promise<any>;
+
+  /**
+   * P6-T6.1: Find expired knowledge items
+   * Efficiently finds items that have expired based on expiry_at timestamp
+   */
+  findExpiredItems(options: {
+    expiry_before?: string;
+    limit?: number;
+    scope?: any;
+    kinds?: string[];
+  }): Promise<KnowledgeItem[]>;
 
   // === Capability Interface ===
 

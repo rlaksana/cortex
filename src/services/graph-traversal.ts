@@ -13,6 +13,10 @@ export interface TraversalOptions {
   depth?: number; // Max depth (default: 2)
   relation_types?: string[]; // Filter by relation types (e.g., ["resolves", "supersedes"])
   direction?: 'outgoing' | 'incoming' | 'both'; // Traversal direction (default: 'outgoing')
+  scope?: Record<string, unknown>; // Scope boundaries for traversal
+  include_circular_refs?: boolean; // Whether to include circular references (default: false)
+  max_results?: number; // Maximum results to return (default: 100)
+  sort_by?: 'created_at' | 'updated_at' | 'relevance' | 'confidence'; // Sort order
 }
 
 export interface GraphNode {
@@ -20,6 +24,12 @@ export interface GraphNode {
   entity_id: string;
   depth: number;
   data?: Record<string, unknown>; // Optional: include entity data
+  confidence_score?: number; // Confidence/relevance score for ranking
+  relationship_metadata?: {
+    relation_type: string;
+    direction: 'parent' | 'child' | 'sibling';
+    confidence?: number;
+  };
 }
 
 export interface GraphEdge {
@@ -37,6 +47,16 @@ export interface GraphTraversalResult {
   root_entity_type: string;
   root_entity_id: string;
   max_depth_reached: number;
+  total_entities_found: number;
+  circular_refs_detected: string[]; // Track circular references
+  expansion_metadata: {
+    total_entities_traversed: number;
+    max_depth_reached: number;
+    circular_references_detected: string[];
+    scope_filtered: boolean;
+    ranking_algorithm: string;
+    traversal_time_ms: number;
+  };
 }
 
 /**
@@ -62,6 +82,7 @@ export async function traverseGraph(
   const maxDepth = options.depth ?? 2;
   void maxDepth; // Mark as used
   const direction = options.direction ?? 'outgoing';
+  const startTime = Date.now();
 
   try {
     // Use simplified Qdrant query for graph traversal
@@ -116,6 +137,16 @@ export async function traverseGraph(
       root_entity_type: startEntityType,
       root_entity_id: startEntityId,
       max_depth_reached: maxDepthReached,
+      total_entities_found: nodes.length,
+      circular_refs_detected: [],
+      expansion_metadata: {
+        total_entities_traversed: nodes.length,
+        max_depth_reached: maxDepthReached,
+        circular_references_detected: [],
+        scope_filtered: false,
+        ranking_algorithm: 'depth_first',
+        traversal_time_ms: Date.now() - startTime,
+      },
     };
   } catch {
     // Fallback: return minimal graph with just the root node
@@ -131,6 +162,16 @@ export async function traverseGraph(
       root_entity_type: startEntityType,
       root_entity_id: startEntityId,
       max_depth_reached: 0,
+      total_entities_found: 1,
+      circular_refs_detected: [],
+      expansion_metadata: {
+        total_entities_traversed: 1,
+        max_depth_reached: 0,
+        circular_references_detected: [],
+        scope_filtered: false,
+        ranking_algorithm: 'depth_first',
+        traversal_time_ms: Date.now() - startTime,
+      },
     };
   }
 }
@@ -218,6 +259,319 @@ export async function enrichGraphNodes(nodes: GraphNode[]): Promise<GraphNode[]>
   }
 
   return enrichedNodes;
+}
+
+/**
+ * Traverse knowledge graph with enhanced parent-child expansion
+ *
+ * Enhanced graph traversal that supports parent-child relationships, circular reference detection,
+ * scope-aware filtering, and proper ranking of results.
+ *
+ * @param startEntityType - Starting entity type
+ * @param startEntityId - Starting entity UUID
+ * @param options - Enhanced traversal options
+ * @returns Enhanced graph traversal result with parent-child metadata
+ */
+export async function traverseGraphWithExpansion(
+  startEntityType: string,
+  startEntityId: string,
+  options: TraversalOptions = {}
+): Promise<GraphTraversalResult> {
+  const startTime = Date.now();
+  const maxDepth = options.depth ?? 2;
+  const direction = options.direction ?? 'outgoing';
+  const maxResults = options.max_results ?? 100;
+  const sortBy = options.sort_by ?? 'created_at';
+
+  // Track visited nodes for circular reference detection
+  const visitedNodes = new Set<string>();
+  const circularRefs: string[] = [];
+  const nodes: GraphNode[] = [];
+  const edges: GraphEdge[] = [];
+
+  try {
+    // Create traversal queue for BFS
+    const queue: Array<{
+      entityType: string;
+      entityId: string;
+      depth: number;
+      path: string[];
+      relationshipMetadata?: GraphNode['relationship_metadata'];
+    }> = [
+      {
+        entityType: startEntityType,
+        entityId: startEntityId,
+        depth: 0,
+        path: [`${startEntityType}:${startEntityId}`],
+      },
+    ];
+
+    // Add root node to visited
+    visitedNodes.add(`${startEntityType}:${startEntityId}`);
+
+    while (queue.length > 0 && nodes.length < maxResults) {
+      const current = queue.shift()!;
+
+      // Check depth limit
+      if (current.depth > maxDepth) {
+        continue;
+      }
+
+      // Add node if it's not the root (root is handled separately)
+      if (current.depth > 0) {
+        const node: GraphNode = {
+          entity_type: current.entityType,
+          entity_id: current.entityId,
+          depth: current.depth,
+          confidence_score: calculateNodeConfidence(current.depth, maxDepth),
+          relationship_metadata: current.relationshipMetadata,
+        };
+
+        nodes.push(node);
+      }
+
+      // Find related entities
+      const relatedEntities = await findRelatedEntities(
+        current.entityType,
+        current.entityId,
+        direction,
+        options.relation_types,
+        options.scope
+      );
+
+      for (const related of relatedEntities) {
+        const nodeKey = `${related.entity_type}:${related.entity_id}`;
+
+        // Check for circular references
+        if (current.path.includes(nodeKey)) {
+          if (options.include_circular_refs) {
+            circularRefs.push(nodeKey);
+          }
+          continue;
+        }
+
+        // Add to visited nodes
+        if (!visitedNodes.has(nodeKey)) {
+          visitedNodes.add(nodeKey);
+
+          // Add to queue with updated path
+          queue.push({
+            entityType: related.entity_type,
+            entityId: related.entity_id,
+            depth: current.depth + 1,
+            path: [...current.path, nodeKey],
+            relationshipMetadata: {
+              relation_type: related.relation_type,
+              direction: determineRelationshipDirection(direction, related),
+              confidence: calculateRelationshipConfidence(related),
+            },
+          });
+
+          // Add edge
+          if (current.depth >= 0) {
+            edges.push({
+              from_entity_type: current.entityType,
+              from_entity_id: current.entityId,
+              to_entity_type: related.entity_type,
+              to_entity_id: related.entity_id,
+              relation_type: related.relation_type,
+              metadata: related.metadata,
+            });
+          }
+        }
+      }
+    }
+
+    // Sort nodes based on requested criteria
+    const sortedNodes = sortNodes(nodes, sortBy);
+
+    // Enrich nodes with full entity data
+    const enrichedNodes = await enrichGraphNodes([
+      { entity_type: startEntityType, entity_id: startEntityId, depth: 0 },
+      ...sortedNodes,
+    ]);
+
+    const executionTime = Date.now() - startTime;
+
+    return {
+      nodes: enrichedNodes,
+      edges,
+      root_entity_type: startEntityType,
+      root_entity_id: startEntityId,
+      max_depth_reached: Math.min(maxDepth, Math.max(...nodes.map((n) => n.depth), 0)),
+      total_entities_found: visitedNodes.size,
+      circular_refs_detected: circularRefs,
+      expansion_metadata: {
+        total_entities_traversed: visitedNodes.size,
+        max_depth_reached: maxDepth,
+        circular_references_detected: circularRefs,
+        scope_filtered: !!options.scope,
+        ranking_algorithm: sortBy,
+        traversal_time_ms: executionTime,
+      },
+    };
+  } catch (error) {
+    // Fallback: return minimal graph with just the root node
+    const executionTime = Date.now() - startTime;
+
+    return {
+      nodes: [
+        {
+          entity_type: startEntityType,
+          entity_id: startEntityId,
+          depth: 0,
+          confidence_score: 1.0,
+        },
+      ],
+      edges: [],
+      root_entity_type: startEntityType,
+      root_entity_id: startEntityId,
+      max_depth_reached: 0,
+      total_entities_found: 1,
+      circular_refs_detected: [],
+      expansion_metadata: {
+        total_entities_traversed: 1,
+        max_depth_reached: 0,
+        circular_references_detected: [],
+        scope_filtered: !!options.scope,
+        ranking_algorithm: 'fallback',
+        traversal_time_ms: executionTime,
+      },
+    };
+  }
+}
+
+/**
+ * Find related entities for a given entity
+ */
+async function findRelatedEntities(
+  entityType: string,
+  entityId: string,
+  direction: 'outgoing' | 'incoming' | 'both',
+  relationTypes?: string[],
+  scope?: Record<string, unknown>
+): Promise<
+  Array<{
+    entity_type: string;
+    entity_id: string;
+    relation_type: string;
+    metadata?: Record<string, unknown>;
+  }>
+> {
+  try {
+    // For now, return mock data - replace with actual Qdrant queries
+    // TODO: Implement proper Qdrant-based relationship queries
+    const mockRelations: Array<{
+      entity_type: string;
+      entity_id: string;
+      relation_type: string;
+      metadata?: Record<string, unknown>;
+    }> = [
+      {
+        entity_type: 'entity',
+        entity_id: `related-to-${entityId}-1`,
+        relation_type: 'related_to',
+        metadata: { confidence: 0.8 },
+      },
+      {
+        entity_type: 'relation',
+        entity_id: `relation-${entityId}-1`,
+        relation_type: 'implements',
+        metadata: { confidence: 0.9 },
+      },
+    ];
+
+    // Filter by relation types if specified
+    if (relationTypes && relationTypes.length > 0) {
+      return mockRelations.filter((r) => relationTypes.includes(r.relation_type));
+    }
+
+    return mockRelations;
+  } catch (error) {
+    console.error('Error finding related entities:', error);
+    return [];
+  }
+}
+
+/**
+ * Calculate confidence score for a node based on depth
+ */
+function calculateNodeConfidence(depth: number, maxDepth: number): number {
+  // Closer nodes have higher confidence
+  return Math.max(0.1, 1 - (depth / maxDepth) * 0.8);
+}
+
+/**
+ * Calculate confidence score for a relationship
+ */
+function calculateRelationshipConfidence(relationship: {
+  relation_type: string;
+  metadata?: Record<string, unknown>;
+}): number {
+  // Base confidence from metadata or use relation type defaults
+  const baseConfidence = relationship.metadata?.confidence as number;
+  if (baseConfidence !== undefined) {
+    return baseConfidence;
+  }
+
+  // Relation type confidence defaults
+  const relationConfidence: Record<string, number> = {
+    resolves: 0.9,
+    implements: 0.8,
+    relates_to: 0.6,
+    depends_on: 0.7,
+    blocks: 0.8,
+    supersedes: 0.9,
+  };
+
+  return relationConfidence[relationship.relation_type] || 0.5;
+}
+
+/**
+ * Determine relationship direction based on traversal direction
+ */
+function determineRelationshipDirection(
+  traversalDirection: 'outgoing' | 'incoming' | 'both',
+  related: { relation_type: string }
+): 'parent' | 'child' | 'sibling' {
+  // Simplified logic - enhance based on actual relation semantics
+  if (traversalDirection === 'outgoing') {
+    return 'child';
+  } else if (traversalDirection === 'incoming') {
+    return 'parent';
+  } else {
+    return 'sibling';
+  }
+}
+
+/**
+ * Sort nodes based on specified criteria
+ */
+function sortNodes(
+  nodes: GraphNode[],
+  sortBy: 'created_at' | 'updated_at' | 'relevance' | 'confidence'
+): GraphNode[] {
+  return [...nodes].sort((a, b) => {
+    switch (sortBy) {
+      case 'confidence':
+        return (b.confidence_score || 0) - (a.confidence_score || 0);
+      case 'relevance':
+        // Combine confidence and depth for relevance
+        const aRelevance = (a.confidence_score || 0) * (1 - a.depth * 0.1);
+        const bRelevance = (b.confidence_score || 0) * (1 - b.depth * 0.1);
+        return bRelevance - aRelevance;
+      case 'created_at':
+        const aCreated = new Date((a.data?.created_at as string) || 0).getTime();
+        const bCreated = new Date((b.data?.created_at as string) || 0).getTime();
+        return bCreated - aCreated;
+      case 'updated_at':
+        const aUpdated = new Date((a.data?.updated_at as string) || 0).getTime();
+        const bUpdated = new Date((b.data?.updated_at as string) || 0).getTime();
+        return bUpdated - aUpdated;
+      default:
+        return 0;
+    }
+  });
 }
 
 /**

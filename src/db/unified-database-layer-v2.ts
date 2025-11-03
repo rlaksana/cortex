@@ -20,6 +20,7 @@
  */
 
 import { logger } from '../utils/logger.js';
+import { createFindObservability } from '../utils/observability-helper.js';
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type {
   IVectorAdapter,
@@ -128,6 +129,7 @@ export class QdrantOnlyDatabaseLayer {
    * Find items by IDs
    */
   async findById(ids: string[]): Promise<MemoryFindResponse> {
+    const startTime = Date.now();
     if (!this.isHealthy) {
       await this.initialize();
     }
@@ -156,6 +158,17 @@ export class QdrantOnlyDatabaseLayer {
           results_found: items.length,
           confidence_average: 1.0,
           user_message_suggestion: `Found ${items.length} items`,
+        },
+        observability: createFindObservability('fast', true, false, Date.now() - startTime, 1.0),
+        meta: {
+          strategy: 'fast',
+          vector_used: false,
+          degraded: false,
+          source: 'cortex_memory',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score: 1.0,
+          truncated: false,
+          warnings: [],
         },
       };
     } catch (error) {
@@ -371,6 +384,31 @@ export class QdrantOnlyDatabaseLayer {
       });
     } catch (error) {
       logger.error(`Failed to find records in ${collection}`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * P6-T6.1: Find expired knowledge items
+   * Efficiently finds items that have expired based on expiry_at timestamp
+   */
+  async findExpiredItems(options: {
+    expiry_before?: string;
+    limit?: number;
+    scope?: any;
+    kinds?: string[];
+  }): Promise<KnowledgeItem[]> {
+    if (!this.isHealthy) {
+      await this.initialize();
+    }
+
+    try {
+      logger.debug('Finding expired items using vector adapter', { options });
+
+      // Delegate to the adapter's efficient findExpiredItems method
+      return await this.adapter.findExpiredItems(options);
+    } catch (error) {
+      logger.error('Failed to find expired items', error);
       throw error;
     }
   }

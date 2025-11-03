@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "lib": ["ES2022", "DOM"],
+    "downlevelIteration": true,
     "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
@@ -28,12 +29,37 @@
     "noEmit": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "typeRoots": ["./src/types", "./node_modules/@types"],
     "types": ["node"],
     "isolatedModules": true,
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/types/*": ["src/types/*"],
+      "@/services/*": ["src/services/*"],
+      "@/config/*": ["src/config/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/schemas/*": ["src/schemas/*"],
+      "@/middleware/*": ["src/middleware/*"],
+      "@/db/*": ["src/db/*"],
+      "@docs/*": ["docs/*"],
+      "@scripts/*": ["scripts/*"],
+      "@tests/*": ["tests/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/test/**", "**/*.test.ts", "**/*.spec.ts"]
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/test/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  }
 }

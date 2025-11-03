@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cortex MCP Quality Gate Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #16a34a;
+            --warning-color: #eab308;
+            --error-color: #dc2626;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .status-banner {
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-banner.success {
+            background: rgba(22, 163, 74, 0.1);
+            color: var(--success-color);
+            border: 1px solid rgba(22, 163, 74, 0.2);
+        }
+
+        .status-banner.error {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .metric-value.success { color: var(--success-color); }
+        .metric-value.warning { color: var(--warning-color); }
+        .metric-value.error { color: var(--error-color); }
+
+        .metric-details {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .stages-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+
+        .stage-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: var(--bg-secondary);
+            border-left: 4px solid;
+        }
+
+        .stage-item.success {
+            border-left-color: var(--success-color);
+        }
+
+        .stage-item.error {
+            border-left-color: var(--error-color);
+        }
+
+        .stage-status {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 16px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .stage-status.success {
+            background: var(--success-color);
+        }
+
+        .stage-status.error {
+            background: var(--error-color);
+        }
+
+        .stage-info {
+            flex: 1;
+        }
+
+        .stage-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .stage-metrics {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .stage-duration {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-container {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-container h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .error-message {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--error-color);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Cortex MCP Quality Gate Dashboard</h1>
+            <div class="subtitle">Real-time quality metrics and performance monitoring</div>
+        </div>
+
+        <div id="loading" class="loading">
+            Loading quality gate data...
+        </div>
+
+        <div id="error-container" style="display: none;">
+            <div class="error-message">
+                Failed to load quality gate data. Make sure the quality gate has been run.
+            </div>
+        </div>
+
+        <div id="dashboard-content" style="display: none;">
+            <div id="status-banner"></div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Overall Status</h3>
+                    <div id="overall-status" class="metric-value"></div>
+                    <div id="overall-details" class="metric-details"></div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Test Coverage</h3>
+                    <div id="coverage-value" class="metric-value"></div>
+                    <div id="coverage-details" class="metric-details"></div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Performance</h3>
+                    <div id="performance-value" class="metric-value"></div>
+                    <div id="performance-details" class="metric-details"></div>
+                </div>
+
+                <div class="metric-card">
+                    <h3>Total Duration</h3>
+                    <div id="duration-value" class="metric-value"></div>
+                    <div id="duration-details" class="metric-details"></div>
+                </div>
+            </div>
+
+            <div class="stages-container">
+                <h3 style="margin-bottom: 20px;">Quality Gate Stages</h3>
+                <div id="stages-list"></div>
+            </div>
+
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3>Stage Performance</h3>
+                    <canvas id="stage-chart"></canvas>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Quality Metrics</h3>
+                    <canvas id="quality-chart"></canvas>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Last updated: <span id="last-updated"></span></p>
+                <p>Version: <span id="version"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let qualityGateData = null;
+
+        async function loadQualityGateData() {
+            try {
+                const response = await fetch('./quality-gate-report.json');
+                if (!response.ok) {
+                    throw new Error('Quality gate report not found');
+                }
+                qualityGateData = await response.json();
+                renderDashboard();
+            } catch (error) {
+                console.error('Error loading quality gate data:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-container').style.display = 'block';
+            }
+        }
+
+        function renderDashboard() {
+            if (!qualityGateData) return;
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('dashboard-content').style.display = 'block';
+
+            // Status banner
+            const statusBanner = document.getElementById('status-banner');
+            if (qualityGateData.passed) {
+                statusBanner.className = 'status-banner success';
+                statusBanner.innerHTML = '✅ Quality Gate Passed - Ready for Deployment';
+            } else {
+                statusBanner.className = 'status-banner error';
+                statusBanner.innerHTML = '❌ Quality Gate Failed - Issues Must Be Resolved';
+            }
+
+            // Overall status
+            const overallStatus = document.getElementById('overall-status');
+            const overallDetails = document.getElementById('overall-details');
+            overallStatus.textContent = qualityGateData.passed ? 'PASSED' : 'FAILED';
+            overallStatus.className = `metric-value ${qualityGateData.passed ? 'success' : 'error'}`;
+            overallDetails.textContent = `Version ${qualityGateData.version} • ${new Date(qualityGateData.timestamp).toLocaleString()}`;
+
+            // Coverage
+            const coverageValue = document.getElementById('coverage-value');
+            const coverageDetails = document.getElementById('coverage-details');
+            const coverage = qualityGateData.qualityMetrics?.coverageThreshold || 0;
+            coverageValue.textContent = `${coverage}%`;
+            coverageValue.className = `metric-value ${coverage >= 90 ? 'success' : coverage >= 80 ? 'warning' : 'error'}`;
+            coverageDetails.textContent = coverage >= 90 ? 'Excellent coverage' : coverage >= 80 ? 'Good coverage' : 'Needs improvement';
+
+            // Performance
+            const performanceValue = document.getElementById('performance-value');
+            const performanceDetails = document.getElementById('performance-details');
+            if (qualityGateData.performanceMetrics) {
+                const ops = qualityGateData.performanceMetrics.totalOperations;
+                const avgTime = qualityGateData.performanceMetrics.avgTimePerOperation;
+                performanceValue.textContent = `${ops} ops`;
+                performanceValue.className = `metric-value ${ops >= 100 && avgTime <= 100 ? 'success' : 'error'}`;
+                performanceDetails.textContent = `${avgTime.toFixed(1)}ms avg • ${qualityGateData.performanceMetrics.operationsPerSecond.toFixed(0)} ops/sec`;
+            } else {
+                performanceValue.textContent = 'N/A';
+                performanceValue.className = 'metric-value';
+                performanceDetails.textContent = 'No performance data';
+            }
+
+            // Duration
+            const durationValue = document.getElementById('duration-value');
+            const durationDetails = document.getElementById('duration-details');
+            const duration = qualityGateData.totalDuration;
+            durationValue.textContent = `${(duration / 1000).toFixed(1)}s`;
+            durationValue.className = `metric-value ${duration < 60000 ? 'success' : 'warning'}`;
+            durationDetails.textContent = `${(duration / 1000 / 60).toFixed(1)} minutes total`;
+
+            // Stages
+            renderStages();
+
+            // Charts
+            renderCharts();
+
+            // Footer
+            document.getElementById('last-updated').textContent = new Date(qualityGateData.timestamp).toLocaleString();
+            document.getElementById('version').textContent = qualityGateData.version;
+        }
+
+        function renderStages() {
+            const stagesList = document.getElementById('stages-list');
+            stagesList.innerHTML = '';
+
+            qualityGateData.stages.forEach((stage, index) => {
+                const stageItem = document.createElement('div');
+                stageItem.className = `stage-item ${stage.passed ? 'success' : 'error'}`;
+
+                stageItem.innerHTML = `
+                    <div class="stage-status ${stage.passed ? 'success' : 'error'}">
+                        ${stage.passed ? '✓' : '✗'}
+                    </div>
+                    <div class="stage-info">
+                        <div class="stage-name">${stage.stage}</div>
+                        <div class="stage-metrics">
+                            ${stage.metrics ? Object.entries(stage.metrics)
+                                .filter(([key]) => !['memoryIncrease', 'memoryIncreaseMB'].includes(key))
+                                .map(([key, value]) => `${key}: ${typeof value === 'number' ? value.toFixed(1) : value}`)
+                                .join(' • ') : 'No metrics available'}
+                        </div>
+                    </div>
+                    <div class="stage-duration">
+                        ${(stage.duration / 1000).toFixed(2)}s
+                    </div>
+                `;
+
+                stagesList.appendChild(stageItem);
+            });
+        }
+
+        function renderCharts() {
+            // Stage Performance Chart
+            const stageCtx = document.getElementById('stage-chart').getContext('2d');
+            new Chart(stageCtx, {
+                type: 'bar',
+                data: {
+                    labels: qualityGateData.stages.map(s => s.stage),
+                    datasets: [{
+                        label: 'Duration (seconds)',
+                        data: qualityGateData.stages.map(s => s.duration / 1000),
+                        backgroundColor: qualityGateData.stages.map(s => s.passed ? 'rgba(22, 163, 74, 0.6)' : 'rgba(220, 38, 38, 0.6)'),
+                        borderColor: qualityGateData.stages.map(s => s.passed ? 'rgba(22, 163, 74, 1)' : 'rgba(220, 38, 38, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Duration (seconds)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Quality Metrics Chart
+            const qualityCtx = document.getElementById('quality-chart').getContext('2d');
+            const qualityMetrics = qualityGateData.qualityMetrics || {};
+            new Chart(qualityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Coverage %', 'Unit Pass Rate %', 'Integration Pass Rate %'],
+                    datasets: [{
+                        data: [
+                            qualityMetrics.coverageThreshold || 0,
+                            qualityMetrics.unitTestPassRate || 0,
+                            qualityMetrics.integrationTestPassRate || 0
+                        ],
+                        backgroundColor: [
+                            'rgba(37, 99, 235, 0.8)',
+                            'rgba(22, 163, 74, 0.8)',
+                            'rgba(234, 179, 8, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(37, 99, 235, 1)',
+                            'rgba(22, 163, 74, 1)',
+                            'rgba(234, 179, 8, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Auto-refresh every 30 seconds
+        function startAutoRefresh() {
+            setInterval(() => {
+                loadQualityGateData();
+            }, 30000);
+        }
+
+        // Initialize dashboard
+        loadQualityGateData();
+        startAutoRefresh();
+    </script>
+</body>
+</html>

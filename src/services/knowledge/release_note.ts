@@ -2,7 +2,7 @@
 import type { ReleaseNoteData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeReleaseNote(data: ReleaseNoteData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

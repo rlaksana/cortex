@@ -2,7 +2,7 @@
 import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data.js';
 
 export async function storeRelease(data: ReleaseData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -37,7 +37,7 @@ export async function findReleases(
   scope?: ScopeFilter,
   limit: number = 50
 ): Promise<ReleaseData[]> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -91,7 +91,7 @@ export async function updateRelease(
   _data: Partial<ReleaseData>,
   _scope: ScopeFilter
 ): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

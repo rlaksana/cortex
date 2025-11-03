@@ -2,7 +2,7 @@ import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
 import { logger } from '../../utils/logger.js';
 
 export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 
@@ -22,7 +22,7 @@ export async function storeRunbook(data: RunbookData, scope: ScopeFilter): Promi
 }
 
 export async function updateRunbook(id: string, data: Partial<RunbookData>): Promise<void> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const updateData: any = {};
@@ -75,7 +75,7 @@ export async function findRunbooks(criteria: {
     updated_at: Date;
   }>
 > {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
 

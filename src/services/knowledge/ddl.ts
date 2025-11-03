@@ -3,7 +3,7 @@ import type { DDLData } from '../../types/knowledge-data.js';
 import { logger } from '../../utils/logger.js';
 
 export async function storeDDL(data: DDLData): Promise<string> {
-  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2');
+  const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');
   const db = new UnifiedDatabaseLayer();
   await db.initialize();
   const checksum = createHash('sha256').update(data.ddl_text).digest('hex');
@@ -43,7 +43,7 @@ export async function storeDDL(data: DDLData): Promise<string> {
           scope: existingItem.scope,
         },
       ]);
-      return result.id;
+      return result.id || '';
     }
   }
 
@@ -64,5 +64,5 @@ export async function storeDDL(data: DDLData): Promise<string> {
     },
   ]);
 
-  return result.id;
+  return result.id || '';
 }

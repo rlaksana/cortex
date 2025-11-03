@@ -1,101 +1,26 @@
 #!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
 
-echo "🔍 Running pre-commit gate sequence..."
+echo "🔍 Running enhanced pre-commit quality gate..."
 
-# Gate 1: Type checking
-echo "📝 Gate 1: Type checking..."
-TYPE_OUTPUT=$(npm run type-check 2>&1)
-TYPE_EXIT_CODE=$?
-if [ $TYPE_EXIT_CODE -ne 0 ]; then
-    echo "❌ Type checking failed - Fix Plan:"
-    echo "   1. Check TypeScript errors in output above"
-    echo "   2. Fix type annotations, missing imports, or interface mismatches"
-    echo "   3. Run 'npm run type-check' to verify fixes"
-    echo "   ❌ STOPPED: Type checking must pass before proceeding"
+# Run the enhanced pre-commit quality gate check
+node scripts/pre-commit-check.mjs
+
+# Check if the pre-commit check passed
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "🔧 Pre-commit quality gate failed!"
+    echo ""
+    echo "💡 To fix and retry:"
+    echo "   1. Run: npm run quality-check (quick fix check)"
+    echo "   2. Run: npm run quality-gate (full pipeline)"
+    echo "   3. Fix the issues shown above"
+    echo "   4. Try committing again"
+    echo ""
+    echo "❌ Commit blocked by quality gate"
     exit 1
 fi
-echo "✅ Type checking passed"
-
-# Gate 2: Linting
-echo "🧹 Gate 2: Linting..."
-npm run lint
-if [ $? -ne 0 ]; then
-    echo "❌ Linting failed - Fix Plan:"
-    echo "   1. Check ESLint errors in output above"
-    echo "   2. Fix unused variables, missing semicolons, quote styles"
-    echo "   3. Run 'npm run lint:fix' for auto-fixable issues"
-    echo "   4. Run 'npm run lint' to verify fixes"
-    echo "   ❌ STOPPED: Linting must pass before proceeding"
-    exit 1
-fi
-echo "✅ Linting passed"
-
-# Gate 3: Format/Imports checking
-echo "✨ Gate 3: Format and Imports checking..."
-npm run format:check
-if [ $? -ne 0 ]; then
-    echo "❌ Format checking failed - Fix Plan:"
-    echo "   1. Run 'npm run format' to auto-fix formatting issues"
-    echo "   2. Check import ordering and consistency"
-    echo "   3. Run 'npm run lint:imports' to check import order"
-    echo "   4. Run 'npm run format:check' to verify fixes"
-    echo "   ❌ STOPPED: Formatting must pass before proceeding"
-    exit 1
-fi
-
-npm run lint:imports
-if [ $? -ne 0 ]; then
-    echo "❌ Import checking failed - Fix Plan:"
-    echo "   1. Check import order violations in output above"
-    echo "   2. Reorder imports according to ESLint rules"
-    echo "   3. Run 'npm run lint:imports' to verify fixes"
-    echo "   ❌ STOPPED: Import order must pass before proceeding"
-    exit 1
-fi
-echo "✅ Format and Imports checking passed"
-
-# Gate 4: Dead code detection
-echo "🧼 Gate 4: Dead code detection..."
-npm run dead-code
-if [ $? -ne 0 ]; then
-    echo "⚠️  Dead code detected - Fix Plan:"
-    echo "   1. Review unused exports in output above"
-    echo "   2. Remove unused exports or add '_' prefix to unused parameters"
-    echo "   3. Consider if code is needed for external API"
-    echo "   4. Re-run 'npm run dead-code' to verify cleanup"
-    echo "   ⚠️  WARNING: Dead code should be cleaned up but not blocking"
-    # Don't exit on dead code warnings as they're often false positives
-fi
-echo "✅ Dead code detection completed"
-
-# Gate 5: Complexity analysis
-echo "📊 Gate 5: Complexity analysis..."
-npm run complexity
-if [ $? -ne 0 ]; then
-    echo "⚠️  Complexity issues detected - Fix Plan:"
-    echo "   1. Review complexity-report.json for high-complexity functions"
-    echo "   2. Consider refactoring complex functions (>10 complexity)"
-    echo "   3. Break down large functions into smaller, focused ones"
-    echo "   4. Re-run 'npm run complexity' to verify improvements"
-    echo "   ⚠️  WARNING: High complexity should be refactored but not blocking"
-    # Don't exit on complexity as it's advisory
-fi
-echo "✅ Complexity analysis completed"
-
-# Final gate: Test coverage verification
-echo "🧪 Final Gate: Test coverage verification..."
-npm run verify-test-coverage
-if [ $? -ne 0 ]; then
-    echo "❌ Test coverage verification failed - Fix Plan:"
-    echo "   1. Check test coverage errors in output above"
-    echo "   2. Add missing test files for protected source code"
-    echo "   3. Improve test coverage to meet thresholds (80%+ statements)"
-    echo "   4. Run 'npm run verify-test-coverage' to verify fixes"
-    echo "   ❌ STOPPED: Test coverage must pass before committing"
-    exit 1
-fi
-echo "✅ Test coverage verification passed"
 
 echo ""
-echo "🎉 All pre-commit gates passed successfully!"
+echo "🎉 Pre-commit quality gate passed!"
 echo "✅ Ready to commit with confidence!"
