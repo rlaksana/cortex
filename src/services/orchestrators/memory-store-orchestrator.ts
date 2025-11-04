@@ -19,6 +19,8 @@ import {
   storeAssumption,
   updateAssumption,
 } from '../knowledge/index.js';
+import { ChunkingService } from '../chunking/chunking-service.js';
+import { EmbeddingService } from '../embeddings/embedding-service.js';
 import { storeDecision, updateDecision } from '../knowledge/decision.js';
 import { storeSection } from '../knowledge/section.js';
 import {
@@ -61,11 +63,31 @@ const mockAuditService = {
  * Coordinates validation, deduplication, similarity detection, and storage
  */
 export class MemoryStoreOrchestrator {
+  private chunkingService: ChunkingService;
+
   /**
    * Initialize the orchestrator and register business validators
    */
   constructor() {
     this.initializeValidators();
+    this.initializeChunkingService();
+  }
+
+  /**
+   * Initialize the chunking service
+   */
+  private initializeChunkingService(): void {
+    // Initialize embedding service for chunking
+    const embeddingService = new EmbeddingService();
+
+    // Initialize chunking service with configuration
+    this.chunkingService = new ChunkingService(
+      undefined, // Use default chunk size from environment
+      undefined, // Use default overlap size from environment
+      embeddingService
+    );
+
+    logger.info('Chunking service initialized successfully');
   }
 
   /**
@@ -119,7 +141,29 @@ export class MemoryStoreOrchestrator {
       // Step 2: Transform MCP input to internal format
       const mcpItems = transformMcpInputToKnowledgeItems(items as any[]);
       // Convert to CoreKnowledgeItem format for validation
-      const transformedItems = mcpItems.map((item) => transformToCoreKnowledgeItem(item));
+      let transformedItems = mcpItems.map((item) => transformToCoreKnowledgeItem(item));
+
+      // Step 2.5: Apply chunking to eligible items
+      logger.debug({ itemCount: transformedItems.length }, 'Applying chunking to eligible items');
+      const chunkingStartTime = Date.now();
+
+      try {
+        transformedItems = await this.chunkingService.processItemsForStorage(transformedItems);
+
+        const chunkingTime = Date.now() - chunkingStartTime;
+        const originalCount = mcpItems.length;
+        const chunkedCount = transformedItems.length;
+
+        logger.info({
+          originalCount,
+          chunkedCount,
+          chunkingTime,
+          chunksCreated: chunkedCount - originalCount
+        }, 'Chunking applied successfully');
+      } catch (chunkingError) {
+        logger.error({ error: chunkingError }, 'Chunking failed, continuing with original items');
+        // Continue with original items if chunking fails
+      }
 
       // Step 3: P5-T5.3 - Process each item individually to continue on business rule violations
       for (let index = 0; index < transformedItems.length; index++) {

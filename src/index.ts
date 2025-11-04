@@ -162,38 +162,6 @@ interface BatchSummary {
   total: number;
 }
 
-interface MemoryStoreResponse {
-  // Enhanced response format
-  items: ItemResult[];
-  summary: BatchSummary;
-
-  // Legacy fields for backward compatibility
-  stored: KnowledgeItem[];
-  errors: Array<{
-    item: KnowledgeItem;
-    error: string;
-  }>;
-  autonomous_context?: {
-    action_performed: string;
-    similar_items_checked: number;
-    duplicates_found: number;
-    contradictions_detected: boolean;
-    recommendation: string;
-    reasoning: string;
-    user_message_suggestion: string;
-    dedupe_threshold_used?: number;
-    dedupe_method?: 'content_hash' | 'semantic_similarity' | 'combined' | 'none';
-    dedupe_enabled?: boolean;
-  };
-}
-
-interface MemoryFindResponse {
-  items: KnowledgeItem[];
-  total: number;
-  query: string;
-  strategy: string;
-  confidence: number;
-}
 
 // === Vector Database Implementation ===
 
@@ -626,7 +594,7 @@ async function validateAndTransformItems(items: any[]) {
   return transformMcpInputToKnowledgeItems(items);
 }
 
-async function processMemoryStore(transformedItems: any[]) {
+async function _processMemoryStore(transformedItems: any[]) {
   const { environment } = await import('./config/environment.js');
   const { memoryStoreOrchestrator } = await import(
     './services/orchestrators/memory-store-orchestrator.js'
@@ -677,7 +645,7 @@ async function processWithMerge(transformedItems: any[], memoryStoreOrchestrator
   return response;
 }
 
-async function processMemoryStoreWithEnhancedDedupe(
+async function _processMemoryStoreWithEnhancedDedupe(
   transformedItems: any[],
   dedupeConfig: any = {}
 ) {
@@ -961,7 +929,7 @@ async function handleMemoryFind(args: {
   }
 }
 
-function determineEffectiveScope(scope?: any) {
+function _determineEffectiveScope(scope?: any) {
   if (scope) return scope;
 
   if (env.CORTEX_ORG) {
@@ -972,7 +940,7 @@ function determineEffectiveScope(scope?: any) {
   return undefined;
 }
 
-function buildSearchQuery(args: any, effectiveScope?: any) {
+function _buildSearchQuery(args: any, effectiveScope?: any) {
   const searchQuery: any = {
     query: args.query,
     limit: args.limit || 10,
@@ -988,7 +956,7 @@ function buildSearchQuery(args: any, effectiveScope?: any) {
   return searchQuery;
 }
 
-async function performSearch(searchQuery: any, startTime: number) {
+async function _performSearch(searchQuery: any, startTime: number) {
   try {
     // Use the orchestrator directly
     const result = await memoryFindOrchestrator.findItems({
@@ -1028,7 +996,7 @@ async function performSearch(searchQuery: any, startTime: number) {
   }
 }
 
-function filterSearchResults(items: any[], args: any) {
+function _filterSearchResults(items: any[], args: any) {
   let filteredItems = items;
 
   // Filter by types if specified
@@ -1050,7 +1018,7 @@ function filterSearchResults(items: any[], args: any) {
   return filteredItems;
 }
 
-function calculateAverageConfidence(items: any[], searchResult?: any) {
+function _calculateAverageConfidence(items: any[], searchResult?: any) {
   if (items.length === 0) return 0;
 
   // If we have enhanced search result metadata, use the pre-calculated confidence
@@ -1067,7 +1035,7 @@ function calculateAverageConfidence(items: any[], searchResult?: any) {
   return totalConfidence / items.length;
 }
 
-async function updateSearchMetrics(args: any, items: any[], startTime: number) {
+async function _updateSearchMetrics(args: any, items: any[], startTime: number) {
   const duration = Date.now() - startTime;
   const { systemMetricsService } = await import('./services/metrics/system-metrics.js');
 
@@ -1097,14 +1065,41 @@ async function handleDatabaseHealth() {
     const rateLimitStatus = rateLimitService.getStatus();
     const systemMetrics = systemMetricsService.getMetrics();
 
+    // Service status - check circuit breaker status for degradation
+    let serviceStatus = 'healthy';
+    let degradedMode = false;
+    let vectorBackendStatus = 'healthy';
+    let vectorBackendError = undefined;
+
+      // Check circuit breaker status to determine service health
+    try {
+        const { circuitBreakerManager } = require('./services/circuit-breaker.service.js');
+        const systemHealth = circuitBreakerManager.getSystemHealth();
+        const openCircuits = circuitBreakerManager.getOpenCircuits();
+
+        if (systemHealth.status === 'failing' || openCircuits.length > 0) {
+          serviceStatus = systemHealth.status === 'failing' ? 'failing' : 'degraded';
+          degradedMode = true;
+          vectorBackendStatus = 'error';
+          vectorBackendError = `Circuit breaker open for services: ${openCircuits.join(', ')}`;
+        } else if (systemHealth.status === 'degraded') {
+          serviceStatus = 'degraded';
+          degradedMode = true;
+          vectorBackendStatus = 'degraded';
+        }
+      } catch (error) {
+        // If we can't check circuit breaker status, assume healthy but log the error
+        logger.warn('Failed to check circuit breaker status', { error: error instanceof Error ? error.message : 'Unknown error' });
+      }
+
     // Build comprehensive system status
     const systemStatus = {
       // Service status
       service: {
         name: 'cortex-memory-mcp',
         version: '2.0.0',
-        status: 'healthy', // Orchestrators handle their own health internally
-        degradedMode: false,
+        status: serviceStatus,
+        degradedMode,
         uptime: telemetry.uptime,
         timestamp: new Date().toISOString(),
       },
@@ -1112,15 +1107,58 @@ async function handleDatabaseHealth() {
       // Vector backend status (via orchestrators)
       vectorBackend: {
         type: 'orchestrator_based',
-        status: 'healthy',
-        error: undefined,
+        status: vectorBackendStatus,
+        error: vectorBackendError,
         capabilities: {
-          vector: 'ok',
+          vector: vectorBackendStatus === 'healthy' ? 'ok' : 'error',
           chunking: systemMetrics.chunking.items_chunked > 0 ? 'enabled' : 'disabled',
           ttl: 'disabled',
           dimensions: 1536,
           distance: 'Cosine',
         },
+      },
+
+      // Circuit breaker status for resilient operations
+      circuitBreakers: {
+        enabled: true,
+        services: (() => {
+          try {
+            const { circuitBreakerManager } = require('./services/circuit-breaker.service.js');
+            const allStats = circuitBreakerManager.getAllStats();
+            const openCircuits = circuitBreakerManager.getOpenCircuits();
+            const systemHealth = circuitBreakerManager.getSystemHealth();
+
+            return {
+              databaseManager: {
+                status: 'unknown', // Will be updated if database manager is available
+                isOpen: false,
+                stats: null,
+              },
+              qdrantAdapter: {
+                status: 'unknown', // Will be updated if Qdrant adapter is available
+                isOpen: false,
+                stats: null,
+              },
+              openaiEmbeddings: {
+                status: 'unknown', // Will be updated if OpenAI service is available
+                isOpen: false,
+                stats: null,
+              },
+              overall: {
+                systemHealth: systemHealth.status,
+                totalServices: systemHealth.totalServices,
+                openCircuits: systemHealth.openCircuits,
+                serviceStatuses: allStats,
+              }
+            };
+          } catch (error) {
+            return {
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              enabled: false,
+            };
+          }
+        })(),
       },
 
       // P4-1: Rate limiting status and meta information
@@ -1159,8 +1197,44 @@ async function handleDatabaseHealth() {
 
       // Memory and system info
       system: {
-        memory: telemetry.memory,
+        memory: {
+          ...telemetry.memory,
+          // Memory usage analysis
+          heapUsedPercentage: (telemetry.memory.heapUsed / telemetry.memory.heapTotal) * 100,
+          heapTotalPercentage: (telemetry.memory.heapTotal / telemetry.memory.rss) * 100,
+          externalPercentage: telemetry.memory.rss > 0 ? (telemetry.memory.external / telemetry.memory.rss) * 100 : 0,
+          // Memory status classification
+          status: (() => {
+            const heapUsagePercent = (telemetry.memory.heapUsed / telemetry.memory.heapTotal) * 100;
+            if (heapUsagePercent >= 90) return 'critical';
+            if (heapUsagePercent >= 75) return 'warning';
+            if (heapUsagePercent >= 60) return 'elevated';
+            return 'healthy';
+          })(),
+          // Memory alerts
+          alerts: (() => {
+            const heapUsagePercent = (telemetry.memory.heapUsed / telemetry.memory.heapTotal) * 100;
+            const alerts = [];
+            if (heapUsagePercent >= 90) {
+              alerts.push({
+                level: 'critical',
+                threshold: 90,
+                current: heapUsagePercent,
+                message: `Critical memory usage at ${heapUsagePercent.toFixed(1)}%`
+              });
+            } else if (heapUsagePercent >= 75) {
+              alerts.push({
+                level: 'warning',
+                threshold: 75,
+                current: heapUsagePercent,
+                message: `High memory usage at ${heapUsagePercent.toFixed(1)}%`
+              });
+            }
+            return alerts;
+          })(),
+        },
         pid: process.pid,
+        uptime: telemetry.uptime,
       },
 
       // P4-1: Active services and capabilities
@@ -1278,7 +1352,7 @@ async function handleDatabaseHealth() {
       readiness: {
         initialized: dbInitialized,
         initializing: dbInitializing,
-        readyForOperations: true,
+        readyForOperations: serviceStatus === 'healthy',
         supportedOperations: [
           'memory_store',
           'memory_find',
@@ -1998,7 +2072,7 @@ async function handleMemoryUpsertWithMerge(args: {
         (result) =>
           result.action === 'stored' || result.action === 'merged' || result.action === 'updated'
       )
-      .map((result, index) => {
+      .map((result, _index) => {
         // Find the original item that corresponds to this result
         const originalIndex = dedupeResult.results.indexOf(result);
         const originalItem = transformedItems[originalIndex];
@@ -2099,7 +2173,7 @@ async function handleMemoryUpsertWithMerge(args: {
 
 async function handleTTLWorkerRunWithReport(args: { options?: any }) {
   try {
-    const { options = {} } = args;
+    const { options: _options = {} } = args;
 
     // Simple expiry worker implementation
     const report = {
@@ -2400,6 +2474,89 @@ async function startServer(): Promise<void> {
       stderr: process.stderr.isTTY ? 'TTY' : 'PIPE',
     });
 
+    // Configure Node.js memory optimization
+    if (!process.env.NODE_OPTIONS) {
+      process.env.NODE_OPTIONS = '--max-old-space-size=4096';
+    }
+
+    // Enable aggressive garbage collection for memory optimization
+    if (global.gc) {
+      logger.info('Native garbage collection available');
+      global.gc();
+    }
+
+    // Set up periodic garbage collection
+    const gcInterval = setInterval(() => {
+      if (global.gc) {
+        global.gc();
+      }
+    }, 30000); // Every 30 seconds
+
+    // Aggressive memory monitoring and optimization
+    const memoryCheckInterval = setInterval(() => {
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+      const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+      const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
+
+      if (heapUsagePercent > 85) {
+        logger.error(`Critical memory usage: ${heapUsagePercent.toFixed(1)}% - executing emergency cleanup`, {
+          heapUsed: `${heapUsedMB.toFixed(1)}MB`,
+          heapTotal: `${heapTotalMB.toFixed(1)}MB`,
+          heapUsagePercent: heapUsagePercent.toFixed(1),
+          rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
+          external: `${(memUsage.external / 1024 / 1024).toFixed(1)}MB`
+        });
+
+        // Force aggressive garbage collection if available
+        if (global.gc) {
+          global.gc();
+          global.gc(); // Double collection for aggressive cleanup
+        }
+
+        // Force additional cleanup strategies
+        if (global.gc && heapUsagePercent > 90) {
+          // Triple collection for critical situations
+          setTimeout(() => global.gc!(), 100);
+          setTimeout(() => global.gc!(), 200);
+
+          // Trigger memory pressure event (Node.js internal event)
+          if (process.emit && (process.emit as any)('memory-pressure', 'critical')) {
+            // Memory pressure event triggered
+          }
+        }
+      } else if (heapUsagePercent > 70) {
+        logger.warn(`High memory usage: ${heapUsagePercent.toFixed(1)}% - executing preventive cleanup`, {
+          heapUsed: `${heapUsedMB.toFixed(1)}MB`,
+          heapTotal: `${heapTotalMB.toFixed(1)}MB`,
+          heapUsagePercent: heapUsagePercent.toFixed(1)
+        });
+
+        // Preventive garbage collection
+        if (global.gc) {
+          global.gc();
+        }
+      }
+    }, 5000); // Check every 5 seconds for more aggressive monitoring
+
+    // Periodic memory cleanup every 30 seconds
+    const periodicCleanupInterval = setInterval(() => {
+      if (global.gc) {
+        const beforeGC = process.memoryUsage();
+        global.gc();
+        const afterGC = process.memoryUsage();
+
+        const memoryFreed = (beforeGC.heapUsed - afterGC.heapUsed) / 1024 / 1024;
+        if (memoryFreed > 1) { // Log meaningful memory recovery
+          logger.info(`Periodic cleanup freed ${memoryFreed.toFixed(1)}MB`, {
+            before: `${(beforeGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+            after: `${(afterGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+            freed: `${memoryFreed.toFixed(1)}MB`
+          });
+        }
+      }
+    }, 30000);
+
     // Initialize observability services
     logger.info('Initializing observability services...');
     await changeLoggerService.initialize();
@@ -2460,6 +2617,33 @@ async function startServer(): Promise<void> {
       });
 
     logger.info('Cortex Memory MCP Server is ready and accepting requests!');
+
+    // Store interval references for cleanup
+    (global as any).memoryIntervals = [gcInterval, memoryCheckInterval];
+
+    // Graceful shutdown handling
+    const gracefulShutdown = () => {
+      logger.info('=== SERVER SHUTDOWN ===');
+
+      // Clear memory monitoring intervals
+      if (typeof memoryCheckInterval !== 'undefined') clearInterval(memoryCheckInterval);
+      if (typeof periodicCleanupInterval !== 'undefined') clearInterval(periodicCleanupInterval);
+      if ((global as any).memoryIntervals) {
+        (global as any).memoryIntervals.forEach((interval: NodeJS.Timeout) => clearInterval(interval));
+        delete (global as any).memoryIntervals;
+      }
+
+      // Force final garbage collection
+      if (global.gc) {
+        global.gc();
+      }
+
+      process.exit(0);
+    };
+
+    process.on('SIGINT', gracefulShutdown);
+    process.on('SIGTERM', gracefulShutdown);
+
   } catch (error) {
     logger.error('=== SERVER STARTUP FAILED ===');
     logger.error('Error details:', error);
@@ -2514,9 +2698,9 @@ async function handleRunCleanup(args: any) {
       cleanup_scope_filters,
       require_confirmation = true,
       confirmation_token,
-      enable_backup = true,
-      batch_size = 100,
-      max_batches = 50,
+      _enable_backup = true,
+      _batch_size = 100,
+      _max_batches = 50,
     } = args;
 
     const report = await cleanupWorker.runCleanup({
@@ -2735,7 +2919,7 @@ async function handleGetCleanupHistory(args: any) {
   }
 }
 
-async function handleSystemStatus(args: any) {
+export async function handleSystemStatus(args: any): Promise<any> {
   const { operation } = args;
 
   try {
@@ -2802,8 +2986,48 @@ async function handleSystemStatus(args: any) {
   }
 }
 
-// Export QdrantRuntimeStatus for testing
-export { type QdrantRuntimeStatus };
+// Export public types and interfaces for package consumers
+export type { QdrantRuntimeStatus };
+
+// Export core knowledge item types
+export type { KnowledgeItem } from './types/core-interfaces.js';
+
+// Export MCP tool input/output types
+export type {
+  MemoryStoreRequest,
+  MemoryFindRequest,
+  ItemResult,
+  BatchSummary,
+  MemoryStoreResponse,
+  MemoryFindResponse,
+  SystemStatusResponse,
+} from './types/core-interfaces.js';
+
+// Export unified response types
+export type {
+  UnifiedResponseMeta,
+  UnifiedToolResponse,
+  createResponseMeta,
+  migrateLegacyResponse,
+} from './types/unified-response.interface.js';
+
+// Export contracts for consistency
+export type {
+  StoreResult,
+  StoreError,
+  CortexResponseMeta,
+  CortexOperation,
+  PerformanceMetrics,
+} from './types/contracts.js';
+
+// Export configuration types
+export type { MergeStrategy } from './config/deduplication-config.js';
+
+// Export search types
+export type { SearchResult, SearchQuery, AutonomousContext } from './types/core-interfaces.js';
+
+// Export JSON schemas for tool validation
+export { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
 
 // Start the server only when not in test mode
 if (process.env.NODE_ENV !== 'test') {

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
-import { DatabaseManager } from '../../src/services/database/database-manager.js';
+import { DatabaseManager } from '../../src/db/database-manager.js';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
 import { MemoryStoreService } from '../../src/services/memory-store.service.js';
 import { MemoryFindService } from '../../src/services/memory-find.service.js';

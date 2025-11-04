@@ -1,26 +1,42 @@
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-echo "🔍 Running enhanced pre-commit quality gate..."
+echo "🔍 Running pre-commit quality checks..."
 
-# Run the enhanced pre-commit quality gate check
-node scripts/pre-commit-check.mjs
+# Run type checking
+echo "📝 Running type check..."
+npm run type-check || {
+  echo "❌ Type check failed"
+  exit 1
+}
 
-# Check if the pre-commit check passed
-if [ $? -ne 0 ]; then
-    echo ""
-    echo "🔧 Pre-commit quality gate failed!"
-    echo ""
-    echo "💡 To fix and retry:"
-    echo "   1. Run: npm run quality-check (quick fix check)"
-    echo "   2. Run: npm run quality-gate (full pipeline)"
-    echo "   3. Fix the issues shown above"
-    echo "   4. Try committing again"
-    echo ""
-    echo "❌ Commit blocked by quality gate"
-    exit 1
-fi
+# Run linting
+echo "🔧 Running lint check..."
+npm run lint || {
+  echo "❌ Lint check failed"
+  exit 1
+}
 
-echo ""
-echo "🎉 Pre-commit quality gate passed!"
-echo "✅ Ready to commit with confidence!"
+# Run format check
+echo "🎨 Running format check..."
+npm run format:check || {
+  echo "❌ Format check failed"
+  echo "💡 Run 'npm run format' to fix formatting issues"
+  exit 1
+}
+
+# Run quick quality check
+echo "✨ Running quality check..."
+npm run quality-check || {
+  echo "❌ Quality check failed"
+  exit 1
+}
+
+# Run unit tests
+echo "🧪 Running unit tests..."
+npm run test:unit || {
+  echo "❌ Unit tests failed"
+  exit 1
+}
+
+echo "✅ All pre-commit checks passed!"

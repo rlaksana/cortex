@@ -5,7 +5,7 @@
  * and that version negotiation works correctly across all supported versions.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   parseSemVer,
   isVersionCompatible,

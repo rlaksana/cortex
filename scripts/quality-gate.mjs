@@ -18,14 +18,15 @@ import { execSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-interface QualityGateResult {
-  passed: boolean;
-  stage: string;
-  duration: number;
-  output: string;
-  error?: string;
-  metrics?: Record<string, number>;
-}
+// QualityGateResult type definition (using JavaScript object structure)
+const createQualityGateResult = (passed, stage, duration, output, error = null, metrics = {}) => ({
+  passed,
+  stage,
+  duration,
+  output,
+  error,
+  metrics
+});
 
 interface PerformanceMetrics {
   totalOperations: number;

@@ -53,7 +53,7 @@ class SchemaMigrator {
    */
   static migrateMemoryStore(input: any): any {
     const migrated = { ...input };
-    let notes: string[] = [];
+    const notes: string[] = [];
 
     // Add default processing options if not present
     if (!migrated.processing) {
@@ -140,7 +140,7 @@ class SchemaMigrator {
    */
   static migrateMemoryFind(input: any): any {
     const migrated = { ...input };
-    let notes: string[] = [];
+    const notes: string[] = [];
 
     // Convert 'mode' to 'search_strategy'
     if (migrated.mode && !migrated.search_strategy) {
@@ -201,7 +201,7 @@ class SchemaMigrator {
    */
   static migrateSystemStatus(input: any): any {
     const migrated = { ...input };
-    let notes: string[] = [];
+    const notes: string[] = [];
 
     // Add default response formatting if not present
     if (!migrated.response_formatting) {
@@ -256,7 +256,7 @@ export class SchemaValidator {
       // This is optional - if not available, we'll fall back to Zod only
       // const Ajv = require('ajv');
       // this.jsonSchemaValidator = new Ajv({ allErrors: true });
-    } catch (error) {
+    } catch (_error) {
       // JSON Schema validator not available, will use Zod only
       console.warn('JSON Schema validator not available, using Zod only');
     }
@@ -454,6 +454,9 @@ export class SchemaValidator {
       case 'performance_monitoring':
         errors.push(...this.validatePerformanceMonitoringBusinessRules(data));
         break;
+      default:
+        // No business rules for unknown schema types
+        break;
     }
 
     return errors;
@@ -597,6 +600,9 @@ export class SchemaValidator {
           );
         }
         break;
+      default:
+        // No operation-specific requirements for unknown operations
+        break;
     }
 
     return errors;
@@ -671,6 +677,9 @@ export class SchemaValidator {
           );
         }
         break;
+      default:
+        // No warnings for unknown schema types
+        break;
     }
 
     return warnings;
@@ -685,15 +694,18 @@ export class SchemaValidator {
   ): { migrated: boolean; input: any; notes: string[] } {
     try {
       switch (schemaName) {
-        case 'memory_store':
+        case 'memory_store': {
           const storeResult = SchemaMigrator.migrateMemoryStore(input);
           return { migrated: true, input: storeResult.migrated, notes: storeResult.notes };
-        case 'memory_find':
+        }
+        case 'memory_find': {
           const findResult = SchemaMigrator.migrateMemoryFind(input);
           return { migrated: true, input: findResult.migrated, notes: findResult.notes };
-        case 'system_status':
+        }
+        case 'system_status': {
           const statusResult = SchemaMigrator.migrateSystemStatus(input);
           return { migrated: true, input: statusResult.migrated, notes: statusResult.notes };
+        }
         default:
           return { migrated: false, input, notes: [] };
       }

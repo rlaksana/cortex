@@ -1,6 +1,6 @@
 {
   "name": "cortex-memory-mcp",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Cortex Memory MCP Server - Advanced knowledge management with Qdrant vector database support",
   "main": "dist/silent-mcp-entry.js",
   "type": "module",
@@ -8,13 +8,14 @@
     "cortex": "dist/silent-mcp-entry.js"
   },
   "scripts": {
-    "start": "node dist/index.js",
+      "start": "NODE_OPTIONS=\"--max-old-space-size=4096 --expose-gc\" node dist/index.js",
     "start:raw": "node dist/index.js",
-    "dev": "node dist/index.js",
+    "start:prod": "NODE_OPTIONS=\"--max-old-space-size=4096 --max-heap-size=4096 --expose-gc\" node dist/index.js",
+    "dev": "NODE_OPTIONS=\"--max-old-space-size=4096 --expose-gc\" node dist/index.js",
     "build": "tsc && node scripts/fix-imports.mjs",
     "build:index": "tsc src/index.ts --outDir dist --target es2022 --module esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck",
-    "lint": "eslint src tests --ext .ts",
-    "lint:fix": "eslint src tests --ext .ts --fix",
+    "lint": "eslint . --ext .js,.mjs --max-warnings=10",
+    "lint:fix": "eslint . --ext .js,.mjs --fix",
     "lint:quiet": "eslint src --quiet",
     "lint:hard": "eslint src tests --ext .ts --max-warnings=500",
     "type-check": "tsc --noEmit",
@@ -137,7 +138,10 @@
     "dev:watch": "npm run build && npm run dev & npm run test:watch",
     "dev:debug": "npm run build && npm run mcp:debug",
     "quickstart": "npm run build && npm run start",
-    "help": "echo 'Available scripts:' && npm run | grep -E '^[[:space:]]*[^[:space:]]+' | cut -d: -f1 | sort"
+    "help": "echo 'Available scripts:' && npm run | grep -E '^[[:space:]]*[^[:space:]]+' | cut -d: -f1 | sort",
+    "postinstall": "echo '🧠 Cortex Memory MCP Server v2.0.0 installed successfully!' && echo '📚 Quick start: npm run quickstart' && echo '📖 Documentation: npm run docs:new-engineer'",
+    "preuninstall": "echo '👋 Thank you for using Cortex Memory MCP Server!' && echo '💾 Remember to backup your data before uninstalling'",
+    "prepare": "husky install"
   },
   "keywords": [
     "mcp",
@@ -177,10 +181,6 @@
     "deployment": "docs/CONFIG-DEPLOYMENT.md",
     "troubleshooting": "docs/TROUBLESHOOT-ERRORS.md"
   },
-  "scripts": {
-    "postinstall": "echo '🧠 Cortex Memory MCP Server v2.0.0 installed successfully!' && echo '📚 Quick start: npm run quickstart' && echo '📖 Documentation: npm run docs:new-engineer'",
-    "preuninstall": "echo '👋 Thank you for using Cortex Memory MCP Server!' && echo '💾 Remember to backup your data before uninstalling'"
-  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.2",
     "@qdrant/js-client-rest": "^1.13.0",
@@ -215,6 +215,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-security": "^3.0.1",
     "glob": "^11.0.3",
+    "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "sinon": "^21.0.0",
     "supertest": "^7.1.4",

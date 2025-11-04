@@ -76,12 +76,12 @@ export default defineConfig({
     environment: 'node',
     include: [
       'tests/unit/**/*.test.ts',
+      'tests/integration/**/*.test.ts',
       'tests/contract/**/*.test.ts',
       'tests/validation/**/*.test.ts',
       'tests/**/*.spec.ts',
     ],
     exclude: [
-      'tests/integration/**',
       'tests/e2e/**',
       'node_modules',
       'dist/',
@@ -145,7 +145,7 @@ export default defineConfig({
       all: true,
       clean: true,
       cleanOnRerun: true,
-      enabled: false, // Disable coverage temporarily to resolve EMFILE
+      enabled: true, // Enable coverage for quality gates
     },
     testTimeout: 60000, // Increased timeout to prevent timeouts
     setupFiles: ['tests/setup.ts'],

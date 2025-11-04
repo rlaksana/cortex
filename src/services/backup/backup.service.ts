@@ -664,7 +664,7 @@ export class BackupService {
     });
 
     // Apply compression if enabled
-    let processedData = Buffer.from(jsonData, 'utf8');
+    const processedData = Buffer.from(jsonData, 'utf8');
 
     if (this.config.strategy.compression_level > 0) {
       // Compression would be implemented here
@@ -1075,7 +1075,7 @@ export class BackupService {
     const now = new Date();
     const [hours, minutes] = this.config.schedule.preferred_time.split(':').map(Number);
 
-    let nextBackup = new Date();
+    const nextBackup = new Date();
     nextBackup.setHours(hours, minutes, 0, 0);
 
     // If preferred time has passed today, schedule for tomorrow

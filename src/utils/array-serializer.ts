@@ -48,7 +48,7 @@ export function deserializeArray(pgArray: string[] | null): string[] {
  * @param value - Value to serialize
  * @returns Serialized value ready for qdrant
  */
-export function serializeForDatabase(value: any, visited = new WeakSet()): any {
+export function serializeForDatabase(value: unknown, visited = new WeakSet()): unknown {
   if (Array.isArray(value)) {
     return serializeArray(value);
   }
@@ -62,7 +62,7 @@ export function serializeForDatabase(value: any, visited = new WeakSet()): any {
 
     try {
       // Handle objects with array properties
-      const result: any = {};
+      const result: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(value)) {
         result[key] = serializeForDatabase(val, visited);
       }
@@ -80,7 +80,7 @@ export function serializeForDatabase(value: any, visited = new WeakSet()): any {
  * @param value - Value from database
  * @returns Deserialized JavaScript value
  */
-export function deserializeFromDatabase(value: any): any {
+export function deserializeFromDatabase(value: unknown): unknown {
   // qdrant arrays come back as arrays, no conversion needed
   return value;
 }

@@ -8,8 +8,12 @@ process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'error'; // Minimize logs during testing
 process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
 
-// Global test utilities
+// Import comprehensive test setup
+import './setup/jest-setup.js';
+
+// Additional simple test utilities for backward compatibility
 global.testUtils = {
+  // Legacy utilities for existing tests
   generateTestItem: (overrides: any = {}) => ({
     kind: 'entity',
     content: 'Test content',
@@ -25,20 +29,7 @@ global.testUtils = {
       metadata: { batch: true, index: i },
       ...overrides,
     })),
+
+  // Reference to comprehensive utilities
+  ...global.testUtils,
 };
-
-// Mock console methods to reduce noise during tests
-const originalConsole = { ...console };
-import { vi } from 'vitest';
-
-beforeAll(() => {
-  console.error = vi.fn();
-  console.warn = vi.fn();
-  console.info = vi.fn();
-  console.debug = vi.fn();
-});
-
-afterAll(() => {
-  // Restore original console methods
-  Object.assign(console, originalConsole);
-});

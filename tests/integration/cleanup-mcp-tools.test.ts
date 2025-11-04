@@ -8,7 +8,7 @@
  * - Error handling at MCP level
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
@@ -18,11 +18,11 @@ process.env.QDRANT_URL = 'http://localhost:6333';
 process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
 
 // Mock cleanup worker and dependencies
-jest.mock('../../src/services/cleanup-worker.service.js');
-jest.mock('../../src/services/expiry-worker.js');
-jest.mock('../../src/services/memory-find.js');
-jest.mock('../../src/services/memory-store.js');
-jest.mock('../../src/services/metrics/system-metrics.js');
+vi.mock('../../src/services/cleanup-worker.service.js');
+vi.mock('../../src/services/expiry-worker.js');
+vi.mock('../../src/services/memory-find.js');
+vi.mock('../../src/services/memory-store.js');
+vi.mock('../../src/services/metrics/system-metrics.js');
 
 describe('MCP Cleanup Tools Integration', () => {
   let server: Server;
@@ -32,15 +32,15 @@ describe('MCP Cleanup Tools Integration', () => {
     // Import the server after mocks are set up
     const { getCleanupWorker } = await import('../../src/services/cleanup-worker.service.js');
     mockCleanupWorker = {
-      runCleanup: jest.fn(),
-      confirmCleanup: jest.fn(),
-      getCleanupStatistics: jest.fn(),
-      getOperationHistory: jest.fn(),
-      getConfig: jest.fn(),
+      runCleanup: vi.fn(),
+      confirmCleanup: vi.fn(),
+      getCleanupStatistics: vi.fn(),
+      getOperationHistory: vi.fn(),
+      getConfig: vi.fn(),
     };
 
     // Mock the getCleanupWorker function
-    (getCleanupWorker as jest.Mock).mockReturnValue(mockCleanupWorker);
+    (getCleanupWorker as any).mockReturnValue(mockCleanupWorker);
 
     // Import and start the server
     const serverModule = await import('../../src/index.ts');
@@ -51,7 +51,7 @@ describe('MCP Cleanup Tools Integration', () => {
   });
 
   afterAll(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('run_cleanup Tool', () => {
@@ -478,7 +478,6 @@ describe('MCP Cleanup Tools Integration', () => {
         errors: [],
         warnings: [],
         performance: { total_duration_ms: 0, items_processed_per_second: 0, memory_usage_mb: 0 },
-        operations: [],
       });
 
       const { handleRunCleanup } = await import('../../src/index.ts');
@@ -554,7 +553,6 @@ describe('MCP Cleanup Tools Integration', () => {
         errors: [],
         warnings: [],
         performance: { total_duration_ms: 100, items_processed_per_second: 100, memory_usage_mb: 1.0 },
-        operations: [],
       };
 
       mockCleanupWorker.runCleanup.mockResolvedValue(mockReport);

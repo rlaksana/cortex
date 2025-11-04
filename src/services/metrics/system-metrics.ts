@@ -149,6 +149,22 @@ export interface SystemMetrics {
     dedupe_processing_time_ms: number;
   };
 
+  // P6-2: TTL execution metrics
+  ttl: {
+    ttl_deletes_total: number;
+    ttl_skips_total: number;
+    ttl_errors_total: number;
+    ttl_processing_rate_per_second: number;
+    ttl_batch_count: number;
+    ttl_average_batch_size: number;
+    ttl_policies_applied: Record<string, number>;
+    ttl_extensions_granted: number;
+    ttl_permanent_items_preserved: number;
+    ttl_cleanup_duration_ms: number;
+    ttl_last_cleanup_timestamp: string;
+    ttl_success_rate: number;
+  };
+
   // P6-1: Insight generation metrics
   insight_generation: {
     insights_generated: number;
@@ -172,6 +188,7 @@ export interface MetricUpdate {
     | 'chunking'
     | 'cleanup'
     | 'dedupe_hits'
+    | 'ttl'
     | 'insight_generation'
     | 'insight_generation_summary';
   data: Record<string, any>;
@@ -296,6 +313,21 @@ export class SystemMetricsService {
       merge_conflicts_resolved: 0,
       dedupe_processing_time_ms: 0,
     },
+    // P6-2: Initialize TTL execution metrics
+    ttl: {
+      ttl_deletes_total: 0,
+      ttl_skips_total: 0,
+      ttl_errors_total: 0,
+      ttl_processing_rate_per_second: 0,
+      ttl_batch_count: 0,
+      ttl_average_batch_size: 0,
+      ttl_policies_applied: {},
+      ttl_extensions_granted: 0,
+      ttl_permanent_items_preserved: 0,
+      ttl_cleanup_duration_ms: 0,
+      ttl_last_cleanup_timestamp: '',
+      ttl_success_rate: 100,
+    },
     // P6-1: Initialize insight generation metrics
     insight_generation: {
       insights_generated: 0,
@@ -353,6 +385,9 @@ export class SystemMetricsService {
           break;
         case 'dedupe_hits':
           this.updateDedupeHitsMetrics(update.data, update.duration_ms);
+          break;
+        case 'ttl':
+          this.updateTTLMetrics(update.data, update.duration_ms);
           break;
         case 'insight_generation':
           this.updateInsightGenerationMetrics(update.data, update.duration_ms);
@@ -829,6 +864,70 @@ export class SystemMetricsService {
     }
   }
 
+/**
+   * P6-2: Update TTL execution metrics
+   */
+  private updateTTLMetrics(data: Record<string, any>, duration?: number): void {
+    // Update TTL delete counters
+    if (data.ttl_deletes_total) {
+      this.metrics.ttl.ttl_deletes_total += Number(data.ttl_deletes_total);
+    }
+    
+    if (data.ttl_skips_total) {
+      this.metrics.ttl.ttl_skips_total += Number(data.ttl_skips_total);
+    }
+    
+    if (data.ttl_errors_total) {
+      this.metrics.ttl.ttl_errors_total += Number(data.ttl_errors_total);
+    }
+
+    // Update processing performance metrics
+    if (data.ttl_processing_rate_per_second) {
+      this.metrics.ttl.ttl_processing_rate_per_second = Number(data.ttl_processing_rate_per_second);
+    }
+    
+    if (data.ttl_batch_count) {
+      this.metrics.ttl.ttl_batch_count += Number(data.ttl_batch_count);
+    }
+    
+    if (data.ttl_average_batch_size) {
+      this.metrics.ttl.ttl_average_batch_size = Number(data.ttl_average_batch_size);
+    }
+
+    // Update policy metrics
+    if (data.ttl_policies_applied) {
+      Object.entries(data.ttl_policies_applied).forEach(([policy, count]) => {
+        this.metrics.ttl.ttl_policies_applied[policy] = 
+          (this.metrics.ttl.ttl_policies_applied[policy] || 0) + Number(count);
+      });
+    }
+    
+    if (data.ttl_extensions_granted) {
+      this.metrics.ttl.ttl_extensions_granted += Number(data.ttl_extensions_granted);
+    }
+    
+    if (data.ttl_permanent_items_preserved) {
+      this.metrics.ttl.ttl_permanent_items_preserved += Number(data.ttl_permanent_items_preserved);
+    }
+
+    // Update timing and success metrics
+    if (duration) {
+      this.metrics.ttl.ttl_cleanup_duration_ms += duration;
+    }
+    
+    if (data.ttl_last_cleanup_timestamp) {
+      this.metrics.ttl.ttl_last_cleanup_timestamp = data.ttl_last_cleanup_timestamp;
+    } else {
+      this.metrics.ttl.ttl_last_cleanup_timestamp = new Date().toISOString();
+    }
+
+    // Calculate success rate
+    const totalOperations = this.metrics.ttl.ttl_deletes_total + this.metrics.ttl.ttl_skips_total + this.metrics.ttl.ttl_errors_total;
+    if (totalOperations > 0) {
+      this.metrics.ttl.ttl_success_rate = ((this.metrics.ttl.ttl_deletes_total + this.metrics.ttl.ttl_skips_total) / totalOperations) * 100;
+    }
+  }
+
   /**
    * Get current system metrics
    */
@@ -963,6 +1062,21 @@ export class SystemMetricsService {
         false_positives: 0,
         merge_conflicts_resolved: 0,
         dedupe_processing_time_ms: 0,
+      },
+      // P6-2: Reset TTL execution metrics
+      ttl: {
+        ttl_deletes_total: 0,
+        ttl_skips_total: 0,
+        ttl_errors_total: 0,
+        ttl_processing_rate_per_second: 0,
+        ttl_batch_count: 0,
+        ttl_average_batch_size: 0,
+        ttl_policies_applied: {},
+        ttl_extensions_granted: 0,
+        ttl_permanent_items_preserved: 0,
+        ttl_cleanup_duration_ms: 0,
+        ttl_last_cleanup_timestamp: '',
+        ttl_success_rate: 100,
       },
       // P6-1: Reset insight generation metrics
       insight_generation: {

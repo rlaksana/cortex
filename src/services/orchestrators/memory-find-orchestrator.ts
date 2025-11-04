@@ -2,12 +2,12 @@ import { logger } from '../../utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal.js';
 import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
-// import { queryParser, type ParsedQuery } from '../search/query-parser.js'; // REMOVED: Service file deleted
-// import { searchStrategySelector, type StrategySelection } from '../search/search-strategy.js'; // REMOVED: Service file deleted
-// import { searchService } from '../search/search-service.js'; // REMOVED: Service file deleted
-// import { entityMatchingService } from '../search/entity-matching-service.js'; // REMOVED: Service file deleted
-// import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js'; // REMOVED: Service file deleted
-// import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
+import { queryParser, type ParsedQuery } from '../search/query-parser.js';
+import { searchStrategySelector, type StrategySelection } from '../search/search-strategy.js';
+import { searchService } from '../search/search-service.js';
+import { entityMatchingService } from '../search/entity-matching-service.js';
+import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
+import { auditService } from '../audit/audit-service.js';
 import { structuredLogger, SearchStrategy } from '../../monitoring/structured-logger.js';
 import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
@@ -15,20 +15,7 @@ import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';
 import type { AuthContext } from '../../types/auth-types.js';
 import { createFindObservability } from '../../utils/observability-helper.js';
 
-// Placeholder types for missing services
-interface ParsedQuery {
-  terms: string[];
-  entities: any[];
-}
-
-interface StrategySelection {
-  primary: { name: string };
-  fallback?: { name: string };
-}
-
-interface ResultRanker {
-  rankResults(results: SearchResult[], query: SearchQuery, parsed: ParsedQuery): any[];
-}
+// Types are now imported from the actual service files
 
 /**
  * Search execution context
@@ -55,57 +42,11 @@ interface SearchExecutionResult {
  * Orchestrator for memory find operations
  * Coordinates query parsing, strategy selection, search execution, and result ranking
  */
-// Mock implementations for missing services
-const mockQueryParser = {
-  parseQuery: (query: SearchQuery) => ({
-    parsed: {
-      terms: query.query.split(' ').filter((t) => t.length > 2),
-      entities: [],
-    } as ParsedQuery,
-    validation: { valid: true, errors: [] },
-  }),
-};
-
-const mockSearchStrategySelector = {
-  selectStrategy: (_query: SearchQuery, _parsed: ParsedQuery) =>
-    ({
-      primary: { name: 'semantic' },
-      fallback: { name: 'keyword' },
-    }) as StrategySelection,
-};
-
-const mockSearchService = {
-  performFallbackSearch: async (_parsed: ParsedQuery, _query: SearchQuery) => ({
-    results: [],
-    totalCount: 0,
-  }),
-};
-
-const mockEntityMatchingService = {
-  findEntityMatches: async (_parsed: ParsedQuery, _query: SearchQuery) => [],
-};
-
-const mockResultRanker: ResultRanker = {
-  rankResults: (results: SearchResult[]) =>
-    results.map((r) => ({ ...r, boostedScore: r.confidence_score })),
-};
-
-const mockAuditService = {
-  logError: async (_error: Error, _context?: any) => {},
-  logSearchOperation: async (
-    _query: string,
-    _resultsFound: number,
-    _strategy: string,
-    _scope?: any,
-    _userId?: any,
-    _duration?: number
-  ) => {},
-};
 
 export class MemoryFindOrchestrator {
   private rateLimiter = rateLimitMiddleware.memoryFind();
 
-  constructor(private _ranker: ResultRanker = mockResultRanker) {}
+  constructor(private _ranker: ResultRanker = resultRanker) {}
 
   /**
    * Map knowledge kinds to their corresponding Qdrant table names
@@ -406,7 +347,7 @@ export class MemoryFindOrchestrator {
       logger.info({ query: query.query, mode: query.mode }, 'Memory find operation started');
 
       // Step 1: Parse and validate query
-      const { parsed, validation } = mockQueryParser.parseQuery(query);
+      const { parsed, validation } = queryParser.parseQuery(query);
       if (!validation.valid) {
         return this.createValidationErrorResponse(validation.errors);
       }
@@ -414,7 +355,7 @@ export class MemoryFindOrchestrator {
       const context: SearchContext = {
         originalQuery: query,
         parsed,
-        strategy: mockSearchStrategySelector.selectStrategy(query, parsed),
+        strategy: searchStrategySelector.selectStrategy(query, parsed),
         startTime,
       };
 
@@ -488,7 +429,7 @@ export class MemoryFindOrchestrator {
       logger.error({ error, query }, 'Memory find operation failed');
 
       // Log error
-      await mockAuditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
+      await auditService.logError(error instanceof Error ? error : new Error('Unknown error'), {
         operation: 'memory_find',
         query: query.query,
       });
@@ -810,23 +751,37 @@ export class MemoryFindOrchestrator {
   }
 
   /**
-   * Execute fallback search using service layer
+   * Execute fallback search using enhanced service layer with hybrid degrade
    */
   private async executeFallbackSearch(
     parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
-    logger.info({ query: query.query }, 'Executing fallback search using service layer');
+    logger.info({ query: query.query }, 'Executing hybrid degrade search using enhanced service layer');
 
     try {
-      // Use the mock search service for fallback search
-      return await mockSearchService.performFallbackSearch(parsed, query);
-    } catch (error) {
-      logger.error({ error, query: query.query }, 'Fallback search service failed');
+      // Use the enhanced search service for hybrid degrade search
+      const searchResult = await searchService.performFallbackSearch(parsed, query);
+
+      // Log quality metrics for monitoring
+      const p95Metrics = searchService.getP95QualityMetrics();
+      logger.info({
+        query: query.query,
+        resultsCount: searchResult.results.length,
+        strategy: 'hybrid_degrade',
+        qualityMetrics: p95Metrics
+      }, 'Hybrid degrade search completed with quality metrics');
+
       return {
-        results: [],
-        totalCount: 0,
+        results: searchResult.results,
+        totalCount: searchResult.totalCount
       };
+    } catch (error) {
+      logger.error({ error, query: query.query }, 'Hybrid degrade search service failed');
+
+      // Final fallback to basic keyword search
+      logger.info({ query: query.query }, 'Attempting final fallback to basic keyword search');
+      return await this.executeFulltextSearch(parsed, query);
     }
   }
 
@@ -840,8 +795,8 @@ export class MemoryFindOrchestrator {
     logger.info({ query: query.query }, 'Finding entity matches using service layer');
 
     try {
-      // Use the mock entity matching service for entity resolution
-      return await mockEntityMatchingService.findEntityMatches(parsed, query);
+      // Use the entity matching service for entity resolution
+      return await entityMatchingService.findEntityMatches(parsed, query);
     } catch (error) {
       logger.error({ error, query: query.query }, 'Entity matching service failed');
       return [];
@@ -1021,7 +976,7 @@ export class MemoryFindOrchestrator {
   }
 
   /**
-   * Build final response
+   * Build final response with enhanced metadata
    */
   private buildResponse(
     rankedResults: any[],
@@ -1039,39 +994,39 @@ export class MemoryFindOrchestrator {
       match_type: rr.match_type,
     }));
 
+    const averageConfidence = results.length > 0
+      ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
+      : 0;
+
+    const strategyUsed = searchResult.strategy.primary?.name || searchResult.strategy;
+    const fallbackUsed = searchResult.fallbackUsed;
+    const degraded = fallbackUsed || searchResult.executionTime > 3000; // Consider slow responses as degraded
+
     return {
       results,
       items: results,
       total_count: searchResult.totalCount,
       autonomous_context: {
-        search_mode_used: searchResult.strategy.primary.name,
+        search_mode_used: String(strategyUsed),
         results_found: results.length,
-        confidence_average:
-          results.length > 0
-            ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
-            : 0,
+        confidence_average: averageConfidence,
         user_message_suggestion: this.generateUserMessage(results, searchResult),
       },
       observability: createFindObservability(
-        'auto', // Use valid strategy type
-        searchResult.strategy.primary.name.includes('vector'),
-        false,
+        strategyUsed as any,
+        String(strategyUsed).includes('semantic') || String(strategyUsed).includes('hybrid'),
+        degraded,
         Date.now() - startTime,
-        results.length > 0
-          ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
-          : 0
+        averageConfidence
       ),
       meta: {
-        strategy: searchResult.strategy.primary.name,
-        vector_used: searchResult.strategy.primary.name.includes('vector'),
-        degraded: false,
+        strategy: String(strategyUsed),
+        vector_used: String(strategyUsed).includes('semantic') || String(strategyUsed).includes('hybrid'),
+        degraded,
         source: 'memory-find-orchestrator',
         execution_time_ms: Date.now() - startTime,
-        confidence_score:
-          results.length > 0
-            ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
-            : 0,
-        truncated: false,
+        confidence_score: averageConfidence,
+        truncated: false
       },
     };
   }
@@ -1107,7 +1062,7 @@ export class MemoryFindOrchestrator {
     response: MemoryFindResponse,
     duration: number
   ): Promise<void> {
-    await mockAuditService.logSearchOperation(
+    await auditService.logSearchOperation(
       query.query,
       response.results.length,
       response.autonomous_context.search_mode_used,

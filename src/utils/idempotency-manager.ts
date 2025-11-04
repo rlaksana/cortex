@@ -320,7 +320,7 @@ export class IdempotencyManager {
     }
 
     let matchingBits = 0;
-    let totalBits = bytes1.length * 8;
+    const totalBits = bytes1.length * 8;
 
     for (let i = 0; i < bytes1.length; i++) {
       const xor = bytes1[i] ^ bytes2[i];

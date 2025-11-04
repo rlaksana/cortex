@@ -9,7 +9,7 @@
  * - Performance and security requirements
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import {
   ToolContractSchema,

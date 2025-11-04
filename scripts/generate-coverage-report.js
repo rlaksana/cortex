@@ -367,10 +367,10 @@ ${thresholdAnalysis.global.passed ? '✅ All thresholds met' : '❌ Some thresho
 
 ## Status: ${summary.status || 'Unknown'}
 
-${thresholdAnalysis.global.passed ? '' : '### Failed Thresholds
-' + Object.entries(thresholdAnalysis.global.failed)
+${thresholdAnalysis.global.passed ? '' : `### Failed Thresholds
+${Object.entries(thresholdAnalysis.global.failed)
   .map(([metric, data]) => `- ${metric}: ${data.actual}% (target: ${data.target}%)`)
-  .join('\n')}
+  .join('\n')}`}
     `.trim();
 
     await fs.writeFile(

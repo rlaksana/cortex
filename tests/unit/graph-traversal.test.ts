@@ -6,19 +6,19 @@
  * @file tests/unit/graph-traversal.test.ts
  */
 
-import { describe, test, expect, jest, beforeAll } from '@jest/globals';
+import { describe, test, expect, jest, beforeAll } from 'vitest';
 import type { TraversalOptions, GraphNode, GraphTraversalResult } from '../../src/services/graph-traversal.js';
 
 // Mock the qdrant client
-jest.mock('../../src/db/qdrant-client.js', () => ({
+vi.mock('../../src/db/qdrant-client.js', () => ({
   qdrant: {
-    getClient: jest.fn().mockReturnValue({
-      section: { findMany: jest.fn() },
-      adrDecision: { findMany: jest.fn() },
-      issueLog: { findMany: jest.fn() },
-      runbook: { findMany: jest.fn() },
-      todoLog: { findMany: jest.fn() },
-      knowledgeEntity: { findMany: jest.fn() },
+    getClient: vi.fn().mockReturnValue({
+      section: { findMany: vi.fn() },
+      adrDecision: { findMany: vi.fn() },
+      issueLog: { findMany: vi.fn() },
+      runbook: { findMany: vi.fn() },
+      todoLog: { findMany: vi.fn() },
+      knowledgeEntity: { findMany: vi.fn() },
     }),
   },
 }));

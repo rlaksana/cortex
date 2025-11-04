@@ -6,6 +6,24 @@ import { truncationService } from './truncation/truncation-service.js';
 import { systemMetricsService } from './metrics/system-metrics.js';
 import { insightGenerationService } from './insights/insight-generation-service.js';
 
+// Type definitions for truncation results
+interface TruncationResult {
+  truncated: { content: string };
+  original: { length: number; contentType?: string };
+  meta: { strategy?: string };
+}
+
+interface ProcessedItem extends Record<string, unknown> {
+  _truncation?: {
+    originalLength: number;
+    truncatedLength: number;
+    strategy: string;
+    contentType?: string;
+  };
+  content?: string;
+  data?: Record<string, unknown>;
+}
+
 /**
  * Main entry point for memory store operations
  *
@@ -215,12 +233,12 @@ function extractContentForTruncation(item: unknown): string | null {
 /**
  * Update item with truncated content
  */
-function updateItemWithTruncatedContent(item: unknown, truncationResult: any): unknown {
+function updateItemWithTruncatedContent(item: unknown, truncationResult: TruncationResult): unknown {
   if (!item || typeof item !== 'object') {
     return item;
   }
 
-  const typedItem = { ...item } as Record<string, any>;
+  const typedItem = { ...item } as ProcessedItem;
 
   // Update content field if it exists
   if (typedItem.content && typeof typedItem.content === 'string') {
@@ -237,10 +255,9 @@ function updateItemWithTruncatedContent(item: unknown, truncationResult: any): u
 
   // Add truncation metadata
   typedItem._truncation = {
-    truncated: true,
-    originalLength: truncationResult.original.length,
-    truncatedLength: truncationResult.truncated.length,
-    strategy: truncationResult.meta.strategy,
+    originalLength: truncationResult.original.length || 0,
+    truncatedLength: truncationResult.truncated.content.length,
+    strategy: truncationResult.meta.strategy || 'unknown',
     contentType: truncationResult.original.contentType,
   };
 
@@ -265,17 +282,17 @@ async function addTruncationMetadata(
     content_type?: string;
   }> = [];
   let totalCharsRemoved = 0;
-  let totalTokensRemoved = 0;
+  const totalTokensRemoved = 0;
   const warnings: string[] = [];
 
   // Check for truncation in processed items
   processedItems.forEach((item, index) => {
     if (item && typeof item === 'object') {
-      const typedItem = item as Record<string, any>;
+      const typedItem = item as ProcessedItem;
       if (typedItem._truncation) {
         truncationDetails.push({
           item_index: index,
-          item_id: typedItem.id,
+          item_id: typedItem.id as string | undefined,
           original_length: typedItem._truncation.originalLength,
           truncated_length: typedItem._truncation.truncatedLength,
           truncation_type: 'character' as const,

@@ -107,7 +107,7 @@ describe('Enhanced Search Degradation Strategy Tests', () => {
 
       it('should switch between semantic and sparse based on performance', async () => {
         let semanticPerformance = 0.3; // Poor initial performance
-        let sparsePerformance = 0.8;  // Good sparse performance
+        const sparsePerformance = 0.8;  // Good sparse performance
 
         vi.spyOn(searchManager as any, 'performSemanticSearch').mockImplementation(async () => {
           // Simulate improving semantic performance over time
@@ -202,7 +202,7 @@ describe('Enhanced Search Degradation Strategy Tests', () => {
 
     describe('Intelligent Strategy Thresholds', () => {
       it('should adapt thresholds based on historical performance', async () => {
-        let performanceHistory = [0.6, 0.7, 0.65, 0.8, 0.75]; // Improving trend
+        const performanceHistory = [0.6, 0.7, 0.65, 0.8, 0.75]; // Improving trend
         let historyIndex = 0;
 
         vi.spyOn(searchManager as any, 'getAdaptiveThreshold').mockImplementation(() => {
@@ -290,7 +290,7 @@ describe('Enhanced Search Degradation Strategy Tests', () => {
   describe('Confidence Calibration System', () => {
     describe('Dynamic Confidence Adjustment', () => {
       it('should calibrate confidence based on actual search performance', async () => {
-        let actualPerformanceScores = [0.9, 0.7, 0.8, 0.6, 0.85];
+        const actualPerformanceScores = [0.9, 0.7, 0.8, 0.6, 0.85];
         let performanceIndex = 0;
 
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {

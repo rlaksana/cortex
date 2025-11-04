@@ -52,6 +52,7 @@ import {
   createStoreObservability,
   createFindObservability,
 } from '../../utils/observability-helper.js';
+import { circuitBreakerManager, type CircuitBreakerStats } from '../../services/circuit-breaker.service.js';
 
 /**
  * Qdrant collection information interface
@@ -102,6 +103,18 @@ export class QdrantAdapter implements IVectorAdapter {
     supportedOperations: string[];
   };
   private readonly COLLECTION_NAME = 'knowledge_items';
+  private qdrantCircuitBreaker = circuitBreakerManager.getCircuitBreaker('qdrant', {
+    failureThreshold: 2, // Lower threshold for faster failure detection in tests
+    recoveryTimeoutMs: 10000, // 10 seconds for faster recovery
+    failureRateThreshold: 0.4, // 40%
+    minimumCalls: 2, // Fewer calls needed for failure detection
+  });
+  private openaiCircuitBreaker = circuitBreakerManager.getCircuitBreaker('openai', {
+    failureThreshold: 3,
+    recoveryTimeoutMs: 30000, // 30 seconds
+    failureRateThreshold: 0.4, // 40%
+    minimumCalls: 5,
+  });
 
   constructor(config: VectorConfig) {
     // Store config for later async initialization
@@ -311,10 +324,17 @@ export class QdrantAdapter implements IVectorAdapter {
 
   async healthCheck(): Promise<boolean> {
     try {
-      await this.client.getCollections();
-      return true;
+      return await this.qdrantCircuitBreaker.execute(
+        async () => {
+          await this.client.getCollections();
+          this.logQdrantCircuitBreakerEvent('health_check_success');
+          return true;
+        },
+        'qdrant_health_check'
+      );
     } catch (error) {
       logger.error({ error }, 'Qdrant health check failed');
+      this.logQdrantCircuitBreakerEvent('health_check_failure', error);
       return false;
     }
   }
@@ -357,12 +377,14 @@ export class QdrantAdapter implements IVectorAdapter {
   // === Knowledge Storage Operations ===
 
   async store(items: KnowledgeItem[], options: StoreOptions = {}): Promise<MemoryStoreResponse> {
-    await this.ensureInitialized();
-    const startTime = Date.now();
+    return await this.qdrantCircuitBreaker.execute(
+      async () => {
+        await this.ensureInitialized();
+        const startTime = Date.now();
 
-    const { batchSize = 100, skipDuplicates = false } = options;
+        const { batchSize = 100, skipDuplicates = false } = options;
 
-    try {
+        try {
       logger.debug({ itemCount: items.length, options }, 'Storing items in Qdrant');
 
       const stored: StoreResult[] = [];
@@ -555,10 +577,44 @@ export class QdrantAdapter implements IVectorAdapter {
           truncated: false,
         },
       };
-    } catch (error) {
-      logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
-      throw new DatabaseError('Failed to store items in Qdrant', 'STORE_ERROR', error as Error);
-    }
+
+      const result = {
+        // Enhanced response format
+        items: itemResults,
+        summary,
+        // Legacy fields for backward compatibility
+        stored,
+        errors,
+        autonomous_context: autonomousContext,
+        // Observability metadata
+        observability: createStoreObservability(
+          true, // vector_used
+          false, // degraded (Qdrant adapter assumes not degraded)
+          Date.now() - startTime,
+          0.8 // confidence score
+        ),
+        // Required meta field for unified response format
+        meta: {
+          strategy: 'vector',
+          vector_used: true,
+          degraded: false,
+          source: 'qdrant-adapter',
+          execution_time_ms: Date.now() - startTime,
+          confidence_score: 0.8,
+          truncated: false,
+        },
+      };
+
+          this.logQdrantCircuitBreakerEvent('store_success', undefined, { itemCount: items.length });
+          return result;
+        } catch (error) {
+          logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
+          this.logQdrantCircuitBreakerEvent('store_failure', error, { itemCount: items.length });
+          throw new DatabaseError('Failed to store items in Qdrant', 'STORE_ERROR', error as Error);
+        }
+      },
+      'qdrant_store'
+    );
   }
 
   async update(items: KnowledgeItem[], options: StoreOptions = {}): Promise<MemoryStoreResponse> {
@@ -2114,5 +2170,67 @@ export class QdrantAdapter implements IVectorAdapter {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Log Qdrant circuit breaker events with proper context
+   */
+  private logQdrantCircuitBreakerEvent(event: string, error?: any, metadata?: any): void {
+    const qdrantStats = this.qdrantCircuitBreaker.getStats();
+    const openaiStats = this.openaiCircuitBreaker.getStats();
+
+    logger.info({
+      event,
+      qdrantCircuitState: qdrantStats.state,
+      qdrantIsOpen: qdrantStats.isOpen,
+      qdrantFailureRate: qdrantStats.failureRate,
+      qdrantTotalCalls: qdrantStats.totalCalls,
+      openaiCircuitState: openaiStats.state,
+      openaiIsOpen: openaiStats.isOpen,
+      openaiFailureRate: openaiStats.failureRate,
+      openaiTotalCalls: openaiStats.totalCalls,
+      error: error?.message || error,
+      metadata,
+    }, `Qdrant adapter circuit breaker event: ${event}`);
+
+    // If Qdrant circuit is open, log additional context
+    if (qdrantStats.isOpen) {
+      logger.warn({
+        event: 'qdrant_circuit_open',
+        timeSinceStateChange: qdrantStats.timeSinceStateChange,
+        failureTypes: qdrantStats.failureTypes,
+        lastFailureTime: qdrantStats.timeSinceLastFailure,
+      }, 'Qdrant adapter circuit breaker is OPEN - database operations will be blocked');
+    }
+  }
+
+  /**
+   * Get Qdrant circuit breaker status for monitoring
+   */
+  getQdrantCircuitBreakerStatus(): CircuitBreakerStats {
+    return this.qdrantCircuitBreaker.getStats();
+  }
+
+  /**
+   * Get OpenAI circuit breaker status for monitoring
+   */
+  getOpenAICircuitBreakerStatus(): CircuitBreakerStats {
+    return this.openaiCircuitBreaker.getStats();
+  }
+
+  /**
+   * Reset Qdrant circuit breaker (useful for testing or recovery)
+   */
+  resetQdrantCircuitBreaker(): void {
+    this.qdrantCircuitBreaker.reset();
+    logger.info('Qdrant adapter circuit breaker reset');
+  }
+
+  /**
+   * Reset OpenAI circuit breaker (useful for testing or recovery)
+   */
+  resetOpenAICircuitBreaker(): void {
+    this.openaiCircuitBreaker.reset();
+    logger.info('OpenAI embeddings circuit breaker reset');
   }
 }

@@ -431,7 +431,7 @@ eventvwr.msc
 If issues persist after following this guide:
 
 1. Run `.\scripts\simple-emfile-validation.ps1` and save the output
-2. Check [EMFILE-TEST-RESULTS.md](../EMFILE-TEST-RESULTS.md) for known issues
+2. Check [TEST-EMFILE-RESULTS.md](../TEST-EMFILE-RESULTS.md) for known issues
 3. Review the validation script logs for specific error patterns
 4. Consider system hardware limitations (RAM, disk space)
 5. Consult Windows Event Viewer for system-level errors

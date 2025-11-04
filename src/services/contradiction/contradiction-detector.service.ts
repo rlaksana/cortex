@@ -125,8 +125,8 @@ export class ContradictionDetector implements ContradictionDetectorService {
     cacheMisses: number;
   }> {
     const contradictions: ContradictionResult[] = [];
-    let cacheHits = 0;
-    let cacheMisses = 0;
+    const cacheHits = 0;
+    const cacheMisses = 0;
 
     // Check each enabled contradiction type
     for (const contradictionType of this.contradictionTypes) {

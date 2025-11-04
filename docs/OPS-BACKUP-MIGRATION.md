@@ -1961,7 +1961,7 @@ This comprehensive backup and migration guide provides all necessary procedures 
 ## 📚 Additional Resources
 
 - [Disaster Recovery Guide](OPS-DISASTER-RECOVERY.md)
-- [Operations Manual](OPS-MANUAL.md)
+- [Operations Manual](OPS-DISASTER-RECOVERY.md)
 - [Monitoring & Alerting](CONFIG-MONITORING.md)
 - [API Reference](API-REFERENCE.md)
 

@@ -145,7 +145,7 @@ export interface ErrorPreventionRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => boolean | string;
+  custom?: (value: unknown) => boolean | string;
 }
 
 export interface ErrorBoundaryConfig {
@@ -185,7 +185,12 @@ export interface ErrorMonitoringIntegration {
 export interface ErrorContext {
   error: Error | string;
   classification?: ErrorClassification;
-  recovery?: any;
+  recovery?: {
+    strategy: string;
+    steps: string[];
+    estimated_time?: number;
+    automatic?: boolean;
+  };
   user_context?: {
     user_id?: string;
     plan?: string;
@@ -194,7 +199,7 @@ export interface ErrorContext {
   system_context?: {
     current_load?: string;
     available_fallbacks?: string[];
-    service_health?: Record<string, any>;
+    service_health?: Record<string, unknown>;
   };
   timestamp: string;
 }
@@ -203,7 +208,7 @@ export interface ValidationError {
   valid: boolean;
   errors: string[];
   warnings?: string[];
-  sanitizedData?: any;
+  sanitizedData?: Record<string, unknown>;
 }
 
 export interface ErrorDetectionResult {

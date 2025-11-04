@@ -236,8 +236,8 @@ describe('Chaos Testing Infrastructure', () => {
           intermittent: false,
         });
 
-        let outageDuration = 1000; // 1 second outage
-        let outageStartTime = Date.now();
+        const outageDuration = 1000; // 1 second outage
+        const outageStartTime = Date.now();
 
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           const elapsed = Date.now() - outageStartTime;
@@ -414,7 +414,7 @@ describe('Chaos Testing Infrastructure', () => {
       });
 
       it('should implement adaptive timeouts based on network conditions', async () => {
-        let networkCondition = 'good'; // good -> degraded -> poor -> recovery
+        const networkCondition = 'good'; // good -> degraded -> poor -> recovery
         let conditionChangeCount = 0;
 
         vi.spyOn(searchManager as any, 'assessNetworkCondition').mockImplementation(() => {

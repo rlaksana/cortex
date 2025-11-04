@@ -810,7 +810,7 @@ export class RestoreService {
 
     let itemsToRestore = sourceAnalysis.total_items;
     let itemsToUpdate = 0;
-    let itemsToSkip = 0;
+    const itemsToSkip = 0;
 
     // Apply scope filters
     if (scopeFilters) {

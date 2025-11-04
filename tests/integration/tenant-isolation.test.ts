@@ -5,7 +5,7 @@
  * cross-tenant access controls work correctly across all scenarios.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Request, Response } from 'express';
 import {
   EnhancedSecurityMiddleware,
@@ -293,12 +293,12 @@ describe('Tenant Isolation', () => {
       } as any;
 
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        setHeader: jest.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        setHeader: vi.fn(),
       } as any;
 
-      const next = jest.fn();
+      const next = vi.fn();
 
       await middleware(req, res, next);
 
@@ -340,12 +340,12 @@ describe('Tenant Isolation', () => {
       } as any;
 
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        setHeader: jest.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        setHeader: vi.fn(),
       } as any;
 
-      const next = jest.fn();
+      const next = vi.fn();
 
       await middleware(req, res, next);
 
@@ -383,12 +383,12 @@ describe('Tenant Isolation', () => {
       } as any;
 
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        setHeader: jest.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        setHeader: vi.fn(),
       } as any;
 
-      const next = jest.fn();
+      const next = vi.fn();
 
       await middleware(req, res, next);
 
@@ -437,12 +437,12 @@ describe('Tenant Isolation', () => {
       } as any;
 
       const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        setHeader: jest.fn(),
+        status: vi.fn().mockReturnThis(),
+        json: vi.fn(),
+        setHeader: vi.fn(),
       } as any;
 
-      const next = jest.fn();
+      const next = vi.fn();
 
       await middleware(req, res, next);
 

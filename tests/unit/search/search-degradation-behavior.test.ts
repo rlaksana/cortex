@@ -206,7 +206,7 @@ describe('Search Degradation Behavior Tests', () => {
       });
 
       it('should handle vector database high error rates', async () => {
-        let errorRate = 0.8; // 80% error rate
+        const errorRate = 0.8; // 80% error rate
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           if (Math.random() < errorRate) {
             throw new Error('Vector database error');
@@ -487,7 +487,7 @@ describe('Search Degradation Behavior Tests', () => {
       });
 
       it('should provide graceful fallback when network is unreliable', async () => {
-        let reliabilityFactor = 0.5; // 50% network reliability
+        const reliabilityFactor = 0.5; // 50% network reliability
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           if (Math.random() > reliabilityFactor) {
             throw new Error('Network timeout');

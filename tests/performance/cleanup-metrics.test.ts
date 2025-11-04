@@ -8,7 +8,7 @@
  * - Memory usage during metrics tracking
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from 'vitest';
 import { performance } from 'node:perf_hooks';
 
 describe('Cleanup Metrics Performance', () => {
@@ -30,8 +30,8 @@ describe('Cleanup Metrics Performance', () => {
     });
 
     // Mock dependencies for performance testing
-    jest.mock('../../src/services/expiry-worker.js', () => ({
-      runExpiryWorker: jest.fn().mockResolvedValue({
+    vi.mock('../../src/services/expiry-worker.js', () => ({
+      runExpiryWorker: vi.fn().mockResolvedValue({
         total_processed: 1000,
         total_deleted: 950,
         deleted_counts: {
@@ -43,8 +43,8 @@ describe('Cleanup Metrics Performance', () => {
         },
         duration_ms: 500,
       }),
-      getRecentPurgeReports: jest.fn().mockResolvedValue([]),
-      getPurgeStatistics: jest.fn().mockResolvedValue({
+      getRecentPurgeReports: vi.fn().mockResolvedValue([]),
+      getPurgeStatistics: vi.fn().mockResolvedValue({
         total_reports: 0,
         total_items_deleted: 0,
         average_performance: { items_per_second: 0, average_duration_ms: 0 },
@@ -52,8 +52,8 @@ describe('Cleanup Metrics Performance', () => {
       }),
     }));
 
-    jest.mock('../../src/services/memory-find.js', () => ({
-      memoryFind: jest.fn().mockResolvedValue({
+    vi.mock('../../src/services/memory-find.js', () => ({
+      memoryFind: vi.fn().mockResolvedValue({
         items: Array.from({ length: 500 }, (_, i) => ({
           id: `orphaned_${i}`,
           kind: 'relation',
@@ -62,18 +62,18 @@ describe('Cleanup Metrics Performance', () => {
       }),
     }));
 
-    jest.mock('../../src/services/memory-store.js', () => ({
-      memoryStore: jest.fn().mockResolvedValue({
+    vi.mock('../../src/services/memory-store.js', () => ({
+      memoryStore: vi.fn().mockResolvedValue({
         stored: [],
         errors: [],
         summary: { total: 0, stored: 0, skipped_dedupe: 0 },
       }),
     }));
 
-    jest.mock('../../src/services/metrics/system-metrics.js', () => ({
+    vi.mock('../../src/services/metrics/system-metrics.js', () => ({
       systemMetricsService: {
-        updateMetrics: jest.fn(),
-        getMetrics: jest.fn().mockReturnValue({
+        updateMetrics: vi.fn(),
+        getMetrics: vi.fn().mockReturnValue({
           store_count: 10000,
           find_count: 20000,
           purge_count: 500,
@@ -84,7 +84,7 @@ describe('Cleanup Metrics Performance', () => {
           rate_limiting: {},
           memory: {},
         }),
-        getMetricsSummary: jest.fn().mockReturnValue({
+        getMetricsSummary: vi.fn().mockReturnValue({
           operations: { stores: 1000, finds: 2000, purges: 50 },
           performance: {
             dedupe_rate: 0.85,
@@ -102,7 +102,7 @@ describe('Cleanup Metrics Performance', () => {
   });
 
   afterAll(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('cleanup_deleted_total Metric Accuracy', () => {
@@ -112,8 +112,8 @@ describe('Cleanup Metrics Performance', () => {
 
       for (let i = 0; i < operationCounts.length; i++) {
         // Mock different counts for each operation
-        jest.doMock('../../src/services/expiry-worker.js', () => ({
-          runExpiryWorker: jest.fn().mockResolvedValue({
+        vi.doMock('../../src/services/expiry-worker.js', () => ({
+          runExpiryWorker: vi.fn().mockResolvedValue({
             total_processed: operationCounts[i] + 50,
             total_deleted: operationCounts[i],
             deleted_counts: {
@@ -191,8 +191,8 @@ describe('Cleanup Metrics Performance', () => {
       const startTime = performance.now();
 
       // Mock high-volume operation
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockResolvedValue({
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockResolvedValue({
           total_processed: highVolumeCount,
           total_deleted: highVolumeCount - 5000,
           deleted_counts: {
@@ -232,8 +232,8 @@ describe('Cleanup Metrics Performance', () => {
 
       const promises = Array.from({ length: concurrentOps }, async (_, i) => {
         // Mock different operation counts
-        jest.doMock('../../src/services/expiry-worker.js', () => ({
-          runExpiryWorker: jest.fn().mockResolvedValue({
+        vi.doMock('../../src/services/expiry-worker.js', () => ({
+          runExpiryWorker: vi.fn().mockResolvedValue({
             total_processed: itemsPerOp + i * 10,
             total_deleted: itemsPerOp,
             deleted_counts: {
@@ -274,8 +274,8 @@ describe('Cleanup Metrics Performance', () => {
 
       // Simulate large operation
       const largeOperationCount = 100000;
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockResolvedValue({
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockResolvedValue({
           total_processed: largeOperationCount,
           total_deleted: largeOperationCount - 10000,
           deleted_counts: {
@@ -311,8 +311,8 @@ describe('Cleanup Metrics Performance', () => {
       // Run multiple operations
       for (let i = 0; i < 5; i++) {
         const itemCount = 100 + i * 50;
-        jest.doMock('../../src/services/expiry-worker.js', () => ({
-          runExpiryWorker: jest.fn().mockResolvedValue({
+        vi.doMock('../../src/services/expiry-worker.js', () => ({
+          runExpiryWorker: vi.fn().mockResolvedValue({
             total_processed: itemCount + 10,
             total_deleted: itemCount,
             deleted_counts: {
@@ -351,8 +351,8 @@ describe('Cleanup Metrics Performance', () => {
       const itemCount = 5000;
       const expectedDuration = 1000;
 
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockResolvedValue({
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockResolvedValue({
           total_processed: itemCount,
           total_deleted: itemCount - 200,
           deleted_counts: {
@@ -382,8 +382,8 @@ describe('Cleanup Metrics Performance', () => {
     it('should track error rates accurately', async () => {
       // Mock some operations to fail
       let callCount = 0;
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockImplementation(() => {
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockImplementation(() => {
           callCount++;
           if (callCount <= 2) {
             return Promise.resolve({
@@ -422,8 +422,8 @@ describe('Cleanup Metrics Performance', () => {
 
   describe('Metrics Tracking Edge Cases', () => {
     it('should handle zero-item operations', async () => {
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockResolvedValue({
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockResolvedValue({
           total_processed: 0,
           total_deleted: 0,
           deleted_counts: {},
@@ -445,8 +445,8 @@ describe('Cleanup Metrics Performance', () => {
 
     it('should handle mixed successful/failed operations', async () => {
       // Mock mixed results
-      jest.doMock('../../src/services/expiry-worker.js', () => ({
-        runExpiryWorker: jest.fn().mockResolvedValue({
+      vi.doMock('../../src/services/expiry-worker.js', () => ({
+        runExpiryWorker: vi.fn().mockResolvedValue({
           total_processed: 200,
           total_deleted: 150,
           deleted_counts: { entity: 80, relation: 50, todo: 20 },
@@ -475,8 +475,8 @@ describe('Cleanup Metrics Performance', () => {
       const reports = [];
 
       for (let i = 0; i < rapidOperations; i++) {
-        jest.doMock('../../src/services/expiry-worker.js', () => ({
-          runExpiryWorker: jest.fn().mockResolvedValue({
+        vi.doMock('../../src/services/expiry-worker.js', () => ({
+          runExpiryWorker: vi.fn().mockResolvedValue({
             total_processed: 50 + i,
             total_deleted: 45 + i,
             deleted_counts: {

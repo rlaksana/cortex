@@ -22,6 +22,8 @@ import { createTTLManagementService } from './ttl/index.js';
 import type { KnowledgeItem, SearchQuery } from '../types/core-interfaces.js';
 import type { TTLBulkOperationOptions } from './ttl/ttl-management-service.js';
 
+import { systemMetricsService } from './metrics/system-metrics.js';
+
 export interface ExpiryWorkerResult {
   deleted_counts: Record<string, number>;
   total_deleted: number;
@@ -219,6 +221,27 @@ export async function runExpiryWorker(
       };
     }
 
+    // Update system metrics with TTL execution data
+    systemMetricsService.updateMetrics({
+      operation: 'ttl',
+      data: {
+        ttl_deletes_total: result.metrics.ttl_deletes_total,
+        ttl_skips_total: result.metrics.ttl_skips_total,
+        ttl_errors_total: result.metrics.ttl_errors_total,
+        ttl_processing_rate_per_second: result.metrics.processing_rate_per_second,
+        ttl_batch_count: result.metrics.batch_count,
+        ttl_average_batch_size: result.metrics.average_batch_size,
+        ttl_policies_applied: result.policy_enforcement.policies_applied,
+        ttl_extensions_granted: result.policy_enforcement.extensions_granted,
+        ttl_permanent_items_preserved: result.policy_enforcement.permanent_items_preserved,
+        ttl_last_cleanup_timestamp: new Date().toISOString(),
+        ttl_success_rate: result.total_processed > 0 ? 
+          ((result.metrics.ttl_deletes_total + result.metrics.ttl_skips_total) / result.total_processed) * 100 : 100,
+        dry_run: finalConfig.dry_run,
+      },
+      duration_ms: result.duration_ms,
+    });
+
     // Enhanced structured logging with TTL integration
     const structuredLogData = {
       operation: 'enhanced_ttl_expiry_worker_completed',
@@ -301,6 +324,21 @@ export async function runExpiryWorker(
   } catch (error) {
     result.duration_ms = Date.now() - startTime;
     result.error = error instanceof Error ? error.message : 'Unknown error';
+
+    // Update system metrics with error information
+    systemMetricsService.updateMetrics({
+      operation: 'ttl',
+      data: {
+        ttl_deletes_total: result.metrics.ttl_deletes_total,
+        ttl_skips_total: result.metrics.ttl_skips_total,
+        ttl_errors_total: result.metrics.ttl_errors_total + 1,
+        ttl_last_cleanup_timestamp: new Date().toISOString(),
+        ttl_success_rate: 0,
+        error: result.error,
+        dry_run: finalConfig.dry_run,
+      },
+      duration_ms: result.duration_ms,
+    });
 
     // Enhanced structured error logging
     logger.error(

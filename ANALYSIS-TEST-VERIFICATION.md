@@ -75,91 +75,91 @@ Node.js v24.5.0
 
 **Evidence:**
 - Test execution failed: Command failed: cd tests && npx vitest run comprehensive/all-knowledge-types-comprehensive.test.ts --reporter=json
-[2m2:36:22 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:22 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:22 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:22 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:22 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:22 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:22 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:22 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:23 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:23 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:23 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:23 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:23 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:23 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:23 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:23 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33mcomprehensive/all-knowledge-types-comprehensive.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  comprehensive/all-knowledge-types-comprehensive.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -182,91 +182,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Scope isolation test failed: Command failed: cd tests && npx vitest run integration/scope-isolation-integration.test.ts --reporter=json
-[2m2:36:27 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:27 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:27 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:27 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:27 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:27 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:27 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:27 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:28 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:28 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:28 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:28 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:28 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:28 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:28 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:28 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33mintegration/scope-isolation-integration.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  integration/scope-isolation-integration.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -289,91 +289,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Performance test failed: Command failed: cd tests && npx vitest run performance/concurrent-users.test.ts --reporter=json
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:32 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:32 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:32 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:32 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:32 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:32 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:32 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:32 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:32 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33mperformance/concurrent-users.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  performance/concurrent-users.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -396,91 +396,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Security test failed: Command failed: cd tests && npx vitest run security/authentication-security.test.ts --reporter=json
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+2:36:38 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:38 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:38 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:38 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:38 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:38 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:38 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:38 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:38 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33msecurity/authentication-security.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  security/authentication-security.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -503,91 +503,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Integration test failed: Command failed: cd tests && npx vitest run e2e/complete-workflows-e2e.test.ts --reporter=json
-[2m2:36:42 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:42 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:42 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:42 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:43 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:43 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:43 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:43 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:43 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:43 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:43 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33me2e/complete-workflows-e2e.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  e2e/complete-workflows-e2e.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -610,91 +610,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Edge case test failed: Command failed: cd tests && npx vitest run validation/edge-case-boundary-comprehensive.test.ts --reporter=json
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:47 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:47 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:47 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:47 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:47 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:47 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:47 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:47 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:47 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33mvalidation/edge-case-boundary-comprehensive.test.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  validation/edge-case-boundary-comprehensive.test.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**
@@ -717,91 +717,91 @@ No test files found, exiting with code 1[39m
 
 **Evidence:**
 - Error handling test failed: Command failed: cd tests && npx vitest run integration/comprehensive-error-handling-test-runner.ts --reporter=json
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate member "injectPermissionError" in class body[33m
+2:36:52 AM [vite] warning: Duplicate member "injectPermissionError" in class body
 391|    }
 392|  
 393|    private async injectPermissionError(injectionId: string, config: DatabaseErrorConfig): Promise<void> {
    |                  ^
 394|      const originalMethods = {
 395|        find: database.find.bind(database),
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "title" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/error-injection-service.ts
+2:36:52 AM [vite] warning: Duplicate key "title" in object literal
 240|              name: kind === 'entity' ? `Entity ${i}` : undefined,
 241|              content: kind === 'observation' ? `Observation content ${i}` : undefined,
 242|              title: kind === 'todo' ? `Todo ${i}` : undefined,
    |              ^
 243|              description: kind === 'risk' ? `Risk description ${i}` : undefined
 244|            },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/concurrent-operations-integration.test.ts
+2:36:52 AM [vite] warning: Duplicate key "type" in object literal
 382|          { type: 'project', name: 'Project Alpha', status: 'active' },
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
    |                                               ^
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "type" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:52 AM [vite] warning: Duplicate key "type" in object literal
 383|          { type: 'project', name: 'Project Beta', status: 'planning' },
 384|          { type: 'technology', name: 'React', type: 'framework' },
 385|          { type: 'technology', name: 'Qdrant', type: 'database' },
    |                                                    ^
 386|          { type: 'organization', name: 'TechCorp', industry: 'Software' }
 387|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "token" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/integration/knowledge-graph-integration.test.ts
+2:36:52 AM [vite] warning: Duplicate key "token" in object literal
 534|      it('should prevent parameter pollution in authentication', () => {
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
    |                                  ^
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "user" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:52 AM [vite] warning: Duplicate key "user" in object literal
 535|        const pollutionAttempts = [
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
    |                           ^
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "role" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:52 AM [vite] warning: Duplicate key "role" in object literal
 536|          { token: 'valid-token', token: 'admin-token' },
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
    |                          ^
 539|          { permission: 'read', permission: 'admin' },
 540|        ];
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2m2:36:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: [33mDuplicate key "permission" in object literal[33m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+2:36:52 AM [vite] warning: Duplicate key "permission" in object literal
 537|          { user: 'user1', user: 'admin' },
 538|          { role: 'user', role: 'admin' },
 539|          { permission: 'read', permission: 'admin' },
    |                                ^
 540|        ];
 541|  
-[39m
-  Plugin: [35mvite:esbuild[39m
-  File: [36mD:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts[39m
-[2mfilter:  [22m[33mintegration/comprehensive-error-handling-test-runner.ts[39m
-[2minclude: [22m[33mtests/unit/**/*.test.ts[2m, [22mtests/contract/**/*.test.ts[2m, [22mtests/validation/**/*.test.ts[2m, [22mtests/**/*.spec.ts[39m
-[2mexclude:  [22m[33mtests/integration/**[2m, [22mtests/e2e/**[2m, [22mnode_modules[2m, [22mdist/[2m, [22mcoverage/[2m, [22m**/*.d.ts[39m
-[31m
-No test files found, exiting with code 1[39m
+
+  Plugin: vite:esbuild
+  File: D:/WORKSPACE/tools-node/mcp-cortex/tests/security/authentication-security.test.ts
+filter:  integration/comprehensive-error-handling-test-runner.ts
+include: tests/unit/**/*.test.ts, tests/contract/**/*.test.ts, tests/validation/**/*.test.ts, tests/**/*.spec.ts
+exclude:  tests/integration/**, tests/e2e/**, node_modules, dist/, coverage/, **/*.d.ts
+
+No test files found, exiting with code 1
 
 
 **Coverage Matrix:**

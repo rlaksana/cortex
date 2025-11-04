@@ -58,7 +58,7 @@ class TokenEstimator {
    * Estimate tokens for different content types
    */
   static estimateByType(content: string, contentType: string): number {
-    let baseEstimate = this.estimate(content);
+    const baseEstimate = this.estimate(content);
 
     // Adjust based on content type
     switch (contentType.toLowerCase()) {

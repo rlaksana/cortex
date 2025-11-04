@@ -1,0 +1,162 @@
+
+> cortex-memory-mcp@2.0.1 test
+> vitest run --config vitest.config.ts tests/integration/system-status-chaos.test.ts --reporter=verbose --reporter=json
+
+
+[1m[46m RUN [49m[22m [36mv4.0.4 [39m[90mD:/WORKSPACE/tools-node/mcp-cortex[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+🚀 Global test setup starting...
+🪟 Windows detected - setting up EMFILE prevention...
+✅ Garbage collection enabled for Windows
+✅ Periodic garbage collection configured (every 10 seconds)
+✅ File handle monitoring configured (every 5 seconds)
+✅ Increased EventEmitter max listeners to 50 (was 10)
+📊 Initial file handle count: 1
+✅ Windows EMFILE prevention configured
+✅ Global test setup completed
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould report degraded status when Qdrant is unreachable[32m 15[2mms[22m[39m
+[31m   → expected 'healthy' to be 'degraded' // Object.is equality[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould handle Qdrant timeout scenarios gracefully[32m 4[2mms[22m[39m
+[31m   → expected 'healthy' to be 'degraded' // Object.is equality[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould implement circuit breaker for repeated Qdrant failures[32m 2[2mms[22m[39m
+[31m   → expected 'healthy' to be 'degraded' // Object.is equality[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mPartial Service Degradation[2m > [22mshould handle memory store failures while keeping search available[32m 4[2mms[22m[39m
+[31m   → expected 'healthy' to be 'degraded' // Object.is equality[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mPartial Service Degradation[2m > [22mshould handle search failures while keeping store available[32m 3[2mms[22m[39m
+[31m   → expected 'healthy' to be 'degraded' // Object.is equality[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mResource Exhaustion Scenarios[2m > [22mshould handle high memory usage gracefully[32m 1[2mms[22m[39m
+[31m   → expected 0 to be greater than 800000[39m
+ [32m✓[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mResource Exhaustion Scenarios[2m > [22mshould handle rapid request bursts during status checks[32m 8[2mms[22m[39m
+ [31m×[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mNetwork Partition Scenarios[2m > [22mshould handle intermittent network connectivity issues[33m 309[2mms[22m[39m
+[31m   → expected 0 to be greater than 0[39m
+ [90m·[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mNetwork Partition Scenarios[2m > [22mshould provide fallback status during complete network isolation
+ [90m·[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mRecovery and Self-Healing[2m > [22mshould detect and report service recovery
+ [90m·[39m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mRecovery and Self-Healing[2m > [22mshould implement progressive backoff for failing services
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 7 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould report degraded status when Qdrant is unreachable
+[31m[1mAssertionError[22m: expected 'healthy' to be 'degraded' // Object.is equality[39m
+
+Expected: [32m"degraded"[39m
+Received: [31m"healthy"[39m
+
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m47:41[22m[39m
+    [90m 45| [39m
+    [90m 46| [39m      [90m// Should report degraded status but still respond[39m
+    [90m 47| [39m      [34mexpect[39m(healthData[33m.[39mservice[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'degraded'[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m 48| [39m      [34mexpect[39m(healthData[33m.[39mvectorBackend[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'error'[39m)[33m;[39m
+    [90m 49| [39m      expect(healthData.vectorBackend.error).toContain('Circuit breake…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould handle Qdrant timeout scenarios gracefully
+[31m[1mAssertionError[22m: expected 'healthy' to be 'degraded' // Object.is equality[39m
+
+Expected: [32m"degraded"[39m
+Received: [31m"healthy"[39m
+
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m81:41[22m[39m
+    [90m 79| [39m      [90m// Should complete quickly even with timeout[39m
+    [90m 80| [39m      [34mexpect[39m(duration)[33m.[39m[34mtoBeLessThan[39m([34m5000[39m)[33m;[39m
+    [90m 81| [39m      [34mexpect[39m(healthData[33m.[39mservice[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'degraded'[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m 82| [39m      [34mexpect[39m(healthData[33m.[39mvectorBackend[33m.[39merror)[33m.[39m[34mtoContain[39m([32m'TIMEOUT'[39m)[33m;[39m
+    [90m 83| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mQdrant Connection Failures[2m > [22mshould implement circuit breaker for repeated Qdrant failures
+[31m[1mAssertionError[22m: expected 'healthy' to be 'degraded' // Object.is equality[39m
+
+Expected: [32m"degraded"[39m
+Received: [31m"healthy"[39m
+
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m110:38[22m[39m
+    [90m108| [39m      const result1 = await handleSystemStatus({ operation: 'health' }…
+    [90m109| [39m      [35mconst[39m health1 [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(result1[33m.[39mcontent[[34m0[39m][33m.[39mtext)[33m;[39m
+    [90m110| [39m      [34mexpect[39m(health1[33m.[39mservice[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'degraded'[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m111| [39m
+    [90m112| [39m      [90m// Second call should also fail[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mPartial Service Degradation[2m > [22mshould handle memory store failures while keeping search available
+[31m[1mAssertionError[22m: expected 'healthy' to be 'degraded' // Object.is equality[39m
+
+Expected: [32m"degraded"[39m
+Received: [31m"healthy"[39m
+
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m148:41[22m[39m
+    [90m146| [39m      [35mconst[39m healthData [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(result[33m.[39mcontent[[34m0[39m][33m.[39mtext)[33m;[39m
+    [90m147| [39m
+    [90m148| [39m      [34mexpect[39m(healthData[33m.[39mservice[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'degraded'[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m149| [39m      expect(healthData.activeServices.memoryStore.status).toBe('error…
+    [90m150| [39m      expect(healthData.activeServices.memoryFind.status).toBe('active…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mPartial Service Degradation[2m > [22mshould handle search failures while keeping store available
+[31m[1mAssertionError[22m: expected 'healthy' to be 'degraded' // Object.is equality[39m
+
+Expected: [32m"degraded"[39m
+Received: [31m"healthy"[39m
+
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m177:41[22m[39m
+    [90m175| [39m      [35mconst[39m healthData [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(result[33m.[39mcontent[[34m0[39m][33m.[39mtext)[33m;[39m
+    [90m176| [39m
+    [90m177| [39m      [34mexpect[39m(healthData[33m.[39mservice[33m.[39mstatus)[33m.[39m[34mtoBe[39m([32m'degraded'[39m)[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m178| [39m      expect(healthData.activeServices.memoryStore.status).toBe('activ…
+    [90m179| [39m      expect(healthData.activeServices.memoryFind.status).toBe('error'…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mResource Exhaustion Scenarios[2m > [22mshould handle high memory usage gracefully
+[31m[1mAssertionError[22m: expected 0 to be greater than 800000[39m
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m201:80[22m[39m
+    [90m199| [39m        [35mconst[39m metricsData [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(result[33m.[39mcontent[[34m0[39m][33m.[39mtext)[33m;[39m
+    [90m200| [39m
+    [90m201| [39m        expect(metricsData.health_status.resource_utilization.memory_u…
+    [90m   | [39m                                                                               [31m^[39m
+    [90m202| [39m        expect(metricsData.performance_indicators.error_rate).toBeDefi…
+    [90m203| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/integration/system-status-chaos.test.ts[2m > [22mSystem Status Chaos Tests[2m > [22mNetwork Partition Scenarios[2m > [22mshould handle intermittent network connectivity issues
+[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
+[36m [2m❯[22m tests/integration/system-status-chaos.test.ts:[2m299:29[22m[39m
+    [90m297| [39m      [90m// Should have mixed results during network issues[39m
+    [90m298| [39m      [34mexpect[39m(successCount [33m+[39m degradedCount)[33m.[39m[34mtoBe[39m([34m5[39m)[33m;[39m
+    [90m299| [39m      [34mexpect[39m(degradedCount)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                            [31m^[39m
+    [90m300| [39m    })[33m;[39m
+    [90m301| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 08:34:52
+[2m   Duration [22m 1.93s[2m (transform 517ms, setup 35ms, collect 845ms, tests 351ms, environment 0ms, prepare 20ms)[22m
+
+JSON report written to D:/WORKSPACE/tools-node/mcp-cortex/test-results/unit.json
+🧹 Global test teardown starting...
+📊 Final file handle count: 1
+🪟 Performing Windows-specific cleanup...
+✅ Restored EventEmitter max listeners to 10
+🧹 Cleaning up Windows EMFILE prevention...
+🧹 Forcing cleanup of file handles and memory...
+✅ Forced garbage collection completed
+✅ Windows EMFILE prevention cleanup completed
+🗑️  Forcing final garbage collection...
+📊 Remaining active handles: 1
+🔍 Remaining handle types:
+   Socket: 1
+✅ Global test teardown completed

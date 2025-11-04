@@ -779,8 +779,8 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         });
 
         // Test merge strategy enums
-        const validStrategies = ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'];
-        validStrategies.forEach(strategy => {
+        const validMergeStrategies = ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'];
+        validMergeStrategies.forEach(strategy => {
           const storeInput = {
             items: [
               {

@@ -139,95 +139,15 @@ This document describes the architecture of a comprehensive machine learning sys
 
 ## System Components
 
-### Data Processing Pipeline
+The data processing pipeline consists of several key components including data ingestion, validation, feature engineering, model training, and evaluation. The system supports multiple machine learning algorithms including supervised learning, unsupervised learning, reinforcement learning, and deep learning approaches.
 
-The data processing pipeline consists of several key components:
+## Performance and Security
 
-1. **Data Ingestion**: Handles incoming data from multiple sources including databases, APIs, and file systems.
-2. **Data Validation**: Ensures data quality and consistency through automated validation rules.
-3. **Feature Engineering**: Transforms raw data into features suitable for machine learning models.
-4. **Model Training**: Trains machine learning models using various algorithms and techniques.
-5. **Model Evaluation**: Evaluates model performance using appropriate metrics and validation techniques.
-
-### Machine Learning Algorithms
-
-The system supports multiple machine learning algorithms:
-
-- **Supervised Learning**: Linear regression, logistic regression, decision trees, random forests, gradient boosting, neural networks
-- **Unsupervised Learning**: K-means clustering, hierarchical clustering, PCA, t-SNE, autoencoders
-- **Reinforcement Learning**: Q-learning, deep Q-networks, policy gradients, actor-critic methods
-- **Deep Learning**: CNNs, RNNs, LSTMs, GRUs, transformers, GANs
-
-### Model Deployment
-
-Deployed models are served through:
-- REST APIs for real-time predictions
-- Batch processing for large-scale predictions
-- Streaming processing for real-time data pipelines
-- Edge deployment for low-latency applications`,
-
-      `## Performance Optimization
-
-### Scalability
-
-The system is designed to scale horizontally:
-
-- **Microservices Architecture**: Each component is deployed as an independent service
-- **Load Balancing**: Requests are distributed across multiple instances
-- **Auto-scaling**: Resources automatically scale based on demand
-- **Caching**: Frequently accessed data is cached for improved performance
-
-### Performance Metrics
-
-Key performance indicators include:
-- **Throughput**: Number of predictions per second
-- **Latency**: Time taken to generate predictions
-- **Accuracy**: Model performance on validation datasets
-- **Resource Utilization**: CPU, memory, and storage usage
-
-### Monitoring and Alerting
-
-Comprehensive monitoring includes:
-- **System Health**: CPU, memory, disk, and network metrics
-- **Application Metrics**: Request rates, error rates, response times
-- **Model Performance**: Prediction accuracy, drift detection
-- **Business Metrics**: User engagement, conversion rates`
-
-## Security and Compliance
-
-### Data Security
-
-Data security measures include:
-- **Encryption**: Data is encrypted at rest and in transit
-- **Access Control**: Role-based access control for sensitive data
-- **Audit Logging**: All access and modifications are logged
-- **Data Anonymization**: Personal data is anonymized where required
-
-### Regulatory Compliance
-
-The system complies with:
-- **GDPR**: General Data Protection Regulation for EU data
-- **CCPA**: California Consumer Privacy Act
-- **HIPAA**: Health Insurance Portability and Accountability Act
-- **SOC 2**: Service Organization Control 2 compliance
+The system is designed to scale horizontally using microservices architecture with load balancing and auto-scaling capabilities. Performance metrics include throughput, latency, accuracy, and resource utilization monitoring. Security measures include encryption, access control, audit logging, and compliance with regulations such as GDPR and CCPA.
 
 ## Future Enhancements
 
-### Planned Features
-
-Future enhancements include:
-- **Advanced Analytics**: More sophisticated analytics and reporting
-- **AutoML**: Automated machine learning pipeline optimization
-- **Federated Learning**: Privacy-preserving distributed learning
-- **Explainable AI**: Model interpretability and explanation tools
-
-### Technology Roadmap
-
-Technology evolution plans:
-- **Cloud Native**: Full migration to cloud-native architecture
-- **Edge Computing**: Support for edge device deployment
-- **Quantum Computing**: Exploration of quantum algorithms
-- **AI Research**: Integration of cutting-edge AI research`
+Planned features include advanced analytics, AutoML capabilities, federated learning, and explainable AI tools. The technology roadmap focuses on cloud-native architecture, edge computing support, and integration of cutting-edge AI research.`
     ];
 
     // Generate content by repeating sections

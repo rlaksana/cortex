@@ -7,7 +7,7 @@
  * @file tests/performance/graph-expansion-performance.test.ts
  */
 
-import { describe, test, expect, jest, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, jest, beforeAll, afterAll } from 'vitest';
 import { traverseGraphWithExpansion } from '../../src/services/graph-traversal.js';
 import { coreMemoryFind, type CoreFindParams } from '../../src/services/core-memory-find.js';
 import type { TraversalOptions } from '../../src/services/graph-traversal.js';
