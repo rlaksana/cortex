@@ -74,7 +74,11 @@ export class MemoryFindService {
   /**
    * Search by knowledge types
    */
-  async findByTypes(types: string[], query: string, options?: Partial<SearchQuery>): Promise<MemoryFindResponse> {
+  async findByTypes(
+    types: string[],
+    query: string,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
     const searchQuery: SearchQuery = {
       query,
       types,
@@ -87,7 +91,11 @@ export class MemoryFindService {
   /**
    * Search within a specific scope
    */
-  async findByScope(scope: Record<string, unknown>, query: string, options?: Partial<SearchQuery>): Promise<MemoryFindResponse> {
+  async findByScope(
+    scope: Record<string, unknown>,
+    query: string,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
     const searchQuery: SearchQuery = {
       query,
       scope,
@@ -140,7 +148,11 @@ export class MemoryFindService {
   /**
    * Search with specific limit
    */
-  async findWithLimit(query: string, limit: number, options?: Partial<SearchQuery>): Promise<MemoryFindResponse> {
+  async findWithLimit(
+    query: string,
+    limit: number,
+    options?: Partial<SearchQuery>
+  ): Promise<MemoryFindResponse> {
     const searchQuery: SearchQuery = {
       query,
       limit,

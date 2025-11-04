@@ -103,6 +103,9 @@ export class HealthCheckService extends EventEmitter {
   // Service instances
   private embeddingService: EmbeddingService;
 
+  // Static instance for singleton pattern
+  private static instance: HealthCheckService | null = null;
+
   constructor(config?: Partial<HealthCheckConfig>) {
     super();
 
@@ -138,10 +141,10 @@ export class HealthCheckService extends EventEmitter {
    * Get singleton instance
    */
   public static getInstance(config?: Partial<HealthCheckConfig>): HealthCheckService {
-    if (!(healthCheckService as any).instance) {
-      (healthCheckService as any).instance = new HealthCheckService(config);
+    if (!HealthCheckService.instance) {
+      HealthCheckService.instance = new HealthCheckService(config);
     }
-    return (healthCheckService as any).instance;
+    return HealthCheckService.instance;
   }
 
   /**
@@ -660,5 +663,5 @@ export class HealthCheckService extends EventEmitter {
   }
 }
 
-// Export singleton instance
-export const healthCheckService = HealthCheckService.getInstance();
+// Export singleton instance with unique name to avoid conflicts
+export const monitoringHealthCheckService = HealthCheckService.getInstance();

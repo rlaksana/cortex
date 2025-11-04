@@ -235,8 +235,12 @@ export async function runExpiryWorker(
         ttl_extensions_granted: result.policy_enforcement.extensions_granted,
         ttl_permanent_items_preserved: result.policy_enforcement.permanent_items_preserved,
         ttl_last_cleanup_timestamp: new Date().toISOString(),
-        ttl_success_rate: result.total_processed > 0 ? 
-          ((result.metrics.ttl_deletes_total + result.metrics.ttl_skips_total) / result.total_processed) * 100 : 100,
+        ttl_success_rate:
+          result.total_processed > 0
+            ? ((result.metrics.ttl_deletes_total + result.metrics.ttl_skips_total) /
+                result.total_processed) *
+              100
+            : 100,
         dry_run: finalConfig.dry_run,
       },
       duration_ms: result.duration_ms,

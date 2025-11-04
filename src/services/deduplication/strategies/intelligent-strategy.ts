@@ -5,7 +5,12 @@
  * and machine learning-inspired heuristics for sophisticated deduplication.
  */
 
-import { DeduplicationStrategy, type DeduplicationResult, type DeduplicationStrategyConfig, type DuplicateAnalysis } from './base-strategy.js';
+import {
+  DeduplicationStrategy,
+  type DeduplicationResult,
+  type DeduplicationStrategyConfig,
+  type DuplicateAnalysis,
+} from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import { logger } from '../../../utils/logger.js';
 
@@ -38,21 +43,60 @@ export class IntelligentStrategy extends DeduplicationStrategy {
       weightingFactors: {
         title: 2.0,
         content: 1.0,
-        metadata: 0.5
+        metadata: 0.5,
       },
       maxHistoryHours: 24 * 7, // 1 week
       crossScopeDeduplication: false,
       prioritizeSameScope: true,
-      ...config
+      ...config,
     });
 
     // Initialize common English stop words
     this.stopWords = new Set([
-      'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have',
-      'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you',
-      'do', 'at', 'this', 'but', 'his', 'by', 'from', 'is', 'was',
-      'are', 'been', 'or', 'had', 'its', 'an', 'will', 'my', 'would',
-      'there', 'their', 'what', 'so', 'if', 'about', 'which', 'them'
+      'the',
+      'be',
+      'to',
+      'of',
+      'and',
+      'a',
+      'in',
+      'that',
+      'have',
+      'i',
+      'it',
+      'for',
+      'not',
+      'on',
+      'with',
+      'he',
+      'as',
+      'you',
+      'do',
+      'at',
+      'this',
+      'but',
+      'his',
+      'by',
+      'from',
+      'is',
+      'was',
+      'are',
+      'been',
+      'or',
+      'had',
+      'its',
+      'an',
+      'will',
+      'my',
+      'would',
+      'there',
+      'their',
+      'what',
+      'so',
+      'if',
+      'about',
+      'which',
+      'them',
     ]);
   }
 
@@ -82,25 +126,28 @@ export class IntelligentStrategy extends DeduplicationStrategy {
           reason: `Intelligent deduplication (similarity: ${analysis.similarityScore.toFixed(3)}, type: ${analysis.matchType})`,
           existingId: analysis.existingId,
           similarityScore: analysis.similarityScore,
-          mergeDetails: action === 'merged' ? {
-            fieldsMerged: this.getPotentialMergedFields(item, existingItems),
-            conflictsResolved: this.getPotentialConflicts(item, existingItems)
-          } : undefined
+          mergeDetails:
+            action === 'merged'
+              ? {
+                  fieldsMerged: this.getPotentialMergedFields(item, existingItems),
+                  conflictsResolved: this.getPotentialConflicts(item, existingItems),
+                }
+              : undefined,
         });
       } else {
         results.push({
           action: 'stored',
           reason: analysis.isDuplicate
             ? `Similarity ${analysis.similarityScore.toFixed(3)} below threshold ${threshold}`
-            : 'No duplicate found'
+            : 'No duplicate found',
         });
       }
     }
 
     if (this.config.logResults) {
-      const stored = results.filter(r => r.action === 'stored').length;
-      const skipped = results.filter(r => r.action === 'skipped').length;
-      const merged = results.filter(r => r.action === 'merged').length;
+      const stored = results.filter((r) => r.action === 'stored').length;
+      const skipped = results.filter((r) => r.action === 'skipped').length;
+      const merged = results.filter((r) => r.action === 'merged').length;
 
       logger.info(
         {
@@ -109,7 +156,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
           storedCount: stored,
           skippedCount: skipped,
           mergedCount: merged,
-          threshold
+          threshold,
         },
         'Intelligent strategy processed items'
       );
@@ -131,7 +178,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Item failed basic validation'
+        reason: 'Item failed basic validation',
       };
     }
 
@@ -170,7 +217,10 @@ export class IntelligentStrategy extends DeduplicationStrategy {
         matchType = 'exact';
       } else if (detailedAnalysis.contentSimilarity >= 0.8) {
         matchType = 'content';
-      } else if (enableSemantic && detailedAnalysis.semanticSimilarity >= (this.config.semanticThreshold as number)) {
+      } else if (
+        enableSemantic &&
+        detailedAnalysis.semanticSimilarity >= (this.config.semanticThreshold as number)
+      ) {
         matchType = 'semantic';
       } else if (weightedSimilarity >= (this.config.contentThreshold as number)) {
         matchType = 'partial';
@@ -184,7 +234,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
           similarity: weightedSimilarity,
           existingItem: existing,
           matchType,
-          detailedAnalysis
+          detailedAnalysis,
         };
       }
     }
@@ -204,7 +254,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
         existingId: bestMatch.existingItem.id,
         existingCreatedAt: bestMatch.existingItem.created_at,
         isNewerVersion: this.isItemNewer(item, bestMatch.existingItem),
-        scopeMatch: this.analyzeScopeMatch(item)
+        scopeMatch: this.analyzeScopeMatch(item),
       };
     }
 
@@ -213,14 +263,17 @@ export class IntelligentStrategy extends DeduplicationStrategy {
       similarityScore: 0,
       matchType: 'none',
       reason: 'No significant matches found',
-      scopeMatch: this.analyzeScopeMatch(item)
+      scopeMatch: this.analyzeScopeMatch(item),
     };
   }
 
   /**
    * Perform detailed similarity analysis between two items
    */
-  private performDetailedSimilarityAnalysis(item1: KnowledgeItem, item2: KnowledgeItem): {
+  private performDetailedSimilarityAnalysis(
+    item1: KnowledgeItem,
+    item2: KnowledgeItem
+  ): {
     titleSimilarity: number;
     contentSimilarity: number;
     metadataSimilarity: number;
@@ -237,7 +290,8 @@ export class IntelligentStrategy extends DeduplicationStrategy {
     // Content similarity (check content fields)
     const content1 = data1.content || data1.body_text || data1.description || data1.text || '';
     const content2 = data2.content || data2.body_text || data2.description || data2.text || '';
-    const contentSimilarity = content1 && content2 ? this.calculateTextSimilarity(content1, content2) : 0;
+    const contentSimilarity =
+      content1 && content2 ? this.calculateTextSimilarity(content1, content2) : 0;
 
     // Metadata similarity
     const metadata1 = JSON.stringify(item1.metadata || {});
@@ -253,7 +307,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
       titleSimilarity,
       contentSimilarity,
       metadataSimilarity,
-      semanticSimilarity
+      semanticSimilarity,
     };
   }
 
@@ -261,16 +315,21 @@ export class IntelligentStrategy extends DeduplicationStrategy {
    * Calculate weighted similarity based on configured factors
    */
   private calculateWeightedSimilarity(
-    analysis: { titleSimilarity: number; contentSimilarity: number; metadataSimilarity: number; semanticSimilarity: number },
+    analysis: {
+      titleSimilarity: number;
+      contentSimilarity: number;
+      metadataSimilarity: number;
+      semanticSimilarity: number;
+    },
     weighting: { title: number; content: number; metadata: number }
   ): number {
     const totalWeight = weighting.title + weighting.content + weighting.metadata;
 
-    const weightedScore = (
-      (analysis.titleSimilarity * weighting.title) +
-      (analysis.contentSimilarity * weighting.content) +
-      (analysis.metadataSimilarity * weighting.metadata)
-    ) / totalWeight;
+    const weightedScore =
+      (analysis.titleSimilarity * weighting.title +
+        analysis.contentSimilarity * weighting.content +
+        analysis.metadataSimilarity * weighting.metadata) /
+      totalWeight;
 
     // Incorporate semantic similarity if it's significant
     if (analysis.semanticSimilarity > 0.7) {
@@ -283,7 +342,10 @@ export class IntelligentStrategy extends DeduplicationStrategy {
   /**
    * Calculate semantic similarity using keyword extraction
    */
-  private calculateSemanticSimilarity(data1: Record<string, any>, data2: Record<string, any>): number {
+  private calculateSemanticSimilarity(
+    data1: Record<string, any>,
+    data2: Record<string, any>
+  ): number {
     if (!this.config.enableKeywordExtraction) {
       return 0;
     }
@@ -296,7 +358,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
     if (keywords1.size === 0 && keywords2.size === 0) return 1.0;
     if (keywords1.size === 0 || keywords2.size === 0) return 0.0;
 
-    const intersection = new Set([...keywords1].filter(word => keywords2.has(word)));
+    const intersection = new Set([...keywords1].filter((word) => keywords2.has(word)));
     const union = new Set([...keywords1, ...keywords2]);
 
     return intersection.size / union.size;
@@ -311,10 +373,11 @@ export class IntelligentStrategy extends DeduplicationStrategy {
     for (const [key, value] of Object.entries(data)) {
       if (typeof value === 'string') {
         // Extract words from string values
-        const words = value.toLowerCase()
+        const words = value
+          .toLowerCase()
           .split(/\W+/)
-          .filter(word => word.length > 3 && !this.stopWords.has(word));
-        words.forEach(word => keywords.add(word));
+          .filter((word) => word.length > 3 && !this.stopWords.has(word));
+        words.forEach((word) => keywords.add(word));
       }
     }
 
@@ -329,19 +392,19 @@ export class IntelligentStrategy extends DeduplicationStrategy {
 
     // Adjust threshold based on match type
     const typeAdjustment: Record<string, number> = {
-      'exact': -0.1,  // Lower threshold for exact matches
-      'content': 0,   // Base threshold for content matches
-      'semantic': 0.1, // Higher threshold for semantic matches
-      'partial': 0.2   // Much higher threshold for partial matches
+      exact: -0.1, // Lower threshold for exact matches
+      content: 0, // Base threshold for content matches
+      semantic: 0.1, // Higher threshold for semantic matches
+      partial: 0.2, // Much higher threshold for partial matches
     };
 
     // Adjust threshold based on item kind
     const kindAdjustment: Record<string, number> = {
-      'decision': 0.05,  // Be more strict with decisions
-      'issue': 0,        // Base for issues
-      'todo': -0.05,     // Be more lenient with todos
-      'incident': 0.1,   // Be very strict with incidents
-      'entity': 0.02,    // Slightly stricter with entities
+      decision: 0.05, // Be more strict with decisions
+      issue: 0, // Base for issues
+      todo: -0.05, // Be more lenient with todos
+      incident: 0.1, // Be very strict with incidents
+      entity: 0.02, // Slightly stricter with entities
     };
 
     let threshold = baseThreshold + (typeAdjustment[matchType] || 0);
@@ -377,7 +440,9 @@ export class IntelligentStrategy extends DeduplicationStrategy {
     }
 
     // Partial matches: store if above threshold
-    return analysis.similarityScore > (this.config.contentThreshold as number) ? 'merged' : 'stored';
+    return analysis.similarityScore > (this.config.contentThreshold as number)
+      ? 'merged'
+      : 'stored';
   }
 
   /**
@@ -447,11 +512,12 @@ export class IntelligentStrategy extends DeduplicationStrategy {
    */
   private getPotentialConflicts(item: KnowledgeItem, existingItems: KnowledgeItem[]): string[] {
     // Simplified conflict detection
-    return Object.keys(item.data || {}).filter(key => {
-      return existingItems.some(existing =>
-        existing.data &&
-        key in existing.data &&
-        JSON.stringify(existing.data[key]) !== JSON.stringify(item.data![key])
+    return Object.keys(item.data || {}).filter((key) => {
+      return existingItems.some(
+        (existing) =>
+          existing.data &&
+          key in existing.data &&
+          JSON.stringify(existing.data[key]) !== JSON.stringify(item.data![key])
       );
     });
   }
@@ -464,7 +530,7 @@ export class IntelligentStrategy extends DeduplicationStrategy {
     return {
       org: !!itemScope.org,
       project: !!itemScope.project,
-      branch: !!itemScope.branch
+      branch: !!itemScope.branch,
     };
   }
 }

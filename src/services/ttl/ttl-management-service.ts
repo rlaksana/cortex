@@ -224,7 +224,7 @@ export class TTLManagementService {
     const dryRun = bulkOptions.dryRun || false;
 
     try {
-      logger.info('Starting expired items cleanup with real deletions', { 
+      logger.info('Starting expired items cleanup with real deletions', {
         bulkOptions,
         realDeletionEnabled: true,
       });
@@ -243,10 +243,10 @@ export class TTLManagementService {
 
       // Analyze TTL policies for enforcement and metrics
       const policyAnalysis = this.analyzeTTLPolicies(expiredItems);
-      
+
       // Update result with policy statistics
       result.details!.policiesApplied = policyAnalysis.policiesApplied;
-      
+
       // Log policy enforcement information
       logger.info('TTL policy enforcement analysis', {
         totalExpired: expiredItems.length,
@@ -256,13 +256,15 @@ export class TTLManagementService {
       });
 
       // Filter out permanent items that should be preserved
-      const itemsToClean = expiredItems.filter(item => 
-        item.policy !== 'permanent' && item.expiryTime !== '9999-12-31T23:59:59.999Z'
+      const itemsToClean = expiredItems.filter(
+        (item) => item.policy !== 'permanent' && item.expiryTime !== '9999-12-31T23:59:59.999Z'
       );
 
       if (itemsToClean.length === 0) {
         logger.info('Only permanent items found in expired list, no deletions performed');
-        result.warnings.push('Only permanent items were identified as expired, preserving all items');
+        result.warnings.push(
+          'Only permanent items were identified as expired, preserving all items'
+        );
         result.duration = Date.now() - startTime;
         return result;
       }
@@ -270,7 +272,7 @@ export class TTLManagementService {
       // Perform real deletion of expired items
       if (!dryRun) {
         const idsToDelete = itemsToClean.map((item) => item.id).filter(Boolean);
-        
+
         logger.info('Executing real deletion of expired items', {
           itemsToDelete: idsToDelete.length,
           totalExpired: expiredItems.length,
@@ -295,12 +297,13 @@ export class TTLManagementService {
             `Expected to delete ${idsToDelete.length} items, but only ${deleteResult.deleted} were actually deleted`
           );
         }
-
       } else {
         // Dry run mode - report what would be deleted
-        result.warnings.push(`Dry run: Would delete ${itemsToClean.length} expired items (${policyAnalysis.permanentItemsPreserved} permanent items preserved)`);
+        result.warnings.push(
+          `Dry run: Would delete ${itemsToClean.length} expired items (${policyAnalysis.permanentItemsPreserved} permanent items preserved)`
+        );
         result.details!.itemsProcessed = itemsToClean.map((item) => item.id).filter(Boolean);
-        
+
         logger.info('Dry run completed - simulated deletions', {
           wouldDelete: itemsToClean.length,
           permanentPreserved: policyAnalysis.permanentItemsPreserved,
@@ -321,7 +324,6 @@ export class TTLManagementService {
           realDeletion: !dryRun,
         });
       }
-
     } catch (error) {
       result.success = false;
       result.errors.push(
@@ -348,12 +350,14 @@ export class TTLManagementService {
   /**
    * Analyze TTL policies for enforcement statistics
    */
-  private analyzeTTLPolicies(expiredItems: Array<{ 
-    id: string; 
-    kind: string; 
-    expiryTime?: string; 
-    policy?: string 
-  }>): {
+  private analyzeTTLPolicies(
+    expiredItems: Array<{
+      id: string;
+      kind: string;
+      expiryTime?: string;
+      policy?: string;
+    }>
+  ): {
     policiesApplied: Record<string, number>;
     permanentItemsPreserved: number;
     extensionsGranted: number;
@@ -362,7 +366,7 @@ export class TTLManagementService {
     let permanentItemsPreserved = 0;
     let extensionsGranted = 0;
 
-    expiredItems.forEach(item => {
+    expiredItems.forEach((item) => {
       const policy = item.policy || 'unknown';
       policiesApplied[policy] = (policiesApplied[policy] || 0) + 1;
 
@@ -725,28 +729,28 @@ export class TTLManagementService {
       );
 
       const now = new Date(expiryBefore);
-      
+
       // Filter expired items in application layer with TTL policy awareness
       const expiredItems = searchResponse.results
         .filter((item) => {
           const expiryTime = item.data?.expiry_at;
           const policy = item.data?.ttl_policy;
-          
+
           // Skip items without expiry time
           if (!expiryTime) {
             return false;
           }
-          
+
           // Handle permanent items (expiry set to far future)
           if (expiryTime === '9999-12-31T23:59:59.999Z') {
             return false; // Permanent items are never expired
           }
-          
+
           const expiryDate = new Date(expiryTime);
-          
+
           // Check if item is actually expired
           const isExpired = expiryDate < now;
-          
+
           // Apply TTL policy logic for extensions
           if (isExpired && policy) {
             // Check for auto-extension policies
@@ -757,7 +761,7 @@ export class TTLManagementService {
               // In a more sophisticated implementation, this could trigger TTL re-calculation
             }
           }
-          
+
           return isExpired;
         })
         .map((item) => ({
@@ -768,11 +772,14 @@ export class TTLManagementService {
         }));
 
       // Log TTL policy statistics
-      const policyStats = expiredItems.reduce((stats, item) => {
-        const policy = item.policy || 'unknown';
-        stats[policy] = (stats[policy] || 0) + 1;
-        return stats;
-      }, {} as Record<string, number>);
+      const policyStats = expiredItems.reduce(
+        (stats, item) => {
+          const policy = item.policy || 'unknown';
+          stats[policy] = (stats[policy] || 0) + 1;
+          return stats;
+        },
+        {} as Record<string, number>
+      );
 
       logger.debug('Found expired items by TTL policy', {
         totalExpired: expiredItems.length,

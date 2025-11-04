@@ -37,55 +37,61 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 70, // Reduced to realistic levels for EMFILE prevention
-          functions: 75,
-          lines: 75,
-          statements: 75,
+          branches: 85, // ≥85% coverage requirement
+          functions: 85,
+          lines: 85,
+          statements: 85,
         },
-        // Critical paths with higher thresholds but still conservative
+        // Critical paths with higher thresholds for quality assurance
         'src/core/**': {
-          branches: 75,
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90,
+        },
+        'src/db/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        'src/services/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        'src/mcp/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        // Utility functions still meet minimum thresholds
+        'src/utils/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        // Types and interfaces have slightly lower but still reasonable thresholds
+        'src/types/**': {
+          branches: 80,
           functions: 80,
           lines: 80,
           statements: 80,
-        },
-        'src/db/**': {
-          branches: 70,
-          functions: 75,
-          lines: 75,
-          statements: 75,
-        },
-        'src/mcp/**': {
-          branches: 70,
-          functions: 75,
-          lines: 75,
-          statements: 75,
-        },
-        // Utility functions can have slightly lower thresholds
-        'src/utils/**': {
-          branches: 65,
-          functions: 70,
-          lines: 70,
-          statements: 70,
-        },
-        // Types and interfaces often don't need full coverage
-        'src/types/**': {
-          branches: 50,
-          functions: 60,
-          lines: 60,
-          statements: 60,
         },
       },
       all: true,
       clean: true,
       cleanOnRerun: true,
       enabled: true,
-      // Custom coverage configuration
+      // Custom coverage configuration with ≥85% watermarks
       watermarks: {
-        statements: [80, 95],
-        functions: [80, 95],
-        branches: [75, 90],
-        lines: [80, 95],
+        statements: [85, 95],
+        functions: [85, 95],
+        branches: [85, 95],
+        lines: [85, 95],
       },
       // Additional coverage options
       skipFull: false,
@@ -105,7 +111,7 @@ export default defineConfig({
     testTimeout: 90000, // Increased timeout for coverage collection
     setupFiles: ['tests/setup.ts'],
     globalSetup: ['tests/global-setup.ts'],
-    reporters: ['verbose', 'json', 'junit'],
+    reporters: ['verbose', 'json'],
     outputFile: {
       json: 'test-results/comprehensive.json',
       junit: 'test-results/junit.xml',

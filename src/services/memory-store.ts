@@ -233,7 +233,10 @@ function extractContentForTruncation(item: unknown): string | null {
 /**
  * Update item with truncated content
  */
-function updateItemWithTruncatedContent(item: unknown, truncationResult: TruncationResult): unknown {
+function updateItemWithTruncatedContent(
+  item: unknown,
+  truncationResult: TruncationResult
+): unknown {
   if (!item || typeof item !== 'object') {
     return item;
   }

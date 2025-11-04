@@ -8,15 +8,34 @@
 
 // Core Knowledge Types
 export type { KnowledgeItem } from './core-interfaces.js';
-export type { KnowledgeItemForStorage, AutonomousContext, SearchResult, SearchQuery } from './core-interfaces.js';
-export type { ItemResult, BatchSummary, MemoryStoreResponse, MemoryFindResponse } from './core-interfaces.js';
+export type {
+  KnowledgeItemForStorage,
+  AutonomousContext,
+  SearchResult,
+  SearchQuery,
+} from './core-interfaces.js';
+export type {
+  ItemResult,
+  BatchSummary,
+  MemoryStoreResponse,
+  MemoryFindResponse,
+} from './core-interfaces.js';
 export type { MemoryStoreRequest, MemoryFindRequest, DeleteRequest } from './core-interfaces.js';
-export type { ValidationService, DeduplicationService, SimilarityService } from './core-interfaces.js';
+export type {
+  ValidationService,
+  DeduplicationService,
+  SimilarityService,
+} from './core-interfaces.js';
 export type { BusinessValidator, ValidatorRegistry, ValidationResult } from './core-interfaces.js';
 
 // API and Service Types
 export type { ApiEndpoint, ApiRequest, ApiParameter, ValidationRule } from './api-interfaces.js';
-export type { ApiMiddleware, AuthenticationMethod, ApiUser, RateLimitConfig } from './api-interfaces.js';
+export type {
+  ApiMiddleware,
+  AuthenticationMethod,
+  ApiUser,
+  RateLimitConfig,
+} from './api-interfaces.js';
 export type { ServiceEndpoint, LoadBalancingStrategy } from './api-interfaces.js';
 export type { ApiResponse as ApiContractResponse } from './api-interfaces.js';
 

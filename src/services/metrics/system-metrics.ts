@@ -864,7 +864,7 @@ export class SystemMetricsService {
     }
   }
 
-/**
+  /**
    * P6-2: Update TTL execution metrics
    */
   private updateTTLMetrics(data: Record<string, any>, duration?: number): void {
@@ -872,11 +872,11 @@ export class SystemMetricsService {
     if (data.ttl_deletes_total) {
       this.metrics.ttl.ttl_deletes_total += Number(data.ttl_deletes_total);
     }
-    
+
     if (data.ttl_skips_total) {
       this.metrics.ttl.ttl_skips_total += Number(data.ttl_skips_total);
     }
-    
+
     if (data.ttl_errors_total) {
       this.metrics.ttl.ttl_errors_total += Number(data.ttl_errors_total);
     }
@@ -885,11 +885,11 @@ export class SystemMetricsService {
     if (data.ttl_processing_rate_per_second) {
       this.metrics.ttl.ttl_processing_rate_per_second = Number(data.ttl_processing_rate_per_second);
     }
-    
+
     if (data.ttl_batch_count) {
       this.metrics.ttl.ttl_batch_count += Number(data.ttl_batch_count);
     }
-    
+
     if (data.ttl_average_batch_size) {
       this.metrics.ttl.ttl_average_batch_size = Number(data.ttl_average_batch_size);
     }
@@ -897,15 +897,15 @@ export class SystemMetricsService {
     // Update policy metrics
     if (data.ttl_policies_applied) {
       Object.entries(data.ttl_policies_applied).forEach(([policy, count]) => {
-        this.metrics.ttl.ttl_policies_applied[policy] = 
+        this.metrics.ttl.ttl_policies_applied[policy] =
           (this.metrics.ttl.ttl_policies_applied[policy] || 0) + Number(count);
       });
     }
-    
+
     if (data.ttl_extensions_granted) {
       this.metrics.ttl.ttl_extensions_granted += Number(data.ttl_extensions_granted);
     }
-    
+
     if (data.ttl_permanent_items_preserved) {
       this.metrics.ttl.ttl_permanent_items_preserved += Number(data.ttl_permanent_items_preserved);
     }
@@ -914,7 +914,7 @@ export class SystemMetricsService {
     if (duration) {
       this.metrics.ttl.ttl_cleanup_duration_ms += duration;
     }
-    
+
     if (data.ttl_last_cleanup_timestamp) {
       this.metrics.ttl.ttl_last_cleanup_timestamp = data.ttl_last_cleanup_timestamp;
     } else {
@@ -922,9 +922,15 @@ export class SystemMetricsService {
     }
 
     // Calculate success rate
-    const totalOperations = this.metrics.ttl.ttl_deletes_total + this.metrics.ttl.ttl_skips_total + this.metrics.ttl.ttl_errors_total;
+    const totalOperations =
+      this.metrics.ttl.ttl_deletes_total +
+      this.metrics.ttl.ttl_skips_total +
+      this.metrics.ttl.ttl_errors_total;
     if (totalOperations > 0) {
-      this.metrics.ttl.ttl_success_rate = ((this.metrics.ttl.ttl_deletes_total + this.metrics.ttl.ttl_skips_total) / totalOperations) * 100;
+      this.metrics.ttl.ttl_success_rate =
+        ((this.metrics.ttl.ttl_deletes_total + this.metrics.ttl.ttl_skips_total) /
+          totalOperations) *
+        100;
     }
   }
 

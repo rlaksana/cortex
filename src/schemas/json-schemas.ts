@@ -20,193 +20,187 @@ export const MEMORY_STORE_JSON_SCHEMA = {
       maxItems: 100,
       description: 'Knowledge items to store',
       items: {
+        type: 'object',
+        required: ['kind'],
+        properties: {
+          kind: {
+            type: 'string',
+            enum: [
+              'entity',
+              'relation',
+              'observation',
+              'section',
+              'runbook',
+              'change',
+              'issue',
+              'decision',
+              'todo',
+              'release_note',
+              'ddl',
+              'pr_context',
+              'incident',
+              'release',
+              'risk',
+              'assumption',
+            ],
+            description: 'Knowledge type',
+          },
+          content: {
+            type: 'string',
+            description: 'Content of the knowledge item (for text-based types)',
+          },
+          data: {
+            type: 'object',
+            description: 'Structured data for the knowledge item',
+            additionalProperties: true,
+          },
+          scope: {
+            type: 'object',
+            properties: {
+              project: { type: 'string' },
+              branch: { type: 'string' },
+              org: { type: 'string' },
+              service: { type: 'string' },
+              sprint: { type: 'string' },
+              tenant: { type: 'string' },
+              environment: { type: 'string' },
+            },
+            additionalProperties: false,
+          },
+          source: {
+            type: 'object',
+            properties: {
+              actor: { type: 'string' },
+              tool: { type: 'string' },
+              timestamp: { type: 'string', format: 'date-time' },
+            },
+            additionalProperties: false,
+          },
+          metadata: {
+            type: 'object',
+            description: 'Additional metadata for the item',
+            additionalProperties: true,
+          },
+          tags: {
+            type: 'object',
+            description: 'Tags for categorization and filtering',
+            additionalProperties: true,
+          },
+          idempotency_key: {
+            type: 'string',
+            maxLength: 256,
+            description: 'Idempotency key for safe retries',
+          },
+          ttl_config: {
+            type: 'object',
+            properties: {
+              policy: {
+                type: 'string',
+                enum: ['default', 'short', 'long', 'permanent'],
+                default: 'default',
+              },
+              expires_at: {
+                type: 'string',
+                format: 'date-time',
+              },
+              auto_extend: { type: 'boolean', default: false },
+              extend_threshold_days: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 180,
+                default: 7,
+              },
+              max_extensions: {
+                type: 'integer',
+                minimum: 0,
+                maximum: 10,
+                default: 3,
+              },
+            },
+            additionalProperties: false,
+          },
+          truncation_config: {
+            type: 'object',
+            properties: {
+              enabled: { type: 'boolean', default: true },
+              max_chars: {
+                type: 'integer',
+                minimum: 100,
+                maximum: 1000000,
+                default: 10000,
+              },
+              max_tokens: {
+                type: 'integer',
+                minimum: 50,
+                maximum: 100000,
+                default: 4000,
+              },
+              mode: {
+                type: 'string',
+                enum: ['hard', 'soft', 'intelligent'],
+                default: 'intelligent',
+              },
+              preserve_structure: { type: 'boolean', default: true },
+              add_indicators: { type: 'boolean', default: true },
+              indicator: {
+                type: 'string',
+                maxLength: 50,
+                default: '[...truncated...]',
+              },
+              safety_margin: {
+                type: 'number',
+                minimum: 0,
+                maximum: 0.5,
+                default: 0.1,
+              },
+              auto_detect_content_type: { type: 'boolean', default: true },
+              enable_smart_truncation: { type: 'boolean', default: true },
+            },
+            additionalProperties: false,
+          },
+          insights_config: {
+            type: 'object',
+            properties: {
+              enabled: { type: 'boolean', default: false },
+              generate_insights: { type: 'boolean', default: false },
+              insight_types: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                  enum: ['summary', 'trends', 'recommendations', 'anomalies', 'patterns'],
+                },
+                default: ['summary'],
+              },
+              confidence_threshold: {
+                type: 'number',
+                minimum: 0.1,
+                maximum: 1.0,
+                default: 0.7,
+              },
+              max_insights: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 50,
+                default: 10,
+              },
+              include_source_data: { type: 'boolean', default: false },
+              analysis_depth: {
+                type: 'string',
+                enum: ['shallow', 'medium', 'deep'],
+                default: 'medium',
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
         oneOf: [
-          {
-            type: 'object',
-            required: ['kind', 'content'],
-            properties: {
-              kind: {
-                type: 'string',
-                enum: [
-                  'entity',
-                  'relation',
-                  'observation',
-                  'section',
-                  'runbook',
-                  'change',
-                  'issue',
-                  'decision',
-                  'todo',
-                  'release_note',
-                  'ddl',
-                  'pr_context',
-                  'incident',
-                  'release',
-                  'risk',
-                  'assumption',
-                ],
-                description: 'Knowledge type',
-              },
-              content: {
-                type: 'string',
-                description: 'Content of the knowledge item (for text-based types)',
-              },
-              scope: {
-                type: 'object',
-                properties: {
-                  project: { type: 'string' },
-                  branch: { type: 'string' },
-                  org: { type: 'string' },
-                  service: { type: 'string' },
-                  sprint: { type: 'string' },
-                  tenant: { type: 'string' },
-                  environment: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-              source: {
-                type: 'object',
-                properties: {
-                  actor: { type: 'string' },
-                  tool: { type: 'string' },
-                  timestamp: { type: 'string', format: 'date-time' },
-                },
-                additionalProperties: false,
-              },
-              metadata: {
-                type: 'object',
-                description: 'Additional metadata for the item',
-                additionalProperties: true,
-              },
-              tags: {
-                type: 'object',
-                description: 'Tags for categorization and filtering',
-                additionalProperties: true,
-              },
-              idempotency_key: {
-                type: 'string',
-                maxLength: 256,
-                description: 'Idempotency key for safe retries',
-              },
-              ttl_config: {
-                $ref: '#/definitions/TTLConfig',
-              },
-              truncation_config: {
-                $ref: '#/definitions/TruncationConfig',
-              },
-              insights_config: {
-                $ref: '#/definitions/InsightsConfig',
-              },
-            },
-            additionalProperties: false,
-          },
-          {
-            type: 'object',
-            required: ['kind', 'data'],
-            properties: {
-              kind: {
-                type: 'string',
-                enum: [
-                  'entity',
-                  'relation',
-                  'observation',
-                  'section',
-                  'runbook',
-                  'change',
-                  'issue',
-                  'decision',
-                  'todo',
-                  'release_note',
-                  'ddl',
-                  'pr_context',
-                  'incident',
-                  'release',
-                  'risk',
-                  'assumption',
-                ],
-                description: 'Knowledge type',
-              },
-              data: {
-                type: 'object',
-                description: 'Structured data for the knowledge item',
-                additionalProperties: true,
-              },
-              scope: {
-                type: 'object',
-                properties: {
-                  project: { type: 'string' },
-                  branch: { type: 'string' },
-                  org: { type: 'string' },
-                  service: { type: 'string' },
-                  sprint: { type: 'string' },
-                  tenant: { type: 'string' },
-                  environment: { type: 'string' },
-                },
-                additionalProperties: false,
-              },
-              source: {
-                type: 'object',
-                properties: {
-                  actor: { type: 'string' },
-                  tool: { type: 'string' },
-                  timestamp: { type: 'string', format: 'date-time' },
-                },
-                additionalProperties: false,
-              },
-              metadata: {
-                type: 'object',
-                description: 'Additional metadata for the item',
-                additionalProperties: true,
-              },
-              tags: {
-                type: 'object',
-                description: 'Tags for categorization and filtering',
-                additionalProperties: true,
-              },
-              idempotency_key: {
-                type: 'string',
-                maxLength: 256,
-                description: 'Idempotency key for safe retries',
-              },
-              ttl_config: {
-                $ref: '#/definitions/TTLConfig',
-              },
-              insights_config: {
-                $ref: '#/definitions/InsightsConfig',
-              },
-            },
-            additionalProperties: false,
-          },
+          { required: ['kind', 'content'] },
+          { required: ['kind', 'data'] },
         ],
       },
     },
     deduplication: {
-      $ref: '#/definitions/DeduplicationConfig',
-    },
-    global_ttl: {
-      $ref: '#/definitions/TTLConfig',
-    },
-    global_truncation: {
-      $ref: '#/definitions/TruncationConfig',
-    },
-    global_insights: {
-      $ref: '#/definitions/InsightsConfig',
-    },
-    processing: {
-      type: 'object',
-      properties: {
-        enable_validation: { type: 'boolean', default: true },
-        enable_async_processing: { type: 'boolean', default: false },
-        batch_processing: { type: 'boolean', default: true },
-        return_summaries: { type: 'boolean', default: false },
-        include_metrics: { type: 'boolean', default: true },
-      },
-      additionalProperties: false,
-    },
-  },
-  additionalProperties: false,
-  definitions: {
-    DeduplicationConfig: {
       type: 'object',
       properties: {
         enabled: { type: 'boolean', default: true },
@@ -270,7 +264,7 @@ export const MEMORY_STORE_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    TTLConfig: {
+    global_ttl: {
       type: 'object',
       properties: {
         policy: {
@@ -298,7 +292,7 @@ export const MEMORY_STORE_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    TruncationConfig: {
+    global_truncation: {
       type: 'object',
       properties: {
         enabled: { type: 'boolean', default: true },
@@ -337,7 +331,7 @@ export const MEMORY_STORE_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    InsightsConfig: {
+    global_insights: {
       type: 'object',
       properties: {
         enabled: { type: 'boolean', default: false },
@@ -371,7 +365,19 @@ export const MEMORY_STORE_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
+    processing: {
+      type: 'object',
+      properties: {
+        enable_validation: { type: 'boolean', default: true },
+        enable_async_processing: { type: 'boolean', default: false },
+        batch_processing: { type: 'boolean', default: true },
+        return_summaries: { type: 'boolean', default: false },
+        include_metrics: { type: 'boolean', default: true },
+      },
+      additionalProperties: false,
+    },
   },
+  additionalProperties: false,
 };
 
 export const MEMORY_FIND_JSON_SCHEMA = {
@@ -446,27 +452,6 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       description: 'Number of results to skip (for pagination)',
     },
     graph_expansion: {
-      $ref: '#/definitions/GraphExpansionConfig',
-    },
-    ttl_filters: {
-      $ref: '#/definitions/TTLFilters',
-    },
-    filters: {
-      $ref: '#/definitions/SearchFilters',
-    },
-    formatting: {
-      $ref: '#/definitions/ResultFormatting',
-    },
-    optimization: {
-      $ref: '#/definitions/SearchOptimization',
-    },
-    analytics: {
-      $ref: '#/definitions/SearchAnalytics',
-    },
-  },
-  additionalProperties: false,
-  definitions: {
-    GraphExpansionConfig: {
       type: 'object',
       properties: {
         enabled: { type: 'boolean', default: false },
@@ -500,7 +485,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    TTLFilters: {
+    ttl_filters: {
       type: 'object',
       properties: {
         include_expired: { type: 'boolean', default: false },
@@ -522,7 +507,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    SearchFilters: {
+    filters: {
       type: 'object',
       properties: {
         created_after: {
@@ -562,7 +547,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    ResultFormatting: {
+    formatting: {
       type: 'object',
       properties: {
         include_content: { type: 'boolean', default: true },
@@ -579,7 +564,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    SearchOptimization: {
+    optimization: {
       type: 'object',
       properties: {
         enable_caching: { type: 'boolean', default: true },
@@ -599,7 +584,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       },
       additionalProperties: false,
     },
-    SearchAnalytics: {
+    analytics: {
       type: 'object',
       properties: {
         track_search_metrics: { type: 'boolean', default: false },
@@ -610,6 +595,7 @@ export const MEMORY_FIND_JSON_SCHEMA = {
       additionalProperties: false,
     },
   },
+  additionalProperties: false,
 };
 
 export const SYSTEM_STATUS_JSON_SCHEMA = {
@@ -681,7 +667,43 @@ export const SYSTEM_STATUS_JSON_SCHEMA = {
       additionalProperties: false,
     },
     cleanup_config: {
-      $ref: '#/definitions/CleanupConfig',
+      type: 'object',
+      properties: {
+        operations: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['expired', 'orphaned', 'duplicate', 'metrics', 'logs'],
+          },
+          default: ['expired'],
+        },
+        scope_filters: {
+          type: 'object',
+          properties: {
+            project: { type: 'string' },
+            org: { type: 'string' },
+            branch: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
+        require_confirmation: { type: 'boolean', default: true },
+        enable_backup: { type: 'boolean', default: true },
+        batch_size: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 1000,
+          default: 100,
+        },
+        max_batches: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          default: 50,
+        },
+        dry_run: { type: 'boolean', default: true },
+        confirmation_token: { type: 'string' },
+      },
+      additionalProperties: false,
     },
     cleanup_token: {
       type: 'string',
@@ -725,47 +747,6 @@ export const SYSTEM_STATUS_JSON_SCHEMA = {
     },
   },
   additionalProperties: false,
-  definitions: {
-    CleanupConfig: {
-      type: 'object',
-      properties: {
-        operations: {
-          type: 'array',
-          items: {
-            type: 'string',
-            enum: ['expired', 'orphaned', 'duplicate', 'metrics', 'logs'],
-          },
-          default: ['expired'],
-        },
-        scope_filters: {
-          type: 'object',
-          properties: {
-            project: { type: 'string' },
-            org: { type: 'string' },
-            branch: { type: 'string' },
-          },
-          additionalProperties: false,
-        },
-        require_confirmation: { type: 'boolean', default: true },
-        enable_backup: { type: 'boolean', default: true },
-        batch_size: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 1000,
-          default: 100,
-        },
-        max_batches: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 100,
-          default: 50,
-        },
-        dry_run: { type: 'boolean', default: true },
-        confirmation_token: { type: 'string' },
-      },
-      additionalProperties: false,
-    },
-  },
 };
 
 export const PERFORMANCE_MONITORING_JSON_SCHEMA = {

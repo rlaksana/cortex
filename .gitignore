@@ -10,6 +10,8 @@ node_modules_old/
 # Build outputs
 dist/
 build/
+dist-test/
+temp-dist/
 *.tsbuildinfo
 
 # Environment variables

@@ -1,0 +1,15 @@
+# Grafana Dashboard Provisioning Configuration
+# Automatically loads dashboards from the specified directory
+
+apiVersion: 1
+
+providers:
+  - name: 'cortex-mcp-dashboards'
+    orgId: 1
+    folder: 'Cortex MCP'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

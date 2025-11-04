@@ -1,0 +1,89 @@
+# Prometheus Configuration for Cortex Memory MCP Monitoring
+#
+# This configuration sets up Prometheus to scrape metrics from:
+# - Cortex MCP monitoring server (port 9090)
+# - Qdrant database metrics (if available)
+# - System metrics (if node_exporter is running)
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'cortex-mcp'
+    environment: 'production'
+
+# Rule files for alerting
+rule_files:
+  - "alerts/*.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Scrape configurations
+scrape_configs:
+  # Cortex MCP Monitoring Server
+  - job_name: 'cortex-mcp'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    honor_labels: true
+    # Custom labels for service identification
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cortex-mcp-1'
+
+  # Qdrant Database Metrics (if available)
+  - job_name: 'qdrant'
+    static_configs:
+      - targets: ['localhost:6333']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 15s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'qdrant-1'
+
+  # Node Exporter for System Metrics (optional but recommended)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cortex-host-1'
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9091']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "http://your-long-term-storage:9201/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    path: ./data/prometheus
+    retention.time: 15d
+    retention.size: 10GB

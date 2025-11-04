@@ -83,12 +83,90 @@ jobs:
       - name: Dead Code Analysis
         run: npm run dead-code || echo "Dead code analysis skipped"
 
-  # Stage 3: Unit Tests
-  unit-tests:
-    name: Unit Test Stage
+  # Stage 3: Security Scan
+  security-scan:
+    name: Security Scan Stage
     runs-on: ubuntu-latest
     needs: lint
     if: needs.lint.outputs.status == 'success'
+    outputs:
+      status: ${{ steps.security-scan.outcome }}
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Security Audit (npm audit)
+        id: security-audit
+        run: |
+          echo "🔒 Running npm security audit..."
+          if npm run security:audit:ci; then
+            echo "✅ Security audit passed"
+          else
+            echo "❌ Security audit failed"
+            exit 1
+          fi
+
+      - name: ESLint Security Analysis
+        id: eslint-security
+        run: |
+          echo "🔍 Running ESLint security analysis..."
+          if npm run lint:security; then
+            echo "✅ ESLint security checks passed"
+          else
+            echo "⚠️ ESLint security warnings found"
+            # Don't fail the build for ESLint warnings
+          fi
+
+      - name: Security Tests
+        id: security-tests
+        run: |
+          echo "🧪 Running security test suite..."
+          if npm run test:security; then
+            echo "✅ Security tests passed"
+          else
+            echo "❌ Security tests failed"
+            exit 1
+          fi
+
+      - name: Comprehensive Security Scan
+        id: security-scan
+        run: |
+          echo "🔍 Running comprehensive security scan..."
+          if npm run security:scan; then
+            echo "✅ Comprehensive security scan passed"
+          else
+            echo "⚠️ Security scan found issues (check logs for details)"
+          fi
+
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-report-node-${{ matrix.node-version }}
+          path: |
+            security-reports/
+          retention-days: 30
+        if: always()
+
+  # Stage 4: Unit Tests
+  unit-tests:
+    name: Unit Test Stage
+    runs-on: ubuntu-latest
+    needs: [lint, security-scan]
+    if: needs.lint.outputs.status == 'success' && needs.security-scan.outputs.status == 'success'
     outputs:
       status: ${{ steps.unit-tests.outcome }}
 
@@ -118,6 +196,56 @@ jobs:
 
       - name: Unit Test Coverage
         run: npm run test:coverage:unit
+
+      - name: Coverage Gate Check - Unit
+        run: |
+          echo "🔍 Checking unit test coverage thresholds (≥85%)..."
+          if [ -f "coverage/unit/coverage-summary.json" ]; then
+            COVERAGE_LINES=$(cat coverage/unit/coverage-summary.json | jq -r '.total.lines.pct')
+            COVERAGE_FUNCTIONS=$(cat coverage/unit/coverage-summary.json | jq -r '.total.functions.pct')
+            COVERAGE_BRANCHES=$(cat coverage/unit/coverage-summary.json | jq -r '.total.branches.pct')
+            COVERAGE_STATEMENTS=$(cat coverage/unit/coverage-summary.json | jq -r '.total.statements.pct')
+
+            echo "📊 Unit Coverage Metrics:"
+            echo "  Lines: ${COVERAGE_LINES}%"
+            echo "  Functions: ${COVERAGE_FUNCTIONS}%"
+            echo "  Branches: ${COVERAGE_BRANCHES}%"
+            echo "  Statements: ${COVERAGE_STATEMENTS}%"
+
+            # Check coverage thresholds (>= 85%)
+            if (( $(echo "$COVERAGE_LINES >= 85" | bc -l) )); then
+              echo "✅ Lines coverage: ${COVERAGE_LINES}% (≥85% - PASS)"
+            else
+              echo "❌ Lines coverage: ${COVERAGE_LINES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_FUNCTIONS >= 85" | bc -l) )); then
+              echo "✅ Functions coverage: ${COVERAGE_FUNCTIONS}% (≥85% - PASS)"
+            else
+              echo "❌ Functions coverage: ${COVERAGE_FUNCTIONS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_BRANCHES >= 85" | bc -l) )); then
+              echo "✅ Branches coverage: ${COVERAGE_BRANCHES}% (≥85% - PASS)"
+            else
+              echo "❌ Branches coverage: ${COVERAGE_BRANCHES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_STATEMENTS >= 85" | bc -l) )); then
+              echo "✅ Statements coverage: ${COVERAGE_STATEMENTS}% (≥85% - PASS)"
+            else
+              echo "❌ Statements coverage: ${COVERAGE_STATEMENTS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            echo "✅ All unit test coverage thresholds passed!"
+          else
+            echo "❌ Coverage report not found at coverage/unit/coverage-summary.json"
+            exit 1
+          fi
 
       - name: Upload unit test artifacts
         uses: actions/upload-artifact@v4
@@ -187,8 +315,108 @@ jobs:
       - name: Integration Test Coverage
         run: npm run test:coverage:integration
 
+      - name: Coverage Gate Check - Integration
+        run: |
+          echo "🔍 Checking integration test coverage thresholds (≥85%)..."
+          if [ -f "coverage/integration/coverage-summary.json" ]; then
+            COVERAGE_LINES=$(cat coverage/integration/coverage-summary.json | jq -r '.total.lines.pct')
+            COVERAGE_FUNCTIONS=$(cat coverage/integration/coverage-summary.json | jq -r '.total.functions.pct')
+            COVERAGE_BRANCHES=$(cat coverage/integration/coverage-summary.json | jq -r '.total.branches.pct')
+            COVERAGE_STATEMENTS=$(cat coverage/integration/coverage-summary.json | jq -r '.total.statements.pct')
+
+            echo "📊 Integration Coverage Metrics:"
+            echo "  Lines: ${COVERAGE_LINES}%"
+            echo "  Functions: ${COVERAGE_FUNCTIONS}%"
+            echo "  Branches: ${COVERAGE_BRANCHES}%"
+            echo "  Statements: ${COVERAGE_STATEMENTS}%"
+
+            # Check coverage thresholds (>= 85%)
+            if (( $(echo "$COVERAGE_LINES >= 85" | bc -l) )); then
+              echo "✅ Lines coverage: ${COVERAGE_LINES}% (≥85% - PASS)"
+            else
+              echo "❌ Lines coverage: ${COVERAGE_LINES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_FUNCTIONS >= 85" | bc -l) )); then
+              echo "✅ Functions coverage: ${COVERAGE_FUNCTIONS}% (≥85% - PASS)"
+            else
+              echo "❌ Functions coverage: ${COVERAGE_FUNCTIONS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_BRANCHES >= 85" | bc -l) )); then
+              echo "✅ Branches coverage: ${COVERAGE_BRANCHES}% (≥85% - PASS)"
+            else
+              echo "❌ Branches coverage: ${COVERAGE_BRANCHES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_STATEMENTS >= 85" | bc -l) )); then
+              echo "✅ Statements coverage: ${COVERAGE_STATEMENTS}% (≥85% - PASS)"
+            else
+              echo "❌ Statements coverage: ${COVERAGE_STATEMENTS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            echo "✅ All integration test coverage thresholds passed!"
+          else
+            echo "❌ Integration coverage report not found at coverage/integration/coverage-summary.json"
+            exit 1
+          fi
+
       - name: Comprehensive Coverage Report
         run: npm run test:coverage:ci
+
+      - name: Coverage Gate Check - Comprehensive
+        run: |
+          echo "🔍 Checking comprehensive coverage thresholds (≥85%)..."
+          if [ -f "coverage/comprehensive/coverage-summary.json" ]; then
+            COVERAGE_LINES=$(cat coverage/comprehensive/coverage-summary.json | jq -r '.total.lines.pct')
+            COVERAGE_FUNCTIONS=$(cat coverage/comprehensive/coverage-summary.json | jq -r '.total.functions.pct')
+            COVERAGE_BRANCHES=$(cat coverage/comprehensive/coverage-summary.json | jq -r '.total.branches.pct')
+            COVERAGE_STATEMENTS=$(cat coverage/comprehensive/coverage-summary.json | jq -r '.total.statements.pct')
+
+            echo "📊 Comprehensive Coverage Metrics:"
+            echo "  Lines: ${COVERAGE_LINES}%"
+            echo "  Functions: ${COVERAGE_FUNCTIONS}%"
+            echo "  Branches: ${COVERAGE_BRANCHES}%"
+            echo "  Statements: ${COVERAGE_STATEMENTS}%"
+
+            # Check coverage thresholds (>= 85%)
+            if (( $(echo "$COVERAGE_LINES >= 85" | bc -l) )); then
+              echo "✅ Lines coverage: ${COVERAGE_LINES}% (≥85% - PASS)"
+            else
+              echo "❌ Lines coverage: ${COVERAGE_LINES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_FUNCTIONS >= 85" | bc -l) )); then
+              echo "✅ Functions coverage: ${COVERAGE_FUNCTIONS}% (≥85% - PASS)"
+            else
+              echo "❌ Functions coverage: ${COVERAGE_FUNCTIONS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_BRANCHES >= 85" | bc -l) )); then
+              echo "✅ Branches coverage: ${COVERAGE_BRANCHES}% (≥85% - PASS)"
+            else
+              echo "❌ Branches coverage: ${COVERAGE_BRANCHES}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            if (( $(echo "$COVERAGE_STATEMENTS >= 85" | bc -l) )); then
+              echo "✅ Statements coverage: ${COVERAGE_STATEMENTS}% (≥85% - PASS)"
+            else
+              echo "❌ Statements coverage: ${COVERAGE_STATEMENTS}% (<85% - FAIL)"
+              exit 1
+            fi
+
+            echo "✅ All comprehensive coverage thresholds passed!"
+          else
+            echo "❌ Comprehensive coverage report not found at coverage/comprehensive/coverage-summary.json"
+            exit 1
+          fi
 
       - name: Upload integration test artifacts
         uses: actions/upload-artifact@v4
@@ -391,7 +619,7 @@ jobs:
   ci-status:
     name: CI Pipeline Status
     runs-on: ubuntu-latest
-    needs: [type-check, lint, unit-tests, integration-tests, artifact-collection]
+    needs: [type-check, lint, security-scan, unit-tests, integration-tests, artifact-collection]
     if: always()
 
     steps:
@@ -399,12 +627,14 @@ jobs:
         run: |
           echo "Type Check: ${{ needs.type-check.result }}"
           echo "Lint: ${{ needs.lint.result }}"
+          echo "Security Scan: ${{ needs.security-scan.result }}"
           echo "Unit Tests: ${{ needs.unit-tests.result }}"
           echo "Integration Tests: ${{ needs.integration-tests.result }}"
           echo "Artifact Collection: ${{ needs.artifact-collection.result }}"
 
           if [[ "${{ needs.type-check.result }}" == "failure" ||
                 "${{ needs.lint.result }}" == "failure" ||
+                "${{ needs.security-scan.result }}" == "failure" ||
                 "${{ needs.unit-tests.result }}" == "failure" ||
                 "${{ needs.integration-tests.result }}" == "failure" ||
                 "${{ needs.artifact-collection.result }}" == "failure" ]]; then

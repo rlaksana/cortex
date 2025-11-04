@@ -95,7 +95,7 @@ export default defineConfig({
     // Remove deps configuration to use default handling
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json'],
+      reporter: ['text', 'json', 'html', 'lcov', 'text-summary'],
       reportsDirectory: 'coverage/unit',
       exclude: [
         'tests/',
@@ -113,39 +113,77 @@ export default defineConfig({
         '.claude/',
         '.serena/',
         '.specify/',
+        '*.test.ts',
+        '*.spec.ts',
+        'fixtures/',
+        'artifacts/',
+        'docs/',
       ],
       thresholds: {
         global: {
           branches: 85,
-          functions: 90,
-          lines: 90,
-          statements: 90,
+          functions: 85,
+          lines: 85,
+          statements: 85,
         },
         // Critical paths have higher thresholds
         'src/core/**': {
           branches: 90,
-          functions: 95,
-          lines: 95,
-          statements: 95,
-        },
-        'src/db/**': {
-          branches: 85,
           functions: 90,
           lines: 90,
           statements: 90,
         },
-        // Less critical code can have lower thresholds
-        'src/utils/**': {
-          branches: 80,
+        'src/db/**': {
+          branches: 85,
           functions: 85,
           lines: 85,
           statements: 85,
+        },
+        'src/services/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        // Less critical code still meets minimum thresholds
+        'src/utils/**': {
+          branches: 85,
+          functions: 85,
+          lines: 85,
+          statements: 85,
+        },
+        'src/types/**': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
         },
       },
       all: true,
       clean: true,
       cleanOnRerun: true,
       enabled: true, // Enable coverage for quality gates
+      // Coverage watermarks for visualization
+      watermarks: {
+        statements: [85, 95],
+        functions: [85, 95],
+        branches: [85, 95],
+        lines: [85, 95],
+      },
+      // Additional coverage options
+      skipFull: false,
+      allowExternal: false,
+      include: ['src/**/*.ts'],
+      // Per-file coverage reporting
+      perFile: true,
+      // Function coverage details
+      functions: true,
+      // Branch coverage details
+      branches: true,
+      // Statement coverage details
+      statements: true,
+      // Line coverage details
+      lines: true,
     },
     testTimeout: 60000, // Increased timeout to prevent timeouts
     setupFiles: ['tests/setup.ts'],

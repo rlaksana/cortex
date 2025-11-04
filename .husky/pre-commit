@@ -39,4 +39,19 @@ npm run test:unit || {
   exit 1
 }
 
+# Run coverage gate validation (only if TypeScript files are staged)
+echo "📊 Running coverage gate validation..."
+STAGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.ts$' | grep '^src/' || true)
+if [ -n "$STAGED_TS_FILES" ]; then
+  echo "📝 TypeScript files staged, validating coverage..."
+  npm run test:coverage:gate || {
+    echo "❌ Coverage gate validation failed"
+    echo "💡 To skip coverage check (not recommended): git commit --no-verify"
+    echo "💡 To fix coverage issues: npm run test:coverage:ci and review coverage reports"
+    exit 1
+  }
+else
+  echo "ℹ️  No TypeScript files staged, skipping coverage validation"
+fi
+
 echo "✅ All pre-commit checks passed!"

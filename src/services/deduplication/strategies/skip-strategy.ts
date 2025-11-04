@@ -5,7 +5,12 @@
  * This is the most permissive strategy - everything gets stored.
  */
 
-import { DeduplicationStrategy, type DeduplicationResult, type DeduplicationStrategyConfig, type DuplicateAnalysis } from './base-strategy.js';
+import {
+  DeduplicationStrategy,
+  type DeduplicationResult,
+  type DeduplicationStrategyConfig,
+  type DuplicateAnalysis,
+} from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import { logger } from '../../../utils/logger.js';
 
@@ -19,7 +24,7 @@ export class SkipStrategy extends DeduplicationStrategy {
     super({
       logSkippedItems: false,
       performBasicValidation: true,
-      ...config
+      ...config,
     });
   }
 
@@ -44,12 +49,12 @@ export class SkipStrategy extends DeduplicationStrategy {
           action: 'stored', // Still store even if duplicate
           reason: 'Skip strategy enabled - storing despite duplicate',
           existingId: result.existingId,
-          similarityScore: result.similarityScore
+          similarityScore: result.similarityScore,
         });
       } else {
         results.push({
           action: 'stored',
-          reason: 'Skip strategy enabled - no deduplication performed'
+          reason: 'Skip strategy enabled - no deduplication performed',
         });
       }
     }
@@ -59,7 +64,7 @@ export class SkipStrategy extends DeduplicationStrategy {
         {
           strategy: this.getStrategyName(),
           totalItems: items.length,
-          storedCount: results.filter(r => r.action === 'stored').length
+          storedCount: results.filter((r) => r.action === 'stored').length,
         },
         'Skip strategy processed items'
       );
@@ -81,7 +86,7 @@ export class SkipStrategy extends DeduplicationStrategy {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Item failed basic validation - will be handled by validation layer'
+        reason: 'Item failed basic validation - will be handled by validation layer',
       };
     }
 
@@ -91,17 +96,21 @@ export class SkipStrategy extends DeduplicationStrategy {
     return {
       isDuplicate: false, // Always false for skip strategy
       similarityScore: maxSimilarity.score,
-      matchType: maxSimilarity.score > 0.9 ? 'exact' : maxSimilarity.score > 0.7 ? 'content' : 'none',
+      matchType:
+        maxSimilarity.score > 0.9 ? 'exact' : maxSimilarity.score > 0.7 ? 'content' : 'none',
       reason: 'Skip strategy enabled - deduplication bypassed',
       existingId: maxSimilarity.existingId,
-      scopeMatch: this.analyzeScopeMatch(item)
+      scopeMatch: this.analyzeScopeMatch(item),
     };
   }
 
   /**
    * Find the most similar existing item
    */
-  private findMaxSimilarity(item: KnowledgeItem, existingItems: KnowledgeItem[]): {
+  private findMaxSimilarity(
+    item: KnowledgeItem,
+    existingItems: KnowledgeItem[]
+  ): {
     score: number;
     existingId?: string;
   } {
@@ -127,7 +136,7 @@ export class SkipStrategy extends DeduplicationStrategy {
     return {
       org: !!itemScope.org,
       project: !!itemScope.project,
-      branch: !!itemScope.branch
+      branch: !!itemScope.branch,
     };
   }
 }

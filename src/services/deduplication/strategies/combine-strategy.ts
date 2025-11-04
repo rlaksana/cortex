@@ -5,7 +5,12 @@
  * When duplicates are found, combines the best aspects of both items.
  */
 
-import { DeduplicationStrategy, type DeduplicationResult, type DeduplicationStrategyConfig, type DuplicateAnalysis } from './base-strategy.js';
+import {
+  DeduplicationStrategy,
+  type DeduplicationResult,
+  type DeduplicationStrategyConfig,
+  type DuplicateAnalysis,
+} from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import { logger } from '../../../utils/logger.js';
 
@@ -25,7 +30,7 @@ export class CombineStrategy extends DeduplicationStrategy {
       mergeConflictResolution: 'prefer_newer',
       preserveMergeHistory: true,
       maxMergeHistoryEntries: 10,
-      ...config
+      ...config,
     });
   }
 
@@ -48,7 +53,7 @@ export class CombineStrategy extends DeduplicationStrategy {
 
       if (analysis.isDuplicate && analysis.similarityScore >= threshold && analysis.existingId) {
         // Find the existing item for merging
-        const existingItem = existingItems.find(e => e.id === analysis.existingId);
+        const existingItem = existingItems.find((e) => e.id === analysis.existingId);
         if (existingItem) {
           const mergedItem = this.mergeItems(existingItem, item);
           results.push({
@@ -58,15 +63,15 @@ export class CombineStrategy extends DeduplicationStrategy {
             similarityScore: analysis.similarityScore,
             mergeDetails: {
               fieldsMerged: this.getMergedFields(existingItem, item),
-              conflictsResolved: this.getConflictsResolved(existingItem, item)
-            }
+              conflictsResolved: this.getConflictsResolved(existingItem, item),
+            },
           });
         } else {
           // Existing item not found, store new one
           results.push({
             action: 'stored',
             reason: 'Existing item for merge not found, storing new item',
-            similarityScore: analysis.similarityScore
+            similarityScore: analysis.similarityScore,
           });
         }
       } else {
@@ -74,14 +79,14 @@ export class CombineStrategy extends DeduplicationStrategy {
           action: 'stored',
           reason: analysis.isDuplicate
             ? `Similarity ${analysis.similarityScore.toFixed(3)} below threshold ${threshold}`
-            : 'No duplicate found'
+            : 'No duplicate found',
         });
       }
     }
 
     if (this.config.logResults) {
-      const stored = results.filter(r => r.action === 'stored').length;
-      const merged = results.filter(r => r.action === 'merged').length;
+      const stored = results.filter((r) => r.action === 'stored').length;
+      const merged = results.filter((r) => r.action === 'merged').length;
 
       logger.info(
         {
@@ -89,7 +94,7 @@ export class CombineStrategy extends DeduplicationStrategy {
           totalItems: items.length,
           storedCount: stored,
           mergedCount: merged,
-          threshold
+          threshold,
         },
         'Combine strategy processed items'
       );
@@ -111,7 +116,7 @@ export class CombineStrategy extends DeduplicationStrategy {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Item failed basic validation'
+        reason: 'Item failed basic validation',
       };
     }
 
@@ -157,7 +162,7 @@ export class CombineStrategy extends DeduplicationStrategy {
         reason: `Duplicate found (similarity: ${bestMatch.similarity.toFixed(3)}) >= threshold ${threshold}`,
         existingId: bestMatch.existingItem.id,
         existingCreatedAt: bestMatch.existingItem.created_at,
-        scopeMatch: this.analyzeScopeMatch(item)
+        scopeMatch: this.analyzeScopeMatch(item),
       };
     }
 
@@ -168,7 +173,7 @@ export class CombineStrategy extends DeduplicationStrategy {
       reason: bestMatch
         ? `Similarity ${bestMatch.similarity.toFixed(3)} below threshold ${threshold}`
         : 'No similar items found',
-      scopeMatch: this.analyzeScopeMatch(item)
+      scopeMatch: this.analyzeScopeMatch(item),
     };
   }
 
@@ -183,7 +188,7 @@ export class CombineStrategy extends DeduplicationStrategy {
       ...existing,
       updated_at: new Date().toISOString(),
       data: { ...existing.data },
-      metadata: { ...existing.metadata }
+      metadata: { ...existing.metadata },
     };
 
     // Merge data fields based on conflict resolution strategy
@@ -192,7 +197,7 @@ export class CombineStrategy extends DeduplicationStrategy {
       merged.data = { ...existing.data, ...newItem.data };
     } else if (resolution === 'prefer_existing') {
       // Keep existing data, but add new fields that don't exist
-      Object.keys(newItem.data || {}).forEach(key => {
+      Object.keys(newItem.data || {}).forEach((key) => {
         if (!(key in existing.data)) {
           merged.data[key] = newItem.data[key];
         }
@@ -206,7 +211,7 @@ export class CombineStrategy extends DeduplicationStrategy {
     if (newItem.metadata) {
       merged.metadata = {
         ...merged.metadata,
-        ...newItem.metadata
+        ...newItem.metadata,
       };
 
       // Add merge history if enabled
@@ -216,12 +221,12 @@ export class CombineStrategy extends DeduplicationStrategy {
           timestamp: new Date().toISOString(),
           merged_from: newItem.id,
           existing_id: existing.id,
-          strategy: this.getStrategyName()
+          strategy: this.getStrategyName(),
         };
 
         merged.metadata.merge_history = [
           ...(merged.metadata.merge_history || []),
-          historyEntry
+          historyEntry,
         ].slice(-maxEntries); // Keep only the last N entries
       }
     }
@@ -230,7 +235,7 @@ export class CombineStrategy extends DeduplicationStrategy {
     if (newItem.scope) {
       merged.scope = {
         ...merged.scope,
-        ...newItem.scope
+        ...newItem.scope,
       };
     }
 
@@ -240,20 +245,33 @@ export class CombineStrategy extends DeduplicationStrategy {
   /**
    * Intelligently combine data fields from both items
    */
-  private combineDataFields(existing: KnowledgeItem, newItem: KnowledgeItem, merged: KnowledgeItem): void {
+  private combineDataFields(
+    existing: KnowledgeItem,
+    newItem: KnowledgeItem,
+    merged: KnowledgeItem
+  ): void {
     const contentFields = ['content', 'body_text', 'body_md', 'description', 'rationale', 'text'];
 
     for (const [key, value] of Object.entries(newItem.data || {})) {
       if (!existing.data || !(key in existing.data)) {
         // Field doesn't exist in existing, use it
         merged.data![key] = value;
-      } else if (contentFields.includes(key) && typeof value === 'string' && typeof existing.data[key] === 'string') {
+      } else if (
+        contentFields.includes(key) &&
+        typeof value === 'string' &&
+        typeof existing.data[key] === 'string'
+      ) {
         // Combine content fields intelligently
         merged.data![key] = this.combineContent(existing.data[key] as string, value);
       } else if (Array.isArray(value) && Array.isArray(existing.data[key])) {
         // Merge arrays, deduplicating entries
         merged.data![key] = [...new Set([...existing.data[key], ...value])];
-      } else if (typeof value === 'object' && typeof existing.data[key] === 'object' && value !== null && existing.data[key] !== null) {
+      } else if (
+        typeof value === 'object' &&
+        typeof existing.data[key] === 'object' &&
+        value !== null &&
+        existing.data[key] !== null
+      ) {
         // Merge objects
         merged.data![key] = { ...existing.data[key], ...value };
       } else {
@@ -268,8 +286,14 @@ export class CombineStrategy extends DeduplicationStrategy {
    */
   private combineContent(existingContent: string, newContent: string): string {
     // Remove duplicates and whitespace
-    const existingLines = existingContent.split('\n').map(line => line.trim()).filter(line => line);
-    const newLines = newContent.split('\n').map(line => line.trim()).filter(line => line);
+    const existingLines = existingContent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line);
+    const newLines = newContent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line);
 
     // Combine and deduplicate
     const allLines = [...existingLines, ...newLines];
@@ -285,7 +309,7 @@ export class CombineStrategy extends DeduplicationStrategy {
     const mergedFields: string[] = [];
 
     if (newItem.data) {
-      Object.keys(newItem.data).forEach(key => {
+      Object.keys(newItem.data).forEach((key) => {
         if (existing.data && key in existing.data) {
           mergedFields.push(key);
         }
@@ -302,9 +326,11 @@ export class CombineStrategy extends DeduplicationStrategy {
     const conflicts: string[] = [];
 
     if (existing.data && newItem.data) {
-      Object.keys(newItem.data).forEach(key => {
-        if (key in existing.data &&
-            JSON.stringify(existing.data[key]) !== JSON.stringify(newItem.data[key])) {
+      Object.keys(newItem.data).forEach((key) => {
+        if (
+          key in existing.data &&
+          JSON.stringify(existing.data[key]) !== JSON.stringify(newItem.data[key])
+        ) {
           conflicts.push(key);
         }
       });
@@ -342,7 +368,7 @@ export class CombineStrategy extends DeduplicationStrategy {
     return {
       org: !!itemScope.org,
       project: !!itemScope.project,
-      branch: !!itemScope.branch
+      branch: !!itemScope.branch,
     };
   }
 }

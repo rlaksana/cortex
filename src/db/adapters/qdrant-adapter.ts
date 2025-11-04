@@ -52,7 +52,10 @@ import {
   createStoreObservability,
   createFindObservability,
 } from '../../utils/observability-helper.js';
-import { circuitBreakerManager, type CircuitBreakerStats } from '../../services/circuit-breaker.service.js';
+import {
+  circuitBreakerManager,
+  type CircuitBreakerStats,
+} from '../../services/circuit-breaker.service.js';
 
 /**
  * Qdrant collection information interface
@@ -324,14 +327,11 @@ export class QdrantAdapter implements IVectorAdapter {
 
   async healthCheck(): Promise<boolean> {
     try {
-      return await this.qdrantCircuitBreaker.execute(
-        async () => {
-          await this.client.getCollections();
-          this.logQdrantCircuitBreakerEvent('health_check_success');
-          return true;
-        },
-        'qdrant_health_check'
-      );
+      return await this.qdrantCircuitBreaker.execute(async () => {
+        await this.client.getCollections();
+        this.logQdrantCircuitBreakerEvent('health_check_success');
+        return true;
+      }, 'qdrant_health_check');
     } catch (error) {
       logger.error({ error }, 'Qdrant health check failed');
       this.logQdrantCircuitBreakerEvent('health_check_failure', error);
@@ -377,244 +377,242 @@ export class QdrantAdapter implements IVectorAdapter {
   // === Knowledge Storage Operations ===
 
   async store(items: KnowledgeItem[], options: StoreOptions = {}): Promise<MemoryStoreResponse> {
-    return await this.qdrantCircuitBreaker.execute(
-      async () => {
-        await this.ensureInitialized();
-        const startTime = Date.now();
+    return await this.qdrantCircuitBreaker.execute(async () => {
+      await this.ensureInitialized();
+      const startTime = Date.now();
 
-        const { batchSize = 100, skipDuplicates = false } = options;
+      const { batchSize = 100, skipDuplicates = false } = options;
 
-        try {
-      logger.debug({ itemCount: items.length, options }, 'Storing items in Qdrant');
+      try {
+        logger.debug({ itemCount: items.length, options }, 'Storing items in Qdrant');
 
-      const stored: StoreResult[] = [];
-      const errors: StoreError[] = [];
-      const itemResults: ItemResult[] = [];
+        const stored: StoreResult[] = [];
+        const errors: StoreError[] = [];
+        const itemResults: ItemResult[] = [];
 
-      // Process items in batches
-      for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize);
+        // Process items in batches
+        for (let i = 0; i < items.length; i += batchSize) {
+          const batch = items.slice(i, i + batchSize);
 
-        for (let j = 0; j < batch.length; j++) {
-          const item = batch[j];
-          const index = i + j;
+          for (let j = 0; j < batch.length; j++) {
+            const item = batch[j];
+            const index = i + j;
 
-          try {
-            // Generate content hash for deduplication
-            const contentHash = this.generateContentHash(item);
+            try {
+              // Generate content hash for deduplication
+              const contentHash = this.generateContentHash(item);
 
-            // Check for duplicates if requested
-            if (skipDuplicates) {
-              const existing = await this.findByHash(contentHash);
-              if (existing.length > 0) {
-                const existingId = existing[0].id;
-                stored.push({
-                  id: existingId,
-                  status: 'skipped_dedupe',
-                  kind: item.kind,
-                  created_at: existing[0].created_at || new Date().toISOString(),
-                });
+              // Check for duplicates if requested
+              if (skipDuplicates) {
+                const existing = await this.findByHash(contentHash);
+                if (existing.length > 0) {
+                  const existingId = existing[0].id;
+                  stored.push({
+                    id: existingId,
+                    status: 'skipped_dedupe',
+                    kind: item.kind,
+                    created_at: existing[0].created_at || new Date().toISOString(),
+                  });
 
-                // Add to item results
-                const skippedResult: ItemResult = {
-                  input_index: index,
-                  status: 'skipped_dedupe',
-                  kind: item.kind,
-                  reason: 'Duplicate content',
-                  existing_id: existingId,
-                  created_at: existing[0].created_at || new Date().toISOString(),
-                };
-                if (item.content !== undefined) {
-                  skippedResult.content = item.content;
+                  // Add to item results
+                  const skippedResult: ItemResult = {
+                    input_index: index,
+                    status: 'skipped_dedupe',
+                    kind: item.kind,
+                    reason: 'Duplicate content',
+                    existing_id: existingId,
+                    created_at: existing[0].created_at || new Date().toISOString(),
+                  };
+                  if (item.content !== undefined) {
+                    skippedResult.content = item.content;
+                  }
+                  itemResults.push(skippedResult);
+                  continue;
                 }
-                itemResults.push(skippedResult);
-                continue;
               }
+
+              // Generate embedding with chunking context if available
+              const content = this.extractContentForEmbedding(item);
+              const chunkingContext = item.data.is_chunk
+                ? {
+                    is_chunk: true,
+                    chunk_index: item.data.chunk_index,
+                    total_chunks: item.data.total_chunks,
+                    parent_id: item.data.parent_id,
+                    extracted_title: item.data.extracted_title,
+                  }
+                : undefined;
+              const embedding = await this.generateEmbedding(content, chunkingContext);
+
+              // Generate sparse vector for keyword search
+              const sparseVector = this.generateSparseVector(content);
+
+              // Calculate TTL and expiry for this item
+              const expiryAt = this.calculateItemExpiryWithPolicy(item);
+              const ttlEpoch = this.calculateTTLEpoch(expiryAt);
+
+              // Create point for Qdrant
+              const point = {
+                id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                vector: embedding,
+                sparse_vector: {
+                  content_sparse: sparseVector,
+                },
+                payload: {
+                  kind: item.kind || 'section',
+                  scope: item.scope || {},
+                  data: item.data || {},
+                  content_hash: contentHash,
+                  created_at: item.created_at || new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  content,
+                  expiry_at: expiryAt,
+                  ttl_policy: this.getTTLPolicyForKind(item.kind),
+                },
+              };
+
+              // Add TTL epoch for Qdrant's native TTL if not permanent
+              if (ttlEpoch !== null) {
+                (point as any).ttl_epoch = ttlEpoch;
+              }
+
+              // Store in Qdrant
+              await this.client.upsert(this.COLLECTION_NAME, {
+                wait: true,
+                points: [point],
+              });
+
+              stored.push({
+                id: point.id,
+                status: 'inserted',
+                kind: item.kind,
+                created_at: new Date().toISOString(),
+              });
+
+              // Add to item results
+              const storedResult: ItemResult = {
+                input_index: index,
+                status: 'stored',
+                kind: item.kind,
+                id: point.id,
+                created_at: new Date().toISOString(),
+              };
+              if (item.content !== undefined) {
+                storedResult.content = item.content;
+              }
+              itemResults.push(storedResult);
+            } catch (error) {
+              const storeError: StoreError = {
+                index,
+                error_code: 'STORE_ERROR',
+                message: error instanceof Error ? error.message : 'Unknown error',
+              };
+              errors.push(storeError);
+
+              // Add to item results
+              const errorResult: ItemResult = {
+                input_index: index,
+                status: 'validation_error',
+                kind: item.kind,
+                reason: error instanceof Error ? error.message : 'Unknown error',
+                error_code: 'STORE_ERROR',
+              };
+              if (item.content !== undefined) {
+                errorResult.content = item.content;
+              }
+              itemResults.push(errorResult);
             }
-
-            // Generate embedding with chunking context if available
-            const content = this.extractContentForEmbedding(item);
-            const chunkingContext = item.data.is_chunk
-              ? {
-                  is_chunk: true,
-                  chunk_index: item.data.chunk_index,
-                  total_chunks: item.data.total_chunks,
-                  parent_id: item.data.parent_id,
-                  extracted_title: item.data.extracted_title,
-                }
-              : undefined;
-            const embedding = await this.generateEmbedding(content, chunkingContext);
-
-            // Generate sparse vector for keyword search
-            const sparseVector = this.generateSparseVector(content);
-
-            // Calculate TTL and expiry for this item
-            const expiryAt = this.calculateItemExpiryWithPolicy(item);
-            const ttlEpoch = this.calculateTTLEpoch(expiryAt);
-
-            // Create point for Qdrant
-            const point = {
-              id: item.id || `qdrant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              vector: embedding,
-              sparse_vector: {
-                content_sparse: sparseVector,
-              },
-              payload: {
-                kind: item.kind || 'section',
-                scope: item.scope || {},
-                data: item.data || {},
-                content_hash: contentHash,
-                created_at: item.created_at || new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                content,
-                expiry_at: expiryAt,
-                ttl_policy: this.getTTLPolicyForKind(item.kind),
-              },
-            };
-
-            // Add TTL epoch for Qdrant's native TTL if not permanent
-            if (ttlEpoch !== null) {
-              (point as any).ttl_epoch = ttlEpoch;
-            }
-
-            // Store in Qdrant
-            await this.client.upsert(this.COLLECTION_NAME, {
-              wait: true,
-              points: [point],
-            });
-
-            stored.push({
-              id: point.id,
-              status: 'inserted',
-              kind: item.kind,
-              created_at: new Date().toISOString(),
-            });
-
-            // Add to item results
-            const storedResult: ItemResult = {
-              input_index: index,
-              status: 'stored',
-              kind: item.kind,
-              id: point.id,
-              created_at: new Date().toISOString(),
-            };
-            if (item.content !== undefined) {
-              storedResult.content = item.content;
-            }
-            itemResults.push(storedResult);
-          } catch (error) {
-            const storeError: StoreError = {
-              index,
-              error_code: 'STORE_ERROR',
-              message: error instanceof Error ? error.message : 'Unknown error',
-            };
-            errors.push(storeError);
-
-            // Add to item results
-            const errorResult: ItemResult = {
-              input_index: index,
-              status: 'validation_error',
-              kind: item.kind,
-              reason: error instanceof Error ? error.message : 'Unknown error',
-              error_code: 'STORE_ERROR',
-            };
-            if (item.content !== undefined) {
-              errorResult.content = item.content;
-            }
-            itemResults.push(errorResult);
           }
         }
+
+        // Generate autonomous context
+        const autonomousContext = this.generateAutonomousContext(stored, errors);
+
+        // Generate summary from item results
+        const summary: BatchSummary = {
+          stored: itemResults.filter((item) => item.status === 'stored').length,
+          skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
+          business_rule_blocked: itemResults.filter(
+            (item) => item.status === 'business_rule_blocked'
+          ).length,
+          validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
+          total: itemResults.length,
+        };
+
+        logger.debug(
+          {
+            stored: stored.length,
+            errors: errors.length,
+            items: itemResults.length,
+          },
+          'Qdrant store operation completed'
+        );
+
+        return {
+          // Enhanced response format
+          items: itemResults,
+          summary,
+
+          // Legacy fields for backward compatibility
+          stored,
+          errors,
+          autonomous_context: autonomousContext,
+
+          // Observability metadata
+          observability: createStoreObservability(
+            true, // vector_used
+            false, // degraded (Qdrant adapter assumes not degraded)
+            Date.now() - startTime,
+            0.8 // confidence score
+          ),
+
+          // Required meta field for unified response format
+          meta: {
+            strategy: 'vector',
+            vector_used: true,
+            degraded: false,
+            source: 'qdrant-adapter',
+            execution_time_ms: Date.now() - startTime,
+            confidence_score: 0.8,
+            truncated: false,
+          },
+        };
+
+        const result = {
+          // Enhanced response format
+          items: itemResults,
+          summary,
+          // Legacy fields for backward compatibility
+          stored,
+          errors,
+          autonomous_context: autonomousContext,
+          // Observability metadata
+          observability: createStoreObservability(
+            true, // vector_used
+            false, // degraded (Qdrant adapter assumes not degraded)
+            Date.now() - startTime,
+            0.8 // confidence score
+          ),
+          // Required meta field for unified response format
+          meta: {
+            strategy: 'vector',
+            vector_used: true,
+            degraded: false,
+            source: 'qdrant-adapter',
+            execution_time_ms: Date.now() - startTime,
+            confidence_score: 0.8,
+            truncated: false,
+          },
+        };
+
+        this.logQdrantCircuitBreakerEvent('store_success', undefined, { itemCount: items.length });
+        return result;
+      } catch (error) {
+        logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
+        this.logQdrantCircuitBreakerEvent('store_failure', error, { itemCount: items.length });
+        throw new DatabaseError('Failed to store items in Qdrant', 'STORE_ERROR', error as Error);
       }
-
-      // Generate autonomous context
-      const autonomousContext = this.generateAutonomousContext(stored, errors);
-
-      // Generate summary from item results
-      const summary: BatchSummary = {
-        stored: itemResults.filter((item) => item.status === 'stored').length,
-        skipped_dedupe: itemResults.filter((item) => item.status === 'skipped_dedupe').length,
-        business_rule_blocked: itemResults.filter((item) => item.status === 'business_rule_blocked')
-          .length,
-        validation_error: itemResults.filter((item) => item.status === 'validation_error').length,
-        total: itemResults.length,
-      };
-
-      logger.debug(
-        {
-          stored: stored.length,
-          errors: errors.length,
-          items: itemResults.length,
-        },
-        'Qdrant store operation completed'
-      );
-
-      return {
-        // Enhanced response format
-        items: itemResults,
-        summary,
-
-        // Legacy fields for backward compatibility
-        stored,
-        errors,
-        autonomous_context: autonomousContext,
-
-        // Observability metadata
-        observability: createStoreObservability(
-          true, // vector_used
-          false, // degraded (Qdrant adapter assumes not degraded)
-          Date.now() - startTime,
-          0.8 // confidence score
-        ),
-
-        // Required meta field for unified response format
-        meta: {
-          strategy: 'vector',
-          vector_used: true,
-          degraded: false,
-          source: 'qdrant-adapter',
-          execution_time_ms: Date.now() - startTime,
-          confidence_score: 0.8,
-          truncated: false,
-        },
-      };
-
-      const result = {
-        // Enhanced response format
-        items: itemResults,
-        summary,
-        // Legacy fields for backward compatibility
-        stored,
-        errors,
-        autonomous_context: autonomousContext,
-        // Observability metadata
-        observability: createStoreObservability(
-          true, // vector_used
-          false, // degraded (Qdrant adapter assumes not degraded)
-          Date.now() - startTime,
-          0.8 // confidence score
-        ),
-        // Required meta field for unified response format
-        meta: {
-          strategy: 'vector',
-          vector_used: true,
-          degraded: false,
-          source: 'qdrant-adapter',
-          execution_time_ms: Date.now() - startTime,
-          confidence_score: 0.8,
-          truncated: false,
-        },
-      };
-
-          this.logQdrantCircuitBreakerEvent('store_success', undefined, { itemCount: items.length });
-          return result;
-        } catch (error) {
-          logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
-          this.logQdrantCircuitBreakerEvent('store_failure', error, { itemCount: items.length });
-          throw new DatabaseError('Failed to store items in Qdrant', 'STORE_ERROR', error as Error);
-        }
-      },
-      'qdrant_store'
-    );
+    }, 'qdrant_store');
   }
 
   async update(items: KnowledgeItem[], options: StoreOptions = {}): Promise<MemoryStoreResponse> {
@@ -2179,28 +2177,34 @@ export class QdrantAdapter implements IVectorAdapter {
     const qdrantStats = this.qdrantCircuitBreaker.getStats();
     const openaiStats = this.openaiCircuitBreaker.getStats();
 
-    logger.info({
-      event,
-      qdrantCircuitState: qdrantStats.state,
-      qdrantIsOpen: qdrantStats.isOpen,
-      qdrantFailureRate: qdrantStats.failureRate,
-      qdrantTotalCalls: qdrantStats.totalCalls,
-      openaiCircuitState: openaiStats.state,
-      openaiIsOpen: openaiStats.isOpen,
-      openaiFailureRate: openaiStats.failureRate,
-      openaiTotalCalls: openaiStats.totalCalls,
-      error: error?.message || error,
-      metadata,
-    }, `Qdrant adapter circuit breaker event: ${event}`);
+    logger.info(
+      {
+        event,
+        qdrantCircuitState: qdrantStats.state,
+        qdrantIsOpen: qdrantStats.isOpen,
+        qdrantFailureRate: qdrantStats.failureRate,
+        qdrantTotalCalls: qdrantStats.totalCalls,
+        openaiCircuitState: openaiStats.state,
+        openaiIsOpen: openaiStats.isOpen,
+        openaiFailureRate: openaiStats.failureRate,
+        openaiTotalCalls: openaiStats.totalCalls,
+        error: error?.message || error,
+        metadata,
+      },
+      `Qdrant adapter circuit breaker event: ${event}`
+    );
 
     // If Qdrant circuit is open, log additional context
     if (qdrantStats.isOpen) {
-      logger.warn({
-        event: 'qdrant_circuit_open',
-        timeSinceStateChange: qdrantStats.timeSinceStateChange,
-        failureTypes: qdrantStats.failureTypes,
-        lastFailureTime: qdrantStats.timeSinceLastFailure,
-      }, 'Qdrant adapter circuit breaker is OPEN - database operations will be blocked');
+      logger.warn(
+        {
+          event: 'qdrant_circuit_open',
+          timeSinceStateChange: qdrantStats.timeSinceStateChange,
+          failureTypes: qdrantStats.failureTypes,
+          lastFailureTime: qdrantStats.timeSinceLastFailure,
+        },
+        'Qdrant adapter circuit breaker is OPEN - database operations will be blocked'
+      );
     }
   }
 

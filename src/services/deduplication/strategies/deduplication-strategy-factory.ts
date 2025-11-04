@@ -8,7 +8,10 @@
 import type { DeduplicationStrategyConfig, DeduplicationStrategy } from './base-strategy.js';
 import type { MergeStrategy } from '../../../config/deduplication-config.js';
 import { SkipStrategy, type SkipStrategyConfig } from './skip-strategy.js';
-import { PreferExistingStrategy, type PreferExistingStrategyConfig } from './prefer-existing-strategy.js';
+import {
+  PreferExistingStrategy,
+  type PreferExistingStrategyConfig,
+} from './prefer-existing-strategy.js';
 import { PreferNewerStrategy, type PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
 import { CombineStrategy, type CombineStrategyConfig } from './combine-strategy.js';
 import { IntelligentStrategy, type IntelligentStrategyConfig } from './intelligent-strategy.js';
@@ -19,28 +22,18 @@ export type {
   DeduplicationStrategy,
   DeduplicationStrategyConfig,
   DeduplicationResult,
-  DuplicateAnalysis
+  DuplicateAnalysis,
 } from './base-strategy.js';
 
-export type {
-  SkipStrategyConfig
-} from './skip-strategy.js';
+export type { SkipStrategyConfig } from './skip-strategy.js';
 
-export type {
-  PreferExistingStrategyConfig
-} from './prefer-existing-strategy.js';
+export type { PreferExistingStrategyConfig } from './prefer-existing-strategy.js';
 
-export type {
-  PreferNewerStrategyConfig
-} from './prefer-newer-strategy.js';
+export type { PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
 
-export type {
-  CombineStrategyConfig
-} from './combine-strategy.js';
+export type { CombineStrategyConfig } from './combine-strategy.js';
 
-export type {
-  IntelligentStrategyConfig
-} from './intelligent-strategy.js';
+export type { IntelligentStrategyConfig } from './intelligent-strategy.js';
 
 // Strategy class union type
 export type StrategyClass =
@@ -59,7 +52,7 @@ export class DeduplicationStrategyFactory {
     ['prefer_existing', PreferExistingStrategy],
     ['prefer_newer', PreferNewerStrategy],
     ['combine', CombineStrategy],
-    ['intelligent', IntelligentStrategy]
+    ['intelligent', IntelligentStrategy],
   ]);
 
   /**
@@ -89,7 +82,9 @@ export class DeduplicationStrategyFactory {
         { error, strategyName: name, config },
         'Failed to create deduplication strategy'
       );
-      throw new Error(`Failed to create ${name} strategy: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to create ${name} strategy: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -119,10 +114,7 @@ export class DeduplicationStrategyFactory {
     const normalized = this.normalizeStrategyName(name);
 
     if (this.strategyRegistry.has(normalized)) {
-      logger.warn(
-        { strategyName: name },
-        'Overriding existing deduplication strategy'
-      );
+      logger.warn({ strategyName: name }, 'Overriding existing deduplication strategy');
     }
 
     this.strategyRegistry.set(normalized, strategyClass);
@@ -158,14 +150,14 @@ export class DeduplicationStrategyFactory {
       case 'skip':
         return {
           logSkippedItems: false,
-          performBasicValidation: true
+          performBasicValidation: true,
         };
 
       case 'prefer_existing':
         return {
           similarityThreshold: 0.85,
           checkWithinScopeOnly: true,
-          respectTimestamps: true
+          respectTimestamps: true,
         };
 
       case 'prefer_newer':
@@ -173,7 +165,7 @@ export class DeduplicationStrategyFactory {
           similarityThreshold: 0.85,
           checkWithinScopeOnly: true,
           respectUpdateTimestamps: true,
-          timeWindowHours: 24 * 7 // 1 week
+          timeWindowHours: 24 * 7, // 1 week
         };
 
       case 'combine':
@@ -182,7 +174,7 @@ export class DeduplicationStrategyFactory {
           checkWithinScopeOnly: true,
           mergeConflictResolution: 'prefer_newer',
           preserveMergeHistory: true,
-          maxMergeHistoryEntries: 10
+          maxMergeHistoryEntries: 10,
         };
 
       case 'intelligent':
@@ -195,11 +187,11 @@ export class DeduplicationStrategyFactory {
           weightingFactors: {
             title: 2.0,
             content: 1.0,
-            metadata: 0.5
+            metadata: 0.5,
           },
           maxHistoryHours: 24 * 7, // 1 week
           crossScopeDeduplication: false,
-          prioritizeSameScope: true
+          prioritizeSameScope: true,
         };
 
       default:
@@ -223,9 +215,11 @@ export class DeduplicationStrategyFactory {
 
     // Common validations
     if (config.similarityThreshold !== undefined) {
-      if (typeof config.similarityThreshold !== 'number' ||
-          config.similarityThreshold < 0 ||
-          config.similarityThreshold > 1) {
+      if (
+        typeof config.similarityThreshold !== 'number' ||
+        config.similarityThreshold < 0 ||
+        config.similarityThreshold > 1
+      ) {
         errors.push('similarityThreshold must be a number between 0 and 1');
       } else if (config.similarityThreshold < 0.5) {
         warnings.push('Low similarity threshold may cause false positives');
@@ -241,10 +235,14 @@ export class DeduplicationStrategyFactory {
         break;
 
       case 'intelligent':
-        if (config.semanticThreshold !== undefined &&
-            config.contentThreshold !== undefined &&
-            config.semanticThreshold <= config.contentThreshold) {
-          warnings.push('semanticThreshold should be higher than contentThreshold for better results');
+        if (
+          config.semanticThreshold !== undefined &&
+          config.contentThreshold !== undefined &&
+          config.semanticThreshold <= config.contentThreshold
+        ) {
+          warnings.push(
+            'semanticThreshold should be higher than contentThreshold for better results'
+          );
         }
         break;
     }
@@ -252,7 +250,7 @@ export class DeduplicationStrategyFactory {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 

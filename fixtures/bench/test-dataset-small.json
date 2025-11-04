@@ -1,0 +1,219 @@
+{
+  "metadata": {
+    "name": "small-test-dataset",
+    "version": "1.0.0",
+    "created": "2025-11-04T00:00:00.000Z",
+    "itemCount": 100,
+    "totalSize": 102400
+  },
+  "items": [
+    {
+      "id": "entity-001",
+      "type": "entity",
+      "content": "User account for Alice Johnson with email alice@example.com and role admin",
+      "size": 512,
+      "created": "2025-10-15T10:30:00.000Z",
+      "tags": ["user", "system", "resource"],
+      "metadata": {
+        "index": 0,
+        "generated": true,
+        "benchmark": true,
+        "category": "resource",
+        "active": true
+      }
+    },
+    {
+      "id": "observation-001",
+      "type": "observation",
+      "content": "User Alice Johnson logged in from New York at 2025-10-15T10:30:00.000Z",
+      "size": 256,
+      "created": "2025-10-15T10:30:00.000Z",
+      "tags": ["event", "metric", "log"],
+      "metadata": {
+        "index": 1,
+        "generated": true,
+        "benchmark": true,
+        "source": "system",
+        "level": "info"
+      }
+    },
+    {
+      "id": "decision-001",
+      "type": "decision",
+      "content": "Approved request for REQ-12345 by Alice Johnson on 2025-10-15T10:30:00.000Z",
+      "size": 384,
+      "created": "2025-10-15T11:00:00.000Z",
+      "tags": ["approval", "policy", "strategy"],
+      "metadata": {
+        "index": 2,
+        "generated": true,
+        "benchmark": true,
+        "status": "approved",
+        "impact": "medium"
+      }
+    },
+    {
+      "id": "issue-001",
+      "type": "issue",
+      "content": "Bug reported in API Gateway: Response timeout exceeding 30 seconds",
+      "size": 448,
+      "created": "2025-10-15T12:00:00.000Z",
+      "tags": ["bug", "problem", "incident"],
+      "metadata": {
+        "index": 3,
+        "generated": true,
+        "benchmark": true,
+        "severity": "medium",
+        "status": "open"
+      }
+    },
+    {
+      "id": "todo-001",
+      "type": "todo",
+      "content": "Implement Authentication for Auth Service",
+      "size": 320,
+      "created": "2025-10-15T13:00:00.000Z",
+      "tags": ["task", "action", "work"],
+      "metadata": {
+        "index": 4,
+        "generated": true,
+        "benchmark": true,
+        "priority": "high",
+        "completed": false
+      }
+    },
+    {
+      "id": "incident-001",
+      "type": "incident",
+      "content": "Service outage: Database unavailable for 45 minutes",
+      "size": 416,
+      "created": "2025-10-15T14:00:00.000Z",
+      "tags": ["outage", "emergency", "critical"],
+      "metadata": {
+        "index": 5,
+        "generated": true,
+        "benchmark": true,
+        "severity": "high",
+        "resolved": false
+      }
+    },
+    {
+      "id": "release-001",
+      "type": "release",
+      "content": "Version v2.1.0 released with 8 features",
+      "size": 288,
+      "created": "2025-10-15T15:00:00.000Z",
+      "tags": ["deployment", "version", "launch"],
+      "metadata": {
+        "index": 6,
+        "generated": true,
+        "benchmark": true,
+        "status": "deployed",
+        "rollback": false
+      }
+    },
+    {
+      "id": "risk-001",
+      "type": "risk",
+      "content": "Security risk: SQL Injection vulnerability in User Management",
+      "size": 416,
+      "created": "2025-10-15T16:00:00.000Z",
+      "tags": ["threat", "vulnerability", "exposure"],
+      "metadata": {
+        "index": 7,
+        "generated": true,
+        "benchmark": true,
+        "probability": "medium",
+        "impact": "high"
+      }
+    },
+    {
+      "id": "assumption-001",
+      "type": "assumption",
+      "content": "Assume Authentication Service can handle 10000 requests/second",
+      "size": 384,
+      "created": "2025-10-15T17:00:00.000Z",
+      "tags": ["hypothesis", "premise", "belief"],
+      "metadata": {
+        "index": 8,
+        "generated": true,
+        "benchmark": true,
+        "validated": false,
+        "confidence": "medium"
+      }
+    },
+    {
+      "id": "runbook-001",
+      "type": "runbook",
+      "content": "Procedure for Service Outage resolution",
+      "size": 352,
+      "created": "2025-10-15T18:00:00.000Z",
+      "tags": ["procedure", "guide", "process"],
+      "metadata": {
+        "index": 9,
+        "generated": true,
+        "benchmark": true,
+        "category": "operational",
+        "automated": false
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "source": "entity-001",
+      "target": "observation-001",
+      "type": "relates_to",
+      "weight": 0.8,
+      "created": "2025-10-15T10:30:00.000Z"
+    },
+    {
+      "source": "entity-001",
+      "target": "decision-001",
+      "type": "relates_to",
+      "weight": 0.7,
+      "created": "2025-10-15T11:00:00.000Z"
+    },
+    {
+      "source": "issue-001",
+      "target": "todo-001",
+      "type": "blocks",
+      "weight": 0.9,
+      "created": "2025-10-15T12:30:00.000Z"
+    },
+    {
+      "source": "incident-001",
+      "target": "issue-001",
+      "type": "causes",
+      "weight": 0.95,
+      "created": "2025-10-15T14:30:00.000Z"
+    },
+    {
+      "source": "release-001",
+      "target": "issue-001",
+      "type": "introduces",
+      "weight": 0.6,
+      "created": "2025-10-15T15:30:00.000Z"
+    },
+    {
+      "source": "risk-001",
+      "target": "incident-001",
+      "type": "relates_to",
+      "weight": 0.85,
+      "created": "2025-10-15T16:30:00.000Z"
+    },
+    {
+      "source": "runbook-001",
+      "target": "incident-001",
+      "type": "addresses",
+      "weight": 0.9,
+      "created": "2025-10-15T18:30:00.000Z"
+    },
+    {
+      "source": "assumption-001",
+      "target": "risk-001",
+      "type": "relates_to",
+      "weight": 0.75,
+      "created": "2025-10-15T17:30:00.000Z"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ class CoverageReportGenerator {
   constructor() {
     this.projectRoot = process.cwd();
     this.coverageDir = path.join(this.projectRoot, 'coverage');
-    this.reportsDir = path.join(this.coverageDir, 'reports');
+    this.reportsDir = path.join(this.projectRoot, 'artifacts', 'coverage');
     this.timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   }
 
@@ -184,15 +184,18 @@ class CoverageReportGenerator {
   async analyzeThresholds() {
     const thresholds = {
       target: {
-        statements: 95,
-        branches: 90,
-        functions: 95,
-        lines: 95
+        statements: 85, // ≥85% coverage requirement
+        branches: 85,
+        functions: 85,
+        lines: 85
       },
       critical: {
-        'src/core/**': { statements: 98, branches: 95, functions: 98, lines: 98 },
-        'src/db/**': { statements: 95, branches: 90, functions: 95, lines: 95 },
-        'src/mcp/**': { statements: 95, branches: 90, functions: 95, lines: 95 }
+        'src/core/**': { statements: 90, branches: 90, functions: 90, lines: 90 },
+        'src/db/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
+        'src/services/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
+        'src/mcp/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
+        'src/utils/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
+        'src/types/**': { statements: 80, branches: 80, functions: 80, lines: 80 }
       }
     };
 

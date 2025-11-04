@@ -5,7 +5,12 @@
  * When a duplicate is found, the new item is discarded in favor of the existing one.
  */
 
-import { DeduplicationStrategy, type DeduplicationResult, type DeduplicationStrategyConfig, type DuplicateAnalysis } from './base-strategy.js';
+import {
+  DeduplicationStrategy,
+  type DeduplicationResult,
+  type DeduplicationStrategyConfig,
+  type DuplicateAnalysis,
+} from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import { logger } from '../../../utils/logger.js';
 
@@ -21,7 +26,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
       similarityThreshold: 0.85,
       checkWithinScopeOnly: true,
       respectTimestamps: true,
-      ...config
+      ...config,
     });
   }
 
@@ -47,21 +52,21 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
           action: 'skipped',
           reason: `Duplicate found (similarity: ${analysis.similarityScore.toFixed(3)}), preferring existing item`,
           existingId: analysis.existingId,
-          similarityScore: analysis.similarityScore
+          similarityScore: analysis.similarityScore,
         });
       } else {
         results.push({
           action: 'stored',
           reason: analysis.isDuplicate
             ? `Similarity ${analysis.similarityScore.toFixed(3)} below threshold ${threshold}`
-            : 'No duplicate found'
+            : 'No duplicate found',
         });
       }
     }
 
     if (this.config.logResults) {
-      const stored = results.filter(r => r.action === 'stored').length;
-      const skipped = results.filter(r => r.action === 'skipped').length;
+      const stored = results.filter((r) => r.action === 'stored').length;
+      const skipped = results.filter((r) => r.action === 'skipped').length;
 
       logger.info(
         {
@@ -69,7 +74,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
           totalItems: items.length,
           storedCount: stored,
           skippedCount: skipped,
-          threshold
+          threshold,
         },
         'Prefer existing strategy processed items'
       );
@@ -91,7 +96,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Item failed basic validation'
+        reason: 'Item failed basic validation',
       };
     }
 
@@ -137,7 +142,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
         reason: `Duplicate found (similarity: ${bestMatch.similarity.toFixed(3)}) >= threshold ${threshold}`,
         existingId: bestMatch.existingItem.id,
         existingCreatedAt: bestMatch.existingItem.created_at,
-        scopeMatch: this.analyzeScopeMatch(item)
+        scopeMatch: this.analyzeScopeMatch(item),
       };
     }
 
@@ -148,7 +153,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
       reason: bestMatch
         ? `Similarity ${bestMatch.similarity.toFixed(3)} below threshold ${threshold}`
         : 'No similar items found',
-      scopeMatch: this.analyzeScopeMatch(item)
+      scopeMatch: this.analyzeScopeMatch(item),
     };
   }
 
@@ -181,7 +186,7 @@ export class PreferExistingStrategy extends DeduplicationStrategy {
     return {
       org: !!itemScope.org,
       project: !!itemScope.project,
-      branch: !!itemScope.branch
+      branch: !!itemScope.branch,
     };
   }
 }

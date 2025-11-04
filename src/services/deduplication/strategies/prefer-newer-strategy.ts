@@ -5,7 +5,12 @@
  * When duplicates are found, the newer item (based on creation/update time) is preferred.
  */
 
-import { DeduplicationStrategy, type DeduplicationResult, type DeduplicationStrategyConfig, type DuplicateAnalysis } from './base-strategy.js';
+import {
+  DeduplicationStrategy,
+  type DeduplicationResult,
+  type DeduplicationStrategyConfig,
+  type DuplicateAnalysis,
+} from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
 import { logger } from '../../../utils/logger.js';
 
@@ -23,7 +28,7 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
       checkWithinScopeOnly: true,
       respectUpdateTimestamps: true,
       timeWindowHours: 24 * 7, // 1 week default
-      ...config
+      ...config,
     });
   }
 
@@ -54,14 +59,14 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
             action: 'stored',
             reason: `Newer version of existing item (similarity: ${analysis.similarityScore.toFixed(3)})`,
             existingId: analysis.existingId,
-            similarityScore: analysis.similarityScore
+            similarityScore: analysis.similarityScore,
           });
         } else {
           results.push({
             action: 'skipped',
             reason: `Existing item is newer or same age (similarity: ${analysis.similarityScore.toFixed(3)})`,
             existingId: analysis.existingId,
-            similarityScore: analysis.similarityScore
+            similarityScore: analysis.similarityScore,
           });
         }
       } else {
@@ -69,14 +74,14 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
           action: 'stored',
           reason: analysis.isDuplicate
             ? `Similarity ${analysis.similarityScore.toFixed(3)} below threshold ${threshold}`
-            : 'No duplicate found'
+            : 'No duplicate found',
         });
       }
     }
 
     if (this.config.logResults) {
-      const stored = results.filter(r => r.action === 'stored').length;
-      const skipped = results.filter(r => r.action === 'skipped').length;
+      const stored = results.filter((r) => r.action === 'stored').length;
+      const skipped = results.filter((r) => r.action === 'skipped').length;
 
       logger.info(
         {
@@ -85,7 +90,7 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
           storedCount: stored,
           skippedCount: skipped,
           threshold,
-          timeWindow
+          timeWindow,
         },
         'Prefer newer strategy processed items'
       );
@@ -107,7 +112,7 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
         isDuplicate: false,
         similarityScore: 0,
         matchType: 'none',
-        reason: 'Item failed basic validation'
+        reason: 'Item failed basic validation',
       };
     }
 
@@ -161,9 +166,9 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
         existingCreatedAt: bestMatch.existingItem.created_at,
         isNewerVersion: this.isItemNewer(item, {
           existingId: bestMatch.existingItem.id,
-          existingCreatedAt: bestMatch.existingItem.created_at
+          existingCreatedAt: bestMatch.existingItem.created_at,
         }),
-        scopeMatch: this.analyzeScopeMatch(item)
+        scopeMatch: this.analyzeScopeMatch(item),
       };
     }
 
@@ -174,7 +179,7 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
       reason: bestMatch
         ? `Similarity ${bestMatch.similarity.toFixed(3)} below threshold ${threshold}`
         : 'No similar items found',
-      scopeMatch: this.analyzeScopeMatch(item)
+      scopeMatch: this.analyzeScopeMatch(item),
     };
   }
 
@@ -255,7 +260,7 @@ export class PreferNewerStrategy extends DeduplicationStrategy {
     return {
       org: !!itemScope.org,
       project: !!itemScope.project,
-      branch: !!itemScope.branch
+      branch: !!itemScope.branch,
     };
   }
 }

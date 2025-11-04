@@ -55,7 +55,7 @@ export abstract class DeduplicationStrategy {
       enabled: true,
       logResults: true,
       performBasicValidation: true,
-      ...config
+      ...config,
     };
   }
 
@@ -126,10 +126,13 @@ export abstract class DeduplicationStrategy {
       scope: item.scope || {},
       data: Object.keys(item.data || {})
         .sort()
-        .reduce((result, key) => {
-          result[key] = item.data![key];
-          return result;
-        }, {} as Record<string, any>)
+        .reduce(
+          (result, key) => {
+            result[key] = item.data![key];
+            return result;
+          },
+          {} as Record<string, any>
+        ),
     };
 
     return JSON.stringify(signatureData);

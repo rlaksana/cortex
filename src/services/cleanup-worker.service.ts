@@ -1161,7 +1161,7 @@ export class CleanupWorkerService {
     return { ...this.config };
   }
 
-/**
+  /**
    * Start cleanup service (for test compatibility)
    */
   public async start(): Promise<void> {
@@ -1204,7 +1204,7 @@ export class CleanupWorkerService {
     totalItemsProcessed: number;
   } {
     const latestOperation = this.operationHistory[this.operationHistory.length - 1];
-    
+
     return {
       itemsCleaned: latestOperation?.metrics.cleanup_deleted_total || 0,
       itemsIdentifiedForCleanup: latestOperation?.metrics.cleanup_dryrun_total || 0,
@@ -1212,7 +1212,9 @@ export class CleanupWorkerService {
       errorCount: latestOperation?.errors.length || 0,
       lastCleanupTime: latestOperation ? new Date(latestOperation.timestamp).getTime() : 0,
       averageCleanupTime: latestOperation?.performance.total_duration_ms || 0,
-      totalItemsProcessed: (latestOperation?.metrics.cleanup_deleted_total || 0) + (latestOperation?.metrics.cleanup_dryrun_total || 0),
+      totalItemsProcessed:
+        (latestOperation?.metrics.cleanup_deleted_total || 0) +
+        (latestOperation?.metrics.cleanup_dryrun_total || 0),
     };
   }
 }

@@ -154,12 +154,15 @@ export class MemoryStoreOrchestrator {
         const originalCount = mcpItems.length;
         const chunkedCount = transformedItems.length;
 
-        logger.info({
-          originalCount,
-          chunkedCount,
-          chunkingTime,
-          chunksCreated: chunkedCount - originalCount
-        }, 'Chunking applied successfully');
+        logger.info(
+          {
+            originalCount,
+            chunkedCount,
+            chunkingTime,
+            chunksCreated: chunkedCount - originalCount,
+          },
+          'Chunking applied successfully'
+        );
       } catch (chunkingError) {
         logger.error({ error: chunkingError }, 'Chunking failed, continuing with original items');
         // Continue with original items if chunking fails

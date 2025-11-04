@@ -1,0 +1,250 @@
+{
+  "metadata": {
+    "name": "Cortex Memory MCP Baseline Performance",
+    "version": "2.0.0",
+    "timestamp": "2025-11-04T00:00:00.000Z",
+    "environment": {
+      "nodeVersion": "v20.0.0",
+      "platform": "win32",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz",
+      "memory": "16GB",
+      "cores": 8
+    },
+    "hardware": {
+      "cpu_cores": 4,
+      "memory_gb": 8,
+      "storage_type": "SSD",
+      "network_mbps": 1000
+    }
+  },
+  "baseline_metrics": {
+    "memory_store": {
+      "single_item": {
+        "p50_ms": 45.0,
+        "p95_ms": 180.0,
+        "p99_ms": 420.0,
+        "throughput_ops_per_sec": 120.0,
+        "error_rate_percent": 0.5,
+        "memory_peak_mb": 45.0
+      },
+      "batch_store": {
+        "p50_ms": 850.0,
+        "p95_ms": 1200.0,
+        "p99_ms": 1800.0,
+        "throughput_ops_per_sec": 95.0,
+        "error_rate_percent": 1.0,
+        "memory_peak_mb": 120.0
+      },
+      "concurrent_store": {
+        "p50_ms": 125.0,
+        "p95_ms": 450.0,
+        "p99_ms": 950.0,
+        "throughput_ops_per_sec": 85.0,
+        "error_rate_percent": 2.0,
+        "memory_peak_mb": 250.0
+      },
+      "deduplication": {
+        "p50_ms": 95.0,
+        "p95_ms": 320.0,
+        "p99_ms": 750.0,
+        "throughput_ops_per_sec": 75.0,
+        "error_rate_percent": 0.8,
+        "memory_peak_mb": 180.0
+      },
+      "large_items": {
+        "p50_ms": 1800.0,
+        "p95_ms": 3500.0,
+        "p99_ms": 5500.0,
+        "throughput_ops_per_sec": 15.0,
+        "error_rate_percent": 1.5,
+        "memory_peak_mb": 520.0
+      },
+      "ttl_processing": {
+        "p50_ms": 65.0,
+        "p95_ms": 240.0,
+        "p99_ms": 580.0,
+        "throughput_ops_per_sec": 110.0,
+        "error_rate_percent": 0.3,
+        "memory_peak_mb": 55.0
+      }
+    },
+    "memory_find": {
+      "simple_search": {
+        "p50_ms": 85.0,
+        "p95_ms": 350.0,
+        "p99_ms": 890.0,
+        "throughput_ops_per_sec": 220.0,
+        "error_rate_percent": 0.2,
+        "memory_peak_mb": 35.0
+      },
+      "complex_search": {
+        "p50_ms": 280.0,
+        "p95_ms": 950.0,
+        "p99_ms": 1800.0,
+        "throughput_ops_per_sec": 85.0,
+        "error_rate_percent": 0.8,
+        "memory_peak_mb": 95.0
+      },
+      "concurrent_search": {
+        "p50_ms": 165.0,
+        "p95_ms": 680.0,
+        "p99_ms": 1450.0,
+        "throughput_ops_per_sec": 125.0,
+        "error_rate_percent": 1.5,
+        "memory_peak_mb": 180.0
+      },
+      "graph_expansion": {
+        "p50_ms": 450.0,
+        "p95_ms": 1500.0,
+        "p99_ms": 2800.0,
+        "throughput_ops_per_sec": 45.0,
+        "error_rate_percent": 1.2,
+        "memory_peak_mb": 250.0
+      },
+      "fuzzy_search": {
+        "p50_ms": 120.0,
+        "p95_ms": 480.0,
+        "p99_ms": 1100.0,
+        "throughput_ops_per_sec": 150.0,
+        "error_rate_percent": 0.5,
+        "memory_peak_mb": 75.0
+      },
+      "large_result_set": {
+        "p50_ms": 650.0,
+        "p95_ms": 2200.0,
+        "p99_ms": 4200.0,
+        "throughput_ops_per_sec": 35.0,
+        "error_rate_percent": 2.0,
+        "memory_peak_mb": 450.0
+      }
+    }
+  },
+  "sla_targets": {
+    "memory_store": {
+      "single_item": {
+        "p95_ms_target": 200,
+        "p99_ms_target": 500,
+        "throughput_min_ops_per_sec": 100,
+        "error_rate_max_percent": 1.0
+      },
+      "batch_store": {
+        "p95_ms_target": 800,
+        "p99_ms_target": 2000,
+        "throughput_min_ops_per_sec": 80,
+        "error_rate_max_percent": 2.0
+      },
+      "concurrent_store": {
+        "p95_ms_target": 500,
+        "p99_ms_target": 1000,
+        "throughput_min_ops_per_sec": 70,
+        "error_rate_max_percent": 3.0
+      }
+    },
+    "memory_find": {
+      "simple_search": {
+        "p95_ms_target": 400,
+        "p99_ms_target": 1000,
+        "throughput_min_ops_per_sec": 200,
+        "error_rate_max_percent": 1.0
+      },
+      "complex_search": {
+        "p95_ms_target": 1000,
+        "p99_ms_target": 2000,
+        "throughput_min_ops_per_sec": 80,
+        "error_rate_max_percent": 2.0
+      },
+      "graph_expansion": {
+        "p95_ms_target": 2000,
+        "p99_ms_target": 5000,
+        "throughput_min_ops_per_sec": 40,
+        "error_rate_max_percent": 2.0
+      }
+    }
+  },
+  "load_testing_benchmarks": {
+    "concurrent_users_100": {
+      "store_ops_per_sec": 75,
+      "search_ops_per_sec": 125,
+      "combined_ops_per_sec": 95,
+      "p95_response_time_ms": 650,
+      "error_rate_percent": 2.5,
+      "memory_usage_mb": 380
+    },
+    "concurrent_users_500": {
+      "store_ops_per_sec": 45,
+      "search_ops_per_sec": 65,
+      "combined_ops_per_sec": 52,
+      "p95_response_time_ms": 1850,
+      "error_rate_percent": 5.0,
+      "memory_usage_mb": 850
+    }
+  },
+  "performance_tiers": {
+    "excellent": {
+      "p95_ratio_to_baseline": 0.8,
+      "throughput_ratio_to_baseline": 1.2,
+      "error_rate_percent": 0.1
+    },
+    "good": {
+      "p95_ratio_to_baseline": 1.0,
+      "throughput_ratio_to_baseline": 1.0,
+      "error_rate_percent": 0.5
+    },
+    "acceptable": {
+      "p95_ratio_to_baseline": 1.5,
+      "throughput_ratio_to_baseline": 0.8,
+      "error_rate_percent": 2.0
+    },
+    "poor": {
+      "p95_ratio_to_baseline": 2.0,
+      "throughput_ratio_to_baseline": 0.5,
+      "error_rate_percent": 5.0
+    }
+  },
+  "data_size_scaling": {
+    "small_dataset_1k": {
+      "avg_store_ms": 25,
+      "avg_search_ms": 35,
+      "memory_usage_mb": 15
+    },
+    "medium_dataset_10k": {
+      "avg_store_ms": 45,
+      "avg_search_ms": 85,
+      "memory_usage_mb": 85
+    },
+    "large_dataset_100k": {
+      "avg_store_ms": 125,
+      "avg_search_ms": 285,
+      "memory_usage_mb": 650
+    },
+    "enterprise_dataset_1m": {
+      "avg_store_ms": 450,
+      "avg_search_ms": 1250,
+      "memory_usage_mb": 4500
+    }
+  },
+  "regression_detection": {
+    "performance_degradation_threshold_percent": 15,
+    "error_rate_increase_threshold_percent": 50,
+    "memory_leak_threshold_mb_per_hour": 100,
+    "throughput_degradation_threshold_percent": 20
+  },
+  "benchmark_configurations": {
+    "standard_test": {
+      "warmup_iterations": 3,
+      "benchmark_iterations": 10,
+      "scenario_delay_ms": 1000
+    },
+    "quick_test": {
+      "warmup_iterations": 1,
+      "benchmark_iterations": 3,
+      "scenario_delay_ms": 500
+    },
+    "comprehensive_test": {
+      "warmup_iterations": 5,
+      "benchmark_iterations": 20,
+      "scenario_delay_ms": 2000
+    }
+  }
+}

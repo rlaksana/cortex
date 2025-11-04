@@ -42,7 +42,17 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  ListToolsRequestSchema,
+  CallToolRequestSchema,
+  InitializeRequestSchema,
+  McpError,
+  ErrorCode
+} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
+
+// Handle both old and new method naming for compatibility
+const ToolsListRequestSchema = ListToolsRequestSchema;
 import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
 import { SearchResult } from './types/core-interfaces.js';
 import { performanceMonitor } from './utils/performance-monitor.js';
@@ -162,7 +172,6 @@ interface BatchSummary {
   total: number;
 }
 
-
 // === Vector Database Implementation ===
 
 interface QdrantRuntimeStatus {
@@ -190,15 +199,116 @@ const server = new Server(
   {
     capabilities: {
       tools: {},
+      resources: {},
+      prompts: {},
+      logging: {},
     },
   }
 );
 
 // Vector database has been replaced by orchestrators above
 
+// === MCP Protocol Handlers ===
+
+// Initialize request handler - required for MCP protocol compliance
+server.setRequestHandler(InitializeRequestSchema, async (request) => {
+  try {
+    const { protocolVersion, capabilities, clientInfo } = request.params;
+
+    // Validate protocol version
+    if (!protocolVersion) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        'Protocol version is required',
+        { received: protocolVersion }
+      );
+    }
+
+    logger.info('MCP initialize request received', {
+      protocolVersion,
+      clientInfo,
+      clientCapabilities: capabilities,
+    });
+
+    // Return server capabilities and info with proper JSON-RPC 2.0 structure
+    return {
+      protocolVersion: '2024-11-05',
+      capabilities: {
+        tools: {
+          listChanged: true,
+        },
+        resources: {
+          subscribe: true,
+          listChanged: true,
+        },
+        prompts: {
+          listChanged: true,
+        },
+        logging: {
+          level: 'info',
+        },
+      },
+      serverInfo: {
+        name: 'cortex-memory-mcp',
+        version: '2.0.0',
+      },
+    };
+  } catch (error) {
+    logger.error('MCP initialization failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      request,
+    });
+
+    // Re-throw MCP errors as-is, wrap others
+    if (error instanceof McpError) {
+      throw error;
+    }
+
+    throw new McpError(
+      ErrorCode.InternalError,
+      `Server initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+});
+
 // === Tool Definitions ===
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: 'memory_store',
+        description:
+          'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights. Features enterprise-grade duplicate detection with 5 merge modes, configurable similarity thresholds, time window controls, scope filtering, and comprehensive audit logging.',
+        inputSchema: ALL_JSON_SCHEMAS.memory_store,
+      },
+      {
+        name: 'memory_find',
+        description:
+          'Search Cortex memory with advanced strategies and graph expansion. Supports semantic vector search with configurable strategies, TTL filters, result formatting, and analytics optimization.',
+        inputSchema: ALL_JSON_SCHEMAS.memory_find,
+      },
+      {
+        name: 'system_status',
+        description:
+          'System monitoring, cleanup, and maintenance operations. Provides database health checks, statistics, telemetry, document management, cleanup operations with safety mechanisms, and comprehensive system diagnostics.',
+        inputSchema: ALL_JSON_SCHEMAS.system_status,
+      },
+    ],
+  };
+});
+
+// Add direct method name handler for compatibility with different MCP clients
+// The issue is that some MCP clients send "tools/list" method name, but the SDK
+// registers the handler under a different internal method name
+
+// Create a custom schema that captures the tools/list method specifically
+const ToolsListMethodSchema = z.object({
+  method: z.literal('tools/list'),
+  params: z.object({}).optional(),
+});
+
+server.setRequestHandler(ToolsListMethodSchema, async () => {
   return {
     tools: [
       {
@@ -1071,26 +1181,127 @@ async function handleDatabaseHealth() {
     let vectorBackendStatus = 'healthy';
     let vectorBackendError = undefined;
 
-      // Check circuit breaker status to determine service health
+    // Check circuit breaker status to determine service health
     try {
-        const { circuitBreakerManager } = require('./services/circuit-breaker.service.js');
-        const systemHealth = circuitBreakerManager.getSystemHealth();
-        const openCircuits = circuitBreakerManager.getOpenCircuits();
+      const { circuitBreakerManager } = require('./services/circuit-breaker.service.js');
+      const systemHealth = circuitBreakerManager.getSystemHealth();
+      const openCircuits = circuitBreakerManager.getOpenCircuits();
 
-        if (systemHealth.status === 'failing' || openCircuits.length > 0) {
-          serviceStatus = systemHealth.status === 'failing' ? 'failing' : 'degraded';
-          degradedMode = true;
-          vectorBackendStatus = 'error';
-          vectorBackendError = `Circuit breaker open for services: ${openCircuits.join(', ')}`;
-        } else if (systemHealth.status === 'degraded') {
+      if (systemHealth.status === 'failing' || openCircuits.length > 0) {
+        serviceStatus = systemHealth.status === 'failing' ? 'failing' : 'degraded';
+        degradedMode = true;
+        vectorBackendStatus = 'error';
+        vectorBackendError = `Circuit breaker open for services: ${openCircuits.join(', ')}`;
+      } else if (systemHealth.status === 'degraded') {
+        serviceStatus = 'degraded';
+        degradedMode = true;
+        vectorBackendStatus = 'degraded';
+      }
+    } catch (error) {
+      // If we can't check circuit breaker status, assume healthy but log the error
+      logger.warn('Failed to check circuit breaker status', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+
+    // P2-T3: Get dependency health information
+    let dependencyHealth: any = {
+      enabled: false,
+      status: 'unknown',
+      dependencies: [],
+      summary: {
+        total: 0,
+        healthy: 0,
+        warning: 0,
+        critical: 0,
+        unknown: 0,
+        disabled: 0
+      },
+      overallScore: 0,
+      lastUpdated: null
+    };
+
+    try {
+      const { dependencyRegistry } = await import('./services/deps-registry.js');
+      const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+      
+      // Get dependency health status
+      const allDependencies = dependencyRegistry.getAllDependencies();
+      const dependencyCount = Object.keys(allDependencies).length;
+      
+      if (dependencyCount > 0) {
+        dependencyHealth.enabled = true;
+        dependencyHealth.dependencies = Object.entries(allDependencies).map(([name, state]) => ({
+          name,
+          type: state.config.type,
+          status: state.status,
+          priority: state.config.priority,
+          enabled: state.enabled,
+          lastHealthCheck: state.lastHealthCheck,
+          responseTime: state.metrics.responseTime.current,
+          errorRate: state.metrics.error.rate,
+          availability: ((state.metrics.availability.uptime / 
+            (state.metrics.availability.uptime + state.metrics.availability.downtime)) * 100) || 100,
+          consecutiveFailures: state.consecutiveFailures,
+          metrics: state.metrics
+        }));
+
+        dependencyHealth.summary = {
+          total: dependencyCount,
+          healthy: Object.values(allDependencies).filter(s => s.status === 'healthy').length,
+          warning: Object.values(allDependencies).filter(s => s.status === 'warning').length,
+          critical: Object.values(allDependencies).filter(s => s.status === 'critical').length,
+          unknown: Object.values(allDependencies).filter(s => s.status === 'unknown').length,
+          disabled: Object.values(allDependencies).filter(s => s.status === 'disabled').length
+        };
+
+        // Calculate overall health score
+        const totalWeight = dependencyHealth.dependencies.reduce((sum: number, dep: any) => {
+          const weight = dep.priority === 'critical' ? 4 : 
+                       dep.priority === 'high' ? 3 : 
+                       dep.priority === 'medium' ? 2 : 1;
+          const score = dep.status === 'healthy' ? 100 :
+                       dep.status === 'warning' ? 70 :
+                       dep.status === 'critical' ? 30 : 50;
+          return sum + (weight * score);
+        }, 0);
+
+        const maxWeight = dependencyHealth.dependencies.reduce((sum: number, dep: any) => {
+          const weight = dep.priority === 'critical' ? 4 : 
+                       dep.priority === 'high' ? 3 : 
+                       dep.priority === 'medium' ? 2 : 1;
+          return sum + (weight * 100);
+        }, 0);
+
+        dependencyHealth.overallScore = maxWeight > 0 ? Math.round((totalWeight / maxWeight) * 100) : 100;
+        dependencyHealth.lastUpdated = new Date().toISOString();
+
+        // Determine dependency health status
+        if (dependencyHealth.summary.critical > 0) {
+          dependencyHealth.status = 'critical';
+        } else if (dependencyHealth.summary.warning > 0 || dependencyHealth.overallScore < 80) {
+          dependencyHealth.status = 'warning';
+        } else if (dependencyHealth.summary.healthy === dependencyHealth.summary.total) {
+          dependencyHealth.status = 'healthy';
+        } else {
+          dependencyHealth.status = 'unknown';
+        }
+
+        // Update overall service status based on dependency health
+        if (dependencyHealth.status === 'critical') {
           serviceStatus = 'degraded';
           degradedMode = true;
-          vectorBackendStatus = 'degraded';
+        } else if (dependencyHealth.status === 'warning' && serviceStatus === 'healthy') {
+          serviceStatus = 'degraded';
+          degradedMode = true;
         }
-      } catch (error) {
-        // If we can't check circuit breaker status, assume healthy but log the error
-        logger.warn('Failed to check circuit breaker status', { error: error instanceof Error ? error.message : 'Unknown error' });
       }
+    } catch (error) {
+      logger.warn('Failed to get dependency health information', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      dependencyHealth.error = error instanceof Error ? error.message : 'Failed to load dependency health';
+    }
 
     // Build comprehensive system status
     const systemStatus = {
@@ -1117,6 +1328,9 @@ async function handleDatabaseHealth() {
           distance: 'Cosine',
         },
       },
+
+      // P2-T3: Dependency health status
+      dependencyHealth,
 
       // Circuit breaker status for resilient operations
       circuitBreakers: {
@@ -1149,7 +1363,7 @@ async function handleDatabaseHealth() {
                 totalServices: systemHealth.totalServices,
                 openCircuits: systemHealth.openCircuits,
                 serviceStatuses: allStats,
-              }
+              },
             };
           } catch (error) {
             return {
@@ -1202,7 +1416,8 @@ async function handleDatabaseHealth() {
           // Memory usage analysis
           heapUsedPercentage: (telemetry.memory.heapUsed / telemetry.memory.heapTotal) * 100,
           heapTotalPercentage: (telemetry.memory.heapTotal / telemetry.memory.rss) * 100,
-          externalPercentage: telemetry.memory.rss > 0 ? (telemetry.memory.external / telemetry.memory.rss) * 100 : 0,
+          externalPercentage:
+            telemetry.memory.rss > 0 ? (telemetry.memory.external / telemetry.memory.rss) * 100 : 0,
           // Memory status classification
           status: (() => {
             const heapUsagePercent = (telemetry.memory.heapUsed / telemetry.memory.heapTotal) * 100;
@@ -1220,14 +1435,14 @@ async function handleDatabaseHealth() {
                 level: 'critical',
                 threshold: 90,
                 current: heapUsagePercent,
-                message: `Critical memory usage at ${heapUsagePercent.toFixed(1)}%`
+                message: `Critical memory usage at ${heapUsagePercent.toFixed(1)}%`,
               });
             } else if (heapUsagePercent >= 75) {
               alerts.push({
                 level: 'warning',
                 threshold: 75,
                 current: heapUsagePercent,
-                message: `High memory usage at ${heapUsagePercent.toFixed(1)}%`
+                message: `High memory usage at ${heapUsagePercent.toFixed(1)}%`,
               });
             }
             return alerts;
@@ -1360,6 +1575,11 @@ async function handleDatabaseHealth() {
           'health_check',
           'metrics',
           'cleanup',
+          'dependency_health',
+          'dependency_registry',
+          'dependency_analysis',
+          'dependency_alerts',
+          'dependency_sla',
         ],
       },
 
@@ -1368,7 +1588,7 @@ async function handleDatabaseHealth() {
         source: 'cortex_memory',
         strategy: 'system_operation',
         vector_used: false,
-        degraded: false,
+        degraded: degradedMode,
         execution_time_ms: 0,
         timestamp: new Date().toISOString(),
       },
@@ -1380,14 +1600,16 @@ async function handleDatabaseHealth() {
       meta: createResponseMeta({
         strategy: 'system_operation',
         vector_used: false,
-        degraded: false,
+        degraded: degradedMode,
         source: 'cortex_memory',
         execution_time_ms: 0,
-        confidence_score: 1.0,
+        confidence_score: serviceStatus === 'healthy' ? 1.0 : 0.7,
         additional: {
           operation: 'health_check',
-          service_status: 'healthy',
+          service_status: serviceStatus,
           uptime: telemetry.uptime,
+          dependencyHealthScore: dependencyHealth.overallScore,
+          dependencyHealthStatus: dependencyHealth.status,
           timestamp: new Date().toISOString(),
         },
       }),
@@ -1478,6 +1700,564 @@ async function handleDatabaseHealth() {
           ),
         },
       ],
+    };
+  }
+}
+
+// P2-T3: Dependency Health System Handlers
+
+/**
+ * Handle dependency health status requests
+ */
+async function handleDependencyHealth(args: any): Promise<any> {
+  try {
+    const { action, dependency, strategy = 'basic' } = args;
+
+    // Import services dynamically to avoid circular dependencies
+    const { dependencyRegistry } = await import('./services/deps-registry.js');
+    const { healthCheckService } = await import('./services/health-check.service.js');
+    const { HealthCheckStrategy } = await import('./services/health-check.service.js');
+
+    switch (action) {
+      case 'check':
+        if (!dependency) {
+          throw new Error('Dependency name is required for health check');
+        }
+
+        const state = dependencyRegistry.getDependencyState(dependency);
+        if (!state) {
+          throw new Error(`Dependency ${dependency} not found`);
+        }
+
+        const result = await healthCheckService.performHealthCheck(
+          dependency,
+          state.config,
+          { strategy: HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] || HealthCheckStrategy.BASIC }
+        );
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              dependency: result.dependency,
+              status: result.status,
+              responseTime: result.responseTime,
+              strategy: result.strategy,
+              diagnostics: result.diagnostics,
+              error: result.error,
+              timestamp: result.timestamp,
+              retryAttempts: result.retryAttempts,
+              cached: result.cached,
+              benchmarkResults: result.benchmarkResults,
+              details: result.details
+            }, null, 2)
+          }]
+        };
+
+      case 'check_all':
+        const allDeps = dependencyRegistry.getAllDependencies();
+        const checkPromises = Object.entries(allDeps).map(async ([name, state]) => {
+          try {
+            return await healthCheckService.performHealthCheck(
+              name,
+              state.config,
+              { strategy: HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] || HealthCheckStrategy.BASIC }
+            );
+          } catch (error) {
+            return {
+              dependency: name,
+              status: 'critical',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              timestamp: new Date().toISOString()
+            };
+          }
+        });
+
+        const results = await Promise.allSettled(checkPromises);
+        const healthResults = results.map(result => 
+          result.status === 'fulfilled' ? result.value : {
+            dependency: 'unknown',
+            status: 'critical',
+            error: 'Health check failed'
+          }
+        );
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              dependencies: healthResults,
+              summary: {
+                total: healthResults.length,
+                healthy: healthResults.filter(r => r.status === 'healthy').length,
+                warning: healthResults.filter(r => r.status === 'warning').length,
+                critical: healthResults.filter(r => r.status === 'critical').length,
+                unknown: healthResults.filter(r => r.status === 'unknown').length
+              },
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'cache_stats':
+        const cacheStats = healthCheckService.getCacheStats();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              cache: cacheStats,
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'clear_cache':
+        healthCheckService.clearCache();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              message: 'Health check cache cleared successfully',
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      default:
+        throw new Error(`Unknown dependency health action: ${action}`);
+    }
+  } catch (error) {
+    logger.error('Dependency health operation failed', { error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'dependency_health',
+          args,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      }]
+    };
+  }
+}
+
+/**
+ * Handle dependency registry operations
+ */
+async function handleDependencyRegistry(args: any): Promise<any> {
+  try {
+    const { action } = args;
+
+    // Import services dynamically
+    const { dependencyRegistry, DependencyType, DependencyStatus } = await import('./services/deps-registry.js');
+
+    switch (action) {
+      case 'list':
+        const allDependencies = dependencyRegistry.getAllDependencies();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              dependencies: Object.entries(allDependencies).map(([name, state]) => ({
+                name,
+                type: state.config.type,
+                status: state.status,
+                priority: state.config.priority,
+                enabled: state.enabled,
+                lastHealthCheck: state.lastHealthCheck,
+                consecutiveFailures: state.consecutiveFailures,
+                consecutiveSuccesses: state.consecutiveSuccesses,
+                totalChecks: state.totalChecks,
+                connection: state.config.connection,
+                thresholds: state.config.thresholds,
+                metadata: {
+                  createdAt: state.metadata.createdAt,
+                  updatedAt: state.metadata.updatedAt,
+                  lastFailure: state.metadata.lastFailure,
+                  lastSuccess: state.metadata.lastSuccess
+                }
+              })),
+              summary: {
+                total: Object.keys(allDependencies).length,
+                healthy: Object.values(allDependencies).filter(s => s.status === DependencyStatus.HEALTHY).length,
+                warning: Object.values(allDependencies).filter(s => s.status === DependencyStatus.WARNING).length,
+                critical: Object.values(allDependencies).filter(s => s.status === DependencyStatus.CRITICAL).length,
+                unknown: Object.values(allDependencies).filter(s => s.status === DependencyStatus.UNKNOWN).length,
+                disabled: Object.values(allDependencies).filter(s => s.status === DependencyStatus.DISABLED).length
+              },
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'by_type':
+        const { type } = args;
+        if (!type || !Object.values(DependencyType).includes(type)) {
+          throw new Error(`Valid dependency type is required. Available types: ${Object.values(DependencyType).join(', ')}`);
+        }
+
+        const dependenciesByType = dependencyRegistry.getDependenciesByType(type as any);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              type,
+              dependencies: Object.entries(dependenciesByType).map(([name, state]) => ({
+                name,
+                status: state.status,
+                priority: state.config.priority,
+                enabled: state.enabled,
+                lastHealthCheck: state.lastHealthCheck,
+                metrics: state.metrics
+              })),
+              count: Object.keys(dependenciesByType).length,
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'by_status':
+        const { status } = args;
+        if (!status || !Object.values(DependencyStatus).includes(status)) {
+          throw new Error(`Valid status is required. Available statuses: ${Object.values(DependencyStatus).join(', ')}`);
+        }
+
+        const dependenciesByStatus = dependencyRegistry.getDependenciesByStatus(status as any);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              status,
+              dependencies: Object.entries(dependenciesByStatus).map(([name, state]) => ({
+                name,
+                type: state.config.type,
+                priority: state.config.priority,
+                lastHealthCheck: state.lastHealthCheck,
+                consecutiveFailures: state.consecutiveFailures,
+                metrics: state.metrics
+              })),
+              count: Object.keys(dependenciesByStatus).length,
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'enable':
+      case 'disable':
+        const { dependency: depName } = args;
+        if (!depName) {
+          throw new Error('Dependency name is required');
+        }
+
+        const depState = dependencyRegistry.getDependencyState(depName);
+        if (!depState) {
+          throw new Error(`Dependency ${depName} not found`);
+        }
+
+        const enabled = action === 'enable';
+        dependencyRegistry.setHealthCheckingEnabled(depName, enabled);
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              dependency: depName,
+              healthCheckingEnabled: enabled,
+              previousStatus: depState.status,
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      case 'check_all':
+        const checkAllResults = await dependencyRegistry.checkAllDependencies();
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              results: checkAllResults,
+              summary: {
+                total: Object.keys(checkAllResults).length,
+                healthy: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.HEALTHY).length,
+                warning: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.WARNING).length,
+                critical: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.CRITICAL).length
+              },
+              timestamp: new Date().toISOString()
+            }, null, 2)
+          }]
+        };
+
+      default:
+        throw new Error(`Unknown dependency registry action: ${action}`);
+    }
+  } catch (error) {
+    logger.error('Dependency registry operation failed', { error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'dependency_registry',
+          args,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      }]
+    };
+  }
+}
+
+/**
+ * Handle comprehensive dependency analysis
+ */
+async function handleDependencyAnalysis(args: any): Promise<any> {
+  try {
+    const { include_history = false, history_limit = 50 } = args;
+
+    // Import services dynamically
+    const { dependencyRegistry } = await import('./services/deps-registry.js');
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+    
+    // Get or create health aggregation service instance
+    let healthAggregation: any;
+    try {
+      // Try to get existing instance from global or create new one
+      healthAggregation = new HealthAggregationService(dependencyRegistry);
+      await healthAggregation.start();
+    } catch (error) {
+      logger.warn('Failed to start health aggregation service', { error });
+      throw new Error('Health aggregation service unavailable');
+    }
+
+    try {
+      // Get comprehensive health analysis
+      const analysis = await healthAggregation.getHealthStatus();
+
+      const response: any = {
+        analysis: {
+          overall: analysis.overall,
+          dependencies: analysis.dependencies,
+          risks: analysis.risks,
+          recommendations: analysis.recommendations,
+          timestamp: analysis.timestamp
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      // Include history if requested
+      if (include_history) {
+        response.history = healthAggregation.getHealthHistory(history_limit);
+      }
+
+      // Get health check cache stats
+      const { healthCheckService } = await import('./services/health-check.service.js');
+      response.cacheStats = healthCheckService.getCacheStats();
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
+        }]
+      };
+
+    } finally {
+      await healthAggregation.stop();
+    }
+
+  } catch (error) {
+    logger.error('Dependency analysis operation failed', { error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'dependency_analysis',
+          args,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      }]
+    };
+  }
+}
+
+/**
+ * Handle dependency alerts operations
+ */
+async function handleDependencyAlerts(args: any): Promise<any> {
+  try {
+    const { action, alert_id, severity, acknowledged_by } = args;
+
+    // Import services dynamically
+    const { dependencyRegistry } = await import('./services/deps-registry.js');
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+    const { AlertSeverity } = await import('./services/health-aggregation.service.js');
+
+    let healthAggregation: any;
+    try {
+      healthAggregation = new HealthAggregationService(dependencyRegistry);
+      await healthAggregation.start();
+    } catch (error) {
+      logger.warn('Failed to start health aggregation service', { error });
+      throw new Error('Health aggregation service unavailable');
+    }
+
+    try {
+      switch (action) {
+        case 'list':
+          const filterSeverity = severity ? AlertSeverity[severity.toUpperCase() as keyof typeof AlertSeverity] : undefined;
+          const activeAlerts = healthAggregation.getActiveAlerts(filterSeverity);
+
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                alerts: activeAlerts,
+                summary: {
+                  total: activeAlerts.length,
+                  critical: activeAlerts.filter((a: any) => a.severity === AlertSeverity.CRITICAL).length,
+                  warning: activeAlerts.filter((a: any) => a.severity === AlertSeverity.WARNING).length,
+                  info: activeAlerts.filter((a: any) => a.severity === AlertSeverity.INFO).length
+                },
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+
+        case 'acknowledge':
+          if (!alert_id) {
+            throw new Error('Alert ID is required for acknowledgment');
+          }
+          if (!acknowledged_by) {
+            throw new Error('Acknowledged by is required for acknowledgment');
+          }
+
+          healthAggregation.acknowledgeAlert(alert_id, acknowledged_by);
+
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                message: `Alert ${alert_id} acknowledged by ${acknowledged_by}`,
+                alert_id,
+                acknowledged_by,
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+
+        case 'resolve':
+          if (!alert_id) {
+            throw new Error('Alert ID is required for resolution');
+          }
+
+          healthAggregation.resolveAlert(alert_id);
+
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                message: `Alert ${alert_id} resolved`,
+                alert_id,
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+
+        default:
+          throw new Error(`Unknown alerts action: ${action}`);
+      }
+
+    } finally {
+      await healthAggregation.stop();
+    }
+
+  } catch (error) {
+    logger.error('Dependency alerts operation failed', { error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'dependency_alerts',
+          args,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      }]
+    };
+  }
+}
+
+/**
+ * Handle dependency SLA operations
+ */
+async function handleDependencySLA(args: any): Promise<any> {
+  try {
+    const { action, sla_name } = args;
+
+    // Import services dynamically
+    const { dependencyRegistry } = await import('./services/deps-registry.js');
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+    const { SLAStatus } = await import('./services/health-aggregation.service.js');
+
+    let healthAggregation: any;
+    try {
+      healthAggregation = new HealthAggregationService(dependencyRegistry);
+      await healthAggregation.start();
+    } catch (error) {
+      logger.warn('Failed to start health aggregation service', { error });
+      throw new Error('Health aggregation service unavailable');
+    }
+
+    try {
+      switch (action) {
+        case 'list':
+          const compliance = healthAggregation.getSLACompliance(sla_name);
+          const slaArray = Array.from(compliance.entries() as Iterable<[string, any]>).map(([name, data]) => ({
+            name,
+            status: data.status,
+            period: data.period,
+            metrics: data.metrics,
+            violations: data.violations,
+            score: data.score
+          }));
+
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                slas: slaArray,
+                summary: {
+                  total: slaArray.length,
+                  compliant: slaArray.filter((s: any) => s.status === SLAStatus.COMPLIANT).length,
+                  warning: slaArray.filter((s: any) => s.status === SLAStatus.WARNING).length,
+                  violation: slaArray.filter((s: any) => s.status === SLAStatus.VIOLATION).length,
+                  unknown: slaArray.filter((s: any) => s.status === SLAStatus.UNKNOWN).length
+                },
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+
+        default:
+          throw new Error(`Unknown SLA action: ${action}`);
+      }
+
+    } finally {
+      await healthAggregation.stop();
+    }
+
+  } catch (error) {
+    logger.error('Dependency SLA operation failed', { error, args });
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Unknown error',
+          operation: 'dependency_sla',
+          args,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      }]
     };
   }
 }
@@ -2461,115 +3241,238 @@ async function ensureDatabaseInitialized(): Promise<void> {
 
 async function startServer(): Promise<void> {
   try {
-    logger.info('=== MCP Server Startup Debug ===');
-    logger.info('Process ID:', process.pid);
-    logger.info('Node version:', process.version);
-    logger.info('Working directory:', process.cwd());
-    logger.info(`Environment: ${env.NODE_ENV}`);
-    logger.info(`Qdrant URL: ${env.QDRANT_URL}`);
-    logger.info(`Collection: ${env.QDRANT_COLLECTION_NAME}`);
-    logger.info('STDIO streams:', {
+    // Track handshake state to prevent background logging during critical window
+    let isHandshakeComplete = false;
+
+    // Conditional logger that respects handshake timing
+    const safeLogger = {
+      info: (message: string, meta?: any) => {
+        if (isHandshakeComplete) {
+          logger.info(message, meta);
+        } else {
+          // Route to stderr only during handshake to avoid stdio pollution
+          process.stderr.write(`[PRE-CONNECT] ${message}\n`);
+        }
+      },
+      warn: (message: string, meta?: any) => {
+        // Always route warnings to stderr during handshake
+        if (!isHandshakeComplete) {
+          process.stderr.write(`[PRE-CONNECT-WARN] ${message}\n`);
+          return;
+        }
+        logger.warn(message, meta);
+      },
+      error: (message: string, meta?: any) => {
+        // Always route errors to stderr during handshake
+        if (!isHandshakeComplete) {
+          process.stderr.write(`[PRE-CONNECT-ERROR] ${message}\n`);
+          return;
+        }
+        logger.error(message, meta);
+      }
+    };
+
+    safeLogger.info('=== MCP Server Startup Debug ===');
+    safeLogger.info(`Process ID: ${process.pid}`);
+    safeLogger.info(`Node version: ${process.version}`);
+    safeLogger.info(`Working directory: ${process.cwd()}`);
+    safeLogger.info(`Environment: ${env.NODE_ENV}`);
+    safeLogger.info(`Qdrant URL: ${env.QDRANT_URL}`);
+    safeLogger.info(`Collection: ${env.QDRANT_COLLECTION_NAME}`);
+    safeLogger.info('STDIO streams: ' + JSON.stringify({
       stdin: process.stdin.isTTY ? 'TTY' : 'PIPE',
       stdout: process.stdout.isTTY ? 'TTY' : 'PIPE',
       stderr: process.stderr.isTTY ? 'TTY' : 'PIPE',
-    });
+    }));
 
     // Configure Node.js memory optimization
     if (!process.env.NODE_OPTIONS) {
       process.env.NODE_OPTIONS = '--max-old-space-size=4096';
     }
 
-    // Enable aggressive garbage collection for memory optimization
+    // Enable initial garbage collection only (no intervals yet)
     if (global.gc) {
-      logger.info('Native garbage collection available');
+      safeLogger.info('Native garbage collection available');
       global.gc();
     }
 
-    // Set up periodic garbage collection
-    const gcInterval = setInterval(() => {
-      if (global.gc) {
-        global.gc();
-      }
-    }, 30000); // Every 30 seconds
+    // Declare interval variables but don't start them yet
+    let gcInterval: NodeJS.Timeout | undefined;
+    let memoryCheckInterval: NodeJS.Timeout | undefined;
+    let periodicCleanupInterval: NodeJS.Timeout | undefined;
 
-    // Aggressive memory monitoring and optimization
-    const memoryCheckInterval = setInterval(() => {
-      const memUsage = process.memoryUsage();
-      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
-      const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
-      const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
+    // Function to start background monitoring after handshake
+    const startBackgroundMonitoring = () => {
+      safeLogger.info('Starting background memory monitoring...');
 
-      if (heapUsagePercent > 85) {
-        logger.error(`Critical memory usage: ${heapUsagePercent.toFixed(1)}% - executing emergency cleanup`, {
-          heapUsed: `${heapUsedMB.toFixed(1)}MB`,
-          heapTotal: `${heapTotalMB.toFixed(1)}MB`,
-          heapUsagePercent: heapUsagePercent.toFixed(1),
-          rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
-          external: `${(memUsage.external / 1024 / 1024).toFixed(1)}MB`
-        });
-
-        // Force aggressive garbage collection if available
+      // Set up periodic garbage collection
+      gcInterval = setInterval(() => {
         if (global.gc) {
           global.gc();
-          global.gc(); // Double collection for aggressive cleanup
         }
+      }, 30000); // Every 30 seconds
 
-        // Force additional cleanup strategies
-        if (global.gc && heapUsagePercent > 90) {
-          // Triple collection for critical situations
-          setTimeout(() => global.gc!(), 100);
-          setTimeout(() => global.gc!(), 200);
+      // Aggressive memory monitoring and optimization with conditional logging
+      memoryCheckInterval = setInterval(() => {
+        const memUsage = process.memoryUsage();
+        const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+        const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+        const heapUsagePercent = (heapUsedMB / heapTotalMB) * 100;
 
-          // Trigger memory pressure event (Node.js internal event)
-          if (process.emit && (process.emit as any)('memory-pressure', 'critical')) {
-            // Memory pressure event triggered
+        if (heapUsagePercent > 85) {
+          safeLogger.error(
+            `Critical memory usage: ${heapUsagePercent.toFixed(1)}% - executing emergency cleanup`,
+            {
+              heapUsed: `${heapUsedMB.toFixed(1)}MB`,
+              heapTotal: `${heapTotalMB.toFixed(1)}MB`,
+              heapUsagePercent: heapUsagePercent.toFixed(1),
+              rss: `${(memUsage.rss / 1024 / 1024).toFixed(1)}MB`,
+              external: `${(memUsage.external / 1024 / 1024).toFixed(1)}MB`,
+            }
+          );
+
+          // Force aggressive garbage collection if available
+          if (global.gc) {
+            global.gc();
+            global.gc(); // Double collection for aggressive cleanup
+          }
+
+          // Force additional cleanup strategies
+          if (global.gc && heapUsagePercent > 90) {
+            // Triple collection for critical situations
+            setTimeout(() => global.gc!(), 100);
+            setTimeout(() => global.gc!(), 200);
+
+            // Trigger memory pressure event (Node.js internal event)
+            if (process.emit && (process.emit as any)('memory-pressure', 'critical')) {
+              // Memory pressure event triggered
+            }
+          }
+        } else if (heapUsagePercent > 70) {
+          safeLogger.warn(
+            `High memory usage: ${heapUsagePercent.toFixed(1)}% - executing preventive cleanup`,
+            {
+              heapUsed: `${heapUsedMB.toFixed(1)}MB`,
+              heapTotal: `${heapTotalMB.toFixed(1)}MB`,
+              heapUsagePercent: heapUsagePercent.toFixed(1),
+            }
+          );
+
+          // Preventive garbage collection
+          if (global.gc) {
+            global.gc();
           }
         }
-      } else if (heapUsagePercent > 70) {
-        logger.warn(`High memory usage: ${heapUsagePercent.toFixed(1)}% - executing preventive cleanup`, {
-          heapUsed: `${heapUsedMB.toFixed(1)}MB`,
-          heapTotal: `${heapTotalMB.toFixed(1)}MB`,
-          heapUsagePercent: heapUsagePercent.toFixed(1)
-        });
+      }, 5000); // Check every 5 seconds for more aggressive monitoring
 
-        // Preventive garbage collection
+      // Periodic memory cleanup every 30 seconds
+      periodicCleanupInterval = setInterval(() => {
         if (global.gc) {
+          const beforeGC = process.memoryUsage();
           global.gc();
+          const afterGC = process.memoryUsage();
+
+          const memoryFreed = (beforeGC.heapUsed - afterGC.heapUsed) / 1024 / 1024;
+          if (memoryFreed > 1) {
+            // Log meaningful memory recovery
+            safeLogger.info(`Periodic cleanup freed ${memoryFreed.toFixed(1)}MB`, {
+              before: `${(beforeGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+              after: `${(afterGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
+              freed: `${memoryFreed.toFixed(1)}MB`,
+            });
+          }
         }
-      }
-    }, 5000); // Check every 5 seconds for more aggressive monitoring
+      }, 30000);
+    };
 
-    // Periodic memory cleanup every 30 seconds
-    const periodicCleanupInterval = setInterval(() => {
-      if (global.gc) {
-        const beforeGC = process.memoryUsage();
-        global.gc();
-        const afterGC = process.memoryUsage();
-
-        const memoryFreed = (beforeGC.heapUsed - afterGC.heapUsed) / 1024 / 1024;
-        if (memoryFreed > 1) { // Log meaningful memory recovery
-          logger.info(`Periodic cleanup freed ${memoryFreed.toFixed(1)}MB`, {
-            before: `${(beforeGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
-            after: `${(afterGC.heapUsed / 1024 / 1024).toFixed(1)}MB`,
-            freed: `${memoryFreed.toFixed(1)}MB`
-          });
-        }
-      }
-    }, 30000);
-
-    // Initialize observability services
-    logger.info('Initializing observability services...');
-    await changeLoggerService.initialize();
+    // Initialize only critical observability services before connection
+    // Non-critical services will be initialized after handshake to avoid blocking
+    safeLogger.info('Initializing critical observability services...');
     performanceMonitor.startResourceMonitoring();
 
-    // P4-1: Initialize performance trending service
-    const { performanceTrendingService } = await import(
-      './services/metrics/performance-trending.js'
-    );
-    performanceTrendingService.startCollection();
-    logger.info('Performance trending service started');
+    // Function to initialize non-critical services after handshake
+    const initializeNonCriticalServices = async () => {
+      try {
+        // Initialize observability services
+        await changeLoggerService.initialize();
 
-    logger.info('Observability services initialized');
+        // P4-1: Initialize performance trending service
+        const { performanceTrendingService } = await import(
+          './services/metrics/performance-trending.js'
+        );
+        performanceTrendingService.startCollection();
+        logger.info('Performance trending service started');
+
+        // P2-T3: Initialize dependency registry and health monitoring
+        logger.info('Initializing dependency registry and health monitoring...');
+        const { dependencyRegistry, DependencyType, DependencyStatus } = await import('./services/deps-registry.js');
+        type DependencyConfig = import('./services/deps-registry.js').DependencyConfig;
+
+        // Initialize dependency registry
+        await dependencyRegistry.initialize();
+
+        // Register core dependencies
+        const dependencies: DependencyConfig[] = [
+          {
+            name: 'qdrant-vector-db',
+            type: DependencyType.VECTOR_DB,
+            priority: 'critical',
+            version: '1.0.0',
+            description: 'Qdrant vector database for semantic search',
+            healthCheck: {
+              enabled: true,
+              intervalMs: 30000, // 30 seconds
+              timeoutMs: 10000,
+              failureThreshold: 3,
+              successThreshold: 2,
+              retryAttempts: 2,
+              retryDelayMs: 1000
+            },
+            connection: {
+              url: env.QDRANT_URL,
+              apiKey: env.QDRANT_API_KEY,
+              timeout: 10000
+            },
+            thresholds: {
+              responseTimeWarning: 2000,
+              responseTimeCritical: 10000,
+              errorRateWarning: 5,
+              errorRateCritical: 15,
+              availabilityWarning: 99,
+              availabilityCritical: 95
+            }
+          }
+        ];
+
+        // Register dependencies
+        for (const depConfig of dependencies) {
+          try {
+            await dependencyRegistry.registerDependency(depConfig);
+            logger.info(`Registered dependency: ${depConfig.name} (${depConfig.type})`);
+          } catch (error) {
+            logger.warn(`Failed to register dependency ${depConfig.name}:`, error);
+          }
+        }
+
+        logger.info('Non-critical services initialized successfully');
+      } catch (error) {
+        logger.warn('Failed to initialize some non-critical services:', error);
+        // Continue without non-critical services - they're not essential for basic operation
+      }
+    };
+
+// Initialize the server
+const server = new Server(
+  {
+    name: 'cortex-memory-mcp',
+    version: '2.0.1',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
 
     // Add comprehensive error handling
     process.on('uncaughtException', (error) => {
@@ -2595,17 +3498,28 @@ async function startServer(): Promise<void> {
     });
 
     // Create MCP transport FIRST (critical for handshake)
-    logger.info('Creating MCP transport...');
+    safeLogger.info('Creating MCP transport...');
     const transport = new StdioServerTransport();
-    logger.info('MCP transport created successfully');
+    safeLogger.info('MCP transport created successfully');
 
     // Connect to transport IMMEDIATELY (before DB initialization)
-    logger.info('Connecting server to transport...');
+    safeLogger.info('Connecting server to transport...');
     await server.connect(transport);
-    logger.info('Server connected to MCP transport successfully!');
+
+    // MARK: Handshake complete - now safe to start background monitoring
+    isHandshakeComplete = true;
+    safeLogger.info('Server connected to MCP transport successfully!');
+
+    // Start background monitoring AFTER successful connection
+    startBackgroundMonitoring();
+
+    // Initialize non-critical services in background (non-blocking)
+    initializeNonCriticalServices().catch((error) => {
+      logger.error('Failed to initialize non-critical services:', error);
+    });
 
     // Initialize database in background after transport is ready
-    logger.info('Starting background database initialization...');
+    safeLogger.info('Starting background database initialization...');
     ensureDatabaseInitialized()
       .then(() => {
         // Start expiry worker after database is ready
@@ -2622,14 +3536,34 @@ async function startServer(): Promise<void> {
     (global as any).memoryIntervals = [gcInterval, memoryCheckInterval];
 
     // Graceful shutdown handling
-    const gracefulShutdown = () => {
+    const gracefulShutdown = async () => {
       logger.info('=== SERVER SHUTDOWN ===');
+
+      try {
+        // P2-T3: Shutdown dependency health system
+        try {
+          const { dependencyRegistry } = await import('./services/deps-registry.js');
+          await dependencyRegistry.shutdown();
+          logger.info('Dependency registry shutdown completed');
+        } catch (error) {
+          logger.warn('Failed to shutdown dependency registry gracefully', { error });
+        }
+
+        // Stop monitoring server
+        const { monitoringServer } = await import('./monitoring/monitoring-server.js');
+        await monitoringServer.stop();
+        logger.info('Monitoring server stopped');
+      } catch (error) {
+        logger.warn('Failed to stop monitoring server gracefully', { error });
+      }
 
       // Clear memory monitoring intervals
       if (typeof memoryCheckInterval !== 'undefined') clearInterval(memoryCheckInterval);
       if (typeof periodicCleanupInterval !== 'undefined') clearInterval(periodicCleanupInterval);
       if ((global as any).memoryIntervals) {
-        (global as any).memoryIntervals.forEach((interval: NodeJS.Timeout) => clearInterval(interval));
+        (global as any).memoryIntervals.forEach((interval: NodeJS.Timeout) =>
+          clearInterval(interval)
+        );
         delete (global as any).memoryIntervals;
       }
 
@@ -2643,7 +3577,6 @@ async function startServer(): Promise<void> {
 
     process.on('SIGINT', gracefulShutdown);
     process.on('SIGTERM', gracefulShutdown);
-
   } catch (error) {
     logger.error('=== SERVER STARTUP FAILED ===');
     logger.error('Error details:', error);
@@ -2968,6 +3901,22 @@ export async function handleSystemStatus(args: any): Promise<any> {
 
       case 'get_cleanup_history':
         return await handleGetCleanupHistory(args);
+
+      // P2-T3: Dependency health operations
+      case 'dependency_health':
+        return await handleDependencyHealth(args);
+
+      case 'dependency_registry':
+        return await handleDependencyRegistry(args);
+
+      case 'dependency_analysis':
+        return await handleDependencyAnalysis(args);
+
+      case 'dependency_alerts':
+        return await handleDependencyAlerts(args);
+
+      case 'dependency_sla':
+        return await handleDependencySLA(args);
 
       default:
         throw new Error(`Unknown system operation: ${operation}`);

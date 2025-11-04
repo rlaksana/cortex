@@ -175,11 +175,10 @@ export class StandardizedAuthService {
       // Verify password
       const isValidPassword = await this.verifyPassword(password, userRecord.password_hash);
       if (!isValidPassword) {
-        throw new AuthenticationError(
-          'Invalid password provided',
-          'Invalid username or password',
-          { userId: userRecord.id, username }
-        );
+        throw new AuthenticationError('Invalid password provided', 'Invalid username or password', {
+          userId: userRecord.id,
+          username,
+        });
       }
 
       // Update last login timestamp
@@ -553,7 +552,10 @@ export class StandardizedAuthService {
         }
 
         if (cacheCleanupCount > 0) {
-          logger.debug({ cacheCleanupCount }, 'Cleaned up expired entries from token blacklist cache');
+          logger.debug(
+            { cacheCleanupCount },
+            'Cleaned up expired entries from token blacklist cache'
+          );
         }
 
         // Clean up expired token revocations from database
@@ -568,7 +570,8 @@ export class StandardizedAuthService {
         // Circuit breaker recovery attempt
         if (
           this.databaseCircuitBreaker.isOpen &&
-          now - this.databaseCircuitBreaker.lastFailureTime > this.databaseCircuitBreaker.recoveryTimeout
+          now - this.databaseCircuitBreaker.lastFailureTime >
+            this.databaseCircuitBreaker.recoveryTimeout
         ) {
           try {
             await this.databaseManager.findOne('tokenRevocationList', {
@@ -732,9 +735,7 @@ export class StandardizedAuthService {
       database_failures: this.databaseCircuitBreaker.failureCount,
     };
 
-    const isDegraded =
-      expiredSessions > 100 ||
-      this.databaseCircuitBreaker.isOpen;
+    const isDegraded = expiredSessions > 100 || this.databaseCircuitBreaker.isOpen;
 
     return {
       status: isDegraded ? 'degraded' : 'healthy',

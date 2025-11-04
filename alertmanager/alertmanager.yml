@@ -1,0 +1,163 @@
+# Alertmanager Configuration for Cortex MCP
+# Handles alert routing, grouping, and notification
+
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@cortex-mcp.local'
+  smtp_auth_username: 'alerts@cortex-mcp.local'
+  smtp_auth_password: 'password'
+
+# Route configuration for alerts
+route:
+  group_by: ['alertname', 'service', 'severity']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default'
+  routes:
+    # Critical alerts go to critical receiver
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 15m
+      continue: true
+
+    # High severity alerts
+    - match:
+        severity: high
+      receiver: 'high-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+      continue: true
+
+    # Warning alerts
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      repeat_interval: 1h
+      continue: true
+
+    # Info alerts
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 1m
+      repeat_interval: 4h
+
+# Inhibition rules to prevent alert spam
+inhibit_rules:
+  # Inhibit warning alerts if there's a critical alert for the same service
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['service', 'alertname']
+
+  # Inhibit info alerts if there are higher severity alerts
+  - source_match_re:
+      severity: (warning|high|critical)
+    target_match:
+      severity: info
+    equal: ['service', 'alertname']
+
+# Receivers for different alert severities
+receivers:
+  # Default receiver
+  - name: 'default'
+    email_configs:
+      - to: 'team@cortex-mcp.local'
+        subject: '[Cortex MCP Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Severity: {{ .Labels.severity }}
+          Runbook: {{ .Annotations.runbook_url }}
+          Impact: {{ .Annotations.impact }}
+          Action: {{ .Annotations.action }}
+          {{ end }}
+
+  # Critical alerts receiver
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@cortex-mcp.local'
+        subject: '[CRITICAL] Cortex MCP: {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Component: {{ .Labels.component }}
+          Severity: {{ .Labels.severity }}
+
+          Impact: {{ .Annotations.impact }}
+          Action: {{ .Annotations.action }}
+          Runbook: {{ .Annotations.runbook_url }}
+
+          Timestamp: {{ .StartsAt }}
+          {{ end }}
+
+          Immediate action required!
+
+  # High severity alerts receiver
+  - name: 'high-alerts'
+    email_configs:
+      - to: 'devops@cortex-mcp.local'
+        subject: '[HIGH] Cortex MCP: {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ HIGH SEVERITY ALERT ⚠️
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Component: {{ .Labels.component }}
+
+          Impact: {{ .Annotations.impact }}
+          Action: {{ .Annotations.action }}
+          Runbook: {{ .Annotations.runbook_url }}
+
+          Timestamp: {{ .StartsAt }}
+          {{ end }}
+
+  # Warning alerts receiver
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'devops@cortex-mcp.local'
+        subject: '[WARNING] Cortex MCP: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+
+          Action: {{ .Annotations.action }}
+          Runbook: {{ .Annotations.runbook_url }}
+
+          Timestamp: {{ .StartsAt }}
+          {{ end }}
+
+  # Info alerts receiver
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'team@cortex-mcp.local'
+        subject: '[INFO] Cortex MCP: {{ .GroupLabels.alertname }}'
+        body: |
+          ℹ️ Informational Alert ℹ️
+
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+
+          Timestamp: {{ .StartsAt }}
+          {{ end }}
+
+# Templates for custom alert formatting
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

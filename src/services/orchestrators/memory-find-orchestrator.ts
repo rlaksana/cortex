@@ -757,7 +757,10 @@ export class MemoryFindOrchestrator {
     parsed: ParsedQuery,
     query: SearchQuery
   ): Promise<{ results: SearchResult[]; totalCount: number }> {
-    logger.info({ query: query.query }, 'Executing hybrid degrade search using enhanced service layer');
+    logger.info(
+      { query: query.query },
+      'Executing hybrid degrade search using enhanced service layer'
+    );
 
     try {
       // Use the enhanced search service for hybrid degrade search
@@ -765,16 +768,19 @@ export class MemoryFindOrchestrator {
 
       // Log quality metrics for monitoring
       const p95Metrics = searchService.getP95QualityMetrics();
-      logger.info({
-        query: query.query,
-        resultsCount: searchResult.results.length,
-        strategy: 'hybrid_degrade',
-        qualityMetrics: p95Metrics
-      }, 'Hybrid degrade search completed with quality metrics');
+      logger.info(
+        {
+          query: query.query,
+          resultsCount: searchResult.results.length,
+          strategy: 'hybrid_degrade',
+          qualityMetrics: p95Metrics,
+        },
+        'Hybrid degrade search completed with quality metrics'
+      );
 
       return {
         results: searchResult.results,
-        totalCount: searchResult.totalCount
+        totalCount: searchResult.totalCount,
       };
     } catch (error) {
       logger.error({ error, query: query.query }, 'Hybrid degrade search service failed');
@@ -994,9 +1000,10 @@ export class MemoryFindOrchestrator {
       match_type: rr.match_type,
     }));
 
-    const averageConfidence = results.length > 0
-      ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
-      : 0;
+    const averageConfidence =
+      results.length > 0
+        ? results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length
+        : 0;
 
     const strategyUsed = searchResult.strategy.primary?.name || searchResult.strategy;
     const fallbackUsed = searchResult.fallbackUsed;
@@ -1021,12 +1028,13 @@ export class MemoryFindOrchestrator {
       ),
       meta: {
         strategy: String(strategyUsed),
-        vector_used: String(strategyUsed).includes('semantic') || String(strategyUsed).includes('hybrid'),
+        vector_used:
+          String(strategyUsed).includes('semantic') || String(strategyUsed).includes('hybrid'),
         degraded,
         source: 'memory-find-orchestrator',
         execution_time_ms: Date.now() - startTime,
         confidence_score: averageConfidence,
-        truncated: false
+        truncated: false,
       },
     };
   }

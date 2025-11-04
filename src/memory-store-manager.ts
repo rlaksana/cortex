@@ -84,7 +84,7 @@ export class MemoryStoreManager {
         items: result.items || [],
         stored: result.stored || items.length,
         errors: result.errors || [],
-        metadata: result.meta || {}
+        metadata: result.meta || {},
       };
     } catch (error) {
       logger.error({ error }, 'Failed to store items');
@@ -93,7 +93,7 @@ export class MemoryStoreManager {
         items: [],
         stored: 0,
         errors: [error instanceof Error ? error.message : 'Unknown error'],
-        metadata: {}
+        metadata: {},
       };
     }
   }
@@ -114,7 +114,7 @@ export class MemoryStoreManager {
         offset: options?.offset || 0,
         types: options?.types || [],
         scope: options?.scope || {},
-        mode: options?.searchStrategy || 'auto'
+        mode: options?.searchStrategy || 'auto',
       };
 
       const result = await this.memoryFindOrchestrator.findItems(searchQuery);
@@ -135,8 +135,8 @@ export class MemoryStoreManager {
           execution_time_ms: result.meta?.execution_time_ms || 0,
           results_count: result.items?.length || 0,
           query_complexity: 'medium',
-          quality_score: result.meta?.confidence_score || 0
-        }
+          quality_score: result.meta?.confidence_score || 0,
+        },
       };
     } catch (error) {
       logger.error({ error }, 'Failed to find items');
@@ -154,8 +154,8 @@ export class MemoryStoreManager {
           execution_time_ms: 0,
           results_count: 0,
           query_complexity: 'unknown',
-          quality_score: 0
-        }
+          quality_score: 0,
+        },
       };
     }
   }
@@ -171,7 +171,7 @@ export class MemoryStoreManager {
     return {
       status: 'healthy',
       initialized: this.initialized,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 }

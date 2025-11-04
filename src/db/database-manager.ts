@@ -22,7 +22,10 @@
 import { DatabaseFactory, createDatabase } from './database-factory.js';
 import type { IDatabase } from './database-interface.js';
 import { logger } from '../utils/logger.js';
-import { circuitBreakerManager, type CircuitBreakerStats } from '../services/circuit-breaker.service.js';
+import {
+  circuitBreakerManager,
+  type CircuitBreakerStats,
+} from '../services/circuit-breaker.service.js';
 
 export interface DatabaseManagerConfig {
   qdrant: {
@@ -106,14 +109,11 @@ export class DatabaseManager {
     }
 
     try {
-      return await this.circuitBreaker.execute(
-        async () => {
-          const result = await this.database!.healthCheck();
-          this.logCircuitBreakerEvent('health_check_success');
-          return result;
-        },
-        'database_health_check'
-      );
+      return await this.circuitBreaker.execute(async () => {
+        const result = await this.database!.healthCheck();
+        this.logCircuitBreakerEvent('health_check_success');
+        return result;
+      }, 'database_health_check');
     } catch (error) {
       logger.error({ error }, 'Database health check failed');
       this.logCircuitBreakerEvent('health_check_failure', error);
@@ -193,14 +193,11 @@ export class DatabaseManager {
     }
 
     try {
-      return await this.circuitBreaker.execute(
-        async () => {
-          const result = await this.database!.store(items, options);
-          this.logCircuitBreakerEvent('store_success', { itemCount: items.length });
-          return result;
-        },
-        'database_store'
-      );
+      return await this.circuitBreaker.execute(async () => {
+        const result = await this.database!.store(items, options);
+        this.logCircuitBreakerEvent('store_success', { itemCount: items.length });
+        return result;
+      }, 'database_store');
     } catch (error) {
       logger.error({ error, itemCount: items.length }, 'Database store operation failed');
       this.logCircuitBreakerEvent('store_failure', error, { itemCount: items.length });
@@ -217,14 +214,11 @@ export class DatabaseManager {
     }
 
     try {
-      return await this.circuitBreaker.execute(
-        async () => {
-          const result = await this.database!.search(query, options);
-          this.logCircuitBreakerEvent('search_success', { queryType: query?.type || 'unknown' });
-          return result;
-        },
-        'database_search'
-      );
+      return await this.circuitBreaker.execute(async () => {
+        const result = await this.database!.search(query, options);
+        this.logCircuitBreakerEvent('search_success', { queryType: query?.type || 'unknown' });
+        return result;
+      }, 'database_search');
     } catch (error) {
       logger.error({ error, query }, 'Database search operation failed');
       this.logCircuitBreakerEvent('search_failure', error, { queryType: query?.type || 'unknown' });
@@ -346,25 +340,31 @@ export class DatabaseManager {
   private logCircuitBreakerEvent(event: string, error?: any, metadata?: any): void {
     const circuitStats = this.circuitBreaker.getStats();
 
-    logger.info({
-      event,
-      circuitState: circuitStats.state,
-      isOpen: circuitStats.isOpen,
-      failureRate: circuitStats.failureRate,
-      totalCalls: circuitStats.totalCalls,
-      averageResponseTime: circuitStats.averageResponseTime,
-      error: error?.message || error,
-      metadata,
-    }, `Circuit breaker event: ${event}`);
+    logger.info(
+      {
+        event,
+        circuitState: circuitStats.state,
+        isOpen: circuitStats.isOpen,
+        failureRate: circuitStats.failureRate,
+        totalCalls: circuitStats.totalCalls,
+        averageResponseTime: circuitStats.averageResponseTime,
+        error: error?.message || error,
+        metadata,
+      },
+      `Circuit breaker event: ${event}`
+    );
 
     // If circuit is open, log additional context
     if (circuitStats.isOpen) {
-      logger.warn({
-        event: 'circuit_open',
-        timeSinceStateChange: circuitStats.timeSinceStateChange,
-        failureTypes: circuitStats.failureTypes,
-        lastFailureTime: circuitStats.timeSinceLastFailure,
-      }, 'DatabaseManager circuit breaker is OPEN - operations will be blocked');
+      logger.warn(
+        {
+          event: 'circuit_open',
+          timeSinceStateChange: circuitStats.timeSinceStateChange,
+          failureTypes: circuitStats.failureTypes,
+          lastFailureTime: circuitStats.timeSinceLastFailure,
+        },
+        'DatabaseManager circuit breaker is OPEN - operations will be blocked'
+      );
     }
   }
 }

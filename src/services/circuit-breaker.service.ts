@@ -100,7 +100,9 @@ export class CircuitBreaker {
 
     // Check if circuit is open
     if (this.isOpen()) {
-      throw new Error(`Circuit breaker is OPEN for ${operationName}. Last failure: ${new Date(this.state.lastFailureTime).toISOString()}`);
+      throw new Error(
+        `Circuit breaker is OPEN for ${operationName}. Last failure: ${new Date(this.state.lastFailureTime).toISOString()}`
+      );
     }
 
     try {
@@ -131,9 +133,14 @@ export class CircuitBreaker {
   /**
    * Execute a half-open probe to test service recovery
    */
-  async executeProbe<T>(probeOperation: () => Promise<T>, operationName: string = 'probe'): Promise<T> {
+  async executeProbe<T>(
+    probeOperation: () => Promise<T>,
+    operationName: string = 'probe'
+  ): Promise<T> {
     if (this.state.state !== 'half-open') {
-      throw new Error(`Circuit breaker is not in half-open state for ${operationName}. Current state: ${this.state.state}`);
+      throw new Error(
+        `Circuit breaker is not in half-open state for ${operationName}. Current state: ${this.state.state}`
+      );
     }
 
     const startTime = Date.now();
@@ -160,8 +167,10 @@ export class CircuitBreaker {
    */
   getStats(): CircuitBreakerStats {
     const now = Date.now();
-    const successRate = this.state.totalCalls > 0 ? this.state.successCalls / this.state.totalCalls : 0;
-    const failureRate = this.state.totalCalls > 0 ? this.state.failedCalls / this.state.totalCalls : 0;
+    const successRate =
+      this.state.totalCalls > 0 ? this.state.successCalls / this.state.totalCalls : 0;
+    const failureRate =
+      this.state.totalCalls > 0 ? this.state.failedCalls / this.state.totalCalls : 0;
 
     return {
       state: this.state.state,
@@ -292,7 +301,8 @@ export class CircuitBreaker {
     }
 
     // Calculate average
-    this.state.averageResponseTime = this.responseTimeBuffer.reduce((sum, time) => sum + time, 0) / this.responseTimeBuffer.length;
+    this.state.averageResponseTime =
+      this.responseTimeBuffer.reduce((sum, time) => sum + time, 0) / this.responseTimeBuffer.length;
   }
 
   /**
