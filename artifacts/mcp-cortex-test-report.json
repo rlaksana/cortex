@@ -1,0 +1,138 @@
+{
+  "summary": {
+    "total": 8,
+    "passed": 6,
+    "failed": 2,
+    "successRate": "75.00%"
+  },
+  "scenarios": [
+    {
+      "scenario": "MCP Tool Import",
+      "passed": false,
+      "message": "Failed to import main module: InitializeRequestSchema is not defined",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.522Z"
+    },
+    {
+      "scenario": "Schema Files",
+      "passed": true,
+      "message": "Schema files exist",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.522Z"
+    },
+    {
+      "scenario": "Memory Schemas",
+      "passed": false,
+      "message": "Memory schemas not found in schema file",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.523Z"
+    },
+    {
+      "scenario": "Test Coverage",
+      "passed": true,
+      "message": "4/4 test files exist",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.523Z"
+    },
+    {
+      "scenario": "Package Config",
+      "passed": "2.0.1",
+      "message": "Package has basic configuration",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.523Z"
+    },
+    {
+      "scenario": "MCP Dependencies",
+      "passed": "^1.0.3",
+      "message": "MCP SDK dependency found",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.523Z"
+    },
+    {
+      "scenario": "Entity Structure",
+      "passed": true,
+      "message": "5/5 entities have valid structure",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.523Z"
+    },
+    {
+      "scenario": "Knowledge Type Coverage",
+      "passed": true,
+      "message": "Found 10 knowledge type test files",
+      "details": null,
+      "timestamp": "2025-11-05T01:18:34.524Z"
+    }
+  ],
+  "testConfiguration": {
+    "testEntities": [
+      {
+        "kind": "entity",
+        "content": "Test User Entity",
+        "metadata": {
+          "type": "user",
+          "role": "developer",
+          "active": true
+        }
+      },
+      {
+        "kind": "decision",
+        "content": "Decision to use React for frontend",
+        "metadata": {
+          "alternatives": [
+            "Vue",
+            "Angular"
+          ],
+          "rationale": "Team experience",
+          "impact": "medium"
+        }
+      },
+      {
+        "kind": "observation",
+        "content": "System performance observation",
+        "metadata": {
+          "metrics": {
+            "cpu": 80,
+            "memory": 60,
+            "disk": 45
+          },
+          "timestamp": "2025-11-05T01:18:34.203Z"
+        }
+      },
+      {
+        "kind": "issue",
+        "content": "Authentication bug found",
+        "metadata": {
+          "severity": "high",
+          "status": "open",
+          "reporter": "test-user"
+        }
+      },
+      {
+        "kind": "todo",
+        "content": "Fix authentication bug",
+        "metadata": {
+          "priority": "high",
+          "assignee": "developer",
+          "dueDate": "2025-11-12T01:18:34.204Z"
+        }
+      }
+    ],
+    "testRelations": [
+      {
+        "kind": "relation",
+        "content": "User reported authentication issue",
+        "metadata": {
+          "relation_type": "reports",
+          "source": "test-user-entity",
+          "target": "authentication-bug"
+        }
+      }
+    ]
+  },
+  "recommendations": [
+    "Fix failing tests before proceeding with MCP Cortex deployment",
+    "Review MCP Cortex implementation - less than 80% tests passing",
+    "Priority issues to address: MCP Tool Import, Memory Schemas"
+  ],
+  "timestamp": "2025-11-05T01:18:34.524Z"
+}

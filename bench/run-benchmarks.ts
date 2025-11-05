@@ -9,7 +9,7 @@
 import { program } from 'commander';
 import { BenchmarkRunner } from './framework/benchmark-runner.js';
 import { BenchmarkDataGenerator } from './utils/data-generator.js';
-import type { BenchmarkConfig, LoadTestConfig } from './framework/types.js';
+import type { BenchmarkConfig } from './framework/types.js';
 
 // Import benchmark scenarios
 import {

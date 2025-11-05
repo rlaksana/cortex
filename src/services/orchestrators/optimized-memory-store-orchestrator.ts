@@ -1,0 +1,561 @@
+/**
+ * Optimized Memory Store Orchestrator
+ *
+ * Enhanced version of the MemoryStoreOrchestrator with memory optimization features:
+ * - Resource pooling for frequently created objects
+ * - Batch processing with memory management
+ * - Automatic cleanup of temporary objects
+ * - Memory usage monitoring during operations
+ * - Circuit breaker for memory pressure scenarios
+ */
+
+import { logger } from '../../utils/logger.js';
+import { MemoryStoreOrchestrator } from './memory-store-orchestrator.js';
+import { memoryManager } from '../memory/memory-manager-service.js';
+import type { MemoryStoreResponse, KnowledgeItem } from '../../types/core-interfaces.js';
+
+/**
+ * Memory pool configuration for objects
+ */
+interface MemoryPoolConfig {
+  itemResultPoolSize: number;
+  batchSummaryPoolSize: number;
+  contextPoolSize: number;
+}
+
+/**
+ * Operation statistics
+ */
+interface OperationStats {
+  totalOperations: number;
+  memoryWarnings: number;
+  cleanupTriggered: number;
+  averageMemoryUsage: number;
+  peakMemoryUsage: number;
+}
+
+/**
+ * Optimized Memory Store Orchestrator
+ *
+ * Extends the base orchestrator with memory optimization features
+ * to prevent high memory usage during batch operations.
+ */
+export class OptimizedMemoryStoreOrchestrator extends MemoryStoreOrchestrator {
+  private memoryPoolConfig: MemoryPoolConfig;
+  private operationStats: OperationStats;
+  private currentOperationMemory = 0;
+  private memoryWarningThreshold = 0.8; // 80%
+  private emergencyCleanupThreshold = 0.95; // 95%
+
+  // Memory pools for object reuse
+  private itemResultPool: any[] = [];
+  private batchSummaryPool: any[] = [];
+  private contextPool: any[] = [];
+
+  constructor(poolConfig: Partial<MemoryPoolConfig> = {}) {
+    super();
+
+    this.memoryPoolConfig = {
+      itemResultPoolSize: poolConfig.itemResultPoolSize || 100,
+      batchSummaryPoolSize: poolConfig.batchSummaryPoolSize || 50,
+      contextPoolSize: poolConfig.contextPoolSize || 50,
+    };
+
+    this.operationStats = {
+      totalOperations: 0,
+      memoryWarnings: 0,
+      cleanupTriggered: 0,
+      averageMemoryUsage: 0,
+      peakMemoryUsage: 0,
+    };
+
+    // Initialize memory pools
+    this.initializeMemoryPools();
+
+    // Setup memory monitoring
+    this.setupMemoryMonitoring();
+
+    logger.info('Optimized Memory Store Orchestrator initialized', {
+      poolConfig: this.memoryPoolConfig,
+    });
+  }
+
+  /**
+   * Initialize memory pools for object reuse
+   */
+  private initializeMemoryPools(): void {
+    // Pre-allocate pools
+    this.itemResultPool = new Array(this.memoryPoolConfig.itemResultPoolSize);
+    this.batchSummaryPool = new Array(this.memoryPoolConfig.batchSummaryPoolSize);
+    this.contextPool = new Array(this.memoryPoolConfig.contextPoolSize);
+
+    logger.debug('Memory pools initialized', {
+      itemResultPoolSize: this.memoryPoolConfig.itemResultPoolSize,
+      batchSummaryPoolSize: this.memoryPoolConfig.batchSummaryPoolSize,
+      contextPoolSize: this.memoryPoolConfig.contextPoolSize,
+    });
+  }
+
+  /**
+   * Setup memory monitoring for operations
+   */
+  private setupMemoryMonitoring(): void {
+    // Listen to memory manager events
+    memoryManager.on('memory-warning', (stats) => {
+      this.handleMemoryWarning(stats);
+    });
+
+    memoryManager.on('memory-critical', (stats) => {
+      this.handleMemoryCritical(stats);
+    });
+
+    memoryManager.on('memory-emergency', (stats) => {
+      this.handleMemoryEmergency(stats);
+    });
+  }
+
+  /**
+   * Handle memory warnings during operations
+   */
+  private handleMemoryWarning(stats: any): void {
+    this.operationStats.memoryWarnings++;
+
+    logger.warn('Memory warning during store operation', {
+      currentUsage: stats.usagePercentage,
+      operationMemory: this.currentOperationMemory,
+    });
+
+    // Trigger preventive cleanup if operation is memory intensive
+    if (this.currentOperationMemory > 50 * 1024 * 1024) { // 50MB
+      this.performOperationCleanup();
+    }
+  }
+
+  /**
+   * Handle critical memory situations
+   */
+  private handleMemoryCritical(stats: any): void {
+    logger.error('Critical memory during store operation', {
+      currentUsage: stats.usagePercentage,
+      operationMemory: this.currentOperationMemory,
+    });
+
+    // Clear memory pools to free memory
+    this.clearMemoryPools();
+    this.operationStats.cleanupTriggered++;
+  }
+
+  /**
+   * Handle emergency memory situations
+   */
+  private handleMemoryEmergency(stats: any): void {
+    logger.error('Emergency memory during store operation', {
+      currentUsage: stats.usagePercentage,
+      operationMemory: this.currentOperationMemory,
+    });
+
+    // Aggressive cleanup
+    this.clearMemoryPools();
+    this.operationStats.cleanupTriggered++;
+
+    // Throw error to prevent further memory usage
+    throw new Error('Operation aborted due to emergency memory situation');
+  }
+
+  /**
+   * Optimized storeItems with memory management
+   */
+  async storeItems(items: unknown[]): Promise<MemoryStoreResponse> {
+    const operationStartMemory = memoryManager.getCurrentMemoryStats().heapUsed;
+    this.operationStats.totalOperations++;
+
+    try {
+      // Pre-operation memory check
+      const currentStats = memoryManager.getCurrentMemoryStats();
+      if (currentStats.usagePercentage > this.emergencyCleanupThreshold) {
+        throw new Error('Cannot start operation - memory usage too high');
+      }
+
+      // Use smaller batches for memory efficiency
+      const batchSize = this.calculateOptimalBatchSize(items.length);
+      const batches = this.createBatches(items, batchSize);
+
+      logger.info('Starting optimized batch storage', {
+        totalItems: items.length,
+        batchSize,
+        batchCount: batches.length,
+        initialMemoryMB: Math.round(operationStartMemory / 1024 / 1024),
+      });
+
+      // Process batches with memory monitoring
+      const allResults = [];
+      const allStored = [];
+      const allErrors = [];
+
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+
+        logger.debug(`Processing batch ${i + 1}/${batches.length}`, {
+          batchSize: batch.length,
+        });
+
+        // Check memory before each batch
+        await this.checkBatchMemory();
+
+        // Process batch
+        const batchResult = await this.processBatchWithMemoryManagement(batch);
+
+        // Merge results
+        allResults.push(...batchResult.items);
+        allStored.push(...batchResult.stored);
+        allErrors.push(...batchResult.errors);
+
+        // Cleanup between batches
+        if (i < batches.length - 1) {
+          this.performInterBatchCleanup();
+        }
+      }
+
+      // Create final response
+      const response = this.createOptimizedResponse(allResults, allStored, allErrors);
+
+      // Update statistics
+      this.updateOperationStats(operationStartMemory);
+
+      logger.info('Optimized batch storage completed', {
+        totalItems: items.length,
+        processedItems: allResults.length,
+        storedItems: allStored.length,
+        errors: allErrors.length,
+        finalMemoryMB: Math.round(memoryManager.getCurrentMemoryStats().heapUsed / 1024 / 1024),
+        memoryDeltaMB: Math.round((memoryManager.getCurrentMemoryStats().heapUsed - operationStartMemory) / 1024 / 1024),
+      });
+
+      return response;
+
+    } catch (error) {
+      logger.error('Optimized store operation failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        operationMemoryMB: Math.round(this.currentOperationMemory / 1024 / 1024),
+      });
+
+      // Cleanup on error
+      this.performOperationCleanup();
+
+      throw error;
+    } finally {
+      // Reset operation memory tracking
+      this.currentOperationMemory = 0;
+    }
+  }
+
+  /**
+   * Calculate optimal batch size based on current memory usage
+   */
+  private calculateOptimalBatchSize(totalItems: number): number {
+    const currentStats = memoryManager.getCurrentMemoryStats();
+    const memoryPressure = currentStats.usagePercentage / 100;
+
+    // Adjust batch size based on memory pressure
+    let batchSize = 50; // Default batch size
+
+    if (memoryPressure > 0.9) {
+      batchSize = 10; // Very small batches under high memory pressure
+    } else if (memoryPressure > 0.8) {
+      batchSize = 20; // Small batches under elevated memory usage
+    } else if (memoryPressure > 0.6) {
+      batchSize = 30; // Medium batches
+    }
+
+    // Ensure we don't create too many batches
+    const minBatchSize = Math.max(1, Math.floor(totalItems / 100));
+    return Math.max(minBatchSize, Math.min(batchSize, totalItems));
+  }
+
+  /**
+   * Create batches for processing
+   */
+  private createBatches<T>(items: T[], batchSize: number): T[][] {
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      batches.push(items.slice(i, i + batchSize));
+    }
+    return batches;
+  }
+
+  /**
+   * Check memory before batch processing
+   */
+  private async checkBatchMemory(): Promise<void> {
+    const stats = memoryManager.getCurrentMemoryStats();
+
+    if (stats.usagePercentage > this.emergencyCleanupThreshold) {
+      throw new Error('Batch processing aborted - memory usage critical');
+    }
+
+    if (stats.usagePercentage > this.memoryWarningThreshold) {
+      logger.warn('High memory usage detected, performing cleanup before batch');
+      this.performOperationCleanup();
+    }
+  }
+
+  /**
+   * Process batch with memory management
+   */
+  private async processBatchWithMemoryManagement(items: unknown[]): Promise<{
+    items: any[];
+    stored: any[];
+    errors: any[];
+  }> {
+    const batchStartMemory = memoryManager.getCurrentMemoryStats().heapUsed;
+
+    try {
+      // Use parent class method for core processing
+      const result = await super.storeItems(items);
+
+      // Track memory usage
+      const batchEndMemory = memoryManager.getCurrentMemoryStats().heapUsed;
+      this.currentOperationMemory += batchEndMemory - batchStartMemory;
+
+      return {
+        items: result.items,
+        stored: result.stored,
+        errors: result.errors,
+      };
+
+    } catch (error) {
+      logger.error('Batch processing failed', {
+        batchSize: items.length,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Perform cleanup between batches
+   */
+  private performInterBatchCleanup(): void {
+    // Trigger garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+
+    // Clear some pool items if pools are getting full
+    this.trimMemoryPools();
+  }
+
+  /**
+   * Perform operation-level cleanup
+   */
+  private performOperationCleanup(): void {
+    // Clear memory pools
+    this.clearMemoryPools();
+
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+
+    logger.debug('Operation cleanup completed');
+  }
+
+  /**
+   * Trim memory pools to prevent growth
+   */
+  private trimMemoryPools(): void {
+    const trimFactor = 0.7; // Keep 70% of pools
+
+    if (this.itemResultPool.length > this.memoryPoolConfig.itemResultPoolSize * trimFactor) {
+      this.itemResultPool.splice(Math.floor(this.memoryPoolConfig.itemResultPoolSize * trimFactor));
+    }
+
+    if (this.batchSummaryPool.length > this.memoryPoolConfig.batchSummaryPoolSize * trimFactor) {
+      this.batchSummaryPool.splice(Math.floor(this.memoryPoolConfig.batchSummaryPoolSize * trimFactor));
+    }
+
+    if (this.contextPool.length > this.memoryPoolConfig.contextPoolSize * trimFactor) {
+      this.contextPool.splice(Math.floor(this.memoryPoolConfig.contextPoolSize * trimFactor));
+    }
+  }
+
+  /**
+   * Clear all memory pools
+   */
+  private clearMemoryPools(): void {
+    const totalCleared = this.itemResultPool.length +
+                       this.batchSummaryPool.length +
+                       this.contextPool.length;
+
+    this.itemResultPool.length = 0;
+    this.batchSummaryPool.length = 0;
+    this.contextPool.length = 0;
+
+    logger.debug('Memory pools cleared', { totalCleared });
+  }
+
+  /**
+   * Create optimized response using pooled objects
+   */
+  private createOptimizedResponse(
+    items: any[],
+    stored: any[],
+    errors: any[]
+  ): MemoryStoreResponse {
+    // Use pooled objects or create new ones if pool is empty
+    const summary = this.getPooledBatchSummary() || {
+      total: items.length,
+      stored: items.filter(r => r.status === 'stored').length,
+      skipped_dedupe: items.filter(r => r.status === 'skipped_dedupe').length,
+      business_rule_blocked: items.filter(r => r.status === 'business_rule_blocked').length,
+      validation_error: items.filter(r => r.status === 'validation_error').length,
+    };
+
+    const context = this.getPooledContext() || {
+      action_performed: 'batch' as const,
+      similar_items_checked: 0,
+      duplicates_found: 0,
+      contradictions_detected: false,
+      recommendation: `Batch processed: ${summary.stored} stored`,
+      reasoning: 'Optimized batch processing with memory management',
+      user_message_suggestion: this.generateUserMessage('batch', stored, errors),
+    };
+
+    const response: MemoryStoreResponse = {
+      items,
+      summary,
+      stored,
+      errors,
+      autonomous_context: context,
+      observability: {
+        source: 'cortex_memory',
+        strategy: 'autonomous_deduplication',
+        vector_used: true,
+        degraded: false,
+        execution_time_ms: 0, // Would be set by actual timing
+        confidence_score: 0.8,
+      },
+      meta: {
+        strategy: 'optimized_memory_store',
+        vector_used: true,
+        degraded: false,
+        source: 'optimized-memory-store-orchestrator',
+        execution_time_ms: 0,
+        confidence_score: 0.8,
+        truncated: false,
+      },
+    };
+
+    // Return pooled objects after a delay
+    setTimeout(() => {
+      this.returnToBatchSummaryPool(summary);
+      this.returnToContextPool(context);
+    }, 100);
+
+    return response;
+  }
+
+  /**
+   * Get pooled batch summary object
+   */
+  private getPooledBatchSummary(): any {
+    return this.batchSummaryPool.pop();
+  }
+
+  /**
+   * Return batch summary to pool
+   */
+  private returnToBatchSummaryPool(summary: any): void {
+    if (this.batchSummaryPool.length < this.memoryPoolConfig.batchSummaryPoolSize) {
+      // Reset object
+      summary.total = 0;
+      summary.stored = 0;
+      summary.skipped_dedupe = 0;
+      summary.business_rule_blocked = 0;
+      summary.validation_error = 0;
+
+      this.batchSummaryPool.push(summary);
+    }
+  }
+
+  /**
+   * Get pooled context object
+   */
+  private getPooledContext(): any {
+    return this.contextPool.pop();
+  }
+
+  /**
+   * Return context to pool
+   */
+  private returnToContextPool(context: any): void {
+    if (this.contextPool.length < this.memoryPoolConfig.contextPoolSize) {
+      // Reset object
+      context.action_performed = 'batch';
+      context.similar_items_checked = 0;
+      context.duplicates_found = 0;
+      context.contradictions_detected = false;
+      context.recommendation = '';
+      context.reasoning = '';
+      context.user_message_suggestion = '';
+
+      this.contextPool.push(context);
+    }
+  }
+
+  /**
+   * Update operation statistics
+   */
+  private updateOperationStats(startMemory: number): void {
+    const endMemory = memoryManager.getCurrentMemoryStats().heapUsed;
+    const memoryDelta = endMemory - startMemory;
+
+    this.operationStats.averageMemoryUsage =
+      (this.operationStats.averageMemoryUsage + Math.abs(memoryDelta)) / 2;
+
+    this.operationStats.peakMemoryUsage =
+      Math.max(this.operationStats.peakMemoryUsage, Math.abs(memoryDelta));
+  }
+
+  
+  /**
+   * Get operation statistics
+   */
+  getOperationStats(): OperationStats {
+    return { ...this.operationStats };
+  }
+
+  /**
+   * Get memory pool statistics
+   */
+  getMemoryPoolStats(): {
+    itemResultPool: number;
+    batchSummaryPool: number;
+    contextPool: number;
+  } {
+    return {
+      itemResultPool: this.itemResultPool.length,
+      batchSummaryPool: this.batchSummaryPool.length,
+      contextPool: this.contextPool.length,
+    };
+  }
+
+  /**
+   * Update memory pool configuration
+   */
+  updatePoolConfig(config: Partial<MemoryPoolConfig>): void {
+    this.memoryPoolConfig = { ...this.memoryPoolConfig, ...config };
+    logger.info('Memory pool config updated', { config: this.memoryPoolConfig });
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  shutdown(): void {
+    this.clearMemoryPools();
+    logger.info('Optimized Memory Store Orchestrator shut down');
+  }
+}
+
+// Export singleton instance
+export const optimizedMemoryStoreOrchestrator = new OptimizedMemoryStoreOrchestrator();

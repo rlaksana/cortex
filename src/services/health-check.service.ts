@@ -26,84 +26,32 @@ import { logger } from '../utils/logger.js';
 import {
   DependencyType,
   DependencyConfig,
-  HealthCheckResult,
+  HealthCheckResult as DependencyHealthResult,
   DependencyStatus,
-  type HealthCheckFunction
+  type HealthCheckFunction,
 } from './deps-registry.js';
+import {
+  HealthCheckStrategy,
+  HealthCheckContext,
+  HealthDiagnostics,
+  EnhancedHealthResult,
+  HealthCheckDiagnostics,
+  PerformanceBenchmark,
+  isDependencyHealthResult,
+  isHealthCheckDiagnostics,
+  dependencyStatusToHealthStatus,
+  healthStatusToDependencyStatus,
+  type HealthCheckConfig as UnifiedHealthCheckConfig,
+} from '../types/unified-health-interfaces.js';
+
+// Note: HealthCheckStrategy, HealthCheckContext, HealthDiagnostics, and EnhancedHealthResult
+// are now imported from unified-health-interfaces.ts to maintain consistency
 
 /**
- * Health check strategy types
+ * Health check configuration (extends unified config)
  */
-export enum HealthCheckStrategy {
-  BASIC = 'basic',
-  ADVANCED = 'advanced',
-  COMPREHENSIVE = 'comprehensive',
-  CUSTOM = 'custom'
-}
-
-/**
- * Health check execution context
- */
-export interface HealthCheckContext {
-  dependencyName: string;
+export interface HealthCheckConfig extends UnifiedHealthCheckConfig {
   strategy: HealthCheckStrategy;
-  startTime: number;
-  timeout: number;
-  retryCount: number;
-  metadata?: Record<string, any>;
-}
-
-/**
- * Health check diagnostics information
- */
-export interface HealthCheckDiagnostics {
-  executionTime: number;
-  networkLatency?: number;
-  connectionTime?: number;
-  dnsResolutionTime?: number;
-  sslHandshakeTime?: number;
-  bytesTransferred?: number;
-  responseHeaders?: Record<string, string>;
-  errorDetails?: {
-    code?: string;
-    message: string;
-    stack?: string;
-    type: string;
-  };
-  performanceMetrics?: {
-    cpuUsage?: number;
-    memoryUsage?: number;
-    diskIO?: number;
-    networkIO?: number;
-  };
-  customMetrics?: Record<string, any>;
-}
-
-/**
- * Enhanced health check result with diagnostics
- */
-export interface EnhancedHealthCheckResult extends HealthCheckResult {
-  strategy: HealthCheckStrategy;
-  diagnostics: HealthCheckDiagnostics;
-  retryAttempts: number;
-  cached: boolean;
-  benchmarkResults?: {
-    throughput: number;
-    averageResponseTime: number;
-    p95ResponseTime: number;
-    p99ResponseTime: number;
-    errorRate: number;
-  };
-}
-
-/**
- * Health check configuration
- */
-export interface HealthCheckConfig {
-  strategy: HealthCheckStrategy;
-  timeout: number;
-  retries: number;
-  retryDelay: number;
   cacheEnabled: boolean;
   cacheTTL: number;
   parallel: boolean;
@@ -117,7 +65,7 @@ export interface HealthCheckConfig {
  * Health check cache entry
  */
 interface HealthCheckCacheEntry {
-  result: EnhancedHealthCheckResult;
+  result: EnhancedHealthResult;
   timestamp: number;
   ttl: number;
   hitCount: number;
@@ -131,12 +79,12 @@ interface HealthCheckCacheEntry {
  */
 export class HealthCheckService extends EventEmitter {
   private cache = new Map<string, HealthCheckCacheEntry>();
-  private activeChecks = new Map<string, Promise<EnhancedHealthCheckResult>>();
+  private activeChecks = new Map<string, Promise<EnhancedHealthResult>>();
   private checkQueue: Array<{
     dependency: string;
     config: DependencyConfig;
     context: HealthCheckContext;
-    resolve: (result: EnhancedHealthCheckResult) => void;
+    resolve: (result: EnhancedHealthResult) => void;
     reject: (error: Error) => void;
   }> = [];
   private maxConcurrentChecks = 10;
@@ -154,19 +102,23 @@ export class HealthCheckService extends EventEmitter {
     dependencyName: string,
     config: DependencyConfig,
     checkConfig: Partial<HealthCheckConfig> = {}
-  ): Promise<EnhancedHealthCheckResult> {
+  ): Promise<EnhancedHealthResult> {
     const finalConfig: HealthCheckConfig = {
       strategy: HealthCheckStrategy.BASIC,
-      timeout: config.healthCheck.timeoutMs,
-      retries: config.healthCheck.retryAttempts,
-      retryDelay: config.healthCheck.retryDelayMs,
+      timeoutMs: config.healthCheck.timeoutMs,
+      retryAttempts: config.healthCheck.retryAttempts,
+      retryDelayMs: config.healthCheck.retryDelayMs,
       cacheEnabled: true,
       cacheTTL: 30000, // 30 seconds
       parallel: false,
       benchmarkEnabled: false,
       benchmarkRequests: 10,
       diagnosticsEnabled: true,
-      ...checkConfig
+      enabled: checkConfig.enabled ?? true, // Ensure enabled is always boolean
+      intervalMs: checkConfig.intervalMs ?? 60000, // Default 1 minute
+      failureThreshold: checkConfig.failureThreshold ?? 3,
+      successThreshold: checkConfig.successThreshold ?? 2,
+      ...checkConfig,
     };
 
     // Check cache first
@@ -188,9 +140,9 @@ export class HealthCheckService extends EventEmitter {
       dependencyName,
       strategy: finalConfig.strategy,
       startTime: performance.now(),
-      timeout: finalConfig.timeout,
+      timeout: finalConfig.timeoutMs,
       retryCount: 0,
-      metadata: finalConfig
+      metadata: finalConfig,
     };
 
     // Create health check promise
@@ -203,7 +155,10 @@ export class HealthCheckService extends EventEmitter {
       const result = await checkPromise;
 
       // Cache result if successful
-      if (finalConfig.cacheEnabled && result.status !== DependencyStatus.CRITICAL) {
+      if (
+        finalConfig.cacheEnabled &&
+        healthStatusToDependencyStatus(result.status) !== DependencyStatus.CRITICAL
+      ) {
         this.setCache(dependencyName, finalConfig.strategy, result, finalConfig.cacheTTL || 300000); // 5 minutes default
       }
 
@@ -220,15 +175,22 @@ export class HealthCheckService extends EventEmitter {
   async performParallelHealthChecks(
     dependencies: Array<{ name: string; config: DependencyConfig }>,
     checkConfig: Partial<HealthCheckConfig> = {}
-  ): Promise<Record<string, EnhancedHealthCheckResult>> {
-    const results: Record<string, EnhancedHealthCheckResult> = {};
+  ): Promise<Record<string, EnhancedHealthResult>> {
+    const results: Record<string, EnhancedHealthResult> = {};
 
     const promises = dependencies.map(async ({ name, config }) => {
       try {
-        const result = await this.performHealthCheck(name, config, { ...checkConfig, parallel: true });
+        const result = await this.performHealthCheck(name, config, {
+          ...checkConfig,
+          parallel: true,
+        });
         results[name] = result;
       } catch (error) {
-        results[name] = this.createErrorResult(name, error instanceof Error ? error : new Error(String(error)), checkConfig.strategy || HealthCheckStrategy.BASIC);
+        results[name] = this.createErrorResult(
+          name,
+          error instanceof Error ? error : new Error(String(error)),
+          checkConfig.strategy || HealthCheckStrategy.BASIC
+        );
       }
     });
 
@@ -239,10 +201,7 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Register custom health check function
    */
-  registerCustomHealthChecker(
-    dependencyType: DependencyType,
-    checker: HealthCheckFunction
-  ): void {
+  registerCustomHealthChecker(dependencyType: DependencyType, checker: HealthCheckFunction): void {
     logger.debug({ dependencyType }, 'Registering custom health checker');
     this.emit('customCheckerRegistered', dependencyType, checker);
   }
@@ -275,7 +234,7 @@ export class HealthCheckService extends EventEmitter {
         dependency,
         strategy: strategy as HealthCheckStrategy,
         age: Date.now() - entry.timestamp,
-        hitCount: entry.hitCount
+        hitCount: entry.hitCount,
       };
     });
 
@@ -285,7 +244,7 @@ export class HealthCheckService extends EventEmitter {
     return {
       size: this.cache.size,
       hitRate: totalRequests > 0 ? totalHits / totalRequests : 0,
-      entries
+      entries,
     };
   }
 
@@ -296,10 +255,10 @@ export class HealthCheckService extends EventEmitter {
     config: DependencyConfig,
     context: HealthCheckContext,
     checkConfig: HealthCheckConfig
-  ): Promise<EnhancedHealthCheckResult> {
+  ): Promise<EnhancedHealthResult> {
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= checkConfig.retries; attempt++) {
+    for (let attempt = 0; attempt <= checkConfig.retryAttempts; attempt++) {
       try {
         context.retryCount = attempt;
 
@@ -315,35 +274,43 @@ export class HealthCheckService extends EventEmitter {
         }
 
         // Add benchmark results if enabled
-        if (checkConfig.benchmarkEnabled && result.status === DependencyStatus.HEALTHY) {
+        if (
+          checkConfig.benchmarkEnabled &&
+          healthStatusToDependencyStatus(result.status) === DependencyStatus.HEALTHY
+        ) {
           result.benchmarkResults = await this.performBenchmark(config, context, checkConfig);
         }
 
         this.emit('healthCheckCompleted', context.dependencyName, result);
         return result;
-
       } catch (error) {
         lastError = error as Error;
 
-        if (attempt < checkConfig.retries) {
-          logger.warn({
-            dependency: context.dependencyName,
-            attempt: attempt + 1,
-            error: lastError.message
-          }, 'Health check failed, retrying...');
+        if (attempt < checkConfig.retryAttempts) {
+          logger.warn(
+            {
+              dependency: context.dependencyName,
+              attempt: attempt + 1,
+              error: lastError.message,
+            },
+            'Health check failed, retrying...'
+          );
 
           // Wait before retry
-          await this.delay(checkConfig.retryDelay * Math.pow(2, attempt));
+          await this.delay(checkConfig.retryDelayMs * Math.pow(2, attempt));
         }
       }
     }
 
     // All retries failed
-    logger.error({
-      dependency: context.dependencyName,
-      attempts: checkConfig.retries + 1,
-      error: lastError?.message
-    }, 'Health check failed after all retries');
+    logger.error(
+      {
+        dependency: context.dependencyName,
+        attempts: checkConfig.retryAttempts + 1,
+        error: lastError?.message,
+      },
+      'Health check failed after all retries'
+    );
 
     return this.createErrorResult(
       context.dependencyName,
@@ -359,11 +326,11 @@ export class HealthCheckService extends EventEmitter {
     config: DependencyConfig,
     context: HealthCheckContext,
     checkConfig: HealthCheckConfig
-  ): Promise<EnhancedHealthCheckResult> {
+  ): Promise<EnhancedHealthResult> {
     const startTime = performance.now();
 
     try {
-      let result: HealthCheckResult;
+      let result: DependencyHealthResult;
 
       switch (context.strategy) {
         case HealthCheckStrategy.BASIC:
@@ -383,15 +350,20 @@ export class HealthCheckService extends EventEmitter {
       }
 
       return {
-        ...result,
+        name: result.dependency,
+        status: dependencyStatusToHealthStatus(result.status),
+        responseTime: result.responseTime,
+        error: result.error,
+        timestamp: new Date(),
+        duration: performance.now() - startTime,
         strategy: context.strategy,
         diagnostics: {
-          executionTime: performance.now() - startTime
+          executionTime: performance.now() - startTime,
         },
         retryAttempts: context.retryCount,
-        cached: false
+        cached: false,
+        dependency: result.dependency,
       };
-
     } catch (error) {
       return this.createErrorResult(
         context.dependencyName,
@@ -405,7 +377,7 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Perform basic health check (ping/connectivity test)
    */
-  private async performBasicHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performBasicHealthCheck(config: DependencyConfig): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -428,7 +400,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -436,7 +408,9 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Perform advanced health check (basic + additional verification)
    */
-  private async performAdvancedHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performAdvancedHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -466,7 +440,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -474,7 +448,9 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Perform comprehensive health check (advanced + performance and load testing)
    */
-  private async performComprehensiveHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performComprehensiveHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -493,17 +469,16 @@ export class HealthCheckService extends EventEmitter {
           ...comprehensiveResult.details,
           comprehensive: true,
           performanceValidated: true,
-          loadTested: true
-        }
+          loadTested: true,
+        },
       };
-
     } catch (error) {
       return {
         dependency: config.name,
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -514,7 +489,7 @@ export class HealthCheckService extends EventEmitter {
   private async performCustomHealthCheck(
     config: DependencyConfig,
     checkConfig: HealthCheckConfig
-  ): Promise<HealthCheckResult> {
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -526,14 +501,13 @@ export class HealthCheckService extends EventEmitter {
 
       // Fall back to advanced check if no custom checker
       return await this.performAdvancedHealthCheck(config);
-
     } catch (error) {
       return {
         dependency: config.name,
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -541,7 +515,9 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Basic database health check
    */
-  private async performBasicDatabaseHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performBasicDatabaseHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -550,10 +526,10 @@ export class HealthCheckService extends EventEmitter {
         qdrant: {
           url: config.connection.url,
           apiKey: config.connection.apiKey,
-          timeout: config.connection.timeout || 30000
+          timeout: config.connection.timeout || 30000,
         },
         enableVectorOperations: config.type === DependencyType.VECTOR_DB,
-        enableFallback: false
+        enableFallback: false,
       });
 
       const isHealthy = await manager.healthCheck();
@@ -565,8 +541,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           connection: config.connection.url,
-          vectorOperations: config.type === DependencyType.VECTOR_DB
-        }
+          vectorOperations: config.type === DependencyType.VECTOR_DB,
+        },
       };
     } catch (error) {
       return {
@@ -574,7 +550,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -584,8 +560,8 @@ export class HealthCheckService extends EventEmitter {
    */
   private async performAdvancedDatabaseHealthCheck(
     config: DependencyConfig,
-    basicResult: HealthCheckResult
-  ): Promise<HealthCheckResult> {
+    basicResult: DependencyHealthResult
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -595,18 +571,19 @@ export class HealthCheckService extends EventEmitter {
         qdrant: {
           url: config.connection.url,
           apiKey: config.connection.apiKey,
-          timeout: config.connection.timeout || 30000
+          timeout: config.connection.timeout || 30000,
         },
         enableVectorOperations: config.type === DependencyType.VECTOR_DB,
-        enableFallback: false
+        enableFallback: false,
       });
 
       // Get database metrics
       const metrics = await manager.getMetrics();
 
       // Check if metrics are within acceptable ranges
-      const isHealthy = basicResult.status === DependencyStatus.HEALTHY &&
-                       (!metrics.errorRate || metrics.errorRate < 0.05);
+      const isHealthy =
+        basicResult.status === DependencyStatus.HEALTHY &&
+        (!metrics.errorRate || metrics.errorRate < 0.05);
 
       return {
         ...basicResult,
@@ -615,8 +592,8 @@ export class HealthCheckService extends EventEmitter {
         details: {
           ...basicResult.details,
           metrics,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     } catch (error) {
       return {
@@ -627,8 +604,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           ...basicResult.details,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     }
   }
@@ -636,14 +613,16 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Basic embedding service health check
    */
-  private async performBasicEmbeddingHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performBasicEmbeddingHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
       const { EmbeddingService } = await import('./embeddings/embedding-service.js');
       const embeddingService = new EmbeddingService({
         apiKey: config.connection.apiKey,
-        timeout: config.connection.timeout || 30000
+        timeout: config.connection.timeout || 30000,
       });
 
       const isHealthy = await embeddingService.healthCheck();
@@ -655,8 +634,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           service: 'OpenAI Embeddings',
-          apiKeyConfigured: !!config.connection.apiKey
-        }
+          apiKeyConfigured: !!config.connection.apiKey,
+        },
       };
     } catch (error) {
       return {
@@ -664,7 +643,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -674,15 +653,15 @@ export class HealthCheckService extends EventEmitter {
    */
   private async performAdvancedEmbeddingHealthCheck(
     config: DependencyConfig,
-    basicResult: HealthCheckResult
-  ): Promise<HealthCheckResult> {
+    basicResult: DependencyHealthResult
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
       const { EmbeddingService } = await import('./embeddings/embedding-service.js');
       const embeddingService = new EmbeddingService({
         apiKey: config.connection.apiKey,
-        timeout: config.connection.timeout || 30000
+        timeout: config.connection.timeout || 30000,
       });
 
       // Get service statistics
@@ -691,9 +670,10 @@ export class HealthCheckService extends EventEmitter {
       // Test with actual embedding generation
       const testResult = await embeddingService.generateEmbedding('health check test');
 
-      const isHealthy = basicResult.status === DependencyStatus.HEALTHY &&
-                       testResult &&
-                       testResult.vector.length > 0;
+      const isHealthy =
+        basicResult.status === DependencyStatus.HEALTHY &&
+        testResult &&
+        testResult.vector.length > 0;
 
       return {
         ...basicResult,
@@ -705,10 +685,10 @@ export class HealthCheckService extends EventEmitter {
           testEmbedding: {
             vectorLength: testResult?.vector.length || 0,
             cached: testResult?.cached || false,
-            processingTime: testResult?.processingTime || 0
+            processingTime: testResult?.processingTime || 0,
           },
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     } catch (error) {
       return {
@@ -719,8 +699,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           ...basicResult.details,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     }
   }
@@ -728,7 +708,9 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Basic cache health check
    */
-  private async performBasicCacheHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performBasicCacheHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -742,8 +724,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           connection: config.connection.url,
-          operations: ['ping']
-        }
+          operations: ['ping'],
+        },
       };
     } catch (error) {
       return {
@@ -751,7 +733,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -761,8 +743,8 @@ export class HealthCheckService extends EventEmitter {
    */
   private async performAdvancedCacheHealthCheck(
     config: DependencyConfig,
-    basicResult: HealthCheckResult
-  ): Promise<HealthCheckResult> {
+    basicResult: DependencyHealthResult
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -781,8 +763,8 @@ export class HealthCheckService extends EventEmitter {
           ...basicResult.details,
           operations: ['ping', 'set', 'get', 'del'],
           testKey,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     } catch (error) {
       return {
@@ -793,8 +775,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           ...basicResult.details,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     }
   }
@@ -802,7 +784,9 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Basic external API health check
    */
-  private async performBasicAPIHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
+  private async performBasicAPIHealthCheck(
+    config: DependencyConfig
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -812,7 +796,7 @@ export class HealthCheckService extends EventEmitter {
       const response = await fetch(config.connection.url, {
         method: 'GET',
         signal: controller.signal,
-        headers: config.connection.headers || {}
+        headers: config.connection.headers || {},
       });
 
       clearTimeout(timeoutId);
@@ -827,8 +811,8 @@ export class HealthCheckService extends EventEmitter {
         details: {
           url: config.connection.url,
           statusCode: response.status,
-          statusText: response.statusText
-        }
+          statusText: response.statusText,
+        },
       };
     } catch (error) {
       return {
@@ -836,7 +820,7 @@ export class HealthCheckService extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -846,8 +830,8 @@ export class HealthCheckService extends EventEmitter {
    */
   private async performAdvancedAPIHealthCheck(
     config: DependencyConfig,
-    basicResult: HealthCheckResult
-  ): Promise<HealthCheckResult> {
+    basicResult: DependencyHealthResult
+  ): Promise<DependencyHealthResult> {
     const startTime = Date.now();
 
     try {
@@ -861,8 +845,8 @@ export class HealthCheckService extends EventEmitter {
         details: {
           ...basicResult.details,
           advanced: true,
-          responseValidated: true
-        }
+          responseValidated: true,
+        },
       };
     } catch (error) {
       return {
@@ -873,8 +857,8 @@ export class HealthCheckService extends EventEmitter {
         timestamp: new Date(),
         details: {
           ...basicResult.details,
-          advanced: true
-        }
+          advanced: true,
+        },
       };
     }
   }
@@ -884,8 +868,8 @@ export class HealthCheckService extends EventEmitter {
    */
   private async performComprehensiveValidation(
     config: DependencyConfig,
-    advancedResult: HealthCheckResult
-  ): Promise<HealthCheckResult> {
+    advancedResult: DependencyHealthResult
+  ): Promise<DependencyHealthResult> {
     // Add comprehensive validation logic here
     // This would include stress testing, load testing, etc.
 
@@ -893,8 +877,8 @@ export class HealthCheckService extends EventEmitter {
       ...advancedResult,
       details: {
         ...advancedResult.details,
-        comprehensive: true
-      }
+        comprehensive: true,
+      },
     };
   }
 
@@ -904,10 +888,10 @@ export class HealthCheckService extends EventEmitter {
   private async collectDiagnostics(
     config: DependencyConfig,
     context: HealthCheckContext,
-    result: EnhancedHealthCheckResult
+    result: EnhancedHealthResult
   ): Promise<HealthCheckDiagnostics> {
     const diagnostics: HealthCheckDiagnostics = {
-      executionTime: result.diagnostics?.executionTime || 0
+      executionTime: result.diagnostics?.executionTime || 0,
     };
 
     // Add performance metrics if available
@@ -917,7 +901,7 @@ export class HealthCheckService extends EventEmitter {
 
       diagnostics.performanceMetrics = {
         memoryUsage: memUsage.heapUsed / 1024 / 1024, // MB
-        cpuUsage: (cpuUsage.user + cpuUsage.system) / 1000000 // Convert to seconds
+        cpuUsage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to seconds
       };
     } catch (error) {
       // Ignore errors in performance collection
@@ -933,7 +917,7 @@ export class HealthCheckService extends EventEmitter {
     config: DependencyConfig,
     context: HealthCheckContext,
     checkConfig: HealthCheckConfig
-  ): Promise<EnhancedHealthCheckResult['benchmarkResults']> {
+  ): Promise<EnhancedHealthResult['benchmarkResults']> {
     const responseTimes: number[] = [];
     const errors = 0;
 
@@ -953,7 +937,7 @@ export class HealthCheckService extends EventEmitter {
         averageResponseTime: 0,
         p95ResponseTime: 0,
         p99ResponseTime: 0,
-        errorRate: 1
+        errorRate: 1,
       };
     }
 
@@ -968,7 +952,7 @@ export class HealthCheckService extends EventEmitter {
       averageResponseTime: average,
       p95ResponseTime: responseTimes[p95Index],
       p99ResponseTime: responseTimes[p99Index],
-      errorRate: errors / checkConfig.benchmarkRequests
+      errorRate: errors / checkConfig.benchmarkRequests,
     };
   }
 
@@ -980,13 +964,14 @@ export class HealthCheckService extends EventEmitter {
     error: Error,
     strategy: HealthCheckStrategy,
     executionTime: number = 0
-  ): EnhancedHealthCheckResult {
+  ): EnhancedHealthResult {
     return {
-      dependency: dependencyName,
-      status: DependencyStatus.CRITICAL,
+      name: dependencyName,
+      status: dependencyStatusToHealthStatus(DependencyStatus.CRITICAL),
       responseTime: executionTime,
       error: error.message,
       timestamp: new Date(),
+      duration: executionTime,
       strategy,
       diagnostics: {
         executionTime,
@@ -994,32 +979,30 @@ export class HealthCheckService extends EventEmitter {
           message: error.message,
           stack: error.stack,
           type: error.constructor.name,
-          code: (error as any).code
-        }
+          code: (error as any).code,
+        },
       },
       retryAttempts: 0,
-      cached: false
+      cached: false,
+      dependency: dependencyName,
     };
   }
 
   /**
    * Execute function with timeout
    */
-  private async executeWithTimeout<T>(
-    fn: () => Promise<T>,
-    timeoutMs: number
-  ): Promise<T> {
+  private async executeWithTimeout<T>(fn: () => Promise<T>, timeoutMs: number): Promise<T> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error(`Health check timeout after ${timeoutMs}ms`));
       }, timeoutMs);
 
       fn()
-        .then(result => {
+        .then((result) => {
           clearTimeout(timeout);
           resolve(result);
         })
-        .catch(error => {
+        .catch((error) => {
           clearTimeout(timeout);
           reject(error);
         });
@@ -1030,7 +1013,7 @@ export class HealthCheckService extends EventEmitter {
    * Delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -1039,7 +1022,7 @@ export class HealthCheckService extends EventEmitter {
   private getFromCache(
     dependencyName: string,
     strategy: HealthCheckStrategy
-  ): EnhancedHealthCheckResult | null {
+  ): EnhancedHealthResult | null {
     const key = `${dependencyName}:${strategy}`;
     const entry = this.cache.get(key);
 
@@ -1064,7 +1047,7 @@ export class HealthCheckService extends EventEmitter {
   private setCache(
     dependencyName: string,
     strategy: HealthCheckStrategy,
-    result: EnhancedHealthCheckResult,
+    result: EnhancedHealthResult,
     ttl: number
   ): void {
     const key = `${dependencyName}:${strategy}`;
@@ -1072,7 +1055,7 @@ export class HealthCheckService extends EventEmitter {
       result: { ...result },
       timestamp: Date.now(),
       ttl,
-      hitCount: 0
+      hitCount: 0,
     });
 
     // Limit cache size
@@ -1101,3 +1084,11 @@ export class HealthCheckService extends EventEmitter {
 
 // Export singleton instance
 export const healthCheckService = new HealthCheckService();
+
+// Re-export required enums for isolatedModules compliance
+export { HealthCheckStrategy } from '../types/unified-health-interfaces.js';
+export type {
+  HealthCheckContext,
+  HealthDiagnostics,
+  EnhancedHealthResult,
+} from '../types/unified-health-interfaces.js';

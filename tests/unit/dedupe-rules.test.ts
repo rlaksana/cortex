@@ -124,7 +124,8 @@ describe('Dedupe Rules Test Suite', () => {
       expect(storeResult2.summary.validation_error).toBe(0);
       expect(storeResult2.errors).toHaveLength(0);
       expect(storeResult2.summary.skipped_dedupe).toBe(1);
-      expect(storeResult2.items).toHaveLength(0);
+      expect(storeResult2.items).toHaveLength(1); // Item should be present but marked as skipped
+      expect(storeResult2.items[0].status).toBe('skipped_dedupe');
       expect(storeResult2.errors).toHaveLength(0);
     });
 
@@ -144,6 +145,35 @@ describe('Dedupe Rules Test Suite', () => {
         data: { content: 'Entity content for project-b' },
         created_at: new Date().toISOString(),
       };
+
+      // Mock successful store of both items (different scopes should not dedupe)
+      mockOrchestrator.storeItems.mockResolvedValueOnce({
+        summary: {
+          stored: 2,
+          skipped_dedupe: 0,
+          business_rule_blocked: 0,
+          validation_error: 0,
+          total: 2,
+        },
+        items: [
+          {
+            input_index: 0,
+            status: 'stored',
+            kind: 'entity',
+            id: 'item-001',
+            created_at: new Date().toISOString(),
+          },
+          {
+            input_index: 1,
+            status: 'stored',
+            kind: 'entity',
+            id: 'item-002',
+            created_at: new Date().toISOString(),
+          },
+        ],
+        stored: ['item-001', 'item-002'],
+        errors: [],
+      });
 
       const storeResult = await mockOrchestrator.storeItems([item1, item2]);
       expect(storeResult.summary.stored).toBe(2);

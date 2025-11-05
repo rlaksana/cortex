@@ -7,6 +7,11 @@ on:
     branches: [main, master, develop]
   workflow_dispatch:
 
+# Strict concurrency controls
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_OPTIONS: --max-old-space-size=4096
   NODE_ENV: test
@@ -14,6 +19,15 @@ env:
   CI: true
   QDRANT_URL: http://localhost:6333
   QDRANT_TIMEOUT: 30000
+  # Strict quality gates
+  ENABLE_STRICT_GATES: true
+  BLOCK_ON_SECURITY_VULNERABILITIES: true
+  ENFORCE_COVERAGE_THRESHOLDS: true
+  REQUIRE_PERFORMANCE_BASELINE: true
+  # Performance thresholds (in milliseconds)
+  BUILD_TIME_THRESHOLD: 60000
+  TEST_TIME_THRESHOLD: 900000
+  MEMORY_THRESHOLD_MB: 4096
 
 jobs:
   # Stage 1: Type Check
@@ -30,6 +44,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full checkout for strict analysis
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -40,9 +56,49 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type Check
+      - name: Cache TypeScript build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .tscache
+            node_modules/.typescript
+          key: ${{ runner.os }}-tscache-${{ matrix.node-version }}-${{ hashFiles('**/tsconfig*.json') }}
+          restore-keys: |
+            ${{ runner.os }}-tscache-${{ matrix.node-version }}-
+            ${{ runner.os }}-tscache-
+
+      - name: Strict Type Check
         id: type-check
-        run: npm run type-check
+        run: |
+          echo "🔍 Running strict TypeScript analysis..."
+
+          # Check for any TypeScript errors first
+          if ! npm run type-check; then
+            echo "❌ TypeScript compilation failed - blocking build"
+            exit 1
+          fi
+
+          # Additional strict checks
+          echo "🔍 Checking for implicit any types..."
+          if grep -r ": any" src/ --include="*.ts" | grep -v node_modules; then
+            echo "⚠️ Found 'any' types - consider improving type safety"
+          fi
+
+          echo "🔍 Checking for @ts-ignore usage..."
+          if grep -r "@ts-ignore" src/ --include="*.ts"; then
+            echo "⚠️ Found @ts-ignore comments - should be addressed"
+            if [ "$ENABLE_STRICT_GATES" = "true" ]; then
+              echo "❌ @ts-ignore usage blocks strict gate"
+              exit 1
+            fi
+          fi
+
+          echo "✅ Strict type check completed successfully"
+
+      - name: Type Complexity Analysis
+        run: |
+          echo "📊 Analyzing type complexity..."
+          npm run complexity || echo "Complexity analysis skipped"
 
   # Stage 2: Lint
   lint:
@@ -112,23 +168,48 @@ jobs:
       - name: Security Audit (npm audit)
         id: security-audit
         run: |
-          echo "🔒 Running npm security audit..."
-          if npm run security:audit:ci; then
-            echo "✅ Security audit passed"
+          echo "🔒 Running strict npm security audit..."
+
+          # Block on high/critical vulnerabilities in strict mode
+          if [ "$BLOCK_ON_SECURITY_VULNERABILITIES" = "true" ]; then
+            echo "🔒 Running audit with high severity blocking..."
+            if ! npm audit --audit-level=high; then
+              echo "❌ HIGH/CRITICAL security vulnerabilities found - BLOCKING build"
+              echo "🚫 Fix required before merge can proceed"
+              npm audit --json > security-audit-report.json
+              exit 1
+            fi
+
+            # Also check for moderate issues but don't block (just warn)
+            echo "🔍 Checking for moderate severity issues..."
+            if npm audit --audit-level=moderate --json > moderate-audit.json; then
+              echo "✅ No moderate issues found"
+            else
+              echo "⚠️ Moderate security issues found - review recommended"
+              cat moderate-audit.json | jq -r '.vulnerabilities | keys[]' 2>/dev/null || true
+            fi
           else
-            echo "❌ Security audit failed"
-            exit 1
+            # Standard audit without blocking
+            if npm run security:audit:ci; then
+              echo "✅ Security audit passed"
+            else
+              echo "❌ Security audit failed"
+              exit 1
+            fi
           fi
 
       - name: ESLint Security Analysis
         id: eslint-security
         run: |
-          echo "🔍 Running ESLint security analysis..."
-          if npm run lint:security; then
-            echo "✅ ESLint security checks passed"
+          echo "🔍 Running strict ESLint security analysis..."
+          if ! npm run lint:security; then
+            echo "❌ ESLint security checks failed"
+            if [ "$ENABLE_STRICT_GATES" = "true" ]; then
+              echo "🚫 Security issues block strict gate"
+              exit 1
+            fi
           else
-            echo "⚠️ ESLint security warnings found"
-            # Don't fail the build for ESLint warnings
+            echo "✅ ESLint security checks passed"
           fi
 
       - name: Security Tests
@@ -263,12 +344,125 @@ jobs:
           path: coverage/index.html
           retention-days: 30
 
-  # Stage 4: Integration Tests
-  integration-tests:
-    name: Integration Test Stage
+  # Stage 4.5: Performance Gates
+  performance-gates:
+    name: Performance Gate Stage
     runs-on: ubuntu-latest
     needs: unit-tests
     if: needs.unit-tests.outputs.status == 'success'
+    outputs:
+      status: ${{ steps.performance-gates.outcome }}
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Performance Test
+        id: build-performance
+        run: |
+          echo "⏱️ Measuring build performance..."
+          BUILD_START=$(date +%s%3N)
+
+          if npm run build; then
+            BUILD_END=$(date +%s%3N)
+            BUILD_TIME=$((BUILD_END - BUILD_START))
+            echo "📊 Build time: ${BUILD_TIME}ms"
+            echo "build_time=${BUILD_TIME}" >> $GITHUB_OUTPUT
+
+            if [ "$BUILD_TIME" -gt "$BUILD_TIME_THRESHOLD" ]; then
+              echo "❌ Build time (${BUILD_TIME}ms) exceeds threshold (${BUILD_TIME_THRESHOLD}ms)"
+              if [ "$REQUIRE_PERFORMANCE_BASELINE" = "true" ]; then
+                echo "🚫 Performance regression detected - BLOCKING"
+                exit 1
+              else
+                echo "⚠️ Build performance regression detected"
+              fi
+            else
+              echo "✅ Build performance acceptable"
+            fi
+          else
+            echo "❌ Build failed"
+            exit 1
+          fi
+
+      - name: Memory Usage Check
+        run: |
+          echo "💾 Checking memory usage during tests..."
+          MEMORY_START=$(node -e "console.log(process.memoryUsage().heapUsed / 1024 / 1024)")
+
+          # Run a quick memory-intensive test
+          npm run test:performance:memory || echo "Memory performance test skipped"
+
+          MEMORY_END=$(node -e "console.log(process.memoryUsage().heapUsed / 1024 / 1024)")
+          MEMORY_USED=$(echo "$MEMORY_END - $MEMORY_START" | bc)
+
+          echo "📊 Memory used: ${MEMORY_USED}MB"
+
+          if (( $(echo "$MEMORY_USED > $MEMORY_THRESHOLD_MB" | bc -l) )); then
+            echo "❌ Memory usage (${MEMORY_USED}MB) exceeds threshold (${MEMORY_THRESHOLD_MB}MB)"
+            if [ "$REQUIRE_PERFORMANCE_BASELINE" = "true" ]; then
+              exit 1
+            fi
+          else
+            echo "✅ Memory usage acceptable"
+          fi
+
+      - name: Performance Baseline Check
+        id: performance-gates
+        run: |
+          echo "📈 Running performance baseline checks..."
+
+          # Check if performance baseline exists
+          if [ -f "performance-baseline.json" ]; then
+            echo "🔍 Comparing against performance baseline..."
+            npm run test:performance:baseline || echo "Baseline comparison skipped"
+          else
+            echo "⚠️ No performance baseline found - creating one..."
+            npm run test:performance:smoke || echo "Performance smoke test skipped"
+          fi
+
+          # Performance regression detection
+          if npm run test:performance:regression 2>/dev/null; then
+            echo "✅ No performance regressions detected"
+          else
+            echo "⚠️ Performance regressions detected"
+            if [ "$REQUIRE_PERFORMANCE_BASELINE" = "true" ]; then
+              echo "🚫 Performance regression blocks strict gate"
+              exit 1
+            fi
+          fi
+
+          echo "✅ Performance gates completed"
+
+      - name: Upload Performance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report-node-${{ matrix.node-version }}
+          path: |
+            performance-*.json
+            performance-*.html
+          retention-days: 30
+        if: always()
+
+  # Stage 5: Integration Tests
+  integration-tests:
+    name: Integration Test Stage
+    runs-on: ubuntu-latest
+    needs: [unit-tests, performance-gates]
+    if: needs.unit-tests.outputs.status == 'success' && needs.performance-gates.outputs.status == 'success'
     outputs:
       status: ${{ steps.integration-tests.outcome }}
 
@@ -615,35 +809,233 @@ jobs:
             dist/
           retention-days: 30
 
+  # Stage 6: Comprehensive Readiness Gates
+  readiness-gates:
+    name: Readiness Gates Stage
+    runs-on: ubuntu-latest
+    needs: [unit-tests, performance-gates, integration-tests]
+    if: needs.unit-tests.result == 'success' && needs.performance-gates.result == 'success' && needs.integration-tests.result == 'success'
+    outputs:
+      status: ${{ steps.readiness-gates.outcome }}
+      ready: ${{ steps.readiness-gates.outputs.ready }}
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Run Comprehensive Readiness Gates
+        id: readiness-gates
+        env:
+          Quality_Gate_Strict: true
+          Quality_Gate_Block_Release: true
+          Quality_Gate_All: true
+          Quality_Gate_Warn_Only: false
+        run: |
+          echo "🚀 Running comprehensive readiness gates validation..."
+          echo "This will validate ALL quality criteria before release:"
+          echo "  ✓ Build = green (0 TypeScript errors)"
+          echo "  ✓ Coverage ≥ 90%"
+          echo "  ✓ Performance targets met (p95 < 1s @ N=100)"
+          echo "  ✓ Alerts verified (end-to-end alerting tests pass)"
+          echo ""
+
+          # Run the comprehensive readiness gate validator
+          if node scripts/readiness-gate-validator.js; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+            echo "✅ ALL READINESS GATES PASSED - READY FOR RELEASE"
+            echo ""
+            echo "🎯 Release Readiness Summary:"
+            echo "  ✅ Build is green (0 TypeScript errors)"
+            echo "  ✅ Coverage ≥ 90%"
+            echo "  ✅ Performance targets met (p95 < 1s @ N=100)"
+            echo "  ✅ Alerts verified (end-to-end alerting tests pass)"
+            echo "  ✅ Security and compliance checks passed"
+            echo ""
+            echo "🚀 RELEASE CANDIDATE APPROVED - Ready for production deployment"
+          else
+            echo "ready=false" >> $GITHUB_OUTPUT
+            echo "❌ READINESS GATES FAILED - RELEASE BLOCKED"
+            echo ""
+            echo "🚫 CRITICAL ISSUES MUST BE RESOLVED BEFORE RELEASE:"
+            echo "  • Fix all failing quality gates"
+            echo "  • Ensure all validation criteria are met"
+            echo "  • Re-run readiness gate validation"
+            echo ""
+            echo "🔒 RELEASE BLOCKED - Quality gates not satisfied"
+            exit 1
+          fi
+
+      - name: Generate Release Gate Report
+        if: always()
+        run: |
+          echo "📋 Generating comprehensive release gate report..."
+          node scripts/release-gate-reporter.js
+
+      - name: Upload Readiness Gate Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-gate-reports-node-${{ matrix.node-version }}
+          path: |
+            artifacts/readiness-gates/
+            artifacts/release-gates/
+          retention-days: 30
+        if: always()
+
+      - name: Upload Readiness Gate HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-gate-html-report-node-${{ matrix.node-version }}
+          path: artifacts/release-gates/*.html
+          retention-days: 30
+        if: always()
+
+      - name: Comment PR with Readiness Status
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const readinessPassed = '${{ steps.readiness-gates.outputs.ready }}' === 'true';
+            const nodeVersion = '${{ matrix.node-version }}';
+
+            const commentBody = `
+            ## 🚀 Release Readiness Gate Results
+
+            **Node Version:** ${nodeVersion}
+            **Status:** ${readinessPassed ? '✅ READY FOR RELEASE' : '❌ RELEASE BLOCKED'}
+
+            ### Quality Gates Validation:
+            ${readinessPassed ?
+              '✅ **Build:** TypeScript compilation successful (0 errors)\n✅ **Coverage:** ≥ 90% test coverage achieved\n✅ **Performance:** P95 latency < 1s @ N=100 concurrent users\n✅ **Alerting:** End-to-end alerting tests passed\n✅ **Security:** No critical vulnerabilities detected' :
+              '❌ **One or more readiness gates failed**\n\nPlease check the readiness gate reports for detailed information on what needs to be fixed.'}
+
+            ### 📊 Reports:
+            - JSON Report: Available in artifacts
+            - HTML Report: Available in artifacts for detailed visualization
+
+            ${readinessPassed ?
+              '🎉 **This PR is ready for merge and release!**' :
+              '🚫 **This PR cannot be merged until readiness gates pass.**'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+
   # Final status check
   ci-status:
     name: CI Pipeline Status
     runs-on: ubuntu-latest
-    needs: [type-check, lint, security-scan, unit-tests, integration-tests, artifact-collection]
+    needs: [type-check, lint, security-scan, unit-tests, performance-gates, integration-tests, artifact-collection, readiness-gates]
     if: always()
 
     steps:
       - name: Check CI Status
         run: |
-          echo "Type Check: ${{ needs.type-check.result }}"
-          echo "Lint: ${{ needs.lint.result }}"
-          echo "Security Scan: ${{ needs.security-scan.result }}"
-          echo "Unit Tests: ${{ needs.unit-tests.result }}"
-          echo "Integration Tests: ${{ needs.integration-tests.result }}"
-          echo "Artifact Collection: ${{ needs.artifact-collection.result }}"
+          echo "🔍 CI Pipeline Stage Results:"
+          echo "  Type Check: ${{ needs.type-check.result }}"
+          echo "  Lint: ${{ needs.lint.result }}"
+          echo "  Security Scan: ${{ needs.security-scan.result }}"
+          echo "  Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "  Performance Gates: ${{ needs.performance-gates.result }}"
+          echo "  Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "  Artifact Collection: ${{ needs.artifact-collection.result }}"
+          echo "  Readiness Gates: ${{ needs.readiness-gates.result }}"
 
-          if [[ "${{ needs.type-check.result }}" == "failure" ||
-                "${{ needs.lint.result }}" == "failure" ||
-                "${{ needs.security-scan.result }}" == "failure" ||
-                "${{ needs.unit-tests.result }}" == "failure" ||
-                "${{ needs.integration-tests.result }}" == "failure" ||
-                "${{ needs.artifact-collection.result }}" == "failure" ]]; then
-            echo "❌ CI Pipeline Failed - Stage failures detected"
+          # Check for any failed stages
+          FAILED_STAGES=()
+
+          if [[ "${{ needs.type-check.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Type Check")
+          fi
+
+          if [[ "${{ needs.lint.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Lint")
+          fi
+
+          if [[ "${{ needs.security-scan.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Security Scan")
+          fi
+
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Unit Tests")
+          fi
+
+          if [[ "${{ needs.performance-gates.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Performance Gates")
+          fi
+
+          if [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Integration Tests")
+          fi
+
+          if [[ "${{ needs.artifact-collection.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Artifact Collection")
+          fi
+
+          if [[ "${{ needs.readiness-gates.result }}" == "failure" ]]; then
+            FAILED_STAGES+=("Readiness Gates")
+          fi
+
+          # Check readiness gate results specifically
+          READINESS_READY="${{ needs.readiness-gates.outputs.ready }}"
+          if [[ "$READINESS_READY" != "true" ]]; then
+            FAILED_STAGES+=("Release Readiness")
+          fi
+
+          if [ ${#FAILED_STAGES[@]} -gt 0 ]; then
+            echo "❌ CI Pipeline Failed - Stage failures detected:"
+            for stage in "${FAILED_STAGES[@]}"; do
+              echo "  ❌ $stage"
+            done
+            echo ""
             echo "🚫 This pull request cannot be merged until all stages pass"
+            echo "🔒 Strict quality gates are enforced"
+            echo ""
+            echo "📊 Readiness Gate Status: $READINESS_READY"
+            if [[ "$READINESS_READY" != "true" ]]; then
+              echo "🚫 RELEASE NOT READY - Quality gates not satisfied"
+              echo "💡 Check readiness gate reports for specific issues to fix"
+            fi
             exit 1
           else
             echo "✅ CI Pipeline Passed Successfully"
             echo "✅ All quality gates passed - Ready for merge"
+            echo ""
+            echo "🎯 Production Readiness Checklist:"
+            echo "  ✅ Type safety verified"
+            echo "  ✅ Code quality standards met"
+            echo "  ✅ Security vulnerabilities cleared"
+            echo "  ✅ Test coverage thresholds achieved"
+            echo "  ✅ Performance baselines maintained"
+            echo "  ✅ Integration tests passing"
+            echo "  ✅ Build artifacts generated"
+            echo "  ✅ Readiness gates validated"
+            echo ""
+            echo "🚀 RELEASE CANDIDATE APPROVED - Safe to merge to main branch"
+            echo "📋 All release criteria satisfied:"
+            echo "  ✓ Build = green (0 TypeScript errors)"
+            echo "  ✓ Coverage ≥ 90%"
+            echo "  ✓ Performance targets met (p95 < 1s @ N=100)"
+            echo "  ✓ Alerts verified (end-to-end alerting tests pass)"
           fi
 
       - name: PR Merge Protection

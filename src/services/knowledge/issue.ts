@@ -74,7 +74,7 @@ export async function storeIssue(data: IssueData, scope: ScopeFilter): Promise<s
   await db.initialize();
 
   // Get qdrant client for direct database access
-  const { getQdrantClient } = await import('../../db/qdrant-client');
+  const { getQdrantClient } = await import('../../db/qdrant-client.js');
   const qdrant = getQdrantClient();
 
   // qdrant SCHEMA COMPLIANCE: Use direct database fields only

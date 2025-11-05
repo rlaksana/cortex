@@ -31,7 +31,7 @@ import {
   ReleaseSchema,
   RiskSchema,
   AssumptionSchema,
-} from '../schemas/knowledge-types.js';
+} from '../schemas/knowledge-types';
 
 // ============================================================================
 // Type Definitions
@@ -138,13 +138,6 @@ export const SUPPORTED_KINDS = [
   'risk',
   'assumption',
 ] as const;
-
-/**
- * Type guard to check if a string is a supported knowledge kind
- */
-export function isSupportedKind(kind: string): kind is (typeof SUPPORTED_KINDS)[number] {
-  return SUPPORTED_KINDS.includes(kind as any);
-}
 
 // ============================================================================
 // Comprehensive Knowledge Type Metadata
@@ -922,145 +915,43 @@ export const KNOWLEDGE_TYPE_METADATA: Record<
 };
 
 // ============================================================================
-// Helper Functions and Utilities
+// Re-exports from kind-validation-features
 // ============================================================================
+// Utility functions, type guards, and derived constants are now exported
+// from the kind-validation-features module for better organization
 
-/**
- * Get metadata for a specific knowledge type
- */
-export function getKnowledgeTypeMetadata(
-  kind: (typeof SUPPORTED_KINDS)[number]
-): KnowledgeTypeMetadata {
-  const metadata = KNOWLEDGE_TYPE_METADATA[kind];
-  if (!metadata) {
-    throw new Error(`Unknown knowledge type: ${kind}`);
-  }
-  return metadata;
-}
+export {
+  // Core utility functions
+  getKnowledgeTypeMetadata,
+  getKnowledgeTypesByCategory,
+  getKnowledgeTypesByTag,
+  getKnowledgeTypesByValidationFeature,
+  getRelatedKnowledgeTypes,
+  isKnowledgeCategory,
+  isSupportedKind,
+  validateKnowledgeTypeCategory,
+  validateKnowledgeTypeMetadata,
+  supportsValidationFeature,
 
-/**
- * Get all knowledge types in a specific category
- */
-export function getKnowledgeTypesByCategory(category: KnowledgeCategory): string[] {
-  return Object.values(KNOWLEDGE_TYPE_METADATA)
-    .filter((metadata) => metadata.category === category)
-    .map((metadata) => metadata.kind);
-}
+  // Derived constants
+  CORE_GRAPH_EXTENSION_TYPES,
+  CORE_DOCUMENT_TYPES,
+  DEVELOPMENT_LIFECYCLE_TYPES,
+  EIGHT_LOG_SYSTEM_TYPES,
+  IMMUTABLE_TYPES,
+  DEDUPLICATED_TYPES,
+  SCOPE_ISOLATED_TYPES,
+  TTL_SUPPORTED_TYPES,
 
-/**
- * Get knowledge types with specific validation features
- */
-export function getKnowledgeTypesByValidationFeature(feature: keyof ValidationFeatures): string[] {
-  return Object.entries(KNOWLEDGE_TYPE_METADATA)
-    .filter(([, metadata]) => metadata.validationFeatures[feature])
-    .map(([kind]) => kind);
-}
+  // Additional types and utilities
+  type SupportedKnowledgeKind,
+  type ValidationFeatureKey,
+  KNOWLEDGE_CATEGORIES,
+  VALIDATION_FEATURES,
 
-/**
- * Get knowledge types with specific tags
- */
-export function getKnowledgeTypesByTag(tag: string): string[] {
-  return Object.entries(KNOWLEDGE_TYPE_METADATA)
-    .filter(([, metadata]) => metadata.tags.includes(tag))
-    .map(([kind]) => kind);
-}
-
-/**
- * Get related knowledge types for a given type
- */
-export function getRelatedKnowledgeTypes(kind: (typeof SUPPORTED_KINDS)[number]): string[] {
-  const metadata = getKnowledgeTypeMetadata(kind);
-  return metadata.relatedTypes;
-}
-
-/**
- * Check if a knowledge type supports specific validation features
- */
-export function supportsValidationFeature(
-  kind: (typeof SUPPORTED_KINDS)[number],
-  feature: keyof ValidationFeatures
-): boolean {
-  const metadata = getKnowledgeTypeMetadata(kind);
-  return metadata.validationFeatures[feature];
-}
-
-/**
- * Validate if a knowledge type is in the expected category
- */
-export function validateKnowledgeTypeCategory(
-  kind: (typeof SUPPORTED_KINDS)[number],
-  expectedCategory: KnowledgeCategory
-): boolean {
-  const metadata = getKnowledgeTypeMetadata(kind);
-  return metadata.category === expectedCategory;
-}
-
-// ============================================================================
-// Type Guards and Validation
-// ============================================================================
-
-/**
- * Type guard for KnowledgeCategory
- */
-export function isKnowledgeCategory(value: string): value is KnowledgeCategory {
-  return [
-    'core-graph-extension',
-    'core-document-types',
-    'development-lifecycle',
-    'eight-log-system',
-  ].includes(value);
-}
-
-/**
- * Validate knowledge type metadata integrity
- */
-export function validateKnowledgeTypeMetadata(): {
-  isValid: boolean;
-  issues: string[];
-} {
-  const issues: string[] = [];
-
-  // Check all supported kinds have metadata
-  for (const kind of SUPPORTED_KINDS) {
-    if (!KNOWLEDGE_TYPE_METADATA[kind]) {
-      issues.push(`Missing metadata for knowledge type: ${kind}`);
-    }
-  }
-
-  // Check metadata consistency
-  Object.entries(KNOWLEDGE_TYPE_METADATA).forEach(([kind, metadata]) => {
-    if (!SUPPORTED_KINDS.includes(kind as any)) {
-      issues.push(`Metadata for unknown knowledge type: ${kind}`);
-    }
-
-    if (metadata.kind !== kind) {
-      issues.push(`Kind mismatch in metadata for ${kind}: expected ${kind}, got ${metadata.kind}`);
-    }
-
-    if (!metadata.tableName) {
-      issues.push(`Missing table name for knowledge type: ${kind}`);
-    }
-  });
-
-  return {
-    isValid: issues.length === 0,
-    issues,
-  };
-}
-
-// ============================================================================
-// Exports
-// ============================================================================
-// Types are exported inline above to avoid conflicts
-
-// Re-export for convenience - commonly used combinations
-export const CORE_GRAPH_EXTENSION_TYPES = getKnowledgeTypesByCategory('core-graph-extension');
-export const CORE_DOCUMENT_TYPES = getKnowledgeTypesByCategory('core-document-types');
-export const DEVELOPMENT_LIFECYCLE_TYPES = getKnowledgeTypesByCategory('development-lifecycle');
-export const EIGHT_LOG_SYSTEM_TYPES = getKnowledgeTypesByCategory('eight-log-system');
-
-// Validation feature groups
-export const IMMUTABLE_TYPES = getKnowledgeTypesByValidationFeature('hasImmutabilityConstraints');
-export const DEDUPLICATED_TYPES = getKnowledgeTypesByValidationFeature('supportsDeduplication');
-export const SCOPE_ISOLATED_TYPES = getKnowledgeTypesByValidationFeature('supportsScopeIsolation');
-export const TTL_SUPPORTED_TYPES = getKnowledgeTypesByValidationFeature('hasTTLPolicies');
+  // Advanced query functions
+  getKnowledgeTypesByCriteria,
+  getCategoryMetadataSummary,
+  areKnowledgeTypesRelated,
+  getValidationStatistics,
+} from './kind-validation-features.js';

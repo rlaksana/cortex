@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { DatabaseManager } from '../../src/db/database-manager.js';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
-import { MemoryStoreService } from '../../src/services/memory-store.service.js';
+import { MemoryStoreService } from '../../src/services/memory-store.service';
 import { MemoryFindService } from '../../src/services/memory-find.service.js';
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
 import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';

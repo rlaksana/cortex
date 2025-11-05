@@ -28,206 +28,27 @@ import {
   DependencyStatus,
   DependencyState,
   AggregatedHealthStatus,
-  HealthCheckResult,
-  type DependencyConfig
+  HealthCheckResult as DependencyHealthResult,
+  type DependencyConfig,
 } from './deps-registry.js';
+import {
+  HealthAnalysis,
+  HealthSnapshot,
+  HealthAlert,
+  SLADefinition,
+  SLACompliance,
+  HealthAggregationConfig,
+  AlertSeverity,
+  HealthTrend,
+  SLAStatus,
+  ValidationPerformanceMonitor,
+  isDependencyHealthResult,
+  dependencyStatusToHealthStatus,
+} from '../types/unified-health-interfaces.js';
 
-/**
- * Health alert severity levels
- */
-export enum AlertSeverity {
-  INFO = 'info',
-  WARNING = 'warning',
-  CRITICAL = 'critical',
-  EMERGENCY = 'emergency'
-}
-
-/**
- * Health trend direction
- */
-export enum HealthTrend {
-  IMPROVING = 'improving',
-  STABLE = 'stable',
-  DEGRADING = 'degrading',
-  FLUCTUATING = 'fluctuating'
-}
-
-/**
- * SLA compliance status
- */
-export enum SLAStatus {
-  COMPLIANT = 'compliant',
-  WARNING = 'warning',
-  VIOLATION = 'violation',
-  UNKNOWN = 'unknown'
-}
-
-/**
- * Health alert configuration
- */
-export interface HealthAlert {
-  id: string;
-  dependency: string;
-  severity: AlertSeverity;
-  title: string;
-  message: string;
-  timestamp: Date;
-  acknowledged: boolean;
-  acknowledgedBy?: string;
-  acknowledgedAt?: Date;
-  resolved: boolean;
-  resolvedAt?: Date;
-  metadata?: Record<string, any>;
-}
-
-/**
- * SLA definition and targets
- */
-export interface SLADefinition {
-  name: string;
-  description: string;
-  targets: {
-    availability: number; // Percentage (0-100)
-    responseTime: number; // Milliseconds
-    errorRate: number; // Percentage (0-100)
-  };
-  period: {
-    type: 'daily' | 'weekly' | 'monthly';
-    duration: number; // Number of periods
-  };
-  dependencies: string[]; // Dependencies this SLA applies to
-  priority: 'high' | 'medium' | 'low';
-}
-
-/**
- * SLA compliance metrics
- */
-export interface SLACompliance {
-  sla: string;
-  status: SLAStatus;
-  period: {
-    start: Date;
-    end: Date;
-  };
-  metrics: {
-    availability: {
-      current: number;
-      target: number;
-      compliance: number;
-    };
-    responseTime: {
-      current: number;
-      target: number;
-      compliance: number;
-    };
-    errorRate: {
-      current: number;
-      target: number;
-      compliance: number;
-    };
-  };
-  violations: Array<{
-    metric: string;
-    value: number;
-    target: number;
-    timestamp: Date;
-    duration?: number;
-  }>;
-  score: number; // Overall SLA score (0-100)
-}
-
-/**
- * Health analysis result
- */
-export interface HealthAnalysis {
-  overall: {
-    status: DependencyStatus;
-    score: number;
-    trend: HealthTrend;
-    confidence: number;
-  };
-  dependencies: Record<string, {
-    status: DependencyStatus;
-    score: number;
-    trend: HealthTrend;
-    impact: number;
-    risk: 'low' | 'medium' | 'high' | 'critical';
-  }>;
-  risks: Array<{
-    dependency: string;
-    type: 'performance' | 'availability' | 'error_rate' | 'dependency_chain';
-    level: 'low' | 'medium' | 'high' | 'critical';
-    description: string;
-    probability: number;
-    impact: number;
-    mitigation?: string;
-  }>;
-  recommendations: Array<{
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    category: 'performance' | 'reliability' | 'monitoring' | 'architecture';
-    title: string;
-    description: string;
-    estimatedImpact: number;
-  }>;
-  timestamp: Date;
-}
-
-/**
- * Health aggregation configuration
- */
-export interface HealthAggregationConfig {
-  healthScoreWeights: {
-    availability: number;
-    responseTime: number;
-    errorRate: number;
-    trend: number;
-  };
-  alertThresholds: {
-    responseTimeWarning: number;
-    responseTimeCritical: number;
-    errorRateWarning: number;
-    errorRateCritical: number;
-    availabilityWarning: number;
-    availabilityCritical: number;
-  };
-  trendAnalysis: {
-    windowSize: number; // Number of data points
-    minDataPoints: number;
-    threshold: number; // Trend significance threshold
-  };
-  slaMonitoring: {
-    enabled: boolean;
-    evaluationInterval: number; // Milliseconds
-    violationGracePeriod: number; // Milliseconds
-  };
-  alerting: {
-    enabled: boolean;
-    cooldownPeriod: number; // Milliseconds
-    escalationPolicy: {
-      warningDelay: number;
-      criticalDelay: number;
-      emergencyDelay: number;
-    };
-  };
-}
-
-/**
- * Health metrics snapshot
- */
-export interface HealthSnapshot {
-  timestamp: Date;
-  dependencies: Record<string, {
-    status: DependencyStatus;
-    score: number;
-    responseTime: number;
-    errorRate: number;
-    availability: number;
-  }>;
-  overall: {
-    status: DependencyStatus;
-    score: number;
-  };
-}
+// Note: All health-related interfaces (AlertSeverity, HealthTrend, SLAStatus, HealthAlert,
+// SLADefinition, SLACompliance, HealthAnalysis, HealthAggregationConfig, HealthSnapshot)
+// are now imported from unified-health-interfaces.ts to maintain consistency
 
 /**
  * Health Aggregation Service
@@ -257,7 +78,7 @@ export class HealthAggregationService extends EventEmitter {
         availability: 0.4,
         responseTime: 0.3,
         errorRate: 0.2,
-        trend: 0.1
+        trend: 0.1,
       },
       alertThresholds: {
         responseTimeWarning: 1000,
@@ -265,17 +86,17 @@ export class HealthAggregationService extends EventEmitter {
         errorRateWarning: 5,
         errorRateCritical: 15,
         availabilityWarning: 99,
-        availabilityCritical: 95
+        availabilityCritical: 95,
       },
       trendAnalysis: {
         windowSize: 10,
         minDataPoints: 5,
-        threshold: 0.1
+        threshold: 0.1,
       },
       slaMonitoring: {
         enabled: true,
         evaluationInterval: 60000, // 1 minute
-        violationGracePeriod: 300000 // 5 minutes
+        violationGracePeriod: 300000, // 5 minutes
       },
       alerting: {
         enabled: true,
@@ -283,10 +104,10 @@ export class HealthAggregationService extends EventEmitter {
         escalationPolicy: {
           warningDelay: 0,
           criticalDelay: 300000, // 5 minutes
-          emergencyDelay: 900000 // 15 minutes
-        }
+          emergencyDelay: 900000, // 15 minutes
+        },
       },
-      ...config
+      ...config,
     };
 
     this.setupEventListeners();
@@ -319,7 +140,6 @@ export class HealthAggregationService extends EventEmitter {
 
       this.emit('started');
       logger.info('Health Aggregation Service started successfully');
-
     } catch (error) {
       logger.error({ error }, 'Failed to start Health Aggregation Service');
       throw error;
@@ -340,7 +160,6 @@ export class HealthAggregationService extends EventEmitter {
 
       this.emit('stopped');
       logger.info('Health Aggregation Service stopped');
-
     } catch (error) {
       logger.error({ error }, 'Failed to stop Health Aggregation Service');
       throw error;
@@ -386,15 +205,21 @@ export class HealthAggregationService extends EventEmitter {
    * Get active alerts
    */
   getActiveAlerts(severity?: AlertSeverity): HealthAlert[] {
-    const alerts = Array.from(this.alerts.values())
-      .filter(alert => !alert.resolved && !alert.acknowledged);
+    const alerts = Array.from(this.alerts.values()).filter(
+      (alert) => !alert.resolved && !alert.acknowledged
+    );
 
     if (severity) {
-      return alerts.filter(alert => alert.severity === severity);
+      return alerts.filter((alert) => alert.severity === severity);
     }
 
     return alerts.sort((a, b) => {
-      const severityOrder = [AlertSeverity.EMERGENCY, AlertSeverity.CRITICAL, AlertSeverity.WARNING, AlertSeverity.INFO];
+      const severityOrder = [
+        AlertSeverity.EMERGENCY,
+        AlertSeverity.CRITICAL,
+        AlertSeverity.WARNING,
+        AlertSeverity.INFO,
+      ];
       return severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity);
     });
   }
@@ -490,8 +315,8 @@ export class HealthAggregationService extends EventEmitter {
       dependencies: {},
       overall: {
         status: DependencyStatus.HEALTHY,
-        score: 100
-      }
+        score: 100,
+      },
     };
 
     let totalScore = 0;
@@ -507,7 +332,7 @@ export class HealthAggregationService extends EventEmitter {
         score,
         responseTime: state.metrics.responseTime.current,
         errorRate: state.metrics.error.rate * 100,
-        availability: this.calculateAvailability(state)
+        availability: this.calculateAvailability(state),
       };
 
       // Calculate weighted average for overall score
@@ -581,11 +406,16 @@ export class HealthAggregationService extends EventEmitter {
     if (totalTime === 0) {
       // If no data, use status-based availability
       switch (state.status) {
-        case DependencyStatus.HEALTHY: return 100;
-        case DependencyStatus.WARNING: return 95;
-        case DependencyStatus.CRITICAL: return 80;
-        case DependencyStatus.UNKNOWN: return 50;
-        default: return 0;
+        case DependencyStatus.HEALTHY:
+          return 100;
+        case DependencyStatus.WARNING:
+          return 95;
+        case DependencyStatus.CRITICAL:
+          return 80;
+        case DependencyStatus.UNKNOWN:
+          return 50;
+        default:
+          return 0;
       }
     }
 
@@ -602,9 +432,10 @@ export class HealthAggregationService extends EventEmitter {
       return 100;
     } else if (responseTime <= thresholds.responseTimeCritical) {
       // Linear interpolation between warning and critical
-      const ratio = (responseTime - thresholds.responseTimeWarning) /
-                   (thresholds.responseTimeCritical - thresholds.responseTimeWarning);
-      return Math.round(100 - (ratio * 50)); // Scale from 100 to 50
+      const ratio =
+        (responseTime - thresholds.responseTimeWarning) /
+        (thresholds.responseTimeCritical - thresholds.responseTimeWarning);
+      return Math.round(100 - ratio * 50); // Scale from 100 to 50
     } else {
       // Exponential decay for very slow responses
       return Math.max(0, 50 - Math.log10(responseTime / thresholds.responseTimeCritical) * 10);
@@ -622,9 +453,10 @@ export class HealthAggregationService extends EventEmitter {
       return 100;
     } else if (errorRatePercentage <= thresholds.errorRateCritical) {
       // Linear interpolation
-      const ratio = (errorRatePercentage - thresholds.errorRateWarning) /
-                   (thresholds.errorRateCritical - thresholds.errorRateWarning);
-      return Math.round(100 - (ratio * 50));
+      const ratio =
+        (errorRatePercentage - thresholds.errorRateWarning) /
+        (thresholds.errorRateCritical - thresholds.errorRateWarning);
+      return Math.round(100 - ratio * 50);
     } else {
       return Math.max(0, 50 - errorRatePercentage);
     }
@@ -637,11 +469,16 @@ export class HealthAggregationService extends EventEmitter {
     const trend = this.calculateDependencyTrend(state.config.name);
 
     switch (trend) {
-      case HealthTrend.IMPROVING: return 100;
-      case HealthTrend.STABLE: return 80;
-      case HealthTrend.FLUCTUATING: return 60;
-      case HealthTrend.DEGRADING: return 20;
-      default: return 50;
+      case HealthTrend.IMPROVING:
+        return 100;
+      case HealthTrend.STABLE:
+        return 80;
+      case HealthTrend.FLUCTUATING:
+        return 60;
+      case HealthTrend.DEGRADING:
+        return 20;
+      default:
+        return 50;
     }
   }
 
@@ -656,8 +493,8 @@ export class HealthAggregationService extends EventEmitter {
     }
 
     const scores = history
-      .map(snapshot => snapshot.dependencies[dependencyName]?.score)
-      .filter(score => score !== undefined);
+      .map((snapshot) => snapshot.dependencies[dependencyName]?.score)
+      .filter((score) => score !== undefined);
 
     if (scores.length < this.config.trendAnalysis.minDataPoints) {
       return HealthTrend.STABLE;
@@ -685,7 +522,8 @@ export class HealthAggregationService extends EventEmitter {
     } else {
       // Check for fluctuation pattern
       const variance = this.calculateVariance(scores);
-      const meanVariance = scores.reduce((sum, score) => sum + Math.pow(score - (sumY / n), 2), 0) / n;
+      const meanVariance =
+        scores.reduce((sum, score) => sum + Math.pow(score - sumY / n, 2), 0) / n;
 
       if (variance > meanVariance * 2) {
         return HealthTrend.FLUCTUATING;
@@ -700,7 +538,7 @@ export class HealthAggregationService extends EventEmitter {
    */
   private calculateVariance(values: number[]): number {
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const squaredDiffs = values.map(value => Math.pow(value - mean, 2));
+    const squaredDiffs = values.map((value) => Math.pow(value - mean, 2));
     return squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
   }
 
@@ -709,11 +547,16 @@ export class HealthAggregationService extends EventEmitter {
    */
   private getDependencyWeight(priority: string): number {
     switch (priority) {
-      case 'critical': return 4;
-      case 'high': return 3;
-      case 'medium': return 2;
-      case 'low': return 1;
-      default: return 1;
+      case 'critical':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 1;
     }
   }
 
@@ -728,12 +571,12 @@ export class HealthAggregationService extends EventEmitter {
         status: snapshot.overall.status,
         score: snapshot.overall.score,
         trend: this.calculateOverallTrend(),
-        confidence: this.calculateConfidenceScore()
+        confidence: this.calculateConfidenceScore(),
       },
       dependencies: {},
       risks: [],
       recommendations: [],
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     // Analyze individual dependencies
@@ -750,7 +593,7 @@ export class HealthAggregationService extends EventEmitter {
         score: depData.score,
         trend,
         impact,
-        risk
+        risk,
       };
 
       // Add risks if any
@@ -785,7 +628,7 @@ export class HealthAggregationService extends EventEmitter {
       return HealthTrend.STABLE;
     }
 
-    const overallScores = this.healthHistory.map(snapshot => snapshot.overall.score);
+    const overallScores = this.healthHistory.map((snapshot) => snapshot.overall.score);
     const variance = this.calculateVariance(overallScores);
 
     if (variance > 25) {
@@ -842,7 +685,7 @@ export class HealthAggregationService extends EventEmitter {
 
     // Adjust impact based on number of dependent services
     const dependentCount = this.countDependentServices(name);
-    const dependencyMultiplier = Math.min(2, 1 + (dependentCount * 0.1));
+    const dependencyMultiplier = Math.min(2, 1 + dependentCount * 0.1);
 
     return Math.round(baseImpact * dependencyMultiplier);
   }
@@ -884,15 +727,19 @@ export class HealthAggregationService extends EventEmitter {
     }
 
     // Performance-based risks
-    if (responseTime > this.config.alertThresholds.responseTimeCritical ||
-        errorRate > this.config.alertThresholds.errorRateCritical ||
-        availability < this.config.alertThresholds.availabilityCritical) {
+    if (
+      responseTime > this.config.alertThresholds.responseTimeCritical ||
+      errorRate > this.config.alertThresholds.errorRateCritical ||
+      availability < this.config.alertThresholds.availabilityCritical
+    ) {
       return 'high';
     }
 
-    if (responseTime > this.config.alertThresholds.responseTimeWarning ||
-        errorRate > this.config.alertThresholds.errorRateWarning ||
-        availability < this.config.alertThresholds.availabilityWarning) {
+    if (
+      responseTime > this.config.alertThresholds.responseTimeWarning ||
+      errorRate > this.config.alertThresholds.errorRateWarning ||
+      availability < this.config.alertThresholds.availabilityWarning
+    ) {
       return 'medium';
     }
 
@@ -930,10 +777,10 @@ export class HealthAggregationService extends EventEmitter {
     let type: HealthAnalysis['risks'][0]['type'] = 'performance';
     let description = `Performance degradation detected`;
 
-    if (issues.some(issue => issue.includes('error rate'))) {
+    if (issues.some((issue) => issue.includes('error rate'))) {
       type = 'error_rate';
       description = `High error rate affecting service reliability`;
-    } else if (issues.some(issue => issue.includes('availability'))) {
+    } else if (issues.some((issue) => issue.includes('availability'))) {
       type = 'availability';
       description = `Service availability below acceptable thresholds`;
     }
@@ -945,7 +792,7 @@ export class HealthAggregationService extends EventEmitter {
       description: `${description}: ${issues.join(', ')}`,
       probability: this.calculateRiskProbability(dependencyData, risk),
       impact: this.calculateRiskImpact(dependencyData, risk),
-      mitigation: this.generateMitigationStrategy(type, risk)
+      mitigation: this.generateMitigationStrategy(type, risk),
     };
   }
 
@@ -957,11 +804,16 @@ export class HealthAggregationService extends EventEmitter {
     risk: 'low' | 'medium' | 'high' | 'critical'
   ): number {
     switch (risk) {
-      case 'critical': return 0.9;
-      case 'high': return 0.7;
-      case 'medium': return 0.5;
-      case 'low': return 0.2;
-      default: return 0.3;
+      case 'critical':
+        return 0.9;
+      case 'high':
+        return 0.7;
+      case 'medium':
+        return 0.5;
+      case 'low':
+        return 0.2;
+      default:
+        return 0.3;
     }
   }
 
@@ -975,11 +827,16 @@ export class HealthAggregationService extends EventEmitter {
     const baseImpact = (100 - dependencyData.score) / 100;
 
     switch (risk) {
-      case 'critical': return baseImpact * 1.0;
-      case 'high': return baseImpact * 0.7;
-      case 'medium': return baseImpact * 0.4;
-      case 'low': return baseImpact * 0.2;
-      default: return baseImpact * 0.3;
+      case 'critical':
+        return baseImpact * 1.0;
+      case 'high':
+        return baseImpact * 0.7;
+      case 'medium':
+        return baseImpact * 0.4;
+      case 'low':
+        return baseImpact * 0.2;
+      default:
+        return baseImpact * 0.3;
     }
   }
 
@@ -994,7 +851,7 @@ export class HealthAggregationService extends EventEmitter {
       performance: 'Implement caching, optimize queries, or scale resources',
       availability: 'Enable failover mechanisms, health checks, and circuit breakers',
       error_rate: 'Implement retry logic, improve error handling, and monitoring',
-      dependency_chain: 'Reduce dependencies, implement async patterns, and timeouts'
+      dependency_chain: 'Reduce dependencies, implement async patterns, and timeouts',
     };
 
     return strategies[type] || 'Review dependency configuration and monitoring';
@@ -1009,26 +866,33 @@ export class HealthAggregationService extends EventEmitter {
     dependencyData: HealthSnapshot['dependencies'][string],
     trend: HealthTrend
   ): void {
-
     // Performance recommendations
     if (dependencyData.responseTime > this.config.alertThresholds.responseTimeWarning) {
       analysis.recommendations.push({
-        priority: dependencyData.responseTime > this.config.alertThresholds.responseTimeCritical ? 'high' : 'medium',
+        priority:
+          dependencyData.responseTime > this.config.alertThresholds.responseTimeCritical
+            ? 'high'
+            : 'medium',
         category: 'performance',
         title: 'Optimize response time',
         description: `Dependency ${name} has elevated response time of ${dependencyData.responseTime}ms`,
-        estimatedImpact: dependencyData.responseTime > this.config.alertThresholds.responseTimeCritical ? 80 : 50
+        estimatedImpact:
+          dependencyData.responseTime > this.config.alertThresholds.responseTimeCritical ? 80 : 50,
       });
     }
 
     // Reliability recommendations
     if (dependencyData.availability < this.config.alertThresholds.availabilityWarning) {
       analysis.recommendations.push({
-        priority: dependencyData.availability < this.config.alertThresholds.availabilityCritical ? 'critical' : 'high',
+        priority:
+          dependencyData.availability < this.config.alertThresholds.availabilityCritical
+            ? 'critical'
+            : 'high',
         category: 'reliability',
         title: 'Improve service availability',
         description: `Dependency ${name} availability is at ${dependencyData.availability}%`,
-        estimatedImpact: dependencyData.availability < this.config.alertThresholds.availabilityCritical ? 90 : 60
+        estimatedImpact:
+          dependencyData.availability < this.config.alertThresholds.availabilityCritical ? 90 : 60,
       });
     }
 
@@ -1039,7 +903,7 @@ export class HealthAggregationService extends EventEmitter {
         category: 'monitoring',
         title: 'Investigate performance fluctuations',
         description: `Dependency ${name} shows unstable performance patterns`,
-        estimatedImpact: 40
+        estimatedImpact: 40,
       });
     }
 
@@ -1050,7 +914,7 @@ export class HealthAggregationService extends EventEmitter {
         category: 'performance',
         title: 'Address performance degradation',
         description: `Dependency ${name} shows declining performance trend`,
-        estimatedImpact: 70
+        estimatedImpact: 70,
       });
     }
   }
@@ -1080,7 +944,7 @@ export class HealthAggregationService extends EventEmitter {
     const lastAlert = this.lastAlertTimes.get(alertKey);
 
     // Check cooldown period
-    if (lastAlert && (now - lastAlert) < this.config.alerting.cooldownPeriod) {
+    if (lastAlert && now - lastAlert < this.config.alerting.cooldownPeriod) {
       return;
     }
 
@@ -1139,7 +1003,7 @@ export class HealthAggregationService extends EventEmitter {
       timestamp: new Date(),
       acknowledged: false,
       resolved: false,
-      metadata
+      metadata,
     };
 
     this.alerts.set(alertId, alert);
@@ -1230,13 +1094,13 @@ export class HealthAggregationService extends EventEmitter {
    */
   private startSLAEvaluation(): void {
     // Perform initial evaluation
-    this.evaluateSLACompliance().catch(error =>
+    this.evaluateSLACompliance().catch((error) =>
       logger.error({ error }, 'Initial SLA evaluation failed')
     );
 
     // Set up periodic evaluation
     setInterval(() => {
-      this.evaluateSLACompliance().catch(error =>
+      this.evaluateSLACompliance().catch((error) =>
         logger.error({ error }, 'SLA evaluation failed')
       );
     }, this.config.slaMonitoring.evaluationInterval);
@@ -1255,7 +1119,6 @@ export class HealthAggregationService extends EventEmitter {
         if (compliance.status === SLAStatus.VIOLATION) {
           this.createSLAViolationAlert(slaName, compliance);
         }
-
       } catch (error) {
         logger.error({ sla: slaName, error }, 'SLA evaluation failed');
       }
@@ -1276,7 +1139,7 @@ export class HealthAggregationService extends EventEmitter {
         periodStart.setDate(periodStart.getDate() - sla.period.duration);
         break;
       case 'weekly':
-        periodStart.setDate(periodStart.getDate() - (sla.period.duration * 7));
+        periodStart.setDate(periodStart.getDate() - sla.period.duration * 7);
         break;
       case 'monthly':
         periodStart.setMonth(periodStart.getMonth() - sla.period.duration);
@@ -1285,7 +1148,7 @@ export class HealthAggregationService extends EventEmitter {
 
     // Get relevant health snapshots for the period
     const relevantSnapshots = this.healthHistory.filter(
-      snapshot => snapshot.timestamp >= periodStart && snapshot.timestamp <= periodEnd
+      (snapshot) => snapshot.timestamp >= periodStart && snapshot.timestamp <= periodEnd
     );
 
     if (relevantSnapshots.length === 0) {
@@ -1296,10 +1159,10 @@ export class HealthAggregationService extends EventEmitter {
         metrics: {
           availability: { current: 0, target: sla.targets.availability, compliance: 0 },
           responseTime: { current: 0, target: sla.targets.responseTime, compliance: 0 },
-          errorRate: { current: 0, target: sla.targets.errorRate, compliance: 0 }
+          errorRate: { current: 0, target: sla.targets.errorRate, compliance: 0 },
         },
         violations: [],
-        score: 0
+        score: 0,
       };
     }
 
@@ -1328,7 +1191,7 @@ export class HealthAggregationService extends EventEmitter {
             metric: 'availability',
             value: depData.availability,
             target: sla.targets.availability,
-            timestamp: snapshot.timestamp
+            timestamp: snapshot.timestamp,
           });
         }
 
@@ -1337,7 +1200,7 @@ export class HealthAggregationService extends EventEmitter {
             metric: 'responseTime',
             value: depData.responseTime,
             target: sla.targets.responseTime,
-            timestamp: snapshot.timestamp
+            timestamp: snapshot.timestamp,
           });
         }
 
@@ -1346,7 +1209,7 @@ export class HealthAggregationService extends EventEmitter {
             metric: 'errorRate',
             value: depData.errorRate,
             target: sla.targets.errorRate,
-            timestamp: snapshot.timestamp
+            timestamp: snapshot.timestamp,
           });
         }
       }
@@ -1360,10 +1223,10 @@ export class HealthAggregationService extends EventEmitter {
         metrics: {
           availability: { current: 0, target: sla.targets.availability, compliance: 0 },
           responseTime: { current: 0, target: sla.targets.responseTime, compliance: 0 },
-          errorRate: { current: 0, target: sla.targets.errorRate, compliance: 0 }
+          errorRate: { current: 0, target: sla.targets.errorRate, compliance: 0 },
         },
         violations: [],
-        score: 0
+        score: 0,
       };
     }
 
@@ -1373,21 +1236,28 @@ export class HealthAggregationService extends EventEmitter {
     const avgErrorRate = totalErrorRate / dependencyCount;
 
     // Calculate compliance percentages
-    const availabilityCompliance = Math.min(100, (avgAvailability / sla.targets.availability) * 100);
-    const responseTimeCompliance = Math.min(100, (sla.targets.responseTime / avgResponseTime) * 100);
+    const availabilityCompliance = Math.min(
+      100,
+      (avgAvailability / sla.targets.availability) * 100
+    );
+    const responseTimeCompliance = Math.min(
+      100,
+      (sla.targets.responseTime / avgResponseTime) * 100
+    );
     const errorRateCompliance = Math.min(100, (sla.targets.errorRate / avgErrorRate) * 100);
 
     // Determine overall SLA status
     let status: SLAStatus = SLAStatus.COMPLIANT;
     if (violations.length > 0) {
-      const criticalViolations = violations.filter(v =>
-        v.metric === 'availability' && v.value < 95
+      const criticalViolations = violations.filter(
+        (v) => v.metric === 'availability' && v.value < 95
       );
       status = criticalViolations.length > 0 ? SLAStatus.VIOLATION : SLAStatus.WARNING;
     }
 
     // Calculate overall score
-    const overallScore = (availabilityCompliance + responseTimeCompliance + errorRateCompliance) / 3;
+    const overallScore =
+      (availabilityCompliance + responseTimeCompliance + errorRateCompliance) / 3;
 
     return {
       sla: sla.name,
@@ -1397,21 +1267,21 @@ export class HealthAggregationService extends EventEmitter {
         availability: {
           current: Math.round(avgAvailability),
           target: sla.targets.availability,
-          compliance: Math.round(availabilityCompliance)
+          compliance: Math.round(availabilityCompliance),
         },
         responseTime: {
           current: Math.round(avgResponseTime),
           target: sla.targets.responseTime,
-          compliance: Math.round(responseTimeCompliance)
+          compliance: Math.round(responseTimeCompliance),
         },
         errorRate: {
           current: Math.round(avgErrorRate),
           target: sla.targets.errorRate,
-          compliance: Math.round(errorRateCompliance)
-        }
+          compliance: Math.round(errorRateCompliance),
+        },
       },
       violations,
-      score: Math.round(overallScore)
+      score: Math.round(overallScore),
     };
   }
 
@@ -1424,12 +1294,12 @@ export class HealthAggregationService extends EventEmitter {
     const lastAlert = this.lastAlertTimes.get(alertKey);
 
     // Check grace period
-    if (lastAlert && (now - lastAlert) < this.config.slaMonitoring.violationGracePeriod) {
+    if (lastAlert && now - lastAlert < this.config.slaMonitoring.violationGracePeriod) {
       return;
     }
 
-    const criticalViolations = compliance.violations.filter(v =>
-      v.metric === 'availability' && v.value < 95
+    const criticalViolations = compliance.violations.filter(
+      (v) => v.metric === 'availability' && v.value < 95
     );
 
     const severity = criticalViolations.length > 0 ? AlertSeverity.CRITICAL : AlertSeverity.WARNING;
@@ -1461,3 +1331,6 @@ export class HealthAggregationService extends EventEmitter {
 
 // Export types and service
 export { HealthAggregationService as default };
+
+// Re-export required enums for isolatedModules compliance
+export { AlertSeverity, SLAStatus, HealthTrend } from '../types/unified-health-interfaces.js';

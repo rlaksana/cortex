@@ -23,6 +23,14 @@
 import { EventEmitter } from 'node:events';
 import { logger } from '../utils/logger.js';
 import { circuitBreakerManager } from './circuit-breaker.service.js';
+import type {
+  ConnectionResult,
+  DisconnectionResult,
+  HealthCheckResultExtended,
+  RegistrationResult,
+  UnregistrationResult,
+} from './deps-registry.types.js';
+import { DependencyResultFactory, DependencyErrorCode } from './deps-registry.types.js';
 
 /**
  * Dependency status levels with severity
@@ -32,7 +40,7 @@ export enum DependencyStatus {
   WARNING = 'warning',
   CRITICAL = 'critical',
   UNKNOWN = 'unknown',
-  DISABLED = 'disabled'
+  DISABLED = 'disabled',
 }
 
 /**
@@ -46,7 +54,7 @@ export enum DependencyType {
   MESSAGE_QUEUE = 'message_queue',
   STORAGE = 'storage',
   EXTERNAL_API = 'external_api',
-  MONITORING = 'monitoring'
+  MONITORING = 'monitoring',
 }
 
 /**
@@ -178,15 +186,13 @@ export interface AggregatedHealthStatus {
 /**
  * Health check function signature
  */
-export type HealthCheckFunction = (
-  config: DependencyConfig
-) => Promise<HealthCheckResult>;
+export type HealthCheckFunction = (config: DependencyConfig) => Promise<HealthCheckResult>;
 
 /**
- * Connection management function signatures
+ * Connection management function signatures with proper Result types
  */
-export type ConnectFunction = (config: DependencyConfig) => Promise<boolean>;
-export type DisconnectFunction = (config: DependencyConfig) => Promise<boolean>;
+export type ConnectFunction = (config: DependencyConfig) => Promise<ConnectionResult>;
+export type DisconnectFunction = (config: DependencyConfig) => Promise<DisconnectionResult>;
 
 /**
  * Dependency Registry Service
@@ -245,15 +251,33 @@ export class DependencyRegistry extends EventEmitter {
       connector?: ConnectFunction;
       disconnector?: DisconnectFunction;
     } = {}
-  ): Promise<void> {
+  ): Promise<RegistrationResult> {
     try {
-      logger.info({ dependency: config.name }, 'Registering dependency');
-
       // Validate configuration
-      this.validateDependencyConfig(config);
+      if (!config.name || config.name.trim() === '') {
+        return DependencyResultFactory.registrationFailure(
+          config.name || 'unknown',
+          config.type,
+          DependencyErrorCode.VALIDATION_ERROR,
+          'Dependency name is required'
+        );
+      }
 
-      // Create initial state
-      const state: DependencyState = {
+      // Check if dependency already exists
+      if (this.dependencies.has(config.name)) {
+        logger.warn({ dependency: config.name }, 'Dependency already registered');
+        return DependencyResultFactory.registrationFailure(
+          config.name,
+          config.type,
+          DependencyErrorCode.CONFIGURATION_ERROR,
+          `Dependency ${config.name} is already registered`
+        );
+      }
+
+      logger.info({ dependency: config.name, type: config.type }, 'Registering dependency');
+
+      // Create initial dependency state
+      const initialState: DependencyState = {
         config,
         status: DependencyStatus.UNKNOWN,
         metrics: this.createEmptyMetrics(),
@@ -261,22 +285,21 @@ export class DependencyRegistry extends EventEmitter {
         consecutiveFailures: 0,
         consecutiveSuccesses: 0,
         totalChecks: 0,
-        enabled: config.healthCheck.enabled,
+        enabled: true,
         metadata: {
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       };
 
-      // Store dependency state
-      this.dependencies.set(config.name, state);
+      // Store dependency
+      this.dependencies.set(config.name, initialState);
+      this.metricsHistory.set(config.name, []);
 
-      // Register custom health check if provided
+      // Store provided functions
       if (options.healthCheck) {
         this.healthChecks.set(config.name, options.healthCheck);
       }
-
-      // Register connector/disconnector if provided
       if (options.connector) {
         this.connectors.set(config.name, options.connector);
       }
@@ -284,65 +307,110 @@ export class DependencyRegistry extends EventEmitter {
         this.disconnectors.set(config.name, options.disconnector);
       }
 
-      // Initialize metrics history
-      this.metricsHistory.set(config.name, []);
-
-      // Connect to dependency if connector is available
+      // Auto-connect if connector is provided
+      let autoConnected = false;
       if (options.connector) {
         try {
-          const connected = await options.connector(config);
-          if (connected) {
-            state.status = DependencyStatus.HEALTHY;
-            state.metadata.lastSuccess = new Date();
+          const connectionResult = await options.connector(config);
+          if (connectionResult.success) {
+            autoConnected = true;
+            initialState.status = DependencyStatus.HEALTHY;
+            initialState.lastHealthCheck = new Date();
+            initialState.metadata.lastSuccess = new Date();
+            logger.info({ dependency: config.name }, 'Dependency auto-connected successfully');
           } else {
-            state.status = DependencyStatus.CRITICAL;
-            state.metadata.lastFailure = new Date();
+            logger.warn(
+              {
+                dependency: config.name,
+                error: connectionResult.error,
+              },
+              'Dependency auto-connection failed'
+            );
           }
         } catch (error) {
-          logger.warn({ dependency: config.name, error }, 'Failed to connect to dependency');
-          state.status = DependencyStatus.CRITICAL;
-          state.metadata.lastFailure = new Date();
+          logger.warn(
+            {
+              dependency: config.name,
+              error,
+            },
+            'Dependency auto-connection failed with exception'
+          );
         }
       }
 
       // Start health checking if enabled
-      if (config.healthCheck.enabled && this.isInitialized) {
+      if (config.healthCheck.enabled) {
         this.startHealthCheck(config.name);
       }
 
-      this.emit('dependencyRegistered', config.name, state);
-      logger.info({ dependency: config.name, status: state.status }, 'Dependency registered');
+      this.emit('dependencyRegistered', config.name);
+      logger.info(
+        {
+          dependency: config.name,
+          type: config.type,
+          autoConnected,
+        },
+        'Dependency registered successfully'
+      );
 
+      return DependencyResultFactory.registrationSuccess(config.name, config.type, autoConnected);
     } catch (error) {
-      logger.error({ dependency: config.name, error }, 'Failed to register dependency');
-      throw error;
+      logger.error(
+        {
+          dependency: config.name,
+          error,
+        },
+        'Failed to register dependency'
+      );
+
+      return DependencyResultFactory.registrationFailure(
+        config.name,
+        config.type,
+        DependencyErrorCode.CONFIGURATION_ERROR,
+        error instanceof Error ? error.message : String(error),
+        error
+      );
     }
   }
 
   /**
    * Unregister a dependency
    */
-  async unregisterDependency(name: string): Promise<void> {
+  async unregisterDependency(name: string): Promise<UnregistrationResult> {
     try {
       const state = this.dependencies.get(name);
       if (!state) {
         logger.warn({ dependency: name }, 'Dependency not found for unregistration');
-        return;
+        return DependencyResultFactory.unregistrationFailure(
+          name,
+          DependencyErrorCode.DEPENDENCY_NOT_FOUND,
+          `Dependency ${name} not found`
+        );
       }
 
       logger.info({ dependency: name }, 'Unregistering dependency');
 
+      const wasConnected = state.status === DependencyStatus.HEALTHY;
+      const cleanedUpResources: string[] = [];
+
       // Stop health checking
       this.stopHealthCheck(name);
+      cleanedUpResources.push('health-check');
 
       // Disconnect if disconnector is available
+      let gracefulDisconnection = true;
       const disconnector = this.disconnectors.get(name);
       if (disconnector) {
         try {
-          await disconnector(state.config);
+          const disconnectResult = await disconnector(state.config);
+          if (!disconnectResult.success) {
+            gracefulDisconnection = false;
+          }
         } catch (error) {
           logger.warn({ dependency: name, error }, 'Failed to disconnect from dependency');
+          gracefulDisconnection = false;
         }
+        cleanedUpResources.push('connection');
       }
 
       // Clean up resources
@@ -352,12 +420,20 @@ export class DependencyRegistry extends EventEmitter {
       this.disconnectors.delete(name);
       this.metricsHistory.delete(name);
 
+      cleanedUpResources.push('registry', 'health-checks', 'connectors', 'metrics-history');
+
       this.emit('dependencyUnregistered', name);
       logger.info({ dependency: name }, 'Dependency unregistered');
 
+      return DependencyResultFactory.unregistrationSuccess(name, wasConnected, cleanedUpResources);
     } catch (error) {
       logger.error({ dependency: name, error }, 'Failed to unregister dependency');
-      throw error;
+      return DependencyResultFactory.unregistrationFailure(
+        name,
+        DependencyErrorCode.DISCONNECTION_FAILED,
+        error instanceof Error ? error.message : String(error),
+        error
+      );
     }
   }
 
@@ -408,19 +484,27 @@ export class DependencyRegistry extends EventEmitter {
   /**
    * Perform health check on a specific dependency
    */
-  async performHealthCheck(name: string): Promise<HealthCheckResult> {
+  async performHealthCheck(name: string): Promise<HealthCheckResultExtended> {
     const state = this.dependencies.get(name);
     if (!state) {
-      throw new Error(`Dependency ${name} not found`);
+      return DependencyResultFactory.healthCheckFailure(
+        name,
+        DependencyErrorCode.DEPENDENCY_NOT_FOUND,
+        `Dependency ${name} not found`,
+        0
+      );
     }
 
+    const previousStatus = state.status;
+
     if (!state.enabled) {
-      return {
+      const disabledResult: HealthCheckResult = {
         dependency: name,
         status: DependencyStatus.DISABLED,
         responseTime: 0,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
+      return DependencyResultFactory.healthCheckSuccess(name, disabledResult, previousStatus);
     }
 
     const startTime = Date.now();
@@ -428,8 +512,8 @@ export class DependencyRegistry extends EventEmitter {
 
     try {
       // Get appropriate health check function
-      const healthCheck = this.healthChecks.get(name) ||
-                         this.getBuiltInHealthCheck(state.config.type);
+      const healthCheck =
+        this.healthChecks.get(name) || this.getBuiltInHealthCheck(state.config.type);
 
       if (!healthCheck) {
         throw new Error(`No health check available for dependency ${name}`);
@@ -437,29 +521,37 @@ export class DependencyRegistry extends EventEmitter {
 
       // Execute health check with timeout
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Health check timeout')),
-                   state.config.healthCheck.timeoutMs);
+        setTimeout(
+          () => reject(new Error('Health check timeout')),
+          state.config.healthCheck.timeoutMs
+        );
       });
 
-      result = await Promise.race([
-        healthCheck(state.config),
-        timeoutPromise
-      ]);
-
+      result = await Promise.race([healthCheck(state.config), timeoutPromise]);
     } catch (error) {
       result = {
         dependency: name,
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
 
     // Update dependency state
     this.updateDependencyState(name, result);
 
-    return result;
+    if (result.status === DependencyStatus.HEALTHY) {
+      return DependencyResultFactory.healthCheckSuccess(name, result, previousStatus);
+    } else {
+      return DependencyResultFactory.healthCheckFailure(
+        name,
+        DependencyErrorCode.HEALTH_CHECK_FAILED,
+        result.error || 'Health check failed',
+        result.responseTime,
+        result
+      );
+    }
   }
 
   /**
@@ -473,7 +565,7 @@ export class DependencyRegistry extends EventEmitter {
       warning: 0,
       critical: 0,
       unknown: 0,
-      disabled: 0
+      disabled: 0,
     };
 
     // Calculate weighted score based on priority and status
@@ -517,7 +609,7 @@ export class DependencyRegistry extends EventEmitter {
       dependencies,
       summary,
       score: Math.round(overallScore),
-      timestamp: new Date()
+      timestamp: new Date(),
     };
   }
 
@@ -553,20 +645,21 @@ export class DependencyRegistry extends EventEmitter {
   /**
    * Manually trigger health check for all dependencies
    */
-  async checkAllDependencies(): Promise<Record<string, HealthCheckResult>> {
-    const results: Record<string, HealthCheckResult> = {};
+  async checkAllDependencies(): Promise<Record<string, HealthCheckResultExtended>> {
+    const results: Record<string, HealthCheckResultExtended> = {};
 
     for (const name of this.dependencies.keys()) {
       try {
-        results[name] = await this.performHealthCheck(name);
+        const healthResult = await this.performHealthCheck(name);
+        results[name] = healthResult;
       } catch (error) {
-        results[name] = {
-          dependency: name,
-          status: DependencyStatus.CRITICAL,
-          responseTime: 0,
-          error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date()
-        };
+        results[name] = DependencyResultFactory.healthCheckFailure(
+          name,
+          DependencyErrorCode.HEALTH_CHECK_FAILED,
+          error instanceof Error ? error.message : String(error),
+          0,
+          error
+        );
       }
     }
 
@@ -590,9 +683,11 @@ export class DependencyRegistry extends EventEmitter {
       const state = this.dependencies.get(name);
       if (state && disconnector) {
         disconnectPromises.push(
-          disconnector(state.config).then(() => {}).catch(error =>
-            logger.warn({ dependency: name, error }, 'Failed to disconnect during shutdown')
-          )
+          disconnector(state.config)
+            .then(() => {})
+            .catch((error) =>
+              logger.warn({ dependency: name, error }, 'Failed to disconnect during shutdown')
+            )
         );
       }
     }
@@ -639,21 +734,21 @@ export class DependencyRegistry extends EventEmitter {
         current: 0,
         average: 0,
         p95: 0,
-        p99: 0
+        p99: 0,
       },
       throughput: {
         requestsPerSecond: 0,
-        requestsPerMinute: 0
+        requestsPerMinute: 0,
       },
       error: {
         rate: 0,
-        count: 0
+        count: 0,
       },
       availability: {
         uptime: 0,
         downtime: 0,
-        lastCheck: new Date()
-      }
+        lastCheck: new Date(),
+      },
     };
   }
 
@@ -688,9 +783,7 @@ export class DependencyRegistry extends EventEmitter {
   /**
    * Perform health check for database dependencies
    */
-  private async performDatabaseHealthCheck(
-    config: DependencyConfig
-  ): Promise<HealthCheckResult> {
+  private async performDatabaseHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
     const startTime = Date.now();
 
     try {
@@ -702,10 +795,10 @@ export class DependencyRegistry extends EventEmitter {
         qdrant: {
           url: config.connection.url,
           apiKey: config.connection.apiKey,
-          timeout: config.connection.timeout || 30000
+          timeout: config.connection.timeout || 30000,
         },
         enableVectorOperations: false,
-        enableFallback: false
+        enableFallback: false,
       });
 
       const isHealthy = await manager.healthCheck();
@@ -715,7 +808,7 @@ export class DependencyRegistry extends EventEmitter {
         status: isHealthy ? DependencyStatus.HEALTHY : DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         timestamp: new Date(),
-        details: { connection: config.connection.url }
+        details: { connection: config.connection.url },
       };
     } catch (error) {
       return {
@@ -723,7 +816,7 @@ export class DependencyRegistry extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -731,9 +824,7 @@ export class DependencyRegistry extends EventEmitter {
   /**
    * Perform health check for vector database dependencies
    */
-  private async performVectorDbHealthCheck(
-    config: DependencyConfig
-  ): Promise<HealthCheckResult> {
+  private async performVectorDbHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
     const startTime = Date.now();
 
     try {
@@ -744,10 +835,10 @@ export class DependencyRegistry extends EventEmitter {
         qdrant: {
           url: config.connection.url,
           apiKey: config.connection.apiKey,
-          timeout: config.connection.timeout || 30000
+          timeout: config.connection.timeout || 30000,
         },
         enableVectorOperations: true,
-        enableFallback: false
+        enableFallback: false,
       });
 
       const isHealthy = await manager.healthCheck();
@@ -759,8 +850,8 @@ export class DependencyRegistry extends EventEmitter {
         timestamp: new Date(),
         details: {
           connection: config.connection.url,
-          vectorOperations: true
-        }
+          vectorOperations: true,
+        },
       };
     } catch (error) {
       return {
@@ -768,7 +859,7 @@ export class DependencyRegistry extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -785,7 +876,7 @@ export class DependencyRegistry extends EventEmitter {
       const { EmbeddingService } = await import('./embeddings/embedding-service.js');
       const embeddingService = new EmbeddingService({
         apiKey: config.connection.apiKey,
-        timeout: config.connection.timeout || 30000
+        timeout: config.connection.timeout || 30000,
       });
 
       const isHealthy = await embeddingService.healthCheck();
@@ -797,8 +888,8 @@ export class DependencyRegistry extends EventEmitter {
         timestamp: new Date(),
         details: {
           service: 'OpenAI Embeddings',
-          apiKeyConfigured: !!config.connection.apiKey
-        }
+          apiKeyConfigured: !!config.connection.apiKey,
+        },
       };
     } catch (error) {
       return {
@@ -806,7 +897,7 @@ export class DependencyRegistry extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -814,9 +905,7 @@ export class DependencyRegistry extends EventEmitter {
   /**
    * Perform health check for cache dependencies
    */
-  private async performCacheHealthCheck(
-    config: DependencyConfig
-  ): Promise<HealthCheckResult> {
+  private async performCacheHealthCheck(config: DependencyConfig): Promise<HealthCheckResult> {
     const startTime = Date.now();
 
     try {
@@ -835,8 +924,8 @@ export class DependencyRegistry extends EventEmitter {
         timestamp: new Date(),
         details: {
           connection: config.connection.url,
-          operations: ['ping', 'set', 'get', 'del']
-        }
+          operations: ['ping', 'set', 'get', 'del'],
+        },
       };
     } catch (error) {
       return {
@@ -844,7 +933,7 @@ export class DependencyRegistry extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -864,7 +953,7 @@ export class DependencyRegistry extends EventEmitter {
       const response = await fetch(config.connection.url, {
         method: 'GET',
         signal: controller.signal,
-        headers: config.connection.headers || {}
+        headers: config.connection.headers || {},
       });
 
       clearTimeout(timeoutId);
@@ -879,8 +968,8 @@ export class DependencyRegistry extends EventEmitter {
         details: {
           url: config.connection.url,
           statusCode: response.status,
-          statusText: response.statusText
-        }
+          statusText: response.statusText,
+        },
       };
     } catch (error) {
       return {
@@ -888,7 +977,7 @@ export class DependencyRegistry extends EventEmitter {
         status: DependencyStatus.CRITICAL,
         responseTime: Date.now() - startTime,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date()
+        timestamp: new Date(),
       };
     }
   }
@@ -915,8 +1004,10 @@ export class DependencyRegistry extends EventEmitter {
     }, state.config.healthCheck.intervalMs);
 
     this.healthCheckIntervals.set(name, interval);
-    logger.debug({ dependency: name, interval: state.config.healthCheck.intervalMs },
-                 'Health check started');
+    logger.debug(
+      { dependency: name, interval: state.config.healthCheck.intervalMs },
+      'Health check started'
+    );
   }
 
   /**
@@ -977,12 +1068,15 @@ export class DependencyRegistry extends EventEmitter {
     // Emit status change event
     if (previousStatus !== result.status) {
       this.emit('statusChanged', name, previousStatus, result.status);
-      logger.info({
-        dependency: name,
-        previousStatus,
-        newStatus: result.status,
-        responseTime: result.responseTime
-      }, 'Dependency status changed');
+      logger.info(
+        {
+          dependency: name,
+          previousStatus,
+          newStatus: result.status,
+          responseTime: result.responseTime,
+        },
+        'Dependency status changed'
+      );
     }
   }
 
@@ -1026,7 +1120,7 @@ export class DependencyRegistry extends EventEmitter {
       state.metrics.circuitBreaker = {
         state: stats.state,
         failureRate: stats.failureRate,
-        totalCalls: stats.totalCalls
+        totalCalls: stats.totalCalls,
       };
     }
   }
@@ -1056,11 +1150,16 @@ export class DependencyRegistry extends EventEmitter {
    */
   private getPriorityWeight(priority: string): number {
     switch (priority) {
-      case 'critical': return 4;
-      case 'high': return 3;
-      case 'medium': return 2;
-      case 'low': return 1;
-      default: return 1;
+      case 'critical':
+        return 4;
+      case 'high':
+        return 3;
+      case 'medium':
+        return 2;
+      case 'low':
+        return 1;
+      default:
+        return 1;
     }
   }
 
@@ -1069,12 +1168,18 @@ export class DependencyRegistry extends EventEmitter {
    */
   private getStatusScore(status: DependencyStatus): number {
     switch (status) {
-      case DependencyStatus.HEALTHY: return 100;
-      case DependencyStatus.WARNING: return 70;
-      case DependencyStatus.CRITICAL: return 30;
-      case DependencyStatus.UNKNOWN: return 50;
-      case DependencyStatus.DISABLED: return 0;
-      default: return 0;
+      case DependencyStatus.HEALTHY:
+        return 100;
+      case DependencyStatus.WARNING:
+        return 70;
+      case DependencyStatus.CRITICAL:
+        return 30;
+      case DependencyStatus.UNKNOWN:
+        return 50;
+      case DependencyStatus.DISABLED:
+        return 0;
+      default:
+        return 0;
     }
   }
 
@@ -1117,15 +1222,11 @@ export class DependencyRegistry extends EventEmitter {
     });
 
     process.on('SIGINT', () => {
-      this.shutdown().catch(error =>
-        logger.error({ error }, 'Error during shutdown')
-      );
+      this.shutdown().catch((error) => logger.error({ error }, 'Error during shutdown'));
     });
 
     process.on('SIGTERM', () => {
-      this.shutdown().catch(error =>
-        logger.error({ error }, 'Error during shutdown')
-      );
+      this.shutdown().catch((error) => logger.error({ error }, 'Error during shutdown'));
     });
   }
 }

@@ -56,6 +56,52 @@ export type { KnowledgeItem as KnowledgeData } from './core-interfaces.js';
 // Auth Types
 export type { AuthContext } from './auth-types.js';
 
+// Health Monitoring Types
+export type {
+  HealthStatus,
+  ComponentHealthResult,
+  DependencyHealthResult,
+  EnhancedHealthResult,
+  EnhancedHealthCheckResult,
+  HealthDiagnostics,
+  HealthCheckDiagnostics,
+  PerformanceBenchmark,
+  HealthCheckStrategy,
+  HealthCheckContext,
+  SystemHealthResult,
+  ProductionHealthResult,
+  HealthCheck,
+  ComponentHealth,
+  AggregatedHealthStatus,
+  DependencyState,
+  DependencyConfig,
+  HealthCheckConfig as UnifiedHealthCheckConfig,
+  DependencyMetrics,
+  HealthAnalysis,
+  HealthAlert,
+  SLADefinition,
+  SLACompliance,
+  HealthAggregationConfig,
+  HealthSnapshot,
+  HealthTrend,
+  AlertSeverity,
+  SLAStatus,
+  ValidationOptions,
+} from './unified-health-interfaces.js';
+
+export {
+  type ValidationMode,
+  isDependencyHealthResult,
+  isSystemHealthResult,
+  isEnhancedHealthResult,
+  isHealthCheckDiagnostics,
+  isValidHealthStatus,
+  isValidDependencyStatus,
+  isValidHealthCheckStrategy,
+  dependencyStatusToHealthStatus,
+  healthStatusToDependencyStatus,
+} from './unified-health-interfaces.js';
+
 // Standard response types
 export interface SuccessResponse<T = unknown> {
   success: true;

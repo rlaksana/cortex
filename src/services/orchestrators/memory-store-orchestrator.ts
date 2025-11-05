@@ -685,7 +685,7 @@ export class MemoryStoreOrchestrator {
   /**
    * Generate user-friendly message
    */
-  private generateUserMessage(
+  protected generateUserMessage(
     action: AutonomousContext['action_performed'],
     stored: StoreResult[],
     errors: StoreError[]

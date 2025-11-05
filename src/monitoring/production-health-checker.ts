@@ -9,63 +9,142 @@
  * @version 2.0.1
  */
 
-export interface HealthCheckResult {
-  status: 'healthy' | 'unhealthy' | 'degraded';
-  timestamp: string;
-  duration: number;
-  checks: HealthCheck[];
-  summary: {
-    total: number;
-    passed: number;
-    failed: number;
-    warnings: number;
-  };
-  issues: string[];
-  metadata?: Record<string, any>;
+import {
+  ProductionHealthResult,
+  HealthCheck,
+  HealthCheckResult,
+  type HealthCheckConfig as UnifiedHealthCheckConfig,
+} from '../types/unified-health-interfaces.js';
+import {
+  migrateHealthCheckConfig,
+  validateHealthCheckConfig,
+  healthCheckConfig,
+  type StandardHealthCheckConfig,
+  type LegacyHealthCheckConfig,
+} from '../config/configuration-migration.js';
+import * as os from 'node:os';
+import * as fs from 'node:fs';
+
+// Re-export for backward compatibility
+export type { ProductionHealthResult as HealthCheckResult };
+
+/**
+ * Legacy HealthCheckConfig interface for backward compatibility
+ * @deprecated Use StandardHealthCheckConfig instead
+ */
+export interface HealthCheckConfig
+  extends Omit<UnifiedHealthCheckConfig, 'timeoutMs' | 'retryAttempts' | 'retryDelayMs'> {
+  enabled: boolean;
+  intervalMs: number;
+  timeoutMs?: number;
+  failureThreshold: number;
+  successThreshold: number;
+  retryAttempts?: number;
+  retryDelayMs?: number;
+  timeout?: number;
+  retries?: number;
+  retryDelay?: number;
+  enableDetailedChecks: boolean;
+  skipOptionalChecks: boolean;
 }
 
-export interface HealthCheck {
-  name: string;
-  status: 'pass' | 'fail' | 'warn';
-  duration: number;
-  message?: string;
-  details?: Record<string, any>;
-  critical: boolean;
-}
-
-export interface HealthCheckConfig {
-  timeout: number;
-  retries: number;
-  retryDelay: number;
+/**
+ * Internal configuration interface that extends standard health check config
+ */
+interface InternalProductionHealthConfig extends StandardHealthCheckConfig {
   enableDetailedChecks: boolean;
   skipOptionalChecks: boolean;
 }
 
 export class ProductionHealthChecker {
-  private config: HealthCheckConfig;
-  private logger: any; // Use any to avoid circular dependency
+  private config: InternalProductionHealthConfig;
 
-  constructor() {
-    this.config = {
+  constructor(config?: Partial<HealthCheckConfig>) {
+    // Create configuration with environment defaults and migration
+    const legacyConfig: LegacyHealthCheckConfig = {
+      enabled: true,
       timeout: parseInt(process.env.HEALTH_CHECK_TIMEOUT || '10000'),
+      timeoutMs: parseInt(process.env.HEALTH_CHECK_TIMEOUT_MS || '10000'),
       retries: parseInt(process.env.HEALTH_CHECK_RETRIES || '3'),
+      retryAttempts: parseInt(process.env.HEALTH_CHECK_RETRY_ATTEMPTS || '3'),
       retryDelay: parseInt(process.env.HEALTH_CHECK_RETRY_DELAY || '1000'),
-      enableDetailedChecks: process.env.ENABLE_DETAILED_HEALTH_CHECKS === 'true',
-      skipOptionalChecks: process.env.SKIP_OPTIONAL_HEALTH_CHECKS === 'true'
+      retryDelayMs: parseInt(process.env.HEALTH_CHECK_RETRY_DELAY_MS || '1000'),
+      ...config,
     };
 
-    // Import logger lazily to avoid circular dependencies
-    this.logger = {
+    // Migrate to standard configuration
+    const standardConfig = migrateHealthCheckConfig(legacyConfig);
+
+    // Validate the migrated configuration
+    const validation = validateHealthCheckConfig(standardConfig);
+    if (!validation.valid) {
+      console.warn(
+        `[production-health-checker] Configuration validation failed: ${validation.errors.join(', ')}`
+      );
+    }
+
+    // Create internal configuration with production-specific settings
+    this.config = {
+      ...standardConfig,
+      enableDetailedChecks:
+        config?.enableDetailedChecks ?? process.env.ENABLE_DETAILED_HEALTH_CHECKS === 'true',
+      skipOptionalChecks:
+        config?.skipOptionalChecks ?? process.env.SKIP_OPTIONAL_HEALTH_CHECKS === 'true',
+    };
+  }
+
+  /**
+   * Create a ProductionHealthChecker with builder pattern
+   */
+  static builder(): ProductionHealthCheckerBuilder {
+    return new ProductionHealthCheckerBuilder();
+  }
+
+  // Import logger lazily to avoid circular dependencies
+  private get logger() {
+    return {
       info: (message: string, data?: any) => console.log(`[health-checker] ${message}`, data || ''),
-      warn: (message: string, data?: any) => console.warn(`[health-checker] ${message}`, data || ''),
-      error: (message: string, data?: any) => console.error(`[health-checker] ${message}`, data || '')
+      warn: (message: string, data?: any) =>
+        console.warn(`[health-checker] ${message}`, data || ''),
+      error: (message: string, data?: any) =>
+        console.error(`[health-checker] ${message}`, data || ''),
+    };
+  }
+
+  /**
+   * Get the current configuration (read-only)
+   */
+  public getConfiguration(): Readonly<InternalProductionHealthConfig> {
+    return { ...this.config };
+  }
+
+  /**
+   * Update configuration with migration and validation
+   */
+  public updateConfiguration(config: Partial<HealthCheckConfig>): void {
+    const legacyConfig: LegacyHealthCheckConfig = {
+      ...this.config,
+      ...config,
+    };
+
+    const standardConfig = migrateHealthCheckConfig(legacyConfig);
+    const validation = validateHealthCheckConfig(standardConfig);
+
+    if (!validation.valid) {
+      throw new Error(`Invalid configuration update: ${validation.errors.join(', ')}`);
+    }
+
+    this.config = {
+      ...standardConfig,
+      enableDetailedChecks: config.enableDetailedChecks ?? this.config.enableDetailedChecks,
+      skipOptionalChecks: config.skipOptionalChecks ?? this.config.skipOptionalChecks,
     };
   }
 
   /**
    * Perform pre-startup health check
    */
-  async performPreStartupHealthCheck(): Promise<HealthCheckResult> {
+  async performPreStartupHealthCheck(): Promise<ProductionHealthResult> {
     this.logger.info('Performing pre-startup health check');
 
     const checks: HealthCheck[] = [
@@ -73,15 +152,12 @@ export class ProductionHealthChecker {
       await this.checkNodeVersion(),
       await this.checkMemoryUsage(),
       await this.checkDiskSpace(),
-      await this.checkQdrantConnection()
+      await this.checkQdrantConnection(),
     ];
 
     // Add optional checks if enabled
     if (!this.config.skipOptionalChecks) {
-      checks.push(
-        await this.checkOpenAIConnection(),
-        await this.checkFileSystemAccess()
-      );
+      checks.push(await this.checkOpenAIConnection(), await this.checkFileSystemAccess());
     }
 
     return this.aggregateHealthResults('pre-startup', checks);
@@ -94,18 +170,19 @@ export class ProductionHealthChecker {
     this.logger.info('Performing post-startup health check');
 
     const checks: HealthCheck[] = [
-      await this.checkServerStatus(),
-      await this.checkQdrantConnection(),
+      await this.checkEnvironmentVariables(),
+      await this.checkNodeVersion(),
       await this.checkMemoryUsage(),
-      await this.checkActiveConnections()
+      await this.checkDiskSpace(),
+      await this.checkQdrantConnection(),
     ];
 
     // Add detailed checks if enabled
     if (this.config.enableDetailedChecks) {
       checks.push(
-        await this.checkDatabasePerformance(),
+        await this.checkSystemLoad(),
         await this.checkCacheHealth(),
-        await this.checkWorkerProcesses()
+        await this.checkWorkerHealth()
       );
     }
 
@@ -116,11 +193,9 @@ export class ProductionHealthChecker {
    * Liveness probe for container orchestration
    */
   async livenessProbe(): Promise<HealthCheckResult> {
-    const checks: HealthCheck[] = [
-      await this.checkServerStatus(),
-      await this.checkMemoryUsage(),
-      await this.checkCpuUsage()
-    ];
+    this.logger.info('Performing liveness probe');
+
+    const checks: HealthCheck[] = [await this.checkMemoryUsage(), await this.checkNodeVersion()];
 
     return this.aggregateHealthResults('liveness', checks);
   }
@@ -129,10 +204,11 @@ export class ProductionHealthChecker {
    * Readiness probe for container orchestration
    */
   async readinessProbe(): Promise<HealthCheckResult> {
+    this.logger.info('Performing readiness probe');
+
     const checks: HealthCheck[] = [
-      await this.checkServerStatus(),
+      await this.checkEnvironmentVariables(),
       await this.checkQdrantConnection(),
-      await this.checkEnvironmentVariables()
     ];
 
     return this.aggregateHealthResults('readiness', checks);
@@ -143,11 +219,9 @@ export class ProductionHealthChecker {
    */
   private async checkEnvironmentVariables(): Promise<HealthCheck> {
     const startTime = Date.now();
-    const requiredVars = [
-      'OPENAI_API_KEY',
-      'QDRANT_URL',
-      'NODE_ENV'
-    ];
+    const requiredVars = ['NODE_ENV', 'QDRANT_URL'];
+
+    const optionalVars = ['OPENAI_API_KEY', 'LOG_LEVEL'];
 
     const missingVars: string[] = [];
     const invalidVars: string[] = [];
@@ -156,9 +230,13 @@ export class ProductionHealthChecker {
       const value = process.env[varName];
       if (!value) {
         missingVars.push(varName);
-      } else if (varName.includes('KEY') && value.length < 10) {
-        invalidVars.push(varName);
       }
+    }
+
+    // Check for invalid values
+    const nodeEnv = process.env.NODE_ENV;
+    if (nodeEnv && !['development', 'production', 'test'].includes(nodeEnv)) {
+      invalidVars.push(`NODE_ENV="${nodeEnv}" is not a valid value`);
     }
 
     const duration = Date.now() - startTime;
@@ -169,8 +247,8 @@ export class ProductionHealthChecker {
         status: 'fail',
         duration,
         message: `Missing required environment variables: ${missingVars.join(', ')}`,
-        details: { missing: missingVars, invalid: invalidVars },
-        critical: true
+        details: { missing: missingVars },
+        critical: true,
       };
     }
 
@@ -179,9 +257,9 @@ export class ProductionHealthChecker {
         name: 'environment-variables',
         status: 'warn',
         duration,
-        message: `Invalid environment variables: ${invalidVars.join(', ')}`,
-        details: { missing: missingVars, invalid: invalidVars },
-        critical: false
+        message: `Invalid environment variable values: ${invalidVars.join(', ')}`,
+        details: { invalid: invalidVars },
+        critical: false,
       };
     }
 
@@ -189,8 +267,9 @@ export class ProductionHealthChecker {
       name: 'environment-variables',
       status: 'pass',
       duration,
-      message: 'All required environment variables are present',
-      critical: true
+      message: 'Environment variables check passed',
+      details: { required: requiredVars, optional: optionalVars },
+      critical: false,
     };
   }
 
@@ -207,11 +286,11 @@ export class ProductionHealthChecker {
     if (majorVersion < 20) {
       return {
         name: 'node-version',
-        status: 'fail',
+        status: 'warn',
         duration,
-        message: `Node.js version ${nodeVersion} is not supported. Minimum required: 20.x`,
-        details: { current: nodeVersion, required: '>=20.x' },
-        critical: true
+        message: `Node.js version ${nodeVersion} is below recommended minimum (20.x)`,
+        details: { version: nodeVersion, recommended: '>=20.x' },
+        critical: false,
       };
     }
 
@@ -219,9 +298,9 @@ export class ProductionHealthChecker {
       name: 'node-version',
       status: 'pass',
       duration,
-      message: `Node.js version ${nodeVersion} is supported`,
+      message: `Node.js version check passed: ${nodeVersion}`,
       details: { version: nodeVersion },
-      critical: true
+      critical: false,
     };
   }
 
@@ -231,8 +310,8 @@ export class ProductionHealthChecker {
   private async checkMemoryUsage(): Promise<HealthCheck> {
     const startTime = Date.now();
     const memUsage = process.memoryUsage();
-    const totalMemory = require('os').totalmem();
-    const freeMemory = require('os').freemem();
+    const totalMemory = os.totalmem();
+    const freeMemory = os.freemem();
     const usedMemory = totalMemory - freeMemory;
     const memoryUsagePercent = (usedMemory / totalMemory) * 100;
 
@@ -246,14 +325,14 @@ export class ProductionHealthChecker {
         name: 'memory-usage',
         status: 'fail',
         duration,
-        message: `Heap usage is critically high: ${heapUsedPercent.toFixed(1)}%`,
+        message: `Critical memory usage: ${heapUsedPercent.toFixed(1)}%`,
         details: {
           heapUsed: memUsage.heapUsed,
           heapTotal: memUsage.heapTotal,
           heapUsedPercent,
-          systemMemoryPercent: memoryUsagePercent
+          systemMemoryPercent: memoryUsagePercent,
         },
-        critical: true
+        critical: true,
       };
     }
 
@@ -262,14 +341,14 @@ export class ProductionHealthChecker {
         name: 'memory-usage',
         status: 'warn',
         duration,
-        message: `Heap usage is high: ${heapUsedPercent.toFixed(1)}%`,
+        message: `High memory usage: ${heapUsedPercent.toFixed(1)}%`,
         details: {
           heapUsed: memUsage.heapUsed,
           heapTotal: memUsage.heapTotal,
           heapUsedPercent,
-          systemMemoryPercent: memoryUsagePercent
+          systemMemoryPercent: memoryUsagePercent,
         },
-        critical: false
+        critical: false,
       };
     }
 
@@ -277,14 +356,14 @@ export class ProductionHealthChecker {
       name: 'memory-usage',
       status: 'pass',
       duration,
-      message: `Memory usage is normal: ${heapUsedPercent.toFixed(1)}%`,
+      message: `Memory usage check passed: ${heapUsedPercent.toFixed(1)}%`,
       details: {
         heapUsed: memUsage.heapUsed,
         heapTotal: memUsage.heapTotal,
         heapUsedPercent,
-        systemMemoryPercent: memoryUsagePercent
+        systemMemoryPercent: memoryUsagePercent,
       },
-      critical: false
+      critical: false,
     };
   }
 
@@ -295,7 +374,7 @@ export class ProductionHealthChecker {
     const startTime = Date.now();
 
     try {
-      const stats = require('fs').statSync(process.cwd());
+      const stats = fs.statSync(process.cwd());
       const duration = Date.now() - startTime;
 
       return {
@@ -304,7 +383,7 @@ export class ProductionHealthChecker {
         duration,
         message: 'Disk space check passed',
         details: { accessible: true },
-        critical: false
+        critical: false,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -313,9 +392,9 @@ export class ProductionHealthChecker {
         name: 'disk-space',
         status: 'fail',
         duration,
-        message: `Cannot access working directory: ${error}`,
+        message: `Disk space check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: true
+        critical: true,
       };
     }
   }
@@ -329,12 +408,10 @@ export class ProductionHealthChecker {
     try {
       const qdrantUrl = process.env.QDRANT_URL;
       if (!qdrantUrl) {
-        throw new Error('QDRANT_URL not configured');
+        throw new Error('QDRANT_URL environment variable is not set');
       }
 
-      // Basic connectivity check
-      const response = await this.makeHttpRequest(`${qdrantUrl}/health`, 5000);
-
+      const response = await this.fetchWithTimeout(`${qdrantUrl}/health`, 5000);
       const duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -342,30 +419,29 @@ export class ProductionHealthChecker {
           name: 'qdrant-connection',
           status: 'pass',
           duration,
-          message: 'Qdrant connection successful',
+          message: 'Qdrant connection check passed',
           details: { url: qdrantUrl, status: response.status },
-          critical: true
+          critical: true,
         };
       } else {
         return {
           name: 'qdrant-connection',
           status: 'fail',
           duration,
-          message: `Qdrant returned error status: ${response.status}`,
+          message: `Qdrant connection failed with status ${response.status}`,
           details: { url: qdrantUrl, status: response.status },
-          critical: true
+          critical: true,
         };
       }
     } catch (error) {
       const duration = Date.now() - startTime;
-
       return {
         name: 'qdrant-connection',
         status: 'fail',
         duration,
-        message: `Failed to connect to Qdrant: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `Qdrant connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: true
+        critical: true,
       };
     }
   }
@@ -379,14 +455,12 @@ export class ProductionHealthChecker {
     try {
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not configured');
+        throw new Error('OPENAI_API_KEY environment variable is not set');
       }
 
-      // Basic API validation
-      const response = await this.makeHttpRequest('https://api.openai.com/v1/models', 5000, {
-        'Authorization': `Bearer ${apiKey}`
+      const response = await this.fetchWithTimeout('https://api.openai.com/v1/models', 5000, {
+        Authorization: `Bearer ${apiKey}`,
       });
-
       const duration = Date.now() - startTime;
 
       if (response.ok) {
@@ -394,30 +468,29 @@ export class ProductionHealthChecker {
           name: 'openai-connection',
           status: 'pass',
           duration,
-          message: 'OpenAI API connection successful',
+          message: 'OpenAI connection check passed',
           details: { status: response.status },
-          critical: false
+          critical: false,
         };
       } else {
         return {
           name: 'openai-connection',
-          status: 'fail',
+          status: 'warn',
           duration,
-          message: `OpenAI API returned error status: ${response.status}`,
+          message: `OpenAI connection failed with status ${response.status}`,
           details: { status: response.status },
-          critical: false
+          critical: false,
         };
       }
     } catch (error) {
       const duration = Date.now() - startTime;
-
       return {
         name: 'openai-connection',
         status: 'warn',
         duration,
-        message: `Failed to connect to OpenAI API: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `OpenAI connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
+        critical: false,
       };
     }
   }
@@ -430,326 +503,234 @@ export class ProductionHealthChecker {
 
     try {
       // Test read access
-      require('fs').accessSync(process.cwd(), require('fs').constants.R_OK);
+      const packageJson = fs.readFileSync('./package.json', 'utf8');
 
-      // Test write access (create a temp file)
-      const testFile = `${process.cwd()}/.health-check-${Date.now()}.tmp`;
-      require('fs').writeFileSync(testFile, 'test');
-      require('fs').unlinkSync(testFile);
+      // Test write access (create and delete a temp file)
+      const testFile = './.health-check-test';
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
 
       const duration = Date.now() - startTime;
 
       return {
-        name: 'filesystem-access',
+        name: 'file-system-access',
         status: 'pass',
         duration,
-        message: 'File system access is normal',
-        details: { readWrite: true },
-        critical: false
+        message: 'File system access check passed',
+        details: { readAccess: true, writeAccess: true },
+        critical: false,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-
       return {
-        name: 'filesystem-access',
+        name: 'file-system-access',
         status: 'fail',
         duration,
-        message: `File system access error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: `File system access failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
+        critical: true,
       };
     }
   }
 
   /**
-   * Check server status
+   * Check system load
    */
-  private async checkServerStatus(): Promise<HealthCheck> {
+  private async checkSystemLoad(): Promise<HealthCheck> {
     const startTime = Date.now();
-    const uptime = process.uptime();
+    const loadAvg = os.loadavg();
+    const cpuCount = os.cpus().length;
+    const uptime = os.uptime();
 
     const duration = Date.now() - startTime;
 
-    // Check if server has been running for at least 5 seconds
+    // Check 1-minute load average
+    const load1Min = loadAvg[0];
+    const loadPercent = (load1Min / cpuCount) * 100;
+
     if (uptime < 5) {
+      // Skip load check on recently started systems
       return {
-        name: 'server-status',
+        name: 'system-load',
+        status: 'pass',
+        duration,
+        message: 'System load check skipped (system recently started)',
+        details: { load1Min, cpuCount, uptime },
+        critical: false,
+      };
+    }
+
+    if (loadPercent > 90) {
+      return {
+        name: 'system-load',
+        status: 'fail',
+        duration,
+        message: `Critical system load: ${loadPercent.toFixed(1)}%`,
+        details: { load1Min, cpuCount, loadPercent },
+        critical: true,
+      };
+    }
+
+    if (loadPercent > 80) {
+      return {
+        name: 'system-load',
         status: 'warn',
         duration,
-        message: `Server just started (${uptime.toFixed(1)}s uptime)`,
-        details: { uptime },
-        critical: false
+        message: `High system load: ${loadPercent.toFixed(1)}%`,
+        details: { load1Min, cpuCount, loadPercent },
+        critical: false,
       };
     }
 
     return {
-      name: 'server-status',
+      name: 'system-load',
       status: 'pass',
       duration,
-      message: `Server is running (${uptime.toFixed(1)}s uptime)`,
-      details: { uptime, pid: process.pid },
-      critical: true
+      message: `System load check passed: ${loadPercent.toFixed(1)}%`,
+      details: { load1Min, cpuCount, loadPercent },
+      critical: false,
     };
   }
 
   /**
-   * Check active connections
-   */
-  private async checkActiveConnections(): Promise<HealthCheck> {
-    const startTime = Date.now();
-
-    try {
-      // This is a placeholder - in a real implementation, you would
-      // check the actual number of active connections
-      const activeConnections = 0; // Placeholder value
-
-      const duration = Date.now() - startTime;
-
-      return {
-        name: 'active-connections',
-        status: 'pass',
-        duration,
-        message: `Active connections: ${activeConnections}`,
-        details: { activeConnections },
-        critical: false
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      return {
-        name: 'active-connections',
-        status: 'warn',
-        duration,
-        message: `Could not determine active connections: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
-      };
-    }
-  }
-
-  /**
-   * Check database performance
-   */
-  private async checkDatabasePerformance(): Promise<HealthCheck> {
-    const startTime = Date.now();
-
-    try {
-      // This is a placeholder - in a real implementation, you would
-      // perform a quick database operation to measure performance
-      const queryTime = Math.random() * 100; // Placeholder value
-
-      const duration = Date.now() - startTime;
-
-      if (queryTime > 5000) {
-        return {
-          name: 'database-performance',
-          status: 'warn',
-          duration,
-          message: `Database query time is high: ${queryTime.toFixed(1)}ms`,
-          details: { queryTime },
-          critical: false
-        };
-      }
-
-      return {
-        name: 'database-performance',
-        status: 'pass',
-        duration,
-        message: `Database performance is normal: ${queryTime.toFixed(1)}ms`,
-        details: { queryTime },
-        critical: false
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      return {
-        name: 'database-performance',
-        status: 'fail',
-        duration,
-        message: `Database performance check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
-      };
-    }
-  }
-
-  /**
-   * Check cache health
+   * Check cache health (placeholder implementation)
    */
   private async checkCacheHealth(): Promise<HealthCheck> {
     const startTime = Date.now();
 
-    try {
-      // This is a placeholder - in a real implementation, you would
-      // check the cache system
-      const cacheHitRate = 0.95; // Placeholder value
-
-      const duration = Date.now() - startTime;
-
-      if (cacheHitRate < 0.8) {
-        return {
-          name: 'cache-health',
-          status: 'warn',
-          duration,
-          message: `Cache hit rate is low: ${(cacheHitRate * 100).toFixed(1)}%`,
-          details: { cacheHitRate },
-          critical: false
-        };
-      }
-
-      return {
-        name: 'cache-health',
-        status: 'pass',
-        duration,
-        message: `Cache performance is good: ${(cacheHitRate * 100).toFixed(1)}% hit rate`,
-        details: { cacheHitRate },
-        critical: false
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      return {
-        name: 'cache-health',
-        status: 'warn',
-        duration,
-        message: `Cache health check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
-      };
-    }
-  }
-
-  /**
-   * Check worker processes
-   */
-  private async checkWorkerProcesses(): Promise<HealthCheck> {
-    const startTime = Date.now();
-
-    try {
-      // This is a placeholder - in a real implementation, you would
-      // check the status of background workers
-      const workerCount = 3; // Placeholder value
-      const activeWorkers = 3; // Placeholder value
-
-      const duration = Date.now() - startTime;
-
-      if (activeWorkers < workerCount) {
-        return {
-          name: 'worker-processes',
-          status: 'warn',
-          duration,
-          message: `Some workers are not active: ${activeWorkers}/${workerCount}`,
-          details: { workerCount, activeWorkers },
-          critical: false
-        };
-      }
-
-      return {
-        name: 'worker-processes',
-        status: 'pass',
-        duration,
-        message: `All workers are active: ${activeWorkers}/${workerCount}`,
-        details: { workerCount, activeWorkers },
-        critical: false
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-
-      return {
-        name: 'worker-processes',
-        status: 'warn',
-        duration,
-        message: `Worker process check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        details: { error: error instanceof Error ? error.message : 'Unknown error' },
-        critical: false
-      };
-    }
-  }
-
-  /**
-   * Check CPU usage
-   */
-  private async checkCpuUsage(): Promise<HealthCheck> {
-    const startTime = Date.now();
-    const cpuUsage = process.cpuUsage();
+    // This is a placeholder - actual implementation would check cache metrics
+    const cacheHitRate = 0.85; // Example value
+    const queryTime = 150; // Example query time in ms
 
     const duration = Date.now() - startTime;
 
-    // Simple CPU check - in a real implementation you'd want more sophisticated monitoring
+    if (queryTime > 5000) {
+      return {
+        name: 'cache-health',
+        status: 'warn',
+        duration,
+        message: `Slow cache queries: ${queryTime}ms average`,
+        details: { queryTime, cacheHitRate },
+        critical: false,
+      };
+    }
+
+    if (cacheHitRate < 0.8) {
+      return {
+        name: 'cache-health',
+        status: 'warn',
+        duration,
+        message: `Low cache hit rate: ${(cacheHitRate * 100).toFixed(1)}%`,
+        details: { queryTime, cacheHitRate },
+        critical: false,
+      };
+    }
+
     return {
-      name: 'cpu-usage',
+      name: 'cache-health',
       status: 'pass',
       duration,
-      message: 'CPU usage check passed',
-      details: { user: cpuUsage.user, system: cpuUsage.system },
-      critical: false
+      message: `Cache health check passed`,
+      details: { queryTime, cacheHitRate },
+      critical: false,
+    };
+  }
+
+  /**
+   * Check worker health (placeholder implementation)
+   */
+  private async checkWorkerHealth(): Promise<HealthCheck> {
+    const startTime = Date.now();
+
+    // This is a placeholder - actual implementation would check worker processes
+    const workerCount = 4;
+    const activeWorkers = 4;
+
+    const duration = Date.now() - startTime;
+
+    if (activeWorkers < workerCount) {
+      return {
+        name: 'worker-health',
+        status: 'warn',
+        duration,
+        message: `Some workers are not active: ${activeWorkers}/${workerCount}`,
+        details: { workerCount, activeWorkers },
+        critical: false,
+      };
+    }
+
+    return {
+      name: 'worker-health',
+      status: 'pass',
+      duration,
+      message: `Worker health check passed`,
+      details: { workerCount, activeWorkers },
+      critical: false,
     };
   }
 
   /**
    * Aggregate health check results
    */
-  private aggregateHealthResults(checkType: string, checks: HealthCheck[]): HealthCheckResult {
-    const summary = {
-      total: checks.length,
-      passed: checks.filter(c => c.status === 'pass').length,
-      failed: checks.filter(c => c.status === 'fail').length,
-      warnings: checks.filter(c => c.status === 'warn').length
-    };
+  private aggregateHealthResults(checkName: string, checks: HealthCheck[]): HealthCheckResult {
+    const total = checks.length;
+    const passed = checks.filter((check) => check.status === 'pass').length;
+    const failed = checks.filter((check) => check.status === 'fail').length;
+    const warnings = checks.filter((check) => check.status === 'warn').length;
 
-    const criticalFailures = checks.filter(c => c.status === 'fail' && c.critical);
-    const issues: string[] = [];
+    const criticalFailures = checks.filter((check) => check.status === 'fail' && check.critical);
 
-    // Collect all failures and warnings
-    checks.forEach(check => {
-      if (check.status === 'fail') {
-        issues.push(`${check.name}: ${check.message || 'Unknown error'}`);
-      } else if (check.status === 'warn') {
-        issues.push(`${check.name}: ${check.message || 'Warning'}`);
-      }
-    });
-
-    // Determine overall status
-    let status: 'healthy' | 'unhealthy' | 'degraded';
+    let overallStatus: 'healthy' | 'unhealthy' | 'degraded';
     if (criticalFailures.length > 0) {
-      status = 'unhealthy';
-    } else if (summary.failed > 0) {
-      status = 'degraded';
+      overallStatus = 'unhealthy';
+    } else if (failed > 0) {
+      overallStatus = 'degraded';
     } else {
-      status = 'healthy';
+      overallStatus = 'healthy';
     }
 
+    const issues = checks
+      .filter((check) => check.status !== 'pass')
+      .map((check) => `${check.name}: ${check.message || 'Unknown error'}`);
+
     return {
-      status,
+      status: overallStatus,
       timestamp: new Date().toISOString(),
-      duration: checks.reduce((total, check) => total + check.duration, 0),
+      duration: checks.reduce((sum, check) => sum + check.duration, 0),
       checks,
-      summary,
+      summary: {
+        total,
+        passed,
+        failed,
+        warnings,
+      },
       issues,
       metadata: {
-        checkType,
-        nodeVersion: process.version,
-        uptime: process.uptime(),
-        memory: process.memoryUsage()
-      }
+        checkName,
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 
   /**
-   * Make HTTP request for health checks
+   * Fetch with timeout helper
    */
-  private async makeHttpRequest(url: string, timeout: number, headers?: Record<string, string>): Promise<Response> {
+  private async fetchWithTimeout(
+    url: string,
+    timeoutMs: number,
+    headers: Record<string, string> = {}
+  ): Promise<Response> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'User-Agent': 'Cortex-Memory-Health-Check/2.0.1',
-          ...headers
+          ...headers,
         },
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -761,4 +742,137 @@ export class ProductionHealthChecker {
   }
 }
 
+/**
+ * Builder for ProductionHealthChecker
+ */
+export class ProductionHealthCheckerBuilder {
+  private config: Partial<HealthCheckConfig> = {};
+
+  /**
+   * Set timeout in milliseconds
+   */
+  timeoutMs(timeoutMs: number): ProductionHealthCheckerBuilder {
+    this.config.timeoutMs = timeoutMs;
+    return this;
+  }
+
+  /**
+   * Set timeout in seconds (convenience method)
+   */
+  timeoutSeconds(seconds: number): ProductionHealthCheckerBuilder {
+    this.config.timeoutMs = seconds * 1000;
+    return this;
+  }
+
+  /**
+   * Set timeout (legacy property for backward compatibility)
+   */
+  timeout(timeout: number): ProductionHealthCheckerBuilder {
+    this.config.timeout = timeout;
+    return this;
+  }
+
+  /**
+   * Set retry attempts
+   */
+  retryAttempts(attempts: number): ProductionHealthCheckerBuilder {
+    this.config.retryAttempts = attempts;
+    return this;
+  }
+
+  /**
+   * Set retry attempts (legacy property for backward compatibility)
+   */
+  retries(retries: number): ProductionHealthCheckerBuilder {
+    this.config.retries = retries;
+    return this;
+  }
+
+  /**
+   * Set retry delay in milliseconds
+   */
+  retryDelayMs(delayMs: number): ProductionHealthCheckerBuilder {
+    this.config.retryDelayMs = delayMs;
+    return this;
+  }
+
+  /**
+   * Set retry delay in seconds (convenience method)
+   */
+  retryDelaySeconds(seconds: number): ProductionHealthCheckerBuilder {
+    this.config.retryDelayMs = seconds * 1000;
+    return this;
+  }
+
+  /**
+   * Set retry delay (legacy property for backward compatibility)
+   */
+  retryDelay(delay: number): ProductionHealthCheckerBuilder {
+    this.config.retryDelay = delay;
+    return this;
+  }
+
+  /**
+   * Enable or disable detailed checks
+   */
+  enableDetailedChecks(enabled: boolean): ProductionHealthCheckerBuilder {
+    this.config.enableDetailedChecks = enabled;
+    return this;
+  }
+
+  /**
+   * Enable or disable optional checks
+   */
+  skipOptionalChecks(skip: boolean): ProductionHealthCheckerBuilder {
+    this.config.skipOptionalChecks = skip;
+    return this;
+  }
+
+  /**
+   * Enable or disable health checks
+   */
+  enabled(enabled: boolean): ProductionHealthCheckerBuilder {
+    this.config.enabled = enabled;
+    return this;
+  }
+
+  /**
+   * Set check interval in milliseconds
+   */
+  intervalMs(intervalMs: number): ProductionHealthCheckerBuilder {
+    this.config.intervalMs = intervalMs;
+    return this;
+  }
+
+  /**
+   * Set check interval in seconds (convenience method)
+   */
+  intervalSeconds(seconds: number): ProductionHealthCheckerBuilder {
+    this.config.intervalMs = seconds * 1000;
+    return this;
+  }
+
+  /**
+   * Set failure threshold
+   */
+  failureThreshold(threshold: number): ProductionHealthCheckerBuilder {
+    this.config.failureThreshold = threshold;
+    return this;
+  }
+
+  /**
+   * Set success threshold
+   */
+  successThreshold(threshold: number): ProductionHealthCheckerBuilder {
+    this.config.successThreshold = threshold;
+    return this;
+  }
+
+  /**
+   * Build the ProductionHealthChecker instance
+   */
+  build(): ProductionHealthChecker {
+    return new ProductionHealthChecker(this.config);
+  }
+}
 export default ProductionHealthChecker;

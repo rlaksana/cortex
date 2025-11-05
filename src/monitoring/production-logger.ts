@@ -54,7 +54,7 @@ export class ProductionLogger {
     error: 0,
     warn: 1,
     info: 2,
-    debug: 3
+    debug: 3,
   };
 
   constructor(service: string = 'cortex-memory') {
@@ -65,7 +65,7 @@ export class ProductionLogger {
       includeRequestId: process.env.LOG_REQUEST_ID !== 'false',
       enablePerformanceLogging: process.env.ENABLE_PERFORMANCE_MONITORING === 'true',
       enableSecurityLogging: process.env.ENABLE_SECURITY_LOGGING === 'true',
-      service
+      service,
     };
   }
 
@@ -110,7 +110,11 @@ export class ProductionLogger {
   /**
    * Log security event
    */
-  security(event: string, severity: 'low' | 'medium' | 'high' | 'critical', metadata?: Record<string, any>): void {
+  security(
+    event: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    metadata?: Record<string, any>
+  ): void {
     if (!this.config.enableSecurityLogging) return;
 
     const logEntry: LogEntry = {
@@ -123,9 +127,9 @@ export class ProductionLogger {
         severity,
         ip: metadata?.ip,
         userAgent: metadata?.userAgent,
-        action: metadata?.action
+        action: metadata?.action,
       },
-      metadata: this.sanitizeMetadata(metadata)
+      metadata: this.sanitizeMetadata(metadata),
     };
 
     this.writeLog(logEntry);
@@ -145,9 +149,9 @@ export class ProductionLogger {
       performance: {
         duration,
         memory: process.memoryUsage(),
-        cpu: process.cpuUsage()
+        cpu: process.cpuUsage(),
       },
-      metadata: this.sanitizeMetadata(metadata)
+      metadata: this.sanitizeMetadata(metadata),
     };
 
     this.writeLog(logEntry);
@@ -164,7 +168,7 @@ export class ProductionLogger {
       level,
       service: this.config.service,
       message,
-      metadata: this.sanitizeMetadata(metadata)
+      metadata: this.sanitizeMetadata(metadata),
     };
 
     // Add error information if provided
@@ -173,7 +177,7 @@ export class ProductionLogger {
         name: error.name,
         message: error.message,
         stack: error.stack,
-        code: (error as any).code
+        code: (error as any).code,
       };
     }
 
@@ -248,13 +252,13 @@ export class ProductionLogger {
       'api_key',
       'openai_api_key',
       'jwt_secret',
-      'encryption_key'
+      'encryption_key',
     ];
 
     const sanitized = { ...metadata };
 
     for (const [key, value] of Object.entries(sanitized)) {
-      if (sensitiveFields.some(field => key.toLowerCase().includes(field))) {
+      if (sensitiveFields.some((field) => key.toLowerCase().includes(field))) {
         sanitized[key] = '[REDACTED]';
       } else if (typeof value === 'object' && value !== null) {
         sanitized[key] = this.sanitizeMetadata(value);
@@ -284,7 +288,9 @@ export class ProductionLogger {
     if (level in this.LOG_LEVELS) {
       this.config.level = level;
     } else {
-      throw new Error(`Invalid log level: ${level}. Valid levels: ${Object.keys(this.LOG_LEVELS).join(', ')}`);
+      throw new Error(
+        `Invalid log level: ${level}. Valid levels: ${Object.keys(this.LOG_LEVELS).join(', ')}`
+      );
     }
   }
 

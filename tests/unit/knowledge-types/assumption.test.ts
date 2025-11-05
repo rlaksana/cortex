@@ -15,8 +15,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { VectorDatabase } from '../../../src/index';
 import { AssumptionSchema, validateKnowledgeItem } from '../../../src/schemas/knowledge-types';
+
+// Declare global VectorDatabase mock
+declare global {
+  class VectorDatabase {
+    client: any;
+    constructor();
+  }
+}
 
 // Mock Qdrant client - reusing pattern from memory-store.test.ts
 vi.mock('@qdrant/js-client-rest', () => ({

@@ -1,23 +1,136 @@
 /**
  * Circuit Breaker Service
  *
- * Implements the circuit breaker pattern for external dependencies like Qdrant.
- * Provides automatic failure detection, service degradation, and recovery mechanisms.
+ * Enhanced circuit breaker implementation with comprehensive logging,
+ * annotations, and monitoring integration for SLO compliance.
+ *
+ * Features:
+ * - Automatic failure detection and recovery
+ * - Performance-based thresholding
+ * - Detailed logging and annotations
+ * - SLO integration for automated responses
+ * - Circuit breaker state analytics
+ * - Multi-dimensional failure tracking
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
  */
 
+import { EventEmitter } from 'events';
+import { logger } from '../utils/logger.js';
+
+/**
+ * Circuit Breaker Configuration
+ */
 export interface CircuitBreakerConfig {
-  // Failure threshold before opening circuit
+  /** Failure threshold before opening circuit */
   failureThreshold: number;
-  // Timeout before attempting to close circuit again
+  /** Timeout before attempting to close circuit again */
   recoveryTimeoutMs: number;
-  // Time window for monitoring failures
+  /** Time window for monitoring failures */
   monitoringWindowMs: number;
-  // Minimum number of calls before considering failure rate
+  /** Minimum number of calls before considering failure rate */
   minimumCalls: number;
-  // Percentage threshold for failure rate
+  /** Percentage threshold for failure rate */
   failureRateThreshold: number;
-  // Whether to track individual failure types
+  /** Whether to track individual failure types */
   trackFailureTypes: boolean;
+  /** Enable detailed performance logging */
+  enablePerformanceLogging: boolean;
+  /** Enable SLO annotations */
+  enableSLOAnnotations: boolean;
+  /** Custom failure type classification */
+  failureClassification?: Record<string, (error: Error) => boolean>;
+  /** Performance thresholds for adaptive behavior */
+  performanceThresholds?: {
+    maxResponseTimeMs: number;
+    maxResponseTimePercentile: number;
+    maxErrorSpikeRate: number;
+  };
+}
+
+/**
+ * Circuit Breaker State with Enhanced Tracking
+ */
+export interface CircuitBreakerState {
+  /** Current circuit state: 'closed', 'open', or 'half-open' */
+  state: 'closed' | 'open' | 'half-open';
+  /** Number of consecutive failures */
+  failures: number;
+  /** Total number of calls in monitoring window */
+  totalCalls: number;
+  /** Number of successful calls */
+  successCalls: number;
+  /** Number of failed calls */
+  failedCalls: number;
+  /** Timestamp of last failure */
+  lastFailureTime: number;
+  /** Timestamp when circuit was opened */
+  openedAt: number;
+  /** Timestamp of last state change */
+  lastStateChange: number;
+  /** Types of failures encountered */
+  failureTypes: Record<string, number>;
+  /** Performance metrics */
+  averageResponseTime: number;
+  responseTimeSamples: number[];
+  /** Enhanced tracking for SLO */
+  sloViolationCount: number;
+  lastSLOViolation?: number;
+  degradationLevel: 'none' | 'minor' | 'major' | 'critical';
+  /** Circuit breaker annotations for monitoring */
+  annotations: CircuitBreakerAnnotation[];
+}
+
+/**
+ * Circuit Breaker Annotation
+ */
+export interface CircuitBreakerAnnotation {
+  timestamp: number;
+  type: 'state_change' | 'failure' | 'recovery' | 'performance' | 'slo_violation' | 'manual_intervention';
+  message: string;
+  details: Record<string, any>;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  correlationId?: string;
+  sloImpact?: {
+    affectedSLOs: string[];
+    severity: 'low' | 'medium' | 'high' | 'critical';
+  };
+}
+
+/**
+ * Enhanced Circuit Breaker Statistics
+ */
+export interface CircuitBreakerStats {
+  /** Basic state information */
+  state: CircuitBreakerState['state'];
+  failures: number;
+  totalCalls: number;
+  successRate: number;
+  failureRate: number;
+  averageResponseTime: number;
+  timeSinceLastFailure: number;
+  timeSinceStateChange: number;
+  isOpen: boolean;
+  failureTypes: Record<string, number>;
+  /** Additional properties for monitoring */
+  isHalfOpen: boolean;
+  successes: number;
+  /** SLO-related metrics */
+  sloCompliance: number;
+  sloViolationRate: number;
+  performanceScore: number;
+  degradationScore: number;
+  /** Circuit breaker health score */
+  healthScore: number;
+  /** Recent annotations */
+  recentAnnotations: CircuitBreakerAnnotation[];
+  /** Predictive metrics */
+  riskOfFailure: number;
+  predictedTimeToRecovery: number | null;
+  /** Recommended actions */
+  recommendations: string[];
 }
 
 export interface CircuitBreakerState {
@@ -55,14 +168,23 @@ export interface CircuitBreakerStats {
   timeSinceStateChange: number;
   isOpen: boolean;
   failureTypes: Record<string, number>;
+  // Additional properties for monitoring
+  isHalfOpen: boolean;
+  successes: number;
 }
 
-export class CircuitBreaker {
+/**
+ * Enhanced Circuit Breaker with Logging and Annotations
+ */
+export class CircuitBreaker extends EventEmitter {
   private config: CircuitBreakerConfig;
   private state: CircuitBreakerState;
   private responseTimeBuffer: number[] = [];
+  private name: string;
 
-  constructor(config: Partial<CircuitBreakerConfig> = {}) {
+  constructor(name: string, config: Partial<CircuitBreakerConfig> = {}) {
+    super();
+    this.name = name;
     this.config = {
       failureThreshold: 5,
       recoveryTimeoutMs: 60000, // 1 minute
@@ -70,10 +192,21 @@ export class CircuitBreaker {
       minimumCalls: 10,
       failureRateThreshold: 0.5, // 50%
       trackFailureTypes: true,
+      enablePerformanceLogging: true,
+      enableSLOAnnotations: true,
+      performanceThresholds: {
+        maxResponseTimeMs: 1000,
+        maxResponseTimePercentile: 95,
+        maxErrorSpikeRate: 0.2,
+      },
       ...config,
     };
 
     this.state = this.getInitialState();
+    this.logAnnotation('info', 'Circuit breaker initialized', {
+      config: this.config,
+      initialState: this.state.state,
+    });
   }
 
   private getInitialState(): CircuitBreakerState {
@@ -89,7 +222,181 @@ export class CircuitBreaker {
       failureTypes: {},
       averageResponseTime: 0,
       responseTimeSamples: [],
+      sloViolationCount: 0,
+      degradationLevel: 'none',
+      annotations: [],
     };
+  }
+
+  /**
+   * Add annotation to circuit breaker history
+   */
+  private addAnnotation(
+    type: CircuitBreakerAnnotation['type'],
+    message: string,
+    details: Record<string, any> = {},
+    severity: CircuitBreakerAnnotation['severity'] = 'info',
+    correlationId?: string,
+    sloImpact?: CircuitBreakerAnnotation['sloImpact']
+  ): void {
+    const annotation: CircuitBreakerAnnotation = {
+      timestamp: Date.now(),
+      type,
+      message,
+      details,
+      severity,
+      correlationId,
+      sloImpact,
+    };
+
+    this.state.annotations.push(annotation);
+
+    // Keep only last 100 annotations
+    if (this.state.annotations.length > 100) {
+      this.state.annotations = this.state.annotations.slice(-100);
+    }
+
+    // Log the annotation
+    this.logAnnotation(severity, message, details, correlationId);
+
+    // Emit annotation event
+    this.emit('annotation', {
+      circuitName: this.name,
+      annotation,
+      state: this.state,
+    });
+
+    // Check for SLO violations
+    if (this.config.enableSLOAnnotations && sloImpact) {
+      this.checkSLOViolation(annotation);
+    }
+  }
+
+  /**
+   * Log annotation with structured logging
+   */
+  private logAnnotation(
+    level: 'info' | 'warn' | 'error',
+    message: string,
+    details: Record<string, any> = {},
+    correlationId?: string
+  ): void {
+    const logData = {
+      circuitBreaker: this.name,
+      state: this.state.state,
+      failures: this.state.failures,
+      totalCalls: this.state.totalCalls,
+      failureRate: this.getFailureRate(),
+      correlationId,
+      ...details,
+    };
+
+    switch (level) {
+      case 'info':
+        logger.info(logData, `[CIRCUIT:${this.name}] ${message}`);
+        break;
+      case 'warn':
+        logger.warn(logData, `[CIRCUIT:${this.name}] ${message}`);
+        break;
+      case 'error':
+        logger.error(logData, `[CIRCUIT:${this.name}] ${message}`);
+        break;
+    }
+  }
+
+  /**
+   * Check for SLO violations
+   */
+  private checkSLOViolation(annotation: CircuitBreakerAnnotation): void {
+    const sloViolations: string[] = [];
+
+    // Check failure rate SLO
+    if (this.getFailureRate() > this.config.failureRateThreshold) {
+      sloViolations.push('failure_rate');
+    }
+
+    // Check response time SLO
+    if (this.config.performanceThresholds &&
+        this.state.averageResponseTime > this.config.performanceThresholds.maxResponseTimeMs) {
+      sloViolations.push('response_time');
+    }
+
+    // Check consecutive failures SLO
+    if (this.state.failures >= this.config.failureThreshold) {
+      sloViolations.push('consecutive_failures');
+    }
+
+    if (sloViolations.length > 0) {
+      this.state.sloViolationCount++;
+      this.state.lastSLOViolation = Date.now();
+
+      this.addAnnotation(
+        'slo_violation',
+        'SLO violation detected',
+        {
+          violations: sloViolations,
+          failureRate: this.getFailureRate(),
+          averageResponseTime: this.state.averageResponseTime,
+          consecutiveFailures: this.state.failures,
+        },
+        'warning',
+        annotation.correlationId,
+        {
+          affectedSLOs: sloViolations,
+          severity: sloViolations.length > 2 ? 'critical' : 'high',
+        }
+      );
+
+      this.emit('slo_violation', {
+        circuitName: this.name,
+        violations: sloViolations,
+        state: this.state,
+      });
+    }
+  }
+
+  /**
+   * Update degradation level
+   */
+  private updateDegradationLevel(): void {
+    const failureRate = this.getFailureRate();
+    const responseTime = this.state.averageResponseTime;
+    const consecutiveFailures = this.state.failures;
+
+    let newLevel: CircuitBreakerState['degradationLevel'] = 'none';
+
+    if (consecutiveFailures >= this.config.failureThreshold || this.state.state === 'open') {
+      newLevel = 'critical';
+    } else if (failureRate > 0.8 || responseTime > 2000) {
+      newLevel = 'major';
+    } else if (failureRate > 0.5 || responseTime > 1000) {
+      newLevel = 'minor';
+    }
+
+    if (newLevel !== this.state.degradationLevel) {
+      const oldLevel = this.state.degradationLevel;
+      this.state.degradationLevel = newLevel;
+
+      this.addAnnotation(
+        'performance',
+        `Degradation level changed from ${oldLevel} to ${newLevel}`,
+        {
+          oldLevel,
+          newLevel,
+          failureRate,
+          responseTime,
+          consecutiveFailures,
+        },
+        newLevel === 'critical' ? 'error' : 'warning'
+      );
+
+      this.emit('degradation_changed', {
+        circuitName: this.name,
+        oldLevel,
+        newLevel,
+        state: this.state,
+      });
+    }
   }
 
   /**
@@ -183,6 +490,9 @@ export class CircuitBreaker {
       timeSinceStateChange: now - this.state.lastStateChange,
       isOpen: this.isOpen(),
       failureTypes: { ...this.state.failureTypes },
+      // Additional properties for monitoring
+      isHalfOpen: this.state.state === 'half-open',
+      successes: this.state.successCalls,
     };
   }
 
@@ -303,6 +613,16 @@ export class CircuitBreaker {
     // Calculate average
     this.state.averageResponseTime =
       this.responseTimeBuffer.reduce((sum, time) => sum + time, 0) / this.responseTimeBuffer.length;
+  }
+
+  /**
+   * Get current failure rate as a percentage
+   */
+  private getFailureRate(): number {
+    if (this.state.totalCalls === 0) {
+      return 0;
+    }
+    return this.state.failures / this.state.totalCalls;
   }
 
   /**

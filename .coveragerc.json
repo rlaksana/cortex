@@ -146,12 +146,11 @@
 
     "checkCoverage": {
       "statements": 95,
-      "branches": 90,
+      "branches": 85,
       "functions": 95,
       "lines": 95,
       "perFile": false,
-      "skipFull": false,
-      "branches": 85
+      "skipFull": false
     },
 
     "reporting": {

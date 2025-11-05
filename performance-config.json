@@ -1,0 +1,124 @@
+{
+  "performanceTargets": {
+    "knowledge_storage": {
+      "p95_latency_ms": 1000,
+      "p99_latency_ms": 2000,
+      "throughput_ops_per_sec": 100,
+      "error_rate_percent": 5,
+      "memory_usage_mb": 512
+    },
+    "search_retrieval": {
+      "p95_latency_ms": 500,
+      "p99_latency_ms": 1000,
+      "throughput_ops_per_sec": 200,
+      "error_rate_percent": 2,
+      "memory_usage_mb": 256
+    },
+    "circuit_breaker": {
+      "p95_latency_ms": 10,
+      "p99_latency_ms": 50,
+      "throughput_ops_per_sec": 10000,
+      "error_rate_percent": 0,
+      "memory_usage_mb": 64
+    },
+    "health_check": {
+      "p95_latency_ms": 100,
+      "p99_latency_ms": 500,
+      "throughput_ops_per_sec": 1000,
+      "error_rate_percent": 1,
+      "memory_usage_mb": 32
+    }
+  },
+  "testConfigurations": {
+    "enableTrendAnalysis": true,
+    "trendWindowSize": 10,
+    "autoUpdateBaseline": true,
+    "performanceGateEnabled": true,
+    "maxRegressionPercentage": 20,
+    "minBaselineSamples": 3,
+    "criticalMetrics": ["p95_latency", "p99_latency", "throughput", "error_rate"],
+    "warningMetrics": ["p50_latency", "memory_usage"]
+  },
+  "ciConfiguration": {
+    "failOnRegression": true,
+    "updateBaseline": false,
+    "outputDir": "./artifacts/performance/ci",
+    "enableNotifications": false,
+    "testSuites": {
+      "critical": [
+        "knowledge_storage_performance",
+        "search_retrieval_performance",
+        "circuit_breaker_performance",
+        "health_check_performance"
+      ],
+      "storage": [
+        "entity_storage_performance",
+        "observation_storage_performance",
+        "decision_storage_performance",
+        "task_storage_performance",
+        "mixed_knowledge_storage_performance"
+      ],
+      "search": [
+        "semantic_search_performance",
+        "keyword_search_performance",
+        "hybrid_search_performance",
+        "search_ranking_performance"
+      ],
+      "circuit_breaker": [
+        "circuit_breaker_response_performance",
+        "circuit_state_transitions",
+        "concurrent_circuit_breaker_operations"
+      ],
+      "health_check": [
+        "database_health_check_performance",
+        "memory_health_check_performance",
+        "circuit_breaker_health_check_performance",
+        "api_health_check_performance"
+      ]
+    }
+  },
+  "dashboardConfiguration": {
+    "title": "Cortex Memory MCP Performance Dashboard",
+    "refreshInterval": 60,
+    "maxResults": 100,
+    "enableRealTime": false,
+    "theme": "light",
+    "charts": {
+      "defaultType": "line",
+      "colors": ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"],
+      "animationDuration": 750
+    }
+  },
+  "artifactStorage": {
+    "baseDir": "./artifacts/performance",
+    "maxArtifacts": 1000,
+    "retentionDays": 30,
+    "enableSearch": true,
+    "enableCompression": false
+  },
+  "notifications": {
+    "slack": {
+      "enabled": false,
+      "webhookUrl": "",
+      "channel": "#performance-alerts"
+    },
+    "email": {
+      "enabled": false,
+      "smtp": {
+        "host": "",
+        "port": 587,
+        "secure": false
+      },
+      "from": "",
+      "to": []
+    }
+  },
+  "reporting": {
+    "generateHTML": true,
+    "generateMarkdown": true,
+    "generateJSON": true,
+    "includeCharts": true,
+    "includeSystemMetrics": true,
+    "includeRecommendations": true
+  }
+}

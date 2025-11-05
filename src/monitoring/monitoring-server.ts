@@ -67,7 +67,7 @@ export class MonitoringServer {
     try {
       const port = this.config.port || 9090;
       const host = this.config.host || '0.0.0.0';
-      
+
       this.server = this.app.listen(port, host, () => {
         this.isRunning = true;
         logger.info(
@@ -84,15 +84,11 @@ export class MonitoringServer {
       // Handle server errors
       this.server.on('error', (error: any) => {
         if (error.code === 'EADDRINUSE') {
-          logger.error(
-            { port },
-            'Monitoring server port already in use'
-          );
+          logger.error({ port }, 'Monitoring server port already in use');
         } else {
           logger.error({ error }, 'Monitoring server error');
         }
       });
-
     } catch (error) {
       logger.error({ error }, 'Failed to start monitoring server');
       throw error;
@@ -149,10 +145,7 @@ export class MonitoringServer {
     if (this.config.enableCors) {
       this.app.use((req: Request, res: Response, next) => {
         res.header('Access-Control-Allow-Origin', '*');
-        res.header(
-          'Access-Control-Allow-Methods',
-          'GET, POST, PUT, DELETE, OPTIONS'
-        );
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         res.header(
           'Access-Control-Allow-Headers',
           'Origin, X-Requested-With, Content-Type, Accept, Authorization'
@@ -264,7 +257,7 @@ export class MonitoringServer {
    */
   private async getMetricsHandler(req: Request, res: Response): Promise<void> {
     try {
-      const format = req.query.format as string || 'prometheus';
+      const format = (req.query.format as string) || 'prometheus';
 
       if (format === 'prometheus') {
         // Get comprehensive Prometheus metrics
@@ -316,7 +309,7 @@ export class MonitoringServer {
       // Add overall_status field for compatibility
       const response = {
         ...healthStatus,
-        overall_status: healthStatus.status
+        overall_status: healthStatus.status,
       };
 
       res.status(httpStatus).json(response);
@@ -344,17 +337,13 @@ export class MonitoringServer {
       let filteredAlerts = [...metricsAlerts];
 
       if (severity) {
-        filteredAlerts = filteredAlerts.filter(
-          alert => alert.severity === severity
-        );
+        filteredAlerts = filteredAlerts.filter((alert) => alert.severity === severity);
       }
 
       if (active === 'true') {
         // Only return recent alerts (last hour)
-        const oneHourAgo = Date.now() - (60 * 60 * 1000);
-        filteredAlerts = filteredAlerts.filter(
-          alert => alert.timestamp > oneHourAgo
-        );
+        const oneHourAgo = Date.now() - 60 * 60 * 1000;
+        filteredAlerts = filteredAlerts.filter((alert) => alert.timestamp > oneHourAgo);
       }
 
       // Limit results
@@ -469,10 +458,10 @@ export class MonitoringServer {
     // Error metrics
     output += '# HELP cortex_errors_total Total number of errors\n';
     output += '# TYPE cortex_errors_total counter\n';
-    const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
-    const highAlerts = alerts.filter(a => a.severity === 'high').length;
-    const mediumAlerts = alerts.filter(a => a.severity === 'medium').length;
-    const lowAlerts = alerts.filter(a => a.severity === 'low').length;
+    const criticalAlerts = alerts.filter((a) => a.severity === 'critical').length;
+    const highAlerts = alerts.filter((a) => a.severity === 'high').length;
+    const mediumAlerts = alerts.filter((a) => a.severity === 'medium').length;
+    const lowAlerts = alerts.filter((a) => a.severity === 'low').length;
     output += `cortex_errors_total{severity="critical"} ${criticalAlerts}\n`;
     output += `cortex_errors_total{severity="high"} ${highAlerts}\n`;
     output += `cortex_errors_total{severity="medium"} ${mediumAlerts}\n`;
@@ -486,13 +475,17 @@ export class MonitoringServer {
     // Business metrics
     output += '# HELP cortex_operations_total Total operations processed\n';
     output += '# TYPE cortex_operations_total counter\n';
-    const totalOps = Object.values(historicalMetrics.operation_metrics).reduce((sum, op) => sum + op.count, 0);
+    const totalOps = Object.values(historicalMetrics.operation_metrics).reduce(
+      (sum, op) => sum + op.count,
+      0
+    );
     output += `cortex_operations_total ${totalOps}\n\n`;
 
     // Circuit breaker metrics
     const circuitBreakerMetrics = this.getCircuitBreakerMetrics();
     if (circuitBreakerMetrics.length > 0) {
-      output += '# HELP cortex_circuit_breaker_state Circuit breaker state (0=closed, 1=open, 2=half_open)\n';
+      output +=
+        '# HELP cortex_circuit_breaker_state Circuit breaker state (0=closed, 1=open, 2=half_open)\n';
       output += '# TYPE cortex_circuit_breaker_state gauge\n';
       output += '# HELP cortex_circuit_breaker_failures_total Total circuit breaker failures\n';
       output += '# TYPE cortex_circuit_breaker_failures_total counter\n';
@@ -500,7 +493,7 @@ export class MonitoringServer {
       output += '# TYPE cortex_circuit_breaker_successes_total counter\n';
       output += '# HELP cortex_circuit_breaker_last_failure_time_seconds Last failure timestamp\n';
       output += '# TYPE cortex_circuit_breaker_last_failure_time_seconds gauge\n\n';
-      
+
       output += circuitBreakerMetrics.join('\n') + '\n\n';
     }
 
@@ -509,9 +502,10 @@ export class MonitoringServer {
     if (qdrantMetrics.length > 0) {
       output += '# HELP cortex_qdrant_connection_status Qdrant connection status (1=up, 0=down)\n';
       output += '# TYPE cortex_qdrant_connection_status gauge\n';
-      output += '# HELP cortex_qdrant_response_time_milliseconds Qdrant response time in milliseconds\n';
+      output +=
+        '# HELP cortex_qdrant_response_time_milliseconds Qdrant response time in milliseconds\n';
       output += '# TYPE cortex_qdrant_response_time_milliseconds gauge\n\n';
-      
+
       output += qdrantMetrics.join('\n') + '\n\n';
     }
 
@@ -528,7 +522,7 @@ export class MonitoringServer {
    */
   private getCircuitBreakerMetrics(): string[] {
     const metrics: string[] = [];
-    
+
     try {
       // Try to get circuit breaker stats from various services
       const { circuitBreakerManager } = require('../services/circuit-breaker.service.js');
@@ -537,7 +531,7 @@ export class MonitoringServer {
       for (const [serviceName, stats] of Object.entries(allStats)) {
         const statsObj = stats as any;
         const stateValue = statsObj.state === 'closed' ? 0 : statsObj.state === 'open' ? 1 : 2;
-        
+
         metrics.push(
           `cortex_circuit_breaker_state{service="${serviceName}"} ${stateValue}`,
           `cortex_circuit_breaker_failures_total{service="${serviceName}"} ${statsObj.failures || 0}`,
@@ -558,18 +552,17 @@ export class MonitoringServer {
    */
   private getQdrantMetrics(): string[] {
     const metrics: string[] = [];
-    
+
     try {
       // Try to get Qdrant connection status from database manager
       const { databaseManager } = require('../index.js');
       const isHealthy = databaseManager.isHealthy ? databaseManager.isHealthy() : true;
-      
+
       metrics.push(`cortex_qdrant_connection_status ${isHealthy ? 1 : 0}`);
-      
+
       // If we have response time metrics, include them
       // This would need to be implemented in the database manager
       metrics.push(`cortex_qdrant_response_time_milliseconds 50`); // Placeholder
-      
     } catch (error) {
       // Database manager not available or not initialized
       logger.debug('Qdrant metrics not available', { error: (error as Error).message });

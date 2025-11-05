@@ -185,7 +185,7 @@ export const MIGRATION_STRATEGIES: Record<MigrationMode, MigrationStrategy> = {
 export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationConfig> = {
   'pg-to-qdrant': {
     generateEmbeddings: 'always',
-    embeddingModel: 'text-embedding-ada-002',
+    embeddingModel: 'text-embedding-3-small',
     batchSize: 100,
     contentFields: ['content', 'text', 'description', 'title'],
     metadataFields: ['kind', 'scope', 'created_at', 'updated_at', 'id'],
@@ -208,7 +208,7 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
   },
   'qdrant-to-pg': {
     generateEmbeddings: 'never',
-    embeddingModel: 'text-embedding-ada-002',
+    embeddingModel: 'text-embedding-3-small',
     batchSize: 50,
     contentFields: ['content'],
     metadataFields: ['kind', 'scope', 'created_at'],
@@ -225,7 +225,7 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
   },
   sync: {
     generateEmbeddings: 'if-missing',
-    embeddingModel: 'text-embedding-ada-002',
+    embeddingModel: 'text-embedding-3-small',
     batchSize: 75,
     contentFields: ['content', 'text'],
     metadataFields: ['kind', 'scope', 'created_at', 'updated_at'],
@@ -248,7 +248,7 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
   },
   validate: {
     generateEmbeddings: 'never',
-    embeddingModel: 'text-embedding-ada-002',
+    embeddingModel: 'text-embedding-3-small',
     batchSize: 200,
     contentFields: ['content'],
     metadataFields: ['id', 'kind', 'scope'],
@@ -257,7 +257,7 @@ export const DEFAULT_TRANSFORMATIONS: Record<MigrationMode, DataTransformationCo
   },
   cleanup: {
     generateEmbeddings: 'never',
-    embeddingModel: 'text-embedding-ada-002',
+    embeddingModel: 'text-embedding-3-small',
     batchSize: 500,
     contentFields: [],
     metadataFields: ['id', 'kind', 'created_at'],
@@ -307,7 +307,7 @@ export class MigrationConfigManager {
       strategy,
       dataTransformation: {
         generateEmbeddings: defaultTransformation.generateEmbeddings,
-        embeddingModel: baseConfig.mode === 'pg-to-qdrant' ? 'text-embedding-ada-002' : 'none',
+        embeddingModel: baseConfig.mode === 'pg-to-qdrant' ? 'text-embedding-3-small' : 'none',
         batchSize: baseConfig.batchSize,
         contentFields: defaultTransformation.contentFields,
         metadataFields: defaultTransformation.metadataFields,
@@ -698,3 +698,4 @@ export function createMigrationConfigForMode(
 ): MigrationConfigManager {
   return MigrationConfigFactory.createForMode(mode, environment, overrides);
 }
+

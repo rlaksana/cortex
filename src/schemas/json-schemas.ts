@@ -194,10 +194,7 @@ export const MEMORY_STORE_JSON_SCHEMA = {
           },
         },
         additionalProperties: false,
-        oneOf: [
-          { required: ['kind', 'content'] },
-          { required: ['kind', 'data'] },
-        ],
+        oneOf: [{ required: ['kind', 'content'] }, { required: ['kind', 'data'] }],
       },
     },
     deduplication: {

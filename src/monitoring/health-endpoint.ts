@@ -26,7 +26,8 @@ export class HealthEndpointManager {
   private logger: ProductionLogger;
   private config: HealthEndpointConfig;
   private lastHealthCheck: HealthCheckResult | null = null;
-  private healthCheckCache: Map<string, { result: HealthCheckResult; timestamp: number }> = new Map();
+  private healthCheckCache: Map<string, { result: HealthCheckResult; timestamp: number }> =
+    new Map();
   private readonly CACHE_TTL = 30000; // 30 seconds
 
   constructor(config?: Partial<HealthEndpointConfig>) {
@@ -39,7 +40,9 @@ export class HealthEndpointManager {
       enableReadinessProbe: process.env.ENABLE_READINESS_PROBE !== 'false',
       enableLivenessProbe: process.env.ENABLE_LIVENESS_PROBE !== 'false',
       authenticationRequired: process.env.HEALTH_ENDPOINT_AUTH_REQUIRED === 'true',
-      allowedIPs: (process.env.HEALTH_ENDPOINT_ALLOWED_IPS || '').split(',').filter(ip => ip.trim())
+      allowedIPs: (process.env.HEALTH_ENDPOINT_ALLOWED_IPS || '')
+        .split(',')
+        .filter((ip) => ip.trim()),
     };
   }
 
@@ -66,21 +69,21 @@ export class HealthEndpointManager {
         userAgent: req.headers['user-agent'],
         status: result.status,
         duration,
-        statusCode
+        statusCode,
       });
 
       res.json(result);
     } catch (error) {
       this.logger.error('Health check failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        ip: req.ip
+        ip: req.ip,
       });
 
       res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         error: 'Health check service unavailable',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -93,7 +96,7 @@ export class HealthEndpointManager {
       if (!this.config.enableLivenessProbe) {
         return res.status(404).json({
           error: 'Not Found',
-          message: 'Liveness probe is disabled'
+          message: 'Liveness probe is disabled',
         });
       }
 
@@ -109,15 +112,15 @@ export class HealthEndpointManager {
       return res.status(statusCode).json({
         status: result.status === 'healthy' ? 'ok' : 'not-healthy',
         timestamp: result.timestamp,
-        checks: result.checks.filter(c => c.critical),
+        checks: result.checks.filter((c) => c.critical),
         uptime: process.uptime(),
-        version: process.env.npm_package_version || '2.0.1'
+        version: process.env.npm_package_version || '2.0.1',
       });
     } catch (error) {
       return res.status(503).json({
         status: 'not-healthy',
         timestamp: new Date().toISOString(),
-        error: 'Liveness probe failed'
+        error: 'Liveness probe failed',
       });
     }
   }
@@ -130,7 +133,7 @@ export class HealthEndpointManager {
       if (!this.config.enableReadinessProbe) {
         return res.status(404).json({
           error: 'Not Found',
-          message: 'Readiness probe is disabled'
+          message: 'Readiness probe is disabled',
         });
       }
 
@@ -146,17 +149,17 @@ export class HealthEndpointManager {
       return res.status(statusCode).json({
         status: result.status === 'healthy' ? 'ready' : 'not-ready',
         timestamp: result.timestamp,
-        checks: result.checks.filter(c => c.critical),
+        checks: result.checks.filter((c) => c.critical),
         dependencies: {
-          qdrant: result.checks.find(c => c.name === 'qdrant-connection')?.status || 'unknown',
-          openai: result.checks.find(c => c.name === 'openai-connection')?.status || 'unknown'
-        }
+          qdrant: result.checks.find((c) => c.name === 'qdrant-connection')?.status || 'unknown',
+          openai: result.checks.find((c) => c.name === 'openai-connection')?.status || 'unknown',
+        },
       });
     } catch (error) {
       return res.status(503).json({
         status: 'not-ready',
         timestamp: new Date().toISOString(),
-        error: 'Readiness probe failed'
+        error: 'Readiness probe failed',
       });
     }
   }
@@ -169,7 +172,7 @@ export class HealthEndpointManager {
       if (!this.config.enableDetailedEndpoints) {
         return res.status(404).json({
           error: 'Not Found',
-          message: 'Detailed health endpoints are disabled'
+          message: 'Detailed health endpoints are disabled',
         });
       }
 
@@ -185,25 +188,25 @@ export class HealthEndpointManager {
           pid: process.pid,
           uptime: process.uptime(),
           memoryUsage: process.memoryUsage(),
-          cpuUsage: process.cpuUsage()
+          cpuUsage: process.cpuUsage(),
         },
         environment: {
           nodeEnv: process.env.NODE_ENV,
           logLevel: process.env.LOG_LEVEL,
           enableMetrics: process.env.ENABLE_METRICS_COLLECTION === 'true',
-          enableDebug: process.env.ENABLE_DEBUG_MODE === 'true'
-        }
+          enableDebug: process.env.ENABLE_DEBUG_MODE === 'true',
+        },
       });
     } catch (error) {
       this.logger.error('Detailed health check failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       return res.status(503).json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
         error: 'Detailed health check failed',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -216,7 +219,7 @@ export class HealthEndpointManager {
       if (!this.config.enableMetricsEndpoint) {
         return res.status(404).json({
           error: 'Not Found',
-          message: 'Metrics endpoint is disabled'
+          message: 'Metrics endpoint is disabled',
         });
       }
 
@@ -230,36 +233,36 @@ export class HealthEndpointManager {
           heapUsed: process.memoryUsage().heapUsed,
           heapTotal: process.memoryUsage().heapTotal,
           external: process.memoryUsage().external,
-          arrayBuffers: process.memoryUsage().arrayBuffers
+          arrayBuffers: process.memoryUsage().arrayBuffers,
         },
         cpu: process.cpuUsage(),
         health: {
           status: healthResult.status,
           checks: healthResult.summary,
-          lastCheck: healthResult.timestamp
+          lastCheck: healthResult.timestamp,
         },
         performance: {
           eventLoopDelay: this.getEventLoopDelay(),
-          gcStats: this.getGCStats()
+          gcStats: this.getGCStats(),
         },
         application: {
           version: process.env.npm_package_version || '2.0.1',
           environment: process.env.NODE_ENV,
-          logLevel: process.env.LOG_LEVEL
-        }
+          logLevel: process.env.LOG_LEVEL,
+        },
       };
 
       res.setHeader('Content-Type', 'application/json');
       return res.json(metrics);
     } catch (error) {
       this.logger.error('Metrics collection failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       return res.status(500).json({
         error: 'Internal Server Error',
         message: 'Failed to collect metrics',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   }
@@ -280,12 +283,12 @@ export class HealthEndpointManager {
       if (!this.config.allowedIPs.includes(clientIP) && !this.config.allowedIPs.includes('*')) {
         this.logger.warn('Health endpoint access denied - IP not whitelisted', {
           ip: clientIP,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
         });
 
         res.status(403).json({
           error: 'Forbidden',
-          message: 'Access denied from this IP address'
+          message: 'Access denied from this IP address',
         });
         return;
       }
@@ -298,12 +301,12 @@ export class HealthEndpointManager {
       if (!providedApiKey || providedApiKey !== requiredApiKey) {
         this.logger.warn('Health endpoint access denied - invalid API key', {
           ip: req.ip,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
         });
 
         res.status(401).json({
           error: 'Unauthorized',
-          message: 'Valid API key required'
+          message: 'Valid API key required',
         });
         return;
       }
@@ -319,7 +322,7 @@ export class HealthEndpointManager {
     const cached = this.healthCheckCache.get(type);
     const now = Date.now();
 
-    if (cached && (now - cached.timestamp) < this.CACHE_TTL) {
+    if (cached && now - cached.timestamp < this.CACHE_TTL) {
       return cached.result;
     }
 
@@ -396,7 +399,7 @@ export class HealthEndpointManager {
     const memUsage = process.memoryUsage();
     return {
       heapUsedPercent: (memUsage.heapUsed / memUsage.heapTotal) * 100,
-      estimatedGCPressure: memUsage.heapUsed / memUsage.heapTotal > 0.8 ? 'high' : 'normal'
+      estimatedGCPressure: memUsage.heapUsed / memUsage.heapTotal > 0.8 ? 'high' : 'normal',
     };
   }
 
@@ -408,12 +411,24 @@ export class HealthEndpointManager {
     app.get('/health', this.authenticateHealthEndpoint.bind(this), this.healthCheck.bind(this));
 
     // Kubernetes/Docker-style probes
-    app.get('/health/live', this.authenticateHealthEndpoint.bind(this), this.livenessProbe.bind(this));
-    app.get('/health/ready', this.authenticateHealthEndpoint.bind(this), this.readinessProbe.bind(this));
+    app.get(
+      '/health/live',
+      this.authenticateHealthEndpoint.bind(this),
+      this.livenessProbe.bind(this)
+    );
+    app.get(
+      '/health/ready',
+      this.authenticateHealthEndpoint.bind(this),
+      this.readinessProbe.bind(this)
+    );
 
     // Detailed endpoints (if enabled)
     if (this.config.enableDetailedEndpoints) {
-      app.get('/health/detailed', this.authenticateHealthEndpoint.bind(this), this.detailedHealthCheck.bind(this));
+      app.get(
+        '/health/detailed',
+        this.authenticateHealthEndpoint.bind(this),
+        this.detailedHealthCheck.bind(this)
+      );
     }
 
     // Metrics endpoint (if enabled)
@@ -424,7 +439,7 @@ export class HealthEndpointManager {
     this.logger.info('Health endpoints configured', {
       detailedEndpoints: this.config.enableDetailedEndpoints,
       metricsEndpoint: this.config.enableMetricsEndpoint,
-      authenticationRequired: this.config.authenticationRequired
+      authenticationRequired: this.config.authenticationRequired,
     });
   }
 
@@ -435,7 +450,7 @@ export class HealthEndpointManager {
     return {
       cacheSize: this.healthCheckCache.size,
       cachedTypes: Array.from(this.healthCheckCache.keys()),
-      cacheTTL: this.CACHE_TTL
+      cacheTTL: this.CACHE_TTL,
     };
   }
 

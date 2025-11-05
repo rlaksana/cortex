@@ -26,7 +26,7 @@ export async function storeDecision(data: DecisionData, scope: ScopeFilter): Pro
  * @throws ImmutabilityViolationError if ADR status is 'accepted'
  */
 export async function updateDecision(id: string, data: Partial<DecisionData>): Promise<void> {
-  const { getQdrantClient } = await import('../../db/qdrant-client');
+  const { getQdrantClient } = await import('../../db/qdrant-client.js');
   const qdrant = getQdrantClient();
   // Check immutability before allowing update
   await validateADRImmutability(id);

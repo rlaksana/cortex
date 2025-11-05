@@ -82,4 +82,5 @@ export const DEFAULT_TTL_CONFIG = {
   requireConfirmation: true,
 };
 
-export { EXPIRY_TIME_MAP, type ExpiryTimeLabel } from '../../constants/expiry-times.js';
+export { EXPIRY_TIME_MAP } from '../../constants/expiry-times.js';
+export type { ExpiryTimeLabel } from '../../constants/expiry-times.js';

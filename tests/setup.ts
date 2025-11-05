@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { vi } from 'vitest';
 
 // Load test environment variables
 config({ path: '.env.test' });
@@ -7,6 +8,32 @@ config({ path: '.env.test' });
 process.env.NODE_ENV = 'test';
 process.env.LOG_LEVEL = 'error'; // Minimize logs during testing
 process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
+
+// Mock VectorDatabase for tests that expect it
+global.VectorDatabase = class MockVectorDatabase {
+  client: any;
+
+  constructor() {
+    this.client = {
+      getCollections: vi.fn().mockResolvedValue({
+        collections: [{ name: 'test-collection' }],
+      }),
+      createCollection: vi.fn().mockResolvedValue(undefined),
+      upsert: vi.fn().mockResolvedValue(undefined),
+      search: vi.fn().mockResolvedValue([]),
+      getCollection: vi.fn().mockResolvedValue({
+        points_count: 0,
+        status: 'green',
+        optimizer_status: { ok: true },
+      }),
+      delete: vi.fn().mockResolvedValue(undefined),
+      scroll: vi.fn().mockResolvedValue({
+        points: [],
+        total_pages: 0,
+      }),
+    };
+  }
+};
 
 // Import comprehensive test setup
 import './setup/jest-setup.js';

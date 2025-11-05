@@ -49,19 +49,25 @@ class MockEncryptionUtils {
   static encryptAES(data: string, key: Buffer): { encrypted: Buffer; iv: Buffer; tag: Buffer } {
     const iv = this.generateIV();
     const cipher = crypto.createCipher(this.AES_ALGORITHM, key);
-    cipher.setAAD(Buffer.from('additional-data'));
+    if (cipher.setAAD) {
+      cipher.setAAD(Buffer.from('additional-data'));
+    }
 
     let encrypted = cipher.update(data, 'utf8');
     encrypted = Buffer.concat([encrypted, cipher.final()]);
-    const tag = cipher.getAuthTag();
+    const tag = cipher.getAuthTag ? cipher.getAuthTag() : Buffer.alloc(0);
 
     return { encrypted, iv, tag };
   }
 
   static decryptAES(encryptedData: Buffer, key: Buffer, iv: Buffer, tag: Buffer): string {
     const decipher = crypto.createDecipher(this.AES_ALGORITHM, key);
-    decipher.setAAD(Buffer.from('additional-data'));
-    decipher.setAuthTag(tag);
+    if (decipher.setAAD) {
+      decipher.setAAD(Buffer.from('additional-data'));
+    }
+    if (decipher.setAuthTag) {
+      decipher.setAuthTag(tag);
+    }
 
     let decrypted = decipher.update(encryptedData);
     decrypted = Buffer.concat([decrypted, decipher.final()]);

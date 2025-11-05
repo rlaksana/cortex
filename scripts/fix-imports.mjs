@@ -58,7 +58,30 @@ function fixDynamicImports(dir = 'dist') {
         "import('$1')"
       );
 
-      // Fix relative imports that don't have extensions
+      // Fix static imports that don't have extensions
+      content = content.replace(
+        /from\s+['"]([^'"]+)['"]/g,
+        (match, path) => {
+          // Skip if already has extension or is node module
+          if (path.includes('.') && !path.startsWith('./') && !path.startsWith('../')) {
+            return match;
+          }
+
+          // Skip if already has .js extension
+          if (path.endsWith('.js')) {
+            return match;
+          }
+
+          // Add .js extension to relative imports
+          if (path.startsWith('./') || path.startsWith('../')) {
+            return `from '${path}.js'`;
+          }
+
+          return match;
+        }
+      );
+
+      // Fix dynamic imports that don't have extensions
       content = content.replace(
         /import\('([^']+)'\)/g,
         (match, path) => {

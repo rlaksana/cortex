@@ -5,7 +5,7 @@
  * with comprehensive caching, batch processing, error handling, and monitoring.
  *
  * Features:
- * - OpenAI text-embedding-ada-002 model integration
+ * - OpenAI text-embedding-3-small model integration
  * - Batch processing for improved performance and cost efficiency
  * - Comprehensive caching with TTL and size limits
  * - Rate limiting and API quota management
@@ -114,7 +114,7 @@ export class EmbeddingService {
   constructor(config: EmbeddingConfig = {}) {
     this.config = {
       apiKey: config.apiKey || process.env.OPENAI_API_KEY || '',
-      model: config.model || 'text-embedding-ada-002',
+      model: config.model || 'text-embedding-3-small',
       batchSize: config.batchSize || 100,
       maxRetries: config.maxRetries || 3,
       retryDelay: config.retryDelay || 1000,
@@ -828,3 +828,4 @@ export class EmbeddingService {
 
 // Export singleton instance
 export const embeddingService = new EmbeddingService();
+

@@ -1,0 +1,1404 @@
+/**
+ * Canary Health Monitor
+ *
+ * Provides comprehensive health monitoring for canary deployments with:
+ * - Real-time health metrics collection
+ * - Automated health threshold evaluation
+ * - Comparative analysis between stable and canary
+ * - Performance regression detection
+ * - Health trend analysis
+ * - Automated alerting and notifications
+ * - Integration with existing health check services
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import { EventEmitter } from 'events';
+import { logger } from '../utils/logger.js';
+import { metricsService } from '../monitoring/metrics-service.js';
+import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
+import { monitoringHealthCheckService } from '../monitoring/health-check-service.js';
+
+// ============================================================================
+// Types and Interfaces
+// ============================================================================
+
+/**
+ * Health metric types
+ */
+export enum HealthMetricType {
+  AVAILABILITY = 'availability',
+  ERROR_RATE = 'error_rate',
+  RESPONSE_TIME = 'response_time',
+  THROUGHPUT = 'throughput',
+  MEMORY_USAGE = 'memory_usage',
+  CPU_USAGE = 'cpu_usage',
+  CUSTOM = 'custom',
+}
+
+/**
+ * Health threshold configuration
+ */
+export interface HealthThreshold {
+  metric: HealthMetricType;
+  warning: number;
+  critical: number;
+  operator: 'less_than' | 'greater_than' | 'equals';
+  windowSize: number; // Time window in minutes
+  consecutiveFailures: number;
+}
+
+/**
+ * Canary health configuration
+ */
+export interface CanaryHealthConfig {
+  deploymentId: string;
+  serviceName: string;
+  stableVersion: string;
+  canaryVersion: string;
+
+  // Monitoring configuration
+  checkIntervalMs: number;
+  evaluationWindowMs: number;
+  metricsRetentionHours: number;
+
+  // Health thresholds
+  thresholds: HealthThreshold[];
+
+  // Comparison settings
+  comparisonEnabled: boolean;
+  comparisonTolerance: number; // Percentage tolerance for comparison
+  baselineWindow: number; // Hours to use for baseline
+
+  // Alerting configuration
+  alerting: {
+    enabled: boolean;
+    channels: ('email' | 'slack' | 'pagerduty' | 'webhook')[];
+    recipients: string[];
+    cooldownPeriodMs: number;
+    escalationRules: EscalationRule[];
+  };
+
+  // Auto-rollback settings
+  autoRollback: {
+    enabled: boolean;
+    thresholds: AutoRollbackThreshold[];
+    delayMs: number;
+    maxRollbacks: number;
+  };
+
+  // Metadata
+  createdBy?: string;
+  createdAt: Date;
+  tags?: string[];
+}
+
+/**
+ * Escalation rule for alerts
+ */
+export interface EscalationRule {
+  severity: AlertSeverity;
+  delayMs: number;
+  recipients: string[];
+  message?: string;
+}
+
+/**
+ * Auto-rollback threshold
+ */
+export interface AutoRollbackThreshold {
+  metric: HealthMetricType;
+  threshold: number;
+  operator: 'less_than' | 'greater_than';
+  duration: number; // Minutes
+  consecutiveViolations: number;
+}
+
+/**
+ * Health metrics snapshot
+ */
+export interface HealthMetricsSnapshot {
+  timestamp: Date;
+  deploymentId: string;
+
+  // Service metrics
+  stable: ServiceHealthMetrics;
+  canary: ServiceHealthMetrics;
+
+  // Comparison metrics
+  comparison: ComparisonMetrics;
+
+  // Overall health assessment
+  overall: {
+    status: HealthStatus;
+    score: number;
+    issues: HealthIssue[];
+    recommendations: string[];
+  };
+
+  // Metadata
+  evaluationTime: number;
+}
+
+/**
+ * Service health metrics
+ */
+export interface ServiceHealthMetrics {
+  availability: {
+    percentage: number;
+    uptime: number;
+    downtime: number;
+  };
+  performance: {
+    averageResponseTime: number;
+    p95ResponseTime: number;
+    p99ResponseTime: number;
+    throughput: number;
+  };
+  errors: {
+    errorRate: number;
+    errorCount: number;
+    totalRequests: number;
+    errorsByType: Record<string, number>;
+  };
+  resources: {
+    memoryUsage: number;
+    cpuUsage: number;
+    activeConnections: number;
+  };
+  customMetrics: Record<string, number>;
+}
+
+/**
+ * Comparison metrics between stable and canary
+ */
+export interface ComparisonMetrics {
+  availabilityDelta: number;
+  errorRateDelta: number;
+  responseTimeDelta: number;
+  throughputDelta: number;
+  resourceDelta: {
+    memoryUsage: number;
+    cpuUsage: number;
+  };
+  regressionDetected: boolean;
+  improvementDetected: boolean;
+  statisticalSignificance: number;
+}
+
+/**
+ * Health issue identified during monitoring
+ */
+export interface HealthIssue {
+  id: string;
+  type: 'threshold_violation' | 'regression' | 'trend' | 'anomaly';
+  severity: AlertSeverity;
+  metric: HealthMetricType;
+  value: number;
+  threshold: number;
+  description: string;
+  firstDetected: Date;
+  lastDetected: Date;
+  occurrences: number;
+  resolved: boolean;
+  resolvedAt?: Date;
+}
+
+/**
+ * Health trend data
+ */
+export interface HealthTrend {
+  metric: HealthMetricType;
+  direction: 'improving' | 'degrading' | 'stable';
+  confidence: number;
+  dataPoints: TrendDataPoint[];
+}
+
+/**
+ * Individual trend data point
+ */
+export interface TrendDataPoint {
+  timestamp: Date;
+  value: number;
+  service: 'stable' | 'canary';
+}
+
+/**
+ * Health alert
+ */
+export interface HealthAlert {
+  id: string;
+  deploymentId: string;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  metrics: Record<string, number>;
+  timestamp: Date;
+  acknowledged: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: Date;
+  resolved: boolean;
+  resolvedAt?: Date;
+  escalationLevel: number;
+}
+
+// ============================================================================
+// Canary Health Monitor Implementation
+// ============================================================================
+
+/**
+ * Main canary health monitor
+ */
+export class CanaryHealthMonitor extends EventEmitter {
+  private configs: Map<string, CanaryHealthConfig> = new Map();
+  private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private metricsHistory: Map<string, HealthMetricsSnapshot[]> = new Map();
+  private activeAlerts: Map<string, HealthAlert[]> = new Map();
+  private healthIssues: Map<string, HealthIssue[]> = new Map();
+  private baselines: Map<string, ServiceHealthMetrics> = new Map();
+
+  // Static instance for singleton pattern
+  private static instance: CanaryHealthMonitor | null = null;
+
+  constructor() {
+    super();
+    logger.info('Canary Health Monitor initialized');
+  }
+
+  /**
+   * Get singleton instance
+   */
+  public static getInstance(): CanaryHealthMonitor {
+    if (!CanaryHealthMonitor.instance) {
+      CanaryHealthMonitor.instance = new CanaryHealthMonitor();
+    }
+    return CanaryHealthMonitor.instance;
+  }
+
+  // ============================================================================
+  // Configuration Management
+  // ============================================================================
+
+  /**
+   * Create health monitoring configuration for a deployment
+   */
+  createConfig(config: Omit<CanaryHealthConfig, 'createdAt'>): CanaryHealthConfig {
+    const newConfig: CanaryHealthConfig = {
+      ...config,
+      createdAt: new Date(),
+    };
+
+    this.configs.set(config.deploymentId, newConfig);
+
+    // Initialize storage
+    this.metricsHistory.set(config.deploymentId, []);
+    this.activeAlerts.set(config.deploymentId, []);
+    this.healthIssues.set(config.deploymentId, []);
+
+    logger.info('Canary health monitoring configuration created', {
+      deploymentId: config.deploymentId,
+      serviceName: config.serviceName,
+      stableVersion: config.stableVersion,
+      canaryVersion: config.canaryVersion,
+    });
+
+    this.emit('configCreated', newConfig);
+
+    return newConfig;
+  }
+
+  /**
+   * Update health monitoring configuration
+   */
+  updateConfig(deploymentId: string, updates: Partial<CanaryHealthConfig>): CanaryHealthConfig | null {
+    const config = this.configs.get(deploymentId);
+    if (!config) {
+      logger.warn('Health monitoring configuration not found for update', { deploymentId });
+      return null;
+    }
+
+    const updatedConfig: CanaryHealthConfig = {
+      ...config,
+      ...updates,
+    };
+
+    this.configs.set(deploymentId, updatedConfig);
+
+    // Restart monitoring if interval changed
+    if (updates.checkIntervalMs) {
+      this.restartMonitoring(deploymentId, updatedConfig);
+    }
+
+    logger.info('Canary health monitoring configuration updated', {
+      deploymentId,
+      changes: Object.keys(updates),
+    });
+
+    this.emit('configUpdated', updatedConfig);
+
+    return updatedConfig;
+  }
+
+  /**
+   * Delete health monitoring configuration
+   */
+  deleteConfig(deploymentId: string): boolean {
+    const config = this.configs.get(deploymentId);
+    if (!config) {
+      return false;
+    }
+
+    // Stop monitoring
+    this.stopMonitoring(deploymentId);
+
+    // Clean up storage
+    this.configs.delete(deploymentId);
+    this.metricsHistory.delete(deploymentId);
+    this.activeAlerts.delete(deploymentId);
+    this.healthIssues.delete(deploymentId);
+    this.baselines.delete(deploymentId);
+
+    logger.info('Canary health monitoring configuration deleted', {
+      deploymentId,
+      serviceName: config.serviceName,
+    });
+
+    this.emit('configDeleted', { deploymentId, serviceName: config.serviceName });
+
+    return true;
+  }
+
+  /**
+   * Get health monitoring configuration
+   */
+  getConfig(deploymentId: string): CanaryHealthConfig | undefined {
+    return this.configs.get(deploymentId);
+  }
+
+  // ============================================================================
+  // Monitoring Control
+  // ============================================================================
+
+  /**
+   * Start health monitoring for a deployment
+   */
+  startMonitoring(deploymentId: string): boolean {
+    const config = this.configs.get(deploymentId);
+    if (!config) {
+      logger.warn('Health monitoring configuration not found', { deploymentId });
+      return false;
+    }
+
+    if (this.monitoringIntervals.has(deploymentId)) {
+      logger.warn('Health monitoring already active', { deploymentId });
+      return false;
+    }
+
+    // Establish baseline if comparison is enabled
+    if (config.comparisonEnabled && !this.baselines.has(deploymentId)) {
+      this.establishBaseline(deploymentId, config);
+    }
+
+    const interval = setInterval(async () => {
+      await this.performHealthCheck(deploymentId, config);
+    }, config.checkIntervalMs);
+
+    this.monitoringIntervals.set(deploymentId, interval);
+
+    logger.info('Canary health monitoring started', {
+      deploymentId,
+      intervalMs: config.checkIntervalMs,
+      comparisonEnabled: config.comparisonEnabled,
+    });
+
+    this.emit('monitoringStarted', deploymentId, config);
+
+    return true;
+  }
+
+  /**
+   * Stop health monitoring for a deployment
+   */
+  stopMonitoring(deploymentId: string): boolean {
+    const interval = this.monitoringIntervals.get(deploymentId);
+    if (!interval) {
+      return false;
+    }
+
+    clearInterval(interval);
+    this.monitoringIntervals.delete(deploymentId);
+
+    logger.info('Canary health monitoring stopped', { deploymentId });
+
+    this.emit('monitoringStopped', deploymentId);
+
+    return true;
+  }
+
+  /**
+   * Restart monitoring with new configuration
+   */
+  private restartMonitoring(deploymentId: string, config: CanaryHealthConfig): void {
+    this.stopMonitoring(deploymentId);
+    setTimeout(() => {
+      this.startMonitoring(deploymentId);
+    }, 1000);
+  }
+
+  // ============================================================================
+  // Health Check Execution
+  // ============================================================================
+
+  /**
+   * Perform comprehensive health check
+   */
+  private async performHealthCheck(deploymentId: string, config: CanaryHealthConfig): Promise<void> {
+    const startTime = Date.now();
+
+    try {
+      logger.debug('Performing canary health check', { deploymentId });
+
+      // Collect metrics for both stable and canary
+      const [stableMetrics, canaryMetrics] = await Promise.all([
+        this.collectServiceMetrics(deploymentId, 'stable', config),
+        this.collectServiceMetrics(deploymentId, 'canary', config),
+      ]);
+
+      // Perform comparison analysis
+      const comparison = this.performComparison(stableMetrics, canaryMetrics, config);
+
+      // Evaluate health thresholds
+      const thresholdViolations = this.evaluateThresholds(canaryMetrics, config);
+
+      // Detect regressions and improvements
+      const regressions = this.detectRegressions(comparison, config);
+      const improvements = this.detectImprovements(comparison, config);
+
+      // Analyze trends
+      const trends = await this.analyzeTrends(deploymentId, config);
+
+      // Create health issues
+      const issues = this.createHealthIssues(thresholdViolations, regressions, trends);
+
+      // Calculate overall health score
+      const overall = this.calculateOverallHealth(canaryMetrics, comparison, issues, config);
+
+      // Create metrics snapshot
+      const snapshot: HealthMetricsSnapshot = {
+        timestamp: new Date(),
+        deploymentId,
+        stable: stableMetrics,
+        canary: canaryMetrics,
+        comparison,
+        overall,
+        evaluationTime: Date.now() - startTime,
+      };
+
+      // Store metrics
+      this.storeMetrics(deploymentId, snapshot);
+
+      // Update health issues
+      this.updateHealthIssues(deploymentId, issues);
+
+      // Check for auto-rollback conditions
+      if (config.autoRollback.enabled) {
+        await this.checkAutoRollbackConditions(deploymentId, snapshot, config);
+      }
+
+      // Send alerts if needed
+      if (config.alerting.enabled) {
+        await this.sendAlerts(deploymentId, snapshot, issues, config);
+      }
+
+      // Emit health check completed event
+      this.emit('healthCheckCompleted', deploymentId, snapshot);
+
+      // Record metrics
+      metricsService.recordGauge('canary_health_score', overall.score, {
+        deployment_id: deploymentId,
+        service_name: config.serviceName,
+      });
+
+      logger.debug('Canary health check completed', {
+        deploymentId,
+        healthScore: overall.score,
+        status: overall.status,
+        issuesCount: issues.length,
+        evaluationTime: snapshot.evaluationTime,
+      });
+
+    } catch (error) {
+      logger.error('Error performing canary health check', {
+        deploymentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      this.emit('healthCheckError', deploymentId, error);
+    }
+  }
+
+  /**
+   * Collect service metrics
+   */
+  private async collectServiceMetrics(
+    deploymentId: string,
+    serviceType: 'stable' | 'canary',
+    config: CanaryHealthConfig
+  ): Promise<ServiceHealthMetrics> {
+    try {
+      // In a real implementation, this would collect actual metrics from your monitoring system
+      // For now, we'll simulate the metrics collection
+
+      const baseMetrics = {
+        availability: {
+          percentage: 99.5 + Math.random() * 0.5,
+          uptime: 86400,
+          downtime: Math.random() * 100,
+        },
+        performance: {
+          averageResponseTime: 100 + Math.random() * 200,
+          p95ResponseTime: 200 + Math.random() * 300,
+          p99ResponseTime: 500 + Math.random() * 500,
+          throughput: 1000 + Math.random() * 2000,
+        },
+        errors: {
+          errorRate: Math.random() * 2,
+          errorCount: Math.floor(Math.random() * 50),
+          totalRequests: 10000 + Math.floor(Math.random() * 5000),
+          errorsByType: {
+            '500': Math.floor(Math.random() * 10),
+            '503': Math.floor(Math.random() * 5),
+            'timeout': Math.floor(Math.random() * 15),
+          },
+        },
+        resources: {
+          memoryUsage: 50 + Math.random() * 30,
+          cpuUsage: 20 + Math.random() * 40,
+          activeConnections: 100 + Math.random() * 200,
+        },
+        customMetrics: {
+          cache_hit_rate: 80 + Math.random() * 15,
+          database_connections: 10 + Math.random() * 20,
+        },
+      };
+
+      // Simulate canary being slightly different from stable
+      if (serviceType === 'canary') {
+        baseMetrics.availability.percentage -= Math.random() * 0.3;
+        baseMetrics.performance.averageResponseTime += Math.random() * 50;
+        baseMetrics.errors.errorRate += Math.random() * 0.5;
+        baseMetrics.resources.memoryUsage += Math.random() * 10;
+      }
+
+      return baseMetrics;
+
+    } catch (error) {
+      logger.error('Error collecting service metrics', {
+        deploymentId,
+        serviceType,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Return default metrics on error
+      return {
+        availability: { percentage: 0, uptime: 0, downtime: 0 },
+        performance: { averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, throughput: 0 },
+        errors: { errorRate: 100, errorCount: 0, totalRequests: 0, errorsByType: {} },
+        resources: { memoryUsage: 0, cpuUsage: 0, activeConnections: 0 },
+        customMetrics: {},
+      };
+    }
+  }
+
+  /**
+   * Perform comparison analysis
+   */
+  private performComparison(
+    stable: ServiceHealthMetrics,
+    canary: ServiceHealthMetrics,
+    config: CanaryHealthConfig
+  ): ComparisonMetrics {
+    const tolerance = config.comparisonTolerance / 100;
+
+    const availabilityDelta = canary.availability.percentage - stable.availability.percentage;
+    const errorRateDelta = canary.errors.errorRate - stable.errors.errorRate;
+    const responseTimeDelta = canary.performance.averageResponseTime - stable.performance.averageResponseTime;
+    const throughputDelta = canary.performance.throughput - stable.performance.throughput;
+
+    const resourceDelta = {
+      memoryUsage: canary.resources.memoryUsage - stable.resources.memoryUsage,
+      cpuUsage: canary.resources.cpuUsage - stable.resources.cpuUsage,
+    };
+
+    // Detect regressions (significant degradation)
+    const regressionDetected =
+      availabilityDelta < -tolerance * 100 ||
+      errorRateDelta > tolerance * stable.errors.errorRate ||
+      responseTimeDelta > tolerance * stable.performance.averageResponseTime ||
+      resourceDelta.memoryUsage > tolerance * stable.resources.memoryUsage;
+
+    // Detect improvements (significant enhancement)
+    const improvementDetected =
+      availabilityDelta > tolerance * 10 ||
+      errorRateDelta < -tolerance * stable.errors.errorRate ||
+      responseTimeDelta < -tolerance * stable.performance.averageResponseTime;
+
+    // Calculate statistical significance (simplified)
+    const statisticalSignificance = Math.abs(availabilityDelta) / 100;
+
+    return {
+      availabilityDelta,
+      errorRateDelta,
+      responseTimeDelta,
+      throughputDelta,
+      resourceDelta,
+      regressionDetected,
+      improvementDetected,
+      statisticalSignificance,
+    };
+  }
+
+  /**
+   * Evaluate health thresholds
+   */
+  private evaluateThresholds(
+    metrics: ServiceHealthMetrics,
+    config: CanaryHealthConfig
+  ): Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }> {
+    const violations: Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }> = [];
+
+    for (const threshold of config.thresholds) {
+      const value = this.getMetricValue(metrics, threshold.metric);
+      if (value === null) {
+        continue;
+      }
+
+      let violates = false;
+      let severity: AlertSeverity = AlertSeverity.WARNING;
+
+      switch (threshold.operator) {
+        case 'greater_than':
+          if (value > threshold.critical) {
+            violates = true;
+            severity = AlertSeverity.CRITICAL;
+          } else if (value > threshold.warning) {
+            violates = true;
+            severity = AlertSeverity.WARNING;
+          }
+          break;
+        case 'less_than':
+          if (value < threshold.critical) {
+            violates = true;
+            severity = AlertSeverity.CRITICAL;
+          } else if (value < threshold.warning) {
+            violates = true;
+            severity = AlertSeverity.WARNING;
+          }
+          break;
+        case 'equals':
+          if (value === threshold.critical) {
+            violates = true;
+            severity = AlertSeverity.CRITICAL;
+          } else if (value === threshold.warning) {
+            violates = true;
+            severity = AlertSeverity.WARNING;
+          }
+          break;
+      }
+
+      if (violates) {
+        violations.push({ threshold, value, severity });
+      }
+    }
+
+    return violations;
+  }
+
+  /**
+   * Detect regressions
+   */
+  private detectRegressions(
+    comparison: ComparisonMetrics,
+    config: CanaryHealthConfig
+  ): Array<{ metric: string; delta: number; significance: number }> {
+    const regressions: Array<{ metric: string; delta: number; significance: number }> = [];
+
+    if (comparison.availabilityDelta < -config.comparisonTolerance) {
+      regressions.push({
+        metric: 'availability',
+        delta: comparison.availabilityDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    if (comparison.errorRateDelta > config.comparisonTolerance) {
+      regressions.push({
+        metric: 'error_rate',
+        delta: comparison.errorRateDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    if (comparison.responseTimeDelta > config.comparisonTolerance) {
+      regressions.push({
+        metric: 'response_time',
+        delta: comparison.responseTimeDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    return regressions;
+  }
+
+  /**
+   * Detect improvements
+   */
+  private detectImprovements(
+    comparison: ComparisonMetrics,
+    config: CanaryHealthConfig
+  ): Array<{ metric: string; delta: number; significance: number }> {
+    const improvements: Array<{ metric: string; delta: number; significance: number }> = [];
+
+    if (comparison.availabilityDelta > config.comparisonTolerance / 2) {
+      improvements.push({
+        metric: 'availability',
+        delta: comparison.availabilityDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    if (comparison.errorRateDelta < -config.comparisonTolerance / 2) {
+      improvements.push({
+        metric: 'error_rate',
+        delta: comparison.errorRateDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    if (comparison.responseTimeDelta < -config.comparisonTolerance / 2) {
+      improvements.push({
+        metric: 'response_time',
+        delta: comparison.responseTimeDelta,
+        significance: comparison.statisticalSignificance,
+      });
+    }
+
+    return improvements;
+  }
+
+  /**
+   * Analyze trends
+   */
+  private async analyzeTrends(
+    deploymentId: string,
+    config: CanaryHealthConfig
+  ): Promise<HealthTrend[]> {
+    const history = this.metricsHistory.get(deploymentId) || [];
+    const trends: HealthTrend[] = [];
+
+    if (history.length < 10) {
+      return trends; // Not enough data for trend analysis
+    }
+
+    const recentHistory = history.slice(-20); // Use last 20 data points
+
+    for (const metricType of Object.values(HealthMetricType)) {
+      if (metricType === HealthMetricType.CUSTOM) {
+        continue; // Skip custom metrics for trend analysis
+      }
+
+      const trend = this.calculateTrend(recentHistory, metricType);
+      if (trend) {
+        trends.push(trend);
+      }
+    }
+
+    return trends;
+  }
+
+  /**
+   * Calculate trend for a specific metric
+   */
+  private calculateTrend(
+    history: HealthMetricsSnapshot[],
+    metricType: HealthMetricType
+  ): HealthTrend | null {
+    // Extract data points for the metric
+    const dataPoints: TrendDataPoint[] = [];
+
+    for (const snapshot of history) {
+      const stableValue = this.getMetricValue(snapshot.stable, metricType);
+      const canaryValue = this.getMetricValue(snapshot.canary, metricType);
+
+      if (stableValue !== null) {
+        dataPoints.push({
+          timestamp: snapshot.timestamp,
+          value: stableValue,
+          service: 'stable',
+        });
+      }
+
+      if (canaryValue !== null) {
+        dataPoints.push({
+          timestamp: snapshot.timestamp,
+          value: canaryValue,
+          service: 'canary',
+        });
+      }
+    }
+
+    if (dataPoints.length < 10) {
+      return null;
+    }
+
+    // Simple linear regression to determine trend
+    const n = dataPoints.length;
+    const sumX = dataPoints.reduce((sum, point, index) => sum + index, 0);
+    const sumY = dataPoints.reduce((sum, point) => sum + point.value, 0);
+    const sumXY = dataPoints.reduce((sum, point, index) => sum + index * point.value, 0);
+    const sumX2 = dataPoints.reduce((sum, point, index) => sum + index * index, 0);
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const confidence = Math.min(Math.abs(slope) / 10, 1); // Simple confidence calculation
+
+    let direction: 'improving' | 'degrading' | 'stable';
+
+    // Determine direction based on metric type (some metrics are better when lower)
+    if (metricType === HealthMetricType.ERROR_RATE || metricType === HealthMetricType.RESPONSE_TIME) {
+      direction = slope < -0.1 ? 'improving' : slope > 0.1 ? 'degrading' : 'stable';
+    } else {
+      direction = slope > 0.1 ? 'improving' : slope < -0.1 ? 'degrading' : 'stable';
+    }
+
+    return {
+      metric: metricType,
+      direction,
+      confidence,
+      dataPoints,
+    };
+  }
+
+  /**
+   * Create health issues from violations and regressions
+   */
+  private createHealthIssues(
+    thresholdViolations: Array<{ threshold: HealthThreshold; value: number; severity: AlertSeverity }>,
+    regressions: Array<{ metric: string; delta: number; significance: number }>,
+    trends: HealthTrend[]
+  ): HealthIssue[] {
+    const issues: HealthIssue[] = [];
+
+    // Create issues from threshold violations
+    for (const violation of thresholdViolations) {
+      const issue: HealthIssue = {
+        id: this.generateId(),
+        type: 'threshold_violation',
+        severity: violation.severity,
+        metric: violation.threshold.metric,
+        value: violation.value,
+        threshold: violation.threshold.warning,
+        description: `Metric ${violation.threshold.metric} value ${violation.value} exceeds threshold ${violation.threshold.warning}`,
+        firstDetected: new Date(),
+        lastDetected: new Date(),
+        occurrences: 1,
+        resolved: false,
+      };
+
+      issues.push(issue);
+    }
+
+    // Create issues from regressions
+    for (const regression of regressions) {
+      const issue: HealthIssue = {
+        id: this.generateId(),
+        type: 'regression',
+        severity: AlertSeverity.WARNING,
+        metric: regression.metric as HealthMetricType,
+        value: regression.delta,
+        threshold: 0,
+        description: `Regression detected in ${regression.metric}: ${regression.delta > 0 ? '+' : ''}${regression.delta}`,
+        firstDetected: new Date(),
+        lastDetected: new Date(),
+        occurrences: 1,
+        resolved: false,
+      };
+
+      issues.push(issue);
+    }
+
+    // Create issues from degrading trends
+    for (const trend of trends) {
+      if (trend.direction === 'degrading' && trend.confidence > 0.7) {
+        const issue: HealthIssue = {
+          id: this.generateId(),
+          type: 'trend',
+          severity: AlertSeverity.WARNING,
+          metric: trend.metric,
+          value: 0,
+          threshold: 0,
+          description: `Degrading trend detected in ${trend.metric}`,
+          firstDetected: new Date(),
+          lastDetected: new Date(),
+          occurrences: 1,
+          resolved: false,
+        };
+
+        issues.push(issue);
+      }
+    }
+
+    return issues;
+  }
+
+  /**
+   * Calculate overall health score
+   */
+  private calculateOverallHealth(
+    canary: ServiceHealthMetrics,
+    comparison: ComparisonMetrics,
+    issues: HealthIssue[],
+    config: CanaryHealthConfig
+  ): HealthMetricsSnapshot['overall'] {
+    let score = 100;
+    const statusIssues: string[] = [];
+    const recommendations: string[] = [];
+
+    // Penalize for availability issues
+    if (canary.availability.percentage < 99) {
+      score -= (99 - canary.availability.percentage) * 2;
+      statusIssues.push(`Low availability: ${canary.availability.percentage}%`);
+      recommendations.push('Investigate availability issues and improve error handling');
+    }
+
+    // Penalize for error rate
+    if (canary.errors.errorRate > 1) {
+      score -= canary.errors.errorRate * 5;
+      statusIssues.push(`High error rate: ${canary.errors.errorRate}%`);
+      recommendations.push('Reduce error rate through better error handling and testing');
+    }
+
+    // Penalize for response time
+    if (canary.performance.averageResponseTime > 500) {
+      score -= (canary.performance.averageResponseTime - 500) / 10;
+      statusIssues.push(`High response time: ${canary.performance.averageResponseTime}ms`);
+      recommendations.push('Optimize performance and reduce latency');
+    }
+
+    // Penalize for regressions
+    if (comparison.regressionDetected) {
+      score -= 20;
+      statusIssues.push('Performance regression detected');
+      recommendations.push('Address performance regressions before proceeding');
+    }
+
+    // Penalize for active issues
+    for (const issue of issues) {
+      switch (issue.severity) {
+        case AlertSeverity.CRITICAL:
+          score -= 15;
+          break;
+        case AlertSeverity.WARNING:
+          score -= 5;
+          break;
+      }
+    }
+
+    // Cap score between 0 and 100
+    score = Math.max(0, Math.min(100, score));
+
+    // Determine status
+    let status: HealthStatus;
+    if (score >= 90) {
+      status = HealthStatus.HEALTHY;
+    } else if (score >= 70) {
+      status = HealthStatus.WARNING;
+    } else if (score >= 50) {
+      status = HealthStatus.DEGRADED;
+    } else {
+      status = HealthStatus.CRITICAL;
+    }
+
+    // Add improvement recommendations
+    if (comparison.improvementDetected) {
+      recommendations.push('Performance improvements detected - consider promotion');
+    }
+
+    return {
+      status,
+      score,
+      issues,
+      recommendations,
+    };
+  }
+
+  // ============================================================================
+  // Auto-Rollback
+  // ============================================================================
+
+  /**
+   * Check auto-rollback conditions
+   */
+  private async checkAutoRollbackConditions(
+    deploymentId: string,
+    snapshot: HealthMetricsSnapshot,
+    config: CanaryHealthConfig
+  ): Promise<void> {
+    for (const threshold of config.autoRollback.thresholds) {
+      const value = this.getMetricValue(snapshot.canary, threshold.metric);
+      if (value === null) {
+        continue;
+      }
+
+      let shouldRollback = false;
+
+      switch (threshold.operator) {
+        case 'greater_than':
+          shouldRollback = value > threshold.threshold;
+          break;
+        case 'less_than':
+          shouldRollback = value < threshold.threshold;
+          break;
+      }
+
+      if (shouldRollback) {
+        logger.warn('Auto-rollback condition met', {
+          deploymentId,
+          metric: threshold.metric,
+          value,
+          threshold: threshold.threshold,
+        });
+
+        this.emit('autoRollbackTriggered', deploymentId, snapshot, threshold);
+
+        // Trigger rollback (this would integrate with your canary orchestrator)
+        await this.triggerAutoRollback(deploymentId, threshold, snapshot);
+        break;
+      }
+    }
+  }
+
+  /**
+   * Trigger auto-rollback
+   */
+  private async triggerAutoRollback(
+    deploymentId: string,
+    threshold: AutoRollbackThreshold,
+    snapshot: HealthMetricsSnapshot
+  ): Promise<void> {
+    // In a real implementation, this would call the canary orchestrator to rollback
+    logger.error('Triggering auto-rollback', {
+      deploymentId,
+      metric: threshold.metric,
+      value: this.getMetricValue(snapshot.canary, threshold.metric),
+      reason: `Metric ${threshold.metric} exceeded auto-rollback threshold`,
+    });
+
+    // Record metrics
+    metricsService.recordCounter('canary_auto_rollbacks_triggered', 1, {
+      deployment_id: deploymentId,
+      metric: threshold.metric,
+    });
+  }
+
+  // ============================================================================
+  // Alerting
+  // ============================================================================
+
+  /**
+   * Send alerts for health issues
+   */
+  private async sendAlerts(
+    deploymentId: string,
+    snapshot: HealthMetricsSnapshot,
+    issues: HealthIssue[],
+    config: CanaryHealthConfig
+  ): Promise<void> {
+    const criticalIssues = issues.filter(issue => issue.severity === AlertSeverity.CRITICAL);
+    const warningIssues = issues.filter(issue => issue.severity === AlertSeverity.WARNING);
+
+    // Send critical alerts immediately
+    for (const issue of criticalIssues) {
+      await this.sendAlert(deploymentId, issue, config, AlertSeverity.CRITICAL);
+    }
+
+    // Send warning alerts if not in cooldown
+    if (warningIssues.length > 0) {
+      const lastWarningAlert = this.getLastAlertTime(deploymentId, AlertSeverity.WARNING);
+      const cooldownExpired = !lastWarningAlert ||
+        (Date.now() - lastWarningAlert.getTime()) > config.alerting.cooldownPeriodMs;
+
+      if (cooldownExpired) {
+        for (const issue of warningIssues) {
+          await this.sendAlert(deploymentId, issue, config, AlertSeverity.WARNING);
+        }
+      }
+    }
+  }
+
+  /**
+   * Send individual alert
+   */
+  private async sendAlert(
+    deploymentId: string,
+    issue: HealthIssue,
+    config: CanaryHealthConfig,
+    severity: AlertSeverity
+  ): Promise<void> {
+    const alert: HealthAlert = {
+      id: this.generateId(),
+      deploymentId,
+      severity,
+      title: `Canary Health Alert: ${issue.type}`,
+      message: issue.description,
+      metrics: {
+        [issue.metric]: issue.value,
+        health_score: snapshot.overall.score,
+      },
+      timestamp: new Date(),
+      acknowledged: false,
+      resolved: false,
+      escalationLevel: 0,
+    };
+
+    // Store alert
+    const alerts = this.activeAlerts.get(deploymentId) || [];
+    alerts.push(alert);
+    this.activeAlerts.set(deploymentId, alerts);
+
+    logger.warn('Canary health alert sent', {
+      deploymentId,
+      alertId: alert.id,
+      severity,
+      title: alert.title,
+      metric: issue.metric,
+      value: issue.value,
+    });
+
+    this.emit('alertSent', deploymentId, alert);
+
+    // Record metrics
+    metricsService.recordCounter('canary_health_alerts_sent', 1, {
+      deployment_id: deploymentId,
+      severity,
+      issue_type: issue.type,
+    });
+  }
+
+  /**
+   * Get last alert time for severity
+   */
+  private getLastAlertTime(deploymentId: string, severity: AlertSeverity): Date | null {
+    const alerts = this.activeAlerts.get(deploymentId) || [];
+    const severityAlerts = alerts
+      .filter(alert => alert.severity === severity)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    return severityAlerts.length > 0 ? severityAlerts[0].timestamp : null;
+  }
+
+  // ============================================================================
+  // Baseline Management
+  // ============================================================================
+
+  /**
+   * Establish baseline metrics
+   */
+  private async establishBaseline(deploymentId: string, config: CanaryHealthConfig): Promise<void> {
+    try {
+      logger.info('Establishing baseline metrics', { deploymentId });
+
+      const baseline = await this.collectServiceMetrics(deploymentId, 'stable', config);
+      this.baselines.set(deploymentId, baseline);
+
+      logger.info('Baseline metrics established', { deploymentId });
+
+    } catch (error) {
+      logger.error('Error establishing baseline', {
+        deploymentId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  // ============================================================================
+  // Data Management
+  // ============================================================================
+
+  /**
+   * Store metrics snapshot
+   */
+  private storeMetrics(deploymentId: string, snapshot: HealthMetricsSnapshot): void {
+    const history = this.metricsHistory.get(deploymentId) || [];
+    history.push(snapshot);
+
+    // Keep only metrics within retention period
+    const retentionCutoff = new Date(Date.now() - this.configs.get(deploymentId)!.metricsRetentionHours * 60 * 60 * 1000);
+    const filteredHistory = history.filter(m => m.timestamp > retentionCutoff);
+
+    this.metricsHistory.set(deploymentId, filteredHistory);
+  }
+
+  /**
+   * Update health issues
+   */
+  private updateHealthIssues(deploymentId: string, newIssues: HealthIssue[]): void {
+    const existingIssues = this.healthIssues.get(deploymentId) || [];
+    const updatedIssues: HealthIssue[] = [];
+
+    // Update existing issues or add new ones
+    for (const newIssue of newIssues) {
+      const existingIssue = existingIssues.find(issue =>
+        issue.type === newIssue.type &&
+        issue.metric === newIssue.metric &&
+        !issue.resolved
+      );
+
+      if (existingIssue) {
+        existingIssue.lastDetected = newIssue.lastDetected;
+        existingIssue.occurrences++;
+        updatedIssues.push(existingIssue);
+      } else {
+        updatedIssues.push(newIssue);
+      }
+    }
+
+    // Keep unresolved existing issues
+    for (const existingIssue of existingIssues) {
+      if (!existingIssue.resolved && !updatedIssues.includes(existingIssue)) {
+        updatedIssues.push(existingIssue);
+      }
+    }
+
+    this.healthIssues.set(deploymentId, updatedIssues);
+  }
+
+  /**
+   * Get metric value from service metrics
+   */
+  private getMetricValue(metrics: ServiceHealthMetrics, metricType: HealthMetricType): number | null {
+    switch (metricType) {
+      case HealthMetricType.AVAILABILITY:
+        return metrics.availability.percentage;
+      case HealthMetricType.ERROR_RATE:
+        return metrics.errors.errorRate;
+      case HealthMetricType.RESPONSE_TIME:
+        return metrics.performance.averageResponseTime;
+      case HealthMetricType.THROUGHPUT:
+        return metrics.performance.throughput;
+      case HealthMetricType.MEMORY_USAGE:
+        return metrics.resources.memoryUsage;
+      case HealthMetricType.CPU_USAGE:
+        return metrics.resources.cpuUsage;
+      case HealthMetricType.CUSTOM:
+        return null; // Custom metrics need specific handling
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Generate unique ID
+   */
+  private generateId(): string {
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+
+  // ============================================================================
+  // Public API Methods
+  // ============================================================================
+
+  /**
+   * Get health metrics history
+   */
+  getMetricsHistory(deploymentId: string, limit?: number): HealthMetricsSnapshot[] {
+    const history = this.metricsHistory.get(deploymentId) || [];
+    const sortedHistory = [...history].reverse();
+    return limit ? sortedHistory.slice(0, limit) : sortedHistory;
+  }
+
+  /**
+   * Get active health issues
+   */
+  getHealthIssues(deploymentId: string): HealthIssue[] {
+    return this.healthIssues.get(deploymentId) || [];
+  }
+
+  /**
+   * Get active alerts
+   */
+  getActiveAlerts(deploymentId: string): HealthAlert[] {
+    return this.activeAlerts.get(deploymentId) || [];
+  }
+
+  /**
+   * Get health trends
+   */
+  async getHealthTrends(deploymentId: string): Promise<HealthTrend[]> {
+    const config = this.configs.get(deploymentId);
+    if (!config) {
+      return [];
+    }
+
+    return await this.analyzeTrends(deploymentId, config);
+  }
+
+  /**
+   * Get service metrics
+   */
+  getMetrics(): {
+    totalDeployments: number;
+    activeMonitoring: number;
+    totalAlerts: number;
+    criticalIssues: number;
+    averageHealthScore: number;
+  } {
+    const deployments = Array.from(this.configs.values());
+    const totalAlerts = Array.from(this.activeAlerts.values())
+      .reduce((sum, alerts) => sum + alerts.length, 0);
+    const criticalIssues = Array.from(this.healthIssues.values())
+      .reduce((sum, issues) => sum + issues.filter(issue => issue.severity === AlertSeverity.CRITICAL).length, 0);
+
+    let totalHealthScore = 0;
+    let healthScoreCount = 0;
+
+    for (const history of this.metricsHistory.values()) {
+      if (history.length > 0) {
+        const latestSnapshot = history[history.length - 1];
+        totalHealthScore += latestSnapshot.overall.score;
+        healthScoreCount++;
+      }
+    }
+
+    return {
+      totalDeployments: deployments.length,
+      activeMonitoring: this.monitoringIntervals.size,
+      totalAlerts,
+      criticalIssues,
+      averageHealthScore: healthScoreCount > 0 ? totalHealthScore / healthScoreCount : 0,
+    };
+  }
+
+  /**
+   * Cleanup method
+   */
+  cleanup(): void {
+    // Stop all monitoring
+    for (const [deploymentId] of this.monitoringIntervals) {
+      this.stopMonitoring(deploymentId);
+    }
+
+    this.configs.clear();
+    this.metricsHistory.clear();
+    this.activeAlerts.clear();
+    this.healthIssues.clear();
+    this.baselines.clear();
+    this.removeAllListeners();
+
+    logger.info('Canary Health Monitor cleaned up');
+  }
+}
+
+// Export singleton instance
+export const canaryHealthMonitor = CanaryHealthMonitor.getInstance();

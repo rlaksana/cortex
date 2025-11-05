@@ -40,21 +40,43 @@
  * @since 2025
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
+  McpError,
+  ErrorCode,
+  InitializeRequestSchema,
   ListToolsRequestSchema,
   CallToolRequestSchema,
-  InitializeRequestSchema,
-  McpError,
-  ErrorCode
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-
-// Handle both old and new method naming for compatibility
-const ToolsListRequestSchema = ListToolsRequestSchema;
-import { ALL_JSON_SCHEMAS } from './schemas/json-schemas.js';
 import { SearchResult } from './types/core-interfaces.js';
+
+// Define Zod schemas for tools in ZodRawShape format
+const memoryStoreSchema = {
+  items: z.array(z.any()).min(1).describe('Knowledge items to store'),
+};
+
+const memoryFindSchema = {
+  query: z.string().describe('Search query'),
+  limit: z.number().optional().describe('Maximum number of results'),
+  types: z.array(z.string()).optional().describe('Knowledge types to filter by'),
+  scope: z.any().optional().describe('Scope for the search'),
+  mode: z.enum(['fast', 'auto', 'deep']).optional().describe('Search mode'),
+  expand: z.enum(['relations', 'parents', 'children', 'none']).optional().describe('Graph expansion'),
+};
+
+const systemStatusSchema = {
+  operation: z.string().optional().describe('System operation to perform'),
+};
+import {
+  DependencyStatus,
+  HealthCheckStrategy,
+  AlertSeverity,
+  SLAStatus,
+  EnhancedHealthResult,
+  HealthCheckResult,
+} from './types/unified-health-interfaces.js';
 import { performanceMonitor } from './utils/performance-monitor.js';
 import { changeLoggerService } from './services/logging/change-logger.js';
 import { createResponseMeta, UnifiedToolResponse } from './types/unified-response.interface.js';
@@ -189,387 +211,36 @@ interface QdrantRuntimeStatus {
 const memoryStoreOrchestrator = new MemoryStoreOrchestrator();
 const memoryFindOrchestrator = new MemoryFindOrchestrator();
 
-// === MCP Server Implementation ===
-
-const server = new Server(
-  {
-    name: 'cortex-memory-mcp',
-    version: '2.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-      resources: {},
-      prompts: {},
-      logging: {},
-    },
-  }
-);
-
-// Vector database has been replaced by orchestrators above
-
 // === MCP Protocol Handlers ===
 
-// Initialize request handler - required for MCP protocol compliance
-server.setRequestHandler(InitializeRequestSchema, async (request) => {
-  try {
-    const { protocolVersion, capabilities, clientInfo } = request.params;
+// McpServer handles initialization automatically
 
-    // Validate protocol version
-    if (!protocolVersion) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Protocol version is required',
-        { received: protocolVersion }
-      );
-    }
-
-    logger.info('MCP initialize request received', {
-      protocolVersion,
-      clientInfo,
-      clientCapabilities: capabilities,
-    });
-
-    // Return server capabilities and info with proper JSON-RPC 2.0 structure
-    return {
-      protocolVersion: '2024-11-05',
-      capabilities: {
-        tools: {
-          listChanged: true,
-        },
-        resources: {
-          subscribe: true,
-          listChanged: true,
-        },
-        prompts: {
-          listChanged: true,
-        },
-        logging: {
-          level: 'info',
-        },
-      },
-      serverInfo: {
-        name: 'cortex-memory-mcp',
-        version: '2.0.0',
-      },
-    };
-  } catch (error) {
-    logger.error('MCP initialization failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      request,
-    });
-
-    // Re-throw MCP errors as-is, wrap others
-    if (error instanceof McpError) {
-      throw error;
-    }
-
-    throw new McpError(
-      ErrorCode.InternalError,
-      `Server initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
-});
-
-// === Tool Definitions ===
-
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+// Helper function to create MCP-compliant responses
+function createMcpResponse(data: any, isError: boolean = false) {
   return {
-    tools: [
-      {
-        name: 'memory_store',
-        description:
-          'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights. Features enterprise-grade duplicate detection with 5 merge modes, configurable similarity thresholds, time window controls, scope filtering, and comprehensive audit logging.',
-        inputSchema: ALL_JSON_SCHEMAS.memory_store,
-      },
-      {
-        name: 'memory_find',
-        description:
-          'Search Cortex memory with advanced strategies and graph expansion. Supports semantic vector search with configurable strategies, TTL filters, result formatting, and analytics optimization.',
-        inputSchema: ALL_JSON_SCHEMAS.memory_find,
-      },
-      {
-        name: 'system_status',
-        description:
-          'System monitoring, cleanup, and maintenance operations. Provides database health checks, statistics, telemetry, document management, cleanup operations with safety mechanisms, and comprehensive system diagnostics.',
-        inputSchema: ALL_JSON_SCHEMAS.system_status,
-      },
-    ],
+    content: [{
+      type: 'text' as const,
+      text: typeof data === 'string' ? data : JSON.stringify(data, null, 2),
+      _meta: {
+        timestamp: new Date().toISOString(),
+        requestId: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
+    }],
+    isError,
   };
-});
+}
 
-// Add direct method name handler for compatibility with different MCP clients
-// The issue is that some MCP clients send "tools/list" method name, but the SDK
-// registers the handler under a different internal method name
+// === MCP Server Setup ===
+// Server instance and tools will be initialized in the startServer function
 
-// Create a custom schema that captures the tools/list method specifically
-const ToolsListMethodSchema = z.object({
-  method: z.literal('tools/list'),
-  params: z.object({}).optional(),
-});
+// === Orchestrator Implementation ===
 
-server.setRequestHandler(ToolsListMethodSchema, async () => {
-  return {
-    tools: [
-      {
-        name: 'memory_store',
-        description:
-          'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights. Features enterprise-grade duplicate detection with 5 merge modes, configurable similarity thresholds, time window controls, scope filtering, and comprehensive audit logging.',
-        inputSchema: ALL_JSON_SCHEMAS.memory_store,
-      },
-      {
-        name: 'memory_find',
-        description:
-          'Search Cortex memory with advanced strategies and graph expansion. Supports semantic vector search with configurable strategies, TTL filters, result formatting, and analytics optimization.',
-        inputSchema: ALL_JSON_SCHEMAS.memory_find,
-      },
-      {
-        name: 'system_status',
-        description:
-          'System monitoring, cleanup, and maintenance operations. Provides database health checks, statistics, telemetry, document management, cleanup operations with safety mechanisms, and comprehensive system diagnostics.',
-        inputSchema: ALL_JSON_SCHEMAS.system_status,
-      },
-    ],
-  };
-});
+// Memory find tool will be registered in startServer function
+
+// System status tool will be registered in startServer function
 
 // === Tool Handlers ===
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-  const startTime = Date.now();
-
-  // T8.2: Extract actor identifier for rate limiting
-  // Use session ID, API key, or fallback to request timestamp
-  const actorId =
-    (request.params as any)?.__session_id ||
-    (request.params as any)?.__api_key ||
-    `anonymous_${Date.now()}`;
-
-  logger.info(`Executing tool: ${name}`, { tool: name, arguments: args, actor: actorId });
-
-  try {
-    // T8.2: Check rate limits before processing
-    const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
-    const rateLimitResult = await rateLimitService.checkRateLimit(name, actorId);
-
-    if (!rateLimitResult.allowed) {
-      const duration = Date.now() - startTime;
-      logger.warn(`Rate limit exceeded for tool: ${name}`, {
-        tool: name,
-        actor: actorId,
-        remaining: rateLimitResult.remaining,
-        resetTime: new Date(rateLimitResult.resetTime).toISOString(),
-        duration: `${duration}ms`,
-      });
-
-      // P4-1: Enhanced rate limit exceeded response with comprehensive meta
-      const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
-      const rateLimitStatus = rateLimitService.getStatus();
-
-      const rateLimitExceededResponse = {
-        error: 'RATE_LIMIT_EXCEEDED',
-        message: `Rate limit exceeded for ${name}`,
-        rate_limit: {
-          allowed: false,
-          remaining: rateLimitResult.remaining,
-          reset_time: new Date(rateLimitResult.resetTime).toISOString(),
-          reset_in_seconds: Math.max(0, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
-          identifier: rateLimitResult.identifier,
-
-          // P4-1: Comprehensive meta for rate limit exceeded
-          meta: {
-            current_window: {
-              requests_used: rateLimitResult.total,
-              requests_remaining: rateLimitResult.remaining,
-              window_percentage: (
-                (rateLimitResult.total / (rateLimitResult.total + rateLimitResult.remaining)) *
-                100
-              ).toFixed(1),
-              window_exceeded: true,
-            },
-            policies: {
-              tool_limit: rateLimitStatus.configs[name]?.limit || 100,
-              tool_window: rateLimitStatus.configs[name]?.windowMs || 60000,
-              actor_limit: 500,
-              actor_window: 60000,
-            },
-            recommendations: {
-              retry_after_seconds: Math.max(
-                0,
-                Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
-              ),
-              backoff_strategy:
-                rateLimitResult.remaining === 0 ? 'exponential_backoff' : 'linear_delay',
-              reduce_frequency: rateLimitResult.remaining < 5,
-              alternative_tools:
-                rateLimitResult.remaining === 0 ? ['system_status', 'metrics'] : [],
-            },
-            system_status: {
-              active_windows: rateLimitStatus.activeWindows,
-              total_requests_system: rateLimitStatus.metrics.totalRequests,
-              blocked_requests_system: rateLimitStatus.metrics.blockedRequests,
-              system_block_rate:
-                rateLimitStatus.metrics.totalRequests > 0
-                  ? (
-                      (rateLimitStatus.metrics.blockedRequests /
-                        rateLimitStatus.metrics.totalRequests) *
-                      100
-                    ).toFixed(1)
-                  : 0,
-            },
-            rate_limit_details: {
-              tool_name: name,
-              actor_id: actorId,
-              current_timestamp: new Date().toISOString(),
-              next_available_request: new Date(rateLimitResult.resetTime).toISOString(),
-              window_start_time: new Date(
-                rateLimitResult.resetTime - (rateLimitStatus.configs[name]?.windowMs || 60000)
-              ).toISOString(),
-            },
-          },
-        },
-        timestamp: new Date().toISOString(),
-      };
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(rateLimitExceededResponse, null, 2),
-          },
-        ],
-      };
-    }
-
-    let result;
-    switch (name) {
-      case 'memory_store':
-        result = await handleMemoryStore(args as { items: any[] });
-        break;
-      case 'memory_find':
-        result = await handleMemoryFind(
-          args as {
-            query: string;
-            limit?: number;
-            types?: string[];
-            scope?: any;
-            mode?: 'fast' | 'auto' | 'deep';
-            expand?: 'relations' | 'parents' | 'children' | 'none';
-          }
-        );
-        break;
-      case 'system_status':
-        result = await handleSystemStatus(args);
-        break;
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-
-    const duration = Date.now() - startTime;
-    logger.info(`Tool completed successfully: ${name} (${duration}ms)`, {
-      tool: name,
-      actor: actorId,
-      rateLimitRemaining: rateLimitResult.remaining,
-      duration: `${duration}ms`,
-    });
-
-    // P4-1: Enhanced rate-limit meta echoing in responses
-    if (result.content && result.content[0]?.type === 'text') {
-      try {
-        const responseData = JSON.parse(result.content[0].text || '{}');
-
-        // Get comprehensive rate limit status
-        const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
-        const rateLimitStatus = rateLimitService.getStatus();
-
-        // Enhanced rate limit metadata
-        responseData.rate_limit = {
-          allowed: true,
-          remaining: rateLimitResult.remaining,
-          reset_time: new Date(rateLimitResult.resetTime).toISOString(),
-          identifier: rateLimitResult.identifier,
-
-          // P4-1: Comprehensive rate limit meta information
-          meta: {
-            current_window: {
-              requests_used: rateLimitResult.total,
-              requests_remaining: rateLimitResult.remaining,
-              reset_in_seconds: Math.max(
-                0,
-                Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
-              ),
-              window_percentage: (
-                (rateLimitResult.total / (rateLimitResult.total + rateLimitResult.remaining)) *
-                100
-              ).toFixed(1),
-            },
-            policies: {
-              tool_limit: rateLimitStatus.configs[name]?.limit || 100,
-              tool_window: rateLimitStatus.configs[name]?.windowMs || 60000,
-              actor_limit: 500,
-              actor_window: 60000,
-            },
-            system_status: {
-              active_windows: rateLimitStatus.activeWindows,
-              total_requests_system: rateLimitStatus.metrics.totalRequests,
-              blocked_requests_system: rateLimitStatus.metrics.blockedRequests,
-              system_block_rate:
-                rateLimitStatus.metrics.totalRequests > 0
-                  ? (
-                      (rateLimitStatus.metrics.blockedRequests /
-                        rateLimitStatus.metrics.totalRequests) *
-                      100
-                    ).toFixed(1)
-                  : 0,
-              memory_usage: rateLimitStatus.memoryUsage,
-            },
-            historical_stats: {
-              requests_this_minute: rateLimitResult.total,
-              estimated_requests_per_hour: Math.ceil(rateLimitResult.total * 60),
-              backoff_suggested: rateLimitResult.remaining < 5,
-              cooling_off_period: rateLimitResult.remaining === 0,
-            },
-          },
-        };
-
-        result.content[0].text = JSON.stringify(responseData, null, 2);
-      } catch (metaError) {
-        logger.warn('Failed to add enhanced rate limit metadata', { error: metaError });
-        // If parsing fails, add basic rate limit info
-        if (result.content && result.content[0]?.type === 'text') {
-          const basicMeta = {
-            rate_limit_basic: {
-              allowed: true,
-              remaining: rateLimitResult.remaining,
-              reset_time: new Date(rateLimitResult.resetTime).toISOString(),
-            },
-          };
-          result.content[0].text += `\n\n// Rate Limit Info: ${JSON.stringify(basicMeta, null, 2)}`;
-        }
-      }
-    }
-
-    return result;
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    logger.error(`Tool execution failed: ${name} (${duration}ms)`, {
-      tool: name,
-      actor: actorId,
-      error: error instanceof Error ? error.message : String(error),
-      duration: `${duration}ms`,
-    });
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        },
-      ],
-    };
-  }
-});
 
 async function handleMemoryStore(args: {
   items: any[];
@@ -675,14 +346,7 @@ async function handleMemoryStore(args: {
 
     performanceMonitor.completeOperation(monitorId);
 
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(enhancedResponse, null, 2),
-        },
-      ],
-    };
+    return createMcpResponse(enhancedResponse);
   } catch (error) {
     performanceMonitor.completeOperation(monitorId, error as Error);
     throw error;
@@ -1025,14 +689,7 @@ async function handleMemoryFind(args: {
 
     performanceMonitor.completeOperation(monitorId);
 
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(enhancedResponse, null, 2),
-        },
-      ],
-    };
+    return createMcpResponse(enhancedResponse);
   } catch (error) {
     performanceMonitor.completeOperation(monitorId, error as Error);
     throw error;
@@ -1207,7 +864,7 @@ async function handleDatabaseHealth() {
     // P2-T3: Get dependency health information
     let dependencyHealth: any = {
       enabled: false,
-      status: 'unknown',
+      status: DependencyStatus.UNKNOWN,
       dependencies: [],
       summary: {
         total: 0,
@@ -1215,20 +872,21 @@ async function handleDatabaseHealth() {
         warning: 0,
         critical: 0,
         unknown: 0,
-        disabled: 0
+        disabled: 0,
       },
       overallScore: 0,
-      lastUpdated: null
+      lastUpdated: null,
     };
 
     try {
-      const { dependencyRegistry } = await import('./services/deps-registry.js');
-      const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
-      
+      const { dependencyRegistry, DependencyStatus } = await import('./services/deps-registry.js');
+      const HealthAggregationService = (await import('./services/health-aggregation.service.js'))
+        .default;
+
       // Get dependency health status
       const allDependencies = dependencyRegistry.getAllDependencies();
       const dependencyCount = Object.keys(allDependencies).length;
-      
+
       if (dependencyCount > 0) {
         dependencyHealth.enabled = true;
         dependencyHealth.dependencies = Object.entries(allDependencies).map(([name, state]) => ({
@@ -1240,58 +898,89 @@ async function handleDatabaseHealth() {
           lastHealthCheck: state.lastHealthCheck,
           responseTime: state.metrics.responseTime.current,
           errorRate: state.metrics.error.rate,
-          availability: ((state.metrics.availability.uptime / 
-            (state.metrics.availability.uptime + state.metrics.availability.downtime)) * 100) || 100,
+          availability:
+            (state.metrics.availability.uptime /
+              (state.metrics.availability.uptime + state.metrics.availability.downtime)) *
+              100 || 100,
           consecutiveFailures: state.consecutiveFailures,
-          metrics: state.metrics
+          metrics: state.metrics,
         }));
 
         dependencyHealth.summary = {
           total: dependencyCount,
-          healthy: Object.values(allDependencies).filter(s => s.status === 'healthy').length,
-          warning: Object.values(allDependencies).filter(s => s.status === 'warning').length,
-          critical: Object.values(allDependencies).filter(s => s.status === 'critical').length,
-          unknown: Object.values(allDependencies).filter(s => s.status === 'unknown').length,
-          disabled: Object.values(allDependencies).filter(s => s.status === 'disabled').length
+          healthy: Object.values(allDependencies).filter(
+            (s) => s.status === DependencyStatus.HEALTHY
+          ).length,
+          warning: Object.values(allDependencies).filter(
+            (s) => s.status === DependencyStatus.WARNING
+          ).length,
+          critical: Object.values(allDependencies).filter(
+            (s) => s.status === DependencyStatus.CRITICAL
+          ).length,
+          unknown: Object.values(allDependencies).filter(
+            (s) => s.status === DependencyStatus.UNKNOWN
+          ).length,
+          disabled: Object.values(allDependencies).filter(
+            (s) => s.status === DependencyStatus.DISABLED
+          ).length,
         };
 
         // Calculate overall health score
         const totalWeight = dependencyHealth.dependencies.reduce((sum: number, dep: any) => {
-          const weight = dep.priority === 'critical' ? 4 : 
-                       dep.priority === 'high' ? 3 : 
-                       dep.priority === 'medium' ? 2 : 1;
-          const score = dep.status === 'healthy' ? 100 :
-                       dep.status === 'warning' ? 70 :
-                       dep.status === 'critical' ? 30 : 50;
-          return sum + (weight * score);
+          const weight =
+            dep.priority === 'critical'
+              ? 4
+              : dep.priority === 'high'
+                ? 3
+                : dep.priority === 'medium'
+                  ? 2
+                  : 1;
+          const score =
+            dep.status === DependencyStatus.HEALTHY
+              ? 100
+              : dep.status === DependencyStatus.WARNING
+                ? 70
+                : dep.status === DependencyStatus.CRITICAL
+                  ? 30
+                  : 50;
+          return sum + weight * score;
         }, 0);
 
         const maxWeight = dependencyHealth.dependencies.reduce((sum: number, dep: any) => {
-          const weight = dep.priority === 'critical' ? 4 : 
-                       dep.priority === 'high' ? 3 : 
-                       dep.priority === 'medium' ? 2 : 1;
-          return sum + (weight * 100);
+          const weight =
+            dep.priority === 'critical'
+              ? 4
+              : dep.priority === 'high'
+                ? 3
+                : dep.priority === 'medium'
+                  ? 2
+                  : 1;
+          return sum + weight * 100;
         }, 0);
 
-        dependencyHealth.overallScore = maxWeight > 0 ? Math.round((totalWeight / maxWeight) * 100) : 100;
+        dependencyHealth.overallScore =
+          maxWeight > 0 ? Math.round((totalWeight / maxWeight) * 100) : 100;
         dependencyHealth.lastUpdated = new Date().toISOString();
 
         // Determine dependency health status
         if (dependencyHealth.summary.critical > 0) {
-          dependencyHealth.status = 'critical';
+          dependencyHealth.status = DependencyStatus.CRITICAL;
         } else if (dependencyHealth.summary.warning > 0 || dependencyHealth.overallScore < 80) {
-          dependencyHealth.status = 'warning';
+          dependencyHealth.status = DependencyStatus.WARNING;
         } else if (dependencyHealth.summary.healthy === dependencyHealth.summary.total) {
-          dependencyHealth.status = 'healthy';
+          dependencyHealth.status = DependencyStatus.HEALTHY;
         } else {
-          dependencyHealth.status = 'unknown';
+          dependencyHealth.status = DependencyStatus.UNKNOWN;
         }
 
         // Update overall service status based on dependency health
-        if (dependencyHealth.status === 'critical') {
+        if (dependencyHealth.status === DependencyStatus.CRITICAL) {
           serviceStatus = 'degraded';
           degradedMode = true;
-        } else if (dependencyHealth.status === 'warning' && serviceStatus === 'healthy') {
+        } else if (
+          dependencyHealth.status === DependencyStatus.WARNING &&
+          serviceStatus === 'healthy'
+        ) {
           serviceStatus = 'degraded';
           degradedMode = true;
         }
@@ -1300,7 +989,8 @@ async function handleDatabaseHealth() {
       logger.warn('Failed to get dependency health information', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      dependencyHealth.error = error instanceof Error ? error.message : 'Failed to load dependency health';
+      dependencyHealth.error =
+        error instanceof Error ? error.message : 'Failed to load dependency health';
     }
 
     // Build comprehensive system status
@@ -1729,98 +1419,124 @@ async function handleDependencyHealth(args: any): Promise<any> {
           throw new Error(`Dependency ${dependency} not found`);
         }
 
-        const result = await healthCheckService.performHealthCheck(
-          dependency,
-          state.config,
-          { strategy: HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] || HealthCheckStrategy.BASIC }
-        );
+        const result = await healthCheckService.performHealthCheck(dependency, state.config, {
+          strategy:
+            HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] ||
+            HealthCheckStrategy.BASIC,
+        });
 
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              dependency: result.dependency,
-              status: result.status,
-              responseTime: result.responseTime,
-              strategy: result.strategy,
-              diagnostics: result.diagnostics,
-              error: result.error,
-              timestamp: result.timestamp,
-              retryAttempts: result.retryAttempts,
-              cached: result.cached,
-              benchmarkResults: result.benchmarkResults,
-              details: result.details
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  dependency: result.dependency,
+                  status: result.status,
+                  responseTime: result.responseTime,
+                  strategy: result.strategy,
+                  diagnostics: result.diagnostics,
+                  error: result.error,
+                  timestamp: result.timestamp,
+                  retryAttempts: result.retryAttempts,
+                  cached: result.cached,
+                  benchmarkResults: result.benchmarkResults,
+                  details: result.details,
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'check_all':
         const allDeps = dependencyRegistry.getAllDependencies();
         const checkPromises = Object.entries(allDeps).map(async ([name, state]) => {
           try {
-            return await healthCheckService.performHealthCheck(
-              name,
-              state.config,
-              { strategy: HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] || HealthCheckStrategy.BASIC }
-            );
+            return await healthCheckService.performHealthCheck(name, state.config, {
+              strategy:
+                HealthCheckStrategy[strategy.toUpperCase() as keyof typeof HealthCheckStrategy] ||
+                HealthCheckStrategy.BASIC,
+            });
           } catch (error) {
             return {
               dependency: name,
               status: 'critical',
               error: error instanceof Error ? error.message : 'Unknown error',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
             };
           }
         });
 
         const results = await Promise.allSettled(checkPromises);
-        const healthResults = results.map(result => 
-          result.status === 'fulfilled' ? result.value : {
-            dependency: 'unknown',
-            status: 'critical',
-            error: 'Health check failed'
-          }
+        const healthResults = results.map((result) =>
+          result.status === 'fulfilled'
+            ? result.value
+            : {
+                dependency: 'unknown',
+                status: 'critical',
+                error: 'Health check failed',
+              }
         );
 
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              dependencies: healthResults,
-              summary: {
-                total: healthResults.length,
-                healthy: healthResults.filter(r => r.status === 'healthy').length,
-                warning: healthResults.filter(r => r.status === 'warning').length,
-                critical: healthResults.filter(r => r.status === 'critical').length,
-                unknown: healthResults.filter(r => r.status === 'unknown').length
-              },
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  dependencies: healthResults,
+                  summary: {
+                    total: healthResults.length,
+                    healthy: healthResults.filter((r) => r.status === 'healthy').length,
+                    warning: healthResults.filter((r) => r.status === 'warning').length,
+                    critical: healthResults.filter((r) => r.status === 'critical').length,
+                    unknown: healthResults.filter((r) => r.status === 'unknown').length,
+                  },
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'cache_stats':
         const cacheStats = healthCheckService.getCacheStats();
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              cache: cacheStats,
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  cache: cacheStats,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'clear_cache':
         healthCheckService.clearCache();
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              message: 'Health check cache cleared successfully',
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  message: 'Health check cache cleared successfully',
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       default:
@@ -1829,15 +1545,21 @@ async function handleDependencyHealth(args: any): Promise<any> {
   } catch (error) {
     logger.error('Dependency health operation failed', { error, args });
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : 'Unknown error',
-          operation: 'dependency_health',
-          args,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              operation: 'dependency_health',
+              args,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 }
@@ -1850,97 +1572,131 @@ async function handleDependencyRegistry(args: any): Promise<any> {
     const { action } = args;
 
     // Import services dynamically
-    const { dependencyRegistry, DependencyType, DependencyStatus } = await import('./services/deps-registry.js');
+    const { dependencyRegistry, DependencyType, DependencyStatus } = await import(
+      './services/deps-registry.js'
+    );
 
     switch (action) {
       case 'list':
         const allDependencies = dependencyRegistry.getAllDependencies();
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              dependencies: Object.entries(allDependencies).map(([name, state]) => ({
-                name,
-                type: state.config.type,
-                status: state.status,
-                priority: state.config.priority,
-                enabled: state.enabled,
-                lastHealthCheck: state.lastHealthCheck,
-                consecutiveFailures: state.consecutiveFailures,
-                consecutiveSuccesses: state.consecutiveSuccesses,
-                totalChecks: state.totalChecks,
-                connection: state.config.connection,
-                thresholds: state.config.thresholds,
-                metadata: {
-                  createdAt: state.metadata.createdAt,
-                  updatedAt: state.metadata.updatedAt,
-                  lastFailure: state.metadata.lastFailure,
-                  lastSuccess: state.metadata.lastSuccess
-                }
-              })),
-              summary: {
-                total: Object.keys(allDependencies).length,
-                healthy: Object.values(allDependencies).filter(s => s.status === DependencyStatus.HEALTHY).length,
-                warning: Object.values(allDependencies).filter(s => s.status === DependencyStatus.WARNING).length,
-                critical: Object.values(allDependencies).filter(s => s.status === DependencyStatus.CRITICAL).length,
-                unknown: Object.values(allDependencies).filter(s => s.status === DependencyStatus.UNKNOWN).length,
-                disabled: Object.values(allDependencies).filter(s => s.status === DependencyStatus.DISABLED).length
-              },
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  dependencies: Object.entries(allDependencies).map(([name, state]) => ({
+                    name,
+                    type: state.config.type,
+                    status: state.status,
+                    priority: state.config.priority,
+                    enabled: state.enabled,
+                    lastHealthCheck: state.lastHealthCheck,
+                    consecutiveFailures: state.consecutiveFailures,
+                    consecutiveSuccesses: state.consecutiveSuccesses,
+                    totalChecks: state.totalChecks,
+                    connection: state.config.connection,
+                    thresholds: state.config.thresholds,
+                    metadata: {
+                      createdAt: state.metadata.createdAt,
+                      updatedAt: state.metadata.updatedAt,
+                      lastFailure: state.metadata.lastFailure,
+                      lastSuccess: state.metadata.lastSuccess,
+                    },
+                  })),
+                  summary: {
+                    total: Object.keys(allDependencies).length,
+                    healthy: Object.values(allDependencies).filter(
+                      (s) => s.status === DependencyStatus.HEALTHY
+                    ).length,
+                    warning: Object.values(allDependencies).filter(
+                      (s) => s.status === DependencyStatus.WARNING
+                    ).length,
+                    critical: Object.values(allDependencies).filter(
+                      (s) => s.status === DependencyStatus.CRITICAL
+                    ).length,
+                    unknown: Object.values(allDependencies).filter(
+                      (s) => s.status === DependencyStatus.UNKNOWN
+                    ).length,
+                    disabled: Object.values(allDependencies).filter(
+                      (s) => s.status === DependencyStatus.DISABLED
+                    ).length,
+                  },
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'by_type':
         const { type } = args;
         if (!type || !Object.values(DependencyType).includes(type)) {
-          throw new Error(`Valid dependency type is required. Available types: ${Object.values(DependencyType).join(', ')}`);
+          throw new Error(
+            `Valid dependency type is required. Available types: ${Object.values(DependencyType).join(', ')}`
+          );
         }
 
         const dependenciesByType = dependencyRegistry.getDependenciesByType(type as any);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              type,
-              dependencies: Object.entries(dependenciesByType).map(([name, state]) => ({
-                name,
-                status: state.status,
-                priority: state.config.priority,
-                enabled: state.enabled,
-                lastHealthCheck: state.lastHealthCheck,
-                metrics: state.metrics
-              })),
-              count: Object.keys(dependenciesByType).length,
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  type,
+                  dependencies: Object.entries(dependenciesByType).map(([name, state]) => ({
+                    name,
+                    status: state.status,
+                    priority: state.config.priority,
+                    enabled: state.enabled,
+                    lastHealthCheck: state.lastHealthCheck,
+                    metrics: state.metrics,
+                  })),
+                  count: Object.keys(dependenciesByType).length,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'by_status':
         const { status } = args;
         if (!status || !Object.values(DependencyStatus).includes(status)) {
-          throw new Error(`Valid status is required. Available statuses: ${Object.values(DependencyStatus).join(', ')}`);
+          throw new Error(
+            `Valid status is required. Available statuses: ${Object.values(DependencyStatus).join(', ')}`
+          );
         }
 
         const dependenciesByStatus = dependencyRegistry.getDependenciesByStatus(status as any);
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              status,
-              dependencies: Object.entries(dependenciesByStatus).map(([name, state]) => ({
-                name,
-                type: state.config.type,
-                priority: state.config.priority,
-                lastHealthCheck: state.lastHealthCheck,
-                consecutiveFailures: state.consecutiveFailures,
-                metrics: state.metrics
-              })),
-              count: Object.keys(dependenciesByStatus).length,
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  status,
+                  dependencies: Object.entries(dependenciesByStatus).map(([name, state]) => ({
+                    name,
+                    type: state.config.type,
+                    priority: state.config.priority,
+                    lastHealthCheck: state.lastHealthCheck,
+                    consecutiveFailures: state.consecutiveFailures,
+                    metrics: state.metrics,
+                  })),
+                  count: Object.keys(dependenciesByStatus).length,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'enable':
@@ -1959,33 +1715,51 @@ async function handleDependencyRegistry(args: any): Promise<any> {
         dependencyRegistry.setHealthCheckingEnabled(depName, enabled);
 
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              dependency: depName,
-              healthCheckingEnabled: enabled,
-              previousStatus: depState.status,
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  dependency: depName,
+                  healthCheckingEnabled: enabled,
+                  previousStatus: depState.status,
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       case 'check_all':
         const checkAllResults = await dependencyRegistry.checkAllDependencies();
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              results: checkAllResults,
-              summary: {
-                total: Object.keys(checkAllResults).length,
-                healthy: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.HEALTHY).length,
-                warning: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.WARNING).length,
-                critical: Object.values(checkAllResults).filter(r => r.status === DependencyStatus.CRITICAL).length
-              },
-              timestamp: new Date().toISOString()
-            }, null, 2)
-          }]
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(
+                {
+                  results: checkAllResults,
+                  summary: {
+                    total: Object.keys(checkAllResults).length,
+                    healthy: Object.values(checkAllResults).filter(
+                      (r) => r.success && r.data?.status === DependencyStatus.HEALTHY
+                    ).length,
+                    warning: Object.values(checkAllResults).filter(
+                      (r) => r.success && r.data?.status === DependencyStatus.WARNING
+                    ).length,
+                    critical: Object.values(checkAllResults).filter(
+                      (r) => r.success && r.data?.status === DependencyStatus.CRITICAL
+                    ).length,
+                  },
+                  timestamp: new Date().toISOString(),
+                },
+                null,
+                2
+              ),
+            },
+          ],
         };
 
       default:
@@ -1994,15 +1768,21 @@ async function handleDependencyRegistry(args: any): Promise<any> {
   } catch (error) {
     logger.error('Dependency registry operation failed', { error, args });
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : 'Unknown error',
-          operation: 'dependency_registry',
-          args,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              operation: 'dependency_registry',
+              args,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 }
@@ -2016,8 +1796,9 @@ async function handleDependencyAnalysis(args: any): Promise<any> {
 
     // Import services dynamically
     const { dependencyRegistry } = await import('./services/deps-registry.js');
-    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
-    
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js'))
+      .default;
+
     // Get or create health aggregation service instance
     let healthAggregation: any;
     try {
@@ -2039,9 +1820,9 @@ async function handleDependencyAnalysis(args: any): Promise<any> {
           dependencies: analysis.dependencies,
           risks: analysis.risks,
           recommendations: analysis.recommendations,
-          timestamp: analysis.timestamp
+          timestamp: analysis.timestamp,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       // Include history if requested
@@ -2054,28 +1835,34 @@ async function handleDependencyAnalysis(args: any): Promise<any> {
       response.cacheStats = healthCheckService.getCacheStats();
 
       return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify(response, null, 2)
-        }]
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(response, null, 2),
+          },
+        ],
       };
-
     } finally {
       await healthAggregation.stop();
     }
-
   } catch (error) {
     logger.error('Dependency analysis operation failed', { error, args });
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : 'Unknown error',
-          operation: 'dependency_analysis',
-          args,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              operation: 'dependency_analysis',
+              args,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 }
@@ -2089,7 +1876,8 @@ async function handleDependencyAlerts(args: any): Promise<any> {
 
     // Import services dynamically
     const { dependencyRegistry } = await import('./services/deps-registry.js');
-    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js'))
+      .default;
     const { AlertSeverity } = await import('./services/health-aggregation.service.js');
 
     let healthAggregation: any;
@@ -2104,23 +1892,35 @@ async function handleDependencyAlerts(args: any): Promise<any> {
     try {
       switch (action) {
         case 'list':
-          const filterSeverity = severity ? AlertSeverity[severity.toUpperCase() as keyof typeof AlertSeverity] : undefined;
+          const filterSeverity = severity
+            ? AlertSeverity[severity.toUpperCase() as keyof typeof AlertSeverity]
+            : undefined;
           const activeAlerts = healthAggregation.getActiveAlerts(filterSeverity);
 
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                alerts: activeAlerts,
-                summary: {
-                  total: activeAlerts.length,
-                  critical: activeAlerts.filter((a: any) => a.severity === AlertSeverity.CRITICAL).length,
-                  warning: activeAlerts.filter((a: any) => a.severity === AlertSeverity.WARNING).length,
-                  info: activeAlerts.filter((a: any) => a.severity === AlertSeverity.INFO).length
-                },
-                timestamp: new Date().toISOString()
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    alerts: activeAlerts,
+                    summary: {
+                      total: activeAlerts.length,
+                      critical: activeAlerts.filter(
+                        (a: any) => a.severity === AlertSeverity.CRITICAL
+                      ).length,
+                      warning: activeAlerts.filter((a: any) => a.severity === AlertSeverity.WARNING)
+                        .length,
+                      info: activeAlerts.filter((a: any) => a.severity === AlertSeverity.INFO)
+                        .length,
+                    },
+                    timestamp: new Date().toISOString(),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
 
         case 'acknowledge':
@@ -2134,15 +1934,21 @@ async function handleDependencyAlerts(args: any): Promise<any> {
           healthAggregation.acknowledgeAlert(alert_id, acknowledged_by);
 
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                message: `Alert ${alert_id} acknowledged by ${acknowledged_by}`,
-                alert_id,
-                acknowledged_by,
-                timestamp: new Date().toISOString()
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    message: `Alert ${alert_id} acknowledged by ${acknowledged_by}`,
+                    alert_id,
+                    acknowledged_by,
+                    timestamp: new Date().toISOString(),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
 
         case 'resolve':
@@ -2153,36 +1959,46 @@ async function handleDependencyAlerts(args: any): Promise<any> {
           healthAggregation.resolveAlert(alert_id);
 
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                message: `Alert ${alert_id} resolved`,
-                alert_id,
-                timestamp: new Date().toISOString()
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    message: `Alert ${alert_id} resolved`,
+                    alert_id,
+                    timestamp: new Date().toISOString(),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
 
         default:
           throw new Error(`Unknown alerts action: ${action}`);
       }
-
     } finally {
       await healthAggregation.stop();
     }
-
   } catch (error) {
     logger.error('Dependency alerts operation failed', { error, args });
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : 'Unknown error',
-          operation: 'dependency_alerts',
-          args,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              operation: 'dependency_alerts',
+              args,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 }
@@ -2196,7 +2012,8 @@ async function handleDependencySLA(args: any): Promise<any> {
 
     // Import services dynamically
     const { dependencyRegistry } = await import('./services/deps-registry.js');
-    const HealthAggregationService = (await import('./services/health-aggregation.service.js')).default;
+    const HealthAggregationService = (await import('./services/health-aggregation.service.js'))
+      .default;
     const { SLAStatus } = await import('./services/health-aggregation.service.js');
 
     let healthAggregation: any;
@@ -2212,75 +2029,87 @@ async function handleDependencySLA(args: any): Promise<any> {
       switch (action) {
         case 'list':
           const compliance = healthAggregation.getSLACompliance(sla_name);
-          const slaArray = Array.from(compliance.entries() as Iterable<[string, any]>).map(([name, data]) => ({
-            name,
-            status: data.status,
-            period: data.period,
-            metrics: data.metrics,
-            violations: data.violations,
-            score: data.score
-          }));
+          const slaArray = Array.from(compliance.entries() as Iterable<[string, any]>).map(
+            ([name, data]) => ({
+              name,
+              status: data.status,
+              period: data.period,
+              metrics: data.metrics,
+              violations: data.violations,
+              score: data.score,
+            })
+          );
 
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify({
-                slas: slaArray,
-                summary: {
-                  total: slaArray.length,
-                  compliant: slaArray.filter((s: any) => s.status === SLAStatus.COMPLIANT).length,
-                  warning: slaArray.filter((s: any) => s.status === SLAStatus.WARNING).length,
-                  violation: slaArray.filter((s: any) => s.status === SLAStatus.VIOLATION).length,
-                  unknown: slaArray.filter((s: any) => s.status === SLAStatus.UNKNOWN).length
-                },
-                timestamp: new Date().toISOString()
-              }, null, 2)
-            }]
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    slas: slaArray,
+                    summary: {
+                      total: slaArray.length,
+                      compliant: slaArray.filter((s: any) => s.status === SLAStatus.COMPLIANT)
+                        .length,
+                      warning: slaArray.filter((s: any) => s.status === SLAStatus.WARNING).length,
+                      violation: slaArray.filter((s: any) => s.status === SLAStatus.VIOLATION)
+                        .length,
+                      unknown: slaArray.filter((s: any) => s.status === SLAStatus.UNKNOWN).length,
+                    },
+                    timestamp: new Date().toISOString(),
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
           };
 
         default:
           throw new Error(`Unknown SLA action: ${action}`);
       }
-
     } finally {
       await healthAggregation.stop();
     }
-
   } catch (error) {
     logger.error('Dependency SLA operation failed', { error, args });
     return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({
-          error: error instanceof Error ? error.message : 'Unknown error',
-          operation: 'dependency_sla',
-          args,
-          timestamp: new Date().toISOString()
-        }, null, 2)
-      }]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              error: error instanceof Error ? error.message : 'Unknown error',
+              operation: 'dependency_sla',
+              args,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2
+          ),
+        },
+      ],
     };
   }
 }
 
 async function handleDatabaseStats(_args: { scope?: any }) {
   // Since we're using orchestrators, provide simplified stats
+  const responseData = {
+    totalItems: 'unknown', // Orchestrators don't expose direct counts
+    collectionInfo: 'managed_by_orchestrators',
+    environment: {
+      nodeEnv: env.NODE_ENV,
+      collectionName: env.QDRANT_COLLECTION_NAME,
+      backend: 'orchestrator_based',
+    },
+  };
+
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify(
-          {
-            totalItems: 'unknown', // Orchestrators don't expose direct counts
-            collectionInfo: 'managed_by_orchestrators',
-            environment: {
-              nodeEnv: env.NODE_ENV,
-              collectionName: env.QDRANT_COLLECTION_NAME,
-              backend: 'orchestrator_based',
-            },
-          },
-          null,
-          2
-        ),
+        text: JSON.stringify(responseData, null, 2),
       },
     ],
   };
@@ -2307,45 +2136,43 @@ async function handleTelemetryReport() {
     find_logs: [],
   };
 
+  const responseData = {
+    report_generated_at: new Date().toISOString(),
+    data_collection_period: 'current_session',
+    backend: 'orchestrator_based',
+    summary: {
+      store_operations: telemetryData.summary.store,
+      find_operations: telemetryData.summary.find,
+      scope_analysis: telemetryData.summary.scope_analysis,
+    },
+    insights: {
+      truncation_issues:
+        telemetryData.summary.store.truncation_ratio > 0.1
+          ? 'High truncation rate detected - content may be losing quality'
+          : 'Truncation rate within acceptable limits',
+      search_quality:
+        telemetryData.summary.find.zero_result_ratio > 0.3
+          ? 'High zero-result rate - queries may need refinement'
+          : 'Search quality appears acceptable',
+      scope_utilization:
+        Object.keys(telemetryData.summary.scope_analysis).length > 1
+          ? 'Multi-scope usage detected'
+          : 'Single-scope usage',
+    },
+    system_info: telemetry,
+    detailed_logs: {
+      store_operations_count: telemetryData.store_logs.length,
+      find_operations_count: telemetryData.find_logs.length,
+      recent_store_logs: telemetryData.store_logs.slice(-5), // Last 5 store operations
+      recent_find_logs: telemetryData.find_logs.slice(-5), // Last 5 find operations
+    },
+  };
+
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify(
-          {
-            report_generated_at: new Date().toISOString(),
-            data_collection_period: 'current_session',
-            backend: 'orchestrator_based',
-            summary: {
-              store_operations: telemetryData.summary.store,
-              find_operations: telemetryData.summary.find,
-              scope_analysis: telemetryData.summary.scope_analysis,
-            },
-            insights: {
-              truncation_issues:
-                telemetryData.summary.store.truncation_ratio > 0.1
-                  ? 'High truncation rate detected - content may be losing quality'
-                  : 'Truncation rate within acceptable limits',
-              search_quality:
-                telemetryData.summary.find.zero_result_ratio > 0.3
-                  ? 'High zero-result rate - queries may need refinement'
-                  : 'Search quality appears acceptable',
-              scope_utilization:
-                Object.keys(telemetryData.summary.scope_analysis).length > 1
-                  ? 'Multi-scope usage detected'
-                  : 'Single-scope usage',
-            },
-            system_info: telemetry,
-            detailed_logs: {
-              store_operations_count: telemetryData.store_logs.length,
-              find_operations_count: telemetryData.find_logs.length,
-              recent_store_logs: telemetryData.store_logs.slice(-5), // Last 5 store operations
-              recent_find_logs: telemetryData.find_logs.slice(-5), // Last 5 find operations
-            },
-          },
-          null,
-          2
-        ),
+        text: JSON.stringify(responseData, null, 2),
       },
     ],
   };
@@ -2361,39 +2188,38 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
       // Return simplified metrics summary
       const summary = systemMetricsService.getMetricsSummary();
 
+      const responseData = {
+        type: 'system_metrics_summary',
+        timestamp: new Date().toISOString(),
+        operations: {
+          total_stores: summary.operations.stores,
+          total_finds: summary.operations.finds,
+          total_purges: summary.operations.purges,
+          total_operations:
+            summary.operations.stores +
+            summary.operations.finds +
+            summary.operations.purges,
+        },
+        performance: {
+          deduplication_rate_percent: summary.performance.dedupe_rate,
+          validator_failure_rate_percent: summary.performance.validator_fail_rate,
+          average_response_time_ms: summary.performance.avg_response_time,
+        },
+        health: {
+          error_rate_percent: summary.health.error_rate,
+          rate_limit_block_rate_percent: summary.health.block_rate,
+          uptime_hours: summary.health.uptime_hours,
+        },
+      };
+
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              {
-                type: 'system_metrics_summary',
-                timestamp: new Date().toISOString(),
-                operations: {
-                  total_stores: summary.operations.stores,
-                  total_finds: summary.operations.finds,
-                  total_purges: summary.operations.purges,
-                  total_operations:
-                    summary.operations.stores +
-                    summary.operations.finds +
-                    summary.operations.purges,
-                },
-                performance: {
-                  deduplication_rate_percent: summary.performance.dedupe_rate,
-                  validator_failure_rate_percent: summary.performance.validator_fail_rate,
-                  average_response_time_ms: summary.performance.avg_response_time,
-                },
-                health: {
-                  error_rate_percent: summary.health.error_rate,
-                  rate_limit_block_rate_percent: summary.health.block_rate,
-                  uptime_hours: summary.health.uptime_hours,
-                },
-              },
-              null,
-              2
-            ),
+            text: JSON.stringify(responseData, null, 2),
           },
         ],
+        structuredContent: responseData,
       };
     } else {
       // Return full detailed metrics
@@ -2508,6 +2334,7 @@ async function handleSystemMetrics(args: { summary?: boolean }) {
           text: `Error retrieving system metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
       ],
+      isError: true,
     };
   }
 }
@@ -3269,7 +3096,7 @@ async function startServer(): Promise<void> {
           return;
         }
         logger.error(message, meta);
-      }
+      },
     };
 
     safeLogger.info('=== MCP Server Startup Debug ===');
@@ -3279,11 +3106,14 @@ async function startServer(): Promise<void> {
     safeLogger.info(`Environment: ${env.NODE_ENV}`);
     safeLogger.info(`Qdrant URL: ${env.QDRANT_URL}`);
     safeLogger.info(`Collection: ${env.QDRANT_COLLECTION_NAME}`);
-    safeLogger.info('STDIO streams: ' + JSON.stringify({
-      stdin: process.stdin.isTTY ? 'TTY' : 'PIPE',
-      stdout: process.stdout.isTTY ? 'TTY' : 'PIPE',
-      stderr: process.stderr.isTTY ? 'TTY' : 'PIPE',
-    }));
+    safeLogger.info(
+      'STDIO streams: ' +
+        JSON.stringify({
+          stdin: process.stdin.isTTY ? 'TTY' : 'PIPE',
+          stdout: process.stdout.isTTY ? 'TTY' : 'PIPE',
+          stderr: process.stderr.isTTY ? 'TTY' : 'PIPE',
+        })
+    );
 
     // Configure Node.js memory optimization
     if (!process.env.NODE_OPTIONS) {
@@ -3405,7 +3235,9 @@ async function startServer(): Promise<void> {
 
         // P2-T3: Initialize dependency registry and health monitoring
         logger.info('Initializing dependency registry and health monitoring...');
-        const { dependencyRegistry, DependencyType, DependencyStatus } = await import('./services/deps-registry.js');
+        const { dependencyRegistry, DependencyType, DependencyStatus } = await import(
+          './services/deps-registry.js'
+        );
         type DependencyConfig = import('./services/deps-registry.js').DependencyConfig;
 
         // Initialize dependency registry
@@ -3426,12 +3258,12 @@ async function startServer(): Promise<void> {
               failureThreshold: 3,
               successThreshold: 2,
               retryAttempts: 2,
-              retryDelayMs: 1000
+              retryDelayMs: 1000,
             },
             connection: {
               url: env.QDRANT_URL,
               apiKey: env.QDRANT_API_KEY,
-              timeout: 10000
+              timeout: 10000,
             },
             thresholds: {
               responseTimeWarning: 2000,
@@ -3439,9 +3271,9 @@ async function startServer(): Promise<void> {
               errorRateWarning: 5,
               errorRateCritical: 15,
               availabilityWarning: 99,
-              availabilityCritical: 95
-            }
-          }
+              availabilityCritical: 95,
+            },
+          },
         ];
 
         // Register dependencies
@@ -3461,18 +3293,243 @@ async function startServer(): Promise<void> {
       }
     };
 
-// Initialize the server
-const server = new Server(
-  {
-    name: 'cortex-memory-mcp',
-    version: '2.0.1',
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
+    // Initialize the server
+    const server = new McpServer({
+      name: 'cortex-memory-mcp',
+      version: '2.0.1',
+    });
+
+    // Register all tools with the server
+    // Register memory_store tool
+    server.registerTool(
+      'memory_store',
+      {
+        title: 'Memory Store',
+        description: 'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights. Features enterprise-grade duplicate detection with 5 merge modes, configurable similarity thresholds, time window controls, scope filtering, and comprehensive audit logging.',
+        inputSchema: memoryStoreSchema,
+      },
+      async (args, _extra) => {
+        const startTime = Date.now();
+        const name = 'memory_store';
+
+        // Extract actor identifier for rate limiting
+        const actorId = `anonymous_${Date.now()}`;
+
+        logger.info(`Executing tool: ${name}`, { tool: name, arguments: args, actor: actorId });
+
+        try {
+          // Check rate limits before processing
+          const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
+          const rateLimitResult = await rateLimitService.checkRateLimit(name, actorId);
+
+          if (!rateLimitResult.allowed) {
+            const duration = Date.now() - startTime;
+            logger.warn(`Rate limit exceeded for tool: ${name}`, {
+              tool: name,
+              actor: actorId,
+              remaining: rateLimitResult.remaining,
+              resetTime: new Date(rateLimitResult.resetTime).toISOString(),
+              duration: `${duration}ms`,
+            });
+
+            const rateLimitExceededResponse = {
+              error: 'RATE_LIMIT_EXCEEDED',
+              message: `Rate limit exceeded for ${name}`,
+              rate_limit: {
+                allowed: false,
+                remaining: rateLimitResult.remaining,
+                reset_time: new Date(rateLimitResult.resetTime).toISOString(),
+                reset_in_seconds: Math.max(0, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+                identifier: rateLimitResult.identifier,
+              },
+              timestamp: new Date().toISOString(),
+            };
+
+            return createMcpResponse(rateLimitExceededResponse, true);
+          }
+
+          const result = await handleMemoryStore(args as { items: any[] });
+
+          const duration = Date.now() - startTime;
+          logger.info(`Tool execution completed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(result);
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          logger.error(`Tool execution failed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            error: error instanceof Error ? error.message : String(error),
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(`Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`, true);
+        }
+      }
+    );
+
+    // Register memory_find tool
+    server.registerTool(
+      'memory_find',
+      {
+        title: 'Memory Find',
+        description: 'Search Cortex memory with advanced strategies and graph expansion. Supports semantic vector search with configurable strategies, TTL filters, result formatting, and analytics optimization.',
+        inputSchema: memoryFindSchema,
+      },
+      async (args, _extra) => {
+        const startTime = Date.now();
+        const name = 'memory_find';
+
+        // Extract actor identifier for rate limiting
+        const actorId = `anonymous_${Date.now()}`;
+
+        logger.info(`Executing tool: ${name}`, { tool: name, arguments: args, actor: actorId });
+
+        try {
+          // Check rate limits before processing
+          const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
+          const rateLimitResult = await rateLimitService.checkRateLimit(name, actorId);
+
+          if (!rateLimitResult.allowed) {
+            const duration = Date.now() - startTime;
+            logger.warn(`Rate limit exceeded for tool: ${name}`, {
+              tool: name,
+              actor: actorId,
+              remaining: rateLimitResult.remaining,
+              resetTime: new Date(rateLimitResult.resetTime).toISOString(),
+              duration: `${duration}ms`,
+            });
+
+            const rateLimitExceededResponse = {
+              error: 'RATE_LIMIT_EXCEEDED',
+              message: `Rate limit exceeded for ${name}`,
+              rate_limit: {
+                allowed: false,
+                remaining: rateLimitResult.remaining,
+                reset_time: new Date(rateLimitResult.resetTime).toISOString(),
+                reset_in_seconds: Math.max(0, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+                identifier: rateLimitResult.identifier,
+              },
+              timestamp: new Date().toISOString(),
+            };
+
+            return createMcpResponse(rateLimitExceededResponse, true);
+          }
+
+          const result = await handleMemoryFind(
+            args as {
+              query: string;
+              limit?: number;
+              scope?: any;
+              mode?: 'fast' | 'auto' | 'deep';
+              types?: string[];
+              expand?: 'relations' | 'parents' | 'children' | 'none';
+            }
+          );
+
+          const duration = Date.now() - startTime;
+          logger.info(`Tool execution completed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(result);
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          logger.error(`Tool execution failed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            error: error instanceof Error ? error.message : String(error),
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(`Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`, true);
+        }
+      }
+    );
+
+    // Register system_status tool
+    server.registerTool(
+      'system_status',
+      {
+        title: 'System Status',
+        description: 'System monitoring, cleanup, and maintenance operations. Provides database health checks, statistics, telemetry, document management, cleanup operations with safety mechanisms, and comprehensive system diagnostics.',
+        inputSchema: systemStatusSchema,
+      },
+      async (args, _extra) => {
+        const startTime = Date.now();
+        const name = 'system_status';
+
+        // Extract actor identifier for rate limiting
+        const actorId = `anonymous_${Date.now()}`;
+
+        logger.info(`Executing tool: ${name}`, { tool: name, arguments: args, actor: actorId });
+
+        try {
+          // Check rate limits before processing
+          const { rateLimitService } = await import('./services/rate-limit/rate-limit-service.js');
+          const rateLimitResult = await rateLimitService.checkRateLimit(name, actorId);
+
+          if (!rateLimitResult.allowed) {
+            const duration = Date.now() - startTime;
+            logger.warn(`Rate limit exceeded for tool: ${name}`, {
+              tool: name,
+              actor: actorId,
+              remaining: rateLimitResult.remaining,
+              resetTime: new Date(rateLimitResult.resetTime).toISOString(),
+              duration: `${duration}ms`,
+            });
+
+            const rateLimitExceededResponse = {
+              error: 'RATE_LIMIT_EXCEEDED',
+              message: `Rate limit exceeded for ${name}`,
+              rate_limit: {
+                allowed: false,
+                remaining: rateLimitResult.remaining,
+                reset_time: new Date(rateLimitResult.resetTime).toISOString(),
+                reset_in_seconds: Math.max(0, Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
+                identifier: rateLimitResult.identifier,
+              },
+              timestamp: new Date().toISOString(),
+            };
+
+            return createMcpResponse(rateLimitExceededResponse, true);
+          }
+
+          const result = await handleSystemStatus(args);
+
+          const duration = Date.now() - startTime;
+          logger.info(`Tool execution completed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(result);
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          logger.error(`Tool execution failed: ${name}`, {
+            tool: name,
+            arguments: args,
+            actor: actorId,
+            error: error instanceof Error ? error.message : String(error),
+            duration: `${duration}ms`,
+          });
+
+          return createMcpResponse(`Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`, true);
+        }
+      }
+    );
 
     // Add comprehensive error handling
     process.on('uncaughtException', (error) => {

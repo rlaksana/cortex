@@ -1,0 +1,4 @@
+
+> cortex-memory-mcp@2.0.1 lint
+> eslint . --ext .js,.mjs --max-warnings=10
+

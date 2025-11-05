@@ -95,7 +95,7 @@ export interface SearchQuery {
 
 export interface ItemResult {
   input_index: number;
-  status: 'stored' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
+  status: 'stored' | 'updated' | 'deleted' | 'created' | 'skipped' | 'batch' | 'skipped_dedupe' | 'business_rule_blocked' | 'validation_error';
   kind: string;
   content?: string;
   id?: string;
@@ -129,6 +129,7 @@ export interface MemoryStoreResponse {
   // Legacy fields for backward compatibility
   stored: StoreResult[];
   errors: StoreError[];
+  skipped?: StoreResult[]; // Added skipped property for compatibility (optional for now)
   autonomous_context: AutonomousContext;
 
   // Observability metadata
@@ -184,6 +185,7 @@ export interface MemoryFindResponse {
   items: SearchResult[]; // Add items property for compatibility
   total_count: number;
   total?: number; // Add total property for compatibility
+  metadata?: Record<string, any>; // Added metadata property for compatibility
   autonomous_context: {
     search_mode_used: string;
     results_found: number;

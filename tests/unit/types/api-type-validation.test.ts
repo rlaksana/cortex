@@ -29,7 +29,8 @@ import {
   type MockedFunction,
   type MockedObject,
 } from 'vitest';
-import { AbortController } from 'node:abort_controller';
+// AbortController is globally available in Node.js 16+
+// No need to import from node:abort_controller for compatibility
 
 // Import API types for validation
 import type {
@@ -269,7 +270,7 @@ describe('API Type Validation', () => {
 
   describe('HTTP Request/Response Type Safety', () => {
     test('should validate complete HTTP request structure', () => {
-      const request: HttpRequest<{ name: String }> = {
+      const request: HttpRequest<{ name: string }> = {
         method: 'POST',
         url: 'https://api.example.com/users',
         headers: {
@@ -294,7 +295,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate HTTP response structure', () => {
-      const response: HttpResponse<{ id: String; name: String }> = {
+      const response: HttpResponse<{ id: string; name: string }> = {
         status: 200,
         headers: {
           'Content-Type': 'application/json',
@@ -454,7 +455,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate GraphQL response structure', () => {
-      const response: GraphQLResponse<{ user: { id: String; name: String } }> = {
+      const response: GraphQLResponse<{ user: { id: string; name: string } }> = {
         data: {
           user: {
             id: '123',
@@ -812,7 +813,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate API response structure', () => {
-      const response: ApiResponse<{ id: String; name: String }> = {
+      const response: ApiResponse<{ id: string; name: string }> = {
         data: { id: '123', name: 'John Doe' },
         status: 200,
         statusText: 'OK',
@@ -838,7 +839,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate SDK method definition', () => {
-      const method: SdkMethod<{ name: String }, { id: String; name: String }> = {
+      const method: SdkMethod<{ name: string }, { id: string; name: string }> = {
         name: 'createUser',
         description: 'Creates a new user',
         parameters: [
@@ -1285,7 +1286,7 @@ describe('API Type Validation', () => {
   describe('Utility Types Validation', () => {
     test('should validate ApiResponseData utility type', () => {
       // This test validates that the utility type correctly extracts the data type
-      type ApiResponsePromise = Promise<{ id: String; name: String }>;
+      type ApiResponsePromise = Promise<{ id: string; name: string }>;
       type ExtractedData = ApiResponseData<ApiResponsePromise>; // Should be { id: String; name: String }
 
       const testData: ExtractedData = { id: '123', name: 'test' };
@@ -1294,7 +1295,7 @@ describe('API Type Validation', () => {
     });
 
     test('should validate request/response body extraction types', () => {
-      type UserContract = RestApiContract<{ name: String }, { id: String; name: String }>;
+      type UserContract = RestApiContract<{ name: string }, { id: string; name: string }>;
 
       // ApiRequestBody should extract { name: String }
       type RequestBodyType = ApiRequestBody<UserContract>;
@@ -1310,7 +1311,7 @@ describe('API Type Validation', () => {
     test('should validate endpoint extraction utilities', () => {
       type Endpoints = {
         getUsers: RestApiContract<null, { users: any[] }>;
-        createUser: RestApiContract<{ name: String }, { id: String; name: String }>;
+        createUser: RestApiContract<{ name: string }, { id: string; name: string }>;
       };
 
       // ExtractEndpoints should preserve the structure
@@ -1334,8 +1335,8 @@ describe('API Type Validation', () => {
     });
 
     test('should validate endpoint method/path extraction', () => {
-      type GetUserEndpoint = RestApiContract<null, { id: String; name: String }>;
-      type CreateUserEndpoint = RestApiContract<{ name: String }, { id: String; name: String }>;
+      type GetUserEndpoint = RestApiContract<null, { id: string; name: string }>;
+      type CreateUserEndpoint = RestApiContract<{ name: string }, { id: string; name: string }>;
 
       // EndpointMethod should extract 'GET'
       type GetUserMethod = EndpointMethod<GetUserEndpoint>;
@@ -1357,8 +1358,8 @@ describe('API Type Validation', () => {
     test('should validate end-to-end type flow from request to response', () => {
       // Define a complete API contract
       const userApiContract: RestApiContract<
-        { name: String; email: String },
-        { id: String; name: String; email: String; createdAt: String }
+        { name: string; email: string },
+        { id: string; name: string; email: string; createdAt: string }
       > = {
         endpoint: '/api/v2/users',
         method: 'POST',
@@ -1418,9 +1419,9 @@ describe('API Type Validation', () => {
 
       // Corresponding TypeScript type
       type UserType = {
-        id: String;
-        name: String;
-        email: String;
+        id: string;
+        name: string;
+        email: string;
         age?: number;
         isActive?: boolean;
       };
@@ -1456,13 +1457,13 @@ describe('API Type Validation', () => {
 
       // Corresponding TypeScript type
       type GraphQLUser = {
-        id: String;
-        name: String;
-        email?: String;
+        id: string;
+        name: string;
+        email?: string;
         posts: Array<{
-          id: String;
-          title: String;
-          content: String;
+          id: string;
+          title: string;
+          content: string;
         }>;
       };
 

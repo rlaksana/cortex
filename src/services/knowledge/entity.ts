@@ -198,8 +198,11 @@ export async function getEntity(
         data: entity.data,
       },
       scope: entity.scope,
-      created_at: entity.created_at,
-      updated_at: entity.updated_at,
+      source: {
+        timestamp: entity.created_at,
+        actor: 'system',
+        tool: 'entity-service',
+      },
     };
   } catch (error) {
     console.error('Failed to get entity:', error);

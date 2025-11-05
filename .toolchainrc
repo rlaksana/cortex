@@ -1,0 +1,28 @@
+{
+  "node": {
+    "version": "25.1.0",
+    "minimum": "18.0.0",
+    "recommended": "25.x",
+    "memory": {
+      "development": "--max-old-space-size=4096 --expose-gc",
+      "production": "--max-old-space-size=8192 --max-heap-size=8192 --expose-gc"
+    }
+  },
+  "pnpm": {
+    "version": "10.20.0",
+    "minimum": "8.0.0"
+  },
+  "typescript": {
+    "version": "5.9.3",
+    "minimum": "5.0.0"
+  },
+  "tools": {
+    "eslint": "9.38.0",
+    "prettier": "3.6.2",
+    "vitest": "4.0.4",
+    "husky": "9.1.7"
+  },
+  "verified": "2025-11-04T00:00:00.000Z",
+  "platform": "win32",
+  "architecture": "x64"
+}

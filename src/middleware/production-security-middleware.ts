@@ -74,20 +74,23 @@ export class ProductionSecurityMiddleware {
     const config = this.config;
     return (req: Request, res: Response, next: NextFunction): void => {
       const contentLength = parseInt(req.headers['content-length'] || '0');
-      const maxSize = Math.min(config.maxRequestSizeMb * 1024 * 1024, ProductionSecurityMiddleware.MAX_REQUEST_SIZE);
+      const maxSize = Math.min(
+        config.maxRequestSizeMb * 1024 * 1024,
+        ProductionSecurityMiddleware.MAX_REQUEST_SIZE
+      );
 
       if (contentLength > maxSize) {
         logger.warn('Request size exceeded limit', {
           contentLength,
           maxSize,
           ip: req.ip,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
         });
 
         res.status(413).json({
           error: 'Payload Too Large',
           message: `Request size ${contentLength} exceeds maximum allowed size of ${maxSize} bytes`,
-          code: 'PAYLOAD_TOO_LARGE'
+          code: 'PAYLOAD_TOO_LARGE',
         });
         return;
       }
@@ -103,7 +106,9 @@ export class ProductionSecurityMiddleware {
     const validApiKey = process.env.MCP_API_KEY;
 
     if (!validApiKey) {
-      throw new Error('MCP_API_KEY environment variable is required when API key validation is enabled');
+      throw new Error(
+        'MCP_API_KEY environment variable is required when API key validation is enabled'
+      );
     }
 
     return (req: Request, res: Response, next: NextFunction): void => {
@@ -113,13 +118,13 @@ export class ProductionSecurityMiddleware {
         logger.warn('Missing API key', {
           ip: req.ip,
           path: req.path,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
         });
 
         res.status(401).json({
           error: 'Unauthorized',
           message: 'API key is required',
-          code: 'MISSING_API_KEY'
+          code: 'MISSING_API_KEY',
         });
         return;
       }
@@ -129,13 +134,13 @@ export class ProductionSecurityMiddleware {
         logger.warn('Invalid API key', {
           ip: req.ip,
           path: req.path,
-          userAgent: req.headers['user-agent']
+          userAgent: req.headers['user-agent'],
         });
 
         res.status(401).json({
           error: 'Unauthorized',
           message: 'Invalid API key',
-          code: 'INVALID_API_KEY'
+          code: 'INVALID_API_KEY',
         });
         return;
       }
@@ -172,7 +177,7 @@ export class ProductionSecurityMiddleware {
         error: 'Too Many Requests',
         message: `Rate limit exceeded. Maximum ${config.rateLimitMaxRequests} requests per ${config.rateLimitWindowMs / 1000} seconds.`,
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: Math.ceil(config.rateLimitWindowMs / 1000)
+        retryAfter: Math.ceil(config.rateLimitWindowMs / 1000),
       },
       standardHeaders: true,
       legacyHeaders: false,
@@ -189,17 +194,17 @@ export class ProductionSecurityMiddleware {
           userAgent: req.headers['user-agent'],
           rateLimit: {
             limit: config.rateLimitMaxRequests,
-            windowMs: config.rateLimitWindowMs
-          }
+            windowMs: config.rateLimitWindowMs,
+          },
         });
 
         res.status(429).json({
           error: 'Too Many Requests',
           message: `Rate limit exceeded. Maximum ${config.rateLimitMaxRequests} requests per ${config.rateLimitWindowMs / 1000} seconds.`,
           code: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: Math.ceil(config.rateLimitWindowMs / 1000)
+          retryAfter: Math.ceil(config.rateLimitWindowMs / 1000),
         });
-      }
+      },
     });
 
     return limiter;
@@ -215,7 +220,7 @@ export class ProductionSecurityMiddleware {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
-          imgSrc: ["'self'", "data:", "https:"],
+          imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: ["'self'"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
@@ -224,25 +229,25 @@ export class ProductionSecurityMiddleware {
           childSrc: ["'none'"],
           workerSrc: ["'self'"],
           manifestSrc: ["'self'"],
-          upgradeInsecureRequests: []
-        }
+          upgradeInsecureRequests: [],
+        },
       },
       crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       dnsPrefetchControl: { allow: false },
       frameguard: { action: 'deny' },
       hidePoweredBy: true,
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
-        preload: true
+        preload: true,
       },
       ieNoOpen: true,
       noSniff: true,
       originAgentCluster: true,
       permittedCrossDomainPolicies: false,
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-      xssFilter: true
+      xssFilter: true,
     });
   }
 
@@ -266,7 +271,7 @@ export class ProductionSecurityMiddleware {
         ip: req.ip,
         userAgent: req.headers['user-agent'],
         contentLength: req.headers['content-length'],
-        referer: req.headers['referer']
+        referer: req.headers['referer'],
       });
 
       // Log response when finished
@@ -280,7 +285,7 @@ export class ProductionSecurityMiddleware {
           statusCode: res.statusCode,
           duration,
           contentLength: res.getHeader('content-length'),
-          ip: req.ip
+          ip: req.ip,
         });
       });
 
@@ -315,13 +320,13 @@ export class ProductionSecurityMiddleware {
           error: error instanceof Error ? error.message : 'Unknown error',
           path: req.path,
           method: req.method,
-          ip: req.ip
+          ip: req.ip,
         });
 
         res.status(400).json({
           error: 'Bad Request',
           message: 'Invalid input data',
-          code: 'INVALID_INPUT'
+          code: 'INVALID_INPUT',
         });
         return;
       }
@@ -341,7 +346,7 @@ export class ProductionSecurityMiddleware {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sanitizeObject(item));
+      return obj.map((item) => this.sanitizeObject(item));
     }
 
     if (typeof obj === 'object') {
@@ -398,7 +403,7 @@ export class ProductionSecurityMiddleware {
       }
 
       // Check if origin is allowed
-      const isAllowed = config.corsOrigin.some(allowedOrigin => {
+      const isAllowed = config.corsOrigin.some((allowedOrigin) => {
         if (allowedOrigin === '*') return true;
         if (allowedOrigin === origin) return true;
 
@@ -415,7 +420,10 @@ export class ProductionSecurityMiddleware {
       if (isAllowed) {
         res.setHeader('Access-Control-Allow-Origin', origin);
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Request-ID');
+        res.setHeader(
+          'Access-Control-Allow-Headers',
+          'Content-Type, Authorization, X-API-Key, X-Request-ID'
+        );
         res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
       }
@@ -437,7 +445,9 @@ export class ProductionSecurityMiddleware {
     const errors: string[] = [];
 
     if (this.config.requireApiKey && !process.env.MCP_API_KEY) {
-      errors.push('MCP_API_KEY environment variable is required when API key validation is enabled');
+      errors.push(
+        'MCP_API_KEY environment variable is required when API key validation is enabled'
+      );
     }
 
     if (this.config.maxRequestSizeMb > 50) {
@@ -454,7 +464,7 @@ export class ProductionSecurityMiddleware {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

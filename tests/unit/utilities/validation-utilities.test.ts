@@ -15,8 +15,8 @@ import {
   type BusinessValidator,
   type ValidationContext,
   ValidationSeverity,
-  ValidationMode,
 } from '../../../src/services/validation/validation-service';
+import { ValidationMode } from '../../../src/types/unified-health-interfaces.js';
 
 import {
   SchemaValidator,

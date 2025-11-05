@@ -106,48 +106,54 @@ export class ProductionConfigManager {
   private loadConfiguration(): ProductionConfig {
     return {
       security: {
-        corsOrigin: (process.env.CORS_ORIGIN || '').split(',').map(origin => origin.trim()).filter(Boolean),
+        corsOrigin: (process.env.CORS_ORIGIN || '')
+          .split(',')
+          .map((origin) => origin.trim())
+          .filter(Boolean),
         rateLimitEnabled: process.env.RATE_LIMIT_ENABLED === 'true',
         rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
         rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'),
         helmetEnabled: process.env.HELMET_ENABLED === 'true',
         requireApiKey: process.env.REQUIRE_API_KEY === 'true',
         maxRequestSizeMb: parseInt(process.env.MAX_REQUEST_SIZE_MB || '10'),
-        enableCompression: process.env.ENABLE_COMPRESSION === 'true'
+        enableCompression: process.env.ENABLE_COMPRESSION === 'true',
       },
       health: {
         enabled: process.env.ENABLE_HEALTH_CHECKS === 'true',
         detailedEndpoints: process.env.ENABLE_DETAILED_HEALTH_ENDPOINTS === 'true',
         metricsEndpoint: process.env.ENABLE_METRICS_ENDPOINT === 'true',
         authenticationRequired: process.env.HEALTH_ENDPOINT_AUTH_REQUIRED === 'true',
-        allowedIPs: (process.env.HEALTH_ENDPOINT_ALLOWED_IPS || '').split(',').map(ip => ip.trim()).filter(Boolean)
+        allowedIPs: (process.env.HEALTH_ENDPOINT_ALLOWED_IPS || '')
+          .split(',')
+          .map((ip) => ip.trim())
+          .filter(Boolean),
       },
       shutdown: {
         timeout: parseInt(process.env.SHUTDOWN_TIMEOUT || '30000'), // 30 seconds
         forceTimeout: parseInt(process.env.FORCE_SHUTDOWN_TIMEOUT || '60000'), // 60 seconds
         enableDrainMode: process.env.ENABLE_DRAIN_MODE !== 'false',
-        drainTimeout: parseInt(process.env.DRAIN_TIMEOUT || '10000') // 10 seconds
+        drainTimeout: parseInt(process.env.DRAIN_TIMEOUT || '10000'), // 10 seconds
       },
       logging: {
         level: process.env.LOG_LEVEL || 'info',
         format: process.env.LOG_FORMAT === 'text' ? 'text' : 'json',
         structured: process.env.LOG_STRUCTURED === 'true',
         includeTimestamp: process.env.LOG_TIMESTAMP !== 'false',
-        includeRequestId: process.env.LOG_REQUEST_ID !== 'false'
+        includeRequestId: process.env.LOG_REQUEST_ID !== 'false',
       },
       performance: {
         enableMetrics: process.env.ENABLE_METRICS_COLLECTION === 'true',
         enablePerformanceMonitoring: process.env.ENABLE_PERFORMANCE_MONITORING === 'true',
         nodeOptions: process.env.NODE_OPTIONS || '',
         maxOldSpaceSize: parseInt(process.env.MAX_OLD_SPACE_SIZE || '8192'),
-        maxHeapSize: parseInt(process.env.MAX_HEAP_SIZE || '8192')
+        maxHeapSize: parseInt(process.env.MAX_HEAP_SIZE || '8192'),
       },
       monitoring: {
         enableSystemMetrics: process.env.ENABLE_SYSTEM_METRICS === 'true',
         enableHealthChecks: process.env.ENABLE_HEALTH_CHECKS === 'true',
         metricsInterval: parseInt(process.env.METRICS_INTERVAL || '60000'), // 1 minute
-        healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000') // 30 seconds
-      }
+        healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL || '30000'), // 30 seconds
+      },
     };
   }
 
@@ -158,7 +164,10 @@ export class ProductionConfigManager {
     const errors: string[] = [];
 
     // Validate security configuration
-    if (this.config.security.rateLimitEnabled && this.config.security.rateLimitMaxRequests > 10000) {
+    if (
+      this.config.security.rateLimitEnabled &&
+      this.config.security.rateLimitMaxRequests > 10000
+    ) {
       errors.push('Rate limit is too permissive for production (>10000 requests)');
     }
 
@@ -230,7 +239,7 @@ export class ProductionConfigManager {
         enableDetailedEndpoints: this.config.health.detailedEndpoints,
         enableMetricsEndpoint: this.config.health.metricsEndpoint,
         authenticationRequired: this.config.health.authenticationRequired,
-        allowedIPs: this.config.health.allowedIPs
+        allowedIPs: this.config.health.allowedIPs,
       });
 
       // Setup graceful shutdown handlers
@@ -244,7 +253,7 @@ export class ProductionConfigManager {
       this.logger.info('✅ Production environment initialized successfully');
     } catch (error) {
       this.logger.error('❌ Failed to initialize production environment', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -264,7 +273,7 @@ export class ProductionConfigManager {
         if (this.healthEndpointManager) {
           this.healthEndpointManager.clearCache();
         }
-      }
+      },
     });
 
     this.gracefulShutdownManager.addCleanupOperation({
@@ -274,7 +283,7 @@ export class ProductionConfigManager {
       critical: false,
       operation: async () => {
         await this.logger.flush();
-      }
+      },
     });
   }
 
@@ -295,7 +304,7 @@ export class ProductionConfigManager {
       maxOldSpaceSize: this.config.performance.maxOldSpaceSize,
       maxHeapSize: this.config.performance.maxHeapSize,
       enableMetrics: this.config.performance.enableMetrics,
-      enablePerformanceMonitoring: this.config.performance.enablePerformanceMonitoring
+      enablePerformanceMonitoring: this.config.performance.enablePerformanceMonitoring,
     });
   }
 
@@ -361,7 +370,11 @@ export class ProductionConfigManager {
 
     for (const key in source) {
       if (source[key] !== undefined) {
-        if (typeof source[key] === 'object' && source[key] !== null && !Array.isArray(source[key])) {
+        if (
+          typeof source[key] === 'object' &&
+          source[key] !== null &&
+          !Array.isArray(source[key])
+        ) {
           result[key] = this.deepMerge((result[key] as any) || {}, source[key] as any) as any;
         } else {
           result[key] = source[key] as any;
@@ -385,7 +398,7 @@ export class ProductionConfigManager {
       memoryUsage: process.memoryUsage(),
       environment: process.env.NODE_ENV,
       timestamp: new Date().toISOString(),
-      configuration: this.config
+      configuration: this.config,
     };
   }
 
@@ -401,8 +414,8 @@ export class ProductionConfigManager {
         healthEndpointsConfigured: !!this.healthEndpointManager,
         gracefulShutdownReady: true,
         configurationValid: true,
-        lastValidation: new Date().toISOString()
-      }
+        lastValidation: new Date().toISOString(),
+      },
     };
   }
 
@@ -418,7 +431,7 @@ export class ProductionConfigManager {
       performance: this.config.performance,
       monitoring: this.config.monitoring,
       environment: process.env.NODE_ENV,
-      version: process.env.npm_package_version || '2.0.1'
+      version: process.env.npm_package_version || '2.0.1',
     };
   }
 }

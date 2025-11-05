@@ -1,0 +1,486 @@
+/**
+ * Enhanced Memory Monitor
+ *
+ * Provides comprehensive memory monitoring and alerting for the MCP Cortex system.
+ * Features include:
+ * - Real-time memory usage tracking
+ * - Trend analysis and prediction
+ * - Alert thresholds with multiple severity levels
+ * - Integration with system metrics
+ * - Automated response triggers
+ */
+
+import { EventEmitter } from 'node:events';
+import { logger } from '../utils/logger.js';
+import { memoryManager, type MemoryStats } from '../services/memory/memory-manager-service.js';
+
+/**
+ * Memory alert severity levels
+ */
+export type MemoryAlertSeverity = 'info' | 'warning' | 'critical' | 'emergency';
+
+/**
+ * Memory alert configuration
+ */
+export interface MemoryAlert {
+  severity: MemoryAlertSeverity;
+  threshold: number;
+  message: string;
+  actions?: string[];
+  cooldown: number; // Cooldown period in milliseconds
+}
+
+/**
+ * Memory trend analysis
+ */
+export interface MemoryTrend {
+  direction: 'increasing' | 'decreasing' | 'stable';
+  rate: number; // Rate of change per minute
+  prediction: number; // Predicted usage in 1 hour
+  confidence: number; // Confidence in prediction (0-1)
+}
+
+/**
+ * Memory monitor events
+ */
+export interface MemoryMonitorEvents {
+  'alert-triggered': (alert: MemoryAlert, stats: MemoryStats) => void;
+  'trend-detected': (trend: MemoryTrend, stats: MemoryStats) => void;
+  'threshold-breached': (threshold: number, stats: MemoryStats) => void;
+  'recovery-detected': (stats: MemoryStats) => void;
+}
+
+/**
+ * Enhanced Memory Monitor Configuration
+ */
+export interface EnhancedMemoryMonitorConfig {
+  checkInterval: number; // milliseconds
+  historySize: number; // Number of data points to keep
+  trendWindowSize: number; // Number of points for trend analysis
+  enablePredictions: boolean;
+  enableAutoCleanup: boolean;
+  alerts: {
+    info: MemoryAlert;
+    warning: MemoryAlert;
+    critical: MemoryAlert;
+    emergency: MemoryAlert;
+  };
+}
+
+/**
+ * Enhanced Memory Monitor
+ *
+ * Provides comprehensive memory monitoring with trend analysis,
+ * predictive capabilities, and automated responses.
+ */
+export class EnhancedMemoryMonitor extends EventEmitter {
+  private config: EnhancedMemoryMonitorConfig;
+  private history: MemoryStats[] = [];
+  private alerts = new Map<string, number>(); // Cooldown tracking
+  private monitorTimer?: NodeJS.Timeout;
+  private lastAlertTime = 0;
+
+  constructor(config: Partial<EnhancedMemoryMonitorConfig> = {}) {
+    super();
+
+    this.config = {
+      checkInterval: config.checkInterval || 15000, // 15 seconds
+      historySize: config.historySize || 240, // 1 hour at 15-second intervals
+      trendWindowSize: config.trendWindowSize || 20, // 5 minutes for trend analysis
+      enablePredictions: config.enablePredictions !== false,
+      enableAutoCleanup: config.enableAutoCleanup !== false,
+      alerts: {
+        info: {
+          severity: 'info',
+          threshold: 70,
+          message: 'Memory usage is elevated',
+          actions: ['Monitor trend', 'Consider preventive cleanup'],
+          cooldown: 300000, // 5 minutes
+          ...config.alerts?.info,
+        },
+        warning: {
+          severity: 'warning',
+          threshold: 80,
+          message: 'High memory usage detected',
+          actions: ['Perform cleanup', 'Monitor for leaks'],
+          cooldown: 180000, // 3 minutes
+          ...config.alerts?.warning,
+        },
+        critical: {
+          severity: 'critical',
+          threshold: 90,
+          message: 'Critical memory usage',
+          actions: ['Immediate cleanup', 'Investigate leaks', 'Consider restart'],
+          cooldown: 60000, // 1 minute
+          ...config.alerts?.critical,
+        },
+        emergency: {
+          severity: 'emergency',
+          threshold: 95,
+          message: 'Emergency: Memory exhaustion imminent',
+          actions: ['Emergency cleanup', 'Process restart recommended'],
+          cooldown: 30000, // 30 seconds
+          ...config.alerts?.emergency,
+        },
+      },
+    };
+
+    logger.info('Enhanced Memory Monitor initialized', {
+      checkInterval: this.config.checkInterval,
+      historySize: this.config.historySize,
+      alertThresholds: {
+        info: this.config.alerts.info.threshold,
+        warning: this.config.alerts.warning.threshold,
+        critical: this.config.alerts.critical.threshold,
+        emergency: this.config.alerts.emergency.threshold,
+      },
+    });
+
+    this.startMonitoring();
+  }
+
+  /**
+   * Start memory monitoring
+   */
+  private startMonitoring(): void {
+    this.monitorTimer = setInterval(() => {
+      this.performMonitoringCycle();
+    }, this.config.checkInterval);
+
+    logger.info('Enhanced memory monitoring started');
+  }
+
+  /**
+   * Perform a complete monitoring cycle
+   */
+  private performMonitoringCycle(): void {
+    try {
+      const stats = memoryManager.getCurrentMemoryStats();
+
+      // Update history
+      this.updateHistory(stats);
+
+      // Analyze trends
+      if (this.history.length >= this.config.trendWindowSize) {
+        const trend = this.analyzeTrend();
+        if (trend) {
+          this.emit('trend-detected', trend, stats);
+          this.handleTrend(trend, stats);
+        }
+      }
+
+      // Check thresholds and trigger alerts
+      this.checkThresholds(stats);
+
+      // Log current status
+      this.logMemoryStatus(stats);
+
+    } catch (error) {
+      logger.error('Memory monitoring cycle failed', { error });
+    }
+  }
+
+  /**
+   * Update memory history
+   */
+  private updateHistory(stats: MemoryStats): void {
+    this.history.push(stats);
+
+    // Maintain history size
+    if (this.history.length > this.config.historySize) {
+      this.history.shift();
+    }
+  }
+
+  /**
+   * Analyze memory usage trends
+   */
+  private analyzeTrend(): MemoryTrend | null {
+    if (this.history.length < this.config.trendWindowSize) {
+      return null;
+    }
+
+    const recent = this.history.slice(-this.config.trendWindowSize);
+    const older = this.history.slice(-this.config.trendWindowSize * 2, -this.config.trendWindowSize);
+
+    if (older.length === 0) {
+      return null;
+    }
+
+    // Calculate average usage for both periods
+    const recentAvg = recent.reduce((sum, s) => sum + s.usagePercentage, 0) / recent.length;
+    const olderAvg = older.reduce((sum, s) => sum + s.usagePercentage, 0) / older.length;
+
+    // Calculate rate of change (percentage points per minute)
+    const timeDiffMinutes = (recent[recent.length - 1].timestamp - older[older.length - 1].timestamp) / 60000;
+    const usageDiff = recentAvg - olderAvg;
+    const rate = timeDiffMinutes > 0 ? usageDiff / timeDiffMinutes : 0;
+
+    // Determine direction
+    let direction: 'increasing' | 'decreasing' | 'stable';
+    if (Math.abs(rate) < 0.5) {
+      direction = 'stable';
+    } else if (rate > 0) {
+      direction = 'increasing';
+    } else {
+      direction = 'decreasing';
+    }
+
+    // Predict usage in 1 hour
+    const prediction = recentAvg + (rate * 60);
+
+    // Calculate confidence based on consistency
+    const recentVariance = this.calculateVariance(recent.map(s => s.usagePercentage));
+    const confidence = Math.max(0, 1 - (recentVariance / 100)); // Normalize to 0-1
+
+    return {
+      direction,
+      rate,
+      prediction,
+      confidence,
+    };
+  }
+
+  /**
+   * Calculate variance of an array of numbers
+   */
+  private calculateVariance(values: number[]): number {
+    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
+    return squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
+  }
+
+  /**
+   * Handle detected trends
+   */
+  private handleTrend(trend: MemoryTrend, stats: MemoryStats): void {
+    if (trend.direction === 'increasing' && trend.rate > 2) {
+      // Rapid increase detected
+      if (trend.prediction > this.config.alerts.warning.threshold) {
+        this.triggerAlert('warning', stats, `Rapid memory increase detected. Predicted usage: ${trend.prediction.toFixed(1)}% in 1 hour`);
+      }
+    }
+
+    if (trend.direction === 'decreasing' && stats.usagePercentage < this.config.alerts.warning.threshold - 5) {
+      // Recovery detected
+      this.emit('recovery-detected', stats);
+      logger.info('Memory usage recovering', {
+        currentUsage: stats.usagePercentage,
+        trend: trend.direction,
+        rate: trend.rate,
+      });
+    }
+
+    // Log significant trends
+    if (Math.abs(trend.rate) > 1) {
+      logger.info('Memory usage trend detected', {
+        direction: trend.direction,
+        rate: trend.rate.toFixed(2),
+        prediction: trend.prediction.toFixed(1),
+        confidence: trend.confidence.toFixed(2),
+      });
+    }
+  }
+
+  /**
+   * Check memory thresholds and trigger alerts
+   */
+  private checkThresholds(stats: MemoryStats): void {
+    const { usagePercentage } = stats;
+
+    // Check thresholds in order of severity
+    if (usagePercentage >= this.config.alerts.emergency.threshold) {
+      this.triggerAlert('emergency', stats);
+    } else if (usagePercentage >= this.config.alerts.critical.threshold) {
+      this.triggerAlert('critical', stats);
+    } else if (usagePercentage >= this.config.alerts.warning.threshold) {
+      this.triggerAlert('warning', stats);
+    } else if (usagePercentage >= this.config.alerts.info.threshold) {
+      this.triggerAlert('info', stats);
+    }
+  }
+
+  /**
+   * Trigger memory alert with cooldown
+   */
+  private triggerAlert(severity: MemoryAlertSeverity, stats: MemoryStats, customMessage?: string): void {
+    const alert = this.config.alerts[severity];
+    const now = Date.now();
+
+    // Check cooldown
+    const lastTriggered = this.alerts.get(severity) || 0;
+    if (now - lastTriggered < alert.cooldown) {
+      return;
+    }
+
+    // Update cooldown
+    this.alerts.set(severity, now);
+
+    // Create alert object
+    const alertObj: MemoryAlert = {
+      ...alert,
+      message: customMessage || alert.message,
+    };
+
+    // Emit alert event
+    this.emit('alert-triggered', alertObj, stats);
+
+    // Log alert
+    const logMethod = severity === 'emergency' ? 'error' :
+                      severity === 'critical' ? 'error' :
+                      severity === 'warning' ? 'warn' : 'info';
+
+    logger[logMethod](`Memory Alert: ${severity.toUpperCase()}`, {
+      message: alertObj.message,
+      currentUsage: stats.usagePercentage,
+      threshold: alert.threshold,
+      heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(stats.heapTotal / 1024 / 1024),
+      actions: alertObj.actions,
+    });
+
+    // Emit threshold breached event
+    this.emit('threshold-breached', alert.threshold, stats);
+
+    // Perform automated actions if enabled
+    if (this.config.enableAutoCleanup) {
+      this.performAutomatedActions(severity, stats);
+    }
+  }
+
+  /**
+   * Perform automated actions based on alert severity
+   */
+  private performAutomatedActions(severity: MemoryAlertSeverity, stats: MemoryStats): void {
+    switch (severity) {
+      case 'warning':
+        // Trigger preventive cleanup through memory manager
+        if (stats.trend === 'increasing') {
+          logger.info('Triggering preventive cleanup due to memory warning');
+        }
+        break;
+
+      case 'critical':
+        // Trigger critical cleanup
+        logger.warn('Triggering critical cleanup due to memory alert');
+        break;
+
+      case 'emergency':
+        // Trigger emergency response
+        logger.error('Triggering emergency response due to memory alert');
+        break;
+    }
+  }
+
+  /**
+   * Log current memory status
+   */
+  private logMemoryStatus(stats: MemoryStats): void {
+    // Only log at debug level to avoid noise
+    logger.debug('Memory status', {
+      heapUsedMB: Math.round(stats.heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(stats.heapTotal / 1024 / 1024),
+      usagePercentage: stats.usagePercentage.toFixed(1),
+      trend: stats.trend,
+      externalMB: Math.round(stats.external / 1024 / 1024),
+      rssMB: Math.round(stats.rss / 1024 / 1024),
+    });
+  }
+
+  /**
+   * Get current memory statistics with enhanced data
+   */
+  getEnhancedStats(): {
+    current: MemoryStats;
+    trend?: MemoryTrend;
+    alerts: {
+      lastTriggered: Record<MemoryAlertSeverity, number>;
+      activeCooldowns: MemoryAlertSeverity[];
+    };
+    history: {
+      size: number;
+      oldestTimestamp: number;
+      newestTimestamp: number;
+    };
+  } {
+    const current = memoryManager.getCurrentMemoryStats();
+    const trend = this.history.length >= this.config.trendWindowSize ? this.analyzeTrend() || undefined : undefined;
+
+    const lastTriggered: Record<MemoryAlertSeverity, number> = {
+      info: this.alerts.get('info') || 0,
+      warning: this.alerts.get('warning') || 0,
+      critical: this.alerts.get('critical') || 0,
+      emergency: this.alerts.get('emergency') || 0,
+    };
+
+    const now = Date.now();
+    const activeCooldowns: MemoryAlertSeverity[] = [];
+    for (const [severity, lastTime] of this.alerts.entries()) {
+      if (now - lastTime < this.config.alerts[severity as MemoryAlertSeverity].cooldown) {
+        activeCooldowns.push(severity as MemoryAlertSeverity);
+      }
+    }
+
+    return {
+      current,
+      trend,
+      alerts: {
+        lastTriggered,
+        activeCooldowns,
+      },
+      history: {
+        size: this.history.length,
+        oldestTimestamp: this.history.length > 0 ? this.history[0].timestamp : 0,
+        newestTimestamp: this.history.length > 0 ? this.history[this.history.length - 1].timestamp : 0,
+      },
+    };
+  }
+
+  /**
+   * Update configuration
+   */
+  updateConfig(config: Partial<EnhancedMemoryMonitorConfig>): void {
+    this.config = { ...this.config, ...config };
+
+    logger.info('Enhanced Memory Monitor config updated', { config });
+
+    // Restart monitoring with new interval
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+      this.startMonitoring();
+    }
+  }
+
+  /**
+   * Manually trigger memory check
+   */
+  triggerCheck(): void {
+    this.performMonitoringCycle();
+  }
+
+  /**
+   * Clear memory history
+   */
+  clearHistory(): void {
+    this.history = [];
+    logger.info('Memory monitor history cleared');
+  }
+
+  /**
+   * Shutdown monitor
+   */
+  shutdown(): void {
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+    }
+
+    this.history = [];
+    this.alerts.clear();
+    this.removeAllListeners();
+
+    logger.info('Enhanced Memory Monitor shut down');
+  }
+}
+
+// Export singleton instance
+export const enhancedMemoryMonitor = new EnhancedMemoryMonitor();

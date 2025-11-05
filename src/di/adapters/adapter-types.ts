@@ -1,0 +1,81 @@
+/**
+ * Adapter Type Definitions
+ *
+ * Type definitions and utility types for service adapters.
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import type {
+  IDatabaseService,
+  ICircuitBreakerService,
+  IMemoryStoreOrchestrator,
+  KnowledgeItem,
+} from '../service-interfaces.js';
+import type { DatabaseManager } from '../../db/database-manager.js';
+import type { CircuitBreakerManager } from '../../services/circuit-breaker.service.js';
+import type { MemoryStoreOrchestrator } from '../../services/orchestrators/memory-store-orchestrator.js';
+
+/**
+ * Adapter factory function types
+ */
+export type DatabaseServiceAdapterFactory = (databaseManager: DatabaseManager) => IDatabaseService;
+export type CircuitBreakerServiceAdapterFactory = (
+  circuitBreakerManager: CircuitBreakerManager
+) => ICircuitBreakerService;
+export type MemoryStoreOrchestratorAdapterFactory = (
+  memoryStoreOrchestrator: MemoryStoreOrchestrator
+) => IMemoryStoreOrchestrator;
+
+/**
+ * Adapter configuration options
+ */
+export interface AdapterConfig {
+  enableLogging?: boolean;
+  enableMetrics?: boolean;
+  timeoutMs?: number;
+  retryAttempts?: number;
+}
+
+/**
+ * Common adapter interface for shared functionality
+ */
+export interface IBaseAdapter {
+  /**
+   * Get the underlying implementation for advanced operations
+   */
+  getUnderlyingImplementation(): any;
+
+  /**
+   * Check if adapter is healthy
+   */
+  isHealthy(): Promise<boolean>;
+
+  /**
+   * Get adapter metrics
+   */
+  getMetrics(): Promise<Record<string, any>>;
+}
+
+/**
+ * Adapter health status
+ */
+export interface AdapterHealthStatus {
+  isHealthy: boolean;
+  lastCheck: Date;
+  errorCount: number;
+  lastError?: string;
+}
+
+/**
+ * Adapter metrics
+ */
+export interface AdapterMetrics {
+  operationCount: number;
+  successCount: number;
+  errorCount: number;
+  averageResponseTime: number;
+  lastOperationTime: Date;
+}

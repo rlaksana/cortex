@@ -21,11 +21,18 @@ import { environment } from './environment.js';
 import type { DatabaseConfig } from '../db/database-interface.js';
 
 // Polyfill fetch for Node.js compatibility
-if (typeof fetch === 'undefined') {
-  const { default: fetch } = await import('node-fetch');
-  // Type assertion to handle fetch interface compatibility
-  (globalThis as any).fetch = fetch as any;
+async function polyfillFetch() {
+  if (typeof fetch === 'undefined') {
+    const { default: fetch } = await import('node-fetch');
+    // Type assertion to handle fetch interface compatibility
+    (globalThis as any).fetch = fetch as any;
+  }
 }
+
+// Initialize polyfill
+polyfillFetch().catch(err =>
+  logger.warn('Failed to polyfill fetch', { error: err })
+);
 
 export interface DatabaseSelectionConfig {
   type: 'qdrant';
@@ -124,7 +131,7 @@ export class DatabaseConfigManager {
         size: parseInt(String(rawConfig.VECTOR_SIZE || '1536')),
         distance:
           (rawConfig.VECTOR_DISTANCE as 'Cosine' | 'Euclid' | 'Dot' | 'Manhattan') || 'Cosine',
-        embeddingModel: rawConfig.EMBEDDING_MODEL || 'text-embedding-ada-002',
+        embeddingModel: rawConfig.EMBEDDING_MODEL || 'text-embedding-3-small',
         batchSize: parseInt(String(rawConfig.EMBEDDING_BATCH_SIZE || '10')),
         qdrant: {
           url: rawConfig.QDRANT_URL || 'http://localhost:6333',
@@ -459,3 +466,4 @@ export class DatabaseConfigManager {
 
 // Export singleton instance
 export const databaseConfig = DatabaseConfigManager.getInstance();
+

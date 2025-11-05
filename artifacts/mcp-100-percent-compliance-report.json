@@ -1,0 +1,65 @@
+{
+  "summary": {
+    "total": 7,
+    "passed": 4,
+    "failed": 3,
+    "successRate": "57.14%"
+  },
+  "scenarios": [
+    {
+      "test": "Main DI File",
+      "passed": true,
+      "message": "main-di.ts file found",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:23.986Z"
+    },
+    {
+      "test": "MCP Initialization",
+      "passed": false,
+      "message": "MCP server initialization failed",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:26.998Z"
+    },
+    {
+      "test": "Knowledge Types in Schemas",
+      "passed": true,
+      "message": "16/16 knowledge types in schemas",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:27.506Z"
+    },
+    {
+      "test": "Knowledge Type Test Coverage",
+      "passed": false,
+      "message": "Found 4 knowledge type test files",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:27.508Z"
+    },
+    {
+      "test": "JSON-RPC 2.0 Compliance",
+      "passed": false,
+      "message": "JSON-RPC 2.0 structure missing",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:27.508Z"
+    },
+    {
+      "test": "Error Code Compliance",
+      "passed": true,
+      "message": "MCP error codes implemented",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:27.508Z"
+    },
+    {
+      "test": "Tool Schema Validation",
+      "passed": true,
+      "message": "Tool schema validation found",
+      "details": null,
+      "timestamp": "2025-11-05T02:33:27.508Z"
+    }
+  ],
+  "is100PercentCompliant": false,
+  "recommendations": [
+    "Address failing tests to achieve 100% compliance",
+    "Critical issues: MCP Initialization, Knowledge Type Test Coverage, JSON-RPC 2.0 Compliance"
+  ],
+  "timestamp": "2025-11-05T02:33:27.508Z"
+}

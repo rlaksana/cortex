@@ -115,3 +115,4 @@ export function logSlowQuery(sql: string, duration_ms: number, context?: Record<
     );
   }
 }
+

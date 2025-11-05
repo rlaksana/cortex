@@ -14,46 +14,22 @@ import { EmbeddingService } from '../services/embeddings/embedding-service.js';
 import { performanceCollector } from './performance-collector.js';
 import { metricsService } from './metrics-service.js';
 import { EventEmitter } from 'events';
+import {
+  HealthStatus,
+  SystemHealthResult,
+  ComponentHealth,
+  ComponentHealthResult,
+  healthStatusToDependencyStatus,
+  dependencyStatusToHealthStatus,
+} from '../types/unified-health-interfaces.js';
+import { DependencyType } from '../services/deps-registry.js';
 
-/**
- * Health status levels
- */
-export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy';
+// Note: HealthStatus is now imported from unified-health-interfaces.ts to maintain consistency
 
-/**
- * Individual component health check result
- */
-export interface ComponentHealth {
-  component: string;
-  status: HealthStatus;
-  latency_ms: number;
-  error?: string;
-  details: Record<string, any> | undefined;
-  timestamp: number;
-}
+// Note: ComponentHealth is now imported from unified-health-interfaces.ts to maintain consistency
 
-/**
- * Overall system health check result
- */
-export interface HealthCheckResult {
-  status: HealthStatus;
-  timestamp: number;
-  uptime_seconds: number;
-  version: string;
-  components: ComponentHealth[];
-  system_metrics: {
-    memory_usage_mb: number;
-    cpu_usage_percent: number;
-    active_connections: number;
-    qps: number;
-  };
-  summary: {
-    total_components: number;
-    healthy_components: number;
-    degraded_components: number;
-    unhealthy_components: number;
-  };
-}
+// Note: SystemHealthResult is now imported from unified-health-interfaces.ts to maintain consistency
+// The local HealthCheckResult interface is replaced with SystemHealthResult
 
 /**
  * Health check configuration
@@ -96,7 +72,7 @@ interface HealthCheckConfig {
 export class HealthCheckService extends EventEmitter {
   private config: HealthCheckConfig;
   private startTime: number;
-  private healthStatus: HealthCheckResult | null = null;
+  private healthStatus: SystemHealthResult | null = null;
   private checkInterval: NodeJS.Timeout | null = null;
   private isShuttingDown = false;
 
@@ -182,14 +158,14 @@ export class HealthCheckService extends EventEmitter {
   /**
    * Get current health status
    */
-  getHealthStatus(): HealthCheckResult | null {
+  getHealthStatus(): SystemHealthResult | null {
     return this.healthStatus;
   }
 
   /**
    * Perform comprehensive health check
    */
-  async performHealthCheck(): Promise<HealthCheckResult> {
+  async performHealthCheck(): Promise<SystemHealthResult> {
     const components: ComponentHealth[] = [];
 
     // Check database health
@@ -220,18 +196,19 @@ export class HealthCheckService extends EventEmitter {
     const systemMetrics = this.getSystemMetrics();
 
     // Create health check result
-    const healthResult: HealthCheckResult = {
+    const healthResult: SystemHealthResult = {
       status: overallStatus,
-      timestamp: Date.now(),
+      timestamp: new Date(),
+      duration: Date.now() - this.startTime,
       uptime_seconds: uptimeSeconds,
       version: process.env.npm_package_version || '2.0.0',
       components,
       system_metrics: systemMetrics,
       summary: {
         total_components: components.length,
-        healthy_components: components.filter((c) => c.status === 'healthy').length,
-        degraded_components: components.filter((c) => c.status === 'degraded').length,
-        unhealthy_components: components.filter((c) => c.status === 'unhealthy').length,
+        healthy_components: components.filter((c) => c.status === HealthStatus.HEALTHY).length,
+        degraded_components: components.filter((c) => c.status === HealthStatus.DEGRADED).length,
+        unhealthy_components: components.filter((c) => c.status === HealthStatus.UNHEALTHY).length,
       },
     };
 
@@ -275,7 +252,7 @@ export class HealthCheckService extends EventEmitter {
 
     return {
       alive,
-      status: alive ? 'healthy' : 'unhealthy',
+      status: alive ? HealthStatus.HEALTHY : HealthStatus.UNHEALTHY,
     };
   }
 
@@ -300,8 +277,11 @@ export class HealthCheckService extends EventEmitter {
     }
 
     return {
-      uptime_seconds: this.healthStatus.uptime_seconds,
-      last_check_timestamp: this.healthStatus.timestamp,
+      uptime_seconds: this.healthStatus.uptime_seconds || 0,
+      last_check_timestamp:
+        typeof this.healthStatus.timestamp === 'string'
+          ? new Date(this.healthStatus.timestamp).getTime()
+          : this.healthStatus.timestamp.getTime(),
       component_count: this.healthStatus.summary.total_components,
       healthy_count: this.healthStatus.summary.healthy_components,
       response_time_ms: 0, // Would be tracked during actual health check
@@ -322,46 +302,52 @@ export class HealthCheckService extends EventEmitter {
 
       if (!dbSummary) {
         return {
-          component,
-          status: 'degraded',
-          latency_ms: latency,
-          error: 'No database metrics available',
+          name: component,
+          type: DependencyType.DATABASE,
+          status: HealthStatus.DEGRADED,
+          last_check: new Date(),
+          response_time_ms: latency,
+          error_rate: 100,
+          uptime_percentage: 0,
           details: {
-            average_latency_ms: 0,
-            p95_latency_ms: 0,
+            average_response_time_ms: 0,
+            p95_response_time_ms: 0,
             error_rate_percent: 100,
             query_count: 0,
           },
-          timestamp: Date.now(),
         };
       }
 
       const errorRate = 100 - dbSummary.successRate;
+      const uptimePercentage = dbSummary.successRate;
       const latencyThreshold = this.config.latency_thresholds.database_ms;
       const errorThreshold = this.config.error_rate_thresholds.database;
 
-      let status: HealthStatus = 'healthy';
+      let status: HealthStatus = HealthStatus.HEALTHY;
       let error: string | undefined;
 
       if (errorRate > errorThreshold) {
-        status = 'unhealthy';
+        status = HealthStatus.UNHEALTHY;
         error = `Error rate ${errorRate}% exceeds threshold ${errorThreshold}%`;
       } else if (dbSummary.averageDuration > latencyThreshold) {
-        status = 'degraded';
+        status = HealthStatus.DEGRADED;
         error = `Latency ${dbSummary.averageDuration}ms exceeds threshold ${latencyThreshold}ms`;
       }
 
       const result: ComponentHealth = {
-        component,
+        name: component,
+        type: DependencyType.DATABASE,
         status,
-        latency_ms: latency,
+        last_check: new Date(),
+        response_time_ms: latency,
+        error_rate: errorRate,
+        uptime_percentage: uptimePercentage,
         details: {
-          average_latency_ms: dbSummary.averageDuration,
-          p95_latency_ms: dbSummary.p95,
+          average_response_time_ms: dbSummary.averageDuration,
+          p95_response_time_ms: dbSummary.p95,
           error_rate_percent: errorRate,
           query_count: dbSummary.count,
         },
-        timestamp: Date.now(),
       };
 
       if (error) {
@@ -371,17 +357,20 @@ export class HealthCheckService extends EventEmitter {
       return result;
     } catch (error) {
       return {
-        component,
-        status: 'unhealthy',
-        latency_ms: Date.now() - startTime,
+        name: component,
+        type: DependencyType.DATABASE,
+        status: HealthStatus.UNHEALTHY,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: 100,
+        uptime_percentage: 0,
         error: error instanceof Error ? error.message : 'Unknown database error',
         details: {
-          average_latency_ms: 0,
-          p95_latency_ms: 0,
+          average_response_time_ms: 0,
+          p95_response_time_ms: 0,
           error_rate_percent: 100,
           query_count: 0,
         },
-        timestamp: Date.now(),
       };
     }
   }
@@ -397,46 +386,53 @@ export class HealthCheckService extends EventEmitter {
 
       if (!qdrantSummary) {
         return {
-          component,
-          status: 'degraded',
-          latency_ms: latency,
+          name: component,
+          type: DependencyType.VECTOR_DB,
+          status: HealthStatus.DEGRADED,
+          last_check: new Date(),
+          response_time_ms: latency,
+          error_rate: 100,
+          uptime_percentage: 0,
           error: 'No Qdrant metrics available',
           details: {
-            average_latency_ms: 0,
-            p95_latency_ms: 0,
+            average_response_time_ms: 0,
+            p95_response_time_ms: 0,
             error_rate_percent: 100,
             search_count: 0,
           },
-          timestamp: Date.now(),
         };
       }
 
       const errorRate = 100 - qdrantSummary.successRate;
+      const uptimePercentage = qdrantSummary.successRate;
       const latencyThreshold = this.config.latency_thresholds.qdrant_ms;
       const errorThreshold = this.config.error_rate_thresholds.qdrant;
 
-      let status: HealthStatus = 'healthy';
+      let status: HealthStatus = HealthStatus.HEALTHY;
       let error: string | undefined;
 
       if (errorRate > errorThreshold) {
-        status = 'unhealthy';
+        status = HealthStatus.UNHEALTHY;
         error = `Error rate ${errorRate}% exceeds threshold ${errorThreshold}%`;
       } else if (qdrantSummary.averageDuration > latencyThreshold) {
-        status = 'degraded';
+        status = HealthStatus.DEGRADED;
         error = `Latency ${qdrantSummary.averageDuration}ms exceeds threshold ${latencyThreshold}ms`;
       }
 
       const result: ComponentHealth = {
-        component,
+        name: component,
+        type: DependencyType.VECTOR_DB,
         status,
-        latency_ms: latency,
+        last_check: new Date(),
+        response_time_ms: latency,
+        error_rate: errorRate,
+        uptime_percentage: uptimePercentage,
         details: {
-          average_latency_ms: qdrantSummary.averageDuration,
-          p95_latency_ms: qdrantSummary.p95,
+          average_response_time_ms: qdrantSummary.averageDuration,
+          p95_response_time_ms: qdrantSummary.p95,
           error_rate_percent: errorRate,
           search_count: qdrantSummary.count,
         },
-        timestamp: Date.now(),
       };
 
       if (error) {
@@ -446,17 +442,20 @@ export class HealthCheckService extends EventEmitter {
       return result;
     } catch (error) {
       return {
-        component,
-        status: 'unhealthy',
-        latency_ms: Date.now() - startTime,
+        name: component,
+        type: DependencyType.VECTOR_DB,
+        status: HealthStatus.UNHEALTHY,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: 100,
+        uptime_percentage: 0,
         error: error instanceof Error ? error.message : 'Unknown Qdrant error',
         details: {
-          average_latency_ms: 0,
-          p95_latency_ms: 0,
+          average_response_time_ms: 0,
+          p95_response_time_ms: 0,
           error_rate_percent: 100,
           search_count: 0,
         },
-        timestamp: Date.now(),
       };
     }
   }
@@ -474,34 +473,45 @@ export class HealthCheckService extends EventEmitter {
       const errorThreshold = this.config.error_rate_thresholds.embedding;
       const latencyThreshold = this.config.latency_thresholds.embedding_ms;
 
-      let status: HealthStatus = isHealthy ? 'healthy' : 'unhealthy';
+      let status: HealthStatus = isHealthy ? HealthStatus.HEALTHY : HealthStatus.UNHEALTHY;
       let error: string | undefined;
+      let errorRate = 0;
+      let uptimePercentage = 100;
 
       if (embeddingSummary) {
-        const errorRate = 100 - embeddingSummary.successRate;
+        errorRate = 100 - embeddingSummary.successRate;
+        uptimePercentage = embeddingSummary.successRate;
 
         if (errorRate > errorThreshold) {
-          status = 'unhealthy';
+          status = HealthStatus.UNHEALTHY;
           error = `Error rate ${errorRate}% exceeds threshold ${errorThreshold}%`;
         } else if (embeddingSummary.averageDuration > latencyThreshold) {
-          status = 'degraded';
+          status = HealthStatus.DEGRADED;
           error = `Latency ${embeddingSummary.averageDuration}ms exceeds threshold ${latencyThreshold}ms`;
         }
       }
 
       const result: ComponentHealth = {
-        component,
+        name: component,
+        type: DependencyType.EMBEDDING_SERVICE,
         status,
-        latency_ms: latency,
+        last_check: new Date(),
+        response_time_ms: latency,
+        error_rate: errorRate,
+        uptime_percentage: uptimePercentage,
         details: embeddingSummary
           ? {
-              average_latency_ms: embeddingSummary.averageDuration,
-              p95_latency_ms: embeddingSummary.p95,
-              error_rate_percent: 100 - embeddingSummary.successRate,
+              average_response_time_ms: embeddingSummary.averageDuration,
+              p95_response_time_ms: embeddingSummary.p95,
+              error_rate_percent: errorRate,
               request_count: embeddingSummary.count,
             }
-          : undefined,
-        timestamp: Date.now(),
+          : {
+              average_response_time_ms: 0,
+              p95_response_time_ms: 0,
+              error_rate_percent: errorRate,
+              request_count: 0,
+            },
       };
 
       if (error) {
@@ -511,17 +521,20 @@ export class HealthCheckService extends EventEmitter {
       return result;
     } catch (error) {
       return {
-        component,
-        status: 'unhealthy',
-        latency_ms: Date.now() - startTime,
+        name: component,
+        type: DependencyType.EMBEDDING_SERVICE,
+        status: HealthStatus.UNHEALTHY,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: 100,
+        uptime_percentage: 0,
         error: error instanceof Error ? error.message : 'Unknown embedding service error',
         details: {
-          average_latency_ms: 0,
-          p95_latency_ms: 0,
+          average_response_time_ms: 0,
+          p95_response_time_ms: 0,
           error_rate_percent: 100,
           request_count: 0,
         },
-        timestamp: Date.now(),
       };
     }
   }
@@ -537,28 +550,37 @@ export class HealthCheckService extends EventEmitter {
       const memoryUsagePercent = (heapUsedMB / heapTotalMB) * 100;
 
       const memoryThreshold = this.config.system_thresholds.memory_usage_percent;
-      let status: HealthStatus = 'healthy';
+      let status: HealthStatus = HealthStatus.HEALTHY;
       let error: string | undefined;
+      let errorRate = 0;
+      let uptimePercentage = 100;
 
       if (memoryUsagePercent > memoryThreshold) {
-        status = 'unhealthy';
+        status = HealthStatus.UNHEALTHY;
+        errorRate = 100;
+        uptimePercentage = 0;
         error = `Memory usage ${memoryUsagePercent.toFixed(2)}% exceeds threshold ${memoryThreshold}%`;
       } else if (memoryUsagePercent > memoryThreshold * 0.8) {
-        status = 'degraded';
+        status = HealthStatus.DEGRADED;
+        errorRate = 50;
+        uptimePercentage = 50;
         error = `Memory usage ${memoryUsagePercent.toFixed(2)}% approaching threshold ${memoryThreshold}%`;
       }
 
       const result: ComponentHealth = {
-        component,
+        name: component,
+        type: DependencyType.MONITORING,
         status,
-        latency_ms: Date.now() - startTime,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: errorRate,
+        uptime_percentage: uptimePercentage,
         details: {
           memory_usage_mb: heapUsedMB,
           memory_total_mb: heapTotalMB,
           memory_usage_percent: memoryUsagePercent,
           external_mb: memoryUsage.external / (1024 * 1024),
         },
-        timestamp: Date.now(),
       };
 
       if (error) {
@@ -568,9 +590,13 @@ export class HealthCheckService extends EventEmitter {
       return result;
     } catch (error) {
       return {
-        component,
-        status: 'unhealthy',
-        latency_ms: Date.now() - startTime,
+        name: component,
+        type: DependencyType.MONITORING,
+        status: HealthStatus.UNHEALTHY,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: 100,
+        uptime_percentage: 0,
         error: error instanceof Error ? error.message : 'Unknown system error',
         details: {
           memory_usage_mb: 0,
@@ -578,7 +604,6 @@ export class HealthCheckService extends EventEmitter {
           memory_usage_percent: 100,
           external_mb: 0,
         },
-        timestamp: Date.now(),
       };
     }
   }
@@ -593,18 +618,28 @@ export class HealthCheckService extends EventEmitter {
 
       // Check if metrics service is providing data
       const hasData = metrics.qps.total_qps >= 0 && metrics.performance.store_p95_ms >= 0;
+      let errorRate = 0;
+      let uptimePercentage = 100;
+
+      if (!hasData) {
+        errorRate = 100;
+        uptimePercentage = 0;
+      }
 
       const result: ComponentHealth = {
-        component,
-        status: hasData ? 'healthy' : 'degraded',
-        latency_ms: latency,
+        name: component,
+        type: DependencyType.MONITORING,
+        status: hasData ? HealthStatus.HEALTHY : HealthStatus.DEGRADED,
+        last_check: new Date(),
+        response_time_ms: latency,
+        error_rate: errorRate,
+        uptime_percentage: uptimePercentage,
         details: {
           current_qps: metrics.qps.total_qps,
           store_p95_ms: metrics.performance.store_p95_ms,
           find_p95_ms: metrics.performance.find_p95_ms,
           memory_usage_mb: metrics.system.memory_usage_mb,
         },
-        timestamp: Date.now(),
       };
 
       if (!hasData) {
@@ -614,9 +649,13 @@ export class HealthCheckService extends EventEmitter {
       return result;
     } catch (error) {
       return {
-        component,
-        status: 'unhealthy',
-        latency_ms: Date.now() - startTime,
+        name: component,
+        type: DependencyType.MONITORING,
+        status: HealthStatus.UNHEALTHY,
+        last_check: new Date(),
+        response_time_ms: Date.now() - startTime,
+        error_rate: 100,
+        uptime_percentage: 0,
         error: error instanceof Error ? error.message : 'Unknown metrics service error',
         details: {
           current_qps: 0,
@@ -624,21 +663,20 @@ export class HealthCheckService extends EventEmitter {
           find_p95_ms: 0,
           memory_usage_mb: 0,
         },
-        timestamp: Date.now(),
       };
     }
   }
 
   private calculateOverallStatus(components: ComponentHealth[]): HealthStatus {
-    const unhealthyCount = components.filter((c) => c.status === 'unhealthy').length;
-    const degradedCount = components.filter((c) => c.status === 'degraded').length;
+    const unhealthyCount = components.filter((c) => c.status === HealthStatus.UNHEALTHY).length;
+    const degradedCount = components.filter((c) => c.status === HealthStatus.DEGRADED).length;
 
     if (unhealthyCount > 0) {
-      return 'unhealthy';
+      return HealthStatus.UNHEALTHY;
     } else if (degradedCount > 0) {
-      return 'degraded';
+      return HealthStatus.DEGRADED;
     } else {
-      return 'healthy';
+      return HealthStatus.HEALTHY;
     }
   }
 

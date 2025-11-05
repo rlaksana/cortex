@@ -48,7 +48,7 @@ export class ProductionStartup {
       startTime: this.startTime,
       duration: 0,
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     try {
@@ -86,18 +86,17 @@ export class ProductionStartup {
       result.endpoints = {
         health: `http://${serverInfo.host}:${serverInfo.port}/health`,
         detailed: `http://${serverInfo.host}:${serverInfo.port}/health/detailed`,
-        metrics: `http://${serverInfo.host}:${serverInfo.port}/metrics`
+        metrics: `http://${serverInfo.host}:${serverInfo.port}/metrics`,
       };
 
       this.logger.info('✅ Cortex Memory MCP Server started successfully', {
         duration: result.duration,
         host: serverInfo.host,
         port: serverInfo.port,
-        endpoints: result.endpoints
+        endpoints: result.endpoints,
       });
 
       return result;
-
     } catch (error) {
       result.duration = Date.now() - this.startTime;
       result.errors.push(error instanceof Error ? error.message : 'Unknown error');
@@ -105,7 +104,7 @@ export class ProductionStartup {
       this.logger.error('❌ Failed to start Cortex Memory MCP Server', {
         duration: result.duration,
         error: result.errors,
-        warnings: result.warnings
+        warnings: result.warnings,
       });
 
       return result;
@@ -137,12 +136,11 @@ export class ProductionStartup {
 
       this.logger.info('✅ Environment validation completed', {
         errors: validationResult.errors.length,
-        warnings: validationResult.warnings.length
+        warnings: validationResult.warnings.length,
       });
-
     } catch (error) {
       this.logger.error('Environment validation failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -163,14 +161,15 @@ export class ProductionStartup {
         securityEnabled: config.security.helmetEnabled,
         rateLimitEnabled: config.security.rateLimitEnabled,
         healthChecksEnabled: config.health.enabled,
-        metricsEnabled: config.performance.enableMetrics
+        metricsEnabled: config.performance.enableMetrics,
       });
-
     } catch (error) {
       this.logger.error('Configuration initialization failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      result.errors.push(`Configuration initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(
+        `Configuration initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       throw error;
     }
   }
@@ -192,14 +191,15 @@ export class ProductionStartup {
       this.logger.info('✅ Security middleware configured', {
         helmetEnabled: validation.valid,
         rateLimitEnabled: true,
-        corsConfigured: true
+        corsConfigured: true,
       });
-
     } catch (error) {
       this.logger.error('Security setup failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      result.errors.push(`Security setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(
+        `Security setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       throw error;
     }
   }
@@ -221,14 +221,15 @@ export class ProductionStartup {
         livenessProbe: '/health/live',
         readinessProbe: '/health/ready',
         detailedEndpoint: '/health/detailed',
-        metricsEndpoint: '/metrics'
+        metricsEndpoint: '/metrics',
       });
-
     } catch (error) {
       this.logger.error('Health endpoint setup failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      result.warnings.push(`Health endpoint setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.warnings.push(
+        `Health endpoint setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       // Don't fail startup for health endpoint issues
     }
   }
@@ -236,7 +237,10 @@ export class ProductionStartup {
   /**
    * Start the main server
    */
-  private async startServer(options: StartupOptions, result: StartupResult): Promise<{ host: string; port: number }> {
+  private async startServer(
+    options: StartupOptions,
+    result: StartupResult
+  ): Promise<{ host: string; port: number }> {
     this.logger.info('🚀 Starting main server...');
 
     try {
@@ -254,17 +258,18 @@ export class ProductionStartup {
       // });
 
       // Simulate server startup for this example
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       this.logger.info('✅ Server started successfully', { host, port });
 
       return { host, port };
-
     } catch (error) {
       this.logger.error('Server startup failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      result.errors.push(`Server startup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.errors.push(
+        `Server startup failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       throw error;
     }
   }
@@ -277,7 +282,7 @@ export class ProductionStartup {
 
     try {
       // Wait a moment for services to initialize
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Validate configuration manager health
       const configHealth = productionConfig.healthCheck();
@@ -293,12 +298,13 @@ export class ProductionStartup {
       }
 
       this.logger.info('✅ Post-startup validation completed');
-
     } catch (error) {
       this.logger.warn('Post-startup validation encountered issues', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
-      result.warnings.push(`Post-startup validation warning: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      result.warnings.push(
+        `Post-startup validation warning: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       // Don't fail startup for post-startup validation issues
     }
   }
@@ -309,7 +315,7 @@ export class ProductionStartup {
   generateReport(result: StartupResult): string {
     const report = [
       '# Cortex Memory MCP Server - Production Startup Report',
-      '=' .repeat(60),
+      '='.repeat(60),
       '',
       `Status: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`,
       `Start Time: ${new Date(result.startTime).toISOString()}`,
@@ -317,12 +323,12 @@ export class ProductionStartup {
       `Environment: ${process.env.NODE_ENV}`,
       `Node.js Version: ${process.version}`,
       `Process ID: ${process.pid}`,
-      ''
+      '',
     ];
 
     if (result.errors.length > 0) {
       report.push('## Errors:');
-      result.errors.forEach(error => {
+      result.errors.forEach((error) => {
         report.push(`- ❌ ${error}`);
       });
       report.push('');
@@ -330,7 +336,7 @@ export class ProductionStartup {
 
     if (result.warnings.length > 0) {
       report.push('## Warnings:');
-      result.warnings.forEach(warning => {
+      result.warnings.forEach((warning) => {
         report.push(`- ⚠️  ${warning}`);
       });
       report.push('');
@@ -346,16 +352,26 @@ export class ProductionStartup {
 
     if (result.configuration) {
       report.push('## Configuration Summary:');
-      report.push(`- Security: ${result.configuration.security?.helmetEnabled ? 'Enabled' : 'Disabled'}`);
-      report.push(`- Rate Limiting: ${result.configuration.security?.rateLimitEnabled ? 'Enabled' : 'Disabled'}`);
-      report.push(`- Health Checks: ${result.configuration.health?.enabled ? 'Enabled' : 'Disabled'}`);
-      report.push(`- Metrics: ${result.configuration.performance?.enableMetrics ? 'Enabled' : 'Disabled'}`);
+      report.push(
+        `- Security: ${result.configuration.security?.helmetEnabled ? 'Enabled' : 'Disabled'}`
+      );
+      report.push(
+        `- Rate Limiting: ${result.configuration.security?.rateLimitEnabled ? 'Enabled' : 'Disabled'}`
+      );
+      report.push(
+        `- Health Checks: ${result.configuration.health?.enabled ? 'Enabled' : 'Disabled'}`
+      );
+      report.push(
+        `- Metrics: ${result.configuration.performance?.enableMetrics ? 'Enabled' : 'Disabled'}`
+      );
       report.push('');
     }
 
     report.push('## System Information:');
     const memUsage = process.memoryUsage();
-    report.push(`- Memory Usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
+    report.push(
+      `- Memory Usage: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`
+    );
     report.push(`- Platform: ${process.platform} (${process.arch})`);
     report.push(`- Uptime: ${Math.round(process.uptime())}s`);
     report.push('');

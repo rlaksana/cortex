@@ -342,14 +342,14 @@ export class ConfigurationValidator {
 
         // Check vector model compatibility
         if (
-          config.vector.embeddingModel === 'text-embedding-ada-002' &&
-          config.vector.size !== 1536
+          config.vector.embeddingModel === 'text-embedding-3-small' &&
+            config.vector.size !== 1536
         ) {
           errors.push({
             field: 'vector.size',
-            message: 'text-embedding-ada-002 model produces 1536-dimensional vectors',
+            message: 'text-embedding-3-small model produces 1536-dimensional vectors',
             severity: 'error',
-            suggestion: 'Set VECTOR_SIZE to 1536 for text-embedding-ada-002 model',
+            suggestion: 'Set VECTOR_SIZE to 1536 for text-embedding-3-small model',
             code: 'COMP001',
           });
         }
@@ -730,3 +730,4 @@ export function addValidationRule(rule: ValidationRule): void {
 export function removeValidationRule(name: string): void {
   configValidator.removeRule(name);
 }
+

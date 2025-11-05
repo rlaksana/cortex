@@ -53,17 +53,13 @@ export interface ProductionEnvironmentConfig {
 }
 
 export class ProductionEnvironmentValidator {
-  private static readonly REQUIRED_SECRETS = [
-    'OPENAI_API_KEY',
-    'JWT_SECRET',
-    'ENCRYPTION_KEY'
-  ];
+  private static readonly REQUIRED_SECRETS = ['OPENAI_API_KEY', 'JWT_SECRET', 'ENCRYPTION_KEY'];
 
   private static readonly MINIMUM_SECRET_LENGTHS = {
     OPENAI_API_KEY: 20,
     JWT_SECRET: 64,
     ENCRYPTION_KEY: 64,
-    MCP_API_KEY: 48
+    MCP_API_KEY: 48,
   };
 
   private static readonly VALID_LOG_LEVELS = ['error', 'warn', 'info', 'debug'];
@@ -81,7 +77,7 @@ export class ProductionEnvironmentValidator {
       isValid: true,
       errors: [],
       warnings: [],
-      critical: []
+      critical: [],
     };
 
     logger.info('Starting production environment validation');
@@ -120,12 +116,17 @@ export class ProductionEnvironmentValidator {
     // Check required secrets
     for (const secret of ProductionEnvironmentValidator.REQUIRED_SECRETS) {
       const value = process.env[secret];
-      const minLength = ProductionEnvironmentValidator.MINIMUM_SECRET_LENGTHS[secret as keyof typeof ProductionEnvironmentValidator.MINIMUM_SECRET_LENGTHS];
+      const minLength =
+        ProductionEnvironmentValidator.MINIMUM_SECRET_LENGTHS[
+          secret as keyof typeof ProductionEnvironmentValidator.MINIMUM_SECRET_LENGTHS
+        ];
 
       if (!value) {
         result.critical.push(`Missing required environment variable: ${secret}`);
       } else if (minLength && value.length < minLength) {
-        result.critical.push(`${secret} must be at least ${minLength} characters long (current: ${value.length})`);
+        result.critical.push(
+          `${secret} must be at least ${minLength} characters long (current: ${value.length})`
+        );
       } else if (this.isDefaultValue(value)) {
         result.critical.push(`${secret} appears to be using a default/placeholder value`);
       }
@@ -140,7 +141,9 @@ export class ProductionEnvironmentValidator {
     const jwtSecret = process.env.JWT_SECRET;
     if (jwtSecret) {
       if (!this.isStrongSecret(jwtSecret)) {
-        result.errors.push('JWT_SECRET should contain a mix of letters, numbers, and special characters');
+        result.errors.push(
+          'JWT_SECRET should contain a mix of letters, numbers, and special characters'
+        );
       }
     }
 
@@ -213,14 +216,16 @@ export class ProductionEnvironmentValidator {
     const timeouts = {
       qdrant: parseInt(process.env.QDRANT_TIMEOUT || '30000'),
       api: parseInt(process.env.API_TIMEOUT || '30000'),
-      connection: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000')
+      connection: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
     };
 
     for (const [name, value] of Object.entries(timeouts)) {
       if (isNaN(value) || value < 1000) {
         result.errors.push(`${name.toUpperCase()}_TIMEOUT must be at least 1000ms`);
       } else if (value > 300000) {
-        result.warnings.push(`${name.toUpperCase()}_TIMEOUT is very high (5+ minutes), consider reducing`);
+        result.warnings.push(
+          `${name.toUpperCase()}_TIMEOUT is very high (5+ minutes), consider reducing`
+        );
       }
     }
 
@@ -229,7 +234,9 @@ export class ProductionEnvironmentValidator {
     if (isNaN(maxConnections) || maxConnections < 5) {
       result.warnings.push('QDRANT_MAX_CONNECTIONS should be at least 5 for production');
     } else if (maxConnections > 100) {
-      result.warnings.push('QDRANT_MAX_CONNECTIONS is very high, ensure your Qdrant cluster can handle it');
+      result.warnings.push(
+        'QDRANT_MAX_CONNECTIONS is very high, ensure your Qdrant cluster can handle it'
+      );
     }
 
     // Validate Node.js memory settings
@@ -248,9 +255,15 @@ export class ProductionEnvironmentValidator {
     if (!logLevel) {
       result.errors.push('LOG_LEVEL is required');
     } else if (!ProductionEnvironmentValidator.VALID_LOG_LEVELS.includes(logLevel)) {
-      result.errors.push(`LOG_LEVEL must be one of: ${ProductionEnvironmentValidator.VALID_LOG_LEVELS.join(', ')}`);
-    } else if (!ProductionEnvironmentValidator.PRODUCTION_RECOMMENDED_LOG_LEVELS.includes(logLevel)) {
-      result.warnings.push(`LOG_LEVEL "${logLevel}" is verbose for production, consider using "info" or "warn"`);
+      result.errors.push(
+        `LOG_LEVEL must be one of: ${ProductionEnvironmentValidator.VALID_LOG_LEVELS.join(', ')}`
+      );
+    } else if (
+      !ProductionEnvironmentValidator.PRODUCTION_RECOMMENDED_LOG_LEVELS.includes(logLevel)
+    ) {
+      result.warnings.push(
+        `LOG_LEVEL "${logLevel}" is verbose for production, consider using "info" or "warn"`
+      );
     }
 
     // Validate monitoring features
@@ -292,7 +305,7 @@ export class ProductionEnvironmentValidator {
     const securityFeatures = [
       'ENABLE_ENCRYPTION',
       'ENABLE_AUDIT_LOGGING',
-      'ENABLE_CIRCUIT_BREAKER'
+      'ENABLE_CIRCUIT_BREAKER',
     ];
 
     for (const feature of securityFeatures) {
@@ -303,7 +316,9 @@ export class ProductionEnvironmentValidator {
 
     // Compression should be enabled
     if (process.env.ENABLE_COMPRESSION !== 'true') {
-      result.warnings.push('ENABLE_COMPRESSION should be true in production for better performance');
+      result.warnings.push(
+        'ENABLE_COMPRESSION should be true in production for better performance'
+      );
     }
   }
 
@@ -318,10 +333,10 @@ export class ProductionEnvironmentValidator {
       /test/i,
       /demo/i,
       /change-me/i,
-      /replace-with/i
+      /replace-with/i,
     ];
 
-    return defaultPatterns.some(pattern => pattern.test(value));
+    return defaultPatterns.some((pattern) => pattern.test(value));
   }
 
   /**
@@ -343,27 +358,27 @@ export class ProductionEnvironmentValidator {
     if (result.critical.length > 0) {
       logger.error('Critical validation errors found', {
         count: result.critical.length,
-        errors: result.critical
+        errors: result.critical,
       });
     }
 
     if (result.errors.length > 0) {
       logger.error('Validation errors found', {
         count: result.errors.length,
-        errors: result.errors
+        errors: result.errors,
       });
     }
 
     if (result.warnings.length > 0) {
       logger.warn('Validation warnings found', {
         count: result.warnings.length,
-        warnings: result.warnings
+        warnings: result.warnings,
       });
     }
 
     if (result.critical.length === 0 && result.errors.length === 0) {
       logger.info('Production environment validation passed', {
-        warningsCount: result.warnings.length
+        warningsCount: result.warnings.length,
       });
     }
   }
@@ -378,21 +393,21 @@ export class ProductionEnvironmentValidator {
       encryptionKey: process.env.ENCRYPTION_KEY || '',
       mcpApiKey: process.env.MCP_API_KEY,
       qdrantUrl: process.env.QDRANT_URL || '',
-      corsOrigin: (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()),
+      corsOrigin: (process.env.CORS_ORIGIN || '').split(',').map((o) => o.trim()),
       requireApiKey: process.env.REQUIRE_API_KEY === 'true',
       helmetEnabled: process.env.HELMET_ENABLED === 'true',
       rateLimitEnabled: process.env.RATE_LIMIT_ENABLED === 'true',
       timeouts: {
         qdrant: parseInt(process.env.QDRANT_TIMEOUT || '30000'),
         api: parseInt(process.env.API_TIMEOUT || '30000'),
-        connection: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000')
+        connection: parseInt(process.env.DB_CONNECTION_TIMEOUT || '30000'),
       },
       enableMetrics: process.env.ENABLE_METRICS_COLLECTION === 'true',
       enableHealthChecks: process.env.ENABLE_HEALTH_CHECKS === 'true',
       logLevel: process.env.LOG_LEVEL || 'info',
       org: process.env.CORTEX_ORG || '',
       project: process.env.CORTEX_PROJECT || '',
-      branch: process.env.CORTEX_BRANCH || ''
+      branch: process.env.CORTEX_BRANCH || '',
     };
 
     return config;
@@ -407,21 +422,21 @@ export class ProductionEnvironmentValidator {
     if (result.critical.length > 0) {
       logger.error('CRITICAL: Production environment validation failed. Server startup aborted.', {
         critical: result.critical,
-        errors: result.errors
+        errors: result.errors,
       });
 
       console.error('\n🚨 CRITICAL VALIDATION FAILURES 🚨');
       console.error('Cannot start in production mode due to critical configuration errors:');
       console.error('');
 
-      result.critical.forEach(error => {
+      result.critical.forEach((error) => {
         console.error(`❌ ${error}`);
       });
 
       if (result.errors.length > 0) {
         console.error('');
         console.error('Additional errors:');
-        result.errors.forEach(error => {
+        result.errors.forEach((error) => {
           console.error(`⚠️  ${error}`);
         });
       }
@@ -435,13 +450,13 @@ export class ProductionEnvironmentValidator {
 
     if (result.errors.length > 0) {
       logger.warn('Production environment has configuration errors', {
-        errors: result.errors
+        errors: result.errors,
       });
     }
 
     if (result.warnings.length > 0) {
       logger.info('Production environment validation completed with warnings', {
-        warnings: result.warnings
+        warnings: result.warnings,
       });
     }
   }

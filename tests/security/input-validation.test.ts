@@ -321,8 +321,8 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '*)(|(password=*',
         '*))(|(cn=*',
         '*)%00',
-        '*)\00',
-        '*)(cn=*))\00',
+        '*)\\x00',
+        '*)(cn=*))\\x00',
         '*)(|(objectClass=*)(&(uid=*',
         'admin)(&(password=*))'
       ];

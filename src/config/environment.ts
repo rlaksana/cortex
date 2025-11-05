@@ -1,11 +1,8 @@
 import { z } from 'zod';
-import * as dotenv from 'dotenv';
+import { execSync } from 'node:child_process';
 import * as crypto from 'node:crypto';
 import { logger } from '../utils/logger.js';
 import { DEFAULT_TRUNCATION_CONFIG, type TruncationConfig } from './truncation-config.js';
-
-// Load environment variables
-void dotenv.config();
 
 /**
  * Qdrant-only environment configuration with validation and security
@@ -43,12 +40,12 @@ const DatabaseConfigSchema = z.object({
     .string()
     .transform(Number)
     .pipe(z.number().int())
-    .refine((n) => [384, 768, 1024, 1536, 2048, 3072].includes(n), {
+    .refine((n) => [384, 512, 768, 1024, 1536, 2048, 3072].includes(n), {
       message: 'VECTOR_SIZE must be one of: 384, 768, 1024, 1536, 2048, 3072',
     })
     .default('1536'),
   VECTOR_DISTANCE: z.enum(['Cosine', 'Euclid', 'Dot', 'Manhattan']).default('Cosine'),
-  EMBEDDING_MODEL: z.string().default('text-embedding-ada-002'),
+  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
   EMBEDDING_BATCH_SIZE: z
     .string()
     .transform(Number)
@@ -326,7 +323,20 @@ export class Environment {
   private isTest: boolean;
 
   private constructor() {
-    // Parse and validate environment configuration
+    // Ensure OPENAI_API_KEY is populated automatically on Windows from User env
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length === 0) {
+      try {
+        if (process.platform === 'win32') {
+          const ps = 'powershell -NoProfile -Command "(Get-ItemProperty -Path \"HKCU:\\Environment\" -Name OPENAI_API_KEY -ErrorAction SilentlyContinue).OPENAI_API_KEY"';
+          const key = execSync(ps, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+          if (key) {
+            process.env.OPENAI_API_KEY = key;
+          }
+        }
+      } catch {
+        // ignore; keep optional
+      }
+    }    // Parse and validate environment configuration
     const dbConfig = DatabaseConfigSchema.parse(process.env);
     const appConfig = AppConfigSchema.parse(process.env);
 
@@ -556,10 +566,10 @@ export class Environment {
 
     // Validate vector configuration consistency
     if (
-      this.config.EMBEDDING_MODEL === 'text-embedding-ada-002' &&
+      this.config.EMBEDDING_MODEL === 'text-embedding-3-small' &&
       this.config.VECTOR_SIZE !== 1536
     ) {
-      errors.push('VECTOR_SIZE must be 1536 for text-embedding-ada-002 model');
+      errors.push('VECTOR_SIZE must be 1536 for text-embedding-3-small model');
     }
 
     return {
@@ -1003,3 +1013,8 @@ export function getMcpConfig() {
 export function getScopeConfig() {
   return environment.getScopeConfig();
 }
+
+
+
+
+

@@ -14,8 +14,7 @@ import type {
   BenchmarkConfig,
   BenchmarkResult,
   BenchmarkScenario,
-  PerformanceMetrics,
-  LoadTestConfig
+  PerformanceMetrics
 } from './types.js';
 
 export class BenchmarkRunner {

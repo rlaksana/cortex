@@ -53,7 +53,7 @@ export class GracefulShutdownManager extends EventEmitter {
       forceTimeout: parseInt(process.env.FORCE_SHUTDOWN_TIMEOUT || '60000'), // 60 seconds
       enableDrainMode: process.env.ENABLE_DRAIN_MODE !== 'false',
       drainTimeout: parseInt(process.env.DRAIN_TIMEOUT || '10000'), // 10 seconds
-      cleanupOperations: []
+      cleanupOperations: [],
     };
 
     this.state = {
@@ -61,7 +61,7 @@ export class GracefulShutdownManager extends EventEmitter {
       shutdownReason: '',
       shutdownInitiated: 0,
       cleanupCompleted: {},
-      errors: []
+      errors: [],
     };
 
     this.setupSignalHandlers();
@@ -73,7 +73,7 @@ export class GracefulShutdownManager extends EventEmitter {
   private setupSignalHandlers(): void {
     const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'];
 
-    signals.forEach(signal => {
+    signals.forEach((signal) => {
       process.on(signal, (signalName) => {
         this.logger.info(`Received shutdown signal: ${signalName}`);
         this.initiateShutdown(signalName);
@@ -84,7 +84,7 @@ export class GracefulShutdownManager extends EventEmitter {
     process.on('uncaughtException', (error) => {
       this.logger.error('Uncaught exception caught', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
       this.initiateShutdown('uncaughtException', error);
     });
@@ -93,9 +93,12 @@ export class GracefulShutdownManager extends EventEmitter {
     process.on('unhandledRejection', (reason, promise) => {
       this.logger.error('Unhandled promise rejection', {
         reason: reason instanceof Error ? reason.message : reason,
-        promise: promise.toString()
+        promise: promise.toString(),
       });
-      this.initiateShutdown('unhandledRejection', reason instanceof Error ? reason : new Error(String(reason)));
+      this.initiateShutdown(
+        'unhandledRejection',
+        reason instanceof Error ? reason : new Error(String(reason))
+      );
     });
   }
 
@@ -115,7 +118,7 @@ export class GracefulShutdownManager extends EventEmitter {
     this.logger.info(`🛑 Initiating graceful shutdown`, {
       reason,
       error: error?.message,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     this.emit('shutdown:initiated', { reason, error });
@@ -141,7 +144,7 @@ export class GracefulShutdownManager extends EventEmitter {
       process.exit(0);
     } catch (error) {
       this.logger.error('Error during graceful shutdown', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       this.emit('shutdown:error', error);
@@ -198,7 +201,7 @@ export class GracefulShutdownManager extends EventEmitter {
       this.emit('drain:completed');
     } catch (error) {
       this.logger.warn('Drain mode encountered issues', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -232,7 +235,9 @@ export class GracefulShutdownManager extends EventEmitter {
     this.emit('cleanup:start');
 
     // Sort operations by priority (lower number = higher priority)
-    const sortedOperations = [...this.config.cleanupOperations].sort((a, b) => a.priority - b.priority);
+    const sortedOperations = [...this.config.cleanupOperations].sort(
+      (a, b) => a.priority - b.priority
+    );
 
     for (const operation of sortedOperations) {
       try {
@@ -246,7 +251,7 @@ export class GracefulShutdownManager extends EventEmitter {
           operation.operation(),
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Operation timeout')), operation.timeout)
-          )
+          ),
         ]);
 
         const operationDuration = Date.now() - operationStart;
@@ -255,25 +260,24 @@ export class GracefulShutdownManager extends EventEmitter {
         this.logger.info(`Cleanup operation completed: ${operation.name} (${operationDuration}ms)`);
         this.emit('cleanup:operation:completed', {
           operation: operation.name,
-          duration: operationDuration
+          duration: operationDuration,
         });
-
       } catch (error) {
         this.state.errors.push({
           operation: operation.name,
           error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         this.logger.error(`Cleanup operation failed: ${operation.name}`, {
           error: error instanceof Error ? error.message : 'Unknown error',
-          critical: operation.critical
+          critical: operation.critical,
         });
 
         this.emit('cleanup:operation:error', {
           operation: operation.name,
           error,
-          critical: operation.critical
+          critical: operation.critical,
         });
 
         // If this is a critical operation, we might want to fail shutdown
@@ -291,7 +295,7 @@ export class GracefulShutdownManager extends EventEmitter {
     this.logger.info('✅ All cleanup operations completed');
     this.emit('cleanup:completed', {
       completed: this.state.cleanupCompleted,
-      errors: this.state.errors.length
+      errors: this.state.errors.length,
     });
   }
 
@@ -305,29 +309,29 @@ export class GracefulShutdownManager extends EventEmitter {
         operation: this.closeDatabaseConnections.bind(this),
         timeout: 5000,
         critical: true,
-        priority: 1
+        priority: 1,
       },
       {
         name: 'background-workers',
         operation: this.stopBackgroundWorkers.bind(this),
         timeout: 3000,
         critical: false,
-        priority: 2
+        priority: 2,
       },
       {
         name: 'flush-logs',
         operation: this.flushLogs.bind(this),
         timeout: 2000,
         critical: false,
-        priority: 3
+        priority: 3,
       },
       {
         name: 'save-metrics',
         operation: this.saveFinalMetrics.bind(this),
         timeout: 2000,
         critical: false,
-        priority: 4
-      }
+        priority: 4,
+      },
     ];
 
     this.config.cleanupOperations = defaultOperations;
@@ -342,7 +346,7 @@ export class GracefulShutdownManager extends EventEmitter {
     // This is a placeholder for the actual database cleanup logic
 
     // Simulate database cleanup
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   /**
@@ -353,7 +357,7 @@ export class GracefulShutdownManager extends EventEmitter {
     // Implementation would stop any background processes
 
     // Simulate worker shutdown
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
 
   /**
@@ -364,7 +368,7 @@ export class GracefulShutdownManager extends EventEmitter {
     // Implementation would flush any buffered logs
 
     // Simulate log flushing
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   /**
@@ -375,7 +379,7 @@ export class GracefulShutdownManager extends EventEmitter {
     // Implementation would save any pending metrics
 
     // Simulate metrics saving
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   /**
@@ -390,7 +394,7 @@ export class GracefulShutdownManager extends EventEmitter {
    * Remove cleanup operation
    */
   removeCleanupOperation(name: string): void {
-    this.config.cleanupOperations = this.config.cleanupOperations.filter(op => op.name !== name);
+    this.config.cleanupOperations = this.config.cleanupOperations.filter((op) => op.name !== name);
     this.logger.debug(`Removed cleanup operation: ${name}`);
   }
 
@@ -446,8 +450,8 @@ export class GracefulShutdownManager extends EventEmitter {
         uptime: process.uptime(),
         cleanupOperationsCount: this.config.cleanupOperations.length,
         errorsCount: this.state.errors.length,
-        remainingShutdownTime: this.getRemainingShutdownTime()
-      }
+        remainingShutdownTime: this.getRemainingShutdownTime(),
+      },
     };
   }
 }

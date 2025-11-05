@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "total": 8,
+    "passed": 6,
+    "failed": 2,
+    "successRate": "75.00%"
+  },
+  "scenarios": [
+    {
+      "test": "MCP Server Build",
+      "passed": true,
+      "message": "MCP server built successfully",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:22.728Z"
+    },
+    {
+      "test": "Tools List Retrieved",
+      "passed": true,
+      "message": "Found 3 tools",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:29.760Z"
+    },
+    {
+      "test": "Memory Store Tool Available",
+      "passed": true,
+      "message": "memory_store tool found",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:29.760Z"
+    },
+    {
+      "test": "Memory Find Tool Available",
+      "passed": true,
+      "message": "memory_find tool found",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:29.760Z"
+    },
+    {
+      "test": "Memory Store Tool Call",
+      "passed": true,
+      "message": "memory_store tool executed successfully",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:32.772Z"
+    },
+    {
+      "test": "Entity Storage",
+      "passed": false,
+      "message": "Entity not stored properly",
+      "details": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{\\n  \\\"capabilities\\\": {\\n    \\\"vector\\\": \\\"ok\\\",\\n    \\\"chunking\\\": \\\"disabled\\\",\\n    \\\"ttl\\\": \\\"disabled\\\"\\n  },\\n  \\\"success\\\": false,\\n  \\\"stored\\\": 0,\\n  \\\"stored_items\\\": [],\\n  \\\"errors\\\": [\\n    {\\n      \\\"index\\\": 0,\\n      \\\"message\\\": \\\"Entity storage failed: Failed to search Qdrant\\\",\\n      \\\"error_code\\\": \\\"UNEXPECTED_ERROR\\\"\\n    }\\n  ],\\n  \\\"summary\\\": {\\n    \\\"total\\\": 1,\\n    \\\"stored\\\": 0,\\n    \\\"skipped_dedupe\\\": 0,\\n    \\\"business_rule_blocked\\\": 0,\\n    \\\"validation_error\\\": 1\\n  },\\n  \\\"autonomous_context\\\": {\\n    \\\"action_performed\\\": \\\"batch\\\",\\n    \\\"similar_items_checked\\\": 0,\\n    \\\"duplicates_found\\\": 0,\\n    \\\"contradictions_detected\\\": false,\\n    \\\"recommendation\\\": \\\"Batch processed: 0 stored, 0 blocked by business rules\\\",\\n    \\\"reasoning\\\": \\\"P5-T5.3: Business rule violations are handled by blocking items but continuing batch processing\\\",\\n    \\\"user_message_suggestion\\\": \\\"❌ 1 error occurred\\\"\\n  },\\n  \\\"total\\\": 1,\\n  \\\"audit_metadata\\\": {\\n    \\\"batch_id\\\": \\\"batch_1762315589762_64uoezjwu\\\",\\n    \\\"duration_ms\\\": 906,\\n    \\\"audit_logged\\\": true\\n  },\\n  \\\"observability\\\": {\\n    \\\"source\\\": \\\"cortex_memory\\\",\\n    \\\"strategy\\\": \\\"orchestrator_based\\\",\\n    \\\"vector_used\\\": true,\\n    \\\"degraded\\\": false,\\n    \\\"execution_time_ms\\\": 906,\\n    \\\"confidence_score\\\": 0\\n  },\\n  \\\"meta\\\": {\\n    \\\"strategy\\\": \\\"autonomous_deduplication\\\",\\n    \\\"vector_used\\\": true,\\n    \\\"degraded\\\": false,\\n    \\\"source\\\": \\\"cortex_memory\\\",\\n    \\\"execution_time_ms\\\": 906,\\n    \\\"confidence_score\\\": 0,\\n    \\\"batch_id\\\": \\\"batch_1762315589762_64uoezjwu\\\",\\n    \\\"items_processed\\\": 1,\\n    \\\"items_stored\\\": 0,\\n    \\\"items_errors\\\": 1\\n  }\\n}\",\n      \"_meta\": {\n        \"timestamp\": \"2025-11-05T04:06:30.670Z\",\n        \"requestId\": \"req_1762315590670_s7cwl5lay\"\n      }\n    }\n  ],\n  \"isError\": false\n}",
+            "_meta": {
+              "timestamp": "2025-11-05T04:06:30.670Z",
+              "requestId": "req_1762315590670_psn8y24gk"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "timestamp": "2025-11-05T04:06:32.773Z"
+    },
+    {
+      "test": "Memory Find Tool Call",
+      "passed": true,
+      "message": "memory_find tool executed successfully",
+      "details": null,
+      "timestamp": "2025-11-05T04:06:35.789Z"
+    },
+    {
+      "test": "Entity Retrieval",
+      "passed": false,
+      "message": "No items found",
+      "details": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"{\\n  \\\"capabilities\\\": {\\n    \\\"vector\\\": \\\"ok\\\",\\n    \\\"chunking\\\": \\\"disabled\\\",\\n    \\\"ttl\\\": \\\"disabled\\\"\\n  },\\n  \\\"query\\\": \\\"test entity\\\",\\n  \\\"strategy\\\": \\\"fulltext\\\",\\n  \\\"confidence\\\": 0,\\n  \\\"total\\\": 0,\\n  \\\"executionTime\\\": 5,\\n  \\\"vector_used\\\": false,\\n  \\\"degraded\\\": true,\\n  \\\"search_id\\\": \\\"search_1762315592773_unmt7nq5e\\\",\\n  \\\"strategy_details\\\": {\\n    \\\"selected_strategy\\\": \\\"fulltext\\\",\\n    \\\"vector_backend_available\\\": false,\\n    \\\"degradation_applied\\\": true,\\n    \\\"fallback_reason\\\": \\\"Search degraded due to backend limitations\\\",\\n    \\\"graph_expansion_applied\\\": true,\\n    \\\"scope_precedence_applied\\\": true\\n  },\\n  \\\"items\\\": [],\\n  \\\"audit_metadata\\\": {\\n    \\\"search_id\\\": \\\"search_1762315592773_unmt7nq5e\\\",\\n    \\\"duration_ms\\\": 5,\\n    \\\"audit_logged\\\": true,\\n    \\\"strategy_used\\\": \\\"fulltext\\\",\\n    \\\"vector_used\\\": false,\\n    \\\"degraded\\\": true\\n  },\\n  \\\"observability\\\": {\\n    \\\"source\\\": \\\"cortex_memory\\\",\\n    \\\"strategy\\\": \\\"fulltext\\\",\\n    \\\"vector_used\\\": false,\\n    \\\"degraded\\\": true,\\n    \\\"execution_time_ms\\\": 5,\\n    \\\"confidence_average\\\": 0,\\n    \\\"search_id\\\": \\\"search_1762315592773_unmt7nq5e\\\"\\n  },\\n  \\\"meta\\\": {\\n    \\\"strategy\\\": \\\"fulltext\\\",\\n    \\\"vector_used\\\": false,\\n    \\\"degraded\\\": true,\\n    \\\"source\\\": \\\"cortex_memory\\\",\\n    \\\"execution_time_ms\\\": 5,\\n    \\\"confidence_score\\\": 0,\\n    \\\"search_id\\\": \\\"search_1762315592773_unmt7nq5e\\\",\\n    \\\"query\\\": \\\"test entity\\\",\\n    \\\"results_found\\\": 0,\\n    \\\"mode\\\": \\\"auto\\\",\\n    \\\"expand\\\": \\\"none\\\",\\n    \\\"scope_applied\\\": true,\\n    \\\"types_filter\\\": 0\\n  }\\n}\",\n      \"_meta\": {\n        \"timestamp\": \"2025-11-05T04:06:32.778Z\",\n        \"requestId\": \"req_1762315592778_61ql4yp6z\"\n      }\n    }\n  ],\n  \"isError\": false\n}",
+            "_meta": {
+              "timestamp": "2025-11-05T04:06:32.779Z",
+              "requestId": "req_1762315592779_q1cyszjav"
+            }
+          }
+        ],
+        "isError": false
+      },
+      "timestamp": "2025-11-05T04:06:35.789Z"
+    }
+  ],
+  "recommendations": [
+    "Fix failing MCP server tests",
+    "Priority issues: Entity Storage, Entity Retrieval"
+  ],
+  "timestamp": "2025-11-05T04:06:35.789Z"
+}

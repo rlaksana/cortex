@@ -1,0 +1,137 @@
+{
+  "summary": {
+    "total": 16,
+    "passed": 14,
+    "failed": 2,
+    "successRate": "87.50%"
+  },
+  "scenarios": [
+    {
+      "test": "Critical Files Exist",
+      "passed": true,
+      "message": "5/5 critical files found",
+      "details": {
+        "existing": [
+          "./src/index.ts",
+          "./src/services/memory-store.ts",
+          "./src/services/memory-find.ts",
+          "./src/schemas/json-schemas.ts",
+          "./package.json"
+        ],
+        "missing": []
+      },
+      "timestamp": "2025-11-05T01:20:07.079Z"
+    },
+    {
+      "test": "MCP SDK Dependency",
+      "passed": true,
+      "message": "MCP SDK dependency found",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "ES Module Configuration",
+      "passed": true,
+      "message": "ES module configured",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Package Metadata",
+      "passed": true,
+      "message": "Name and version present",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Test File Count",
+      "passed": true,
+      "message": "Found 85 test files",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Memory Test Coverage",
+      "passed": true,
+      "message": "Found 11 memory-related test files",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Memory Schemas Defined",
+      "passed": false,
+      "message": "Memory schemas missing",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Knowledge Types in Schema",
+      "passed": true,
+      "message": "Knowledge types represented",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.080Z"
+    },
+    {
+      "test": "Knowledge Type Coverage",
+      "passed": false,
+      "message": "Error: dirent.isFile is not a function",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "TypeScript Configuration",
+      "passed": true,
+      "message": "tsconfig.json exists",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "Test Configuration",
+      "passed": true,
+      "message": "vitest.config.ts exists",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "Documentation Coverage",
+      "passed": true,
+      "message": "3/3 documentation files found",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "Memory Store Feature",
+      "passed": true,
+      "message": "Memory store functionality found",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "Memory Find Feature",
+      "passed": true,
+      "message": "Memory find functionality found",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "TTL Support",
+      "passed": true,
+      "message": "TTL support detected",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    },
+    {
+      "test": "Deduplication",
+      "passed": true,
+      "message": "Deduplication logic found",
+      "details": null,
+      "timestamp": "2025-11-05T01:20:07.081Z"
+    }
+  ],
+  "recommendations": [
+    "Address failing tests before deployment",
+    "Priority fixes: Memory Schemas Defined, Knowledge Type Coverage",
+    "MCP Cortex implementation appears ready for testing"
+  ],
+  "timestamp": "2025-11-05T01:20:07.081Z"
+}
