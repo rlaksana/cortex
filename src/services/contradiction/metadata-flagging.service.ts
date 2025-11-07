@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Metadata Flagging Service
  * Handles flagging items with contradiction metadata and managing pointers

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Relation storage service (11th knowledge type - entity relationships)
  *

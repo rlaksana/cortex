@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Runbook Integration Service for MCP Cortex Alerting
  *

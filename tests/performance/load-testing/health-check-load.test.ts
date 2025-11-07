@@ -556,7 +556,7 @@ describe('Health Check Load Tests', () => {
         latency = Math.random() * 5 + 1;
         success = true;
         details = {
-          state: ['closed', 'open', 'half_open'][Math.floor(Math.random() * 3)],
+          state: ['closed', 'open', 'half-open'][Math.floor(Math.random() * 3)],
           failureRate: Math.floor(Math.random() * 100),
           lastFailureTime: Date.now() - Math.floor(Math.random() * 60000)
         };

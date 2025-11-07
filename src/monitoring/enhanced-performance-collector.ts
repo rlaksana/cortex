@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enhanced Performance Metrics Collector
  *

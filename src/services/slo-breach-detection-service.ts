@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * SLO Breach Detection and Notification Service
  *

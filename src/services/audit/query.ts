@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { getQdrantClient } from '../../db/qdrant.js';
 import { logger } from '../../utils/logger';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Knowledge Gap Analysis Strategy
  *

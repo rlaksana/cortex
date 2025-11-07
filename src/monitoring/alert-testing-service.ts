@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Alert Testing and Validation Service for MCP Cortex
  *

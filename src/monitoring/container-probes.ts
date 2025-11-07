@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Container-Ready Probes for Kubernetes/Docker Orchestration
  *

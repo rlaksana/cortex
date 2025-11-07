@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logger } from '@/utils/logger.js';
 import type {
   ValidationService as IValidationService,

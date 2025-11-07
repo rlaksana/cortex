@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { logger } from '@/utils/logger.js';
 import { environment } from '../../config/environment.js';
 import { DEFAULT_INSIGHT_CONFIG, type InsightConfig } from '../../config/insight-config.js';

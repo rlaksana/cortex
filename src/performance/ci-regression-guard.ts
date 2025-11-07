@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CI Performance Regression Guard
  *

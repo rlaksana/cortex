@@ -170,4 +170,4 @@ comprehensive-memory-test.js
 test-autonomous.cjs
 
 # Legacy development scripts
-scripts/legacy/
+scripts/legacy/.chroma/

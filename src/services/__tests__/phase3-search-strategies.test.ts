@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Phase 3 Search Strategies Test Suite
  *

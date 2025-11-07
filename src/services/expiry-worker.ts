@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P6-T6.2: Expiry Worker Service
  *

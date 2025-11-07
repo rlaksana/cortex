@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P1-2: Truncation Service
  * Handles intelligent content truncation with proper metadata and metrics

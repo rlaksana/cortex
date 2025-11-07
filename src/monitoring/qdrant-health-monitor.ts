@@ -669,7 +669,7 @@ export class QdrantHealthMonitor extends EventEmitter {
     };
 
     if (this.config.apiKey) {
-      headers['api-key'] = this.config.apiKey;
+      headers['api_key'] = this.config.apiKey;
     }
 
     const controller = new AbortController();

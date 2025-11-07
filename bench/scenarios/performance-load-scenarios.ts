@@ -308,8 +308,8 @@ async function executeCircuitBreakerScenario(
         processingTime = 1 + Math.random() * 3;
         failureCount = Math.max(0, failureCount - 1);
         if (circuitState === 'open' && failureCount < threshold / 2) {
-          circuitState = 'half_open';
-        } else if (circuitState === 'half_open') {
+          circuitState = 'half-open';
+        } else if (circuitState === 'half-open') {
           circuitState = 'closed';
         }
       }

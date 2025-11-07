@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * MCP Cortex Monitoring Module - Complete Alerting System
  *

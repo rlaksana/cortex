@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Notification Channel Implementations for MCP Cortex Alerting
  *

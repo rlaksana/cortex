@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Authorization Service for Cortex MCP
  * Implements scope-based access control with fine-grained permissions

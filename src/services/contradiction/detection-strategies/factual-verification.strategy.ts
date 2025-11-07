@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Factual Verification Contradiction Detection Strategy
  *

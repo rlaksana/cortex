@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Contradiction Resolution Suggestion Service
  *

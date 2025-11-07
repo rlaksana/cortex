@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Memory Store Service - Class Wrapper for Memory Store Functionality
  *

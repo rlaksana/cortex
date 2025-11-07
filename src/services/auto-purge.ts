@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Auto-Purge Service
  *

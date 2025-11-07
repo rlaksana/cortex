@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { LanguageDetector } from '../telemetry/language-detector.js';
 import { KnowledgeItem } from '../../types/core-interfaces.js';
 

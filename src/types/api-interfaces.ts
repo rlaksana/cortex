@@ -90,7 +90,7 @@ export interface ApiMiddleware {
 }
 
 export interface AuthenticationMethod {
-  type: 'api-key' | 'jwt' | 'oauth' | 'basic' | 'mfa';
+  type: 'api_key' | 'jwt' | 'oauth' | 'basic' | 'mfa';
   config: Record<string, any>;
   validate: (request: ApiRequest) => Promise<ApiUser | null>;
 }

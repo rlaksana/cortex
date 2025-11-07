@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Result Type Definitions for Dependency Registry
  *

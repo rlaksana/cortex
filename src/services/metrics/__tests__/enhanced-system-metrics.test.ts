@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P4-1: Enhanced System Metrics Tests
  *

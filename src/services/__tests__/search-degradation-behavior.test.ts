@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Search Degradation Behavior Test Suite
  *

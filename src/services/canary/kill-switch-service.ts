@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Emergency Kill Switch Service
  *

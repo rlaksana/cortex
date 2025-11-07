@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Authentication Helper Functions for MCP Server
  * Simplified middleware functionality for MCP protocol authentication

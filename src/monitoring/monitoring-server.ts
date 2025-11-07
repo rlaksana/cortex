@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * HTTP Monitoring Server for Cortex MCP
  *

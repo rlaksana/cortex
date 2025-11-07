@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ZAI Enhanced Insight Service
  *

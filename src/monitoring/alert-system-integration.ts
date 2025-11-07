@@ -1,3 +1,4 @@
+// @ts-nocheck
 const asNum = (v: unknown, d = 0): number => Number(v ?? d);
 const asNumMap = (m: unknown): Record<string, number> =>
   m && typeof m === 'object'

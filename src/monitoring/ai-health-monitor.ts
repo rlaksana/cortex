@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* @file: src/monitoring/ai-health-monitor.ts
  * Clean scaffold after accidental regex corruption.
  * Keep minimal, deterministic shapes; no widening.

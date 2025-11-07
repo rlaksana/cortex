@@ -6,8 +6,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noEmit": false,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
     "sourceMap": true,
     "noEmitOnError": true
   },

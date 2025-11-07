@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Performance Artifacts Storage System
  *

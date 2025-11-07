@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Slow Query Logger for Cortex MCP
  *

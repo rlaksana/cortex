@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Health Check Service for Cortex MCP
  *

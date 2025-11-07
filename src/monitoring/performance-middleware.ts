@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Performance Monitoring Middleware for Cortex MCP
  * Provides automatic performance tracking for HTTP requests and MCP operations

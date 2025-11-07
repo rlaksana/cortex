@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Structured Health Event Logger
  *

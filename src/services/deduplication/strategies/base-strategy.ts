@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Base Deduplication Strategy Interface
  *

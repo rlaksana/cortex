@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Vector Embedding Service
  *

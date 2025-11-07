@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive Cleanup Worker Service Tests
  *

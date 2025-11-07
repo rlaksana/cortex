@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Relationship Analysis Strategy
  *

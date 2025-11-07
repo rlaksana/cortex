@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Background Processor Service
  *

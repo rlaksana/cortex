@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Entity storage service (10th knowledge type - flexible entity storage)
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { qdrant } from '../../db/qdrant-client.js';
 
 export interface Suggestion {

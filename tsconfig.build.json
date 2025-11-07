@@ -1,52 +1,69 @@
 {
-  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    // Production-specific optimizations
-    "types": ["node"],
-    "declaration": true,
-    "declarationMap": false,
-    "sourceMap": false,
-    "noEmitOnError": true,
-    "incremental": true,
-    "composite": true,
-    "removeComments": false,
-    "stripInternal": true,
-    "importHelpers": false,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
-    // Advanced incremental compilation options
-    "tsBuildInfoFile": ".tsbuildinfo.prod",
-    "assumeChangesOnlyAffectDirectDependencies": true,
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": false,
 
-    // Build optimization settings
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "preserveWatchOutput": true,
-    "pretty": true,
+    "verbatimModuleSyntax": false,
 
-    // Dependency tracking optimizations
-    "disableSourceOfProjectReferenceRedirect": true,
-    "disableSolutionSearching": true,
-    "disableReferencedProjectLoad": true
-  },
-  "include": [
-    "src/entry-point-factory.ts",
-    "src/index.ts",
-    "src/silent-mcp-entry.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/**/__tests__/**",
-    "src/test/**"
-  ],
-  "references": [
-    {
-      "path": "./tsconfig.incremental.json"
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "inlineSources": true,
+    "removeComments": false,
+    "importHelpers": true,
+    "downlevelIteration": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "newLine": "lf",
+
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
+    "skipLibCheck": true,
+
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@models/*": ["src/models/*"],
+      "@services/*": ["src/services/*"],
+      "@utils/*": ["src/utils/*"],
+      "@/types/*": ["src/types/*"],
+      "@/services/*": ["src/services/*"],
+      "@/config/*": ["src/config/*"],
+      "@/utils/*": ["src/utils/*"],
+      "@/schemas/*": ["src/schemas/*"],
+      "@/middleware/*": ["src/middleware/*"],
+      "@/db/*": ["src/db/*"],
+      "@/monitoring/*": ["src/monitoring/*"],
+      "@docs/*": ["docs/*"],
+      "@scripts/*": ["scripts/*"],
+      "@tests/*": ["tests/*"]
     }
-  ]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }
+

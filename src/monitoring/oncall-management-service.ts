@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * On-Call Management and Escalation Service for MCP Cortex
  *

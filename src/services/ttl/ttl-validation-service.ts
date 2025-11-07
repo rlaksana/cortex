@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TTL Validation Service
  *

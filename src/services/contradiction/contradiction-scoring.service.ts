@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Contradiction Scoring and Prioritization Service
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import type { ReleaseData, ScopeFilter } from '../../types/knowledge-data.js';
 

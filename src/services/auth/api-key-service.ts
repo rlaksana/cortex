@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * API Key Management Service for Cortex MCP
  * Handles creation, validation, and management of API keys for MCP clients

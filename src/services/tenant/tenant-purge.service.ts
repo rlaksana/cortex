@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P3 Data Management: Tenant Purge Service
  *

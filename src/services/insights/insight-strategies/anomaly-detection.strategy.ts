@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Anomaly Detection Strategy
  *

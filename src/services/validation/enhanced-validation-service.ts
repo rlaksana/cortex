@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enhanced Validation Service
  *

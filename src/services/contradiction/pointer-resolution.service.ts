@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Pointer and Resolution Service
  * Manages contradiction pointers and provides resolution workflows

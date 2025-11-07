@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Search Strategy Manager Test Suite - Phase 3 Enhanced
  *

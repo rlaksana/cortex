@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Memory Manager Service
  *

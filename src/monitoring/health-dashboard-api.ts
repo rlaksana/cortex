@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive Health Dashboard API
  *

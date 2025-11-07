@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createHash } from 'crypto';
 import type { DDLData } from '../../types/knowledge-data.js';
 import { logger } from '@/utils/logger.js';

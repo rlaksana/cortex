@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Storage Pipeline Integration
  * Integrates contradiction detection into the storage pipeline

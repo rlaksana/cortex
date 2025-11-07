@@ -89,7 +89,7 @@ export interface DLQMessage {
 }
 
 export interface CircuitBreakerState {
-  state: 'closed' | 'open' | 'half_open';
+  state: 'closed' | 'open' | 'half-open';
   failure_count: number;
   last_failure_time: number;
   next_attempt_time: number;
@@ -408,14 +408,14 @@ export class RetryPolicyManager {
     switch (state.state) {
       case 'open':
         if (now >= state.next_attempt_time) {
-          state.state = 'half_open';
+          state.state = 'half-open';
           state.half_open_calls = 0;
           logger.info('Circuit breaker transitioning to half-open', { key });
           return false;
         }
         return true;
 
-      case 'half_open':
+      case 'half-open':
         if (state.half_open_calls >= this.config.circuit_breaker.half_open_max_calls) {
           return true;
         }
@@ -435,7 +435,7 @@ export class RetryPolicyManager {
     const state = this.circuitBreakerStates.get(key);
     if (!state) return;
 
-    if (state.state === 'half_open') {
+    if (state.state === 'half-open') {
       state.state = 'closed';
       state.failure_count = 0;
       logger.info('Circuit breaker closed after successful half-open call', { key });
@@ -463,7 +463,7 @@ export class RetryPolicyManager {
     state.failure_count++;
     state.last_failure_time = Date.now();
 
-    if (state.state === 'half_open') {
+    if (state.state === 'half-open') {
       state.state = 'open';
       state.next_attempt_time = Date.now() + this.config.circuit_breaker.recovery_timeout_ms;
       this.metrics.circuit_breaker_trips++;
@@ -802,7 +802,7 @@ export class RetryPolicyManager {
   } {
     const circuitBreakerStates = Array.from(this.circuitBreakerStates.values());
     const openCBs = circuitBreakerStates.filter((s) => s.state === 'open').length;
-    const halfOpenCBs = circuitBreakerStates.filter((s) => s.state === 'half_open').length;
+    const halfOpenCBs = circuitBreakerStates.filter((s) => s.state === 'half-open').length;
     const closedCBs = circuitBreakerStates.filter((s) => s.state === 'closed').length;
 
     const now = Date.now();

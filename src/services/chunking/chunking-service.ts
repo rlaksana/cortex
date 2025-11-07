@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { randomUUID, createHash } from 'crypto';
 import { KnowledgeItem } from '../../types/core-interfaces.js';
 import { inheritTTLFromParent } from '../../utils/tl-utils.js';

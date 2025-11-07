@@ -1681,7 +1681,7 @@ describe('Resource Access Control', () => {
       const authRequirements = {
         'knowledge://': {
           level: 'standard',
-          methods: ['jwt', 'api-key'],
+          methods: ['jwt', 'api_key'],
           mfaRequired: false,
           sessionTimeout: 3600,
         },

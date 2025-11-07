@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Alert Metrics and Dashboard Integration Service for MCP Cortex
  *

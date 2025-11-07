@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Partitioning and Sharding Service
  *

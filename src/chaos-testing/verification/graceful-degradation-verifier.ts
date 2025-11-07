@@ -28,8 +28,8 @@ export interface DegradationMetrics {
 
 export interface CircuitBreakerTransition {
   timestamp: Date;
-  fromState: 'closed' | 'open' | 'half_open';
-  toState: 'closed' | 'open' | 'half_open';
+  fromState: 'closed' | 'open' | 'half-open';
+  toState: 'closed' | 'open' | 'half-open';
   trigger: string;
   component: string;
 }
@@ -228,13 +228,13 @@ export class GracefulDegradationVerifier extends EventEmitter {
         const next = transitions[i + 1];
 
         // Validate transitions follow expected patterns
-        if (current.toState === 'open' && next.toState === 'half_open') {
+        if (current.toState === 'open' && next.toState === 'half-open') {
           // Expected transition
           continue;
-        } else if (current.toState === 'half_open' && next.toState === 'closed') {
+        } else if (current.toState === 'half-open' && next.toState === 'closed') {
           // Expected transition
           continue;
-        } else if (current.toState === 'half_open' && next.toState === 'open') {
+        } else if (current.toState === 'half-open' && next.toState === 'open') {
           // Expected transition (failure in half-open state)
           continue;
         } else {
@@ -380,7 +380,7 @@ export class GracefulDegradationVerifier extends EventEmitter {
         openConnections: 60
       },
       circuitBreaker: {
-        state: 'half_open',
+        state: 'half-open',
         failureRate: 15,
         numberOfCalls: 80,
         numberOfSuccessfulCalls: 68,

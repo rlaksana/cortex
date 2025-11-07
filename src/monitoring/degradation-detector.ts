@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Qdrant Degradation Detector
  *

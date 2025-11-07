@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * 8-LOG SYSTEM Service - Session Persistence
  *

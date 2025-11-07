@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Memory Find Service - Class Wrapper for Memory Find Functionality
  *

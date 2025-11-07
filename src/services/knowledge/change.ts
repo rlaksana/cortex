@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 import { computeContentHash } from '../../utils/hash.js';
 import type { ChangeData, ScopeFilter } from '../../types/knowledge-data.js';

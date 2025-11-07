@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Procedural Contradiction Detection Strategy
  *

@@ -74,7 +74,7 @@ export interface DegradationVerification {
   expectedFallback: boolean;
   maxDegradationTime: number; // ms
   minServiceAvailability: number; // percentage
-  expectedCircuitBreakerState: 'open' | 'closed' | 'half_open';
+  expectedCircuitBreakerState: 'open' | 'closed' | 'half-open';
   userFacingErrors: UserFacingErrorExpectation[];
 }
 
@@ -181,7 +181,7 @@ export interface ResourceMetrics {
 }
 
 export interface CircuitBreakerMetrics {
-  state: 'closed' | 'open' | 'half_open';
+  state: 'closed' | 'open' | 'half-open';
   failureRate: number;
   numberOfCalls: number;
   numberOfSuccessfulCalls: number;

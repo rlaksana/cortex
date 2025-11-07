@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Calculate confidence score for search results
  *

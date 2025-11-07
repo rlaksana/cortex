@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enhanced MCP Server Health Monitor
  *

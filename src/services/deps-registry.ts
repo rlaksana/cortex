@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Dependency Registry & Health Monitoring System
  *

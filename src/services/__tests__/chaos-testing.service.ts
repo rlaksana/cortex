@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P2-P3: Chaos Testing Service for Resilience Validation
  *

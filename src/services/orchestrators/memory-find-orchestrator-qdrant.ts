@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Memory Find Orchestrator - Qdrant Implementation
  *

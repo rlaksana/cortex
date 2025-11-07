@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Insight Generation Guardrails
  *

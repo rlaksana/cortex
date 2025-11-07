@@ -8,6 +8,21 @@
  * @since 2025-11-07
  */
 
+import { EventEmitter } from 'events';
+
+// ============================================================================
+// Socket Server Types (Unified socket handling)
+// ============================================================================
+
+export interface SocketServerLike {
+  io?: {
+    emit?: (channel: string, data: unknown) => void;
+    on?: (event: string, callback: (data: unknown) => void) => void;
+    close?: () => void;
+  };
+  status?: 'connected' | 'disconnected' | 'connecting';
+}
+
 // ============================================================================
 // Core Enums (Consolidated from multiple definitions)
 // ============================================================================
@@ -119,14 +134,9 @@ export interface MetricsData {
   labels?: Record<string, string>;
 }
 
-interface SocketServerLike {
-  io?: {
-    emit: (channel: string, data: unknown) => void
-  }
-}
 
-export class ObservabilityService {
-  private socketServer: SocketServerLike | null = null;
+export class ObservabilityService extends EventEmitter {
+  protected socketServer: SocketServerLike | null = null;
 
   initSocket(server: SocketServerLike): void {
     this.socketServer = server;
@@ -138,7 +148,7 @@ export class ObservabilityService {
       console.warn('Socket server not initialized');
       return;
     }
-    io.emit('metrics', data);
+    io.emit?.('metrics', data);
   }
 
   createWidget(config: WidgetConfig = {}): DashboardWidget {

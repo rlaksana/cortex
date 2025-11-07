@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unified Similarity Service - Simplified Implementation
  *

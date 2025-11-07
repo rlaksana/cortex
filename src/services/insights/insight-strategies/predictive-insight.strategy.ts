@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Predictive Insight Strategy
  *

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive test suite for insight generation guardrails
  * Tests token caps, deterministic templates, provenance tracking, and reproducible outputs

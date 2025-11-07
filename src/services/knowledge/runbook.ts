@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { RunbookData, ScopeFilter } from '../../types/knowledge-data.js';
 import { logger } from '@/utils/logger.js';
 

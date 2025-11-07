@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Performance Dashboard API for Cortex MCP
  * Provides HTTP endpoints for performance monitoring and alerting

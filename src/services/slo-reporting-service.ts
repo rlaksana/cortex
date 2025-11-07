@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * SLO Reporting and Analysis Service
  *

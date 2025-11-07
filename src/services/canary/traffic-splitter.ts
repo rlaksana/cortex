@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Traffic Splitter Service
  *

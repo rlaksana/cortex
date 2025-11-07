@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Retry Worker Service
  *

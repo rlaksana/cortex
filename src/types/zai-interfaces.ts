@@ -142,7 +142,7 @@ export interface ZAIServiceStatus {
   lastCheck: number;
   responseTime: number;
   errorRate: number;
-  circuitBreakerState: 'closed' | 'open' | 'half_open';
+  circuitBreakerState: 'closed' | 'open' | 'half-open';
   consecutiveFailures: number;
   uptime: number;
 }
@@ -169,7 +169,7 @@ export interface ZAIMetrics {
   successCount: number;
   errorCount: number;
   throughput: number;
-  circuitBreakerStatus: 'closed' | 'open' | 'half_open';
+  circuitBreakerStatus: 'closed' | 'open' | 'half-open';
   tokensUsed: number;
   cost: number;
 }
@@ -215,7 +215,7 @@ export interface ZAIJob {
 /**
  * Circuit breaker states
  */
-export type CircuitBreakerState = 'closed' | 'open' | 'half_open';
+export type CircuitBreakerState = 'closed' | 'open' | 'half-open';
 
 /**
  * Circuit breaker configuration
@@ -611,7 +611,7 @@ export interface DependencyHealth {
  */
 export interface CircuitBreakerHealth {
   name: string;
-  state: 'closed' | 'open' | 'half_open';
+  state: 'closed' | 'open' | 'half-open';
   status?: 'normal' | 'warning' | 'critical' | 'healthy' | 'degraded' | 'unhealthy'; // Added for compatibility
   failureCount: number;
   failureThreshold: number;

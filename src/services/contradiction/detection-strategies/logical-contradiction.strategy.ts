@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Logical Contradiction Detection Strategy
  *

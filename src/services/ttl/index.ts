@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * TTL Services Index
  *

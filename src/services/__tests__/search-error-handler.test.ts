@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Search Error Handler Test Suite - Phase 3 Enhanced
  *

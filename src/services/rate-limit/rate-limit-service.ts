@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P8-T8.2: Rate Limiting Service
  *

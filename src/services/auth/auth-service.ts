@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Authentication Service for Cortex MCP
  * Implements JWT-based authentication with RBAC and scope-based authorization

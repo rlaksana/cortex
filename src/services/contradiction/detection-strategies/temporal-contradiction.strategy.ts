@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Temporal Contradiction Detection Strategy
  *

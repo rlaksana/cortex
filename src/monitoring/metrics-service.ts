@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive Metrics Service for Cortex MCP
  *

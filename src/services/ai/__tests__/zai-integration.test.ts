@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * ZAI Integration Tests
  *

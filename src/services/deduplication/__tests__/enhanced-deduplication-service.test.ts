@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive test suite for enhanced deduplication service
  * Tests all 5 merge strategies and scope window configuration

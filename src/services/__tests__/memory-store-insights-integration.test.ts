@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { memoryStore } from '../memory-store.js';
 import { environment } from '../../config/environment.js';

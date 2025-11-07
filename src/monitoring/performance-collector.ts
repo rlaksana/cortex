@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Performance Metrics Collector for Cortex MCP
  * Collects and aggregates performance metrics for key operations

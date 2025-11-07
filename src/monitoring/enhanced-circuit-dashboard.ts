@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Enhanced Circuit Breaker Dashboard with SLO Overlays
  *

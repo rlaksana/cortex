@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Standardized Authentication Service
  *

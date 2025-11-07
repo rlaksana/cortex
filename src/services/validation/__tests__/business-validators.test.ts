@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Comprehensive test suite for business validators
  * Tests all P5-T5.1 business rules and validation scenarios

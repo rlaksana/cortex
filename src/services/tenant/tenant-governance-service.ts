@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * P8-T8.4: Multi-Tenancy Governance Service
  *

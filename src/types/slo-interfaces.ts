@@ -1156,7 +1156,7 @@ export interface ValidationResult {
  */
 export interface CircuitBreakerStats {
   name: string;
-  state: 'closed' | 'open' | 'half_open';
+  state: 'closed' | 'open' | 'half-open';
   failureCount: number;
   successCount: number;
   lastFailureTime?: Date;

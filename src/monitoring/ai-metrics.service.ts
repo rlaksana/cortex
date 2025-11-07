@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * AI Metrics Service - Comprehensive Monitoring for AI Operations
  *

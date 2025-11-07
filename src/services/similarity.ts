@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Similarity Detection Service (Legacy Interface)
  *

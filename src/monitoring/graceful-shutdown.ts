@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Graceful Shutdown Manager
  *

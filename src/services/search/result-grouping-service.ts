@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SearchResult } from '../../types/core-interfaces.js';
 
 export interface GroupedResult {

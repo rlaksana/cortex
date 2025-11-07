@@ -702,7 +702,7 @@ export class MTTRMeasurer extends EventEmitter {
         openConnections: 60
       },
       circuitBreaker: {
-        state: 'half_open',
+        state: 'half-open',
         failureRate: 10,
         numberOfCalls: 80,
         numberOfSuccessfulCalls: 72,
