@@ -95,12 +95,12 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('assumption');
-        expect(result.data.data.category).toBe('technical');
-        expect(result.data.data.validation_status).toBe('assumed');
-        expect(result.data.data.title).toBe('Database can handle 10,000 concurrent connections');
-        expect(result.data.data.validation_criteria).toHaveLength(3);
-        expect(result.data.data.review_frequency).toBe('monthly');
+        expect(result['data.kind']).toBe('assumption');
+        expect(result['data.data'].category).toBe('technical');
+        expect(result['data.data'].validation_status).toBe('assumed');
+        expect(result['data.data'].title).toBe('Database can handle 10,000 concurrent connections');
+        expect(result['data.data'].validation_criteria).toHaveLength(3);
+        expect(result['data.data'].review_frequency).toBe('monthly');
       }
     });
 
@@ -124,10 +124,10 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.category).toBe('business');
-        expect(result.data.data.validation_status).toBe('needs_validation');
-        expect(result.data.data.validation_criteria).toBeUndefined();
-        expect(result.data.data.owner).toBeUndefined();
+        expect(result['data.data'].category).toBe('business');
+        expect(result['data.data'].validation_status).toBe('needs_validation');
+        expect(result['data.data'].validation_criteria).toBeUndefined();
+        expect(result['data.data'].owner).toBeUndefined();
       }
     });
 
@@ -388,11 +388,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(technicalAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.category).toBe('technical');
-        expect(result.data.data.validation_status).toBe('validated');
-        expect(result.data.data.validation_criteria).toHaveLength(4);
-        expect(result.data.data.dependencies).toHaveLength(3);
-        expect(result.data.data.validation_date).toBe('2025-01-20T14:00:00Z');
+        expect(result['data.data'].category).toBe('technical');
+        expect(result['data.data'].validation_status).toBe('validated');
+        expect(result['data.data'].validation_criteria).toHaveLength(4);
+        expect(result['data.data'].dependencies).toHaveLength(3);
+        expect(result['data.data'].validation_date).toBe('2025-01-20T14:00:00Z');
       }
     });
 
@@ -422,9 +422,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(businessAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.category).toBe('business');
-        expect(result.data.data.validation_status).toBe('needs_validation');
-        expect(result.data.data.owner).toBe('product-management');
+        expect(result['data.data'].category).toBe('business');
+        expect(result['data.data'].validation_status).toBe('needs_validation');
+        expect(result['data.data'].owner).toBe('product-management');
       }
     });
 
@@ -454,8 +454,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(userAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.category).toBe('user');
-        expect(result.data.data.review_frequency).toBe('as_needed');
+        expect(result['data.data'].category).toBe('user');
+        expect(result['data.data'].review_frequency).toBe('as_needed');
       }
     });
   });
@@ -532,7 +532,7 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumptionWithValidDate);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.validation_date).toBe('2025-01-15T10:30:00Z');
+        expect(result['data.data'].validation_date).toBe('2025-01-15T10:30:00Z');
       }
     });
 
@@ -574,9 +574,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       expect(validatedResult.success).toBe(true);
 
       if (validatedResult.success) {
-        expect(validatedResult.data.data.validation_status).toBe('validated');
-        expect(validatedResult.data.data.validation_date).toBe('2025-01-25T16:45:00Z');
-        expect(validatedResult.data.data.validation_criteria).toHaveLength(2);
+        expect(validatedResult['data.data'].validation_status).toBe('validated');
+        expect(validatedResult['data.data'].validation_date).toBe('2025-01-25T16:45:00Z');
+        expect(validatedResult['data.data'].validation_criteria).toHaveLength(2);
       }
     });
   });
@@ -946,11 +946,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumptionWithRelations);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.related_assumptions).toHaveLength(3);
-        expect(result.data.data.related_assumptions[0]).toBe(
+        expect(result['data.data'].related_assumptions).toHaveLength(3);
+        expect(result['data.data'].related_assumptions[0]).toBe(
           '550e8400-e29b-41d4-a716-446655440001'
         );
-        expect(result.data.data.dependencies).toHaveLength(2);
+        expect(result['data.data'].dependencies).toHaveLength(2);
       }
     });
 
@@ -993,8 +993,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumptionWithEmptyArrays);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.related_assumptions).toEqual([]);
-        expect(result.data.data.dependencies).toEqual([]);
+        expect(result['data.data'].related_assumptions).toEqual([]);
+        expect(result['data.data'].dependencies).toEqual([]);
       }
     });
   });
@@ -1063,9 +1063,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(assumptionWithMonitoring);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.monitoring_approach).toContain('Prometheus');
-        expect(result.data.data.monitoring_approach).toContain('Weekly');
-        expect(result.data.data.review_frequency).toBe('weekly');
+        expect(result['data.data'].monitoring_approach).toContain('Prometheus');
+        expect(result['data.data'].monitoring_approach).toContain('Weekly');
+        expect(result['data.data'].review_frequency).toBe('weekly');
       }
     });
 
@@ -1128,11 +1128,11 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(assumption);
       expect(result.kind).toBe('assumption');
-      expect(result.data.category).toBe('resource');
-      expect(result.data.validation_status).toBe('validated');
+      expect(result['data.category']).toBe('resource');
+      expect(result['data.validation_status']).toBe('validated');
       expect(result.tags.infrastructure).toBe(true);
       expect(result.source.actor).toBe('cloud-architect');
-      expect(result.ttl_policy).toBe('long');
+      expect(result['ttl_policy']).toBe('long');
     });
 
     it('should handle assumption with complex validation criteria', () => {
@@ -1166,9 +1166,9 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(complexAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.validation_criteria).toHaveLength(6);
-        expect(result.data.data.validation_criteria[0]).toContain('accuracy > 85%');
-        expect(result.data.data.dependencies).toHaveLength(3);
+        expect(result['data.data'].validation_criteria).toHaveLength(6);
+        expect(result['data.data'].validation_criteria[0]).toContain('accuracy > 85%');
+        expect(result['data.data'].dependencies).toHaveLength(3);
       }
     });
   });
@@ -1248,7 +1248,7 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(minimalAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.monitoring_approach).toBe('Basic monitoring');
+        expect(result['data.data'].monitoring_approach).toBe('Basic monitoring');
       }
     });
 
@@ -1277,8 +1277,8 @@ describe('Assumption Knowledge Type - Comprehensive Testing', () => {
       const result = AssumptionSchema.safeParse(invalidatedAssumption);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.validation_status).toBe('invalidated');
-        expect(result.data.data.validation_date).toBe('2025-01-30T16:00:00Z');
+        expect(result['data.data'].validation_status).toBe('invalidated');
+        expect(result['data.data'].validation_date).toBe('2025-01-30T16:00:00Z');
       }
     });
   });

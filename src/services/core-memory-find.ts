@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { memoryStore } from './memory-store.js';
 import {
   traverseGraphWithExpansion,

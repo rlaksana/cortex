@@ -9,6 +9,7 @@ This document describes the comprehensive implementation of the dependency regis
 ### 🎯 **Core Components Implemented**
 
 #### 1. **Dependency Registry Service** (`src/services/deps-registry.ts`)
+
 - **Purpose**: Centralized registration and lifecycle management of all external dependencies
 - **Key Features**:
   - Dependency registration with metadata and configuration
@@ -18,6 +19,7 @@ This document describes the comprehensive implementation of the dependency regis
   - Service catalog with comprehensive metadata
 
 #### 2. **Health Aggregation Service** (`src/services/health-aggregation.service.ts`)
+
 - **Purpose**: Advanced health monitoring with analytics and alerting
 - **Key Features**:
   - Multi-dimensional health scoring with weighted metrics
@@ -27,6 +29,7 @@ This document describes the comprehensive implementation of the dependency regis
   - Dependency impact analysis and risk assessment
 
 #### 3. **Health Check Service** (`src/services/health-check.service.ts`)
+
 - **Purpose**: Comprehensive health checking framework
 - **Key Features**:
   - Multiple health check strategies (basic, advanced, comprehensive)
@@ -36,6 +39,7 @@ This document describes the comprehensive implementation of the dependency regis
   - Custom health check registration
 
 #### 4. **Integration Tests** (`tests/integration/deps-health.test.ts`)
+
 - **Purpose**: Comprehensive test coverage for the dependency health system
 - **Test Coverage**:
   - Dependency registration and lifecycle management
@@ -47,6 +51,7 @@ This document describes the comprehensive implementation of the dependency regis
   - System integration
 
 #### 5. **System Status Integration** (Updated `src/index.ts`)
+
 - **Purpose**: Integration with existing MCP system status endpoints
 - **New Operations**:
   - `dependency_health`: Check dependency health status
@@ -58,6 +63,7 @@ This document describes the comprehensive implementation of the dependency regis
 ## 🔧 **Technical Architecture**
 
 ### **Dependency Types Supported**
+
 - **Database** (`DependencyType.DATABASE`)
 - **Vector Database** (`DependencyType.VECTOR_DB`)
 - **Embedding Service** (`DependencyType.EMBEDDING_SERVICE`)
@@ -68,6 +74,7 @@ This document describes the comprehensive implementation of the dependency regis
 - **Monitoring** (`DependencyType.MONITORING`)
 
 ### **Health Status Levels**
+
 - **HEALTHY**: Dependency is fully operational
 - **WARNING**: Dependency has performance issues but is functional
 - **CRITICAL**: Dependency is failing or unavailable
@@ -75,6 +82,7 @@ This document describes the comprehensive implementation of the dependency regis
 - **DISABLED**: Health checking is disabled
 
 ### **Health Check Strategies**
+
 - **BASIC**: Simple connectivity and response check
 - **ADVANCED**: Basic + additional validation and metrics
 - **COMPREHENSIVE**: Advanced + performance benchmarking
@@ -83,6 +91,7 @@ This document describes the comprehensive implementation of the dependency regis
 ## 📊 **Monitoring & Analytics**
 
 ### **Health Metrics**
+
 - **Response Time**: Current, average, P95, P99
 - **Throughput**: Requests per second/minute
 - **Error Rate**: Percentage and count
@@ -90,6 +99,7 @@ This document describes the comprehensive implementation of the dependency regis
 - **Circuit Breaker**: State, failure rate, total calls
 
 ### **SLA Monitoring**
+
 - **Availability Targets**: Configurable percentage thresholds
 - **Response Time Targets**: Millisecond-based thresholds
 - **Error Rate Targets**: Percentage-based thresholds
@@ -97,6 +107,7 @@ This document describes the comprehensive implementation of the dependency regis
 - **Violation Detection**: Automatic SLA violation alerts
 
 ### **Alert Management**
+
 - **Severity Levels**: Info, Warning, Critical, Emergency
 - **Alert Lifecycle**: Creation, acknowledgment, resolution
 - **Cooldown Periods**: Prevent alert fatigue
@@ -105,6 +116,7 @@ This document describes the comprehensive implementation of the dependency regis
 ## 🚀 **Integration Points**
 
 ### **MCP Server Integration**
+
 The dependency health system is fully integrated into the MCP server with the following new endpoints:
 
 ```typescript
@@ -157,6 +169,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 ```
 
 ### **Core Dependencies Registered**
+
 1. **Qdrant Vector Database** (Critical)
    - Connection: `env.QDRANT_URL`
    - Health check interval: 30 seconds
@@ -174,24 +187,28 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 🔍 **Advanced Features**
 
 ### **Risk Assessment**
+
 - **Performance Risks**: Response time and throughput issues
 - **Availability Risks**: Downtime and connectivity problems
 - **Error Rate Risks**: Increasing error patterns
 - **Dependency Chain Risks**: Cascading failure potential
 
 ### **Trend Analysis**
+
 - **Health Trends**: Improving, stable, degrading, fluctuating
 - **Performance Trends**: Response time and throughput patterns
 - **Error Trends**: Error rate progression
 - **Availability Trends**: Uptime/downtime patterns
 
 ### **Recommendations Engine**
+
 - **Performance Recommendations**: Optimization suggestions
 - **Reliability Recommendations**: Availability improvements
 - **Monitoring Recommendations**: Enhanced observability
 - **Architecture Recommendations**: Structural improvements
 
 ### **Circuit Breaker Integration**
+
 - **Failure Detection**: Automatic failure pattern recognition
 - **Circuit Opening**: Prevent cascade failures
 - **Recovery Monitoring**: Automatic recovery detection
@@ -200,6 +217,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 🧪 **Testing Coverage**
 
 ### **Unit Tests**
+
 - Dependency registration and validation
 - Health check execution with various strategies
 - Cache behavior and invalidation
@@ -207,6 +225,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 - SLA compliance calculations
 
 ### **Integration Tests**
+
 - End-to-end dependency health workflows
 - System integration with existing MCP services
 - Performance under load scenarios
@@ -214,6 +233,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 - Memory usage and efficiency testing
 
 ### **Test Scenarios**
+
 - Normal operation scenarios
 - Network failures and timeouts
 - Service degradation and recovery
@@ -224,6 +244,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 📈 **Performance Characteristics**
 
 ### **Health Check Performance**
+
 - **Basic Health Check**: < 100ms
 - **Advanced Health Check**: < 500ms
 - **Comprehensive Health Check**: < 2000ms
@@ -231,12 +252,14 @@ The dependency health system is fully integrated into the MCP server with the fo
 - **Cache Hit Response**: < 1ms
 
 ### **Memory Usage**
+
 - **Base Memory Overhead**: ~10MB
 - **Per Dependency**: ~100KB
 - **Cache Storage**: Configurable, default 1000 entries
 - **History Storage**: Rolling window, configurable size
 
 ### **Scalability**
+
 - **Max Dependencies**: 1000+ (tested)
 - **Concurrent Health Checks**: 50+ (configurable)
 - **Alert Rate**: 1000+ per minute
@@ -245,18 +268,21 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 🛡️ **Error Handling & Resilience**
 
 ### **Graceful Degradation**
+
 - Service continues operating with partial dependency failures
 - Fallback mechanisms for critical dependencies
 - Circuit breaker prevents cascade failures
 - Health check failures don't crash the system
 
 ### **Error Recovery**
+
 - Automatic retry with exponential backoff
 - Health check result caching for resilience
 - Dependency reconnection on recovery
 - Alert resolution on health restoration
 
 ### **Monitoring & Observability**
+
 - Comprehensive logging at all levels
 - Performance metrics collection
 - Error tracking and analysis
@@ -265,6 +291,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 🔄 **Configuration & Customization**
 
 ### **Dependency Configuration**
+
 ```typescript
 {
   name: string,
@@ -302,6 +329,7 @@ The dependency health system is fully integrated into the MCP server with the fo
 ```
 
 ### **Health Aggregation Configuration**
+
 ```typescript
 {
   healthScoreWeights: {
@@ -343,12 +371,13 @@ The dependency health system is fully integrated into the MCP server with the fo
 ## 🎯 **Usage Examples**
 
 ### **Basic Dependency Health Check**
+
 ```typescript
 // Check all dependencies
 const result = await server.request({
   operation: 'system_status',
   action: 'dependency_health',
-  action: 'check_all'
+  action: 'check_all',
 });
 
 // Check specific dependency with advanced strategy
@@ -357,17 +386,18 @@ const result = await server.request({
   action: 'dependency_health',
   action: 'check',
   dependency: 'qdrant-vector-db',
-  strategy: 'advanced'
+  strategy: 'advanced',
 });
 ```
 
 ### **Dependency Registry Management**
+
 ```typescript
 // List all dependencies
 const result = await server.request({
   operation: 'system_status',
   action: 'dependency_registry',
-  action: 'list'
+  action: 'list',
 });
 
 // Get dependencies by type
@@ -375,29 +405,31 @@ const result = await server.request({
   operation: 'system_status',
   action: 'dependency_registry',
   action: 'by_type',
-  type: 'vector_db'
+  type: 'vector_db',
 });
 ```
 
 ### **Comprehensive Health Analysis**
+
 ```typescript
 // Get detailed health analysis with history
 const result = await server.request({
   operation: 'system_status',
   action: 'dependency_analysis',
   include_history: true,
-  history_limit: 100
+  history_limit: 100,
 });
 ```
 
 ### **Alert Management**
+
 ```typescript
 // List active critical alerts
 const result = await server.request({
   operation: 'system_status',
   action: 'dependency_alerts',
   action: 'list',
-  severity: 'critical'
+  severity: 'critical',
 });
 
 // Acknowledge an alert
@@ -406,13 +438,14 @@ const result = await server.request({
   action: 'dependency_alerts',
   action: 'acknowledge',
   alert_id: 'alert-123',
-  acknowledged_by: 'admin'
+  acknowledged_by: 'admin',
 });
 ```
 
 ## 🚀 **Future Enhancements**
 
 ### **Planned Features**
+
 1. **Distributed Health Monitoring**: Multi-node health aggregation
 2. **Machine Learning**: Predictive failure detection
 3. **Custom Dashboards**: Real-time health visualization
@@ -420,6 +453,7 @@ const result = await server.request({
 5. **Integration with External Systems**: Prometheus, Grafana, etc.
 
 ### **Potential Extensions**
+
 1. **Cost Monitoring**: Track dependency usage costs
 2. **Security Monitoring**: Dependency vulnerability scanning
 3. **Compliance Reporting**: Automated compliance reports
@@ -431,6 +465,7 @@ const result = await server.request({
 The P2-T3 dependency registry and health monitoring system provides a comprehensive, production-ready solution for managing external dependencies in the MCP Cortex project. With its modular architecture, extensive configuration options, and robust error handling, it ensures high availability and observability for all system dependencies.
 
 The implementation successfully addresses all requirements:
+
 - ✅ Dependency Registry & Lifecycle Management
 - ✅ Health Aggregation & Monitoring
 - ✅ Comprehensive Health Check Implementation

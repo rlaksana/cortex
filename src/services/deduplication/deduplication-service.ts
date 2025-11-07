@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import type {
   DeduplicationService as IDeduplicationService,

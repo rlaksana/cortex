@@ -11,6 +11,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Downgraded to `@modelcontextprotocol/sdk@^1.0.3` for proven stability and broader client compatibility.
 
 **Files Changed**:
+
 - `package.json` - Updated dependency version
 
 ### 2. Node.js Engine Requirements ✅
@@ -20,6 +21,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Changed to `>=18.0.0` to support Node.js 18+ for broader compatibility while maintaining modern features.
 
 **Files Changed**:
+
 - `package.json` - Updated engines field
 
 ### 3. TypeScript Module Resolution ✅
@@ -29,6 +31,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Changed to `"node"` for standard Node.js module resolution and better compatibility.
 
 **Files Changed**:
+
 - `tsconfig.json` - Updated moduleResolution setting
 
 ### 4. Entry Point Configuration ✅
@@ -38,6 +41,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Simplified to use direct entry point `dist/mcp-server.js` with clean MCP protocol handling.
 
 **Files Changed**:
+
 - `package.json` - Updated main and bin fields
 - Created new `src/mcp-server.ts` as simplified entry point
 
@@ -48,6 +52,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Updated build scripts to use the new entry point and ensure proper executable permissions.
 
 **Files Changed**:
+
 - `package.json` - Updated build, start, dev, and validation scripts
 - Added MCP-specific validation scripts
 
@@ -58,6 +63,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Created a new, clean `src/mcp-server.ts` with proper TypeScript syntax and MCP protocol implementation.
 
 **Files Changed**:
+
 - `src/index.ts` - Backed up to `src/index.ts.backup`
 - `src/schemas/json-schemas.ts` - Fixed duplicate export keywords
 - `src/mcp-server.ts` - New clean implementation
@@ -69,6 +75,7 @@ This document summarizes the configuration issues that were identified and fixed
 **Fix**: Updated to use `import.meta.url` for proper ES module detection.
 
 **Files Changed**:
+
 - `src/mcp-server.ts` - Fixed module detection
 
 ## New MCP Server Features
@@ -102,6 +109,7 @@ The new `src/mcp-server.ts` provides:
 ## Configuration for Clients
 
 ### Claude Desktop
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -110,11 +118,13 @@ env = {}
 ```
 
 ### Codex CLI
+
 ```bash
 cortex-memory-mcp --stdio
 ```
 
 ### Direct Execution
+
 ```bash
 node dist/mcp-server.js
 ```
@@ -138,16 +148,19 @@ npm run start
 ## Files Summary
 
 ### Core Configuration Files
+
 - `package.json` - Updated with compatible dependencies and scripts
 - `tsconfig.json` - Fixed module resolution for compatibility
 - `mcp-server-config.md` - New configuration documentation
 
 ### New Implementation Files
+
 - `src/mcp-server.ts` - Clean, compatible MCP server implementation
 - `test-mcp-simple.mjs` - Validation test for MCP server
 - `MCP-COMPATIBILITY-FIXES-SUMMARY.md` - This summary document
 
 ### Backup Files
+
 - `src/index.ts.backup` - Original complex implementation (preserved)
 
 ## Testing Results

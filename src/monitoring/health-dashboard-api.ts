@@ -29,14 +29,12 @@ import {
   containerProbesHandler,
   type ContainerHealthState
 } from './container-probes.js';
-import {
-  healthStructuredLogger
-} from './health-structured-logger.js';
+import { ProductionLogger } from '@/utils/logger.js';
 import {
   HealthStatus,
   DependencyType
 } from '../types/unified-health-interfaces.js';
-import { logger } from '../utils/logger.js';
+const logger = ProductionLogger;
 
 /**
  * Dashboard API configuration

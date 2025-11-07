@@ -33,17 +33,20 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const itemA = {
         kind: 'entity' as const,
         content: 'Sensitive data for tenant A',
-        scope: tenantA
+        scope: tenantA,
       };
 
       const resultA = await memoryStore.store(itemA, { userId: testUserId, ...tenantA });
       expect(resultA.success).toBe(true);
 
       // Try to access from tenant B - should fail or return empty
-      const findResultB = await memoryStore.find({
-        query: 'Sensitive data',
-        scope: tenantB
-      }, { userId: testUserId, ...tenantB });
+      const findResultB = await memoryStore.find(
+        {
+          query: 'Sensitive data',
+          scope: tenantB,
+        },
+        { userId: testUserId, ...tenantB }
+      );
 
       expect(findResultB.items).toHaveLength(0);
     });
@@ -55,16 +58,19 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const item = {
         kind: 'entity' as const,
         content: 'Organization-specific data',
-        scope: orgA
+        scope: orgA,
       };
 
       await memoryStore.store(item, { userId: testUserId, ...orgA });
 
       // Different org in same tenant should not see the data
-      const result = await memoryStore.find({
-        query: 'Organization-specific data',
-        scope: orgB
-      }, { userId: testUserId, ...orgB });
+      const result = await memoryStore.find(
+        {
+          query: 'Organization-specific data',
+          scope: orgB,
+        },
+        { userId: testUserId, ...orgB }
+      );
 
       expect(result.items).toHaveLength(0);
     });
@@ -76,16 +82,19 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const item = {
         kind: 'entity' as const,
         content: 'Project-specific data',
-        scope: scope1
+        scope: scope1,
       };
 
       await memoryStore.store(item, { userId: testUserId, ...scope1 });
 
       // Different project should not see the data
-      const result = await memoryStore.find({
-        query: 'Project-specific data',
-        scope: scope2
-      }, { userId: testUserId, ...scope2 });
+      const result = await memoryStore.find(
+        {
+          query: 'Project-specific data',
+          scope: scope2,
+        },
+        { userId: testUserId, ...scope2 }
+      );
 
       expect(result.items).toHaveLength(0);
     });
@@ -99,7 +108,7 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const storeResult = await memoryStore.store({
         kind: 'entity' as const,
         content: 'Test data',
-        scope
+        scope,
       });
 
       expect(storeResult.success).toBe(false);
@@ -108,7 +117,7 @@ describe('Security Tests - RBAC Scope Validation', () => {
       // Test find without user context
       const findResult = await memoryStore.find({
         query: 'Test',
-        scope
+        scope,
       });
 
       expect(findResult.items).toHaveLength(0);
@@ -121,17 +130,20 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const item = {
         kind: 'entity' as const,
         content: 'User-specific data',
-        scope: { tenant: testTenantId, org: testOrgId }
+        scope: { tenant: testTenantId, org: testOrgId },
       };
 
       // Store as user A
       await memoryStore.store(item, userA);
 
       // Try to find as user B - should not see other user's private data
-      const result = await memoryStore.find({
-        query: 'User-specific data',
-        scope: { tenant: testTenantId, org: testOrgId }
-      }, userB);
+      const result = await memoryStore.find(
+        {
+          query: 'User-specific data',
+          scope: { tenant: testTenantId, org: testOrgId },
+        },
+        userB
+      );
 
       // Should not return data stored by other user (assuming proper RBAC)
       expect(result.items.length).toBeLessThanOrEqual(0);
@@ -144,7 +156,7 @@ describe('Security Tests - RBAC Scope Validation', () => {
         userId: testUserId,
         tenant: 'user-tenant',
         org: 'user-org',
-        project: 'user-project'
+        project: 'user-project',
       };
 
       const maliciousScope = {
@@ -153,8 +165,8 @@ describe('Security Tests - RBAC Scope Validation', () => {
         scope: {
           tenant: 'admin-tenant',
           org: 'admin-org',
-          project: 'admin-project'
-        }
+          project: 'admin-project',
+        },
       };
 
       // User trying to store data with admin scope
@@ -169,14 +181,17 @@ describe('Security Tests - RBAC Scope Validation', () => {
         userId: testUserId,
         tenant: testTenantId,
         org: testOrgId,
-        project: 'different-project' // Project not belonging to org
+        project: 'different-project', // Project not belonging to org
       };
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Inconsistent scope test',
-        scope: { tenant: testTenantId, org: 'different-org' }
-      }, inconsistentScope);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Inconsistent scope test',
+          scope: { tenant: testTenantId, org: 'different-org' },
+        },
+        inconsistentScope
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Scope hierarchy validation failed');
@@ -188,10 +203,13 @@ describe('Security Tests - RBAC Scope Validation', () => {
       const userContext = { userId: testUserId, tenant: testTenantId, org: testOrgId };
 
       // Attempt to access restricted data
-      await memoryStore.find({
-        query: 'sensitive information',
-        scope: { tenant: 'different-tenant' }
-      }, userContext);
+      await memoryStore.find(
+        {
+          query: 'sensitive information',
+          scope: { tenant: 'different-tenant' },
+        },
+        userContext
+      );
 
       // Verify audit log contains the unauthorized access attempt
       // This would require access to audit logs implementation
@@ -202,11 +220,14 @@ describe('Security Tests - RBAC Scope Validation', () => {
     it('should not expose sensitive information in error messages', async () => {
       const userContext = { userId: testUserId, tenant: testTenantId, org: testOrgId };
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Confidential data with secrets',
-        scope: { tenant: 'restricted-tenant' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Confidential data with secrets',
+          scope: { tenant: 'restricted-tenant' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).not.toContain('Confidential data');
@@ -222,14 +243,14 @@ describe('Security Tests - RBAC Scope Validation', () => {
         userId: testUserId,
         tenant: testTenantId,
         org: testOrgId,
-        secureConnection: true
+        secureConnection: true,
       };
 
       const insecureContext = {
         userId: testUserId,
         tenant: testTenantId,
         org: testOrgId,
-        secureConnection: false
+        secureConnection: false,
       };
 
       // These would be rejected by middleware in a real implementation

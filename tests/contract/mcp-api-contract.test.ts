@@ -18,7 +18,7 @@ import {
   CallToolRequestSchema,
   InitializeRequestSchema,
   ErrorCode,
-  McpError
+  McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
@@ -27,7 +27,7 @@ import {
   MemoryStoreInputSchema,
   MemoryFindInputSchema,
   safeValidateMemoryStoreInput,
-  safeValidateMemoryFindInput
+  safeValidateMemoryFindInput,
 } from '../../src/schemas/mcp-inputs.js';
 import { ALL_JSON_SCHEMAS } from '../../src/schemas/json-schemas.js';
 
@@ -40,7 +40,7 @@ import {
   createValidMemoryFindInput,
   createInvalidMemoryStoreInput,
   createInvalidMemoryFindInput,
-  createEdgeCaseInputs
+  createEdgeCaseInputs,
 } from '../fixtures/mcp-input-fixtures.js';
 
 describe('MCP API Contract Tests - T22', () => {
@@ -93,7 +93,7 @@ describe('MCP API Contract Tests - T22', () => {
       // Verify tool discovery contract
       expect(expectedTools).toHaveLength(2);
 
-      expectedTools.forEach(tool => {
+      expectedTools.forEach((tool) => {
         expect(tool.name).toMatch(/^(memory_store|memory_find)$/);
         expect(tool.description).toBeTypeOf('string');
         expect(tool.description).toContain('Cortex memory');
@@ -108,7 +108,7 @@ describe('MCP API Contract Tests - T22', () => {
       // Verify tool names remain consistent (backward compatibility)
       const toolNames = ['memory_store', 'memory_find'];
 
-      toolNames.forEach(toolName => {
+      toolNames.forEach((toolName) => {
         expect(toolName).toBeTypeOf('string');
         expect(toolName).toMatch(/^[a-z_]+$/);
         expect(toolName.length).toBeGreaterThan(0);
@@ -164,7 +164,7 @@ describe('MCP API Contract Tests - T22', () => {
         expect(result.success).toBe(false);
 
         if (!result.success) {
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
           expect(result.error.errors.length).toBeGreaterThan(0);
 
           // Verify error messages are helpful
@@ -179,34 +179,49 @@ describe('MCP API Contract Tests - T22', () => {
     it('should handle edge cases in memory_store inputs', () => {
       const edgeCases = createEdgeCaseInputs().memoryStore;
 
-      edgeCases.forEach(input => {
+      edgeCases.forEach((input) => {
         const result = MemoryStoreInputSchema.safeParse(input);
 
         // Edge cases should either pass or fail gracefully
         if (result.success) {
           // If it passes, ensure the output is well-formed
           expect(result.data).toHaveProperty('items');
-          expect(Array.isArray(result.data.items)).toBe(true);
+          expect(Array.isArray(result['data.items'])).toBe(true);
         } else {
           // If it fails, ensure proper error handling
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
         }
       });
     });
 
     it('should validate all 16 knowledge types', () => {
       const knowledgeTypes = [
-        'entity', 'relation', 'observation', 'section', 'runbook',
-        'change', 'issue', 'decision', 'todo', 'release_note',
-        'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+        'entity',
+        'relation',
+        'observation',
+        'section',
+        'runbook',
+        'change',
+        'issue',
+        'decision',
+        'todo',
+        'release_note',
+        'ddl',
+        'pr_context',
+        'incident',
+        'release',
+        'risk',
+        'assumption',
       ];
 
-      knowledgeTypes.forEach(kind => {
+      knowledgeTypes.forEach((kind) => {
         const input = {
-          items: [{
-            kind,
-            content: `Test content for ${kind}`,
-          }]
+          items: [
+            {
+              kind,
+              content: `Test content for ${kind}`,
+            },
+          ],
         };
 
         const result = MemoryStoreInputSchema.safeParse(input);
@@ -216,21 +231,27 @@ describe('MCP API Contract Tests - T22', () => {
 
     it('should validate deduplication configuration', () => {
       const validDeduplicationStrategies = [
-        'skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'
+        'skip',
+        'prefer_existing',
+        'prefer_newer',
+        'combine',
+        'intelligent',
       ];
 
-      validDeduplicationStrategies.forEach(strategy => {
+      validDeduplicationStrategies.forEach((strategy) => {
         const input = {
-          items: [{
-            kind: 'entity',
-            content: 'Test entity',
-          }],
+          items: [
+            {
+              kind: 'entity',
+              content: 'Test entity',
+            },
+          ],
           deduplication: {
             enabled: true,
             merge_strategy: strategy,
             similarity_threshold: 0.85,
             max_history_hours: 168,
-          }
+          },
         };
 
         const result = MemoryStoreInputSchema.safeParse(input);
@@ -241,16 +262,18 @@ describe('MCP API Contract Tests - T22', () => {
     it('should validate TTL configuration', () => {
       const ttlPolicies = ['default', 'short', 'long', 'permanent'];
 
-      ttlPolicies.forEach(policy => {
+      ttlPolicies.forEach((policy) => {
         const input = {
-          items: [{
-            kind: 'entity',
-            content: 'Test entity with TTL',
-          }],
+          items: [
+            {
+              kind: 'entity',
+              content: 'Test entity with TTL',
+            },
+          ],
           global_ttl: {
             policy,
             auto_extend: policy !== 'permanent',
-          }
+          },
         };
 
         const result = MemoryStoreInputSchema.safeParse(input);
@@ -282,7 +305,7 @@ describe('MCP API Contract Tests - T22', () => {
         expect(result.success).toBe(false);
 
         if (!result.success) {
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
           expect(result.error.errors.length).toBeGreaterThan(0);
 
           // Verify error messages are specific and helpful
@@ -296,7 +319,7 @@ describe('MCP API Contract Tests - T22', () => {
     it('should validate search strategies', () => {
       const searchStrategies = ['fast', 'auto', 'deep'];
 
-      searchStrategies.forEach(strategy => {
+      searchStrategies.forEach((strategy) => {
         const input = {
           query: 'test query',
           search_strategy: strategy,
@@ -315,7 +338,7 @@ describe('MCP API Contract Tests - T22', () => {
         { org: 'test-org', project: 'test-project', branch: 'feature/test' },
       ];
 
-      validScopes.forEach(scope => {
+      validScopes.forEach((scope) => {
         const input = {
           query: 'test query',
           scope,
@@ -329,7 +352,7 @@ describe('MCP API Contract Tests - T22', () => {
     it('should validate result format options', () => {
       const resultFormats = ['detailed', 'summary', 'compact'];
 
-      resultFormats.forEach(format => {
+      resultFormats.forEach((format) => {
         const input = {
           query: 'test query',
           result_format: format,
@@ -366,7 +389,7 @@ describe('MCP API Contract Tests - T22', () => {
       // Verify response structure matches contract
       expect(expectedResponseStructure).toBeDefined();
       expect(expectedResponseStructure.content).toBeDefined();
-      expect(expectedResponseStructure._meta).toBeDefined();
+      expect(expectedResponseStructure['_']meta).toBeDefined();
       expect(expectedResponseStructure.isError).toBe(false);
     });
 
@@ -395,21 +418,15 @@ describe('MCP API Contract Tests - T22', () => {
       // Verify error response structure matches contract
       expect(expectedErrorResponse).toBeDefined();
       expect(expectedErrorResponse.content).toBeDefined();
-      expect(expectedErrorResponse._meta).toBeDefined();
-      expect(expectedErrorResponse._meta.error).toBeDefined();
+      expect(expectedErrorResponse['_']meta).toBeDefined();
+      expect(expectedErrorResponse['_']meta.error).toBeDefined();
       expect(expectedErrorResponse.isError).toBe(true);
     });
 
     it('should include proper metadata in responses', () => {
-      const expectedMetadataFields = [
-        'requestId',
-        'timestamp',
-        'operation',
-        'duration',
-        'version',
-      ];
+      const expectedMetadataFields = ['requestId', 'timestamp', 'operation', 'duration', 'version'];
 
-      expectedMetadataFields.forEach(field => {
+      expectedMetadataFields.forEach((field) => {
         expect(field).toBeTypeOf('string');
       });
     });
@@ -432,10 +449,10 @@ describe('MCP API Contract Tests - T22', () => {
         isError: false,
       };
 
-      expect(batchResponse._meta.batchId).toBeDefined();
-      expect(batchResponse._meta.itemCount).toBeGreaterThan(0);
-      expect(typeof batchResponse._meta.processedItems).toBe('number');
-      expect(typeof batchResponse._meta.failedItems).toBe('number');
+      expect(batchResponse['_']meta.batchId).toBeDefined();
+      expect(batchResponse['_']meta.itemCount).toBeGreaterThan(0);
+      expect(typeof batchResponse['_']meta.processedItems).toBe('number');
+      expect(typeof batchResponse['_']meta.failedItems).toBe('number');
     });
   });
 
@@ -459,14 +476,14 @@ describe('MCP API Contract Tests - T22', () => {
 
     it('should handle MCP protocol errors correctly', () => {
       const expectedErrorCodes = [
-        ErrorCode.InvalidRequest,
-        ErrorCode.MethodNotFound,
-        ErrorCode.InvalidParams,
-        ErrorCode.InternalError,
-        ErrorCode.ParseError,
+        ErrorCode['I']nvalidRequest,
+        ErrorCode['M']ethodNotFound,
+        ErrorCode['I']nvalidParams,
+        ErrorCode['I']nternalError,
+        ErrorCode['P']arseError,
       ];
 
-      expectedErrorCodes.forEach(code => {
+      expectedErrorCodes.forEach((code) => {
         const mcpError = new McpError(code, `Test error for ${code}`);
         expect(mcpError).toBeInstanceOf(Error);
         expect(mcpError.code).toBe(code);
@@ -495,9 +512,9 @@ describe('MCP API Contract Tests - T22', () => {
         isError: true,
       };
 
-      expect(errorResponse._meta.error.code).toBeTypeOf('string');
-      expect(errorResponse._meta.error.message).toBeTypeOf('string');
-      expect(errorResponse._meta.error.type).toMatch(/^(validation|operational|system)$/);
+      expect(errorResponse['_']meta.error.code).toBeTypeOf('string');
+      expect(errorResponse['_']meta.error.message).toBeTypeOf('string');
+      expect(errorResponse['_']meta.error.type).toMatch(/^(validation|operational|system)$/);
     });
 
     it('should handle timeout errors gracefully', () => {
@@ -524,8 +541,8 @@ describe('MCP API Contract Tests - T22', () => {
         isError: true,
       };
 
-      expect(timeoutError._meta.error.code).toBe('TIMEOUT');
-      expect(timeoutError._meta.error.details.timeout).toBeGreaterThan(0);
+      expect(timeoutError['_']meta.error.code).toBe('TIMEOUT');
+      expect(timeoutError['_']meta.error.details.timeout).toBeGreaterThan(0);
     });
 
     it('should handle database connection errors', () => {
@@ -552,8 +569,8 @@ describe('MCP API Contract Tests - T22', () => {
         isError: true,
       };
 
-      expect(dbError._meta.error.code).toBe('DATABASE_ERROR');
-      expect(typeof dbError._meta.error.details.retryable).toBe('boolean');
+      expect(dbError['_']meta.error.code).toBe('DATABASE_ERROR');
+      expect(typeof dbError['_']meta.error.details.retryable).toBe('boolean');
     });
   });
 
@@ -578,9 +595,9 @@ describe('MCP API Contract Tests - T22', () => {
 
       if (result.success) {
         // Verify that the parsed result has expected defaults
-        expect(result.data.deduplication).toBeDefined();
-        expect(result.data.global_ttl).toBeDefined();
-        expect(result.data.global_truncation).toBeDefined();
+        expect(result['data.deduplication']).toBeDefined();
+        expect(result['data.global_ttl']).toBeDefined();
+        expect(result['data.global_truncation']).toBeDefined();
       }
     });
 
@@ -595,9 +612,9 @@ describe('MCP API Contract Tests - T22', () => {
 
       if (result.success) {
         // Verify that the parsed result has expected defaults
-        expect(result.data.search_strategy).toBeDefined();
-        expect(result.data.limit).toBeDefined();
-        expect(result.data.result_format).toBeDefined();
+        expect(result['data.search_strategy']).toBeDefined();
+        expect(result['data.limit']).toBeDefined();
+        expect(result['data.result_format']).toBeDefined();
       }
     });
 

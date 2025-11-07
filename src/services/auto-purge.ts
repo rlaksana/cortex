@@ -9,7 +9,7 @@
  * @module services/auto-purge
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { QdrantOnlyDatabaseLayer, QdrantDatabaseConfig } from '../db/unified-database-layer-v2.js';
 import { Environment } from '../config/environment.js';
 

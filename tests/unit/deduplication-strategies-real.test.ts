@@ -22,7 +22,7 @@ import {
   CombineStrategy,
   IntelligentStrategy,
   DeduplicationStrategyFactory,
-  type DeduplicationStrategy
+  type DeduplicationStrategy,
 } from '../../src/services/deduplication/strategies/index.js';
 
 // Test utilities
@@ -34,7 +34,7 @@ const createTestKnowledgeItem = (overrides: any = {}) => ({
   metadata: {},
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  ...overrides
+  ...overrides,
 });
 
 // Test strategy instances
@@ -56,41 +56,41 @@ describe('Real Deduplication Strategies Test Suite', () => {
       createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Identical content that should be detected as duplicate' },
-        metadata: { category: 'test', priority: 'high' }
+        metadata: { category: 'test', priority: 'high' },
       }),
       createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Identical content that should be detected as duplicate' },
-        metadata: { category: 'test', priority: 'high' }
+        metadata: { category: 'test', priority: 'high' },
       }),
 
       // Semantic duplicates
       createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Machine learning algorithms analyze data patterns' },
-        metadata: { category: 'ml', priority: 'medium' }
+        metadata: { category: 'ml', priority: 'medium' },
       }),
       createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Data analysis is performed by machine learning models' },
-        metadata: { category: 'ml', priority: 'medium' }
+        metadata: { category: 'ml', priority: 'medium' },
       }),
       createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'AI systems use machine learning to analyze patterns in data' },
-        metadata: { category: 'ai', priority: 'medium' }
+        metadata: { category: 'ai', priority: 'medium' },
       }),
 
       // Hash collisions (same content, different formatting)
       createTestKnowledgeItem({
         kind: 'section',
         data: { content: 'The quick brown fox jumps over the lazy dog' },
-        metadata: { type: 'sentence' }
+        metadata: { type: 'sentence' },
       }),
       createTestKnowledgeItem({
         kind: 'section',
         data: { content: 'the quick brown fox jumps over the lazy dog' }, // lowercase
-        metadata: { type: 'sentence' }
+        metadata: { type: 'sentence' },
       }),
 
       // Metadata-based duplicates
@@ -101,8 +101,8 @@ describe('Real Deduplication Strategies Test Suite', () => {
           decision_id: 'DEC-001',
           author: 'john.doe',
           date: '2024-01-15',
-          category: 'technical'
-        }
+          category: 'technical',
+        },
       }),
       createTestKnowledgeItem({
         kind: 'decision',
@@ -111,21 +111,21 @@ describe('Real Deduplication Strategies Test Suite', () => {
           decision_id: 'DEC-001',
           author: 'john.doe',
           date: '2024-01-15',
-          category: 'technical'
-        }
+          category: 'technical',
+        },
       }),
 
       // Unique items (should not be deduplicated)
       createTestKnowledgeItem({
         kind: 'observation',
         data: { content: 'Unique observation content that has no duplicates' },
-        metadata: { category: 'unique' }
+        metadata: { category: 'unique' },
       }),
       createTestKnowledgeItem({
         kind: 'runbook',
         data: { content: 'Step-by-step procedures for system recovery' },
-        metadata: { category: 'procedures', complexity: 'high' }
-      })
+        metadata: { category: 'procedures', complexity: 'high' },
+      }),
     ];
 
     // Additional test items for stress testing
@@ -134,9 +134,9 @@ describe('Real Deduplication Strategies Test Suite', () => {
         createTestKnowledgeItem({
           kind: 'entity',
           data: { content: `Bulk test item ${i % 3}` }, // Creates intentional duplicates
-          metadata: { batch: 'bulk-test', index: i }
+          metadata: { batch: 'bulk-test', index: i },
         })
-      )
+      ),
     ];
   });
 
@@ -144,27 +144,27 @@ describe('Real Deduplication Strategies Test Suite', () => {
     // Initialize strategies with test configurations
     skipStrategy = new SkipStrategy({
       logSkippedItems: false,
-      performBasicValidation: true
+      performBasicValidation: true,
     });
 
     preferExistingStrategy = new PreferExistingStrategy({
       similarityThreshold: 0.85,
       comparisonMethod: 'first_encountered',
-      logDetailedActions: false
+      logDetailedActions: false,
     });
 
     preferNewerStrategy = new PreferNewerStrategy({
       similarityThreshold: 0.85,
       ageDeterminationMethod: 'created_at',
       tieBreaker: 'content_length',
-      logTimestampComparisons: false
+      logTimestampComparisons: false,
     });
 
     combineStrategy = new CombineStrategy({
       similarityThreshold: 0.8,
       contentMergeStrategy: 'intelligent_merge',
       metadataMergeStrategy: 'union',
-      maxItemsInMergeGroup: 5
+      maxItemsInMergeGroup: 5,
     });
 
     intelligentStrategy = new IntelligentStrategy({
@@ -175,8 +175,8 @@ describe('Real Deduplication Strategies Test Suite', () => {
         exact: 0.95,
         semantic: 0.8,
         structural: 0.7,
-        overall: 0.75
-      }
+        overall: 0.75,
+      },
     });
   });
 
@@ -249,7 +249,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
     it('should prefer first encountered item when duplicates found', async () => {
       const result = await preferExistingStrategy.detectDuplicates(testItems);
 
-      result.duplicates.forEach(group => {
+      result.duplicates.forEach((group) => {
         expect(group.action).toBeDefined();
         expect(group.action!.keepIndices).toContain(0); // Should keep first item
         expect(group.action!.discardIndices.length).toBeGreaterThan(0);
@@ -271,11 +271,11 @@ describe('Real Deduplication Strategies Test Suite', () => {
       // Create items with different timestamps
       const olderItem = createTestKnowledgeItem({
         data: { content: 'Same content' },
-        created_at: '2024-01-01T00:00:00.000Z'
+        created_at: '2024-01-01T00:00:00.000Z',
       });
       const newerItem = createTestKnowledgeItem({
         data: { content: 'Same content' },
-        created_at: '2024-01-02T00:00:00.000Z'
+        created_at: '2024-01-02T00:00:00.000Z',
       });
 
       const result = await preferNewerStrategy.detectDuplicates([olderItem, newerItem]);
@@ -292,11 +292,11 @@ describe('Real Deduplication Strategies Test Suite', () => {
     it('should handle tie-breaking when timestamps are similar', async () => {
       const item1 = createTestKnowledgeItem({
         data: { content: 'Short content' },
-        created_at: '2024-01-01T00:00:00.000Z'
+        created_at: '2024-01-01T00:00:00.000Z',
       });
       const item2 = createTestKnowledgeItem({
         data: { content: 'Much longer content with more details' },
-        created_at: '2024-01-01T00:00:01.000Z' // Only 1 second difference
+        created_at: '2024-01-01T00:00:01.000Z', // Only 1 second difference
       });
 
       const result = await preferNewerStrategy.detectDuplicates([item1, item2]);
@@ -308,16 +308,19 @@ describe('Real Deduplication Strategies Test Suite', () => {
 
     it('should handle missing timestamps gracefully', async () => {
       const itemWithoutTimestamp = createTestKnowledgeItem({
-        data: { content: 'Content without timestamp' }
+        data: { content: 'Content without timestamp' },
       });
       delete itemWithoutTimestamp.created_at;
 
       const itemWithTimestamp = createTestKnowledgeItem({
         data: { content: 'Content without timestamp' },
-        created_at: '2024-01-01T00:00:00.000Z'
+        created_at: '2024-01-01T00:00:00.000Z',
       });
 
-      const result = await preferNewerStrategy.detectDuplicates([itemWithoutTimestamp, itemWithTimestamp]);
+      const result = await preferNewerStrategy.detectDuplicates([
+        itemWithoutTimestamp,
+        itemWithTimestamp,
+      ]);
 
       expect(result.duplicates.length).toBe(1);
       expect(result.unique.length).toBe(1);
@@ -338,12 +341,12 @@ describe('Real Deduplication Strategies Test Suite', () => {
       const itemsToCombine = [
         createTestKnowledgeItem({
           data: { content: 'First part of information', tags: ['tag1'] },
-          metadata: { source: 'doc1' }
+          metadata: { source: 'doc1' },
         }),
         createTestKnowledgeItem({
           data: { content: 'Second part of information', tags: ['tag2'] },
-          metadata: { source: 'doc2' }
-        })
+          metadata: { source: 'doc2' },
+        }),
       ];
 
       const result = await combineStrategy.detectDuplicates(itemsToCombine);
@@ -353,20 +356,20 @@ describe('Real Deduplication Strategies Test Suite', () => {
 
       // Check that merged item contains combined content
       const mergedItem = result.unique[0];
-      expect(mergedItem.data.content).toContain('First part');
-      expect(mergedItem.data.content).toContain('Second part');
-      expect(mergedItem.metadata.merged_from).toBeDefined();
+      expect(mergedItem['data.content']).toContain('First part');
+      expect(mergedItem['data.content']).toContain('Second part');
+      expect(mergedItem.metadata['merged_from']).toBeDefined();
     });
 
     it('should handle content merging with different strategies', async () => {
       const concatenateStrategy = new CombineStrategy({
         contentMergeStrategy: 'concatenate',
-        similarityThreshold: 0.8
+        similarityThreshold: 0.8,
       });
 
       const itemsToCombine = [
         createTestKnowledgeItem({ data: { content: 'Content A' } }),
-        createTestKnowledgeItem({ data: { content: 'Content B' } })
+        createTestKnowledgeItem({ data: { content: 'Content B' } }),
       ];
 
       const result = await concatenateStrategy.detectDuplicates(itemsToCombine);
@@ -380,7 +383,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
       const manyDuplicates = Array.from({ length: 15 }, (_, i) =>
         createTestKnowledgeItem({
           data: { content: `Similar content ${i}` },
-          created_at: new Date(Date.now() - i * 1000).toISOString()
+          created_at: new Date(Date.now() - i * 1000).toISOString(),
         })
       );
 
@@ -396,20 +399,20 @@ describe('Real Deduplication Strategies Test Suite', () => {
     it('should preserve merge history when configured', async () => {
       const strategyWithHistory = new CombineStrategy({
         preserveMergeHistory: true,
-        similarityThreshold: 0.8
+        similarityThreshold: 0.8,
       });
 
       const itemsToCombine = [
         createTestKnowledgeItem({ data: { content: 'Content 1' } }),
-        createTestKnowledgeItem({ data: { content: 'Content 2' } })
+        createTestKnowledgeItem({ data: { content: 'Content 2' } }),
       ];
 
       const result = await strategyWithHistory.detectDuplicates(itemsToCombine);
 
       expect(result.duplicates.length).toBe(1);
       const mergedItem = result.unique[0];
-      expect(mergedItem.metadata.merge_history).toBeDefined();
-      expect(mergedItem.metadata.merge_history).toBeInstanceOf(Array);
+      expect(mergedItem.metadata['merge_history']).toBeDefined();
+      expect(mergedItem.metadata['merge_history']).toBeInstanceOf(Array);
     });
 
     it('should provide strategy description and statistics', () => {
@@ -447,10 +450,10 @@ describe('Real Deduplication Strategies Test Suite', () => {
 
     it('should analyze content structure', async () => {
       const structuredItem = createTestKnowledgeItem({
-        data: { content: '# Header\n\n- List item 1\n- List item 2\n\n```code```' }
+        data: { content: '# Header\n\n- List item 1\n- List item 2\n\n```code```' },
       });
       const unstructuredItem = createTestKnowledgeItem({
-        data: { content: 'Plain text without structure' }
+        data: { content: 'Plain text without structure' },
       });
 
       const result = await intelligentStrategy.detectDuplicates([structuredItem, unstructuredItem]);
@@ -461,10 +464,12 @@ describe('Real Deduplication Strategies Test Suite', () => {
 
     it('should extract and compare keywords', async () => {
       const technicalItem = createTestKnowledgeItem({
-        data: { content: 'Machine learning algorithms use neural networks for pattern recognition' }
+        data: {
+          content: 'Machine learning algorithms use neural networks for pattern recognition',
+        },
       });
       const similarItem = createTestKnowledgeItem({
-        data: { content: 'Neural networks in ML systems recognize patterns effectively' }
+        data: { content: 'Neural networks in ML systems recognize patterns effectively' },
       });
 
       const result = await intelligentStrategy.detectDuplicates([technicalItem, similarItem]);
@@ -490,7 +495,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
       const performanceStrategy = new IntelligentStrategy({
         enableCaching: true,
         maxCacheSize: 100,
-        enableSemanticAnalysis: true
+        enableSemanticAnalysis: true,
       });
 
       const result1 = await performanceStrategy.detectDuplicates(testItems.slice(0, 3));
@@ -576,7 +581,8 @@ describe('Real Deduplication Strategies Test Suite', () => {
 
     it('should provide strategy descriptions', () => {
       const skipDescription = DeduplicationStrategyFactory.getStrategyDescription('skip');
-      const intelligentDescription = DeduplicationStrategyFactory.getStrategyDescription('intelligent');
+      const intelligentDescription =
+        DeduplicationStrategyFactory.getStrategyDescription('intelligent');
 
       expect(skipDescription).toContain('skip');
       expect(intelligentDescription).toContain('intelligent');
@@ -591,16 +597,12 @@ describe('Real Deduplication Strategies Test Suite', () => {
         ...Array.from({ length: 50 }, (_, i) =>
           createTestKnowledgeItem({
             data: { content: `Performance test item ${i}` },
-            metadata: { performance: true, index: i }
+            metadata: { performance: true, index: i },
           })
-        )
+        ),
       ];
 
-      const strategies = [
-        skipStrategy,
-        preferExistingStrategy,
-        preferNewerStrategy
-      ];
+      const strategies = [skipStrategy, preferExistingStrategy, preferNewerStrategy];
 
       for (const strategy of strategies) {
         const startTime = Date.now();
@@ -620,7 +622,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
         [undefined], // Single undefined item
         [{}], // Empty object
         [{ id: 'test' }], // Item with minimal data
-        Array.from({ length: 1 }, () => ({})) // Array of empty objects
+        Array.from({ length: 1 }, () => ({})), // Array of empty objects
       ].filter(Boolean); // Remove null/undefined
 
       for (const testCase of edgeCases) {
@@ -655,7 +657,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
         { similarityThreshold: 0.7 },
         { respectScopeBoundaries: false },
         { dedupeWindowDays: 1 },
-        { enableAuditLogging: false }
+        { enableAuditLogging: false },
       ];
 
       for (const config of configurations) {
@@ -673,7 +675,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
         { id: 'valid', kind: 'entity', data: { content: 'valid' } },
         { id: 'missing-data', kind: 'entity' },
         { id: 'missing-kind', data: { content: 'no kind' } },
-        { data: { content: 'no id or kind' } }
+        { data: { content: 'no id or kind' } },
       ];
 
       const result = await skipStrategy.detectDuplicates(malformedItems as any[]);
@@ -688,7 +690,7 @@ describe('Real Deduplication Strategies Test Suite', () => {
         preferExistingStrategy,
         preferNewerStrategy,
         combineStrategy,
-        intelligentStrategy
+        intelligentStrategy,
       ];
 
       for (const strategy of strategies) {

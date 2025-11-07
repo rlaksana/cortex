@@ -38,7 +38,7 @@ describe('Dependency Registry Promise Return Types', () => {
     it('should return RegistrationPromiseResult on successful registration', async () => {
       const testConfig: DependencyConfig = {
         name: 'test-db',
-        type: DependencyType.DATABASE,
+        type: DependencyType['DATABASE'],
         priority: 'high',
         healthCheck: {
           enabled: true,
@@ -63,9 +63,9 @@ describe('Dependency Registry Promise Return Types', () => {
         },
       };
 
-      const mockConnector = vi.fn().mockResolvedValue(
-        DependencyResultFactory.connectionSuccess('test-db', 150, 0)
-      );
+      const mockConnector = vi
+        .fn()
+        .mockResolvedValue(DependencyResultFactory.connectionSuccess('test-db', 150, 0));
 
       const result = await registry.registerDependency(testConfig, {
         connector: mockConnector,
@@ -91,7 +91,7 @@ describe('Dependency Registry Promise Return Types', () => {
     it('should return RegistrationPromiseResult on registration failure', async () => {
       const invalidConfig = {
         name: '', // Invalid empty name
-        type: DependencyType.DATABASE,
+        type: DependencyType['DATABASE'],
         priority: 'high' as const,
         healthCheck: {
           enabled: true,
@@ -121,7 +121,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Verify failure case
       expect(result.success).toBe(false);
       expect(result).toHaveProperty('error');
-      expect(result.error?.code).toBe(DependencyErrorCode.VALIDATION_ERROR);
+      expect(result.error?.code).toBe(DependencyErrorCode['VALIDATION_ERROR']);
       expect(result.dependency).toBe('');
       expect(result.type).toBe('database');
       expect(typeof result.timestamp).toBe('object');
@@ -133,7 +133,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Register a test dependency first
       const testConfig: DependencyConfig = {
         name: 'test-unreg',
-        type: DependencyType.CACHE,
+        type: DependencyType['CACHE'],
         priority: 'medium',
         healthCheck: {
           enabled: true,
@@ -162,39 +162,42 @@ describe('Dependency Registry Promise Return Types', () => {
     });
 
     it('should return UnregistrationPromiseResult on successful unregistration', async () => {
-      const mockDisconnector = vi.fn().mockResolvedValue(
-        DependencyResultFactory.disconnectionSuccess('test-unreg', true)
-      );
+      const mockDisconnector = vi
+        .fn()
+        .mockResolvedValue(DependencyResultFactory.disconnectionSuccess('test-unreg', true));
 
       // Register the disconnector
-      await registry.registerDependency({
-        name: 'test-unreg',
-        type: DependencyType.CACHE,
-        priority: 'medium',
-        healthCheck: {
-          enabled: true,
-          intervalMs: 30000,
-          timeoutMs: 5000,
-          failureThreshold: 3,
-          successThreshold: 2,
-          retryAttempts: 3,
-          retryDelayMs: 1000,
+      await registry.registerDependency(
+        {
+          name: 'test-unreg',
+          type: DependencyType['CACHE'],
+          priority: 'medium',
+          healthCheck: {
+            enabled: true,
+            intervalMs: 30000,
+            timeoutMs: 5000,
+            failureThreshold: 3,
+            successThreshold: 2,
+            retryAttempts: 3,
+            retryDelayMs: 1000,
+          },
+          connection: {
+            url: 'http://localhost:6379',
+            timeout: 5000,
+          },
+          thresholds: {
+            responseTimeWarning: 500,
+            responseTimeCritical: 2000,
+            errorRateWarning: 0.05,
+            errorRateCritical: 0.15,
+            availabilityWarning: 0.98,
+            availabilityCritical: 0.95,
+          },
         },
-        connection: {
-          url: 'http://localhost:6379',
-          timeout: 5000,
-        },
-        thresholds: {
-          responseTimeWarning: 500,
-          responseTimeCritical: 2000,
-          errorRateWarning: 0.05,
-          errorRateCritical: 0.15,
-          availabilityWarning: 0.98,
-          availabilityCritical: 0.95,
-        },
-      }, {
-        disconnector: mockDisconnector,
-      });
+        {
+          disconnector: mockDisconnector,
+        }
+      );
 
       const result = await registry.unregisterDependency('test-unreg');
 
@@ -220,7 +223,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Verify failure case
       expect(result.success).toBe(false);
       expect(result).toHaveProperty('error');
-      expect(result.error?.code).toBe(DependencyErrorCode.DEPENDENCY_NOT_FOUND);
+      expect(result.error?.code).toBe(DependencyErrorCode['DEPENDENCY_NOT_FOUND']);
       expect(result.dependency).toBe('non-existent');
     });
   });
@@ -230,7 +233,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Register a test dependency first
       const testConfig: DependencyConfig = {
         name: 'test-health',
-        type: DependencyType.EXTERNAL_API,
+        type: DependencyType['EXTERNAL_API'],
         priority: 'high',
         healthCheck: {
           enabled: true,
@@ -262,7 +265,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Mock the built-in health check to return a healthy result
       const mockHealthCheck = vi.fn().mockResolvedValue({
         dependency: 'test-health',
-        status: DependencyStatus.HEALTHY,
+        status: DependencyStatus['HEALTHY'],
         responseTime: 200,
         timestamp: new Date(),
         details: { statusCode: 200 },
@@ -283,7 +286,7 @@ describe('Dependency Registry Promise Return Types', () => {
 
       // Verify success case
       expect(result.success).toBe(true);
-      expect(result.data?.status).toBe(DependencyStatus.HEALTHY);
+      expect(result.data?.status).toBe(DependencyStatus['HEALTHY']);
       expect(result.dependency).toBe('test-health');
       expect(result.responseTime).toBe(200);
       expect(typeof result.timestamp).toBe('object');
@@ -291,9 +294,7 @@ describe('Dependency Registry Promise Return Types', () => {
 
     it('should return HealthCheckPromiseResult on health check failure', async () => {
       // Mock the built-in health check to throw an error
-      const mockHealthCheck = vi.fn().mockRejectedValue(
-        new Error('Connection timeout')
-      );
+      const mockHealthCheck = vi.fn().mockRejectedValue(new Error('Connection timeout'));
 
       // Access the private method using bracket notation for testing
       const registryAny = registry as any;
@@ -304,7 +305,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Verify failure case
       expect(result.success).toBe(false);
       expect(result).toHaveProperty('error');
-      expect(result.error?.code).toBe(DependencyErrorCode.HEALTH_CHECK_FAILED);
+      expect(result.error?.code).toBe(DependencyErrorCode['HEALTH_CHECK_FAILED']);
       expect(result.dependency).toBe('test-health');
       expect(typeof result.responseTime).toBe('number');
     });
@@ -315,7 +316,7 @@ describe('Dependency Registry Promise Return Types', () => {
       // Verify failure case
       expect(result.success).toBe(false);
       expect(result).toHaveProperty('error');
-      expect(result.error?.code).toBe(DependencyErrorCode.DEPENDENCY_NOT_FOUND);
+      expect(result.error?.code).toBe(DependencyErrorCode['DEPENDENCY_NOT_FOUND']);
       expect(result.dependency).toBe('non-existent');
       expect(result.responseTime).toBe(0);
     });
@@ -327,7 +328,7 @@ describe('Dependency Registry Promise Return Types', () => {
       const configs: DependencyConfig[] = [
         {
           name: 'test-db-all',
-          type: DependencyType.DATABASE,
+          type: DependencyType['DATABASE'],
           priority: 'high',
           healthCheck: {
             enabled: true,
@@ -353,7 +354,7 @@ describe('Dependency Registry Promise Return Types', () => {
         },
         {
           name: 'test-cache-all',
-          type: DependencyType.CACHE,
+          type: DependencyType['CACHE'],
           priority: 'medium',
           healthCheck: {
             enabled: true,
@@ -412,7 +413,7 @@ describe('Dependency Registry Promise Return Types', () => {
 
       const testConfig: DependencyConfig = {
         name: 'type-safety-test',
-        type: DependencyType.DATABASE,
+        type: DependencyType['DATABASE'],
         priority: 'high',
         healthCheck: {
           enabled: true,
@@ -487,11 +488,9 @@ describe('Dependency Registry Promise Return Types', () => {
       expect(successResult.timestamp).toBeInstanceOf(Date);
       expect(successResult.error).toBeUndefined();
 
-      const failureResult = DependencyResultFactory.failure(
-        'TEST_ERROR',
-        'Test error message',
-        { detail: 'test' }
-      );
+      const failureResult = DependencyResultFactory.failure('TEST_ERROR', 'Test error message', {
+        detail: 'test',
+      });
       expect(failureResult.success).toBe(false);
       expect(failureResult.error?.code).toBe('TEST_ERROR');
       expect(failureResult.error?.message).toBe('Test error message');

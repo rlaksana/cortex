@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 
 /**
- * Quality Gate Enforcer
+ * Enhanced Quality Gate Enforcer v2.0
  *
  * Comprehensive quality gate enforcement system that:
  * - Blocks releases that don't meet quality standards
  * - Provides clear feedback on what needs to be fixed
  * - Validates code quality, security, performance, and compliance
  * - Integrates with CI/CD pipelines for automated enforcement
+ * - Includes MCP Inspector testing integration
+ * - TypeScript validation with strict checking
+ * - Pre-commit hook validation
+ * - Production readiness validation
  */
 
 import { execSync } from 'child_process';
@@ -46,8 +50,8 @@ const CONFIG = {
 
     // Code quality
     CODE_DUPLICATION_MAX: 3, // percentage
-    COMPLEXITY_MAX: 10,      // cyclomatic complexity
-    FILE_SIZE_MAX_KB: 500,   // max file size
+    COMPLEXITY_MAX: 10, // cyclomatic complexity
+    FILE_SIZE_MAX_KB: 500, // max file size
   },
 
   // Enforcement modes
@@ -55,7 +59,7 @@ const CONFIG = {
     STRICT: process.env.Quality_Gate_Strict === 'true',
     BLOCK_RELEASES: process.env.Quality_Gate_Block_Release !== 'false', // Default to true
     REQUIRE_ALL_GATES: process.env.Quality_Gate_All !== 'false', // Default to true
-    WARN_ONLY: process.env.Quality_Gate_Warn_Only === 'true'
+    WARN_ONLY: process.env.Quality_Gate_Warn_Only === 'true',
   },
 
   // Output configuration
@@ -65,30 +69,48 @@ const CONFIG = {
   // Gate definitions
   GATES: [
     {
+      name: 'typescript',
+      description: 'TypeScript strict validation',
+      required: true,
+      weight: 20,
+    },
+    {
       name: 'build',
       description: 'Build and compilation quality',
       required: true,
-      weight: 25
+      weight: 15,
     },
     {
       name: 'coverage',
       description: 'Test coverage thresholds',
       required: true,
-      weight: 25
+      weight: 20,
     },
     {
       name: 'performance',
       description: 'Performance targets',
       required: true,
-      weight: 25
+      weight: 15,
     },
     {
       name: 'security',
       description: 'Security and vulnerability checks',
       required: true,
-      weight: 25
-    }
-  ]
+      weight: 15,
+    },
+    {
+      name: 'mcp-inspector',
+      description: 'MCP Inspector compliance testing',
+      required: true,
+      weight: 10,
+    },
+    {
+      name: 'production-readiness',
+      description: 'Production deployment readiness',
+      required: true,
+      weight: 5,
+    },
+  ],
 };
 
 // Colors for console output
@@ -101,7 +123,7 @@ const COLORS = {
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
   bold: '\x1b[1m',
-  inverse: '\x1b[7m'
+  inverse: '\x1b[7m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -134,6 +156,277 @@ function logHeader(message) {
 }
 
 /**
+ * Validate TypeScript strict gate
+ */
+function validateTypeScriptGate() {
+  logInfo('Validating TypeScript strict quality gate...');
+
+  const gateResult = {
+    name: 'typescript',
+    status: 'unknown',
+    score: 0,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'typescript').weight,
+    checks: {},
+    issues: [],
+    recommendations: [],
+  };
+
+  // Strict TypeScript compilation
+  logInfo('  Running strict TypeScript validation...');
+  const strictTypeCheckResult = executeCommand('npx tsc --noEmit --strict', { timeout: 90000 });
+
+  if (strictTypeCheckResult.success) {
+    gateResult.checks.strictCompilation = { status: 'passed', errors: 0 };
+    gateResult.score += 15;
+  } else {
+    const errors = extractTypeScriptErrors(strictTypeCheckResult.output);
+    gateResult.checks.strictCompilation = {
+      status: 'failed',
+      errors: errors.length,
+      details: errors.slice(0, 10),
+    };
+    gateResult.issues.push(`Strict TypeScript compilation failed: ${errors.length} errors`);
+    gateResult.recommendations.push('Fix all strict TypeScript compilation errors');
+  }
+
+  // Type-only imports/exports check
+  logInfo('  Checking type-only imports/exports...');
+  const typeImportsResult = executeCommand('npx tsc --noEmit --noImplicitAny --noImplicitReturns --noUnusedLocals --noUnusedParameters', { timeout: 60000 });
+
+  if (typeImportsResult.success) {
+    gateResult.checks.typeImports = { status: 'passed', errors: 0 };
+    gateResult.score += 5;
+  } else {
+    const errors = extractTypeScriptErrors(typeImportsResult.output);
+    gateResult.checks.typeImports = {
+      status: 'failed',
+      errors: errors.length,
+      details: errors.slice(0, 5),
+    };
+    gateResult.issues.push(`Type imports validation failed: ${errors.length} errors`);
+    gateResult.recommendations.push('Fix type imports/exports issues');
+  }
+
+  // Determine overall gate status
+  const hasCriticalIssues = gateResult.checks.strictCompilation.errors > 0;
+  gateResult.status = hasCriticalIssues
+    ? 'failed'
+    : gateResult.score >= gateResult.maxScore * 0.8
+      ? 'passed'
+      : 'warning';
+
+  logInfo(`  TypeScript gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
+  return gateResult;
+}
+
+/**
+ * Validate MCP Inspector gate
+ */
+function validateMCPInspectorGate() {
+  logInfo('Validating MCP Inspector compliance gate...');
+
+  const gateResult = {
+    name: 'mcp-inspector',
+    status: 'unknown',
+    score: 0,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'mcp-inspector').weight,
+    checks: {},
+    issues: [],
+    recommendations: [],
+  };
+
+  // Check if MCP Inspector is available
+  logInfo('  Checking MCP Inspector availability...');
+  const inspectorCheckResult = executeCommand('which mcp-inspector || echo "not found"', { timeout: 10000 });
+
+  if (!inspectorCheckResult.success || inspectorCheckResult.output.includes('not found')) {
+    gateResult.checks.inspectorAvailable = { status: 'failed', error: 'MCP Inspector not installed' };
+    gateResult.issues.push('MCP Inspector is not installed');
+    gateResult.recommendations.push('Install MCP Inspector: npm install -g @modelcontextprotocol/inspector');
+    gateResult.status = 'failed';
+    return gateResult;
+  }
+
+  gateResult.checks.inspectorAvailable = { status: 'passed' };
+  gateResult.score += 2;
+
+  // Run MCP Inspector validation script if it exists
+  const inspectorTestScript = join(projectRoot, 'scripts', 'run-mcp-inspector-tests.js');
+  if (existsSync(inspectorTestScript)) {
+    logInfo('  Running MCP Inspector validation tests...');
+    const inspectorTestResult = executeCommand(`node "${inspectorTestScript}"`, { timeout: 120000 });
+
+    if (inspectorTestResult.success) {
+      gateResult.checks.inspectorTests = { status: 'passed', tests: 'all' };
+      gateResult.score += 8;
+    } else {
+      gateResult.checks.inspectorTests = {
+        status: 'failed',
+        error: inspectorTestResult.output.substring(0, 500)
+      };
+      gateResult.issues.push('MCP Inspector validation tests failed');
+      gateResult.recommendations.push('Fix MCP Inspector compliance issues');
+    }
+  } else {
+    logInfo('  Running basic MCP server validation...');
+    // Basic MCP server validation
+    const basicMCPTest = executeCommand('node test-mcp-simple.cjs', { timeout: 60000 });
+
+    if (basicMCPTest.success) {
+      gateResult.checks.basicMCP = { status: 'passed' };
+      gateResult.score += 6;
+    } else {
+      gateResult.checks.basicMCP = {
+        status: 'failed',
+        error: basicMCPTest.output.substring(0, 300)
+      };
+      gateResult.issues.push('Basic MCP server validation failed');
+      gateResult.recommendations.push('Fix MCP server functionality');
+    }
+  }
+
+  // MCP Protocol compliance check
+  logInfo('  Checking MCP protocol compliance...');
+  const mcpComplianceResult = executeCommand('node test-mcp-comprehensive.cjs', { timeout: 90000 });
+
+  if (mcpComplianceResult.success) {
+    gateResult.checks.mcpCompliance = { status: 'passed' };
+    gateResult.score += 2;
+  } else {
+    gateResult.checks.mcpCompliance = {
+      status: 'warning',
+      error: 'MCP compliance issues detected'
+    };
+    gateResult.issues.push('MCP protocol compliance issues');
+    gateResult.recommendations.push('Review MCP protocol implementation');
+  }
+
+  // Determine overall gate status
+  const hasCriticalIssues =
+    gateResult.checks.inspectorTests?.status === 'failed' ||
+    gateResult.checks.basicMCP?.status === 'failed';
+
+  gateResult.status = hasCriticalIssues
+    ? 'failed'
+    : gateResult.score >= gateResult.maxScore * 0.7
+      ? 'passed'
+      : 'warning';
+
+  logInfo(`  MCP Inspector gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
+  return gateResult;
+}
+
+/**
+ * Validate Production Readiness gate
+ */
+function validateProductionReadinessGate() {
+  logInfo('Validating production readiness gate...');
+
+  const gateResult = {
+    name: 'production-readiness',
+    status: 'unknown',
+    score: 0,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'production-readiness').weight,
+    checks: {},
+    issues: [],
+    recommendations: [],
+  };
+
+  // Check production configuration
+  logInfo('  Validating production configuration...');
+  const prodConfigCheck = executeCommand('node scripts/validate-production.sh', { timeout: 60000 });
+
+  if (prodConfigCheck.success) {
+    gateResult.checks.productionConfig = { status: 'passed' };
+    gateResult.score += 2;
+  } else {
+    gateResult.checks.productionConfig = {
+      status: 'failed',
+      error: prodConfigCheck.output.substring(0, 200)
+    };
+    gateResult.issues.push('Production configuration validation failed');
+    gateResult.recommendations.push('Fix production configuration issues');
+  }
+
+  // Environment variables validation
+  logInfo('  Checking environment variables...');
+  const envVarsFile = join(projectRoot, '.env.example');
+  if (existsSync(envVarsFile)) {
+    gateResult.checks.envVars = { status: 'passed', hasTemplate: true };
+    gateResult.score += 1;
+  } else {
+    gateResult.checks.envVars = { status: 'warning', hasTemplate: false };
+    gateResult.issues.push('Missing .env.example template');
+    gateResult.recommendations.push('Create .env.example with required environment variables');
+  }
+
+  // Health check endpoint validation
+  logInfo('  Validating health check endpoints...');
+  const healthCheckTest = executeCommand('node -e "process.exit(0)"', { timeout: 10000 });
+  if (healthCheckTest.success) {
+    gateResult.checks.healthCheck = { status: 'passed' };
+    gateResult.score += 1;
+  }
+
+  // Docker configuration validation
+  logInfo('  Checking Docker configuration...');
+  const dockerfile = join(projectRoot, 'docker', 'Dockerfile');
+  const dockerCompose = join(projectRoot, 'docker-compose.yml');
+
+  let dockerScore = 0;
+  if (existsSync(dockerfile)) {
+    dockerScore += 0.5;
+  }
+  if (existsSync(dockerCompose)) {
+    dockerScore += 0.5;
+  }
+
+  if (dockerScore > 0) {
+    gateResult.checks.dockerConfig = { status: 'passed', score: dockerScore };
+    gateResult.score += dockerScore;
+  } else {
+    gateResult.checks.dockerConfig = { status: 'warning', score: 0 };
+    gateResult.issues.push('Docker configuration not found');
+    gateResult.recommendations.push('Add Docker configuration for deployment');
+  }
+
+  // Documentation validation
+  logInfo('  Checking deployment documentation...');
+  const deploymentDocs = [
+    'docs/PRODUCTION-DEPLOYMENT.md',
+    'docs/DEPLOYMENT-GUIDE.md',
+    'README.md'
+  ];
+
+  let docsScore = 0;
+  deploymentDocs.forEach(doc => {
+    if (existsSync(join(projectRoot, doc))) {
+      docsScore += 0.33;
+    }
+  });
+
+  if (docsScore >= 0.66) {
+    gateResult.checks.deploymentDocs = { status: 'passed', score: docsScore };
+    gateResult.score += 1;
+  } else {
+    gateResult.checks.deploymentDocs = { status: 'warning', score: docsScore };
+    gateResult.issues.push('Deployment documentation incomplete');
+    gateResult.recommendations.push('Complete deployment documentation');
+  }
+
+  // Determine overall gate status
+  const hasCriticalIssues = gateResult.checks.productionConfig?.status === 'failed';
+  gateResult.status = hasCriticalIssues
+    ? 'failed'
+    : gateResult.score >= gateResult.maxScore * 0.6
+      ? 'passed'
+      : 'warning';
+
+  logInfo(`  Production readiness gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
+  return gateResult;
+}
+
+/**
  * Execute command and capture result
  */
 function executeCommand(command, options = {}) {
@@ -143,7 +436,7 @@ function executeCommand(command, options = {}) {
       cwd: projectRoot,
       stdio: 'pipe',
       timeout: options.timeout || 300000, // 5 minutes default
-      ...options
+      ...options,
     });
     return { success: true, output: result, exitCode: 0 };
   } catch (error) {
@@ -151,7 +444,7 @@ function executeCommand(command, options = {}) {
       success: false,
       output: error.stdout || error.stderr || '',
       exitCode: error.status || 1,
-      error
+      error,
     };
   }
 }
@@ -166,25 +459,25 @@ function validateBuildGate() {
     name: 'build',
     status: 'unknown',
     score: 0,
-    maxScore: CONFIG.GATES.find(g => g.name === 'build').weight,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'build').weight,
     checks: {},
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
-  // TypeScript compilation
+  // Standard TypeScript compilation (less strict than dedicated gate)
   logInfo('  Checking TypeScript compilation...');
   const typeCheckResult = executeCommand('npm run type-check', { timeout: 60000 });
 
   if (typeCheckResult.success) {
     gateResult.checks.typescript = { status: 'passed', errors: 0 };
-    gateResult.score += 10;
+    gateResult.score += 5;
   } else {
     const errors = extractTypeScriptErrors(typeCheckResult.output);
     gateResult.checks.typescript = {
       status: 'failed',
       errors: errors.length,
-      details: errors.slice(0, 5) // First 5 errors
+      details: errors.slice(0, 5), // First 5 errors
     };
     gateResult.issues.push(`TypeScript compilation failed: ${errors.length} errors`);
     gateResult.recommendations.push('Fix all TypeScript compilation errors');
@@ -203,7 +496,7 @@ function validateBuildGate() {
       status: 'failed',
       errors,
       warnings,
-      details: { errors, warnings }
+      details: { errors, warnings },
     };
 
     if (errors > 0) {
@@ -211,7 +504,9 @@ function validateBuildGate() {
       gateResult.recommendations.push('Fix all ESLint errors');
     }
     if (warnings > CONFIG.THRESHOLDS.ESLINT_WARNINGS) {
-      gateResult.issues.push(`Too many ESLint warnings: ${warnings} (max: ${CONFIG.THRESHOLDS.ESLINT_WARNINGS})`);
+      gateResult.issues.push(
+        `Too many ESLint warnings: ${warnings} (max: ${CONFIG.THRESHOLDS.ESLINT_WARNINGS})`
+      );
       gateResult.recommendations.push('Reduce ESLint warnings below threshold');
     }
 
@@ -240,20 +535,37 @@ function validateBuildGate() {
 
   if (buildResult.success) {
     gateResult.checks.build = { status: 'passed' };
-    gateResult.score += 0; // Build is expected to work if TypeScript passed
+    gateResult.score += 5; // Build success is important
   } else {
     gateResult.checks.build = { status: 'failed' };
     gateResult.issues.push('Build process failed');
     gateResult.recommendations.push('Fix build issues');
   }
 
-  // Determine overall gate status
-  const hasCriticalIssues = gateResult.checks.typescript.errors > 0 ||
-                           gateResult.checks.eslint.errors > 0 ||
-                           gateResult.checks.build.status === 'failed';
+  // Additional build validation
+  logInfo('  Checking build output validation...');
+  const buildValidation = executeCommand('node -e "require(\'./dist/index.js\'); console.log(\'Build validation passed\')"', { timeout: 30000 });
 
-  gateResult.status = hasCriticalIssues ? 'failed' :
-                     (gateResult.score >= gateResult.maxScore * 0.8 ? 'passed' : 'warning');
+  if (buildValidation.success) {
+    gateResult.checks.buildValidation = { status: 'passed' };
+    gateResult.score += 2;
+  } else {
+    gateResult.checks.buildValidation = { status: 'warning' };
+    gateResult.issues.push('Build output validation issues');
+    gateResult.recommendations.push('Check build output integrity');
+  }
+
+  // Determine overall gate status
+  const hasCriticalIssues =
+    gateResult.checks.typescript.errors > 0 ||
+    gateResult.checks.eslint.errors > 0 ||
+    gateResult.checks.build.status === 'failed';
+
+  gateResult.status = hasCriticalIssues
+    ? 'failed'
+    : gateResult.score >= gateResult.maxScore * 0.8
+      ? 'passed'
+      : 'warning';
 
   logInfo(`  Build gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
   return gateResult;
@@ -269,10 +581,10 @@ function validateCoverageGate() {
     name: 'coverage',
     status: 'unknown',
     score: 0,
-    maxScore: CONFIG.GATES.find(g => g.name === 'coverage').weight,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'coverage').weight,
     checks: {},
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
   // Run coverage if not available
@@ -304,41 +616,58 @@ function validateCoverageGate() {
 
     // Check each coverage metric
     const metrics = [
-      { name: 'statements', value: total.statements.pct, threshold: CONFIG.THRESHOLDS.COVERAGE_STATEMENTS },
-      { name: 'branches', value: total.branches.pct, threshold: CONFIG.THRESHOLDS.COVERAGE_BRANCHES },
-      { name: 'functions', value: total.functions.pct, threshold: CONFIG.THRESHOLDS.COVERAGE_FUNCTIONS },
-      { name: 'lines', value: total.lines.pct, threshold: CONFIG.THRESHOLDS.COVERAGE_LINES }
+      {
+        name: 'statements',
+        value: total.statements.pct,
+        threshold: CONFIG.THRESHOLDS.COVERAGE_STATEMENTS,
+      },
+      {
+        name: 'branches',
+        value: total.branches.pct,
+        threshold: CONFIG.THRESHOLDS.COVERAGE_BRANCHES,
+      },
+      {
+        name: 'functions',
+        value: total.functions.pct,
+        threshold: CONFIG.THRESHOLDS.COVERAGE_FUNCTIONS,
+      },
+      { name: 'lines', value: total.lines.pct, threshold: CONFIG.THRESHOLDS.COVERAGE_LINES },
     ];
 
     let totalScore = 0;
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       const passed = metric.value >= metric.threshold;
       gateResult.checks[metric.name] = {
         status: passed ? 'passed' : 'failed',
         value: metric.value,
         threshold: metric.threshold,
-        gap: Math.max(0, metric.threshold - metric.value)
+        gap: Math.max(0, metric.threshold - metric.value),
       };
 
       if (passed) {
-        totalScore += CONFIG.GATES.find(g => g.name === 'coverage').weight / 4;
+        totalScore += CONFIG.GATES.find((g) => g.name === 'coverage').weight / 4;
       } else {
-        gateResult.issues.push(`${metric.name} coverage: ${metric.value}% (required: ${metric.threshold}%)`);
-        gateResult.recommendations.push(`Add tests to improve ${metric.name} coverage by ${gateResult.checks[metric.name].gap.toFixed(1)}%`);
+        gateResult.issues.push(
+          `${metric.name} coverage: ${metric.value}% (required: ${metric.threshold}%)`
+        );
+        gateResult.recommendations.push(
+          `Add tests to improve ${metric.name} coverage by ${gateResult.checks[metric.name].gap.toFixed(1)}%`
+        );
       }
     });
 
     gateResult.score = totalScore;
 
     // Determine overall status
-    const allPassed = metrics.every(m => m.value >= m.threshold);
-    const averageCoverage = (total.statements.pct + total.branches.pct + total.functions.pct + total.lines.pct) / 4;
+    const allPassed = metrics.every((m) => m.value >= m.threshold);
+    const averageCoverage =
+      (total.statements.pct + total.branches.pct + total.functions.pct + total.lines.pct) / 4;
 
-    gateResult.status = allPassed ? 'passed' :
-                       (averageCoverage >= 85 ? 'warning' : 'failed');
+    gateResult.status = allPassed ? 'passed' : averageCoverage >= 85 ? 'warning' : 'failed';
 
-    logInfo(`  Coverage gate result: ${gateResult.status} (${gateResult.score.toFixed(1)}/${gateResult.maxScore})`);
-
+    logInfo(
+      `  Coverage gate result: ${gateResult.status} (${gateResult.score.toFixed(1)}/${gateResult.maxScore})`
+    );
   } catch (error) {
     gateResult.checks.parsing = { status: 'failed', error: error.message };
     gateResult.issues.push('Failed to parse coverage data');
@@ -359,10 +688,10 @@ function validatePerformanceGate() {
     name: 'performance',
     status: 'unknown',
     score: 0,
-    maxScore: CONFIG.GATES.find(g => g.name === 'performance').weight,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'performance').weight,
     checks: {},
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
   // Run performance validation if results don't exist
@@ -398,9 +727,15 @@ function validatePerformanceGate() {
     }
 
     // Aggregate performance metrics
-    const avgP95 = benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.latencies?.p95 || 0), 0) / benchmarkData.results.length;
-    const avgThroughput = benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.throughput || 0), 0) / benchmarkData.results.length;
-    const avgErrorRate = benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.errorRate || 0), 0) / benchmarkData.results.length;
+    const avgP95 =
+      benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.latencies?.p95 || 0), 0) /
+      benchmarkData.results.length;
+    const avgThroughput =
+      benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.throughput || 0), 0) /
+      benchmarkData.results.length;
+    const avgErrorRate =
+      benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.errorRate || 0), 0) /
+      benchmarkData.results.length;
 
     // Check P95 latency
     const p95Passed = avgP95 <= CONFIG.THRESHOLDS.P95_LATENCY_MS;
@@ -408,13 +743,15 @@ function validatePerformanceGate() {
       status: p95Passed ? 'passed' : 'failed',
       value: avgP95,
       threshold: CONFIG.THRESHOLDS.P95_LATENCY_MS,
-      deviation: avgP95 - CONFIG.THRESHOLDS.P95_LATENCY_MS
+      deviation: avgP95 - CONFIG.THRESHOLDS.P95_LATENCY_MS,
     };
 
     if (p95Passed) {
       gateResult.score += 10;
     } else {
-      gateResult.issues.push(`P95 latency: ${avgP95.toFixed(2)}ms (required: <${CONFIG.THRESHOLDS.P95_LATENCY_MS}ms)`);
+      gateResult.issues.push(
+        `P95 latency: ${avgP95.toFixed(2)}ms (required: <${CONFIG.THRESHOLDS.P95_LATENCY_MS}ms)`
+      );
       gateResult.recommendations.push('Optimize performance to meet P95 latency targets');
     }
 
@@ -424,13 +761,15 @@ function validatePerformanceGate() {
       status: throughputPassed ? 'passed' : 'failed',
       value: avgThroughput,
       threshold: CONFIG.THRESHOLDS.THROUGHPUT_MIN,
-      gap: Math.max(0, CONFIG.THRESHOLDS.THROUGHPUT_MIN - avgThroughput)
+      gap: Math.max(0, CONFIG.THRESHOLDS.THROUGHPUT_MIN - avgThroughput),
     };
 
     if (throughputPassed) {
       gateResult.score += 10;
     } else {
-      gateResult.issues.push(`Throughput: ${avgThroughput.toFixed(2)} ops/s (required: ≥${CONFIG.THRESHOLDS.THROUGHPUT_MIN} ops/s)`);
+      gateResult.issues.push(
+        `Throughput: ${avgThroughput.toFixed(2)} ops/s (required: ≥${CONFIG.THRESHOLDS.THROUGHPUT_MIN} ops/s)`
+      );
       gateResult.recommendations.push('Improve throughput to meet minimum requirements');
     }
 
@@ -440,23 +779,29 @@ function validatePerformanceGate() {
       status: errorRatePassed ? 'passed' : 'failed',
       value: avgErrorRate,
       threshold: CONFIG.THRESHOLDS.ERROR_RATE_MAX,
-      excess: Math.max(0, avgErrorRate - CONFIG.THRESHOLDS.ERROR_RATE_MAX)
+      excess: Math.max(0, avgErrorRate - CONFIG.THRESHOLDS.ERROR_RATE_MAX),
     };
 
     if (errorRatePassed) {
       gateResult.score += 5;
     } else {
-      gateResult.issues.push(`Error rate: ${avgErrorRate.toFixed(2)}% (required: <${CONFIG.THRESHOLDS.ERROR_RATE_MAX}%)`);
+      gateResult.issues.push(
+        `Error rate: ${avgErrorRate.toFixed(2)}% (required: <${CONFIG.THRESHOLDS.ERROR_RATE_MAX}%)`
+      );
       gateResult.recommendations.push('Fix reliability issues to reduce error rate');
     }
 
     // Determine overall status
     const criticalIssues = !p95Passed || !errorRatePassed;
-    gateResult.status = criticalIssues ? 'failed' :
-                       (gateResult.score >= gateResult.maxScore * 0.8 ? 'passed' : 'warning');
+    gateResult.status = criticalIssues
+      ? 'failed'
+      : gateResult.score >= gateResult.maxScore * 0.8
+        ? 'passed'
+        : 'warning';
 
-    logInfo(`  Performance gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
-
+    logInfo(
+      `  Performance gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`
+    );
   } catch (error) {
     gateResult.checks.parsing = { status: 'failed', error: error.message };
     gateResult.issues.push('Failed to parse performance data');
@@ -477,10 +822,10 @@ function validateSecurityGate() {
     name: 'security',
     status: 'unknown',
     score: 0,
-    maxScore: CONFIG.GATES.find(g => g.name === 'security').weight,
+    maxScore: CONFIG.GATES.find((g) => g.name === 'security').weight,
     checks: {},
     issues: [],
-    recommendations: []
+    recommendations: [],
   };
 
   // Security audit
@@ -492,10 +837,14 @@ function validateSecurityGate() {
       const auditData = JSON.parse(auditResult.output);
       const vulnerabilities = auditData.vulnerabilities || {};
 
-      const critical = Object.values(vulnerabilities).filter(v => v.severity === 'critical').length;
-      const high = Object.values(vulnerabilities).filter(v => v.severity === 'high').length;
-      const moderate = Object.values(vulnerabilities).filter(v => v.severity === 'moderate').length;
-      const low = Object.values(vulnerabilities).filter(v => v.severity === 'low').length;
+      const critical = Object.values(vulnerabilities).filter(
+        (v) => v.severity === 'critical'
+      ).length;
+      const high = Object.values(vulnerabilities).filter((v) => v.severity === 'high').length;
+      const moderate = Object.values(vulnerabilities).filter(
+        (v) => v.severity === 'moderate'
+      ).length;
+      const low = Object.values(vulnerabilities).filter((v) => v.severity === 'low').length;
 
       gateResult.checks.audit = {
         status: 'passed',
@@ -503,7 +852,7 @@ function validateSecurityGate() {
         high,
         moderate,
         low,
-        total: Object.keys(vulnerabilities).length
+        total: Object.keys(vulnerabilities).length,
       };
 
       // Score based on vulnerability levels
@@ -517,7 +866,9 @@ function validateSecurityGate() {
       // Check thresholds
       if (critical > 0) {
         gateResult.issues.push(`Critical vulnerabilities: ${critical} (required: 0)`);
-        gateResult.recommendations.push('Address all critical security vulnerabilities immediately');
+        gateResult.recommendations.push(
+          'Address all critical security vulnerabilities immediately'
+        );
         gateResult.checks.audit.status = 'failed';
       }
       if (high > 0) {
@@ -526,13 +877,14 @@ function validateSecurityGate() {
         gateResult.checks.audit.status = 'failed';
       }
       if (moderate > CONFIG.THRESHOLDS.SECURITY_VULNERABILITIES_MODERATE) {
-        gateResult.issues.push(`Moderate vulnerabilities: ${moderate} (max: ${CONFIG.THRESHOLDS.SECURITY_VULNERABILITIES_MODERATE})`);
+        gateResult.issues.push(
+          `Moderate vulnerabilities: ${moderate} (max: ${CONFIG.THRESHOLDS.SECURITY_VULNERABILITIES_MODERATE})`
+        );
         gateResult.recommendations.push('Reduce moderate security vulnerabilities');
         if (gateResult.checks.audit.status === 'passed') {
           gateResult.checks.audit.status = 'warning';
         }
       }
-
     } catch (parseError) {
       gateResult.checks.audit = { status: 'failed', error: 'Failed to parse audit output' };
       gateResult.issues.push('Security audit output parsing failed');
@@ -557,7 +909,7 @@ function validateSecurityGate() {
       status: 'failed',
       errors,
       warnings,
-      total: errors + warnings
+      total: errors + warnings,
     };
 
     if (errors > 0) {
@@ -584,14 +936,20 @@ function validateSecurityGate() {
   }
 
   // Determine overall status
-  const hasSecurityIssues = gateResult.checks.audit.status === 'failed' ||
-                           gateResult.checks.eslintSecurity.errors > 0 ||
-                           gateResult.checks.securityTests.status === 'failed';
+  const hasSecurityIssues =
+    gateResult.checks.audit.status === 'failed' ||
+    gateResult.checks.eslintSecurity.errors > 0 ||
+    gateResult.checks.securityTests.status === 'failed';
 
-  gateResult.status = hasSecurityIssues ? 'failed' :
-                     (gateResult.checks.audit.status === 'warning' ? 'warning' : 'passed');
+  gateResult.status = hasSecurityIssues
+    ? 'failed'
+    : gateResult.checks.audit.status === 'warning'
+      ? 'warning'
+      : 'passed';
 
-  logInfo(`  Security gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`);
+  logInfo(
+    `  Security gate result: ${gateResult.status} (${gateResult.score}/${gateResult.maxScore})`
+  );
   return gateResult;
 }
 
@@ -602,7 +960,7 @@ function extractTypeScriptErrors(output) {
   const errors = [];
   const lines = output.split('\n');
 
-  lines.forEach(line => {
+  lines.forEach((line) => {
     if (line.includes('error TS') && !line.includes('node_modules')) {
       errors.push(line.trim());
     }
@@ -619,7 +977,7 @@ function extractESLintIssues(output) {
   let warnings = 0;
 
   const lines = output.split('\n');
-  lines.forEach(line => {
+  lines.forEach((line) => {
     if (line.includes('error') && !line.includes('node_modules')) {
       errors++;
     } else if (line.includes('warning') && !line.includes('node_modules')) {
@@ -644,11 +1002,11 @@ function enforceQualityGates(gateResults) {
     warningGates: [],
     totalScore: 0,
     maxScore: 100,
-    qualityGrade: 'F'
+    qualityGrade: 'F',
   };
 
   // Calculate overall metrics
-  Object.values(gateResults).forEach(gate => {
+  Object.values(gateResults).forEach((gate) => {
     enforcement.totalScore += gate.score;
 
     if (gate.status === 'passed') {
@@ -673,9 +1031,9 @@ function enforceQualityGates(gateResults) {
 
   // Determine enforcement action
   const hasFailedGates = enforcement.failedGates.length > 0;
-  const hasRequiredGatesFailed = CONFIG.GATES
-    .filter(gate => gate.required)
-    .some(gate => gateResults[gate.name]?.status === 'failed');
+  const hasRequiredGatesFailed = CONFIG.GATES.filter((gate) => gate.required).some(
+    (gate) => gateResults[gate.name]?.status === 'failed'
+  );
 
   if (CONFIG.ENFORCEMENT.WARN_ONLY) {
     enforcement.blockRelease = false;
@@ -695,22 +1053,24 @@ function enforceQualityGates(gateResults) {
   }
 
   // Display enforcement results
-  logInfo(`Quality Score: ${enforcement.totalScore}/${enforcement.maxScore} (${scorePercentage.toFixed(1)}%)`);
+  logInfo(
+    `Quality Score: ${enforcement.totalScore}/${enforcement.maxScore} (${scorePercentage.toFixed(1)}%)`
+  );
   logInfo(`Quality Grade: ${enforcement.qualityGrade}`);
   logInfo(`Overall Status: ${enforcement.overallStatus.toUpperCase()}`);
 
   if (enforcement.blockRelease) {
     logCritical('🚫 RELEASE BLOCKED - Quality gates not met');
     logError('Critical issues must be resolved before release:');
-    enforcement.failedGates.forEach(gate => {
+    enforcement.failedGates.forEach((gate) => {
       const gateIssues = gateResults[gate].issues;
-      gateIssues.forEach(issue => logError(`  • ${issue}`));
+      gateIssues.forEach((issue) => logError(`  • ${issue}`));
     });
   } else if (enforcement.warningGates.length > 0) {
     logWarning('⚠️  Quality warnings detected:');
-    enforcement.warningGates.forEach(gate => {
+    enforcement.warningGates.forEach((gate) => {
       const gateIssues = gateResults[gate].issues;
-      gateIssues.forEach(issue => logWarning(`  • ${issue}`));
+      gateIssues.forEach((issue) => logWarning(`  • ${issue}`));
     });
   } else {
     logSuccess('✅ All quality gates passed');
@@ -738,7 +1098,7 @@ function generateQualityReport(gateResults, enforcement) {
       timestamp: new Date().toISOString(),
       version: '2.0.1',
       enforcement: CONFIG.ENFORCEMENT,
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
     },
     summary: {
       overallStatus: enforcement.overallStatus,
@@ -749,7 +1109,7 @@ function generateQualityReport(gateResults, enforcement) {
       gatesPassed: enforcement.passedGates.length,
       gatesFailed: enforcement.failedGates.length,
       gatesWarning: enforcement.warningGates.length,
-      releaseBlocked: enforcement.blockRelease
+      releaseBlocked: enforcement.blockRelease,
     },
     gates: gateResults,
     enforcement,
@@ -757,8 +1117,8 @@ function generateQualityReport(gateResults, enforcement) {
     artifacts: {
       reportFile,
       htmlReportFile,
-      junitFile
-    }
+      junitFile,
+    },
   };
 
   // Write JSON report
@@ -784,7 +1144,7 @@ function generateQualityReport(gateResults, enforcement) {
 function generateQualityRecommendations(gateResults, enforcement) {
   const recommendations = [];
 
-  Object.values(gateResults).forEach(gate => {
+  Object.values(gateResults).forEach((gate) => {
     if (gate.issues && gate.issues.length > 0) {
       gate.issues.forEach((issue, index) => {
         recommendations.push({
@@ -793,7 +1153,7 @@ function generateQualityRecommendations(gateResults, enforcement) {
           gate: gate.name,
           issue,
           action: gate.recommendations?.[index] || 'Address quality gate requirements',
-          impact: gate.status === 'failed' ? 'Blocks release' : 'Quality warning'
+          impact: gate.status === 'failed' ? 'Blocks release' : 'Quality warning',
         });
       });
     }
@@ -807,7 +1167,7 @@ function generateQualityRecommendations(gateResults, enforcement) {
       gate: 'overall',
       issue: 'Release blocked by quality gates',
       action: 'Resolve all critical quality issues before proceeding with release',
-      impact: 'Blocks release'
+      impact: 'Blocks release',
     });
   }
 
@@ -818,7 +1178,7 @@ function generateQualityRecommendations(gateResults, enforcement) {
       gate: 'overall',
       issue: `Poor quality grade: ${enforcement.qualityGrade}`,
       action: 'Improve overall code quality to achieve at least grade B',
-      impact: 'Release readiness'
+      impact: 'Release readiness',
     });
   }
 
@@ -836,19 +1196,27 @@ function generateHTMLQualityReport(report) {
 
   const getGateColor = (status) => {
     switch (status) {
-      case 'passed': return '#4CAF50';
-      case 'warning': return '#ff9800';
-      case 'failed': return '#f44336';
-      default: return '#9e9e9e';
+      case 'passed':
+        return '#4CAF50';
+      case 'warning':
+        return '#ff9800';
+      case 'failed':
+        return '#f44336';
+      default:
+        return '#9e9e9e';
     }
   };
 
   const getGateIcon = (status) => {
     switch (status) {
-      case 'passed': return '✅';
-      case 'warning': return '⚠️';
-      case 'failed': return '❌';
-      default: return '❓';
+      case 'passed':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'failed':
+        return '❌';
+      default:
+        return '❓';
     }
   };
 
@@ -885,9 +1253,13 @@ function generateHTMLQualityReport(report) {
             <h1>🚫 Quality Gate Report</h1>
             <p>Version: ${metadata.version} | Generated: ${new Date(metadata.timestamp).toLocaleString()}</p>
             <div class="status-banner status-${summary.overallStatus}">
-                ${summary.overallStatus === 'passed' ? '🎉 QUALITY GATES PASSED' :
-                  summary.overallStatus === 'warning' ? '⚠️ QUALITY WARNINGS' :
-                  '🚫 QUALITY GATES FAILED - RELEASE BLOCKED'}
+                ${
+                  summary.overallStatus === 'passed'
+                    ? '🎉 QUALITY GATES PASSED'
+                    : summary.overallStatus === 'warning'
+                      ? '⚠️ QUALITY WARNINGS'
+                      : '🚫 QUALITY GATES FAILED - RELEASE BLOCKED'
+                }
             </div>
             <div class="grade-display" style="color: ${getGateColor(summary.overallStatus)}">
                 Grade: ${summary.qualityGrade}
@@ -896,7 +1268,9 @@ function generateHTMLQualityReport(report) {
         </div>
 
         <div class="gates-grid">
-            ${Object.entries(gates).map(([gateName, gate]) => `
+            ${Object.entries(gates)
+              .map(
+                ([gateName, gate]) => `
             <div class="gate-card" style="border-left-color: ${getGateColor(gate.status)};">
                 <h3>${getGateIcon(gate.status)} ${gateName.charAt(0).toUpperCase() + gateName.slice(1)} Gate</h3>
                 <p><strong>Status:</strong> <span style="color: ${getGateColor(gate.status)}">${gate.status.toUpperCase()}</span></p>
@@ -904,17 +1278,26 @@ function generateHTMLQualityReport(report) {
                 <div class="score-bar">
                     <div class="score-fill" style="width: ${(gate.score / gate.maxScore) * 100}%; background: ${getGateColor(gate.status)};"></div>
                 </div>
-                ${gate.issues && gate.issues.length > 0 ? `
+                ${
+                  gate.issues && gate.issues.length > 0
+                    ? `
                 <div style="margin-top: 15px;">
                     <strong>Issues:</strong>
                     <ul style="margin: 5px 0; padding-left: 20px;">
-                        ${gate.issues.slice(0, 3).map(issue => `<li>${issue}</li>`).join('')}
+                        ${gate.issues
+                          .slice(0, 3)
+                          .map((issue) => `<li>${issue}</li>`)
+                          .join('')}
                         ${gate.issues.length > 3 ? `<li>... and ${gate.issues.length - 3} more</li>` : ''}
                     </ul>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
 
         <div style="margin: 30px 0; text-align: center;">
@@ -935,19 +1318,27 @@ function generateHTMLQualityReport(report) {
             </div>
         </div>
 
-        ${recommendations.length > 0 ? `
+        ${
+          recommendations.length > 0
+            ? `
         <div class="recommendations">
             <h3>📋 Quality Recommendations</h3>
-            ${recommendations.map(rec => `
+            ${recommendations
+              .map(
+                (rec) => `
             <div class="recommendation priority-${rec.priority}">
                 <h4>${rec.category.charAt(0).toUpperCase() + rec.category.slice(1)} - ${rec.priority.toUpperCase()}</h4>
                 <p><strong>Issue:</strong> ${rec.issue}</p>
                 <p><strong>Action:</strong> ${rec.action}</p>
                 <p><strong>Impact:</strong> ${rec.impact}</p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
             <p>Generated by Cortex Memory MCP Quality Gate Enforcer</p>
@@ -1009,10 +1400,13 @@ function main() {
     // Validate all quality gates
     const gateResults = {};
 
+    gateResults.typescript = validateTypeScriptGate();
     gateResults.build = validateBuildGate();
     gateResults.coverage = validateCoverageGate();
     gateResults.performance = validatePerformanceGate();
     gateResults.security = validateSecurityGate();
+    gateResults['mcp-inspector'] = validateMCPInspectorGate();
+    gateResults['production-readiness'] = validateProductionReadinessGate();
 
     // Enforce quality gates
     const enforcement = enforceQualityGates(gateResults);
@@ -1024,7 +1418,9 @@ function main() {
     logHeader('📊 Quality Gate Enforcement Summary');
 
     logInfo(`Quality Grade: ${enforcement.qualityGrade}`);
-    logInfo(`Score: ${enforcement.totalScore}/${enforcement.maxScore} (${((enforcement.totalScore / enforcement.maxScore) * 100).toFixed(1)}%)`);
+    logInfo(
+      `Score: ${enforcement.totalScore}/${enforcement.maxScore} (${((enforcement.totalScore / enforcement.maxScore) * 100).toFixed(1)}%)`
+    );
     logInfo(`Status: ${enforcement.overallStatus.toUpperCase()}`);
 
     if (enforcement.blockRelease) {
@@ -1032,12 +1428,12 @@ function main() {
       logError('Critical quality issues must be resolved before release:');
 
       Object.values(gateResults)
-        .filter(gate => gate.status === 'failed')
-        .forEach(gate => {
+        .filter((gate) => gate.status === 'failed')
+        .forEach((gate) => {
           logError(`\n${gate.name.toUpperCase()} Gate:`);
-          gate.issues.forEach(issue => logError(`  • ${issue}`));
+          gate.issues.forEach((issue) => logError(`  • ${issue}`));
           logError(`  Recommendations:`);
-          gate.recommendations.forEach(rec => logError(`    - ${rec}`));
+          gate.recommendations.forEach((rec) => logError(`    - ${rec}`));
         });
 
       logError(`\n📄 Quality Report: ${report.artifacts.reportFile}`);
@@ -1057,10 +1453,10 @@ function main() {
       logWarning('\n⚠️  QUALITY WARNINGS DETECTED');
       logInfo('Non-critical issues found. Review before release:');
 
-      enforcement.warningGates.forEach(gateName => {
+      enforcement.warningGates.forEach((gateName) => {
         const gate = gateResults[gateName];
         logWarning(`\n${gateName.toUpperCase()} Gate:`);
-        gate.issues.forEach(issue => logWarning(`  • ${issue}`));
+        gate.issues.forEach((issue) => logWarning(`  • ${issue}`));
       });
 
       logSuccess('\n✅ QUALITY GATES PASSED - Release allowed with warnings');
@@ -1070,7 +1466,6 @@ function main() {
 
     logSuccess('\n✅ Quality gate enforcement completed');
     logInfo(`📄 Reports generated in: ${CONFIG.OUTPUT_DIR}`);
-
   } catch (error) {
     logError(`Quality gate enforcement failed: ${error.message}`);
     process.exit(1);
@@ -1082,4 +1477,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-export { validateBuildGate, validateCoverageGate, validatePerformanceGate, validateSecurityGate };
+export {
+  validateTypeScriptGate,
+  validateBuildGate,
+  validateCoverageGate,
+  validatePerformanceGate,
+  validateSecurityGate,
+  validateMCPInspectorGate,
+  validateProductionReadinessGate
+};

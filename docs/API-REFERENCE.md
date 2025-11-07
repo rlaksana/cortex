@@ -5,6 +5,7 @@
 The Cortex Memory MCP Server v2.0 provides an AI-optimized API for knowledge storage, retrieval, and management through the Model Context Protocol (MCP). This document covers the enhanced 3-tool interface with advanced features including intelligent deduplication, TTL policies, semantic chunking, and comprehensive monitoring capabilities designed specifically for AI agent integration.
 
 **🚀 Production Ready Features (100% Compliant)**:
+
 - ✅ **MCP Protocol Version 2024-11-05** - Full compliance with latest MCP specification
 - ✅ **3-Tool Interface** - Streamlined, AI-optimized tool set
 - ✅ **16 Knowledge Types** - Complete knowledge type support with validation
@@ -62,8 +63,8 @@ interface EnhancedKnowledgeItem {
     | 'release'
     | 'risk'
     | 'assumption';
-  content?: string;  // For text-based types
-  data?: Record<string, any>;  // For structured data
+  content?: string; // For text-based types
+  data?: Record<string, any>; // For structured data
   scope?: {
     project?: string;
     branch?: string;
@@ -768,40 +769,40 @@ const result = await client.callTool('memory_store', {
         rationale: 'Industry standard with robust security features',
         alternatives: ['Basic Auth', 'API Keys', 'Session-based'],
         impact: 'High - affects all API endpoints',
-        status: 'accepted'
+        status: 'accepted',
       },
       scope: {
         project: 'user-service',
         branch: 'feature/auth-upgrade',
         org: 'my-company',
-        environment: 'development'
+        environment: 'development',
       },
       source: {
         actor: 'backend-team',
         tool: 'claude-code',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       ttl_config: {
         policy: 'long',
         auto_extend: true,
         extend_threshold_days: 30,
-        max_extensions: 5
+        max_extensions: 5,
       },
       truncation_config: {
         enabled: true,
         max_chars: 15000,
         mode: 'intelligent',
         preserve_structure: true,
-        add_indicators: true
+        add_indicators: true,
       },
       insights_config: {
         enabled: true,
         generate_insights: true,
         insight_types: ['summary', 'recommendations'],
         confidence_threshold: 0.8,
-        analysis_depth: 'medium'
-      }
-    }
+        analysis_depth: 'medium',
+      },
+    },
   ],
   deduplication: {
     enabled: true,
@@ -809,17 +810,17 @@ const result = await client.callTool('memory_store', {
     similarity_threshold: 0.9,
     enable_intelligent_merging: true,
     enable_audit_logging: true,
-    cross_scope_deduplication: false
+    cross_scope_deduplication: false,
   },
   global_ttl: {
     policy: 'long',
-    auto_extend: true
+    auto_extend: true,
   },
   processing: {
     enable_validation: true,
     batch_processing: true,
-    include_metrics: true
-  }
+    include_metrics: true,
+  },
 });
 
 console.log(`Stored ${result.stored.length} items`);
@@ -835,7 +836,7 @@ const searchResult = await client.callTool('memory_find', {
   query: 'authentication security best practices',
   scope: {
     project: 'user-service',
-    org: 'my-company'
+    org: 'my-company',
   },
   types: ['decision', 'runbook', 'incident', 'risk'],
   search_strategy: 'deep',
@@ -846,16 +847,16 @@ const searchResult = await client.callTool('memory_find', {
     max_depth: 3,
     max_nodes: 50,
     include_metadata: true,
-    direction: 'both'
+    direction: 'both',
   },
   ttl_filters: {
     include_expired: false,
-    ttl_policies: ['default', 'long', 'permanent']
+    ttl_policies: ['default', 'long', 'permanent'],
   },
   filters: {
     created_after: '2025-01-01T00:00:00Z',
     confidence_min: 0.7,
-    tags: ['security', 'authentication']
+    tags: ['security', 'authentication'],
   },
   formatting: {
     include_content: true,
@@ -864,18 +865,18 @@ const searchResult = await client.callTool('memory_find', {
     include_confidence_scores: true,
     include_similarity_explanation: true,
     highlight_matches: true,
-    max_content_length: 2000
+    max_content_length: 2000,
   },
   optimization: {
     enable_caching: true,
     cache_ttl_seconds: 600,
     parallel_search: true,
-    timeout_ms: 15000
+    timeout_ms: 15000,
   },
   analytics: {
     track_search_metrics: true,
-    include_performance_metrics: true
-  }
+    include_performance_metrics: true,
+  },
 });
 
 console.log(`Found ${searchResult.results.length} results`);
@@ -893,8 +894,8 @@ const healthResult = await client.callTool('system_status', {
   response_formatting: {
     verbose: true,
     include_raw_data: false,
-    include_timestamps: true
-  }
+    include_timestamps: true,
+  },
 });
 
 if (healthResult.status === 'success') {
@@ -909,10 +910,10 @@ if (healthResult.status === 'success') {
 const statsResult = await client.callTool('system_status', {
   operation: 'stats',
   scope: {
-    project: 'user-service'
+    project: 'user-service',
   },
   stats_period_days: 30,
-  include_detailed_metrics: true
+  include_detailed_metrics: true,
 });
 
 console.log('System Statistics:');
@@ -932,11 +933,11 @@ const cleanupDryRun = await client.callTool('system_status', {
     dry_run: true,
     batch_size: 100,
     require_confirmation: true,
-    enable_backup: true
+    enable_backup: true,
   },
   scope: {
-    project: 'user-service'
-  }
+    project: 'user-service',
+  },
 });
 
 console.log(`Items to cleanup: ${cleanupDryRun.data.items_count}`);
@@ -945,7 +946,7 @@ console.log(`Estimated space saved: ${cleanupDryRun.data.estimated_space_saved_m
 // Confirm and run actual cleanup
 const cleanupResult = await client.callTool('system_status', {
   operation: 'confirm_cleanup',
-  cleanup_token: cleanupDryRun.data.confirmation_token
+  cleanup_token: cleanupDryRun.data.confirmation_token,
 });
 
 console.log(`Cleanup completed: ${cleanupResult.data.cleaned_items}`);
@@ -968,8 +969,8 @@ const deduplicationResult = await client.callTool('memory_store', {
     preserve_merge_history: true,
     enable_audit_logging: true,
     cross_scope_deduplication: false,
-    prioritize_same_scope: true
-  }
+    prioritize_same_scope: true,
+  },
 });
 ```
 
@@ -985,8 +986,8 @@ const ttlResult = await client.callTool('memory_store', {
     policy: 'long', // 90 days default
     auto_extend: true,
     extend_threshold_days: 7,
-    max_extensions: 10
-  }
+    max_extensions: 10,
+  },
 });
 ```
 
@@ -997,7 +998,7 @@ const ttlResult = await client.callTool('memory_store', {
 const performanceResult = await client.callTool('system_status', {
   operation: 'get_performance_trends',
   performance_window_hours: 24,
-  include_detailed_metrics: true
+  include_detailed_metrics: true,
 });
 
 console.log(`Average response time: ${performanceResult.data.avg_response_time_ms}ms`);

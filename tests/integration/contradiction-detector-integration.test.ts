@@ -94,11 +94,11 @@ describe('Contradiction Detector Integration Tests', () => {
 
       // Update item metadata
       const updatedItems = await Promise.all(
-        items.map(item => flaggingService.updateItemMetadata(item))
+        items.map((item) => flaggingService.updateItemMetadata(item))
       );
 
       // Check that metadata was updated correctly
-      updatedItems.forEach(item => {
+      updatedItems.forEach((item) => {
         expect(item.metadata?.flags).toContain('possible_contradiction');
         expect(item.metadata?.contradiction_count).toBeGreaterThan(0);
         expect(item.metadata?.contradiction_ids).toBeDefined();
@@ -132,8 +132,8 @@ describe('Contradiction Detector Integration Tests', () => {
       const detectionResponse = await detector.detectContradictions(request);
 
       // Filter for high-severity contradictions
-      const highSeverityContradictions = detectionResponse.contradictions.filter(c =>
-        c.severity === 'high' || c.severity === 'critical'
+      const highSeverityContradictions = detectionResponse.contradictions.filter(
+        (c) => c.severity === 'high' || c.severity === 'critical'
       );
 
       if (highSeverityContradictions.length > 0) {
@@ -180,7 +180,7 @@ describe('Contradiction Detector Integration Tests', () => {
       }
 
       // Test after_store hook
-      const storeResults = items.map(item => ({
+      const storeResults = items.map((item) => ({
         id: item.id,
         status: 'success',
         kind: item.kind,
@@ -227,7 +227,7 @@ describe('Contradiction Detector Integration Tests', () => {
       });
 
       expect(batchResults.length).toBeGreaterThan(0);
-      batchResults.forEach(result => {
+      batchResults.forEach((result) => {
         expect(result.summary).toBeDefined();
         expect(result.performance).toBeDefined();
       });
@@ -296,7 +296,7 @@ describe('Contradiction Detector Integration Tests', () => {
       // Should detect multiple types of contradictions
       expect(response.contradictions.length).toBeGreaterThan(0);
 
-      const contradictionTypes = new Set(response.contradictions.map(c => c.contradiction_type));
+      const contradictionTypes = new Set(response.contradictions.map((c) => c.contradiction_type));
       expect(contradictionTypes.size).toBeGreaterThan(1);
 
       // Check summary statistics
@@ -333,8 +333,8 @@ describe('Contradiction Detector Integration Tests', () => {
 
       if (detectionResponse.contradictions.length > 0) {
         // Create pointers to simulate cluster formation
-        const pointers: ContradictionPointer[] = detectionResponse.contradictions.flatMap(c =>
-          c.conflicting_item_ids.map(targetId => ({
+        const pointers: ContradictionPointer[] = detectionResponse.contradictions.flatMap((c) =>
+          c.conflicting_item_ids.map((targetId) => ({
             source_id: c.primary_item_id,
             target_id: targetId,
             pointer_type: 'contradicts' as const,
@@ -352,7 +352,7 @@ describe('Contradiction Detector Integration Tests', () => {
         );
 
         expect(clusters.length).toBeGreaterThanOrEqual(0);
-        clusters.forEach(cluster => {
+        clusters.forEach((cluster) => {
           expect(cluster.member_item_ids.length).toBeGreaterThanOrEqual(2);
           expect(cluster.severity).toBeDefined();
           expect(cluster.cluster_type).toBeDefined();
@@ -530,7 +530,7 @@ class ContradictionDetectorImpl implements ContradictionDetector {
 
   async detectContradictions(request: ContradictionDetectionRequest): Promise<any> {
     // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
 
     const contradictions = this.simulateContradictionDetection(request.items);
 
@@ -539,14 +539,20 @@ class ContradictionDetectorImpl implements ContradictionDetector {
       summary: {
         total_items_checked: request.items.length,
         contradictions_found: contradictions.length,
-        by_type: contradictions.reduce((acc, c) => {
-          acc[c.contradiction_type] = (acc[c.contradiction_type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        by_severity: contradictions.reduce((acc, c) => {
-          acc[c.severity] = (acc[c.severity] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
+        by_type: contradictions.reduce(
+          (acc, c) => {
+            acc[c.contradiction_type] = (acc[c.contradiction_type] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
+        by_severity: contradictions.reduce(
+          (acc, c) => {
+            acc[c.severity] = (acc[c.severity] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
         processing_time_ms: Math.random() * 1000,
         cache_hits: Math.floor(Math.random() * 10),
         cache_misses: Math.floor(Math.random() * 5),
@@ -614,8 +620,10 @@ class ContradictionDetectorImpl implements ContradictionDetector {
     ];
 
     for (const [pos, neg] of negationPairs) {
-      if ((content1.includes(pos) && content2.includes(neg)) ||
-          (content1.includes(neg) && content2.includes(pos))) {
+      if (
+        (content1.includes(pos) && content2.includes(neg)) ||
+        (content1.includes(neg) && content2.includes(pos))
+      ) {
         return true;
       }
     }
@@ -627,13 +635,21 @@ class ContradictionDetectorImpl implements ContradictionDetector {
     const content1 = (item1.content || '').toLowerCase();
     const content2 = (item2.content || '').toLowerCase();
 
-    if (content1.includes('before') || content2.includes('before') ||
-        content1.includes('after') || content2.includes('after')) {
+    if (
+      content1.includes('before') ||
+      content2.includes('before') ||
+      content1.includes('after') ||
+      content2.includes('after')
+    ) {
       return 'temporal';
     }
 
-    if (content1.includes('either') || content2.includes('either') ||
-        content1.includes('exclusive') || content2.includes('exclusive')) {
+    if (
+      content1.includes('either') ||
+      content2.includes('either') ||
+      content1.includes('exclusive') ||
+      content2.includes('exclusive')
+    ) {
       return 'logical';
     }
 
@@ -660,7 +676,9 @@ class ContradictionDetectorImpl implements ContradictionDetector {
   }
 
   // Mock implementations for other interface methods
-  async flagContradictions() { return []; }
+  async flagContradictions() {
+    return [];
+  }
   async analyzeItem() {
     return {
       item_id: '',
@@ -678,10 +696,14 @@ class ContradictionDetectorImpl implements ContradictionDetector {
       },
     };
   }
-  async getContradictionPointers() { return []; }
+  async getContradictionPointers() {
+    return [];
+  }
   async batchCheck(items: KnowledgeItem[]) {
     return this.detectContradictions({ items });
   }
-  async validateContradiction() { return true; }
-  async resolveContradiction() { }
+  async validateContradiction() {
+    return true;
+  }
+  async resolveContradiction() {}
 }

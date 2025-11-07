@@ -156,7 +156,7 @@ describe('ContradictionDetector', () => {
       const response = await detector.detectContradictions(request);
 
       expect(response.contradictions.length).toBeGreaterThan(0);
-      expect(response.contradictions.some(c => c.contradiction_type === 'temporal')).toBe(true);
+      expect(response.contradictions.some((c) => c.contradiction_type === 'temporal')).toBe(true);
     });
 
     test('should handle items with no temporal data', async () => {
@@ -216,7 +216,7 @@ describe('ContradictionDetector', () => {
       const response = await detector.detectContradictions(request);
 
       expect(response.contradictions.length).toBeGreaterThan(0);
-      expect(response.contradictions.some(c => c.contradiction_type === 'logical')).toBe(true);
+      expect(response.contradictions.some((c) => c.contradiction_type === 'logical')).toBe(true);
     });
 
     test('should detect mutual exclusion markers', async () => {
@@ -275,7 +275,7 @@ describe('ContradictionDetector', () => {
       const response = await detector.detectContradictions(request);
 
       expect(response.contradictions.length).toBeGreaterThan(0);
-      expect(response.contradictions.some(c => c.contradiction_type === 'attribute')).toBe(true);
+      expect(response.contradictions.some((c) => c.contradiction_type === 'attribute')).toBe(true);
     });
 
     test('should detect value conflicts', async () => {
@@ -304,7 +304,9 @@ describe('ContradictionDetector', () => {
       const response = await detector.detectContradictions(request);
 
       expect(response.contradictions.length).toBeGreaterThan(0);
-      const attributeContradiction = response.contradictions.find(c => c.contradiction_type === 'attribute');
+      const attributeContradiction = response.contradictions.find(
+        (c) => c.contradiction_type === 'attribute'
+      );
       expect(attributeContradiction).toBeDefined();
       expect(attributeContradiction!.confidence_score).toBeGreaterThan(0.8);
     });

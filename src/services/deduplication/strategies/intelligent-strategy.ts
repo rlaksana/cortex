@@ -12,7 +12,7 @@ import {
   type DuplicateAnalysis,
 } from './base-strategy.js';
 import type { KnowledgeItem } from '../../../types/core-interfaces.js';
-import { logger } from '../../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface IntelligentStrategyConfig extends DeduplicationStrategyConfig {
   similarityThreshold?: number;

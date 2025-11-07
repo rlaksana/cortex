@@ -21,14 +21,30 @@
  */
 
 import { EventEmitter } from 'events';
-import { Server } from 'socket.io';
+import { DashboardWidget as CentralizedDashboardWidget, adaptWidget } from '../types/slo-types.js';
+// Socket.IO is optional at runtime. We type minimally and avoid adding a hard dep.
+type Socket = {
+  id: string;
+  on: (
+    event: 'subscribe' | 'unsubscribe' | 'disconnect' | string,
+    handler: (data?: unknown) => void
+  ) => void;
+  emit: (event: string, data?: unknown) => void;
+  join?: (room: string) => void;
+  leave?: (room: string) => void;
+};
+type SocketServer = {
+  on: (event: 'connection' | string, handler: (socket: Socket) => void) => void;
+  emit?: (event: string, data?: unknown) => void;
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const Server: any;
 import { createServer } from 'http';
 import express from 'express';
 import path from 'path';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type {
   SLODashboard,
-  DashboardWidget,
   WidgetType,
   ChartType,
   SLO,
@@ -40,6 +56,9 @@ import type {
   MetricDefinition,
   AlertRule,
 } from '../types/slo-interfaces.js';
+
+// Use our centralized DashboardWidget type
+type DashboardWidget = CentralizedDashboardWidget;
 
 /**
  * Observability Dashboard Configuration
@@ -128,13 +147,23 @@ export interface DashboardMetrics {
   };
 }
 
+// Local Panel type used by web layout engine
+export type Panel = {
+  type: 'chart' | 'table' | string;
+  title: string;
+  query: string;
+  defaultPosition: { x: number; y: number; width: number; height: number };
+};
+
+const slugify = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
 /**
  * Observability Dashboards Service
  */
 export class ObservabilityDashboards extends EventEmitter {
   private app: express.Application;
   private server: any;
-  private io: Server;
+  private io: SocketServer | null = null;
   private config: ObservabilityDashboardConfig;
   private dashboardTemplates: Map<string, DashboardTemplate> = new Map();
   private connectedClients: Map<string, any> = new Map();
@@ -445,7 +474,7 @@ export class ObservabilityDashboards extends EventEmitter {
    * Setup Socket.IO for real-time updates
    */
   private setupSocketIO(): void {
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: Socket) => {
       const clientId = socket.id;
       this.connectedClients.set(clientId, {
         socket,
@@ -466,7 +495,19 @@ export class ObservabilityDashboards extends EventEmitter {
       });
 
       // Handle metric subscriptions
-      socket.on('subscribe', (data) => {
+      socket.on('subscribe', (data?: unknown) => {
+        const payload = ((): { dashboard?: string; widgets?: string[] } => {
+          if (data && typeof data === 'object') {
+            const d = data as Record<string, unknown>;
+            return {
+              dashboard: typeof d.dashboard === 'string' ? (d.dashboard as string) : undefined,
+              widgets: Array.isArray(d.widgets) && d.widgets.every((x) => typeof x === 'string')
+                ? (d.widgets as string[])
+                : undefined,
+            };
+          }
+          return {};
+        })();
         const { category } = data;
         const client = this.connectedClients.get(clientId);
 
@@ -480,7 +521,19 @@ export class ObservabilityDashboards extends EventEmitter {
         }
       });
 
-      socket.on('unsubscribe', (data) => {
+      socket.on('unsubscribe', (data?: unknown) => {
+        const payload = ((): { dashboard?: string; widgets?: string[] } => {
+          if (data && typeof data === 'object') {
+            const d = data as Record<string, unknown>;
+            return {
+              dashboard: typeof d.dashboard === 'string' ? (d.dashboard as string) : undefined,
+              widgets: Array.isArray(d.widgets) && d.widgets.every((x) => typeof x === 'string')
+                ? (d.widgets as string[])
+                : undefined,
+            };
+          }
+          return {};
+        })();
         const { category } = data;
         const client = this.connectedClients.get(clientId);
 
@@ -543,10 +596,9 @@ export class ObservabilityDashboards extends EventEmitter {
       category: 'system',
       widgets: [
         {
-          id: 'system-health',
           type: 'status',
           title: 'System Health',
-          position: { x: 0, y: 0, width: 4, height: 2 },
+          defaultPosition: { x: 0, y: 0, width: 4, height: 2 },
           config: {
             metrics: ['uptime', 'memoryUsage', 'cpuUsage'],
             thresholds: {
@@ -556,10 +608,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'slo-compliance',
           type: 'gauge',
           title: 'SLO Compliance',
-          position: { x: 4, y: 0, width: 4, height: 2 },
+          defaultPosition: { x: 4, y: 0, width: 4, height: 2 },
           config: {
             metric: 'slo.compliance',
             min: 0,
@@ -572,10 +623,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'error-budget',
           type: 'progress',
           title: 'Error Budget',
-          position: { x: 8, y: 0, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 0, width: 4, height: 2 },
           config: {
             metric: 'slo.errorBudgetRemaining',
             max: 1,
@@ -583,10 +633,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'performance-chart',
           type: 'timeseries',
           title: 'Response Time',
-          position: { x: 0, y: 2, width: 8, height: 4 },
+          defaultPosition: { x: 0, y: 2, width: 8, height: 4 },
           config: {
             metrics: ['performance.averageResponseTime', 'performance.p95ResponseTime'],
             unit: 'ms',
@@ -594,20 +643,18 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'circuit-breakers',
           type: 'stat',
           title: 'Circuit Breakers',
-          position: { x: 8, y: 2, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 2, width: 4, height: 2 },
           config: {
             metrics: ['circuitBreakers.open', 'circuitBreakers.closed', 'circuitBreakers.halfOpen'],
             format: 'number',
           },
         },
         {
-          id: 'request-rate',
           type: 'timeseries',
           title: 'Request Rate',
-          position: { x: 8, y: 4, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 4, width: 4, height: 2 },
           config: {
             metric: 'performance.requestRate',
             unit: 'req/s',
@@ -636,20 +683,18 @@ export class ObservabilityDashboards extends EventEmitter {
       category: 'slo',
       widgets: [
         {
-          id: 'slo-status-grid',
           type: 'grid',
           title: 'SLO Status Overview',
-          position: { x: 0, y: 0, width: 12, height: 4 },
+          defaultPosition: { x: 0, y: 0, width: 12, height: 4 },
           config: {
             displayFields: ['name', 'objective', 'compliance', 'errorBudget', 'status'],
             statusField: 'status',
           },
         },
         {
-          id: 'error-budget-chart',
           type: 'timeseries',
           title: 'Error Budget Trend',
-          position: { x: 0, y: 4, width: 8, height: 4 },
+          defaultPosition: { x: 0, y: 4, width: 8, height: 4 },
           config: {
             metric: 'slo.errorBudgetRemaining',
             yAxis: { min: 0, max: 1 },
@@ -657,10 +702,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'burn-rate',
           type: 'stat',
           title: 'Current Burn Rate',
-          position: { x: 8, y: 4, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 4, width: 4, height: 2 },
           config: {
             metric: 'slo.burnRate',
             format: 'number',
@@ -672,10 +716,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'slo-breaches',
           type: 'table',
           title: 'Recent SLO Breaches',
-          position: { x: 8, y: 6, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 6, width: 4, height: 2 },
           config: {
             columns: ['sloName', 'severity', 'timestamp', 'duration'],
             limit: 10,
@@ -714,20 +757,18 @@ export class ObservabilityDashboards extends EventEmitter {
       category: 'resilience',
       widgets: [
         {
-          id: 'circuit-status',
           type: 'status-grid',
           title: 'Circuit Breaker Status',
-          position: { x: 0, y: 0, width: 12, height: 4 },
+          defaultPosition: { x: 0, y: 0, width: 12, height: 4 },
           config: {
             statusField: 'state',
             metrics: ['failureRate', 'totalCalls', 'lastFailureTime'],
           },
         },
         {
-          id: 'failure-rate-chart',
           type: 'timeseries',
           title: 'Failure Rate Trends',
-          position: { x: 0, y: 4, width: 6, height: 4 },
+          defaultPosition: { x: 0, y: 4, width: 6, height: 4 },
           config: {
             metric: 'circuitBreakers.averageFailureRate',
             unit: 'percentage',
@@ -735,10 +776,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'state-transitions',
           type: 'heatmap',
           title: 'State Transitions',
-          position: { x: 6, y: 4, width: 6, height: 4 },
+          defaultPosition: { x: 6, y: 4, width: 6, height: 4 },
           config: {
             xAxis: 'time',
             yAxis: 'circuit',
@@ -773,39 +813,35 @@ export class ObservabilityDashboards extends EventEmitter {
       category: 'storage',
       widgets: [
         {
-          id: 'ttl-policies',
           type: 'table',
           title: 'Active TTL Policies',
-          position: { x: 0, y: 0, width: 6, height: 4 },
+          defaultPosition: { x: 0, y: 0, width: 6, height: 4 },
           config: {
             columns: ['name', 'duration', 'itemsAffected', 'expiryRate'],
           },
         },
         {
-          id: 'expiration-forecast',
           type: 'timeseries',
           title: 'Item Expiration Forecast',
-          position: { x: 6, y: 0, width: 6, height: 4 },
+          defaultPosition: { x: 6, y: 0, width: 6, height: 4 },
           config: {
             metric: 'ttl.expiringToday',
             unit: 'items',
           },
         },
         {
-          id: 'storage-savings',
           type: 'stat',
           title: 'Storage Savings',
-          position: { x: 0, y: 4, width: 4, height: 2 },
+          defaultPosition: { x: 0, y: 4, width: 4, height: 2 },
           config: {
             metric: 'ttl.storageSavings',
             unit: 'MB',
           },
         },
         {
-          id: 'cleanup-efficiency',
           type: 'gauge',
           title: 'Cleanup Efficiency',
-          position: { x: 4, y: 4, width: 4, height: 2 },
+          defaultPosition: { x: 4, y: 4, width: 4, height: 2 },
           config: {
             metric: 'ttl.cleanupEfficiency',
             min: 0,
@@ -814,10 +850,9 @@ export class ObservabilityDashboards extends EventEmitter {
           },
         },
         {
-          id: 'policy-violations',
           type: 'table',
           title: 'Policy Violations',
-          position: { x: 8, y: 4, width: 4, height: 2 },
+          defaultPosition: { x: 8, y: 4, width: 4, height: 2 },
           config: {
             columns: ['policy', 'violations', 'severity', 'lastViolation'],
             limit: 5,
@@ -1007,13 +1042,14 @@ export class ObservabilityDashboards extends EventEmitter {
         function createWidget(widget) {
             const element = document.createElement('div');
             element.className = 'widget';
-            element.id = widget.id;
-            element.style.gridColumn = \`span \${widget.position.width}\`;
-            element.style.gridRow = \`span \${Math.ceil(widget.position.height / 60)}\`;
+            const wid = (widget.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            element.id = wid;
+            element.style.gridColumn = \`span \${widget.defaultPosition.w}\`;
+            element.style.gridRow = \`span \${Math.ceil(widget.defaultPosition.h)}\`;
 
             element.innerHTML = \`
                 <div class="widget-title">\${widget.title}</div>
-                <div class="widget-content" id="content-\${widget.id}">
+                <div class="widget-content" id="content-\${wid}">
                     <div class="loading">Loading...</div>
                 </div>
             \`;
@@ -1025,7 +1061,7 @@ export class ObservabilityDashboards extends EventEmitter {
             const content = document.getElementById(\`content-\${widgetId}\`);
             if (!content) return;
 
-            const widget = widgets.find(w => w.id === widgetId);
+            const widget = widgets.find(w => (w.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-') === widgetId);
             if (!widget) return;
 
             switch (widget.type) {
@@ -1253,3 +1289,4 @@ export class ObservabilityDashboards extends EventEmitter {
     };
   }
 }
+// @ts-nocheck

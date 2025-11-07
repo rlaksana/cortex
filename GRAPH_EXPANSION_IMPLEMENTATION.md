@@ -11,6 +11,7 @@ Successfully implemented comprehensive graph expansion functionality for memory 
 **File**: `src/services/graph-traversal.ts`
 
 **New Functions**:
+
 - `traverseGraphWithExpansion()` - Enhanced graph traversal with parent-child expansion
 - `findRelatedEntities()` - Efficient relationship discovery
 - `calculateNodeConfidence()` - Depth-based confidence scoring
@@ -19,6 +20,7 @@ Successfully implemented comprehensive graph expansion functionality for memory 
 - `sortNodes()` - Multi-criteria sorting algorithms
 
 **Enhanced Interfaces**:
+
 ```typescript
 export interface TraversalOptions {
   depth?: number;
@@ -64,12 +66,14 @@ export interface GraphTraversalResult {
 **File**: `src/services/core-memory-find.ts`
 
 **Key Improvements**:
+
 - Enhanced `applyGraphExpansion()` with parent-child metadata
 - `convertGraphNodesToSearchResults()` for proper result transformation
 - `calculateEnhancedConfidence()` for relationship-aware scoring
 - Comprehensive graph expansion metadata tracking
 
 **Enhanced Search Context**:
+
 ```typescript
 interface SearchContext {
   // ... existing fields
@@ -87,6 +91,7 @@ interface SearchContext {
 **File**: `src/types/core-interfaces.ts`
 
 **New Response Fields**:
+
 ```typescript
 graph_expansion?: {
   enabled: boolean;
@@ -179,6 +184,7 @@ graph_expansion?: {
 **File**: `tests/integration/graph-expansion.test.ts`
 
 **Test Coverage**:
+
 - Basic parent-child relationships
 - Circular reference detection
 - Scope boundary enforcement
@@ -193,6 +199,7 @@ graph_expansion?: {
 **File**: `tests/unit/graph-traversal.test.ts`
 
 **Test Coverage**:
+
 - Traversal options validation
 - Graph node structure
 - Relationship metadata
@@ -206,12 +213,14 @@ graph_expansion?: {
 **File**: `tests/performance/graph-expansion-performance.test.ts`
 
 **Performance Thresholds**:
+
 - **MAX_TRAVERSAL_TIME_MS**: 2000ms
 - **MAX_MEMORY_FIND_TIME_MS**: 5000ms
 - **MAX_MEMORY_USAGE_MB**: 100MB
 - **MIN_THROUGHPUT_PER_SECOND**: 10 traversals/sec
 
 **Test Scenarios**:
+
 - Single traversal performance
 - Concurrent traversal throughput
 - Memory usage validation
@@ -244,11 +253,11 @@ const result = await memoryFind({
   query: 'authentication decision',
   expand: 'parents',
   limit: 15,
-  scope: { project: 'user-service' }
+  scope: { project: 'user-service' },
 });
 
 // Access parent entities
-result.graph_expansion?.parent_entities.forEach(parent => {
+result.graph_expansion?.parent_entities.forEach((parent) => {
   console.log(`Parent: ${parent.entity_type}:${parent.entity_id}`);
   console.log(`Child count: ${parent.child_count}`);
 });
@@ -262,7 +271,7 @@ const result = await memoryFind({
   expand: 'relations',
   limit: 50,
   types: ['decision', 'entity', 'observation'],
-  scope: { project: 'platform-team', branch: 'main' }
+  scope: { project: 'platform-team', branch: 'main' },
 });
 
 // Analyze traversal metadata
@@ -283,12 +292,14 @@ const queue: Array<{
   entityId: string;
   depth: number;
   path: string[];
-}> = [{
-  entityType: startEntityType,
-  entityId: startEntityId,
-  depth: 0,
-  path: [`${startEntityType}:${startEntityId}`],
-}];
+}> = [
+  {
+    entityType: startEntityType,
+    entityId: startEntityId,
+    depth: 0,
+    path: [`${startEntityType}:${startEntityId}`],
+  },
+];
 
 while (queue.length > 0 && nodes.length < maxResults) {
   const current = queue.shift()!;
@@ -337,8 +348,9 @@ function sortNodes(nodes: GraphNode[], sortBy: string): GraphNode[] {
         const bRelevance = (b.confidence_score || 0) * (1 - b.depth * 0.1);
         return bRelevance - aRelevance;
       case 'created_at':
-        return new Date(b.data?.created_at || 0).getTime() -
-               new Date(a.data?.created_at || 0).getTime();
+        return (
+          new Date(b.data?.created_at || 0).getTime() - new Date(a.data?.created_at || 0).getTime()
+        );
       default:
         return 0;
     }

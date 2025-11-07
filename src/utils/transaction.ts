@@ -9,8 +9,9 @@
  * @module utils/transaction
  */
 
-import { logger } from './logger.js';
-import { dbErrorHandler, DbOperationResult } from './db-error-handler.js';
+import { logger } from '@/utils/logger.js';
+import { dbErrorHandler } from './db-error-handler.js';
+import type { DbOperationResult } from './db-error-handler.js';
 
 export interface TransactionOptions {
   timeout?: number; // Operation timeout in milliseconds (default: 30000)

@@ -129,20 +129,20 @@ describe('Enhanced Deduplication Service', () => {
 
     it('should update configuration', () => {
       service.updateConfig({
-        contentSimilarityThreshold: 0.90,
+        contentSimilarityThreshold: 0.9,
         mergeStrategy: 'skip',
       });
 
       const config = service.getConfig();
-      expect(config.contentSimilarityThreshold).toBe(0.90);
+      expect(config.contentSimilarityThreshold).toBe(0.9);
       expect(config.mergeStrategy).toBe('skip');
     });
 
     it('should load configuration from environment', () => {
       // Mock environment variables
-      process.env.DEDUPE_SIMILARITY_THRESHOLD = '0.95';
-      process.env.DEDUPE_MERGE_STRATEGY = 'combine';
-      process.env.DEDUPE_CROSS_SCOPE = 'true';
+      process.env['DEDUPE_SIMILARITY_THRESHOLD'] = '0.95';
+      process.env['DEDUPE_MERGE_STRATEGY'] = 'combine';
+      process.env['DEDUPE_CROSS_SCOPE'] = 'true';
 
       const envService = new EnhancedDeduplicationService();
       const config = envService.getConfig();
@@ -152,9 +152,9 @@ describe('Enhanced Deduplication Service', () => {
       expect(config.crossScopeDeduplication).toBe(true);
 
       // Clean up
-      delete process.env.DEDUPE_SIMILARITY_THRESHOLD;
-      delete process.env.DEDUPE_MERGE_STRATEGY;
-      delete process.env.DEDUPE_CROSS_SCOPE;
+      delete process.env['DEDUPE_SIMILARITY_THRESHOLD'];
+      delete process.env['DEDUPE_MERGE_STRATEGY'];
+      delete process.env['DEDUPE_CROSS_SCOPE'];
     });
   });
 
@@ -238,7 +238,7 @@ describe('Enhanced Deduplication Service', () => {
       newItem.data = {
         content: 'Updated content',
         new_field: 'new value',
-        existing_field: 'existing value'
+        existing_field: 'existing value',
       };
 
       const result = await service.processItems([newItem]);
@@ -264,8 +264,8 @@ describe('Enhanced Deduplication Service', () => {
         impact: 'High impact analysis',
         metadata: {
           tags: ['decision', 'architecture'],
-          priority: 'high'
-        }
+          priority: 'high',
+        },
       };
 
       const result = await service.processItems([newItem]);
@@ -281,8 +281,9 @@ describe('Enhanced Deduplication Service', () => {
     it('should prefer newer content when significantly better', async () => {
       const newItem = createTestItem('duplicate-content');
       newItem.data = {
-        content: 'Much more comprehensive and detailed content that provides better context and explanation',
-        additional_info: 'Extra valuable information'
+        content:
+          'Much more comprehensive and detailed content that provides better context and explanation',
+        additional_info: 'Extra valuable information',
       };
       newItem.created_at = new Date('2024-01-16T00:00:00Z').toISOString();
 
@@ -306,7 +307,7 @@ describe('Enhanced Deduplication Service', () => {
     });
 
     it('should be more lenient with lower threshold', async () => {
-      service.updateConfig({ contentSimilarityThreshold: 0.80, mergeStrategy: 'skip' });
+      service.updateConfig({ contentSimilarityThreshold: 0.8, mergeStrategy: 'skip' });
 
       const items = [createTestItem('similar')]; // Mock returns 0.88 similarity
 
@@ -321,7 +322,7 @@ describe('Enhanced Deduplication Service', () => {
     it('should respect dedupe window settings', async () => {
       service.updateConfig({
         dedupeWindowDays: 1, // Very short window
-        timeBasedDeduplication: true
+        timeBasedDeduplication: true,
       });
 
       const oldItem = createTestItem('duplicate-content');
@@ -336,7 +337,7 @@ describe('Enhanced Deduplication Service', () => {
     it('should handle recently updated items correctly', async () => {
       service.updateConfig({
         respectUpdateTimestamps: true,
-        mergeStrategy: 'prefer_newer'
+        mergeStrategy: 'prefer_newer',
       });
 
       const recentItem = createTestItem('duplicate-content');
@@ -352,7 +353,7 @@ describe('Enhanced Deduplication Service', () => {
     it('should dedupe within same scope', async () => {
       service.updateConfig({
         checkWithinScopeOnly: true,
-        crossScopeDeduplication: false
+        crossScopeDeduplication: false,
       });
 
       const items = [createTestItem('duplicate-content', 'test-project')];
@@ -365,7 +366,7 @@ describe('Enhanced Deduplication Service', () => {
     it('should not dedupe across different projects when cross-scope is disabled', async () => {
       service.updateConfig({
         checkWithinScopeOnly: true,
-        crossScopeDeduplication: false
+        crossScopeDeduplication: false,
       });
 
       const items = [createTestItem('duplicate-content', 'different-project')];
@@ -379,7 +380,7 @@ describe('Enhanced Deduplication Service', () => {
     it('should dedupe across different projects when cross-scope is enabled', async () => {
       service.updateConfig({
         crossScopeDeduplication: true,
-        mergeStrategy: 'skip'
+        mergeStrategy: 'skip',
       });
 
       const items = [createTestItem('duplicate-content', 'different-project')];
@@ -513,7 +514,7 @@ describe('Enhanced Deduplication Service', () => {
 
       expect(result.results).toHaveLength(3);
       // Should not throw errors, but handle gracefully
-      result.results.forEach(itemResult => {
+      result.results.forEach((itemResult) => {
         expect(['stored', 'skipped']).toContain(itemResult.action);
       });
     });
@@ -545,14 +546,12 @@ describe('Enhanced Deduplication Service', () => {
         createTestItem(`concurrent-content-${i}`)
       );
 
-      const promises = concurrentItems.map(item =>
-        service.processItems([item])
-      );
+      const promises = concurrentItems.map((item) => service.processItems([item]));
 
       const results = await Promise.all(promises);
 
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.results).toHaveLength(1);
       });
     });
@@ -575,8 +574,8 @@ describe('Enhanced Deduplication Service', () => {
       expect(result.results).toHaveLength(5);
       expect(result.summary.totalProcessed).toBe(5);
 
-      const stored = result.results.filter(r => r.action === 'stored');
-      const skipped = result.results.filter(r => r.action === 'skipped');
+      const stored = result.results.filter((r) => r.action === 'stored');
+      const skipped = result.results.filter((r) => r.action === 'skipped');
 
       expect(stored.length).toBe(3); // Unique items
       expect(skipped.length).toBe(2); // Duplicate/similar items

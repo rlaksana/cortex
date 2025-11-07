@@ -9,6 +9,7 @@ This document provides standardized communication templates for different audien
 ### 1. Initial Incident Notification
 
 #### **Technical Team Alert**
+
 ```
 SUBJECT: INCIDENT ALERT - [SEVERITY] - [SERVICE NAME] - [INCIDENT ID]
 
@@ -47,6 +48,7 @@ PLEASE ACKNOWLEDGE RECEIPT IN #incidents SLACK CHANNEL
 ```
 
 #### **Management Alert**
+
 ```
 SUBJECT: INCIDENT NOTIFICATION - [SEVERITY] - [SERVICE NAME]
 
@@ -85,6 +87,7 @@ CONTACT: Incident Commander [NAME] at [PHONE/EMAIL]
 ### 2. Status Update Templates
 
 #### **Regular Technical Status Update**
+
 ```
 SUBJECT: STATUS UPDATE - INC-[ID] - [SERVICE NAME] - [TIME]
 
@@ -122,6 +125,7 @@ NEXT UPDATE: [TIMESTAMP] UTC
 ```
 
 #### **Management Status Update**
+
 ```
 SUBJECT: INCIDENT STATUS UPDATE - INC-[ID] - [TIME]
 
@@ -160,6 +164,7 @@ INCIDENT COMMANDER: [NAME] - [PHONE]
 ### 3. Resolution Notification
 
 #### **Technical Resolution Announcement**
+
 ```
 SUBJECT: RESOLVED - INC-[ID] - [SERVICE NAME] - [TIME]
 
@@ -202,6 +207,7 @@ TECHNICAL LEAD: [NAME]
 ```
 
 #### **Business Resolution Announcement**
+
 ```
 SUBJECT: INCIDENT RESOLVED - [SERVICE NAME] - BUSINESS IMPACT UPDATE
 
@@ -249,6 +255,7 @@ CONTACT FOR FOLLOW-UP: [NAME] - [TITLE] - [EMAIL]
 ### 1. Customer Communication Templates
 
 #### **Service Disruption Notice - Active Incident**
+
 ```
 SUBJECT: Service Disruption - [SERVICE NAME]
 
@@ -285,6 +292,7 @@ For immediate assistance:
 ```
 
 #### **Data Security Incident Notice**
+
 ```
 SUBJECT: Important Security Notice Regarding Your Account
 
@@ -330,6 +338,7 @@ Sincerely,
 ```
 
 #### **Service Restoration Notice**
+
 ```
 SUBJECT: Service Restored - [SERVICE NAME]
 
@@ -378,6 +387,7 @@ Best regards,
 ### 2. Partner/B2B Communication Templates
 
 #### **Partner Incident Notification**
+
 ```
 SUBJECT: Service Incident - Impact to Integration - [SERVICE NAME]
 
@@ -424,6 +434,7 @@ Sincerely,
 ```
 
 #### **Partner Resolution Notice**
+
 ```
 SUBJECT: RESOLVED - Service Incident - Integration Restored - [SERVICE NAME]
 
@@ -467,6 +478,7 @@ Best regards,
 ### 3. Regulatory/Compliance Templates
 
 #### **GDPR Breach Notification**
+
 ```
 SUBJECT: Personal Data Breach Notification - Article 33 GDPR
 
@@ -512,6 +524,7 @@ For immediate questions contact:
 ```
 
 #### **Industry-Specific Reporting**
+
 ```
 SUBJECT: Incident Report - [Industry Regulation Reference]
 
@@ -561,6 +574,7 @@ I certify that the information provided in this report is accurate and complete 
 ### 1. Social Media Updates
 
 #### **Twitter/X - Initial Incident**
+
 ```
 [SERVICE NAME] is currently experiencing [technical issue].
 Our team is investigating and working to resolve it as quickly as possible.
@@ -571,6 +585,7 @@ Status: [LINK TO STATUS PAGE]
 ```
 
 #### **Twitter/X - Resolution**
+
 ```
 The issue affecting [SERVICE NAME] has been resolved.
 All services are now fully operational.
@@ -581,6 +596,7 @@ More details: [LINK TO BLOG POST/STATUS PAGE]
 ```
 
 #### **LinkedIn - Professional Update**
+
 ```
 UPDATE: [Service Name] Service Incident Resolution
 
@@ -598,6 +614,7 @@ For detailed information: [Link to status page or blog post]
 ### 2. Press Release Template
 
 #### **Service Incident Press Release**
+
 ```
 FOR IMMEDIATE RELEASE
 
@@ -633,18 +650,19 @@ Media Contact:
 
 ### 1. Communication Matrix
 
-| Audience | Communication Method | Frequency | Content Owner | Approval Required |
-|----------|---------------------|-----------|---------------|-------------------|
-| Technical Team | Slack/Teams | Real-time | Incident Commander | No |
-| Management | Email/Meeting | Hourly | Communications Lead | Yes |
-| Customers | Email/Status Page | As needed | Customer Success | Yes |
-| Partners | Email | As needed | Partner Management | Yes |
-| Media | Press Release | As needed | PR/Comms | Yes |
-| Regulatory | Formal Report | As required | Legal/Compliance | Yes |
+| Audience       | Communication Method | Frequency   | Content Owner       | Approval Required |
+| -------------- | -------------------- | ----------- | ------------------- | ----------------- |
+| Technical Team | Slack/Teams          | Real-time   | Incident Commander  | No                |
+| Management     | Email/Meeting        | Hourly      | Communications Lead | Yes               |
+| Customers      | Email/Status Page    | As needed   | Customer Success    | Yes               |
+| Partners       | Email                | As needed   | Partner Management  | Yes               |
+| Media          | Press Release        | As needed   | PR/Comms            | Yes               |
+| Regulatory     | Formal Report        | As required | Legal/Compliance    | Yes               |
 
 ### 2. Communication Checklist
 
 #### **Pre-Incident Preparation**
+
 - [ ] Contact lists verified and updated
 - [ ] Communication templates customized
 - [ ] Approval workflows established
@@ -653,6 +671,7 @@ Media Contact:
 - [ ] Email distribution lists tested
 
 #### **During Incident**
+
 - [ ] Initial notifications sent within timeframes
 - [ ] Regular updates scheduled and sent
 - [ ] Stakeholder acknowledgments tracked
@@ -661,6 +680,7 @@ Media Contact:
 - [ ] Customer sentiment monitored
 
 #### **Post-Incident**
+
 - [ ] Resolution announcements sent
 - [ ] Follow-up communications planned
 - [ ] Lessons learned documented
@@ -690,4 +710,4 @@ Media Contact:
 
 ---
 
-*These templates should be adapted to your organization's specific needs and approved by appropriate stakeholders before use.*
+_These templates should be adapted to your organization's specific needs and approved by appropriate stakeholders before use._

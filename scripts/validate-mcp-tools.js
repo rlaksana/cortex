@@ -20,18 +20,18 @@ const EXPECTED_TOOLS = [
   {
     name: 'memory_store',
     description: 'Store knowledge items in vector database',
-    requiredParams: ['items']
+    requiredParams: ['items'],
   },
   {
     name: 'memory_find',
     description: 'Search knowledge items using semantic search',
-    requiredParams: ['query']
+    requiredParams: ['query'],
   },
   {
     name: 'system_status',
     description: 'System monitoring and management',
-    requiredParams: ['operation']
-  }
+    requiredParams: ['operation'],
+  },
 ];
 
 function validateMcpTools() {
@@ -84,7 +84,6 @@ function validateMcpTools() {
     console.log(`\n📊 Validation Summary: ${validTools}/${EXPECTED_TOOLS.length} tools valid`);
 
     return validTools === EXPECTED_TOOLS.length && hasToolsList && hasServerSetup;
-
   } catch (error) {
     console.error('❌ Error validating MCP tools:', error.message);
     return false;

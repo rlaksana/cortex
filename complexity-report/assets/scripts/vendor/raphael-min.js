@@ -2335,16 +2335,14 @@
         f = this.matrix ? bj(f, this.matrix) : f;
         for (var g = 1; g < c + 1; g++)
           e.push(
-            d
-              .path(f)
-              .attr({
-                stroke: b.color,
-                fill: b.fill ? b.color : 'none',
-                'stroke-linejoin': 'round',
-                'stroke-linecap': 'round',
-                'stroke-width': +((b.width / c) * g).toFixed(3),
-                opacity: +(b.opacity / c).toFixed(3),
-              })
+            d.path(f).attr({
+              stroke: b.color,
+              fill: b.fill ? b.color : 'none',
+              'stroke-linejoin': 'round',
+              'stroke-linecap': 'round',
+              'stroke-width': +((b.width / c) * g).toFixed(3),
+              opacity: +(b.opacity / c).toFixed(3),
+            })
           );
         return e.insertBefore(this).translate(b.offsetx, b.offsety);
       }));

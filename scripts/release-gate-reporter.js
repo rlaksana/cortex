@@ -31,8 +31,8 @@ const CONFIG = {
     version: process.env.npm_package_version || '2.0.1',
     branch: getCurrentGitBranch(),
     commit: getCurrentGitCommit(),
-    buildNumber: process.env.BUILD_NUMBER || 'local'
-  }
+    buildNumber: process.env.BUILD_NUMBER || 'local',
+  },
 };
 
 // Colors for console output
@@ -44,7 +44,7 @@ const COLORS = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -96,21 +96,27 @@ function collectBuildArtifacts() {
     build: {
       status: 'unknown',
       artifacts: [],
-      size: 0
+      size: 0,
     },
     dist: {
       status: 'unknown',
       files: [],
-      size: 0
-    }
+      size: 0,
+    },
   };
 
   // Check if build exists
   const distDir = join(projectRoot, 'dist');
   if (existsSync(distDir)) {
     try {
-      const files = execSync(`find "${distDir}" -type f -name "*.js" -o -name "*.mjs" -o -name "*.json" | head -20`, { encoding: 'utf8' });
-      artifacts.dist.files = files.trim().split('\n').filter(f => f.length > 0);
+      const files = execSync(
+        `find "${distDir}" -type f -name "*.js" -o -name "*.mjs" -o -name "*.json" | head -20`,
+        { encoding: 'utf8' }
+      );
+      artifacts.dist.files = files
+        .trim()
+        .split('\n')
+        .filter((f) => f.length > 0);
       artifacts.dist.status = 'exists';
       artifacts.dist.size = getDirectorySize(distDir);
       logSuccess(`Found ${artifacts.dist.files.length} distribution files`);
@@ -127,8 +133,13 @@ function collectBuildArtifacts() {
   const artifactsDir = join(CONFIG.ARTIFACTS_DIR);
   if (existsSync(artifactsDir)) {
     try {
-      const artifactFiles = execSync(`find "${artifactsDir}" -type f | head -50`, { encoding: 'utf8' });
-      artifacts.build.artifacts = artifactFiles.trim().split('\n').filter(f => f.length > 0);
+      const artifactFiles = execSync(`find "${artifactsDir}" -type f | head -50`, {
+        encoding: 'utf8',
+      });
+      artifacts.build.artifacts = artifactFiles
+        .trim()
+        .split('\n')
+        .filter((f) => f.length > 0);
       artifacts.build.status = 'exists';
       artifacts.build.size = getDirectorySize(artifactsDir);
       logSuccess(`Found ${artifacts.build.artifacts.length} build artifacts`);
@@ -151,18 +162,18 @@ function collectTestResults() {
     unit: {
       status: 'unknown',
       results: {},
-      summary: {}
+      summary: {},
     },
     integration: {
       status: 'unknown',
       results: {},
-      summary: {}
+      summary: {},
     },
     coverage: {
       status: 'unknown',
       metrics: {},
-      summary: {}
-    }
+      summary: {},
+    },
   };
 
   // Unit test results
@@ -202,7 +213,7 @@ function collectTestResults() {
         statements: coverageData.total.statements.pct,
         branches: coverageData.total.branches.pct,
         functions: coverageData.total.functions.pct,
-        lines: coverageData.total.lines.pct
+        lines: coverageData.total.lines.pct,
       };
       logSuccess('Coverage report found');
     } catch (error) {
@@ -224,13 +235,13 @@ function collectPerformanceResults() {
     benchmarks: {
       status: 'unknown',
       results: {},
-      summary: {}
+      summary: {},
     },
     loadTests: {
       status: 'unknown',
       results: {},
-      summary: {}
-    }
+      summary: {},
+    },
   };
 
   // Benchmark results
@@ -245,9 +256,15 @@ function collectPerformanceResults() {
       if (benchmarkData.results && Array.isArray(benchmarkData.results)) {
         const summary = {
           scenarios: benchmarkData.results.length,
-          avgP95: benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.latencies?.p95 || 0), 0) / benchmarkData.results.length,
-          avgThroughput: benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.throughput || 0), 0) / benchmarkData.results.length,
-          avgErrorRate: benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.errorRate || 0), 0) / benchmarkData.results.length
+          avgP95:
+            benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.latencies?.p95 || 0), 0) /
+            benchmarkData.results.length,
+          avgThroughput:
+            benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.throughput || 0), 0) /
+            benchmarkData.results.length,
+          avgErrorRate:
+            benchmarkData.results.reduce((sum, r) => sum + (r.metrics?.errorRate || 0), 0) /
+            benchmarkData.results.length,
         };
         performance.benchmarks.summary = summary;
       }
@@ -286,18 +303,18 @@ function collectSecurityResults() {
     audit: {
       status: 'unknown',
       results: {},
-      summary: {}
+      summary: {},
     },
     eslint: {
       status: 'unknown',
       results: {},
-      summary: {}
+      summary: {},
     },
     tests: {
       status: 'unknown',
       results: {},
-      summary: {}
-    }
+      summary: {},
+    },
   };
 
   // Security audit results
@@ -309,10 +326,16 @@ function collectSecurityResults() {
       security.audit.status = 'exists';
       security.audit.summary = {
         totalVulnerabilities: Object.keys(auditData.vulnerabilities || {}).length,
-        critical: Object.values(auditData.vulnerabilities || {}).filter(v => v.severity === 'critical').length,
-        high: Object.values(auditData.vulnerabilities || {}).filter(v => v.severity === 'high').length,
-        moderate: Object.values(auditData.vulnerabilities || {}).filter(v => v.severity === 'moderate').length,
-        low: Object.values(auditData.vulnerabilities || {}).filter(v => v.severity === 'low').length
+        critical: Object.values(auditData.vulnerabilities || {}).filter(
+          (v) => v.severity === 'critical'
+        ).length,
+        high: Object.values(auditData.vulnerabilities || {}).filter((v) => v.severity === 'high')
+          .length,
+        moderate: Object.values(auditData.vulnerabilities || {}).filter(
+          (v) => v.severity === 'moderate'
+        ).length,
+        low: Object.values(auditData.vulnerabilities || {}).filter((v) => v.severity === 'low')
+          .length,
       };
       logSuccess('Security audit results found');
     } catch (error) {
@@ -330,8 +353,8 @@ function collectSecurityResults() {
       security.eslint.status = 'exists';
       security.eslint.summary = {
         totalIssues: eslintData.length || 0,
-        errors: eslintData.filter(r => r.severity === 'error').length,
-        warnings: eslintData.filter(r => r.severity === 'warning').length
+        errors: eslintData.filter((r) => r.severity === 'error').length,
+        warnings: eslintData.filter((r) => r.severity === 'warning').length,
       };
       logSuccess('ESLint security results found');
     } catch (error) {
@@ -351,7 +374,7 @@ function collectSecurityResults() {
         totalTests: securityTestData.numTotalTests || 0,
         passed: securityTestData.numPassedTests || 0,
         failed: securityTestData.numFailedTests || 0,
-        skipped: securityTestData.numPendingTests || 0
+        skipped: securityTestData.numPendingTests || 0,
       };
       logSuccess('Security test results found');
     } catch (error) {
@@ -450,22 +473,23 @@ function generateReleaseReport() {
       environment: process.env.NODE_ENV || 'development',
       nodeVersion: process.version,
       platform: process.platform,
-      generatedBy: 'Release Gate Reporter v2.0.1'
+      generatedBy: 'Release Gate Reporter v2.0.1',
     },
     summary: {
-      buildStatus: build.dist.status === 'exists' && build.build.status === 'exists' ? 'success' : 'failed',
+      buildStatus:
+        build.dist.status === 'exists' && build.build.status === 'exists' ? 'success' : 'failed',
       testStatus: testResults.coverage.status === 'exists' ? 'success' : 'failed',
       performanceStatus: performance.benchmarks.status === 'exists' ? 'success' : 'failed',
       securityStatus: security.audit.status === 'exists' ? 'success' : 'failed',
       overallStatus: 'unknown', // Will be calculated
       artifactCount: build.dist.files.length + build.build.artifacts.length,
-      totalSize: build.dist.size + build.build.size
+      totalSize: build.dist.size + build.build.size,
     },
     artifacts: {
       build,
       testResults,
       performance,
-      security
+      security,
     },
     compliance: {
       coverageThresholds: {
@@ -473,7 +497,7 @@ function generateReleaseReport() {
         branches: testResults.coverage.summary?.branches || 0,
         functions: testResults.coverage.summary?.functions || 0,
         lines: testResults.coverage.summary?.lines || 0,
-        required: 90
+        required: 90,
       },
       performanceThresholds: {
         p95Latency: performance.benchmarks.summary?.avgP95 || 0,
@@ -481,26 +505,27 @@ function generateReleaseReport() {
         errorRate: performance.benchmarks.summary?.avgErrorRate || 0,
         requiredP95: 1000,
         requiredThroughput: 100,
-        requiredErrorRate: 1.0
+        requiredErrorRate: 1.0,
       },
       securityCompliance: {
         criticalVulnerabilities: security.audit.summary?.critical || 0,
         highVulnerabilities: security.audit.summary?.high || 0,
-        requiredMaximum: 0
-      }
+        requiredMaximum: 0,
+      },
     },
     readiness: {
       buildReady: build.dist.status === 'exists' && build.build.status === 'exists',
       coverageReady: (testResults.coverage.summary?.statements || 0) >= 90,
       performanceReady: (performance.benchmarks.summary?.avgP95 || 0) <= 1000,
-      securityReady: (security.audit.summary?.critical || 0) === 0 && (security.audit.summary?.high || 0) === 0,
-      readyForRelease: false // Will be calculated
+      securityReady:
+        (security.audit.summary?.critical || 0) === 0 && (security.audit.summary?.high || 0) === 0,
+      readyForRelease: false, // Will be calculated
     },
     recommendations: generateReleaseRecommendations({
       build,
       testResults,
       performance,
-      security
+      security,
     }),
     artifacts: {
       reportFile,
@@ -511,18 +536,18 @@ function generateReleaseReport() {
         testResults: [
           join(CONFIG.TEST_RESULTS_DIR, 'unit-test-results.json'),
           join(CONFIG.TEST_RESULTS_DIR, 'integration-test-results.json'),
-          join(CONFIG.COVERAGE_DIR, 'coverage-summary.json')
+          join(CONFIG.COVERAGE_DIR, 'coverage-summary.json'),
         ],
         performance: [
           join(CONFIG.BENCHMARK_DIR, 'benchmark-results.json'),
-          join(CONFIG.BENCHMARK_DIR, 'load-test-results.json')
+          join(CONFIG.BENCHMARK_DIR, 'load-test-results.json'),
         ],
         security: [
           join(CONFIG.SECURITY_REPORTS_DIR, 'audit-report.json'),
-          join(CONFIG.SECURITY_REPORTS_DIR, 'eslint-security-report.json')
-        ]
-      }
-    }
+          join(CONFIG.SECURITY_REPORTS_DIR, 'eslint-security-report.json'),
+        ],
+      },
+    },
   };
 
   // Calculate overall status
@@ -530,7 +555,7 @@ function generateReleaseReport() {
     report.readiness.buildReady,
     report.readiness.coverageReady,
     report.readiness.performanceReady,
-    report.readiness.securityReady
+    report.readiness.securityReady,
   ];
 
   report.readiness.readyForRelease = readyGates.every(Boolean);
@@ -570,7 +595,7 @@ function generateReleaseRecommendations(results) {
       priority: 'critical',
       category: 'Build',
       issue: 'Distribution files missing',
-      action: 'Run `npm run build` to generate distribution files'
+      action: 'Run `npm run build` to generate distribution files',
     });
   }
 
@@ -581,7 +606,7 @@ function generateReleaseRecommendations(results) {
       priority: 'high',
       category: 'Testing',
       issue: `Test coverage below 90%: ${coverage?.statements || 0}%`,
-      action: 'Add more unit tests and integration tests to meet 90% coverage requirement'
+      action: 'Add more unit tests and integration tests to meet 90% coverage requirement',
     });
   }
 
@@ -592,7 +617,7 @@ function generateReleaseRecommendations(results) {
       priority: 'high',
       category: 'Performance',
       issue: `P95 latency above 1s threshold: ${perf?.avgP95?.toFixed(2) || 'N/A'}ms`,
-      action: 'Optimize performance bottlenecks to meet P95 < 1s requirement'
+      action: 'Optimize performance bottlenecks to meet P95 < 1s requirement',
     });
   }
 
@@ -603,7 +628,7 @@ function generateReleaseRecommendations(results) {
       priority: 'critical',
       category: 'Security',
       issue: `Security vulnerabilities detected: ${sec.critical} critical, ${sec.high} high`,
-      action: 'Address all high and critical security vulnerabilities before release'
+      action: 'Address all high and critical security vulnerabilities before release',
     });
   }
 
@@ -745,18 +770,26 @@ function generateHTMLReleaseReport(report) {
             </div>
         </div>
 
-        ${recommendations.length > 0 ? `
+        ${
+          recommendations.length > 0
+            ? `
         <div class="recommendations">
             <h3>📋 Release Recommendations</h3>
-            ${recommendations.map(rec => `
+            ${recommendations
+              .map(
+                (rec) => `
             <div class="recommendation priority-${rec.priority}">
                 <h4>${rec.category} - ${rec.priority.toUpperCase()}</h4>
                 <p><strong>Issue:</strong> ${rec.issue}</p>
                 <p><strong>Action:</strong> ${rec.action}</p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
             <p>Generated by Cortex Memory MCP Release Gate Reporter</p>
@@ -779,40 +812,40 @@ function generateAttachmentManifest(report) {
         name: 'release-gate-report.json',
         type: 'application/json',
         description: 'Comprehensive release gate report with all metrics and results',
-        required: true
+        required: true,
       },
       {
         name: 'release-gate-report.html',
         type: 'text/html',
         description: 'HTML visualization of release gate report',
-        required: false
+        required: false,
       },
       {
         name: 'release-metrics.csv',
         type: 'text/csv',
         description: 'CSV export of all release metrics',
-        required: false
+        required: false,
       },
       {
         name: 'attachment-manifest.json',
         type: 'application/json',
         description: 'Manifest of all release artifacts',
-        required: true
-      }
+        required: true,
+      },
     ],
     artifacts: {
       build: report.artifacts.build,
       testResults: report.artifacts.testResults,
       performance: report.artifacts.performance,
-      security: report.artifacts.security
+      security: report.artifacts.security,
     },
     readyForRelease: report.readiness.readyForRelease,
     compliance: report.compliance,
     summary: {
       totalChecks: 4,
       passedChecks: Object.values(report.readiness).filter(Boolean).length,
-      failedChecks: Object.values(report.readiness).filter(v => !v).length
-    }
+      failedChecks: Object.values(report.readiness).filter((v) => !v).length,
+    },
   };
 
   return manifest;
@@ -850,8 +883,9 @@ function main() {
     logInfo(`  JSON: ${report.artifacts.reportFile}`);
     logInfo(`  HTML: ${report.artifacts.htmlReportFile}`);
     logInfo(`  CSV: ${report.artifacts.csvFile}`);
-    logInfo(`  Manifest: ${join(CONFIG.OUTPUT_DIR, `attachment-manifest-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)}`);
-
+    logInfo(
+      `  Manifest: ${join(CONFIG.OUTPUT_DIR, `attachment-manifest-${new Date().toISOString().replace(/[:.]/g, '-')}.json`)}`
+    );
   } catch (error) {
     logError(`Release gate report generation failed: ${error.message}`);
     process.exit(1);

@@ -80,10 +80,10 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
       const result = EntitySchema.safeParse(entity);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('entity');
-        expect(result.data.data.entity_type).toBe('user');
-        expect(result.data.data.name).toBe('john_doe');
-        expect(result.data.data.data).toEqual({
+        expect(result['data.kind']).toBe('entity');
+        expect(result['data.data'].entity_type).toBe('user');
+        expect(result['data.data'].name).toBe('john_doe');
+        expect(result['data.data'].data).toEqual({
           email: 'john@example.com',
           role: 'developer',
           preferences: { theme: 'dark', language: 'en' },
@@ -108,8 +108,8 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
       const result = EntitySchema.safeParse(entity);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.entity_type).toBe('organization');
-        expect(result.data.data.data).toEqual({});
+        expect(result['data.data'].entity_type).toBe('organization');
+        expect(result['data.data'].data).toEqual({});
       }
     });
 
@@ -458,7 +458,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
       const result = await db.storeItems([complexEntity]);
 
       expect(result.stored).toHaveLength(1);
-      expect(result.stored[0].data.data.nested.level1.level2.level3.deep_value).toBe('found');
+      expect(result.stored[0].data['data.nested'].level1.level2.level3.deep_value).toBe('found');
     });
 
     it('should handle entities with special characters in name', async () => {
@@ -547,7 +547,7 @@ describe('Entity Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(entity);
       expect(result.kind).toBe('entity');
-      expect(result.data.entity_type).toBe('goal');
+      expect(result['data.entity_type']).toBe('goal');
       expect(result.tags.priority).toBe('high');
       expect(result.source.actor).toBe('product-manager');
     });

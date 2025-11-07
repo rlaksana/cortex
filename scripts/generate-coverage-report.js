@@ -35,7 +35,7 @@ class CoverageReportGenerator {
       this.reportsDir,
       path.join(this.reportsDir, 'historical'),
       path.join(this.reportsDir, 'trends'),
-      path.join(this.reportsDir, 'badges')
+      path.join(this.reportsDir, 'badges'),
     ];
 
     for (const dir of dirs) {
@@ -50,7 +50,7 @@ class CoverageReportGenerator {
       // Run comprehensive coverage
       execSync('npm run test:coverage:ci', {
         stdio: 'inherit',
-        cwd: this.projectRoot
+        cwd: this.projectRoot,
       });
     } catch (error) {
       console.warn('⚠️  Coverage collection failed:', error.message);
@@ -66,14 +66,14 @@ class CoverageReportGenerator {
         version: '1.0.0',
         project: 'mcp-cortex',
         nodeVersion: process.version,
-        platform: process.platform
+        platform: process.platform,
       },
       summary: await this.generateSummary(),
       detailed: await this.generateDetailedCoverage(),
       thresholdAnalysis: await this.analyzeThresholds(),
       criticalPathAnalysis: await this.analyzeCriticalPaths(),
       qualityMetrics: await this.calculateQualityMetrics(),
-      recommendations: await this.generateRecommendations()
+      recommendations: await this.generateRecommendations(),
     };
 
     await fs.writeFile(
@@ -97,11 +97,20 @@ class CoverageReportGenerator {
         covered: coverageData.covered,
         percentage: {
           lines: this.calculatePercentage(coverageData.total.lines, coverageData.covered.lines),
-          functions: this.calculatePercentage(coverageData.total.functions, coverageData.covered.functions),
-          branches: this.calculatePercentage(coverageData.total.branches, coverageData.covered.branches),
-          statements: this.calculatePercentage(coverageData.total.statements, coverageData.covered.statements)
+          functions: this.calculatePercentage(
+            coverageData.total.functions,
+            coverageData.covered.functions
+          ),
+          branches: this.calculatePercentage(
+            coverageData.total.branches,
+            coverageData.covered.branches
+          ),
+          statements: this.calculatePercentage(
+            coverageData.total.statements,
+            coverageData.covered.statements
+          ),
         },
-        status: this.determineCoverageStatus(coverageData)
+        status: this.determineCoverageStatus(coverageData),
       };
 
       return summary;
@@ -123,8 +132,8 @@ class CoverageReportGenerator {
           lines: { total: 0, covered: 0, percentage: 0 },
           functions: { total: 0, covered: 0, percentage: 0 },
           branches: { total: 0, covered: 0, percentage: 0 },
-          statements: { total: 0, covered: 0, percentage: 0 }
-        }
+          statements: { total: 0, covered: 0, percentage: 0 },
+        },
       };
 
       // Process each file
@@ -143,7 +152,7 @@ class CoverageReportGenerator {
             lines: { total: 0, covered: 0 },
             functions: { total: 0, covered: 0 },
             branches: { total: 0, covered: 0 },
-            statements: { total: 0, covered: 0 }
+            statements: { total: 0, covered: 0 },
           };
         }
 
@@ -187,7 +196,7 @@ class CoverageReportGenerator {
         statements: 85, // ≥85% coverage requirement
         branches: 85,
         functions: 85,
-        lines: 85
+        lines: 85,
       },
       critical: {
         'src/core/**': { statements: 90, branches: 90, functions: 90, lines: 90 },
@@ -195,14 +204,14 @@ class CoverageReportGenerator {
         'src/services/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
         'src/mcp/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
         'src/utils/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
-        'src/types/**': { statements: 80, branches: 80, functions: 80, lines: 80 }
-      }
+        'src/types/**': { statements: 80, branches: 80, functions: 80, lines: 80 },
+      },
     };
 
     const analysis = {
       global: { passed: true, met: {}, failed: {} },
       critical: {},
-      recommendations: []
+      recommendations: [],
     };
 
     try {
@@ -226,15 +235,11 @@ class CoverageReportGenerator {
   }
 
   async analyzeCriticalPaths() {
-    const criticalPaths = [
-      'src/core',
-      'src/db',
-      'src/mcp'
-    ];
+    const criticalPaths = ['src/core', 'src/db', 'src/mcp'];
 
     const analysis = {
       paths: {},
-      overall: { passed: true, coverage: 0 }
+      overall: { passed: true, coverage: 0 },
     };
 
     try {
@@ -243,14 +248,15 @@ class CoverageReportGenerator {
         for (const criticalPath of criticalPaths) {
           const pathData = detailed.directories[criticalPath];
           if (pathData) {
-            const avgCoverage = Object.values(pathData)
-              .filter(data => typeof data === 'object' && data.percentage)
-              .reduce((sum, data) => sum + data.percentage, 0) / 4;
+            const avgCoverage =
+              Object.values(pathData)
+                .filter((data) => typeof data === 'object' && data.percentage)
+                .reduce((sum, data) => sum + data.percentage, 0) / 4;
 
             analysis.paths[criticalPath] = {
               coverage: Math.round(avgCoverage),
               details: pathData,
-              status: avgCoverage >= 90 ? 'passed' : 'failed'
+              status: avgCoverage >= 90 ? 'passed' : 'failed',
             };
 
             if (avgCoverage < 90) {
@@ -261,8 +267,8 @@ class CoverageReportGenerator {
 
         // Calculate overall critical path coverage
         const pathCoverages = Object.values(analysis.paths)
-          .filter(path => path.coverage)
-          .map(path => path.coverage);
+          .filter((path) => path.coverage)
+          .map((path) => path.coverage);
 
         if (pathCoverages.length > 0) {
           analysis.overall.coverage = Math.round(
@@ -282,7 +288,7 @@ class CoverageReportGenerator {
       maintainabilityIndex: await this.calculateMaintainabilityIndex(),
       codeComplexity: await this.calculateCodeComplexity(),
       testComplexity: await this.calculateTestComplexity(),
-      codeQuality: await this.assessCodeQuality()
+      codeQuality: await this.assessCodeQuality(),
     };
   }
 
@@ -301,7 +307,7 @@ class CoverageReportGenerator {
             priority: 'high',
             metric,
             message: `Increase ${metric} coverage from ${data.actual}% to ${data.target}% (${data.deficit}% deficit)`,
-            action: `Add tests for uncovered ${metric}`
+            action: `Add tests for uncovered ${metric}`,
           });
         }
       }
@@ -315,7 +321,7 @@ class CoverageReportGenerator {
               priority: 'high',
               path,
               message: `Critical path ${path} has insufficient coverage (${data.coverage}%)`,
-              action: `Focus test efforts on ${path} to meet 90% threshold`
+              action: `Focus test efforts on ${path} to meet 90% threshold`,
             });
           }
         }
@@ -327,22 +333,21 @@ class CoverageReportGenerator {
           type: 'maintenance',
           priority: 'medium',
           message: 'Set up automated coverage monitoring',
-          action: 'Configure CI/CD pipeline to track coverage trends'
+          action: 'Configure CI/CD pipeline to track coverage trends',
         },
         {
           type: 'quality',
           priority: 'low',
           message: 'Consider coverage badges for README',
-          action: 'Generate and display coverage badges'
+          action: 'Generate and display coverage badges',
         }
       );
-
     } catch (error) {
       recommendations.push({
         type: 'error',
         priority: 'high',
         message: `Error generating recommendations: ${error.message}`,
-        action: 'Check coverage configuration and test setup'
+        action: 'Check coverage configuration and test setup',
       });
     }
 
@@ -370,21 +375,19 @@ ${thresholdAnalysis.global.passed ? '✅ All thresholds met' : '❌ Some thresho
 
 ## Status: ${summary.status || 'Unknown'}
 
-${thresholdAnalysis.global.passed ? '' : `### Failed Thresholds
+${
+  thresholdAnalysis.global.passed
+    ? ''
+    : `### Failed Thresholds
 ${Object.entries(thresholdAnalysis.global.failed)
   .map(([metric, data]) => `- ${metric}: ${data.actual}% (target: ${data.target}%)`)
-  .join('\n')}`}
+  .join('\n')}`
+}
     `.trim();
 
-    await fs.writeFile(
-      path.join(this.reportsDir, `summary-${this.timestamp}.md`),
-      report
-    );
+    await fs.writeFile(path.join(this.reportsDir, `summary-${this.timestamp}.md`), report);
 
-    await fs.writeFile(
-      path.join(this.reportsDir, 'latest-summary.md'),
-      report
-    );
+    await fs.writeFile(path.join(this.reportsDir, 'latest-summary.md'), report);
   }
 
   async generateTrendingReport() {
@@ -401,7 +404,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
           const data = JSON.parse(await fs.readFile(filePath, 'utf8'));
           reports.push({
             date: data.metadata?.generated || file,
-            summary: data.summary
+            summary: data.summary,
           });
         }
       }
@@ -411,7 +414,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
       const trendingReport = {
         generated: new Date().toISOString(),
         reports,
-        trends: this.calculateTrends(reports)
+        trends: this.calculateTrends(reports),
       };
 
       await fs.writeFile(
@@ -426,7 +429,6 @@ ${Object.entries(thresholdAnalysis.global.failed)
       if (await this.fileExists(comprehensiveReport)) {
         await fs.copyFile(comprehensiveReport, currentReport);
       }
-
     } catch (error) {
       console.warn('⚠️  Could not generate trending report:', error.message);
     }
@@ -444,10 +446,13 @@ ${Object.entries(thresholdAnalysis.global.failed)
         overallCoverage: thresholdAnalysis.global.passed ? 'passed' : 'failed',
         criticalPaths: criticalPathAnalysis.overall.passed ? 'passed' : 'failed',
         minimumFiles: await this.checkMinimumFileCoverage(),
-        noRegression: await this.checkForRegression()
+        noRegression: await this.checkForRegression(),
       },
-      overall: thresholdAnalysis.global.passed && criticalPathAnalysis.overall.passed ? 'passed' : 'failed',
-      recommendations: []
+      overall:
+        thresholdAnalysis.global.passed && criticalPathAnalysis.overall.passed
+          ? 'passed'
+          : 'failed',
+      recommendations: [],
     };
 
     // Add recommendations based on failures
@@ -456,7 +461,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
         qualityGate.recommendations.push({
           gate: gateName,
           message: `Quality gate '${gateName}' failed`,
-          action: this.getGateAction(gateName)
+          action: this.getGateAction(gateName),
         });
       }
     }
@@ -473,16 +478,17 @@ ${Object.entries(thresholdAnalysis.global.failed)
     try {
       const summary = await this.generateSummary();
       const coverage = Math.round(
-        (summary.percentage?.lines || 0 +
-         summary.percentage?.functions || 0 +
-         summary.percentage?.statements || 0) / 3
+        (summary.percentage?.lines ||
+          0 + summary.percentage?.functions ||
+          0 + summary.percentage?.statements ||
+          0) / 3
       );
 
       const badge = {
         schemaVersion: 1,
         label: 'coverage',
         message: `${coverage}%`,
-        color: coverage >= 95 ? 'green' : coverage >= 80 ? 'yellow' : 'red'
+        color: coverage >= 95 ? 'green' : coverage >= 80 ? 'yellow' : 'red',
       };
 
       const badgeSvg = this.generateBadgeSvg(badge);
@@ -492,11 +498,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
         badgeSvg
       );
 
-      await fs.writeFile(
-        path.join(this.reportsDir, 'badges', 'coverage-latest.svg'),
-        badgeSvg
-      );
-
+      await fs.writeFile(path.join(this.reportsDir, 'badges', 'coverage-latest.svg'), badgeSvg);
     } catch (error) {
       console.warn('⚠️  Could not generate badge:', error.message);
     }
@@ -509,10 +511,12 @@ ${Object.entries(thresholdAnalysis.global.failed)
   }
 
   determineCoverageStatus(summary) {
-    const avgCoverage = (summary.percentage?.lines || 0 +
-                        summary.percentage?.functions || 0 +
-                        summary.percentage?.branches || 0 +
-                        summary.percentage?.statements || 0) / 4;
+    const avgCoverage =
+      (summary.percentage?.lines ||
+        0 + summary.percentage?.functions ||
+        0 + summary.percentage?.branches ||
+        0 + summary.percentage?.statements ||
+        0) / 4;
 
     if (avgCoverage >= 95) return 'excellent';
     if (avgCoverage >= 90) return 'good';
@@ -525,7 +529,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
       lines: { total: fileData.l?.total || 0, covered: fileData.l?.covered || 0 },
       functions: { total: fileData.f?.total || 0, covered: fileData.f?.covered || 0 },
       branches: { total: fileData.b?.total || 0, covered: fileData.b?.covered || 0 },
-      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 }
+      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 },
     };
   }
 
@@ -565,7 +569,12 @@ ${Object.entries(thresholdAnalysis.global.failed)
         current: latestValue,
         previous: previousValue,
         change: latestValue - previousValue,
-        trend: latestValue > previousValue ? 'improving' : latestValue < previousValue ? 'declining' : 'stable'
+        trend:
+          latestValue > previousValue
+            ? 'improving'
+            : latestValue < previousValue
+              ? 'declining'
+              : 'stable',
       };
     }
 
@@ -587,7 +596,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
       overallCoverage: 'Improve overall test coverage to meet thresholds',
       criticalPaths: 'Focus on critical path coverage',
       minimumFiles: 'Ensure minimum coverage per file',
-      noRegression: 'Address coverage regression issues'
+      noRegression: 'Address coverage regression issues',
     };
     return actions[gateName] || 'Review quality gate requirements';
   }
@@ -596,7 +605,7 @@ ${Object.entries(thresholdAnalysis.global.failed)
     const colors = {
       green: '#4c1',
       yellow: '#dfb317',
-      red: '#e05d44'
+      red: '#e05d44',
     };
 
     const color = colors[badge.color] || '#999';

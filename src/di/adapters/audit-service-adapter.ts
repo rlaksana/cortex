@@ -23,13 +23,10 @@ export class AuditServiceAdapter implements IAuditService {
    */
   async log(action: string, data: any): Promise<void> {
     // Map to the audit service's logSearchOperation method
-    await this.service.logSearchOperation(
+    this.service.logSearchOperation(
+      data.userId || 'anonymous',
       data.query || '',
-      data.resultsFound || 0,
-      data.strategy || 'unknown',
-      data.scope,
-      data.userId,
-      data.duration
+      data.resultsFound || 0
     );
   }
 
@@ -37,26 +34,23 @@ export class AuditServiceAdapter implements IAuditService {
    * Query audit events with filters
    */
   async query(filters: Record<string, any>): Promise<any[]> {
-    const searchResult = await this.service.searchAuditEvents({
+    const events = this.service.searchAuditEvents({
       userId: filters.userId,
-      eventType: filters.eventType,
-      operation: filters.operation,
+      action: filters.eventType,
+      resource: filters.operation,
+      outcome: filters.success ? 'success' : 'failure',
       startDate: filters.startDate,
       endDate: filters.endDate,
-      success: filters.success,
-      limit: filters.limit,
-      offset: filters.offset,
     });
 
-    return searchResult.events;
+    return events;
   }
 
   /**
    * Archive audit events before a specified date
    */
   async archive(before: Date): Promise<number> {
-    const retentionDays = Math.floor((Date.now() - before.getTime()) / (1000 * 60 * 60 * 24));
-    const result = await this.service.cleanupOldEvents(retentionDays);
-    return result.deletedCount;
+    const result = this.service.cleanupOldEvents(before);
+    return result;
   }
 }

@@ -19,7 +19,7 @@ import {
   DependencyType
 } from '../types/unified-health-interfaces.js';
 import { circuitBreakerManager } from '../services/circuit-breaker.service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Probe configuration

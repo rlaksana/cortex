@@ -14,46 +14,43 @@ import request from 'supertest';
 import express from 'express';
 import {
   mcpServerHealthMonitor,
-  type MCPServerHealthMetrics
+  type MCPServerHealthMetrics,
 } from '../../src/monitoring/mcp-server-health-monitor.js';
 import {
   QdrantHealthMonitor,
   type QdrantHealthCheckResult,
-  QdrantConnectionStatus
+  QdrantConnectionStatus,
 } from '../../src/monitoring/qdrant-health-monitor.js';
 import {
   circuitBreakerMonitor,
-  type CircuitBreakerHealthStatus
+  type CircuitBreakerHealthStatus,
 } from '../../src/monitoring/circuit-breaker-monitor.js';
 import {
   enhancedPerformanceCollector,
   type SystemPerformanceMetrics,
-  type MCPOperationMetrics
+  type MCPOperationMetrics,
 } from '../../src/monitoring/enhanced-performance-collector.js';
 import {
   containerProbesHandler,
-  type ContainerHealthState
+  type ContainerHealthState,
 } from '../../src/monitoring/container-probes.js';
 import {
   healthStructuredLogger,
-  type StructuredLogEntry
+  type StructuredLogEntry,
 } from '../../src/monitoring/health-structured-logger.js';
 import {
   healthDashboardAPIHandler,
   type DashboardSummary,
-  type RealTimeHealthData
+  type RealTimeHealthData,
 } from '../../src/monitoring/health-dashboard-api.js';
 import {
   circuitBreakerManager,
-  CircuitBreaker
+  CircuitBreaker,
 } from '../../src/services/circuit-breaker.service.js';
-import {
-  HealthStatus,
-  DependencyType
-} from '../../src/types/unified-health-interfaces.js';
+import { HealthStatus, DependencyType } from '../../src/types/unified-health-interfaces.js';
 
 describe('Comprehensive Health Monitoring', () => {
-  let app: express.Application;
+  let app: express['A']pplication;
   let server: any;
   let qdrantMonitor: QdrantHealthMonitor;
   let mockFetch: ReturnType<typeof vi.fn>;
@@ -96,15 +93,16 @@ describe('Comprehensive Health Monitoring', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({
-            version: '1.7.4',
-            commit: 'abc123',
-            services: {
-              qdrant: 'OK',
-              collections: 'OK',
-              cluster: 'OK',
-            },
-          }),
+          json: () =>
+            Promise.resolve({
+              version: '1.7.4',
+              commit: 'abc123',
+              services: {
+                qdrant: 'OK',
+                collections: 'OK',
+                cluster: 'OK',
+              },
+            }),
         } as Response);
       }
 
@@ -112,7 +110,8 @@ describe('Comprehensive Health Monitoring', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          text: () => Promise.resolve(`
+          text: () =>
+            Promise.resolve(`
             qdrant_collections_total 3
             qdrant_vectors_total 10000
             qdrant_memory_usage_bytes 1073741824
@@ -125,18 +124,19 @@ describe('Comprehensive Health Monitoring', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({
-            result: {
-              collections: [
-                {
-                  name: 'test-collection',
-                  vectors_count: 5000,
-                  status: 'green',
-                  optimizer_status: { status: 'ok' },
-                },
-              ],
-            },
-          }),
+          json: () =>
+            Promise.resolve({
+              result: {
+                collections: [
+                  {
+                    name: 'test-collection',
+                    vectors_count: 5000,
+                    status: 'green',
+                    optimizer_status: { status: 'ok' },
+                  },
+                ],
+              },
+            }),
         } as Response);
       }
 
@@ -144,17 +144,18 @@ describe('Comprehensive Health Monitoring', () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({
-            result: {
-              uptime: 3600,
-              memory: {
-                usage: { ram: 1073741824 },
-                total: { ram: 4294967296 },
+          json: () =>
+            Promise.resolve({
+              result: {
+                uptime: 3600,
+                memory: {
+                  usage: { ram: 1073741824 },
+                  total: { ram: 4294967296 },
+                },
+                cpu: { usage: 25.5 },
+                disk: { usage: 5368709120, total: 107374182400 },
               },
-              cpu: { usage: 25.5 },
-              disk: { usage: 5368709120, total: 107374182400 },
-            },
-          }),
+            }),
         } as Response);
       }
 
@@ -189,7 +190,7 @@ describe('Comprehensive Health Monitoring', () => {
 
     it('should collect metrics and track history', async () => {
       // Wait for some metrics to be collected
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const metrics = mcpServerHealthMonitor.getCurrentMetrics();
       expect(metrics).toBeDefined();
@@ -219,7 +220,7 @@ describe('Comprehensive Health Monitoring', () => {
 
     it('should track consecutive failures and successes', async () => {
       // Simulate some health checks
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const metrics = mcpServerHealthMonitor.getCurrentMetrics();
       expect(metrics).toBeDefined();
@@ -234,14 +235,14 @@ describe('Comprehensive Health Monitoring', () => {
     it('should start monitoring and check Qdrant health', async () => {
       const result = await qdrantMonitor.performHealthCheck();
       expect(result).toBeDefined();
-      expect(result.status).toBe(HealthStatus.HEALTHY);
-      expect(result.connectionStatus).toBe(QdrantConnectionStatus.CONNECTED);
+      expect(result.status).toBe(HealthStatus['HEALTHY']);
+      expect(result.connectionStatus).toBe(QdrantConnectionStatus['CONNECTED']);
       expect(result.metrics).toBeDefined();
     });
 
     it('should track connection history and metrics', async () => {
       // Wait for metrics collection
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const metrics = qdrantMonitor.getCurrentMetrics();
       expect(metrics).toBeDefined();
@@ -260,8 +261,8 @@ describe('Comprehensive Health Monitoring', () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection refused'));
 
       const result = await qdrantMonitor.performHealthCheck();
-      expect(result.status).toBe(HealthStatus.UNHEALTHY);
-      expect(result.connectionStatus).toBe(QdrantConnectionStatus.ERROR);
+      expect(result.status).toBe(HealthStatus['UNHEALTHY']);
+      expect(result.connectionStatus).toBe(QdrantConnectionStatus['ERROR']);
       expect(result.error).toBeDefined();
     });
 
@@ -286,7 +287,7 @@ describe('Comprehensive Health Monitoring', () => {
 
     it('should collect detailed Qdrant metrics', async () => {
       // Wait for metrics collection
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const metrics = qdrantMonitor.getCurrentMetrics();
       expect(metrics).toBeDefined();
@@ -314,7 +315,7 @@ describe('Comprehensive Health Monitoring', () => {
       circuitBreaker.forceOpen();
 
       // Wait for monitor to detect the change
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const healthStatus = circuitBreakerMonitor.getHealthStatus('test-service');
       expect(healthStatus).toBeDefined();
@@ -367,7 +368,7 @@ describe('Comprehensive Health Monitoring', () => {
   describe('Enhanced Performance Collector', () => {
     it('should collect system and MCP metrics', async () => {
       // Wait for metrics collection
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const systemMetrics = enhancedPerformanceCollector.getSystemMetrics();
       expect(systemMetrics).toBeDefined();
@@ -398,7 +399,9 @@ describe('Comprehensive Health Monitoring', () => {
       enhancedPerformanceCollector.recordToolExecution('test-tool', 200, true);
       enhancedPerformanceCollector.recordToolExecution('test-tool', 300, false);
 
-      const histogramData = enhancedPerformanceCollector.getHistogramData('response_time_test-operation');
+      const histogramData = enhancedPerformanceCollector.getHistogramData(
+        'response_time_test-operation'
+      );
       expect(histogramData).toBeDefined();
       expect(histogramData!.count).toBeGreaterThan(0);
     });
@@ -414,11 +417,14 @@ describe('Comprehensive Health Monitoring', () => {
     it('should calculate percentiles correctly', () => {
       // Record some response times
       const responseTimes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-      responseTimes.forEach(time => {
+      responseTimes.forEach((time) => {
         enhancedPerformanceCollector.recordResponseTime('percentile-test', time);
       });
 
-      const percentiles = enhancedPerformanceCollector.getPercentiles('response_time_percentile-test', [50, 95, 99]);
+      const percentiles = enhancedPerformanceCollector.getPercentiles(
+        'response_time_percentile-test',
+        [50, 95, 99]
+      );
       expect(percentiles[50]).toBeCloseTo(50, 0);
       expect(percentiles[95]).toBeCloseTo(95, 0);
       expect(percentiles[99]).toBeCloseTo(100, 0);
@@ -427,9 +433,7 @@ describe('Comprehensive Health Monitoring', () => {
 
   describe('Container Probes', () => {
     it('should handle readiness probe requests', async () => {
-      const response = await request(app)
-        .get('/ready')
-        .expect(200);
+      const response = await request(app).get('/ready').expect(200);
 
       expect(response.body.status).toBe('ready');
       expect(response.body.uptime).toBeDefined();
@@ -438,9 +442,7 @@ describe('Comprehensive Health Monitoring', () => {
     });
 
     it('should handle liveness probe requests', async () => {
-      const response = await request(app)
-        .get('/health/live')
-        .expect(200);
+      const response = await request(app).get('/health/live').expect(200);
 
       expect(response.body.status).toBe('alive');
       expect(response.body.uptime).toBeDefined();
@@ -449,9 +451,7 @@ describe('Comprehensive Health Monitoring', () => {
     });
 
     it('should handle startup probe requests', async () => {
-      const response = await request(app)
-        .get('/startup')
-        .expect(200);
+      const response = await request(app).get('/startup').expect(200);
 
       expect(['started', 'starting']).toContain(response.body.status);
       expect(response.body.uptime).toBeDefined();
@@ -468,9 +468,7 @@ describe('Comprehensive Health Monitoring', () => {
     it('should handle probe failures gracefully', async () => {
       // Simulate a failure by creating a scenario where readiness check fails
       // This would require more complex setup in a real test environment
-      const response = await request(app)
-        .get('/ready')
-        .expect(200); // Should still respond, but with not-ready status if issues exist
+      const response = await request(app).get('/ready').expect(200); // Should still respond, but with not-ready status if issues exist
 
       expect(['ready', 'not-ready']).toContain(response.body.status);
     });
@@ -523,8 +521,8 @@ describe('Comprehensive Health Monitoring', () => {
       };
 
       healthStructuredLogger.logSystemHealthCheck(
-        HealthStatus.HEALTHY,
-        HealthStatus.DEGRADED,
+        HealthStatus['HEALTHY'],
+        HealthStatus['DEGRADED'],
         metrics,
         'test-correlation-id'
       );
@@ -543,9 +541,9 @@ describe('Comprehensive Health Monitoring', () => {
 
       healthStructuredLogger.logComponentHealthCheck(
         'test-component',
-        DependencyType.DATABASE,
-        HealthStatus.DEGRADED,
-        HealthStatus.HEALTHY,
+        DependencyType['DATABASE'],
+        HealthStatus['DEGRADED'],
+        HealthStatus['HEALTHY'],
         150,
         'Connection slow',
         'test-correlation-id'
@@ -651,9 +649,7 @@ describe('Comprehensive Health Monitoring', () => {
 
   describe('Health Dashboard API', () => {
     it('should provide dashboard summary', async () => {
-      const response = await request(app)
-        .get('/api/health-dashboard/summary')
-        .expect(200);
+      const response = await request(app).get('/api/health-dashboard/summary').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
@@ -673,9 +669,7 @@ describe('Comprehensive Health Monitoring', () => {
     });
 
     it('should provide real-time health data', async () => {
-      const response = await request(app)
-        .get('/api/health-dashboard/realtime')
-        .expect(200);
+      const response = await request(app).get('/api/health-dashboard/realtime').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
@@ -705,16 +699,14 @@ describe('Comprehensive Health Monitoring', () => {
       expect(historicalData.data).toBeDefined();
       expect(historicalData.summaries).toBeDefined();
 
-      expect(historicalData.data.timestamps).toBeDefined();
-      expect(Array.isArray(historicalData.data.timestamps)).toBe(true);
-      expect(Array.isArray(historicalData.data.healthStatus)).toBe(true);
-      expect(Array.isArray(historicalData.data.responseTimes)).toBe(true);
+      expect(historicalData['data.timestamps']).toBeDefined();
+      expect(Array.isArray(historicalData['data.timestamps'])).toBe(true);
+      expect(Array.isArray(historicalData['data.healthStatus'])).toBe(true);
+      expect(Array.isArray(historicalData['data.responseTimes'])).toBe(true);
     });
 
     it('should provide alerts', async () => {
-      const response = await request(app)
-        .get('/api/health-dashboard/alerts')
-        .expect(200);
+      const response = await request(app).get('/api/health-dashboard/alerts').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
@@ -755,9 +747,7 @@ describe('Comprehensive Health Monitoring', () => {
     });
 
     it('should handle API health check', async () => {
-      const response = await request(app)
-        .get('/api/health-dashboard/health')
-        .expect(200);
+      const response = await request(app).get('/api/health-dashboard/health').expect(200);
 
       expect(response.body.status).toBe('healthy');
       expect(response.body.version).toBeDefined();
@@ -767,17 +757,13 @@ describe('Comprehensive Health Monitoring', () => {
     it('should handle rate limiting', async () => {
       // This test would require configuring rate limiting with a lower threshold
       // For now, just verify the endpoint exists
-      const response = await request(app)
-        .get('/api/health-dashboard/summary')
-        .expect(200);
+      const response = await request(app).get('/api/health-dashboard/summary').expect(200);
 
       expect(response.body.success).toBe(true);
     });
 
     it('should handle CORS headers', async () => {
-      const response = await request(app)
-        .options('/api/health-dashboard/summary')
-        .expect(200);
+      const response = await request(app).options('/api/health-dashboard/summary').expect(200);
 
       expect(response.headers['access-control-allow-origin']).toBeDefined();
       expect(response.headers['access-control-allow-methods']).toBeDefined();
@@ -786,14 +772,10 @@ describe('Comprehensive Health Monitoring', () => {
 
     it('should cache responses appropriately', async () => {
       // First request
-      const response1 = await request(app)
-        .get('/api/health-dashboard/realtime')
-        .expect(200);
+      const response1 = await request(app).get('/api/health-dashboard/realtime').expect(200);
 
       // Second request should be faster due to caching
-      const response2 = await request(app)
-        .get('/api/health-dashboard/realtime')
-        .expect(200);
+      const response2 = await request(app).get('/api/health-dashboard/realtime').expect(200);
 
       expect(response1.body.data).toEqual(response2.body.data);
     });
@@ -808,7 +790,7 @@ describe('Comprehensive Health Monitoring', () => {
       qdrantMonitor.start();
 
       // Wait for monitoring to collect data
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Verify all components are working
       const mcpStatus = mcpServerHealthMonitor.getCurrentStatus();
@@ -822,15 +804,11 @@ describe('Comprehensive Health Monitoring', () => {
       expect(qdrantMetrics).toBeDefined();
 
       // Verify API integration
-      const summaryResponse = await request(app)
-        .get('/api/health-dashboard/summary')
-        .expect(200);
+      const summaryResponse = await request(app).get('/api/health-dashboard/summary').expect(200);
 
       expect(summaryResponse.body.success).toBe(true);
 
-      const realtimeResponse = await request(app)
-        .get('/api/health-dashboard/realtime')
-        .expect(200);
+      const realtimeResponse = await request(app).get('/api/health-dashboard/realtime').expect(200);
 
       expect(realtimeResponse.body.success).toBe(true);
     });
@@ -840,16 +818,14 @@ describe('Comprehensive Health Monitoring', () => {
       mockFetch.mockRejectedValue(new Error('Qdrant unavailable'));
 
       // Wait for monitoring to detect the failure
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify health status reflects the failure
       const qdrantResult = await qdrantMonitor.performHealthCheck();
-      expect(qdrantResult.status).toBe(HealthStatus.UNHEALTHY);
+      expect(qdrantResult.status).toBe(HealthStatus['UNHEALTHY']);
 
       // Verify API still responds with degraded status
-      const summaryResponse = await request(app)
-        .get('/api/health-dashboard/summary')
-        .expect(200);
+      const summaryResponse = await request(app).get('/api/health-dashboard/summary').expect(200);
 
       const summary: DashboardSummary = summaryResponse.body.data;
       expect(summary.overview.overallHealth).toBeDefined();
@@ -867,10 +843,10 @@ describe('Comprehensive Health Monitoring', () => {
       });
 
       // Wait for recovery
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const recoveredResult = await qdrantMonitor.performHealthCheck();
-      expect(recoveredResult.status).toBe(HealthStatus.HEALTHY);
+      expect(recoveredResult.status).toBe(HealthStatus['HEALTHY']);
     });
 
     it('should maintain performance under load', async () => {
@@ -891,7 +867,7 @@ describe('Comprehensive Health Monitoring', () => {
       const endTime = Date.now();
 
       // Verify all requests succeeded
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
       });
@@ -910,7 +886,7 @@ describe('Comprehensive Health Monitoring', () => {
       qdrantMonitor.start();
 
       // Wait for initialization
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify monitoring is active
       expect(mcpServerHealthMonitor.getCurrentStatus()).toBeDefined();

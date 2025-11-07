@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { HealthStatus, AlertSeverity, SystemHealthResult, ComponentHealth } from '../types/unified-health-interfaces.js';
 
 // Re-export AlertSeverity for use by other modules
@@ -1478,6 +1478,22 @@ export interface AlertMetrics {
   averageResolutionTime: number;
   notificationSuccessRate: number;
   escalationRate: number;
+
+  resolved?: unknown
+
+  acknowledged?: unknown
+
+  suppressed?: unknown
+
+  byRule?: unknown
+
+  byComponent?: unknown
+
+  bySource?: unknown
+
+  notificationsSent?: unknown
+
+  averageResponseTime?: unknown
 }
 
 export interface RunbookStepResult {
@@ -1506,3 +1522,15 @@ export const alertManagementService = new AlertManagementService({
     maxDelayMs: 60000,
   },
 });
+
+// Additional exports for compatibility
+export type TestResult = AlertTestResult;
+export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type TestCategory = 'functional' | 'performance' | 'security' | 'integration' | 'regression';
+export type StepType = 'setup' | 'execute' | 'validate' | 'cleanup' | 'notification';
+export type CommandType = 'api_call' | 'database_query' | 'file_operation' | 'system_command' | 'custom';
+export type VerificationType = 'automatic' | 'manual' | 'hybrid';
+export type PanelType = 'metric' | 'log' | 'trace' | 'alert' | 'custom';
+export type QueryType = 'promql' | 'sql' | 'logql' | 'custom';
+export type AggregationType = 'sum' | 'avg' | 'min' | 'max' | 'count' | 'rate';
+export type VisualizationType = 'line' | 'bar' | 'pie' | 'heatmap' | 'gauge' | 'table';

@@ -1343,7 +1343,7 @@ describe('WorkflowService', () => {
 
         expect(result.assignee).toBe('reviewer@example.com');
         expect(result.dueDate).toBe('2024-01-02T17:00:00Z');
-        expect(result.metadata.documentId).toBe('doc-123');
+        expect(result.metadata['documentId']).toBe('doc-123');
       });
 
       it('should support bulk task assignment', async () => {

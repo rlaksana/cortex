@@ -6,7 +6,7 @@
  */
 
 import { EventEmitter } from 'events';
-import {
+import type {
   ChaosScenario,
   ChaosScenarioType,
   ChaosScenarioConfig,

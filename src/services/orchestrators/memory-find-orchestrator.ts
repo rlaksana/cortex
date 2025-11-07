@@ -1,4 +1,4 @@
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
 import { traverseGraph, enrichGraphNodes, type TraversalOptions } from '../graph-traversal.js';
 import type { SearchQuery, SearchResult, MemoryFindResponse } from '../../types/core-interfaces.js';
@@ -8,7 +8,7 @@ import { searchService } from '../search/search-service.js';
 import { entityMatchingService } from '../search/entity-matching-service.js';
 import { resultRanker, type ResultRanker } from '../ranking/result-ranker.js';
 import { auditService } from '../audit/audit-service.js';
-import { structuredLogger, SearchStrategy } from '../../monitoring/structured-logger.js';
+import { structuredLogger, SearchStrategy } from '@/utils/logger.js';
 import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';
 import { rateLimitMiddleware } from '../../middleware/rate-limit-middleware.js';

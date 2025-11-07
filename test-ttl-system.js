@@ -37,7 +37,8 @@ const expectedDefaultTime = new Date(now.getTime() + EXPIRY_TIME_MAP.default);
 const defaultExpiryDate = new Date(defaultExpiry);
 const defaultTimeDiff = Math.abs(defaultExpiryDate.getTime() - expectedDefaultTime.getTime());
 
-if (defaultTimeDiff < 60000) { // Within 1 minute
+if (defaultTimeDiff < 60000) {
+  // Within 1 minute
   console.log('✓ Default TTL calculation correct (30 days)');
 } else {
   console.log('✗ Default TTL calculation incorrect');
@@ -51,7 +52,8 @@ const expectedShortTime = new Date(now.getTime() + EXPIRY_TIME_MAP.short);
 const shortExpiryDate = new Date(shortExpiry);
 const shortTimeDiff = Math.abs(shortExpiryDate.getTime() - expectedShortTime.getTime());
 
-if (shortTimeDiff < 60000) { // Within 1 minute
+if (shortTimeDiff < 60000) {
+  // Within 1 minute
   console.log('✓ Short TTL calculation correct (1 day)');
 } else {
   console.log('✗ Short TTL calculation incorrect');
@@ -65,7 +67,8 @@ const expectedLongTime = new Date(now.getTime() + EXPIRY_TIME_MAP.long);
 const longExpiryDate = new Date(longExpiry);
 const longTimeDiff = Math.abs(longExpiryDate.getTime() - expectedLongTime.getTime());
 
-if (longTimeDiff < 60000) { // Within 1 minute
+if (longTimeDiff < 60000) {
+  // Within 1 minute
   console.log('✓ Long TTL calculation correct (90 days)');
 } else {
   console.log('✗ Long TTL calculation incorrect');
@@ -118,7 +121,9 @@ try {
   console.log(`  - Total processed: ${dryRunResult.summary?.total_items_processed || 0}`);
   console.log(`  - Total deleted: ${dryRunResult.summary?.total_items_deleted || 0}`);
   console.log(`  - Duration: ${dryRunResult.performance_metrics?.total_duration_ms || 0}ms`);
-  console.log(`  - Items per second: ${dryRunResult.performance_metrics?.items_per_second?.toFixed(2) || 0}`);
+  console.log(
+    `  - Items per second: ${dryRunResult.performance_metrics?.items_per_second?.toFixed(2) || 0}`
+  );
   console.log(`  - Errors: ${dryRunResult.errors?.length || 0}`);
 
   // In dry run mode, no items should actually be deleted
@@ -136,26 +141,26 @@ console.log('\nTest 4: TTL policies by knowledge type');
 
 const ttlPolicies = {
   // Short-lived items
-  'todo': 'short', // 1 day
-  'pr_context': 'short', // 1 day
+  todo: 'short', // 1 day
+  pr_context: 'short', // 1 day
 
   // Standard items
-  'entity': 'default', // 30 days
-  'relation': 'default', // 30 days
-  'observation': 'default', // 30 days
-  'section': 'default', // 30 days
-  'change': 'default', // 30 days
-  'issue': 'default', // 30 days
-  'incident': 'default', // 30 days
+  entity: 'default', // 30 days
+  relation: 'default', // 30 days
+  observation: 'default', // 30 days
+  section: 'default', // 30 days
+  change: 'default', // 30 days
+  issue: 'default', // 30 days
+  incident: 'default', // 30 days
 
   // Long-lived items
-  'decision': 'long', // 90 days
-  'runbook': 'long', // 90 days
-  'release_note': 'long', // 90 days
-  'ddl': 'long', // 90 days
-  'release': 'long', // 90 days
-  'risk': 'long', // 90 days
-  'assumption': 'long', // 90 days
+  decision: 'long', // 90 days
+  runbook: 'long', // 90 days
+  release_note: 'long', // 90 days
+  ddl: 'long', // 90 days
+  release: 'long', // 90 days
+  risk: 'long', // 90 days
+  assumption: 'long', // 90 days
 };
 
 let ttlPoliciesCorrect = true;

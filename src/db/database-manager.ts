@@ -21,7 +21,7 @@
 
 import { DatabaseFactory, createDatabase } from './database-factory.js';
 import type { IDatabase } from './database-interface.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   circuitBreakerManager,
   type CircuitBreakerStats,

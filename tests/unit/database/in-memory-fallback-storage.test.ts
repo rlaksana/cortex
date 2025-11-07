@@ -17,8 +17,17 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
-import { InMemoryFallbackStorage, type InMemoryFallbackConfig, type DegradationMetrics } from '../../../src/db/adapters/in-memory-fallback-storage';
-import type { KnowledgeItem, SearchQuery, ItemResult, BatchSummary } from '../../../src/types/core-interfaces';
+import {
+  InMemoryFallbackStorage,
+  type InMemoryFallbackConfig,
+  type DegradationMetrics,
+} from '../../../src/db/adapters/in-memory-fallback-storage';
+import type {
+  KnowledgeItem,
+  SearchQuery,
+  ItemResult,
+  BatchSummary,
+} from '../../../src/types/core-interfaces';
 
 describe('In-Memory Fallback Storage', () => {
   let storage: InMemoryFallbackStorage;
@@ -540,7 +549,6 @@ describe('In-Memory Fallback Storage', () => {
         // Items should be cleaned up
         const findResult = await cleanupStorage.findById(['ttl-test-1', 'ttl-test-2']);
         expect(findResult).toHaveLength(0);
-
       } finally {
         await cleanupStorage.shutdown();
       }
@@ -566,7 +574,6 @@ describe('In-Memory Fallback Storage', () => {
         expect(result.items.length).toBeGreaterThan(0);
         expect(result.items.length).toBeLessThanOrEqual(3);
         expect(result.summary.stored + result.summary.skipped + result.summary.errors).toBe(3);
-
       } finally {
         await smallStorage.shutdown();
       }
@@ -597,7 +604,6 @@ describe('In-Memory Fallback Storage', () => {
         // Should handle memory constraints gracefully
         expect(result.items.length).toBeGreaterThan(0);
         expect(result.items.length).toBeLessThanOrEqual(5);
-
       } finally {
         await memoryStorage.shutdown();
       }
@@ -628,7 +634,6 @@ describe('In-Memory Fallback Storage', () => {
         expect(result.items).toHaveLength(2);
         // With deduplication, one should be stored and one skipped
         expect(result.summary.stored + result.summary.skipped).toBe(2);
-
       } finally {
         await dedupStorage.shutdown();
       }
@@ -657,7 +662,6 @@ describe('In-Memory Fallback Storage', () => {
         expect(result.items).toHaveLength(2);
         // Without deduplication, both should be stored
         expect(result.summary.stored).toBe(2);
-
       } finally {
         await noDedupStorage.shutdown();
       }
@@ -672,22 +676,25 @@ describe('In-Memory Fallback Storage', () => {
       }
 
       // Concurrent stores
-      const storePromises = [
-        storage.store(items.slice(0, 5)),
-        storage.store(items.slice(5, 10)),
-      ];
+      const storePromises = [storage.store(items.slice(0, 5)), storage.store(items.slice(5, 10))];
 
       const storeResults = await Promise.all(storePromises);
-      expect(storeResults.every(r => r.items.length > 0)).toBe(true);
+      expect(storeResults.every((r) => r.items.length > 0)).toBe(true);
 
       // Concurrent searches
       const searchPromises = [
-        storage.search({ text: 'concurrent', kind: undefined, scope: undefined, limit: 10, offset: 0 }),
+        storage.search({
+          text: 'concurrent',
+          kind: undefined,
+          scope: undefined,
+          limit: 10,
+          offset: 0,
+        }),
         storage.search({ text: '', kind: 'entity', scope: undefined, limit: 10, offset: 0 }),
       ];
 
       const searchResults = await Promise.all(searchPromises);
-      expect(searchResults.every(r => r.success)).toBe(true);
+      expect(searchResults.every((r) => r.success)).toBe(true);
     });
 
     it('should handle malformed items gracefully', async () => {
@@ -744,8 +751,20 @@ describe('In-Memory Fallback Storage', () => {
       await storage.store(items);
 
       // Search operations
-      await storage.search({ text: 'metrics', kind: undefined, scope: undefined, limit: 10, offset: 0 });
-      await storage.search({ text: 'nonexistent', kind: undefined, scope: undefined, limit: 10, offset: 0 });
+      await storage.search({
+        text: 'metrics',
+        kind: undefined,
+        scope: undefined,
+        limit: 10,
+        offset: 0,
+      });
+      await storage.search({
+        text: 'nonexistent',
+        kind: undefined,
+        scope: undefined,
+        limit: 10,
+        offset: 0,
+      });
 
       // Find operations
       await storage.findById(['metrics-test-1', 'metrics-test-2']);

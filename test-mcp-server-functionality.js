@@ -16,7 +16,7 @@ const results = {
   total: 0,
   passed: 0,
   failed: 0,
-  scenarios: []
+  scenarios: [],
 };
 
 function addResult(test, passed, message, details = null) {
@@ -29,7 +29,7 @@ function addResult(test, passed, message, details = null) {
     passed,
     message,
     details,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   results.scenarios.push(result);
 
@@ -40,7 +40,7 @@ function addResult(test, passed, message, details = null) {
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function testMcpServer() {
@@ -60,7 +60,7 @@ async function testMcpServer() {
     // Start MCP server
     console.log('Starting MCP server...');
     mcpProcess = spawn('node', ['./dist/index.js'], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     let serverReady = false;
@@ -106,8 +106,8 @@ async function testMcpServer() {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        clientInfo: { name: 'test-client', version: '1.0.0' }
-      }
+        clientInfo: { name: 'test-client', version: '1.0.0' },
+      },
     };
 
     console.log('Sending initialization request...');
@@ -119,7 +119,7 @@ async function testMcpServer() {
       jsonrpc: '2.0',
       id: ++requestId,
       method: 'tools/list',
-      params: {}
+      params: {},
     };
 
     console.log('Sending list tools request...');
@@ -127,19 +127,25 @@ async function testMcpServer() {
     await sleep(2000);
 
     // Check for tools response
-    const toolsResponse = responses.find(r => r.id === listToolsRequest.id);
+    const toolsResponse = responses.find((r) => r.id === listToolsRequest.id);
     if (toolsResponse && toolsResponse.result && toolsResponse.result.tools) {
       const tools = toolsResponse.result.tools;
       addResult('Tools List Retrieved', true, `Found ${tools.length} tools`);
 
       // Check for expected tools
-      const hasMemoryStore = tools.some(t => t.name === 'memory_store');
-      const hasMemoryFind = tools.some(t => t.name === 'memory_find');
+      const hasMemoryStore = tools.some((t) => t.name === 'memory_store');
+      const hasMemoryFind = tools.some((t) => t.name === 'memory_find');
 
-      addResult('Memory Store Tool Available', hasMemoryStore,
-        hasMemoryStore ? 'memory_store tool found' : 'memory_store tool missing');
-      addResult('Memory Find Tool Available', hasMemoryFind,
-        hasMemoryFind ? 'memory_find tool found' : 'memory_find tool missing');
+      addResult(
+        'Memory Store Tool Available',
+        hasMemoryStore,
+        hasMemoryStore ? 'memory_store tool found' : 'memory_store tool missing'
+      );
+      addResult(
+        'Memory Find Tool Available',
+        hasMemoryFind,
+        hasMemoryFind ? 'memory_find tool found' : 'memory_find tool missing'
+      );
 
       // Test memory_store tool call if available
       if (hasMemoryStore) {
@@ -154,18 +160,18 @@ async function testMcpServer() {
                 {
                   kind: 'entity',
                   content: 'Test entity from server test',
-                  metadata: { test: true, timestamp: new Date().toISOString() }
-                }
-              ]
-            }
-          }
+                  metadata: { test: true, timestamp: new Date().toISOString() },
+                },
+              ],
+            },
+          },
         };
 
         console.log('Testing memory_store tool...');
         mcpProcess.stdin.write(JSON.stringify(storeRequest) + '\n');
         await sleep(3000);
 
-        const storeResponse = responses.find(r => r.id === storeRequest.id);
+        const storeResponse = responses.find((r) => r.id === storeRequest.id);
         if (storeResponse && storeResponse.result) {
           addResult('Memory Store Tool Call', true, 'memory_store tool executed successfully');
 
@@ -175,7 +181,12 @@ async function testMcpServer() {
             addResult('Entity Storage', false, 'Entity not stored properly', storeResponse.result);
           }
         } else {
-          addResult('Memory Store Tool Call', false, 'memory_store tool call failed', storeResponse);
+          addResult(
+            'Memory Store Tool Call',
+            false,
+            'memory_store tool call failed',
+            storeResponse
+          );
         }
       }
 
@@ -189,16 +200,16 @@ async function testMcpServer() {
             name: 'memory_find',
             arguments: {
               query: 'test entity',
-              scope: { project: 'mcp-cortex-test' }
-            }
-          }
+              scope: { project: 'mcp-cortex-test' },
+            },
+          },
         };
 
         console.log('Testing memory_find tool...');
         mcpProcess.stdin.write(JSON.stringify(findRequest) + '\n');
         await sleep(3000);
 
-        const findResponse = responses.find(r => r.id === findRequest.id);
+        const findResponse = responses.find((r) => r.id === findRequest.id);
         if (findResponse && findResponse.result) {
           addResult('Memory Find Tool Call', true, 'memory_find tool executed successfully');
 
@@ -211,11 +222,9 @@ async function testMcpServer() {
           addResult('Memory Find Tool Call', false, 'memory_find tool call failed', findResponse);
         }
       }
-
     } else {
       addResult('Tools List Retrieved', false, 'Failed to retrieve tools list', toolsResponse);
     }
-
   } catch (error) {
     addResult('MCP Server Test', false, `MCP server test failed: ${error.message}`);
   } finally {
@@ -240,11 +249,12 @@ async function runAllTests() {
       total: results.total,
       passed: results.passed,
       failed: results.failed,
-      successRate: results.total > 0 ? (results.passed / results.total * 100).toFixed(2) + '%' : '0%'
+      successRate:
+        results.total > 0 ? ((results.passed / results.total) * 100).toFixed(2) + '%' : '0%',
     },
     scenarios: results.scenarios,
     recommendations: [],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Add recommendations
@@ -252,9 +262,9 @@ async function runAllTests() {
     report.recommendations.push('Fix failing MCP server tests');
   }
 
-  const failedTests = results.scenarios.filter(s => !s.passed);
+  const failedTests = results.scenarios.filter((s) => !s.passed);
   if (failedTests.length > 0) {
-    report.recommendations.push(`Priority issues: ${failedTests.map(f => f.test).join(', ')}`);
+    report.recommendations.push(`Priority issues: ${failedTests.map((f) => f.test).join(', ')}`);
   }
 
   if (results.passed / results.total >= 0.8) {
@@ -266,7 +276,10 @@ async function runAllTests() {
     fs.mkdirSync('./artifacts', { recursive: true });
   }
 
-  fs.writeFileSync('./artifacts/mcp-server-functionality-report.json', JSON.stringify(report, null, 2));
+  fs.writeFileSync(
+    './artifacts/mcp-server-functionality-report.json',
+    JSON.stringify(report, null, 2)
+  );
 
   // Display final summary
   console.log('\n=== MCP Server Test Summary ===');
@@ -290,10 +303,10 @@ async function runAllTests() {
 
 // Run tests
 runAllTests()
-  .then(success => {
+  .then((success) => {
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Test execution failed:', error);
     process.exit(1);
   });

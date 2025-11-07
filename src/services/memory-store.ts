@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { memoryStoreOrchestrator } from './orchestrators/memory-store-orchestrator.js';
 import type { MemoryStoreResponse } from '../types/core-interfaces.js';
 import { createStoreObservability } from '../utils/observability-helper.js';

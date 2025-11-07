@@ -8,7 +8,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 // Simple test server using high-level API
 const server = new McpServer({
   name: 'test-mcp-server',
-  version: '1.0.0'
+  version: '1.0.0',
 });
 
 // Register memory_store tool (simplified version)
@@ -16,7 +16,8 @@ server.registerTool(
   'memory_store',
   {
     title: 'Memory Store',
-    description: 'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights.',
+    description:
+      'Store knowledge items in Cortex memory with advanced deduplication, TTL, truncation, and insights.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -27,18 +28,20 @@ server.registerTool(
             type: 'object',
             properties: {
               kind: { type: 'string', description: 'Knowledge type' },
-              data: { type: 'object', description: 'Knowledge data' }
+              data: { type: 'object', description: 'Knowledge data' },
             },
-            required: ['kind', 'data']
-          }
-        }
+            required: ['kind', 'data'],
+          },
+        },
       },
-      required: ['items']
-    }
+      required: ['items'],
+    },
   },
   async (args) => {
     return {
-      content: [{ type: 'text', text: `Memory store called with ${args.items?.length || 0} items` }]
+      content: [
+        { type: 'text', text: `Memory store called with ${args.items?.length || 0} items` },
+      ],
     };
   }
 );
@@ -53,14 +56,14 @@ server.registerTool(
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search query' },
-        limit: { type: 'number', description: 'Result limit', default: 10 }
+        limit: { type: 'number', description: 'Result limit', default: 10 },
       },
-      required: ['query']
-    }
+      required: ['query'],
+    },
   },
   async (args) => {
     return {
-      content: [{ type: 'text', text: `Memory find called with query: ${args.query}` }]
+      content: [{ type: 'text', text: `Memory find called with query: ${args.query}` }],
     };
   }
 );
@@ -78,15 +81,20 @@ server.registerTool(
           type: 'string',
           enum: ['status', 'health_check', 'cleanup'],
           description: 'Operation to perform',
-          default: 'status'
-        }
+          default: 'status',
+        },
       },
-      required: []
-    }
+      required: [],
+    },
   },
   async (args) => {
     return {
-      content: [{ type: 'text', text: `System status called with operation: ${args.operation || 'status'}` }]
+      content: [
+        {
+          type: 'text',
+          text: `System status called with operation: ${args.operation || 'status'}`,
+        },
+      ],
     };
   }
 );

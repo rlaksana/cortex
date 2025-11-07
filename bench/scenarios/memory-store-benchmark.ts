@@ -18,8 +18,8 @@ export const singleItemStoreBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 100,
       averageItemSize: 1024,
-      sizeVariance: 0.2
-    }
+      sizeVariance: 0.2,
+    },
   },
   tags: ['store', 'single', 'baseline'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -36,7 +36,7 @@ export const singleItemStoreBenchmark: BenchmarkScenario = {
           kind: 'entity' as const,
           content: `Test entity ${i} with content for benchmarking`,
           scope: { project: 'benchmark-test' },
-          metadata: { index: i, test: true }
+          metadata: { index: i, test: true },
         };
 
         const result = await memoryStore({ items: [item] });
@@ -45,26 +45,26 @@ export const singleItemStoreBenchmark: BenchmarkScenario = {
         results.push({
           success: true,
           duration: endTime - startTime,
-          itemId: result.items?.[0]?.id
+          itemId: result.items?.[0]?.id,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
     return {
       totalOperations: results.length,
-      successfulOperations: results.filter(r => r.success).length,
-      failedOperations: results.filter(r => !r.success).length,
+      successfulOperations: results.filter((r) => r.success).length,
+      failedOperations: results.filter((r) => !r.success).length,
       averageDuration: results.reduce((sum, r) => sum + r.duration, 0) / results.length,
-      results
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -79,8 +79,8 @@ export const batchStoreBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 1000,
       averageItemSize: 2048,
-      sizeVariance: 0.3
-    }
+      sizeVariance: 0.3,
+    },
   },
   tags: ['store', 'batch', 'throughput'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -99,7 +99,7 @@ export const batchStoreBenchmark: BenchmarkScenario = {
             kind: 'observation' as const,
             content: `Batch observation ${i}-${j} with detailed content for performance testing`,
             scope: { project: 'benchmark-test' },
-            metadata: { batch: i, index: j, test: true }
+            metadata: { batch: i, index: j, test: true },
           });
         }
 
@@ -110,7 +110,7 @@ export const batchStoreBenchmark: BenchmarkScenario = {
           success: true,
           duration: endTime - startTime,
           itemsStored: result.items?.length || 0,
-          batchSize
+          batchSize,
         });
       } catch (error) {
         const endTime = performance.now();
@@ -118,7 +118,7 @@ export const batchStoreBenchmark: BenchmarkScenario = {
           success: false,
           duration: endTime - startTime,
           error: error instanceof Error ? error.message : String(error),
-          batchSize
+          batchSize,
         });
       }
     }
@@ -126,13 +126,14 @@ export const batchStoreBenchmark: BenchmarkScenario = {
     return {
       totalOperations: results.length,
       totalItems: results.reduce((sum, r) => sum + (r.itemsStored || 0), 0),
-      successfulOperations: results.filter(r => r.success).length,
+      successfulOperations: results.filter((r) => r.success).length,
       averageDuration: results.reduce((sum, r) => sum + r.duration, 0) / results.length,
-      itemsPerSecond: results.reduce((sum, r) => sum + (r.itemsStored || 0), 0) /
-                       (results.reduce((sum, r) => sum + r.duration, 0) / 1000),
-      results
+      itemsPerSecond:
+        results.reduce((sum, r) => sum + (r.itemsStored || 0), 0) /
+        (results.reduce((sum, r) => sum + r.duration, 0) / 1000),
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -148,8 +149,8 @@ export const concurrentStoreBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 1000,
       averageItemSize: 1536,
-      sizeVariance: 0.25
-    }
+      sizeVariance: 0.25,
+    },
   },
   tags: ['store', 'concurrent', 'load'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -164,19 +165,21 @@ export const concurrentStoreBenchmark: BenchmarkScenario = {
         // Ramp-up delay
         if (config.rampUpTime) {
           const delay = (config.rampUpTime / config.operations) * index;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
 
         const startTime = performance.now();
 
         try {
           const result = await memoryStore({
-            items: [{
-              kind: 'decision' as const,
-              content: `Concurrent decision ${index} for load testing with concurrent operations`,
-              scope: { project: 'benchmark-test' },
-              metadata: { concurrent: true, index, test: true }
-            }]
+            items: [
+              {
+                kind: 'decision' as const,
+                content: `Concurrent decision ${index} for load testing with concurrent operations`,
+                scope: { project: 'benchmark-test' },
+                metadata: { concurrent: true, index, test: true },
+              },
+            ],
           });
 
           const endTime = performance.now();
@@ -185,7 +188,7 @@ export const concurrentStoreBenchmark: BenchmarkScenario = {
             success: true,
             duration: endTime - startTime,
             itemId: result.items?.[0]?.id,
-            index
+            index,
           };
         } catch (error) {
           const endTime = performance.now();
@@ -193,7 +196,7 @@ export const concurrentStoreBenchmark: BenchmarkScenario = {
             success: false,
             duration: endTime - startTime,
             error: error instanceof Error ? error.message : String(error),
-            index
+            index,
           };
         }
       };
@@ -206,22 +209,22 @@ export const concurrentStoreBenchmark: BenchmarkScenario = {
     results.push(...operationResults);
 
     // Calculate metrics
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       failedOperations: failed.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      minDuration: Math.min(...successful.map(r => r.duration)),
-      maxDuration: Math.max(...successful.map(r => r.duration)),
+      minDuration: Math.min(...successful.map((r) => r.duration)),
+      maxDuration: Math.max(...successful.map((r) => r.duration)),
       concurrency: config.concurrency,
-      throughput: successful.length / (Math.max(...results.map(r => r.duration)) / 1000),
+      throughput: successful.length / (Math.max(...results.map((r) => r.duration)) / 1000),
       errorRate: (failed.length / results.length) * 100,
-      results
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -236,8 +239,8 @@ export const deduplicationBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 50, // Only 50 unique items
       averageItemSize: 1024,
-      sizeVariance: 0.1
-    }
+      sizeVariance: 0.1,
+    },
   },
   tags: ['store', 'deduplication', 'performance'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -261,22 +264,24 @@ export const deduplicationBenchmark: BenchmarkScenario = {
         const isDuplicate = i >= 50;
 
         const result = await memoryStore({
-          items: [{
-            kind: 'entity' as const,
-            content: uniqueContents[contentIndex],
-            scope: { project: 'benchmark-test' },
-            metadata: {
-              index: i,
-              duplicate: isDuplicate,
-              originalIndex: contentIndex,
-              test: true
-            }
-          }],
+          items: [
+            {
+              kind: 'entity' as const,
+              content: uniqueContents[contentIndex],
+              scope: { project: 'benchmark-test' },
+              metadata: {
+                index: i,
+                duplicate: isDuplicate,
+                originalIndex: contentIndex,
+                test: true,
+              },
+            },
+          ],
           deduplication: {
             enabled: true,
             mergeStrategy: 'intelligent',
-            similarityThreshold: 0.85
-          }
+            similarityThreshold: 0.85,
+          },
         });
 
         const endTime = performance.now();
@@ -286,36 +291,36 @@ export const deduplicationBenchmark: BenchmarkScenario = {
           duration: endTime - startTime,
           isDuplicate,
           itemId: result.items?.[0]?.id,
-          duplicateDetected: result.duplicateDetection?.detected || false
+          duplicateDetected: result.duplicateDetection?.detected || false,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const duplicates = results.filter(r => r.duplicateDetected);
-    const uniques = results.filter(r => !r.duplicateDetected);
+    const duplicates = results.filter((r) => r.duplicateDetected);
+    const uniques = results.filter((r) => !r.duplicateDetected);
 
     return {
       totalOperations: results.length,
       duplicateOperations: duplicates.length,
       uniqueOperations: uniques.length,
       averageDuration: results.reduce((sum, r) => sum + r.duration, 0) / results.length,
-      averageDuplicateDuration: duplicates.length > 0
-        ? duplicates.reduce((sum, r) => sum + r.duration, 0) / duplicates.length
-        : 0,
-      averageUniqueDuration: uniques.length > 0
-        ? uniques.reduce((sum, r) => sum + r.duration, 0) / uniques.length
-        : 0,
+      averageDuplicateDuration:
+        duplicates.length > 0
+          ? duplicates.reduce((sum, r) => sum + r.duration, 0) / duplicates.length
+          : 0,
+      averageUniqueDuration:
+        uniques.length > 0 ? uniques.reduce((sum, r) => sum + r.duration, 0) / uniques.length : 0,
       duplicateDetectionRate: (duplicates.length / 150) * 100, // 150 expected duplicates
-      results
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -330,8 +335,8 @@ export const largeItemStoreBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 50,
       averageItemSize: 50000, // 50KB average
-      sizeVariance: 0.2
-    }
+      sizeVariance: 0.2,
+    },
   },
   tags: ['store', 'large-items', 'memory'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -355,17 +360,19 @@ export const largeItemStoreBenchmark: BenchmarkScenario = {
         const content = generateLargeContent(targetSize);
 
         const result = await memoryStore({
-          items: [{
-            kind: 'observation' as const,
-            content,
-            scope: { project: 'benchmark-test' },
-            metadata: {
-              large: true,
-              size: content.length,
-              index: i,
-              test: true
-            }
-          }]
+          items: [
+            {
+              kind: 'observation' as const,
+              content,
+              scope: { project: 'benchmark-test' },
+              metadata: {
+                large: true,
+                size: content.length,
+                index: i,
+                test: true,
+              },
+            },
+          ],
         });
 
         const endTime = performance.now();
@@ -377,23 +384,24 @@ export const largeItemStoreBenchmark: BenchmarkScenario = {
           itemSize: content.length,
           memoryDelta: {
             rss: endMemory.rss - startMemory.rss,
-            heapUsed: endMemory.heapUsed - startMemory.heapUsed
+            heapUsed: endMemory.heapUsed - startMemory.heapUsed,
           },
-          itemId: result.items?.[0]?.id
+          itemId: result.items?.[0]?.id,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
+    const successful = results.filter((r) => r.success);
     const totalDataSize = successful.reduce((sum, r) => sum + (r.itemSize || 0), 0);
-    const avgMemoryDelta = successful.reduce((sum, r) => sum + r.memoryDelta.rss, 0) / successful.length;
+    const avgMemoryDelta =
+      successful.reduce((sum, r) => sum + r.memoryDelta.rss, 0) / successful.length;
 
     return {
       totalOperations: results.length,
@@ -401,11 +409,12 @@ export const largeItemStoreBenchmark: BenchmarkScenario = {
       totalDataSize,
       averageItemSize: successful.length > 0 ? totalDataSize / successful.length : 0,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      throughputMBps: (totalDataSize / 1024 / 1024) / (successful.reduce((sum, r) => sum + r.duration, 0) / 1000),
+      throughputMBps:
+        totalDataSize / 1024 / 1024 / (successful.reduce((sum, r) => sum + r.duration, 0) / 1000),
       averageMemoryDelta: avgMemoryDelta,
-      results
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -420,8 +429,8 @@ export const ttlProcessingBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 100,
       averageItemSize: 1024,
-      sizeVariance: 0.1
-    }
+      sizeVariance: 0.1,
+    },
   },
   tags: ['store', 'ttl', 'expiration'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -438,21 +447,23 @@ export const ttlProcessingBenchmark: BenchmarkScenario = {
         const ttlPolicy = ttlMinutes < 60 ? 'short' : ttlMinutes < 720 ? 'default' : 'long';
 
         const result = await memoryStore({
-          items: [{
-            kind: 'todo' as const,
-            content: `TTL test item ${i} with ${ttlPolicy} policy`,
-            scope: { project: 'benchmark-test' },
-            metadata: {
-              ttl: ttlMinutes,
-              policy: ttlPolicy,
-              index: i,
-              test: true
-            }
-          }],
+          items: [
+            {
+              kind: 'todo' as const,
+              content: `TTL test item ${i} with ${ttlPolicy} policy`,
+              scope: { project: 'benchmark-test' },
+              metadata: {
+                ttl: ttlMinutes,
+                policy: ttlPolicy,
+                index: i,
+                test: true,
+              },
+            },
+          ],
           ttl_config: {
             policy: ttlPolicy as any,
-            expires_at: new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString()
-          }
+            expires_at: new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString(),
+          },
         });
 
         const endTime = performance.now();
@@ -462,40 +473,45 @@ export const ttlProcessingBenchmark: BenchmarkScenario = {
           duration: endTime - startTime,
           ttlMinutes,
           ttlPolicy,
-          itemId: result.items?.[0]?.id
+          itemId: result.items?.[0]?.id,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const byPolicy = results.reduce((acc, result) => {
-      if (result.success && result.ttlPolicy) {
-        if (!acc[result.ttlPolicy]) {
-          acc[result.ttlPolicy] = [];
+    const byPolicy = results.reduce(
+      (acc, result) => {
+        if (result.success && result.ttlPolicy) {
+          if (!acc[result.ttlPolicy]) {
+            acc[result.ttlPolicy] = [];
+          }
+          acc[result.ttlPolicy].push(result);
         }
-        acc[result.ttlPolicy].push(result);
-      }
-      return acc;
-    }, {} as Record<string, any[]>);
+        return acc;
+      },
+      {} as Record<string, any[]>
+    );
 
     const policyStats = Object.entries(byPolicy).map(([policy, items]) => ({
       policy,
       count: items.length,
-      averageDuration: items.reduce((sum, item) => sum + item.duration, 0) / items.length
+      averageDuration: items.reduce((sum, item) => sum + item.duration, 0) / items.length,
     }));
 
     return {
       totalOperations: results.length,
-      successfulOperations: results.filter(r => r.success).length,
-      averageDuration: results.filter(r => r.success).reduce((sum, r) => sum + r.duration, 0) / results.filter(r => r.success).length,
+      successfulOperations: results.filter((r) => r.success).length,
+      averageDuration:
+        results.filter((r) => r.success).reduce((sum, r) => sum + r.duration, 0) /
+        results.filter((r) => r.success).length,
       policyPerformance: policyStats,
-      results
+      results,
     };
-  }
+  },
 };

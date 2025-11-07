@@ -7,6 +7,7 @@ This runbook provides procedures for scaling the Cortex Memory MCP Server to han
 ## Scaling Architecture
 
 ### Current Architecture
+
 ```
 Load Balancer (Nginx/ALB)
 ├── Cortex MCP Instances (3+ replicas)
@@ -22,12 +23,13 @@ Load Balancer (Nginx/ALB)
 ```
 
 ### Scaling Targets
-| Component | Current | Target | Scaling Method |
-|-----------|---------|--------|----------------|
-| **MCP Instances** | 3 | 10 | Horizontal |
-| **Qdrant Nodes** | 1 | 3 | Horizontal |
-| **Memory per Instance** | 2GB | 4GB | Vertical |
-| **CPU per Instance** | 1 vCPU | 2 vCPU | Vertical |
+
+| Component               | Current | Target | Scaling Method |
+| ----------------------- | ------- | ------ | -------------- |
+| **MCP Instances**       | 3       | 10     | Horizontal     |
+| **Qdrant Nodes**        | 1       | 3      | Horizontal     |
+| **Memory per Instance** | 2GB     | 4GB    | Vertical       |
+| **CPU per Instance**    | 1 vCPU  | 2 vCPU | Vertical       |
 
 ## Pre-Scaling Assessment
 

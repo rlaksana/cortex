@@ -7,6 +7,7 @@ This runbook provides step-by-step procedures for deploying the Cortex Memory MC
 ## Prerequisites
 
 ### Environment Requirements
+
 - **Node.js**: >= 20.x
 - **Docker**: >= 20.x (for containerized deployments)
 - **Kubernetes**: >= 1.25 (for K8s deployments)
@@ -16,6 +17,7 @@ This runbook provides step-by-step procedures for deploying the Cortex Memory MC
 - **Network**: Outbound HTTPS access (port 443)
 
 ### Required Access
+
 - SSH access to deployment servers
 - Docker registry push permissions
 - Kubernetes cluster admin permissions (if using K8s)
@@ -570,18 +572,21 @@ exit 0
 ## Environment-Specific Considerations
 
 ### Development Environment
+
 - Use hot reload during development: `npm run dev`
 - Enable debug logging: `DEBUG=cortex:*`
 - Use development ports: MCP (3001), Qdrant (6334)
 - Skip backup procedures for rapid iteration
 
 ### Staging Environment
+
 - Mirror production configuration as closely as possible
 - Use production-sized data samples for testing
 - Run full validation suite including performance tests
 - Test rollback procedures before production deployment
 
 ### Production Environment
+
 - Always run pre-deployment backups
 - Use blue-green deployment for zero-downtime updates
 - Monitor system metrics during and after deployment
@@ -591,6 +596,7 @@ exit 0
 ## Troubleshooting Common Issues
 
 ### Service Won't Start
+
 ```bash
 # Check logs
 docker logs cortex-mcp
@@ -605,6 +611,7 @@ netstat -tlnp | grep :3000
 ```
 
 ### Database Connection Issues
+
 ```bash
 # Test Qdrant connectivity
 curl -v http://localhost:6333/health
@@ -617,6 +624,7 @@ docker exec cortex-mcp curl -f http://qdrant:6333/health
 ```
 
 ### Performance Degradation
+
 ```bash
 # Check resource usage
 docker stats
@@ -632,6 +640,7 @@ tail -f /app/logs/cortex-mcp.log | grep ERROR
 ## Communication During Deployment
 
 ### Pre-Deployment Notification
+
 ```
 Subject: [DEPLOYMENT] Cortex MCP - Starting Deployment to Production
 
@@ -651,6 +660,7 @@ Rollback plan available if issues arise.
 ```
 
 ### Post-Deployment Notification
+
 ```
 Subject: [DEPLOYMENT] Cortex MCP - Deployment Completed Successfully
 
@@ -668,6 +678,7 @@ System is operating normally. Monitor for next 30 minutes for any issues.
 ```
 
 ### Deployment Failure Notification
+
 ```
 Subject: [INCIDENT] Cortex MCP - Deployment Failed
 

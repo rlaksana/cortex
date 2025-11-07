@@ -71,7 +71,6 @@ async function testBasicDeduplication() {
     console.log(`📊 Performance metrics:`, metrics);
 
     console.log('✅ Basic deduplication test completed successfully');
-
   } catch (error) {
     console.error('❌ Basic deduplication test failed:', error);
     process.exit(1);

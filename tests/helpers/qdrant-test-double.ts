@@ -70,8 +70,11 @@ export class QdrantTestDouble {
   }
 
   private async simulateLatency(): Promise<void> {
-    const delay = Math.random() * (this.config.latency.max - this.config.latency.min) + this.config.latency.min;
-    await new Promise(resolve => setTimeout(resolve, delay * this.config.performance.responseTimeMultiplier));
+    const delay =
+      Math.random() * (this.config.latency.max - this.config.latency.min) + this.config.latency.min;
+    await new Promise((resolve) =>
+      setTimeout(resolve, delay * this.config.performance.responseTimeMultiplier)
+    );
   }
 
   private shouldInjectError(): boolean {
@@ -122,7 +125,7 @@ export class QdrantTestDouble {
 
     const collections = Array.from(this.collections.values());
     return {
-      collections: collections.map(col => ({
+      collections: collections.map((col) => ({
         name: col.name,
         points_count: this.points.get(col.name)?.size || 0,
         vectors_count: this.points.get(col.name)?.size || 0,
@@ -275,7 +278,7 @@ export class QdrantTestDouble {
 
     const collectionPoints = this.points.get(collectionName)!;
 
-    return ids.map(id => {
+    return ids.map((id) => {
       const point = collectionPoints.get(id);
       if (!point) {
         return {
@@ -379,7 +382,7 @@ export class QdrantTestDouble {
     const originalFailureRate = this.config.failureRate;
     this.config.failureRate = 0.3; // 30% failure rate during chaos
 
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Chaos duration
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Chaos duration
 
     this.config.failureRate = originalFailureRate;
   }

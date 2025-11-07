@@ -1,3 +1,8 @@
+const asNum = (v: unknown, d = 0): number => Number(v ?? d);
+const asNumMap = (m: unknown): Record<string, number> =>
+  m && typeof m === 'object'
+    ? Object.fromEntries(Object.entries(m as Record<string, unknown>).map(([k, v]) => [k, asNum(v)]))
+    : {};
 /**
  * Alert System Integration Service for MCP Cortex
  *
@@ -17,7 +22,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { HealthCheckService } from './health-check-service.js';
 import { alertManagementService, Alert, AlertSeverity } from './alert-management-service.js';
 import { notificationChannelRegistry } from './notification-channels.js';
@@ -866,11 +871,17 @@ export class AlertSystemIntegrationService extends EventEmitter {
   private async checkAutoAssignment(alert: Alert): Promise<void> {
     try {
       // Auto-assign to on-call user based on alert severity and component
+      const toSeverity = (s: any): 'critical'|'high'|'medium'|'low' => {
+        const k = String(s || '').toLowerCase();
+        if (k === 'emergency' || k === 'critical') return 'critical';
+        if (k === 'warning' || k === 'warn') return 'medium';
+        return 'low';
+      };
       const assignmentOptions = {
         userId: undefined, // Let system find best user
         assignedBy: 'auto-assignment',
         requiredSkills: this.getRequiredSkills(alert),
-        priority: alert.severity,
+        priority: toSeverity(alert.severity),
       };
 
       await onCallManagementService.assignAlert(alert.id, assignmentOptions);
@@ -1058,33 +1069,52 @@ export class AlertSystemIntegrationService extends EventEmitter {
     // Record metrics for dashboard
     alertMetricsService.recordAlertMetrics({
       timestamp: new Date(),
-      total: metrics.total,
-      active: metrics.active,
-      resolved: metrics.resolved,
-      acknowledged: metrics.acknowledged,
-      suppressed: metrics.suppressed,
+      total: asNum(metrics.total),
+      active: asNum(metrics.active),
+      resolved: asNum(metrics.resolved),
+      acknowledged: asNum(metrics.acknowledged),
+      suppressed: asNum(metrics.suppressed),
       bySeverity: metrics.bySeverity,
-      byStatus: metrics.byStatus,
-      byRule: metrics.byRule,
-      byComponent: metrics.byComponent,
-      bySource: metrics.bySource,
-      responseTime: metrics.averageResolutionTime,
-      resolutionTime: metrics.averageResolutionTime,
+      byStatus: asNumMap(metrics.byStatus),
+      byRule: asNumMap(metrics.byRule),
+      byComponent: asNumMap(metrics.byComponent),
+      bySource: asNumMap(metrics.bySource),
+      notificationsSent:       asNum(metrics.notificationsSent),
+      notificationSuccessRate: asNum(metrics.notificationSuccessRate),
+      averageResponseTime:     asNum(metrics.averageResponseTime),
+      responseTime: {
+        average: asNum(metrics.averageResponseTime),
+        median:  0,
+        p95:     0,
+        p99:     0,
+        min:     0,
+        max:     0,
+      },
+      resolutionTime: {
+        average:   0,
+        median:    0,
+        p95:       0,
+        p99:       0,
+        min:       0,
+        max:       0,
+        bySeverity: { info: 0, warning: 0, critical: 0, emergency: 0 },
+      },
+      // responseTime/resolutionTime not present on AlertMetrics interface; keep scalars only
       notificationMetrics: {
-        sent: metrics.notificationsSent,
+        sent: asNum(metrics.notificationsSent),
         failed: 0,
         pending: 0,
         byChannel: {},
-        successRate: metrics.notificationSuccessRate,
-        averageDeliveryTime: metrics.averageResponseTime,
+        successRate: asNum(metrics.notificationSuccessRate),
+        averageDeliveryTime: asNum(metrics.averageResponseTime),
       },
       escalationMetrics: {
-        triggered: metrics.escalationRate,
-        completed: metrics.escalationRate,
+        triggered: asNum(metrics.escalationRate),
+        completed: asNum(metrics.escalationRate),
         failed: 0,
         byLevel: {},
-        averageEscalationTime: metrics.averageResponseTime,
-        escalationRate: metrics.escalationRate,
+        averageEscalationTime: asNum(metrics.averageResponseTime),
+        escalationRate: asNum(metrics.escalationRate),
       },
     });
   }
@@ -1322,10 +1352,11 @@ export class AlertSystemIntegrationService extends EventEmitter {
     const notificationCount = this.countNotifications(alerts);
     const escalationCount = this.countEscalations(alerts);
 
+    const expectedEsc = (scenario.expectedEscalations ?? 0);
     return (
       alertCount === scenario.expectedAlerts &&
       notificationCount >= scenario.expectedNotifications &&
-      escalationCount === scenario.expectedEscalations
+      escalationCount === expectedEsc
     );
   }
 
@@ -1340,7 +1371,7 @@ export class AlertSystemIntegrationService extends EventEmitter {
       recommendations.push('Some notifications failed - check notification channel configuration');
     }
 
-    if (this.countEscalations(alerts) > scenario.expectedEscalations) {
+    if (this.countEscalations(alerts) > (scenario.expectedEscalations ?? 0)) {
       recommendations.push('Unexpected escalations occurred - review escalation policies');
     }
 

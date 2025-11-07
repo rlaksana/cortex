@@ -11,7 +11,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { DegradationEvent, DegradationLevel } from './degradation-detector.js';
 
 /**
@@ -341,7 +341,10 @@ export class QdrantDegradationNotifier extends EventEmitter {
       switch (delivery.status) {
         case 'sent':
           stats.totalSent++;
-          stats.byLevel[delivery.channel as any]++; // Simplified
+          {
+            const lvl = (delivery as any).level as DegradationLevel | undefined;
+            if (lvl !== undefined) stats.byLevel[lvl]++;
+          }
           stats.byChannel[delivery.channel]++;
           break;
         case 'failed':
@@ -643,9 +646,20 @@ export class QdrantDegradationNotifier extends EventEmitter {
     message: string,
     template: NotificationTemplate
   ): Promise<void> {
+    const logWithSeverity = (
+      sev: 'info' | 'error' | 'warning' | 'critical',
+      meta: any,
+      msg: string
+    ) => {
+      if (sev === 'warning' && (logger as any).warn) return (logger as any).warn(meta, msg);
+      if (sev === 'critical' && (logger as any).error) return logger.error(meta, msg);
+      if (sev === 'info' && (logger as any).info) return logger.info(meta, msg);
+      if (sev === 'error' && (logger as any).error) return logger.error(meta, msg);
+      return logger.info?.(meta, msg);
+    };
     switch (channel) {
       case NotificationChannel.LOG:
-        logger[template.severity]({ recipientId: recipient.id }, message);
+        logWithSeverity(template.severity as any, { recipientId: recipient.id }, message);
         break;
 
       case NotificationChannel.CONSOLE:
@@ -896,6 +910,8 @@ export class QdrantDegradationNotifier extends EventEmitter {
   private generateDeliveryId(): string {
     return `del_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
-}
+
+  stop?: unknown|undefined
+  start?: unknown|undefined}
 
 export default QdrantDegradationNotifier;

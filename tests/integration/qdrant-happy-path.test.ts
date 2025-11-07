@@ -13,7 +13,11 @@ import { MemoryFindService } from '../../src/services/memory-find.service.js';
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
 import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';
 import { mockQdrantClient } from '../mocks/database.js';
-import { KnowledgeItem, MemoryStoreInput, MemoryFindInput } from '../../src/types/core-interfaces.js';
+import {
+  KnowledgeItem,
+  MemoryStoreInput,
+  MemoryFindInput,
+} from '../../src/types/core-interfaces.js';
 
 describe('Integration Tests - Qdrant Available (Happy Path)', () => {
   let databaseManager: DatabaseManager;
@@ -33,8 +37,8 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
     // Initialize database manager
     databaseManager = new DatabaseManager({
       qdrant: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
-        apiKey: process.env.QDRANT_API_KEY,
+        url: process.env['QDRANT_URL'] || 'http://localhost:6333',
+        apiKey: process.env['QDRANT_API_KEY'],
         timeout: 30000,
       },
       enableVectorOperations: true,
@@ -45,7 +49,7 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
     chunkingService = new ChunkingService(
       databaseManager,
       embeddingService,
-      undefined, // semantic analyzer will be created internally
+      undefined // semantic analyzer will be created internally
     );
 
     // Replace semantic analyzer with mock for consistent testing
@@ -151,17 +155,20 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
         },
         {
           kind: 'runbook',
-          content: 'Authentication service deployment procedure involves database migration and service restart',
+          content:
+            'Authentication service deployment procedure involves database migration and service restart',
           scope: { project: 'auth-system' },
         },
         {
           kind: 'risk',
-          content: 'Authentication service has a risk of single point failure if database becomes unavailable',
+          content:
+            'Authentication service has a risk of single point failure if database becomes unavailable',
           scope: { project: 'auth-system' },
         },
         {
           kind: 'assumption',
-          content: 'We assume the database will maintain 99.9% uptime for authentication operations',
+          content:
+            'We assume the database will maintain 99.9% uptime for authentication operations',
           scope: { project: 'auth-system' },
         },
       ];
@@ -252,7 +259,8 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
       const searchTestData: MemoryStoreInput[] = [
         {
           kind: 'section',
-          content: 'The microservices architecture consists of independent services communicating through APIs',
+          content:
+            'The microservices architecture consists of independent services communicating through APIs',
           scope: { project: 'architecture-docs' },
         },
         {
@@ -267,12 +275,14 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
         },
         {
           kind: 'section',
-          content: 'Container orchestration using Kubernetes manages service deployment and scaling',
+          content:
+            'Container orchestration using Kubernetes manages service deployment and scaling',
           scope: { project: 'architecture-docs' },
         },
         {
           kind: 'section',
-          content: 'Authentication and authorization are implemented using OAuth 2.0 and JWT tokens',
+          content:
+            'Authentication and authorization are implemented using OAuth 2.0 and JWT tokens',
           scope: { project: 'architecture-docs' },
         },
       ];
@@ -303,13 +313,14 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
         // Verify results are properly ranked by confidence
         if (searchResult.results.length > 1) {
           for (let i = 0; i < searchResult.results.length - 1; i++) {
-            expect(searchResult.results[i].confidence_score)
-              .toBeGreaterThanOrEqual(searchResult.results[i + 1].confidence_score);
+            expect(searchResult.results[i].confidence_score).toBeGreaterThanOrEqual(
+              searchResult.results[i + 1].confidence_score
+            );
           }
         }
 
         // Verify all results are relevant to the query
-        searchResult.results.forEach(result => {
+        searchResult.results.forEach((result) => {
           expect(result.confidence_score).toBeGreaterThan(0.3); // Minimum relevance threshold
         });
       }
@@ -324,12 +335,14 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
         },
         {
           kind: 'entity',
-          content: 'Refund management processes customer refund requests through automated workflows',
+          content:
+            'Refund management processes customer refund requests through automated workflows',
           scope: { project: 'payment-system' },
         },
         {
           kind: 'process',
-          content: 'The payment reconciliation process runs daily to match transactions with bank statements',
+          content:
+            'The payment reconciliation process runs daily to match transactions with bank statements',
           scope: { project: 'payment-system' },
         },
         {
@@ -354,16 +367,17 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
       expect(hybridSearch.results.length).toBeGreaterThan(0);
 
       // Should find exact match for payment processing
-      const exactMatch = hybridSearch.results.find(r =>
+      const exactMatch = hybridSearch.results.find((r) =>
         r.content.toLowerCase().includes('payment processing')
       );
       expect(exactMatch).toBeDefined();
 
       // Should also find semantically related content
-      const semanticMatches = hybridSearch.results.filter(r =>
-        !r.content.toLowerCase().includes('payment processing') &&
-        (r.content.toLowerCase().includes('payment') ||
-         r.content.toLowerCase().includes('transactions'))
+      const semanticMatches = hybridSearch.results.filter(
+        (r) =>
+          !r.content.toLowerCase().includes('payment processing') &&
+          (r.content.toLowerCase().includes('payment') ||
+            r.content.toLowerCase().includes('transactions'))
       );
       expect(semanticMatches.length).toBeGreaterThan(0);
     });
@@ -412,18 +426,20 @@ describe('Integration Tests - Qdrant Available (Happy Path)', () => {
 
       expect(expandedSearch.results.length).toBeGreaterThan(2); // Should find related services
 
-      const resultContents = expandedSearch.results.map(r => r.content);
+      const resultContents = expandedSearch.results.map((r) => r.content);
 
       // Should find the main entity
-      expect(resultContents.some(c => c.includes('User Service manages user profiles'))).toBe(true);
+      expect(resultContents.some((c) => c.includes('User Service manages user profiles'))).toBe(
+        true
+      );
 
       // Should find related services through expansion
-      expect(resultContents.some(c => c.includes('Database Service provides'))).toBe(true);
-      expect(resultContents.some(c => c.includes('Email Service handles'))).toBe(true);
+      expect(resultContents.some((c) => c.includes('Database Service provides'))).toBe(true);
+      expect(resultContents.some((c) => c.includes('Email Service handles'))).toBe(true);
 
       // Should find dependency relations
-      expect(resultContents.some(c => c.includes('depends on Database Service'))).toBe(true);
-      expect(resultContents.some(c => c.includes('integrates with Email Service'))).toBe(true);
+      expect(resultContents.some((c) => c.includes('depends on Database Service'))).toBe(true);
+      expect(resultContents.some((c) => c.includes('integrates with Email Service'))).toBe(true);
     });
   });
 
@@ -627,9 +643,11 @@ This architecture documentation serves as the foundation for our engineering tea
         expect(searchResult.results.length).toBeGreaterThan(0);
 
         // Verify that search results are properly reconstructed or show relevant chunks
-        const hasRelevantContent = searchResult.results.some(result =>
-          result.content.toLowerCase().includes(query.toLowerCase()) ||
-          (result.data?.reconstructed && result.content.toLowerCase().includes(query.toLowerCase()))
+        const hasRelevantContent = searchResult.results.some(
+          (result) =>
+            result.content.toLowerCase().includes(query.toLowerCase()) ||
+            (result.data?.reconstructed &&
+              result.content.toLowerCase().includes(query.toLowerCase()))
         );
 
         expect(hasRelevantContent).toBe(true);
@@ -643,12 +661,12 @@ This architecture documentation serves as the foundation for our engineering tea
       });
 
       // Should find reconstructed document or chunks with reassembly metadata
-      const reconstructedDoc = architectureSearch.results.find(r => r.data?.reconstructed);
+      const reconstructedDoc = architectureSearch.results.find((r) => r.data?.reconstructed);
       if (reconstructedDoc) {
         expect(reconstructedDoc.content).toContain('Complete System Architecture Documentation');
-        expect(reconstructedDoc.data.total_chunks).toBeGreaterThan(1);
-        expect(reconstructedDoc.data.found_chunks).toBeGreaterThan(1);
-        expect(reconstructedDoc.data.completeness_ratio).toBeGreaterThan(0.8);
+        expect(reconstructedDoc['data.total_chunks']).toBeGreaterThan(1);
+        expect(reconstructedDoc['data.found_chunks']).toBeGreaterThan(1);
+        expect(reconstructedDoc['data.completeness_ratio']).toBeGreaterThan(0.8);
       }
     });
   });
@@ -674,7 +692,7 @@ This architecture documentation serves as the foundation for our engineering tea
       const storeTime = Date.now() - startTime;
 
       // Verify all stores succeeded
-      storeResults.forEach(result => {
+      storeResults.forEach((result) => {
         expect(result.success).toBe(true);
       });
 
@@ -694,7 +712,7 @@ This architecture documentation serves as the foundation for our engineering tea
       const searchTime = Date.now() - searchStartTime;
 
       // Verify searches completed successfully
-      searchResults.forEach(result => {
+      searchResults.forEach((result) => {
         expect(result.results.length).toBeGreaterThanOrEqual(0);
       });
 
@@ -704,7 +722,13 @@ This architecture documentation serves as the foundation for our engineering tea
     it('should maintain search quality with large datasets', async () => {
       // Create a larger dataset for quality testing
       const largeDataset = Array.from({ length: 100 }, (_, index) => {
-        const categories = ['performance', 'security', 'scalability', 'reliability', 'maintainability'];
+        const categories = [
+          'performance',
+          'security',
+          'scalability',
+          'reliability',
+          'maintainability',
+        ];
         const category = categories[index % categories.length];
 
         return {
@@ -714,10 +738,16 @@ This architecture documentation serves as the foundation for our engineering tea
           metadata: {
             category,
             test_index: index,
-            quality_metric: category === 'performance' ? 'response_time' :
-                           category === 'security' ? 'vulnerability_count' :
-                           category === 'scalability' ? 'throughput' :
-                           category === 'reliability' ? 'uptime' : 'code_coverage'
+            quality_metric:
+              category === 'performance'
+                ? 'response_time'
+                : category === 'security'
+                  ? 'vulnerability_count'
+                  : category === 'scalability'
+                    ? 'throughput'
+                    : category === 'reliability'
+                      ? 'uptime'
+                      : 'code_coverage',
           },
         };
       });
@@ -746,7 +776,7 @@ This architecture documentation serves as the foundation for our engineering tea
         expect(searchResult.results.length).toBeGreaterThan(0);
 
         // Verify results are relevant and have good confidence scores
-        searchResult.results.forEach(result => {
+        searchResult.results.forEach((result) => {
           expect(result.confidence_score).toBeGreaterThan(0.5);
           expect(result.content.toLowerCase()).toContain(expectedCategory);
         });
@@ -754,8 +784,9 @@ This architecture documentation serves as the foundation for our engineering tea
         // Results should be properly ranked
         if (searchResult.results.length > 1) {
           for (let i = 0; i < searchResult.results.length - 1; i++) {
-            expect(searchResult.results[i].confidence_score)
-              .toBeGreaterThanOrEqual(searchResult.results[i + 1].confidence_score);
+            expect(searchResult.results[i].confidence_score).toBeGreaterThanOrEqual(
+              searchResult.results[i + 1].confidence_score
+            );
           }
         }
       }
@@ -823,17 +854,17 @@ This architecture documentation serves as the foundation for our engineering tea
       expect(sharedResults.results.length).toBe(1); // Should find shared component
 
       // Verify cross-contamination doesn't occur
-      const alphaContent = alphaResults.results.map(r => r.content);
-      const betaContent = betaResults.results.map(r => r.content);
-      const sharedContent = sharedResults.results.map(r => r.content);
+      const alphaContent = alphaResults.results.map((r) => r.content);
+      const betaContent = betaResults.results.map((r) => r.content);
+      const sharedContent = sharedResults.results.map((r) => r.content);
 
       // Alpha results should not contain Beta content
-      alphaContent.forEach(content => {
+      alphaContent.forEach((content) => {
         expect(content).not.toContain('project-beta');
       });
 
       // Beta results should not contain Alpha content
-      betaContent.forEach(content => {
+      betaContent.forEach((content) => {
         expect(content).not.toContain('project-alpha');
       });
 

@@ -42,7 +42,7 @@ function runCommand(command, cwd = projectRoot) {
       env: {
         ...process.env,
         NODE_ENV: 'test',
-      }
+      },
     });
     return { success: true, output: result };
   } catch (error) {
@@ -94,8 +94,8 @@ async function runSpecificTest(pattern) {
 async function generateTestReport(results) {
   printHeader('Test Report Summary');
 
-  const passed = results.filter(r => r.passed).length;
-  const failed = results.filter(r => r.failed).length;
+  const passed = results.filter((r) => r.passed).length;
+  const failed = results.filter((r) => r.failed).length;
   const total = results.length;
 
   console.log(`📊 Total Test Suites: ${total}`);
@@ -104,7 +104,7 @@ async function generateTestReport(results) {
   console.log(`📈 Success Rate: ${((passed / total) * 100).toFixed(1)}%`);
 
   console.log('\n📋 Detailed Results:');
-  results.forEach(result => {
+  results.forEach((result) => {
     const status = result.passed ? '✅' : '❌';
     console.log(`  ${status} ${result.name}`);
     if (!result.passed && result.error) {
@@ -114,9 +114,11 @@ async function generateTestReport(results) {
 
   if (failed > 0) {
     console.log('\n🔧 Failed tests to fix:');
-    results.filter(r => !r.passed).forEach(result => {
-      console.log(`  - ${result.name}`);
-    });
+    results
+      .filter((r) => !r.passed)
+      .forEach((result) => {
+        console.log(`  - ${result.name}`);
+      });
   }
 }
 
@@ -191,7 +193,7 @@ async function main() {
 
       await generateTestReport(results);
 
-      const allPassed = results.every(r => r.passed);
+      const allPassed = results.every((r) => r.passed);
       process.exit(allPassed ? 0 : 1);
     }
   } catch (error) {

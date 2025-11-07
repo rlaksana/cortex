@@ -9,15 +9,18 @@
 ⚠️ **WARNING**: Only ONE Cortex MCP configuration allowed per Claude Desktop setup
 
 ### **MANDATORY RULE**
+
 ✅ Use only `[mcp_servers.cortex]` - no alternatives, backups, or multiples
 
 ### **FORBIDDEN CONFIGURATIONS**
+
 ❌ `[mcp_servers.cortex_backup]`
 ❌ `[mcp_servers.cortex_alt]`
 ❌ `[mcp_servers.cortex_test]`
 ❌ Any configuration with "cortex" in the name other than the primary
 
 ### **VALID CONFIGURATION**
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -26,7 +29,9 @@ env = {}
 ```
 
 ### **VERIFICATION**
+
 Run this command to verify compliance:
+
 ```bash
 npm run mcp:check-config
 ```
@@ -45,6 +50,7 @@ npm run mcp:check-config
 ## **Configuration Validation**
 
 ### **Check Your Current Configuration**
+
 ```bash
 # Check Claude Desktop configuration
 npm run mcp:check-config
@@ -53,6 +59,7 @@ npm run mcp:check-config
 ```
 
 ### **Fix Non-Compliant Configurations**
+
 1. Open your Claude Desktop configuration file
 2. Remove all `[mcp_servers.cortex_*]` sections except the primary
 3. Keep only `[mcp_servers.cortex]`
@@ -63,11 +70,13 @@ npm run mcp:check-config
 ## **Troubleshooting**
 
 ### **Multiple Configuration Detected**
+
 - **Error**: "Multiple Cortex configurations found"
 - **Solution**: Remove duplicate Cortex configurations
 - **Verify**: Run `npm run mcp:check-config` again
 
 ### **Configuration Not Found**
+
 - **Error**: "Cortex configuration not found"
 - **Solution**: Add the valid configuration shown above
 - **Verify**: Restart Claude Desktop
@@ -77,6 +86,7 @@ npm run mcp:check-config
 ## **Additional Guidelines**
 
 ### **Environment Variables**
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -88,6 +98,7 @@ env = {
 ```
 
 ### **Custom Arguments**
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -100,6 +111,7 @@ env = {}
 ## **Support**
 
 If you encounter configuration issues:
+
 1. Run `npm run mcp:check-config` first
 2. Check the [Troubleshooting Guide](docs/TROUBLESHOOT-ERRORS.md)
 3. Review [Configuration Guide](docs/SETUP-CONFIGURATION.md)

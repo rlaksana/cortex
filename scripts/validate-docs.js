@@ -16,12 +16,7 @@ const __dirname = dirname(__filename);
 
 console.log('🔍 Validating Cortex Memory MCP documentation...');
 
-const REQUIRED_SECTIONS = [
-  '# ',
-  '## Overview',
-  '## Usage',
-  '## Examples'
-];
+const REQUIRED_SECTIONS = ['# ', '## Overview', '## Usage', '## Examples'];
 
 function validateDocs() {
   try {
@@ -30,7 +25,7 @@ function validateDocs() {
       'API-REFERENCE.md',
       'ARCH-SYSTEM.md',
       'SETUP-QUICK-START.md',
-      'NEW-ENGINEER-GUIDE.md'
+      'NEW-ENGINEER-GUIDE.md',
     ];
 
     let validCount = 0;
@@ -40,9 +35,7 @@ function validateDocs() {
       const docPath = join(docsPath, doc);
       if (existsSync(docPath)) {
         const content = readFileSync(docPath, 'utf8');
-        const hasRequiredSections = REQUIRED_SECTIONS.some(section =>
-          content.includes(section)
-        );
+        const hasRequiredSections = REQUIRED_SECTIONS.some((section) => content.includes(section));
 
         if (hasRequiredSections) {
           console.log(`✅ ${doc} - Valid`);
@@ -64,7 +57,6 @@ function validateDocs() {
       console.log('⚠️  Some documentation files need attention');
       return false;
     }
-
   } catch (error) {
     console.error('❌ Error validating documentation:', error.message);
     process.exit(1);

@@ -75,11 +75,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
       const result = TodoSchema.safeParse(todo);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('todo');
-        expect(result.data.data.todo_type).toBe('task');
-        expect(result.data.data.status).toBe('in_progress');
-        expect(result.data.data.priority).toBe('high');
-        expect(result.data.data.assignee).toBe('developer-1');
+        expect(result['data.kind']).toBe('todo');
+        expect(result['data.data'].todo_type).toBe('task');
+        expect(result['data.data'].status).toBe('in_progress');
+        expect(result['data.data'].priority).toBe('high');
+        expect(result['data.data'].assignee).toBe('developer-1');
       }
     });
 
@@ -101,11 +101,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
       const result = TodoSchema.safeParse(todo);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.scope).toBe('epic');
-        expect(result.data.data.todo_type).toBe('story');
-        expect(result.data.data.status).toBe('open');
-        expect(result.data.data.priority).toBeUndefined();
-        expect(result.data.data.assignee).toBeUndefined();
+        expect(result['data.data'].scope).toBe('epic');
+        expect(result['data.data'].todo_type).toBe('story');
+        expect(result['data.data'].status).toBe('open');
+        expect(result['data.data'].priority).toBeUndefined();
+        expect(result['data.data'].assignee).toBeUndefined();
       }
     });
 
@@ -401,7 +401,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         }
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.todo_type).toBe(todoType);
+          expect(result['data.data'].todo_type).toBe(todoType);
         }
       }
     });
@@ -430,7 +430,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         const result = TodoSchema.safeParse(todo);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.status).toBe(status);
+          expect(result['data.data'].status).toBe(status);
         }
       }
     });
@@ -459,7 +459,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         const result = TodoSchema.safeParse(todo);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.priority).toBe(priority);
+          expect(result['data.data'].priority).toBe(priority);
         }
       }
     });
@@ -555,7 +555,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         const result = TodoSchema.safeParse(todo);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.assignee).toBe(assignee);
+          expect(result['data.data'].assignee).toBe(assignee);
         }
       }
     });
@@ -621,7 +621,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
         const result = TodoSchema.safeParse(todo);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.scope).toBe(level.scope);
+          expect(result['data.data'].scope).toBe(level.scope);
         }
       }
     });
@@ -675,7 +675,7 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
       const result = TodoSchema.safeParse(todo);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.text).toHaveLength(1000);
+        expect(result['data.data'].text).toHaveLength(1000);
       }
     });
 
@@ -730,11 +730,11 @@ describe('Todo Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(todo);
       expect(result.kind).toBe('todo');
-      expect(result.data.todo_type).toBe('story');
-      expect(result.data.priority).toBe('high');
+      expect(result['data.todo_type']).toBe('story');
+      expect(result['data.priority']).toBe('high');
       expect(result.tags.user_story).toBe(true);
       expect(result.source.actor).toBe('product-owner');
-      expect(result.ttl_policy).toBe('default');
+      expect(result['ttl_policy']).toBe('default');
     });
 
     it('should handle TTL policy for todos', async () => {

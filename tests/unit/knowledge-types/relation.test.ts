@@ -76,11 +76,11 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
       const result = RelationSchema.safeParse(relation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('relation');
-        expect(result.data.data.from_entity_type).toBe('decision');
-        expect(result.data.data.to_entity_type).toBe('entity');
-        expect(result.data.data.relationType).toBe('resolves');
-        expect(result.data.data.metadata.weight).toBe(1.0);
+        expect(result['data.kind']).toBe('relation');
+        expect(result['data.data'].from_entity_type).toBe('decision');
+        expect(result['data.data'].to_entity_type).toBe('entity');
+        expect(result['data.data'].relationType).toBe('resolves');
+        expect(result['data.data'].metadata.weight).toBe(1.0);
       }
     });
 
@@ -103,10 +103,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
       const result = RelationSchema.safeParse(relation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.from_entity_type).toBe('issue');
-        expect(result.data.data.to_entity_type).toBe('decision');
-        expect(result.data.data.relationType).toBe('addresses');
-        expect(result.data.data.metadata).toBeUndefined();
+        expect(result['data.data'].from_entity_type).toBe('issue');
+        expect(result['data.data'].to_entity_type).toBe('decision');
+        expect(result['data.data'].relationType).toBe('addresses');
+        expect(result['data.data'].metadata).toBeUndefined();
       }
     });
 
@@ -434,7 +434,7 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
         const result = RelationSchema.safeParse(relation);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.relationType).toBe(relationType);
+          expect(result['data.data'].relationType).toBe(relationType);
         }
       }
     });
@@ -583,8 +583,8 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
       const result = await db.storeItems([complexRelation]);
 
       expect(result.stored).toHaveLength(1);
-      expect(result.stored[0].data.metadata.weight).toBe(0.95);
-      expect(result.stored[0].data.metadata.evidence).toHaveLength(3);
+      expect(result.stored[0].data.metadata['weight']).toBe(0.95);
+      expect(result.stored[0].data.metadata['evidence']).toHaveLength(3);
     });
 
     it('should handle self-referencing relations', async () => {
@@ -667,10 +667,10 @@ describe('Relation Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(relation);
       expect(result.kind).toBe('relation');
-      expect(result.data.relationType).toBe('resolved_using');
+      expect(result['data.relationType']).toBe('resolved_using');
       expect(result.tags.graph_relation).toBe(true);
       expect(result.source.actor).toBe('incident-commander');
-      expect(result.ttl_policy).toBe('long');
+      expect(result['ttl_policy']).toBe('long');
     });
 
     it('should handle TTL policy for relations', async () => {

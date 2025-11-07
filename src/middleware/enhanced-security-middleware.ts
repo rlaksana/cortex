@@ -11,11 +11,11 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import '../types/express.d.ts'; // Reference the type extensions
+import '../types/express.d.js'; // Reference the type extensions
 import { z } from 'zod';
 import { rateLimitService } from './rate-limiter.js';
 import { AuthContext } from '../types/auth-types.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 // ============================================================================
 // Security Configuration Types

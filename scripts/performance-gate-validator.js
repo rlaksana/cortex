@@ -25,32 +25,32 @@ const projectRoot = join(__dirname, '..');
 const CONFIG = {
   // Performance thresholds (as specified in requirements)
   THRESHOLDS: {
-    P95_LATENCY_MS: 1000,    // p95 < 1s
-    THROUGHPUT_MIN: 100,     // Minimum operations per second
-    ERROR_RATE_MAX: 1.0,     // Maximum error rate percentage
-    MEMORY_MAX_MB: 2048,     // Maximum memory usage in MB
-    CPU_MAX_PERCENT: 80      // Maximum CPU usage percentage
+    P95_LATENCY_MS: 1000, // p95 < 1s
+    THROUGHPUT_MIN: 100, // Minimum operations per second
+    ERROR_RATE_MAX: 1.0, // Maximum error rate percentage
+    MEMORY_MAX_MB: 2048, // Maximum memory usage in MB
+    CPU_MAX_PERCENT: 80, // Maximum CPU usage percentage
   },
   // Load testing configuration (N=100 as specified)
   LOAD_TEST: {
-    CONCURRENT_USERS: 100,   // N=100 concurrent users
-    DURATION_SECONDS: 60,    // Test duration
-    WARMUP_SECONDS: 10,      // Warmup period
-    RAMP_UP_SECONDS: 20,     // Ramp up time
-    REQUESTS_PER_USER: 50,   // Requests per user
-    TOTAL_REQUESTS: 5000     // Total target requests
+    CONCURRENT_USERS: 100, // N=100 concurrent users
+    DURATION_SECONDS: 60, // Test duration
+    WARMUP_SECONDS: 10, // Warmup period
+    RAMP_UP_SECONDS: 20, // Ramp up time
+    REQUESTS_PER_USER: 50, // Requests per user
+    TOTAL_REQUESTS: 5000, // Total target requests
   },
   // Stress testing configuration
   STRESS_TEST: {
     MAX_CONCURRENT_USERS: 500,
     STEP_USERS: 50,
     STEP_DURATION_SECONDS: 30,
-    TOTAL_DURATION_SECONDS: 300
+    TOTAL_DURATION_SECONDS: 300,
   },
   // Output directories
   OUTPUT_DIR: join(projectRoot, 'artifacts', 'performance-gates'),
   BENCHMARK_DIR: join(projectRoot, 'artifacts', 'bench'),
-  TEMP_DIR: join(projectRoot, 'temp', 'performance')
+  TEMP_DIR: join(projectRoot, 'temp', 'performance'),
 };
 
 // Colors for console output
@@ -62,7 +62,7 @@ const COLORS = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -101,7 +101,7 @@ function executeCommand(command, options = {}) {
     const child = spawn(cmd, args, {
       cwd: projectRoot,
       stdio: 'pipe',
-      ...options
+      ...options,
     });
 
     let stdout = '';
@@ -128,7 +128,7 @@ function executeCommand(command, options = {}) {
         success: code === 0,
         exitCode: code,
         stdout,
-        stderr
+        stderr,
       });
     });
 
@@ -162,11 +162,11 @@ async function executeLoadTest(config) {
   const serverProcess = spawn('npm', ['run', 'start'], {
     cwd: projectRoot,
     stdio: 'pipe',
-    detached: true
+    detached: true,
   });
 
   // Wait for server to start
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 
   try {
     const results = {
@@ -185,22 +185,22 @@ async function executeLoadTest(config) {
           p50: 0,
           p90: 0,
           p95: 0,
-          p99: 0
+          p99: 0,
         },
         throughput: 0,
         errorRate: 0,
         memoryUsage: {
           initial: 0,
           peak: 0,
-          final: 0
+          final: 0,
         },
         cpuUsage: {
           average: 0,
-          peak: 0
-        }
+          peak: 0,
+        },
       },
       samples: [],
-      status: 'running'
+      status: 'running',
     };
 
     // Monitor system resources during test
@@ -216,7 +216,7 @@ async function executeLoadTest(config) {
       const testCommand = `npm run bench:load -c ${config.concurrentUsers} -n ${config.totalRequests}`;
       const testResult = await executeCommand(testCommand, {
         timeout: (config.durationSeconds + 30) * 1000,
-        realTimeOutput: true
+        realTimeOutput: true,
       });
 
       if (testResult.success) {
@@ -248,7 +248,6 @@ async function executeLoadTest(config) {
 
     logInfo(`Load test results saved to: ${resultFile}`);
     return results;
-
   } finally {
     // Clean up server process
     try {
@@ -275,12 +274,12 @@ function parseLoadTestOutput(output) {
         p50: 0,
         p90: 0,
         p95: 0,
-        p99: 0
+        p99: 0,
       },
       throughput: 0,
-      errorRate: 0
+      errorRate: 0,
     },
-    samples: []
+    samples: [],
   };
 
   try {
@@ -296,14 +295,14 @@ function parseLoadTestOutput(output) {
           failedRequests: benchmark.failedRequests || 0,
           latencies: benchmark.latencies || results.metrics.latencies,
           throughput: benchmark.throughput || 0,
-          errorRate: benchmark.errorRate || 0
+          errorRate: benchmark.errorRate || 0,
         };
         results.samples = benchmark.samples || [];
       }
     } else {
       // Fallback to regex parsing
       const lines = output.split('\n');
-      lines.forEach(line => {
+      lines.forEach((line) => {
         if (line.includes('requests') && line.includes('completed')) {
           const match = line.match(/(\d+)\s+requests\s+completed/);
           if (match) results.metrics.totalRequests = parseInt(match[1]);
@@ -319,9 +318,10 @@ function parseLoadTestOutput(output) {
       });
 
       // Calculate error rate
-      results.metrics.errorRate = results.metrics.totalRequests > 0
-        ? (results.metrics.failedRequests / results.metrics.totalRequests) * 100
-        : 0;
+      results.metrics.errorRate =
+        results.metrics.totalRequests > 0
+          ? (results.metrics.failedRequests / results.metrics.totalRequests) * 100
+          : 0;
     }
   } catch (error) {
     logWarning(`Failed to parse load test output: ${error.message}`);
@@ -340,7 +340,7 @@ async function runBenchmarks() {
     // Run quick benchmarks
     const quickResult = await executeCommand('npm run bench:quick', {
       timeout: 120000,
-      realTimeOutput: true
+      realTimeOutput: true,
     });
 
     if (!quickResult.success) {
@@ -352,7 +352,6 @@ async function runBenchmarks() {
     logSuccess('Benchmarks completed successfully');
 
     return benchmarkResults;
-
   } catch (error) {
     logError(`Benchmark execution failed: ${error.message}`);
     return { success: false, error: error.message };
@@ -370,8 +369,8 @@ function parseBenchmarkResults(output) {
       avgP95: 0,
       avgThroughput: 0,
       avgErrorRate: 0,
-      totalScenarios: 0
-    }
+      totalScenarios: 0,
+    },
   };
 
   try {
@@ -380,19 +379,22 @@ function parseBenchmarkResults(output) {
       const benchmarkData = JSON.parse(readFileSync(benchmarkFile, 'utf8'));
 
       if (benchmarkData.results && Array.isArray(benchmarkData.results)) {
-        results.scenarios = benchmarkData.results.map(result => ({
+        results.scenarios = benchmarkData.results.map((result) => ({
           name: result.scenario,
           p95Latency: result.metrics?.latencies?.p95 || 0,
           throughput: result.metrics?.throughput || 0,
           errorRate: result.metrics?.errorRate || 0,
-          status: 'completed'
+          status: 'completed',
         }));
 
         // Calculate summary
         if (results.scenarios.length > 0) {
-          results.summary.avgP95 = results.scenarios.reduce((sum, s) => sum + s.p95Latency, 0) / results.scenarios.length;
-          results.summary.avgThroughput = results.scenarios.reduce((sum, s) => sum + s.throughput, 0) / results.scenarios.length;
-          results.summary.avgErrorRate = results.scenarios.reduce((sum, s) => sum + s.errorRate, 0) / results.scenarios.length;
+          results.summary.avgP95 =
+            results.scenarios.reduce((sum, s) => sum + s.p95Latency, 0) / results.scenarios.length;
+          results.summary.avgThroughput =
+            results.scenarios.reduce((sum, s) => sum + s.throughput, 0) / results.scenarios.length;
+          results.summary.avgErrorRate =
+            results.scenarios.reduce((sum, s) => sum + s.errorRate, 0) / results.scenarios.length;
           results.summary.totalScenarios = results.scenarios.length;
         }
       }
@@ -417,60 +419,83 @@ function validatePerformanceThresholds(benchmarkResults, loadTestResults) {
       p95Latency: { status: 'unknown', value: 0, threshold: CONFIG.THRESHOLDS.P95_LATENCY_MS },
       throughput: { status: 'unknown', value: 0, threshold: CONFIG.THRESHOLDS.THROUGHPUT_MIN },
       errorRate: { status: 'unknown', value: 0, threshold: CONFIG.THRESHOLDS.ERROR_RATE_MAX },
-      memoryUsage: { status: 'unknown', value: 0, threshold: CONFIG.THRESHOLDS.MEMORY_MAX_MB }
+      memoryUsage: { status: 'unknown', value: 0, threshold: CONFIG.THRESHOLDS.MEMORY_MAX_MB },
     },
-    details: {}
+    details: {},
   };
 
   // Validate P95 latency
   const p95Value = loadTestResults.metrics?.latencies?.p95 || benchmarkResults.summary?.avgP95 || 0;
   validation.thresholds.p95Latency.value = p95Value;
-  validation.thresholds.p95Latency.status = p95Value <= CONFIG.THRESHOLDS.P95_LATENCY_MS ? 'passed' : 'failed';
+  validation.thresholds.p95Latency.status =
+    p95Value <= CONFIG.THRESHOLDS.P95_LATENCY_MS ? 'passed' : 'failed';
 
   const p95Status = validation.thresholds.p95Latency.status === 'passed' ? '✅' : '❌';
   const p95Color = validation.thresholds.p95Latency.status === 'passed' ? COLORS.green : COLORS.red;
-  log(`   ${p95Status} P95 Latency: ${p95Value.toFixed(2)}ms (threshold: ${CONFIG.THRESHOLDS.P95_LATENCY_MS}ms)`, p95Color);
+  log(
+    `   ${p95Status} P95 Latency: ${p95Value.toFixed(2)}ms (threshold: ${CONFIG.THRESHOLDS.P95_LATENCY_MS}ms)`,
+    p95Color
+  );
 
   // Validate throughput
-  const throughputValue = loadTestResults.metrics?.throughput || benchmarkResults.summary?.avgThroughput || 0;
+  const throughputValue =
+    loadTestResults.metrics?.throughput || benchmarkResults.summary?.avgThroughput || 0;
   validation.thresholds.throughput.value = throughputValue;
-  validation.thresholds.throughput.status = throughputValue >= CONFIG.THRESHOLDS.THROUGHPUT_MIN ? 'passed' : 'failed';
+  validation.thresholds.throughput.status =
+    throughputValue >= CONFIG.THRESHOLDS.THROUGHPUT_MIN ? 'passed' : 'failed';
 
   const throughputStatus = validation.thresholds.throughput.status === 'passed' ? '✅' : '❌';
-  const throughputColor = validation.thresholds.throughput.status === 'passed' ? COLORS.green : COLORS.red;
-  log(`   ${throughputStatus} Throughput: ${throughputValue.toFixed(2)} ops/s (threshold: ${CONFIG.THRESHOLDS.THROUGHPUT_MIN} ops/s)`, throughputColor);
+  const throughputColor =
+    validation.thresholds.throughput.status === 'passed' ? COLORS.green : COLORS.red;
+  log(
+    `   ${throughputStatus} Throughput: ${throughputValue.toFixed(2)} ops/s (threshold: ${CONFIG.THRESHOLDS.THROUGHPUT_MIN} ops/s)`,
+    throughputColor
+  );
 
   // Validate error rate
-  const errorRateValue = loadTestResults.metrics?.errorRate || benchmarkResults.summary?.avgErrorRate || 0;
+  const errorRateValue =
+    loadTestResults.metrics?.errorRate || benchmarkResults.summary?.avgErrorRate || 0;
   validation.thresholds.errorRate.value = errorRateValue;
-  validation.thresholds.errorRate.status = errorRateValue <= CONFIG.THRESHOLDS.ERROR_RATE_MAX ? 'passed' : 'failed';
+  validation.thresholds.errorRate.status =
+    errorRateValue <= CONFIG.THRESHOLDS.ERROR_RATE_MAX ? 'passed' : 'failed';
 
   const errorRateStatus = validation.thresholds.errorRate.status === 'passed' ? '✅' : '❌';
-  const errorRateColor = validation.thresholds.errorRate.status === 'passed' ? COLORS.green : COLORS.red;
-  log(`   ${errorRateStatus} Error Rate: ${errorRateValue.toFixed(2)}% (threshold: ${CONFIG.THRESHOLDS.ERROR_RATE_MAX}%)`, errorRateColor);
+  const errorRateColor =
+    validation.thresholds.errorRate.status === 'passed' ? COLORS.green : COLORS.red;
+  log(
+    `   ${errorRateStatus} Error Rate: ${errorRateValue.toFixed(2)}% (threshold: ${CONFIG.THRESHOLDS.ERROR_RATE_MAX}%)`,
+    errorRateColor
+  );
 
   // Validate memory usage
   const memoryValue = loadTestResults.metrics?.memoryUsage?.peak || 0;
   validation.thresholds.memoryUsage.value = memoryValue;
-  validation.thresholds.memoryUsage.status = memoryValue <= CONFIG.THRESHOLDS.MEMORY_MAX_MB ? 'passed' : 'failed';
+  validation.thresholds.memoryUsage.status =
+    memoryValue <= CONFIG.THRESHOLDS.MEMORY_MAX_MB ? 'passed' : 'failed';
 
   const memoryStatus = validation.thresholds.memoryUsage.status === 'passed' ? '✅' : '❌';
-  const memoryColor = validation.thresholds.memoryUsage.status === 'passed' ? COLORS.green : COLORS.red;
-  log(`   ${memoryStatus} Memory Usage: ${memoryValue.toFixed(0)}MB (threshold: ${CONFIG.THRESHOLDS.MEMORY_MAX_MB}MB)`, memoryColor);
+  const memoryColor =
+    validation.thresholds.memoryUsage.status === 'passed' ? COLORS.green : COLORS.red;
+  log(
+    `   ${memoryStatus} Memory Usage: ${memoryValue.toFixed(0)}MB (threshold: ${CONFIG.THRESHOLDS.MEMORY_MAX_MB}MB)`,
+    memoryColor
+  );
 
   // Determine overall status
-  const failedThresholds = Object.values(validation.thresholds).filter(t => t.status === 'failed');
+  const failedThresholds = Object.values(validation.thresholds).filter(
+    (t) => t.status === 'failed'
+  );
   validation.overall = failedThresholds.length === 0 ? 'passed' : 'failed';
 
   validation.details = {
     benchmarkResults,
     loadTestResults,
-    failedThresholds: failedThresholds.map(t => ({
-      metric: Object.keys(validation.thresholds).find(key => validation.thresholds[key] === t),
+    failedThresholds: failedThresholds.map((t) => ({
+      metric: Object.keys(validation.thresholds).find((key) => validation.thresholds[key] === t),
       value: t.value,
       threshold: t.threshold,
-      deviation: t.value - t.threshold
-    }))
+      deviation: t.value - t.threshold,
+    })),
   };
 
   return validation;
@@ -493,15 +518,17 @@ function generatePerformanceReport(validation) {
       testConfiguration: {
         concurrentUsers: CONFIG.LOAD_TEST.CONCURRENT_USERS,
         duration: CONFIG.LOAD_TEST.DURATION_SECONDS,
-        totalRequests: CONFIG.LOAD_TEST.TOTAL_REQUESTS
-      }
+        totalRequests: CONFIG.LOAD_TEST.TOTAL_REQUESTS,
+      },
     },
     summary: {
       overallStatus: validation.overall,
       thresholdsChecked: Object.keys(validation.thresholds).length,
-      thresholdsPassed: Object.values(validation.thresholds).filter(t => t.status === 'passed').length,
-      thresholdsFailed: Object.values(validation.thresholds).filter(t => t.status === 'failed').length,
-      readyForRelease: validation.overall === 'passed'
+      thresholdsPassed: Object.values(validation.thresholds).filter((t) => t.status === 'passed')
+        .length,
+      thresholdsFailed: Object.values(validation.thresholds).filter((t) => t.status === 'failed')
+        .length,
+      readyForRelease: validation.overall === 'passed',
     },
     thresholds: validation.thresholds,
     details: validation.details,
@@ -510,8 +537,8 @@ function generatePerformanceReport(validation) {
       reportFile,
       htmlReportFile,
       benchmarkDir: CONFIG.BENCHMARK_DIR,
-      performanceGateDir: CONFIG.OUTPUT_DIR
-    }
+      performanceGateDir: CONFIG.OUTPUT_DIR,
+    },
   };
 
   // Write JSON report
@@ -540,7 +567,8 @@ function generatePerformanceRecommendations(validation) {
             priority: 'high',
             category: 'Latency',
             issue: `P95 latency ${threshold.value.toFixed(2)}ms exceeds threshold ${threshold.threshold}ms`,
-            action: 'Optimize database queries, add caching, reduce computational complexity, or use more efficient algorithms'
+            action:
+              'Optimize database queries, add caching, reduce computational complexity, or use more efficient algorithms',
           });
           break;
         case 'throughput':
@@ -548,7 +576,8 @@ function generatePerformanceRecommendations(validation) {
             priority: 'high',
             category: 'Throughput',
             issue: `Throughput ${threshold.value.toFixed(2)} ops/s below threshold ${threshold.threshold} ops/s`,
-            action: 'Scale horizontally, optimize code performance, use connection pooling, or implement request batching'
+            action:
+              'Scale horizontally, optimize code performance, use connection pooling, or implement request batching',
           });
           break;
         case 'errorRate':
@@ -556,7 +585,8 @@ function generatePerformanceRecommendations(validation) {
             priority: 'critical',
             category: 'Reliability',
             issue: `Error rate ${threshold.value.toFixed(2)}% exceeds threshold ${threshold.threshold}%`,
-            action: 'Fix bugs causing errors, improve error handling, add circuit breakers, or implement retry mechanisms'
+            action:
+              'Fix bugs causing errors, improve error handling, add circuit breakers, or implement retry mechanisms',
           });
           break;
         case 'memoryUsage':
@@ -564,7 +594,8 @@ function generatePerformanceRecommendations(validation) {
             priority: 'medium',
             category: 'Memory',
             issue: `Memory usage ${threshold.value.toFixed(0)}MB exceeds threshold ${threshold.threshold}MB`,
-            action: 'Optimize memory usage, fix memory leaks, use streaming for large data, or increase memory limits'
+            action:
+              'Optimize memory usage, fix memory leaks, use streaming for large data, or increase memory limits',
           });
           break;
       }
@@ -580,8 +611,8 @@ function generatePerformanceRecommendations(validation) {
 function generateHTMLPerformanceReport(report) {
   const { metadata, summary, thresholds, recommendations } = report;
 
-  const getThresholdColor = (status) => status === 'passed' ? '#4CAF50' : '#f44336';
-  const getThresholdIcon = (status) => status === 'passed' ? '✅' : '❌';
+  const getThresholdColor = (status) => (status === 'passed' ? '#4CAF50' : '#f44336');
+  const getThresholdIcon = (status) => (status === 'passed' ? '✅' : '❌');
 
   return `
 <!DOCTYPE html>
@@ -632,7 +663,9 @@ function generateHTMLPerformanceReport(report) {
         </div>
 
         <div class="thresholds-grid">
-            ${Object.entries(thresholds).map(([key, threshold]) => `
+            ${Object.entries(thresholds)
+              .map(
+                ([key, threshold]) => `
             <div class="threshold-card ${threshold.status}">
                 <h3>${getThresholdIcon(threshold.status)} ${key.replace(/([A-Z])/g, ' $1').trim()}</h3>
                 <div class="metric-value" style="color: ${getThresholdColor(threshold.status)}">
@@ -646,7 +679,9 @@ function generateHTMLPerformanceReport(report) {
                 </div>
                 <p><strong>Status:</strong> <span style="color: ${getThresholdColor(threshold.status)}">${threshold.status.toUpperCase()}</span></p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
 
         <div style="margin: 30px 0; text-align: center;">
@@ -656,18 +691,26 @@ function generateHTMLPerformanceReport(report) {
             <p>Failed: <span style="color: #f44336; font-weight: bold;">${summary.thresholdsFailed}</span></p>
         </div>
 
-        ${recommendations.length > 0 ? `
+        ${
+          recommendations.length > 0
+            ? `
         <div class="recommendations">
             <h3>📋 Performance Recommendations</h3>
-            ${recommendations.map(rec => `
+            ${recommendations
+              .map(
+                (rec) => `
             <div class="recommendation priority-${rec.priority}">
                 <h4>${rec.category} - ${rec.priority.toUpperCase()}</h4>
                 <p><strong>Issue:</strong> ${rec.issue}</p>
                 <p><strong>Action:</strong> ${rec.action}</p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
             <p>Generated by Cortex Memory MCP Performance Gate Validator</p>
@@ -729,7 +772,9 @@ async function validatePerformanceGates() {
       Object.entries(validation.thresholds).forEach(([metric, threshold]) => {
         if (threshold.status === 'failed') {
           const metricName = metric.replace(/([A-Z])/g, ' $1').trim();
-          logError(`  ❌ ${metricName}: ${threshold.value.toFixed(2)} (threshold: ${threshold.threshold})`);
+          logError(
+            `  ❌ ${metricName}: ${threshold.value.toFixed(2)} (threshold: ${threshold.threshold})`
+          );
         }
       });
 
@@ -739,7 +784,6 @@ async function validatePerformanceGates() {
 
       process.exit(1);
     }
-
   } catch (error) {
     logError(`Performance gate validation failed: ${error.message}`);
     process.exit(1);
@@ -748,7 +792,7 @@ async function validatePerformanceGates() {
 
 // Run the validation if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  validatePerformanceGates().catch(error => {
+  validatePerformanceGates().catch((error) => {
     logError(`Unexpected error: ${error.message}`);
     process.exit(1);
   });

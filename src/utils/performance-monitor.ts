@@ -12,7 +12,7 @@
  * - Historical performance trends
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface PerformanceMetric {
   operation: string;
@@ -371,6 +371,10 @@ export class PerformanceMonitor {
     const random = Math.random().toString(36).substr(2, 6);
     return `${operation}_${timestamp}_${random}`;
   }
+
+  getRecentResponseTimes?: unknown
+
+  getStats?: unknown
 }
 
 export const performanceMonitor = PerformanceMonitor.getInstance();

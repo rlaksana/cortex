@@ -70,7 +70,7 @@ class SearchDegradationTester {
       const output = execSync(testCommand, {
         encoding: 'utf8',
         cwd: __dirname,
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
 
       const suiteEndTime = Date.now();
@@ -83,7 +83,7 @@ class SearchDegradationTester {
         name: suiteName,
         duration: suiteDuration,
         ...results,
-        output: output
+        output: output,
       };
 
       this.testResults.suites.push(suiteResult);
@@ -107,7 +107,7 @@ class SearchDegradationTester {
         failed: 1,
         skipped: 0,
         error: error.message,
-        output: error.stdout || ''
+        output: error.stdout || '',
       };
 
       this.testResults.suites.push(suiteResult);
@@ -126,7 +126,7 @@ class SearchDegradationTester {
       passed: 0,
       failed: 0,
       skipped: 0,
-      testCases: []
+      testCases: [],
     };
 
     // Parse Jest output
@@ -175,9 +175,12 @@ class SearchDegradationTester {
     const skippedWidth = totalWidth - passedWidth - failedWidth;
 
     const progressBar =
-      colors.green + '█'.repeat(passedWidth) +
-      colors.red + '█'.repeat(failedWidth) +
-      colors.yellow + '░'.repeat(skippedWidth) +
+      colors.green +
+      '█'.repeat(passedWidth) +
+      colors.red +
+      '█'.repeat(failedWidth) +
+      colors.yellow +
+      '░'.repeat(skippedWidth) +
       colors.reset;
 
     console.log(`  [${progressBar}]`);
@@ -193,32 +196,32 @@ class SearchDegradationTester {
     const testSuites = [
       {
         name: 'Vector Database Failure Scenarios',
-        pattern: 'Vector Database Failure Scenarios'
+        pattern: 'Vector Database Failure Scenarios',
       },
       {
         name: 'High Query Load Scenarios',
-        pattern: 'High Query Load Scenarios'
+        pattern: 'High Query Load Scenarios',
       },
       {
         name: 'Network Latency and Connectivity Issues',
-        pattern: 'Network Latency and Connectivity Issues'
+        pattern: 'Network Latency and Connectivity Issues',
       },
       {
         name: 'Automatic Recovery Mechanisms',
-        pattern: 'Automatic Recovery Mechanisms'
+        pattern: 'Automatic Recovery Mechanisms',
       },
       {
         name: 'Manual Recovery Triggers',
-        pattern: 'Manual Recovery Triggers'
+        pattern: 'Manual Recovery Triggers',
       },
       {
         name: 'System Health Monitoring',
-        pattern: 'System Health Monitoring'
+        pattern: 'System Health Monitoring',
       },
       {
         name: 'Error Rate and Threshold Management',
-        pattern: 'Error Rate and Threshold Management'
-      }
+        pattern: 'Error Rate and Threshold Management',
+      },
     ];
 
     colorLogBold('magenta', '\n🚀 Starting Comprehensive Test Execution...\n');
@@ -227,7 +230,7 @@ class SearchDegradationTester {
       await this.runTestSuite(suite.name, suite.pattern);
 
       // Small delay between suites
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
     this.printFinalReport();
@@ -243,7 +246,10 @@ class SearchDegradationTester {
     colorLogBold('cyan', '╚══════════════════════════════════════════════════════════════╝\n');
 
     // Overall statistics
-    const successRate = this.testResults.total > 0 ? (this.testResults.passed / this.testResults.total * 100).toFixed(1) : 0;
+    const successRate =
+      this.testResults.total > 0
+        ? ((this.testResults.passed / this.testResults.total) * 100).toFixed(1)
+        : 0;
 
     colorLogBold('white', '📊 OVERALL STATISTICS');
     colorLog('dim', '─'.repeat(40));
@@ -259,7 +265,8 @@ class SearchDegradationTester {
     colorLog('dim', '─'.repeat(40));
 
     for (const suite of this.testResults.suites) {
-      const suiteSuccessRate = suite.total > 0 ? (suite.passed / suite.total * 100).toFixed(1) : 0;
+      const suiteSuccessRate =
+        suite.total > 0 ? ((suite.passed / suite.total) * 100).toFixed(1) : 0;
       const status = suite.failed === 0 ? '✅' : '❌';
 
       colorLog('blue', `${status} ${suite.name}`);
@@ -285,7 +292,7 @@ class SearchDegradationTester {
       return;
     }
 
-    const durations = this.testResults.suites.map(s => s.duration);
+    const durations = this.testResults.suites.map((s) => s.duration);
     const avgDuration = durations.reduce((sum, d) => sum + d, 0) / durations.length;
     const maxDuration = Math.max(...durations);
     const minDuration = Math.min(...durations);
@@ -306,7 +313,8 @@ class SearchDegradationTester {
     colorLogBold('white', '\n💡 RECOMMENDATIONS');
     colorLog('dim', '─'.repeat(40));
 
-    const successRate = this.testResults.total > 0 ? (this.testResults.passed / this.testResults.total) : 0;
+    const successRate =
+      this.testResults.total > 0 ? this.testResults.passed / this.testResults.total : 0;
 
     if (successRate >= 0.9) {
       colorLog('green', '✅ Excellent search degradation behavior resilience!');
@@ -325,19 +333,19 @@ class SearchDegradationTester {
     }
 
     // Specific recommendations based on failed suites
-    const failedSuites = this.testResults.suites.filter(s => s.failed > 0);
+    const failedSuites = this.testResults.suites.filter((s) => s.failed > 0);
     if (failedSuites.length > 0) {
       colorLogBold('yellow', '\n🔧 Areas Requiring Attention:');
-      failedSuites.forEach(suite => {
+      failedSuites.forEach((suite) => {
         colorLog('yellow', `   • ${suite.name}: ${suite.failed} test(s) failed`);
       });
     }
 
     // Performance recommendations
-    const slowSuites = this.testResults.suites.filter(s => s.duration > 10000);
+    const slowSuites = this.testResults.suites.filter((s) => s.duration > 10000);
     if (slowSuites.length > 0) {
       colorLogBold('yellow', '\n⚡ Performance Optimization Opportunities:');
-      slowSuites.forEach(suite => {
+      slowSuites.forEach((suite) => {
         colorLog('yellow', `   • ${suite.name}: Consider optimizing test execution time`);
       });
     }

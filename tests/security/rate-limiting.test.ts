@@ -23,7 +23,7 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const requests = [];
@@ -31,21 +31,25 @@ describe('Security Tests - Rate Limiting', () => {
       // Make multiple rapid requests
       for (let i = 0; i < 20; i++) {
         requests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Test data ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Test data ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
       }
 
       const results = await Promise.allSettled(requests);
 
       // Some requests should be rate limited
-      const rateLimitedRequests = results.filter(result =>
-        result.status === 'fulfilled' &&
-        !result.value.success &&
-        result.value.error?.includes('rate limit')
+      const rateLimitedRequests = results.filter(
+        (result) =>
+          result.status === 'fulfilled' &&
+          !result.value.success &&
+          result.value.error?.includes('rate limit')
       );
 
       expect(rateLimitedRequests.length).toBeGreaterThan(0);
@@ -55,26 +59,28 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Simulate exceeding rate limit
       const rapidRequests = [];
       for (let i = 0; i < 50; i++) {
         rapidRequests.push(
-          memoryStore.find({
-            query: `test query ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.find(
+            {
+              query: `test query ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
       }
 
       const results = await Promise.allSettled(rapidRequests);
 
       // Check if any results indicate rate limiting
-      const rateLimitedResults = results.filter(result =>
-        result.status === 'fulfilled' &&
-        result.value.rateLimited === true
+      const rateLimitedResults = results.filter(
+        (result) => result.status === 'fulfilled' && result.value.rateLimited === true
       );
 
       expect(rateLimitedResults.length).toBeGreaterThan(0);
@@ -85,25 +91,28 @@ describe('Security Tests - Rate Limiting', () => {
         userId: 'premium-user',
         tenant: 'test-tenant',
         org: 'test-org',
-        tier: 'premium'
+        tier: 'premium',
       };
 
       const standardUser = {
         userId: 'standard-user',
         tenant: 'test-tenant',
         org: 'test-org',
-        tier: 'standard'
+        tier: 'standard',
       };
 
       // Test premium user limits
       const premiumRequests = [];
       for (let i = 0; i < 100; i++) {
         premiumRequests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Premium data ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, premiumUser)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Premium data ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            premiumUser
+          )
         );
       }
 
@@ -111,11 +120,14 @@ describe('Security Tests - Rate Limiting', () => {
       const standardRequests = [];
       for (let i = 0; i < 100; i++) {
         standardRequests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Standard data ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, standardUser)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Standard data ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            standardUser
+          )
         );
       }
 
@@ -123,13 +135,13 @@ describe('Security Tests - Rate Limiting', () => {
       const standardResults = await Promise.allSettled(standardRequests);
 
       // Premium users should have higher success rate
-      const premiumSuccessRate = premiumResults.filter(r =>
-        r.status === 'fulfilled' && r.value.success
-      ).length / premiumResults.length;
+      const premiumSuccessRate =
+        premiumResults.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+        premiumResults.length;
 
-      const standardSuccessRate = standardResults.filter(r =>
-        r.status === 'fulfilled' && r.value.success
-      ).length / standardResults.length;
+      const standardSuccessRate =
+        standardResults.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+        standardResults.length;
 
       expect(premiumSuccessRate).toBeGreaterThan(standardSuccessRate);
     });
@@ -144,26 +156,30 @@ describe('Security Tests - Rate Limiting', () => {
       const requests = [];
       for (let i = 0; i < 50; i++) {
         requests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Bypass attempt ${i}`,
-            scope: { tenant, org }
-          }, {
-            userId: `user-${i}`,
-            tenant,
-            org,
-            ipAddress: 'same-ip-address' // Simulate same IP
-          })
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Bypass attempt ${i}`,
+              scope: { tenant, org },
+            },
+            {
+              userId: `user-${i}`,
+              tenant,
+              org,
+              ipAddress: 'same-ip-address', // Simulate same IP
+            }
+          )
         );
       }
 
       const results = await Promise.allSettled(requests);
 
       // Should detect and block bypass attempts
-      const blockedRequests = results.filter(result =>
-        result.status === 'fulfilled' &&
-        !result.value.success &&
-        result.value.error?.includes('suspicious activity')
+      const blockedRequests = results.filter(
+        (result) =>
+          result.status === 'fulfilled' &&
+          !result.value.success &&
+          result.value.error?.includes('suspicious activity')
       );
 
       expect(blockedRequests.length).toBeGreaterThan(0);
@@ -173,7 +189,7 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: 'violating-user',
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       let consecutiveRejections = 0;
@@ -184,19 +200,21 @@ describe('Security Tests - Rate Limiting', () => {
         const rapidRequests = [];
         for (let i = 0; i < 30; i++) {
           rapidRequests.push(
-            memoryStore.find({
-              query: `violation attempt ${attempt}-${i}`,
-              scope: { tenant: 'test-tenant', org: 'test-org' }
-            }, userContext)
+            memoryStore.find(
+              {
+                query: `violation attempt ${attempt}-${i}`,
+                scope: { tenant: 'test-tenant', org: 'test-org' },
+              },
+              userContext
+            )
           );
         }
 
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        await new Promise((resolve) => setTimeout(resolve, backoffTime));
         const results = await Promise.allSettled(rapidRequests);
 
-        const rejectedCount = results.filter(result =>
-          result.status === 'fulfilled' &&
-          !result.value.success
+        const rejectedCount = results.filter(
+          (result) => result.status === 'fulfilled' && !result.value.success
         ).length;
 
         if (rejectedCount > 20) {
@@ -214,18 +232,21 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test store operation limits
       const storeRequests = [];
       for (let i = 0; i < 50; i++) {
         storeRequests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Store test ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Store test ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
       }
 
@@ -233,26 +254,29 @@ describe('Security Tests - Rate Limiting', () => {
       const findRequests = [];
       for (let i = 0; i < 100; i++) {
         findRequests.push(
-          memoryStore.find({
-            query: `Find test ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.find(
+            {
+              query: `Find test ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
       }
 
       const [storeResults, findResults] = await Promise.allSettled([
         Promise.allSettled(storeRequests),
-        Promise.allSettled(findRequests)
+        Promise.allSettled(findRequests),
       ]);
 
       if (storeResults.status === 'fulfilled' && findResults.status === 'fulfilled') {
-        const storeSuccessRate = storeResults.value.filter(r =>
-          r.status === 'fulfilled' && r.value.success
-        ).length / storeResults.value.length;
+        const storeSuccessRate =
+          storeResults.value.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+          storeResults.value.length;
 
-        const findSuccessRate = findResults.value.filter(r =>
-          r.status === 'fulfilled' && r.value.success
-        ).length / findResults.value.length;
+        const findSuccessRate =
+          findResults.value.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+          findResults.value.length;
 
         // Different operations should have different rate limits
         expect(storeSuccessRate).toBeGreaterThanOrEqual(0);
@@ -264,46 +288,52 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test burst capacity (short-term higher limit)
       const burstRequests = [];
       for (let i = 0; i < 20; i++) {
         burstRequests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Burst test ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Burst test ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
       }
 
       const burstResults = await Promise.allSettled(burstRequests);
-      const burstSuccessRate = burstResults.filter(r =>
-        r.status === 'fulfilled' && r.value.success
-      ).length / burstResults.length;
+      const burstSuccessRate =
+        burstResults.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+        burstResults.length;
 
       // Wait for rate limit window to reset
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Test sustained rate (long-term lower limit)
       const sustainedRequests = [];
       for (let i = 0; i < 20; i++) {
         sustainedRequests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `Sustained test ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, userContext)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `Sustained test ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            userContext
+          )
         );
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms between requests
+        await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms between requests
       }
 
       const sustainedResults = await Promise.allSettled(sustainedRequests);
-      const sustainedSuccessRate = sustainedResults.filter(r =>
-        r.status === 'fulfilled' && r.value.success
-      ).length / sustainedResults.length;
+      const sustainedSuccessRate =
+        sustainedResults.filter((r) => r.status === 'fulfilled' && r.value.success).length /
+        sustainedResults.length;
 
       expect(burstSuccessRate).toBeGreaterThanOrEqual(0);
       expect(sustainedSuccessRate).toBeGreaterThanOrEqual(0);
@@ -315,14 +345,17 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Rate limit test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Rate limit test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result).toHaveProperty('rateLimit');
       if (result.rateLimit) {
@@ -337,16 +370,19 @@ describe('Security Tests - Rate Limiting', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Make requests to consume quota
       for (let i = 0; i < 5; i++) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: `Quota test ${i}`,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: `Quota test ${i}`,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.rateLimit) {
           expect(typeof result.rateLimit.remaining).toBe('number');

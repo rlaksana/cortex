@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { DegradationLevel, DegradationEvent } from './degradation-detector.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
@@ -457,7 +457,7 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
     // Calculate SLO compliance
     const availabilityTarget = this.config.slo.availabilityTarget;
     const latencyTarget = this.config.slo.latencyTarget;
-    const errorRateTarget = this.config.slo.errorRate;
+    const errorRateTarget = this.config.slo.errorRateTarget;
 
     const sloPassed = availability >= availabilityTarget &&
                      averageResponseTime <= latencyTarget &&
@@ -694,14 +694,14 @@ export class QdrantErrorBudgetTracker extends EventEmitter {
         totalTime += event.estimatedRecoveryTime;
       } else {
         // Default estimate based on severity
-        const defaultDurations = {
+        const defaultDurations: Partial<Record<DegradationLevel, number>> = {
           [DegradationLevel.WARNING]: 10 * 60 * 1000,      // 10 minutes
           [DegradationLevel.DEGRADED]: 30 * 60 * 1000,    // 30 minutes
           [DegradationLevel.CRITICAL]: 60 * 60 * 1000,    // 1 hour
           [DegradationLevel.UNAVAILABLE]: 2 * 60 * 60 * 1000, // 2 hours
         };
 
-        totalTime += defaultDurations[event.level] || 30 * 60 * 1000;
+        totalTime += defaultDurations[event.level] ?? 30 * 60 * 1000;
       }
     }
 

@@ -38,8 +38,8 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
 
     databaseManager = new DatabaseManager({
       qdrant: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
-        apiKey: process.env.QDRANT_API_KEY,
+        url: process.env['QDRANT_URL'] || 'http://localhost:6333',
+        apiKey: process.env['QDRANT_API_KEY'],
         timeout: 10000, // Shorter timeout for performance tests
       },
       enableVectorOperations: true,
@@ -51,11 +51,7 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       },
     });
 
-    chunkingService = new ChunkingService(
-      databaseManager,
-      embeddingService,
-      undefined,
-    );
+    chunkingService = new ChunkingService(databaseManager, embeddingService, undefined);
 
     const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
       shouldFail: false,
@@ -97,24 +93,27 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
   describe('Storage Performance Tests', () => {
     it(`should store ${TARGET_ITEM_COUNT} items in <${TARGET_STORAGE_TIME}ms`, async () => {
       // Generate 100 test items
-      const testItems: MemoryStoreInput[] = Array.from({ length: TARGET_ITEM_COUNT }, (_, index) => {
-        const categories = ['entity', 'decision', 'observation', 'risk', 'assumption'];
-        const category = categories[index % categories.length];
-        const projects = ['project-alpha', 'project-beta', 'project-gamma', 'project-delta'];
-        const project = projects[index % projects.length];
+      const testItems: MemoryStoreInput[] = Array.from(
+        { length: TARGET_ITEM_COUNT },
+        (_, index) => {
+          const categories = ['entity', 'decision', 'observation', 'risk', 'assumption'];
+          const category = categories[index % categories.length];
+          const projects = ['project-alpha', 'project-beta', 'project-gamma', 'project-delta'];
+          const project = projects[index % projects.length];
 
-        return {
-          kind: category,
-          content: `Performance test item ${index}: This is test content for category ${category} in project ${project}. The content is designed to be representative of real-world usage patterns with meaningful semantic content.`,
-          scope: { project, branch: 'main' },
-          metadata: {
-            test_index: index,
-            category,
-            created_at: new Date().toISOString(),
-            test_type: 'performance_smoke',
-          },
-        };
-      });
+          return {
+            kind: category,
+            content: `Performance test item ${index}: This is test content for category ${category} in project ${project}. The content is designed to be representative of real-world usage patterns with meaningful semantic content.`,
+            scope: { project, branch: 'main' },
+            metadata: {
+              test_index: index,
+              category,
+              created_at: new Date().toISOString(),
+              test_type: 'performance_smoke',
+            },
+          };
+        }
+      );
 
       // Measure storage performance
       const startTime = Date.now();
@@ -136,7 +135,9 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       console.log(`${TARGET_ITEM_COUNT} items in ${storageTime}ms`);
       console.log(`${avgTimePerItem.toFixed(2)}ms per item`);
       console.log(`${itemsPerSecond.toFixed(0)} items/second`);
-      console.log(`Storage Performance: ${TARGET_ITEM_COUNT} items in ${storageTime}ms (${avgTimePerItem.toFixed(2)}ms per item)`);
+      console.log(
+        `Storage Performance: ${TARGET_ITEM_COUNT} items in ${storageTime}ms (${avgTimePerItem.toFixed(2)}ms per item)`
+      );
       console.log(`Storage Rate: ${itemsPerSecond.toFixed(0)} items/second`);
     });
 
@@ -175,8 +176,10 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       const firstResult = performanceResults[0];
 
       console.log('Batch Storage Performance:');
-      performanceResults.forEach(result => {
-        console.log(`  Batch ${result.batchSize}: ${result.time}ms total, ${result.timePerItem.toFixed(2)}ms/item, ${result.itemsPerSecond.toFixed(0)} items/sec`);
+      performanceResults.forEach((result) => {
+        console.log(
+          `  Batch ${result.batchSize}: ${result.time}ms total, ${result.timePerItem.toFixed(2)}ms/item, ${result.itemsPerSecond.toFixed(0)} items/sec`
+        );
       });
 
       // Larger batches should be more efficient (lower time per item)
@@ -189,7 +192,9 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
         const contentSizes = [500, 1000, 2000, 5000]; // characters
         const size = contentSizes[index % contentSizes.length];
         const baseContent = `Large content test item ${index} with ${size} characters. `;
-        const repeatedContent = 'This is repeated content to increase size. '.repeat(Math.ceil(size / 50));
+        const repeatedContent = 'This is repeated content to increase size. '.repeat(
+          Math.ceil(size / 50)
+        );
         const finalContent = (baseContent + repeatedContent).substring(0, size);
 
         return {
@@ -216,28 +221,42 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       // Should have more total items due to chunking of large content
       expect(storeResult.items.length).toBeGreaterThanOrEqual(20);
 
-      console.log(`Large Content Storage: 20 items (${storeResult.items.length} total with chunks) in ${storageTime}ms`);
+      console.log(
+        `Large Content Storage: 20 items (${storeResult.items.length} total with chunks) in ${storageTime}ms`
+      );
     });
   });
 
   describe('Search Performance Tests', () => {
     it(`should search across ${TARGET_ITEM_COUNT} items in <${TARGET_SEARCH_TIME}ms`, async () => {
       // First, populate with test data
-      const searchData: MemoryStoreInput[] = Array.from({ length: TARGET_ITEM_COUNT }, (_, index) => {
-        const topics = ['authentication', 'database', 'api', 'security', 'performance', 'deployment', 'monitoring', 'testing'];
-        const topic = topics[index % topics.length];
+      const searchData: MemoryStoreInput[] = Array.from(
+        { length: TARGET_ITEM_COUNT },
+        (_, index) => {
+          const topics = [
+            'authentication',
+            'database',
+            'api',
+            'security',
+            'performance',
+            'deployment',
+            'monitoring',
+            'testing',
+          ];
+          const topic = topics[index % topics.length];
 
-        return {
-          kind: 'entity',
-          content: `${topic} system component ${index}: This content discusses ${topic} implementation details, best practices, and operational considerations for enterprise applications.`,
-          scope: { project: 'search-performance-test' },
-          metadata: {
-            topic,
-            test_index: index,
-            category: 'system_component',
-          },
-        };
-      });
+          return {
+            kind: 'entity',
+            content: `${topic} system component ${index}: This content discusses ${topic} implementation details, best practices, and operational considerations for enterprise applications.`,
+            scope: { project: 'search-performance-test' },
+            metadata: {
+              topic,
+              test_index: index,
+              category: 'system_component',
+            },
+          };
+        }
+      );
 
       // Store the data
       await memoryStoreService.store({
@@ -275,12 +294,13 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       }
 
       console.log('Search Performance Results:');
-      searchResults.forEach(result => {
+      searchResults.forEach((result) => {
         console.log(`  Query "${result.query}": ${result.time}ms, ${result.resultCount} results`);
       });
 
       // Average search time should be well under target
-      const avgSearchTime = searchResults.reduce((sum, r) => sum + r.time, 0) / searchResults.length;
+      const avgSearchTime =
+        searchResults.reduce((sum, r) => sum + r.time, 0) / searchResults.length;
       expect(avgSearchTime).toBeLessThan(TARGET_SEARCH_TIME * 0.7);
       console.log(`Average search time: ${avgSearchTime.toFixed(2)}ms`);
     });
@@ -306,9 +326,7 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       }));
 
       const startTime = Date.now();
-      const searchPromises = concurrentQueries.map(query =>
-        memoryFindService.find(query)
-      );
+      const searchPromises = concurrentQueries.map((query) => memoryFindService.find(query));
 
       const results = await Promise.all(searchPromises);
       const concurrentTime = Date.now() - startTime;
@@ -321,7 +339,9 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
         console.log(`  Concurrent search ${index + 1}: ${result.results.length} results`);
       });
 
-      console.log(`Concurrent Search Performance: 10 searches in ${concurrentTime}ms (${concurrentTime / 10}ms per search)`);
+      console.log(
+        `Concurrent Search Performance: 10 searches in ${concurrentTime}ms (${concurrentTime / 10}ms per search)`
+      );
     });
 
     it('should maintain search quality with high performance', async () => {
@@ -344,7 +364,8 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
         },
         {
           kind: 'decision',
-          content: 'Technical decision to migrate to microservices architecture for better scalability',
+          content:
+            'Technical decision to migrate to microservices architecture for better scalability',
           scope: { project: 'quality-test' },
         },
         {
@@ -382,8 +403,9 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
           query,
           time: searchTime,
           resultCount: result.results.length,
-          foundExpectedType: result.results.some(r => r.kind === expectedType),
-          avgConfidence: result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length,
+          foundExpectedType: result.results.some((r) => r.kind === expectedType),
+          avgConfidence:
+            result.results.reduce((sum, r) => sum + r.confidence_score, 0) / result.results.length,
         });
 
         expect(searchTime).toBeLessThan(TARGET_SEARCH_TIME);
@@ -391,14 +413,18 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       }
 
       console.log('Search Quality Performance:');
-      qualityResults.forEach(result => {
-        console.log(`  "${result.query}": ${result.time}ms, ${result.resultCount} results, avg confidence: ${result.avgConfidence.toFixed(3)}, found expected: ${result.foundExpectedType}`);
+      qualityResults.forEach((result) => {
+        console.log(
+          `  "${result.query}": ${result.time}ms, ${result.resultCount} results, avg confidence: ${result.avgConfidence.toFixed(3)}, found expected: ${result.foundExpectedType}`
+        );
       });
 
       // Verify quality metrics
-      const avgConfidence = qualityResults.reduce((sum, r) => sum + r.avgConfidence, 0) / qualityResults.length;
+      const avgConfidence =
+        qualityResults.reduce((sum, r) => sum + r.avgConfidence, 0) / qualityResults.length;
       expect(avgConfidence).toBeGreaterThan(0.5); // Minimum quality threshold
-      const foundExpectedRate = qualityResults.filter(r => r.foundExpectedType).length / qualityResults.length;
+      const foundExpectedRate =
+        qualityResults.filter((r) => r.foundExpectedType).length / qualityResults.length;
       expect(foundExpectedRate).toBeGreaterThan(0.8); // 80% of searches should find expected type
     });
   });
@@ -447,18 +473,22 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
             scope: operation.scope,
             limit: 5,
           });
-          results.push({ type: 'search', resultCount: result.results.length, time: Date.now() - startTime });
+          results.push({
+            type: 'search',
+            resultCount: result.results.length,
+            time: Date.now() - startTime,
+          });
         }
       }
 
       const totalTime = Date.now() - startTime;
 
       // Analyze results
-      const storeOps = results.filter(r => r.type === 'store');
-      const searchOps = results.filter(r => r.type === 'search');
+      const storeOps = results.filter((r) => r.type === 'store');
+      const searchOps = results.filter((r) => r.type === 'search');
 
-      expect(storeOps.every(op => op.success)).toBe(true);
-      expect(searchOps.every(op => op.resultCount >= 0)).toBe(true);
+      expect(storeOps.every((op) => op.success)).toBe(true);
+      expect(searchOps.every((op) => op.resultCount >= 0)).toBe(true);
       expect(totalTime).toBeLessThan(TARGET_STORAGE_TIME * 2); // Should complete in <2s
 
       console.log('Mixed Operations Performance:');
@@ -475,14 +505,16 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
 
       // Store data across multiple scopes
       const scopeStorageStartTime = Date.now();
-      const storagePromises = scopes.map(scope =>
-        Array.from({ length: itemsPerScope }, (_, index) => ({
-          kind: 'entity',
-          content: `Scope ${scope} item ${index}: Content isolated to specific scope for performance testing`,
-          scope: { project: scope, branch: 'main' },
-          metadata: { scope, item_index: index },
-        }))
-      ).flat();
+      const storagePromises = scopes
+        .map((scope) =>
+          Array.from({ length: itemsPerScope }, (_, index) => ({
+            kind: 'entity',
+            content: `Scope ${scope} item ${index}: Content isolated to specific scope for performance testing`,
+            scope: { project: scope, branch: 'main' },
+            metadata: { scope, item_index: index },
+          }))
+        )
+        .flat();
 
       await memoryStoreService.store({
         items: storagePromises,
@@ -493,7 +525,7 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
 
       // Perform searches across different scopes
       const scopeSearchStartTime = Date.now();
-      const searchPromises = scopes.map(scope =>
+      const searchPromises = scopes.map((scope) =>
         memoryFindService.find({
           query: `scope ${scope} content`,
           scope: { project: scope },
@@ -509,11 +541,13 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       // Verify scope isolation
       searchResults.forEach((result, index) => {
         expect(result.results.length).toBeGreaterThan(0);
-        expect(result.results.every(r => r.scope.project === scopes[index])).toBe(true);
+        expect(result.results.every((r) => r.scope.project === scopes[index])).toBe(true);
       });
 
       console.log('Scope Isolation Performance:');
-      console.log(`  Storage: ${scopes.length * itemsPerScope} items across ${scopes.length} scopes in ${scopeStorageTime}ms`);
+      console.log(
+        `  Storage: ${scopes.length * itemsPerScope} items across ${scopes.length} scopes in ${scopeStorageTime}ms`
+      );
       console.log(`  Search: ${scopes.length} concurrent scope searches in ${scopeSearchTime}ms`);
     });
   });
@@ -670,9 +704,15 @@ describe('Performance Smoke Tests - N=100 Items, <1s Target', () => {
       expect(concurrentTime).toBeLessThan(performanceBaselines.concurrent_10_searches * 1.5);
 
       console.log('Performance Regression Test Results:');
-      console.log(`  Storage (100 items): ${storageTime}ms (baseline: ${performanceBaselines.storage_100_items}ms)`);
-      console.log(`  Search (single query): ${searchTime}ms (baseline: ${performanceBaselines.search_single_query}ms)`);
-      console.log(`  Concurrent (10 searches): ${concurrentTime}ms (baseline: ${performanceBaselines.concurrent_10_searches}ms)`);
+      console.log(
+        `  Storage (100 items): ${storageTime}ms (baseline: ${performanceBaselines.storage_100_items}ms)`
+      );
+      console.log(
+        `  Search (single query): ${searchTime}ms (baseline: ${performanceBaselines.search_single_query}ms)`
+      );
+      console.log(
+        `  Concurrent (10 searches): ${concurrentTime}ms (baseline: ${performanceBaselines.concurrent_10_searches}ms)`
+      );
       console.log(`  All tests within 150% of baseline targets ✓`);
     });
   });

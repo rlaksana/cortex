@@ -29,12 +29,12 @@ Cortex MCP v2.0.0 Architecture
 
 ### Critical Components
 
-| Component | Role | Recovery Priority | RTO | RPO |
-|-----------|------|-------------------|-----|-----|
-| **Qdrant Database** | Primary data storage | Critical | 15 min | 5 min |
-| **MCP Server** | API and business logic | High | 5 min | 0 min |
-| **OpenAI API** | Embedding generation | High | 30 min | N/A |
-| **Monitoring** | System observability | Medium | 1 hour | N/A |
+| Component           | Role                   | Recovery Priority | RTO    | RPO   |
+| ------------------- | ---------------------- | ----------------- | ------ | ----- |
+| **Qdrant Database** | Primary data storage   | Critical          | 15 min | 5 min |
+| **MCP Server**      | API and business logic | High              | 5 min  | 0 min |
+| **OpenAI API**      | Embedding generation   | High              | 30 min | N/A   |
+| **Monitoring**      | System observability   | Medium            | 1 hour | N/A   |
 
 ## 🚨 Emergency Procedures
 
@@ -630,9 +630,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "Cortex MCP Server is down"
-          description: "Cortex MCP server has been down for more than 1 minute"
-          runbook_url: "https://docs.cortex.ai/runbooks/mcp-server-down"
+          summary: 'Cortex MCP Server is down'
+          description: 'Cortex MCP server has been down for more than 1 minute'
+          runbook_url: 'https://docs.cortex.ai/runbooks/mcp-server-down'
 
       - alert: QdrantDown
         expr: up{job="qdrant"} == 0
@@ -641,9 +641,9 @@ groups:
           severity: critical
           service: qdrant
         annotations:
-          summary: "Qdrant database is down"
-          description: "Qdrant vector database has been down for more than 2 minutes"
-          runbook_url: "https://docs.cortex.ai/runbooks/qdrant-down"
+          summary: 'Qdrant database is down'
+          description: 'Qdrant vector database has been down for more than 2 minutes'
+          runbook_url: 'https://docs.cortex.ai/runbooks/qdrant-down'
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
@@ -652,9 +652,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "High error rate detected"
-          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
-          runbook_url: "https://docs.cortex.ai/runbooks/high-error-rate"
+          summary: 'High error rate detected'
+          description: 'Error rate is {{ $value | humanizePercentage }} for the last 5 minutes'
+          runbook_url: 'https://docs.cortex.ai/runbooks/high-error-rate'
 
       - alert: HighResponseTime
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
@@ -663,9 +663,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "High response time detected"
-          description: "95th percentile response time is {{ $value }}s"
-          runbook_url: "https://docs.cortex.ai/runbooks/high-response-time"
+          summary: 'High response time detected'
+          description: '95th percentile response time is {{ $value }}s'
+          runbook_url: 'https://docs.cortex.ai/runbooks/high-response-time'
 
       - alert: LowVectorCount
         expr: qdrant_collection_points < 1000
@@ -674,9 +674,9 @@ groups:
           severity: warning
           service: qdrant
         annotations:
-          summary: "Low vector count in collection"
-          description: "Collection has only {{ $value }} vectors - possible data loss"
-          runbook_url: "https://docs.cortex.ai/runbooks/low-vector-count"
+          summary: 'Low vector count in collection'
+          description: 'Collection has only {{ $value }} vectors - possible data loss'
+          runbook_url: 'https://docs.cortex.ai/runbooks/low-vector-count'
 
       - alert: DiskSpaceCritical
         expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
@@ -685,9 +685,9 @@ groups:
           severity: critical
           service: system
         annotations:
-          summary: "Critical disk space"
-          description: "Disk space is {{ $value }}% full"
-          runbook_url: "https://docs.cortex.ai/runbooks/disk-space"
+          summary: 'Critical disk space'
+          description: 'Disk space is {{ $value }}% full'
+          runbook_url: 'https://docs.cortex.ai/runbooks/disk-space'
 
       - alert: MemoryUsageHigh
         expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 10
@@ -696,9 +696,9 @@ groups:
           severity: warning
           service: system
         annotations:
-          summary: "High memory usage"
-          description: "Available memory is {{ $value }}%"
-          runbook_url: "https://docs.cortex.ai/runbooks/high-memory"
+          summary: 'High memory usage'
+          description: 'Available memory is {{ $value }}%'
+          runbook_url: 'https://docs.cortex.ai/runbooks/high-memory'
 ```
 
 #### AlertManager Configuration
@@ -1100,7 +1100,7 @@ echo "- cortex-restart   - Restart service"
 
 #### Quick Reference Card
 
-```bash
+````bash
 # Create quick reference file
 cat > ~/cortex-ops/QUICK_REFERENCE.md << 'EOF'
 # Cortex MCP Operations Quick Reference
@@ -1122,11 +1122,12 @@ cortex-logs-error
 
 # Emergency restore (if needed)
 sudo ~/cortex-ops/scripts/emergency-restore.sh
-```
+````
 
 ## 🔍 Common Troubleshooting
 
 ### MCP Server Issues
+
 ```bash
 # Check if service is running
 sudo systemctl status cortex-mcp
@@ -1142,6 +1143,7 @@ cat /app/.env
 ```
 
 ### Qdrant Issues
+
 ```bash
 # Check Qdrant status
 curl http://localhost:6333/health
@@ -1154,6 +1156,7 @@ curl http://localhost:6333/collections/cortex-memory | jq .
 ```
 
 ### Performance Issues
+
 ```bash
 # Check system resources
 free -h
@@ -1168,17 +1171,20 @@ netstat -an | grep :6333 | wc -l
 ## 📊 Monitoring
 
 ### Grafana Dashboards
+
 - Main Dashboard: https://grafana.cortex.ai/d/cortex-main
 - Database Dashboard: https://grafana.cortex.ai/d/cortex-db
 - System Dashboard: https://grafana.cortex.ai/d/cortex-system
 
 ### AlertManager
+
 - Alerts: https://alertmanager.cortex.ai
 - Silence Rules: https://alertmanager.cortex.ai/#/silences
 
 ## 🔄 Maintenance Tasks
 
 ### Daily
+
 ```bash
 # Health check
 cortex-health
@@ -1188,6 +1194,7 @@ ls -la /backups/qdrant/
 ```
 
 ### Weekly
+
 ```bash
 # Log cleanup
 sudo ~/cortex-ops/scripts/cleanup-logs.sh
@@ -1197,6 +1204,7 @@ sudo ~/cortex-ops/scripts/cleanup-logs.sh
 ```
 
 ### Monthly
+
 ```bash
 # Security updates
 sudo apt update && sudo apt upgrade -y
@@ -1207,12 +1215,12 @@ sudo apt update && sudo apt upgrade -y
 
 ## 📞 Escalation Contacts
 
-| Issue Type | Contact | Method |
-|------------|---------|--------|
-| Critical System Failure | On-call Engineer | oncall@cortex.ai, +1-555-CORTEX1 |
-| Security Incident | Security Team | security@cortex.ai, #security-alerts |
-| Performance Issues | Performance Team | perf@cortex.ai, #perf-team |
-| Database Issues | DBA Team | dba@cortex.ai, #dba-team |
+| Issue Type              | Contact          | Method                               |
+| ----------------------- | ---------------- | ------------------------------------ |
+| Critical System Failure | On-call Engineer | oncall@cortex.ai, +1-555-CORTEX1     |
+| Security Incident       | Security Team    | security@cortex.ai, #security-alerts |
+| Performance Issues      | Performance Team | perf@cortex.ai, #perf-team           |
+| Database Issues         | DBA Team         | dba@cortex.ai, #dba-team             |
 
 ## 🏥 Health Check Interpretation
 
@@ -1222,26 +1230,28 @@ sudo apt update && sudo apt upgrade -y
 
 ## 🔧 Configuration Files
 
-| File | Location | Purpose |
-|------|----------|---------|
-| Environment Variables | `/app/.env` | Runtime configuration |
-| MCP Config | `/app/config/mcp.json` | MCP server settings |
-| Qdrant Config | `/etc/qdrant/config.yaml` | Database configuration |
-| Systemd Service | `/etc/systemd/system/cortex-mcp.service` | Service definition |
+| File                  | Location                                 | Purpose                |
+| --------------------- | ---------------------------------------- | ---------------------- |
+| Environment Variables | `/app/.env`                              | Runtime configuration  |
+| MCP Config            | `/app/config/mcp.json`                   | MCP server settings    |
+| Qdrant Config         | `/etc/qdrant/config.yaml`                | Database configuration |
+| Systemd Service       | `/etc/systemd/system/cortex-mcp.service` | Service definition     |
 
 ## 📁 Important Directories
 
-| Directory | Purpose |
-|-----------|---------|
-| `/app/logs` | Application logs |
-| `/backups` | Backup storage |
-| `/app/config` | Configuration files |
+| Directory         | Purpose             |
+| ----------------- | ------------------- |
+| `/app/logs`       | Application logs    |
+| `/backups`        | Backup storage      |
+| `/app/config`     | Configuration files |
 | `/qdrant/storage` | Qdrant data storage |
-| `/var/log` | System logs |
+| `/var/log`        | System logs         |
+
 EOF
 
 echo "✅ Created quick reference guide"
-```
+
+````
 
 ## 🔧 Troubleshooting Runbooks
 
@@ -1273,9 +1283,10 @@ ps aux | grep "node.*index.js"
 
 # Check port availability
 netstat -tlnp | grep :3000
-```
+````
 
 ### 2. Check Logs for Errors
+
 ```bash
 # Check recent logs
 sudo journalctl -u cortex-mcp --no-pager -n 50
@@ -1288,8 +1299,10 @@ tail -50 /app/logs/error.log
 ### 3. Common Issues & Solutions
 
 #### Out of Memory
+
 **Symptoms**: OOM killer messages in logs
 **Solution**:
+
 ```bash
 # Check memory usage
 free -h
@@ -1302,8 +1315,10 @@ sudo systemctl restart cortex-mcp
 ```
 
 #### Configuration Error
+
 **Symptoms**: Failed to start due to config issues
 **Solution**:
+
 ```bash
 # Check environment variables
 cat /app/.env
@@ -1316,8 +1331,10 @@ sudo systemctl restart cortex-mcp
 ```
 
 #### Port Already in Use
+
 **Symptoms**: Address already in use error
 **Solution**:
+
 ```bash
 # Find process using port
 sudo lsof -i :3000
@@ -1330,6 +1347,7 @@ sudo systemctl restart cortex-mcp
 ```
 
 ### 4. Restart Procedure
+
 ```bash
 # Graceful restart
 sudo systemctl restart cortex-mcp
@@ -1345,6 +1363,7 @@ curl http://localhost:3000/health
 ```
 
 ### 5. Verification
+
 ```bash
 # Health check
 curl http://localhost:3000/health
@@ -1357,18 +1376,22 @@ sudo journalctl -u cortex-mcp -f
 ```
 
 ## Escalation Criteria
+
 Escalate immediately if:
+
 - Service fails to restart after 3 attempts
 - Multiple services are down
 - Data corruption is suspected
 - Security breach is suspected
 
 ## Prevention
+
 - Monitor memory usage trends
 - Regular log review
 - Configuration validation in CI/CD
 - Regular restart after updates
-```
+
+````
 
 ### 2. Performance Issues
 
@@ -1399,11 +1422,12 @@ curl http://localhost:3000/metrics | grep http_request_duration
 # Monitor system resources
 top -p $(pgrep -f "node.*index.js")
 iostat -x 1 5
-```
+````
 
 ### 2. Check Common Causes
 
 #### High CPU Usage
+
 ```bash
 # Identify CPU-intensive processes
 top -p $(pgrep -f "node.*index.js")
@@ -1416,6 +1440,7 @@ sudo systemctl restart cortex-mcp
 ```
 
 #### Memory Pressure
+
 ```bash
 # Check memory usage
 free -h
@@ -1435,6 +1460,7 @@ for (let key in used) {
 ```
 
 #### Database Performance
+
 ```bash
 # Check Qdrant performance
 curl http://localhost:6333/metrics
@@ -1449,6 +1475,7 @@ curl -X POST http://localhost:6333/collections/cortex-memory/search \
 ```
 
 #### Network Issues
+
 ```bash
 # Check network connectivity
 ping -c 3 localhost
@@ -1464,6 +1491,7 @@ cat /proc/sys/net/core/somaxconn
 ### 3. Performance Optimization
 
 #### Application Level
+
 ```bash
 # Check for memory leaks
 node --inspect dist/index.js
@@ -1475,6 +1503,7 @@ export NODE_OPTIONS="--trace-warnings"
 ```
 
 #### Database Level
+
 ```bash
 # Optimize Qdrant configuration
 # Edit /etc/qdrant/config.yaml
@@ -1497,6 +1526,7 @@ curl -X PUT http://localhost:6333/collections/cortex-memory-optimized \
 ```
 
 ### 4. Monitoring & Verification
+
 ```bash
 # Monitor performance after changes
 watch -n 5 'curl -s http://localhost:3000/metrics | grep http_request_duration'
@@ -1508,18 +1538,22 @@ time curl http://localhost:3000/api/memory/find \
 ```
 
 ## Escalation Criteria
+
 Escalate if:
+
 - Response times remain > 5s after optimization
 - System resources are consistently > 90%
 - Multiple users are affected
 - Issue persists > 1 hour
 
 ## Prevention
+
 - Set up performance monitoring alerts
 - Regular performance testing
 - Capacity planning based on usage trends
 - Regular optimization reviews
-```
+
+````
 
 ## 📊 System Metrics & KPIs
 
@@ -1578,7 +1612,7 @@ else
 fi
 
 echo "Metrics collected at $DATE"
-```
+````
 
 ### 2. Performance Baselines
 

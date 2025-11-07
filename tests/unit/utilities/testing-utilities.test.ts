@@ -1237,7 +1237,7 @@ describe('Testing Utilities', () => {
         email: 'newuser@example.com',
       });
       expect(createResponse.status).toBe(200);
-      expect(createResponse.data.id).toBe(3);
+      expect(createResponse['data.id']).toBe(3);
 
       await expect(httpMocker.simulateRequest('DELETE', '/api/users/1')).rejects.toThrow(
         'User not found'
@@ -1253,10 +1253,10 @@ describe('Testing Utilities', () => {
           data: new Map(),
 
           insert: async (table: string, record: any) => {
-            if (!databaseMocker.data.has(table)) {
-              databaseMocker.data.set(table, []);
+            if (!databaseMocker['data.has'](table)) {
+              databaseMocker['data.set'](table, []);
             }
-            const records = databaseMocker.data.get(table)!;
+            const records = databaseMocker['data.get'](table)!;
             const id = records.length + 1;
             const newRecord = { id, ...record, createdAt: new Date().toISOString() };
             records.push(newRecord);
@@ -1264,19 +1264,19 @@ describe('Testing Utilities', () => {
           },
 
           find: async (table: string, query: any = {}) => {
-            const records = databaseMocker.data.get(table) || [];
+            const records = databaseMocker['data.get'](table) || [];
             return records.filter((record: any) => {
               return Object.entries(query).every(([key, value]) => record[key] === value);
             });
           },
 
           findById: async (table: string, id: number) => {
-            const records = databaseMocker.data.get(table) || [];
+            const records = databaseMocker['data.get'](table) || [];
             return records.find((record: any) => record.id === id);
           },
 
           update: async (table: string, id: number, updates: any) => {
-            const records = databaseMocker.data.get(table) || [];
+            const records = databaseMocker['data.get'](table) || [];
             const index = records.findIndex((record: any) => record.id === id);
             if (index !== -1) {
               records[index] = {
@@ -1290,7 +1290,7 @@ describe('Testing Utilities', () => {
           },
 
           delete: async (table: string, id: number) => {
-            const records = databaseMocker.data.get(table) || [];
+            const records = databaseMocker['data.get'](table) || [];
             const index = records.findIndex((record: any) => record.id === id);
             if (index !== -1) {
               return records.splice(index, 1)[0];
@@ -1300,9 +1300,9 @@ describe('Testing Utilities', () => {
 
           clear: async (table?: string) => {
             if (table) {
-              databaseMocker.data.delete(table);
+              databaseMocker['data.delete'](table);
             } else {
-              databaseMocker.data.clear();
+              databaseMocker['data.clear']();
             }
           },
         }),
@@ -1878,7 +1878,7 @@ describe('Testing Utilities', () => {
 
         // Test GET specific user
         const userResponse = await client.get('/api/users/1');
-        if (userResponse.status !== 200 || !userResponse.data.id) {
+        if (userResponse.status !== 200 || !userResponse['data.id']) {
           throw new Error('Failed to fetch specific user');
         }
 
@@ -1887,7 +1887,7 @@ describe('Testing Utilities', () => {
           name: 'Test User',
           email: 'test@example.com',
         });
-        if (newUserResponse.status !== 201 || !newUserResponse.data.id) {
+        if (newUserResponse.status !== 201 || !newUserResponse['data.id']) {
           throw new Error('Failed to create user');
         }
 
@@ -1895,7 +1895,7 @@ describe('Testing Utilities', () => {
         const updateUserResponse = await client.put('/api/users/1', {
           name: 'Updated Name',
         });
-        if (updateUserResponse.status !== 200 || !updateUserResponse.data.updatedAt) {
+        if (updateUserResponse.status !== 200 || !updateUserResponse['data.updatedAt']) {
           throw new Error('Failed to update user');
         }
       };

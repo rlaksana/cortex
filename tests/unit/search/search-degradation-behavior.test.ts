@@ -15,7 +15,12 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SearchStrategyManager } from '../../../src/services/search/search-strategy-manager.js';
-import { searchErrorHandler, ErrorCategory, ErrorSeverity, RecoveryStrategy } from '../../../src/services/search/search-error-handler.js';
+import {
+  searchErrorHandler,
+  ErrorCategory,
+  ErrorSeverity,
+  RecoveryStrategy,
+} from '../../../src/services/search/search-error-handler.js';
 import { searchAuditLogger } from '../../../src/services/search/search-audit-logger.js';
 import type { SearchQuery } from '../../../src/types/core-interfaces.js';
 
@@ -75,7 +80,7 @@ describe('Search Degradation Behavior Tests', () => {
         expect(result.degraded).toBe(true);
         expect(result.fallbackReason).toContain('unavailable');
         expect(result.vectorUsed).toBe(false);
-        expect(result.metadata.backendHealthStatus).toBe('unavailable');
+        expect(result.metadata['backendHealthStatus']).toBe('unavailable');
 
         // Verify results are still returned (fallback to keyword search)
         expect(result.results).toBeDefined();
@@ -83,7 +88,7 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Verify audit logging
         const auditLogs = searchManager.getRecentAuditLogs(10);
-        const degradationLogs = auditLogs.filter(log => log.event_type === 'degradation');
+        const degradationLogs = auditLogs.filter((log) => log.event_type === 'degradation');
         expect(degradationLogs.length).toBeGreaterThan(0);
       });
 
@@ -112,8 +117,8 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Verify that auto and deep strategies are degraded, fast is not
         expect(results[0].degraded).toBe(false); // fast
-        expect(results[1].degraded).toBe(true);  // auto
-        expect(results[2].degraded).toBe(true);  // deep
+        expect(results[1].degraded).toBe(true); // auto
+        expect(results[2].degraded).toBe(true); // deep
       });
 
       it('should handle vector database recovery gracefully', async () => {
@@ -182,7 +187,7 @@ describe('Search Degradation Behavior Tests', () => {
         // Mock slow vector responses
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           // Simulate slow response
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           return [];
         });
 
@@ -231,7 +236,7 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Circuit breaker should be activated
         const circuitBreakers = searchManager.getCircuitBreakerStates();
-        expect(Array.from(circuitBreakers.values()).some(cb => cb.isOpen)).toBe(true);
+        expect(Array.from(circuitBreakers.values()).some((cb) => cb.isOpen)).toBe(true);
 
         // System should be marked as degraded
         const healthReport = searchManager.getSystemHealth();
@@ -252,13 +257,13 @@ describe('Search Degradation Behavior Tests', () => {
 
         const startTime = Date.now();
         const results = await Promise.allSettled(
-          queries.map(query => searchManager.executeSearch(query, 'auto'))
+          queries.map((query) => searchManager.executeSearch(query, 'auto'))
         );
         const endTime = Date.now();
 
         // Analyze results
-        const successful = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
+        const successful = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.filter((r) => r.status === 'rejected').length;
 
         // Most searches should succeed
         expect(successful).toBeGreaterThan(concurrentQueries * 0.8);
@@ -288,22 +293,25 @@ describe('Search Degradation Behavior Tests', () => {
         }));
 
         const results = await Promise.allSettled(
-          queries.map(query => searchManager.executeSearch(query, 'deep'))
+          queries.map((query) => searchManager.executeSearch(query, 'deep'))
         );
 
         const successfulResults = results
-          .filter(r => r.status === 'fulfilled')
-          .map(r => (r as PromiseFulfilledResult<any>).value);
+          .filter((r) => r.status === 'fulfilled')
+          .map((r) => (r as PromiseFulfilledResult<any>).value);
 
         // Verify search quality metrics
-        const averageResults = successfulResults.reduce((sum, r) => sum + r.results.length, 0) / successfulResults.length;
+        const averageResults =
+          successfulResults.reduce((sum, r) => sum + r.results.length, 0) /
+          successfulResults.length;
         expect(averageResults).toBeGreaterThan(0);
 
-        const averageConfidence = successfulResults.reduce((sum, r) => sum + r.confidence, 0) / successfulResults.length;
+        const averageConfidence =
+          successfulResults.reduce((sum, r) => sum + r.confidence, 0) / successfulResults.length;
         expect(averageConfidence).toBeGreaterThan(0);
 
         // Check degradation rate
-        const degradedCount = successfulResults.filter(r => r.degraded).length;
+        const degradedCount = successfulResults.filter((r) => r.degraded).length;
         const degradationRate = degradedCount / successfulResults.length;
         expect(degradationRate).toBeLessThan(0.5); // Less than 50% degradation
       });
@@ -319,12 +327,12 @@ describe('Search Degradation Behavior Tests', () => {
 
         const startTime = Date.now();
         const results = await Promise.allSettled(
-          queries.map(query => searchManager.executeSearch(query, 'fast'))
+          queries.map((query) => searchManager.executeSearch(query, 'fast'))
         );
         const endTime = Date.now();
 
         // System should handle extreme load gracefully
-        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const successful = results.filter((r) => r.status === 'fulfilled').length;
         expect(successful).toBeGreaterThan(extremeLoad * 0.7); // At least 70% success rate
 
         // Response times should increase but remain reasonable
@@ -340,13 +348,15 @@ describe('Search Degradation Behavior Tests', () => {
     describe('Resource Exhaustion Scenarios', () => {
       it('should handle memory pressure gracefully', async () => {
         // Mock memory pressure detection
-        vi.spyOn(searchManager as any, 'executeWithTimeout').mockImplementation(async (operation, operationName) => {
-          if (operationName.includes('vector') || operationName.includes('deep')) {
-            // Simulate memory pressure on resource-intensive operations
-            throw new Error('Out of memory');
+        vi.spyOn(searchManager as any, 'executeWithTimeout').mockImplementation(
+          async (operation, operationName) => {
+            if (operationName.includes('vector') || operationName.includes('deep')) {
+              // Simulate memory pressure on resource-intensive operations
+              throw new Error('Out of memory');
+            }
+            return operation();
           }
-          return operation();
-        });
+        );
 
         const query: SearchQuery = {
           query: 'test memory pressure',
@@ -387,19 +397,19 @@ describe('Search Degradation Behavior Tests', () => {
         }));
 
         const results = await Promise.allSettled(
-          queries.map(query => searchManager.executeSearch(query, 'auto'))
+          queries.map((query) => searchManager.executeSearch(query, 'auto'))
         );
 
         // Some queries should succeed, others should be handled gracefully
-        const successful = results.filter(r => r.status === 'fulfilled').length;
-        const failed = results.filter(r => r.status === 'rejected').length;
+        const successful = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.filter((r) => r.status === 'rejected').length;
 
         expect(successful).toBeGreaterThan(0);
         expect(failed).toBeGreaterThan(0);
 
         // Error handling should categorize as database errors
         const errorMetrics = searchManager.getErrorMetrics();
-        expect(errorMetrics.errorsByCategory[ErrorCategory.DATABASE]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['DATABASE']]).toBeGreaterThan(0);
       });
 
       it('should maintain system stability during CPU spikes', async () => {
@@ -439,7 +449,7 @@ describe('Search Degradation Behavior Tests', () => {
       it('should handle high latency to vector database', async () => {
         // Mock high latency responses
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
-          await new Promise(resolve => setTimeout(resolve, 8000)); // 8 second delay
+          await new Promise((resolve) => setTimeout(resolve, 8000)); // 8 second delay
           return [];
         });
 
@@ -468,7 +478,7 @@ describe('Search Degradation Behavior Tests', () => {
           callCount++;
           // First call is slow, subsequent calls are faster
           const delay = callCount === 1 ? 3000 : 500;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           return [];
         });
 
@@ -492,7 +502,7 @@ describe('Search Degradation Behavior Tests', () => {
           if (Math.random() > reliabilityFactor) {
             throw new Error('Network timeout');
           }
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           return [];
         });
 
@@ -513,8 +523,8 @@ describe('Search Degradation Behavior Tests', () => {
         }
 
         // Should have mixed success and degradation
-        const degradedCount = results.filter(r => r.degraded).length;
-        const successCount = results.filter(r => !r.degraded).length;
+        const degradedCount = results.filter((r) => r.degraded).length;
+        const successCount = results.filter((r) => !r.degraded).length;
 
         expect(results.length).toBeGreaterThan(0);
         expect(degradedCount + successCount).toBe(results.length);
@@ -524,8 +534,12 @@ describe('Search Degradation Behavior Tests', () => {
     describe('Network Connectivity Loss', () => {
       it('should handle complete network connectivity loss', async () => {
         // Mock complete network failure
-        vi.spyOn(searchManager as any, 'performVectorSearch').mockRejectedValue(new Error('Network unreachable'));
-        vi.spyOn(searchManager as any, 'queryDatabase').mockRejectedValue(new Error('Network unreachable'));
+        vi.spyOn(searchManager as any, 'performVectorSearch').mockRejectedValue(
+          new Error('Network unreachable')
+        );
+        vi.spyOn(searchManager as any, 'queryDatabase').mockRejectedValue(
+          new Error('Network unreachable')
+        );
 
         const query: SearchQuery = {
           query: 'test network loss',
@@ -542,7 +556,7 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Error should be properly categorized
         const errorMetrics = searchManager.getErrorMetrics();
-        expect(errorMetrics.errorsByCategory[ErrorCategory.NETWORK]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['NETWORK']]).toBeGreaterThan(0);
       });
 
       it('should handle intermittent network connectivity', async () => {
@@ -613,7 +627,7 @@ describe('Search Degradation Behavior Tests', () => {
         expect(firstResult.degraded).toBe(true);
 
         // Wait for health check interval (simulated)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Second search should recover
         const secondResult = await searchManager.executeSearch(query, 'deep');
@@ -642,12 +656,12 @@ describe('Search Degradation Behavior Tests', () => {
         for (let i = 0; i < 5; i++) {
           const result = await searchManager.executeSearch(query, 'auto');
           results.push(result);
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         // Should show gradual improvement
-        const degradedResults = results.filter(r => r.degraded).length;
-        const recoveredResults = results.filter(r => !r.degraded).length;
+        const degradedResults = results.filter((r) => r.degraded).length;
+        const recoveredResults = results.filter((r) => !r.degraded).length;
 
         expect(degradedResults).toBeGreaterThan(0);
         expect(recoveredResults).toBeGreaterThan(0);
@@ -683,12 +697,12 @@ describe('Search Degradation Behavior Tests', () => {
         for (let i = 0; i < 8; i++) {
           const result = await searchManager.executeSearch(query, 'deep');
           results.push(result);
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         // Should handle setbacks and eventual recovery
         const finalResults = results.slice(-2);
-        expect(finalResults.every(r => r.degraded === false)).toBe(true);
+        expect(finalResults.every((r) => r.degraded === false)).toBe(true);
 
         // Should track setbacks in metrics
         const healthReport = searchManager.getSystemHealth();
@@ -725,7 +739,7 @@ describe('Search Degradation Behavior Tests', () => {
         vi.spyOn(searchManager['deepVectorSearch'], 'search').mockResolvedValue([]);
 
         // Wait for circuit breaker timeout (simulated)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Next call should be in half-open state and succeed
         const recoveryResult = await searchManager.executeSearch(query, 'deep');
@@ -743,7 +757,8 @@ describe('Search Degradation Behavior Tests', () => {
         vi.spyOn(searchManager['deepVectorSearch'], 'search').mockImplementation(async () => {
           failureCount++;
           // Fail in half-open state to re-open circuit breaker
-          if (failureCount === 7) { // After circuit breaker opens and goes half-open
+          if (failureCount === 7) {
+            // After circuit breaker opens and goes half-open
             throw persistentError;
           }
           if (failureCount < 6) {
@@ -768,7 +783,7 @@ describe('Search Degradation Behavior Tests', () => {
         }
 
         // Wait for half-open state
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Try recovery (should fail and re-open)
         try {
@@ -800,7 +815,7 @@ describe('Search Degradation Behavior Tests', () => {
             performanceValue = Math.min(10000, performanceValue + 1000);
           }
 
-          await new Promise(resolve => setTimeout(resolve, performanceValue / 1000));
+          await new Promise((resolve) => setTimeout(resolve, performanceValue / 1000));
 
           if (performanceValue > 8000) {
             throw new Error('Performance too poor');
@@ -822,7 +837,7 @@ describe('Search Degradation Behavior Tests', () => {
           initialResults.push(result);
         }
 
-        expect(initialResults.every(r => r.degraded)).toBe(true);
+        expect(initialResults.every((r) => r.degraded)).toBe(true);
 
         // Simulate performance improvement
         performanceTrend = 'improving';
@@ -834,7 +849,7 @@ describe('Search Degradation Behavior Tests', () => {
           recoveredResults.push(result);
         }
 
-        expect(recoveredResults.some(r => !r.degraded)).toBe(true);
+        expect(recoveredResults.some((r) => !r.degraded)).toBe(true);
       });
 
       it('should implement intelligent retry backoff based on failure patterns', async () => {
@@ -995,7 +1010,7 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Mock slow responses
         vi.spyOn(conservativeManager as any, 'performVectorSearch').mockImplementation(async () => {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 1500));
           throw new Error('Slow response');
         });
 
@@ -1018,7 +1033,7 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Apply same mocks to lenient manager
         vi.spyOn(lenientManager as any, 'performVectorSearch').mockImplementation(async () => {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise((resolve) => setTimeout(resolve, 1500));
           throw new Error('Slow response');
         });
 
@@ -1063,8 +1078,10 @@ describe('Search Degradation Behavior Tests', () => {
         const earlyResults = results.slice(0, 3);
         const laterResults = results.slice(3);
 
-        const earlyDegradationRate = earlyResults.filter(r => r.degraded).length / earlyResults.length;
-        const laterDegradationRate = laterResults.filter(r => r.degraded).length / laterResults.length;
+        const earlyDegradationRate =
+          earlyResults.filter((r) => r.degraded).length / earlyResults.length;
+        const laterDegradationRate =
+          laterResults.filter((r) => r.degraded).length / laterResults.length;
 
         expect(laterDegradationRate).toBeLessThanOrEqual(earlyDegradationRate);
       });
@@ -1111,22 +1128,29 @@ describe('Search Degradation Behavior Tests', () => {
           const isHealthy = i >= 2; // Become healthy after 2 iterations
           vi.spyOn(searchManager as any, 'checkVectorBackendHealth').mockResolvedValue(isHealthy);
 
-          await searchManager.executeSearch({
-            query: `health trend test ${i}`,
-            mode: 'auto',
-          }, 'auto');
+          await searchManager.executeSearch(
+            {
+              query: `health trend test ${i}`,
+              mode: 'auto',
+            },
+            'auto'
+          );
 
           const healthReport = searchManager.getSystemHealth();
           healthSnapshots.push(healthReport);
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         // Verify health trend tracking
         const earlySnapshots = healthSnapshots.slice(0, 2);
         const laterSnapshots = healthSnapshots.slice(2);
 
-        const earlyHealthyCount = earlySnapshots.filter(h => h.overall_status === 'healthy').length;
-        const laterHealthyCount = laterSnapshots.filter(h => h.overall_status === 'healthy').length;
+        const earlyHealthyCount = earlySnapshots.filter(
+          (h) => h.overall_status === 'healthy'
+        ).length;
+        const laterHealthyCount = laterSnapshots.filter(
+          (h) => h.overall_status === 'healthy'
+        ).length;
 
         expect(laterHealthyCount).toBeGreaterThan(earlyHealthyCount);
       });
@@ -1135,10 +1159,13 @@ describe('Search Degradation Behavior Tests', () => {
         // Create conditions that would trigger recommendations
         for (let i = 0; i < 10; i++) {
           try {
-            await searchManager.executeSearch({
-              query: `recommendation test ${i}`,
-              mode: 'deep',
-            }, 'deep');
+            await searchManager.executeSearch(
+              {
+                query: `recommendation test ${i}`,
+                mode: 'deep',
+              },
+              'deep'
+            );
           } catch (error) {
             // Generate failures for recommendations
           }
@@ -1157,7 +1184,9 @@ describe('Search Degradation Behavior Tests', () => {
         // Verify recommendations have proper structure
         if (analytics.recommendations.length > 0) {
           const recommendation = analytics.recommendations[0];
-          expect(recommendation.category).toMatch(/^(performance|reliability|usability|infrastructure)$/);
+          expect(recommendation.category).toMatch(
+            /^(performance|reliability|usability|infrastructure)$/
+          );
           expect(recommendation.priority).toMatch(/^(high|medium|low)$/);
           expect(recommendation.title).toBeDefined();
           expect(recommendation.description).toBeDefined();
@@ -1179,12 +1208,12 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Execute searches during degradation
         const results = await Promise.allSettled(
-          queries.map(query => searchManager.executeSearch(query, 'auto'))
+          queries.map((query) => searchManager.executeSearch(query, 'auto'))
         );
 
         const successfulResults = results
-          .filter(r => r.status === 'fulfilled')
-          .map(r => (r as PromiseFulfilledResult<any>).value);
+          .filter((r) => r.status === 'fulfilled')
+          .map((r) => (r as PromiseFulfilledResult<any>).value);
 
         // Verify metrics are tracked during degradation
         const performanceMetrics = searchManager.getPerformanceMetrics();
@@ -1229,8 +1258,10 @@ describe('Search Degradation Behavior Tests', () => {
         }
 
         // Analyze performance differences
-        const avgFallbackTime = fallbackResults.reduce((sum, r) => sum + r.executionTime, 0) / fallbackResults.length;
-        const avgNormalTime = normalResults.reduce((sum, r) => sum + r.executionTime, 0) / normalResults.length;
+        const avgFallbackTime =
+          fallbackResults.reduce((sum, r) => sum + r.executionTime, 0) / fallbackResults.length;
+        const avgNormalTime =
+          normalResults.reduce((sum, r) => sum + r.executionTime, 0) / normalResults.length;
 
         // Both should provide reasonable performance
         expect(avgFallbackTime).toBeGreaterThan(0);
@@ -1240,8 +1271,8 @@ describe('Search Degradation Behavior Tests', () => {
         expect(avgFallbackTime).toBeLessThan(10000); // Less than 10 seconds
 
         // Verify all results are marked appropriately
-        expect(fallbackResults.every(r => r.degraded === true)).toBe(true);
-        expect(normalResults.every(r => r.degraded === false)).toBe(true);
+        expect(fallbackResults.every((r) => r.degraded === true)).toBe(true);
+        expect(normalResults.every((r) => r.degraded === false)).toBe(true);
       });
     });
   });
@@ -1265,7 +1296,9 @@ describe('Search Degradation Behavior Tests', () => {
 
         // Execute searches with different error types
         for (let i = 0; i < errorScenarios.length; i++) {
-          vi.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementationOnce(errorScenarios[i]);
+          vi.spyOn(searchManager['autoHybridSearch'], 'search').mockImplementationOnce(
+            errorScenarios[i]
+          );
 
           try {
             await searchManager.executeSearch(query, 'auto');
@@ -1277,10 +1310,10 @@ describe('Search Degradation Behavior Tests', () => {
         // Verify error categorization
         const errorMetrics = searchManager.getErrorMetrics();
         expect(errorMetrics.totalErrors).toBe(4);
-        expect(errorMetrics.errorsByCategory[ErrorCategory.NETWORK]).toBeGreaterThan(0);
-        expect(errorMetrics.errorsByCategory[ErrorCategory.DATABASE]).toBeGreaterThan(0);
-        expect(errorMetrics.errorsByCategory[ErrorCategory.VECTOR_BACKEND]).toBeGreaterThan(0);
-        expect(errorMetrics.errorsByCategory[ErrorCategory.MEMORY]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['NETWORK']]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['DATABASE']]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['VECTOR_BACKEND']]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['MEMORY']]).toBeGreaterThan(0);
       });
 
       it('should implement error rate-based degradation thresholds', async () => {
@@ -1379,7 +1412,7 @@ describe('Search Degradation Behavior Tests', () => {
         // Mock performance-based threshold adjustment
         vi.spyOn(searchManager as any, 'getDynamicThreshold').mockImplementation(() => {
           // Increase threshold as system load increases
-          return 0.7 + (systemLoad * 0.2);
+          return 0.7 + systemLoad * 0.2;
         });
 
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
@@ -1412,9 +1445,9 @@ describe('Search Degradation Behavior Tests', () => {
         expect(results.length).toBeGreaterThan(0);
 
         // Later searches should be more likely to be degraded
-        const degradations = results.map(r => r.degraded);
+        const degradations = results.map((r) => r.degraded);
         const laterDegradations = degradations.slice(3);
-        expect(laterDegradations.some(d => d)).toBe(true);
+        expect(laterDegradations.some((d) => d)).toBe(true);
       });
 
       it('should implement context-aware threshold adjustments', async () => {
@@ -1428,7 +1461,9 @@ describe('Search Degradation Behavior Tests', () => {
         const results = [];
 
         for (const context of contexts) {
-          vi.spyOn(searchManager as any, 'getContextualThreshold').mockReturnValue(context.expectedThreshold);
+          vi.spyOn(searchManager as any, 'getContextualThreshold').mockReturnValue(
+            context.expectedThreshold
+          );
 
           const query: SearchQuery = {
             query: context.query,
@@ -1457,7 +1492,7 @@ describe('Search Degradation Behavior Tests', () => {
         expect(results.length).toBeGreaterThan(0);
 
         // Higher priority contexts should have better success rates
-        const highPriorityResult = results.find(r => r.context === 'high');
+        const highPriorityResult = results.find((r) => r.context === 'high');
         expect(highPriorityResult?.degraded).toBe(false);
       });
     });

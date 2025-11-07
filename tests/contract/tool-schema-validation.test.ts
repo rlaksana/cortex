@@ -194,11 +194,11 @@ describe('Tool Schema Validation Tests - T22', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         // Verify transformed output
-        expect(result.data.items).toBeInstanceOf(Array);
-        expect(result.data.items.length).toBeGreaterThan(0);
-        expect(result.data.deduplication).toBeDefined();
-        expect(result.data.global_ttl).toBeDefined();
-        expect(result.data.global_truncation).toBeDefined();
+        expect(result['data.items']).toBeInstanceOf(Array);
+        expect(result['data.items'].length).toBeGreaterThan(0);
+        expect(result['data.deduplication']).toBeDefined();
+        expect(result['data.global_ttl']).toBeDefined();
+        expect(result['data.global_truncation']).toBeDefined();
       }
     });
 
@@ -209,11 +209,11 @@ describe('Tool Schema Validation Tests - T22', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         // Verify transformed output
-        expect(result.data.query).toBeTypeOf('string');
-        expect(result.data.query.trim()).toBe(result.data.query); // Should be trimmed
-        expect(result.data.search_strategy).toBeDefined();
-        expect(result.data.result_format).toBeDefined();
-        expect(result.data.limit).toBeDefined();
+        expect(result['data.query']).toBeTypeOf('string');
+        expect(result['data.query'].trim()).toBe(result['data.query']); // Should be trimmed
+        expect(result['data.search_strategy']).toBeDefined();
+        expect(result['data.result_format']).toBeDefined();
+        expect(result['data.limit']).toBeDefined();
       }
     });
 
@@ -225,7 +225,7 @@ describe('Tool Schema Validation Tests - T22', () => {
         expect(result.success).toBe(false);
 
         if (!result.success) {
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
           expect(result.error.issues.length).toBeGreaterThan(0);
 
           // Verify error structure
@@ -245,7 +245,7 @@ describe('Tool Schema Validation Tests - T22', () => {
         expect(result.success).toBe(false);
 
         if (!result.success) {
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
           expect(result.error.issues.length).toBeGreaterThan(0);
         }
       });
@@ -261,7 +261,7 @@ describe('Tool Schema Validation Tests - T22', () => {
       const result = MemoryFindInputSchema.safeParse(untrimmedInput);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.query).toBe('trimmed query with spaces');
+        expect(result['data.query']).toBe('trimmed query with spaces');
       }
 
       // Test default value application
@@ -272,9 +272,9 @@ describe('Tool Schema Validation Tests - T22', () => {
       const minimalResult = MemoryFindInputSchema.safeParse(minimalInput);
       expect(minimalResult.success).toBe(true);
       if (minimalResult.success) {
-        expect(minimalResult.data.search_strategy).toBeDefined();
-        expect(minimalResult.data.result_format).toBeDefined();
-        expect(minimalResult.data.limit).toBeDefined();
+        expect(minimalResult['data.search_strategy']).toBeDefined();
+        expect(minimalResult['data.result_format']).toBeDefined();
+        expect(minimalResult['data.limit']).toBeDefined();
       }
     });
   });
@@ -325,23 +325,29 @@ describe('Tool Schema Validation Tests - T22', () => {
 
     it('should have matching enum values across schemas', () => {
       // Test merge strategy enums
-      const validMergeStrategies = ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'];
+      const validMergeStrategies = [
+        'skip',
+        'prefer_existing',
+        'prefer_newer',
+        'combine',
+        'intelligent',
+      ];
 
-      validMergeStrategies.forEach(strategy => {
+      validMergeStrategies.forEach((strategy) => {
         expect(MergeStrategySchema.safeParse(strategy).success).toBe(true);
       });
 
       // Test TTL policy enums
       const validTtlPolicies = ['default', 'short', 'long', 'permanent'];
 
-      validTtlPolicies.forEach(policy => {
+      validTtlPolicies.forEach((policy) => {
         expect(TTLPolicySchema.safeParse(policy).success).toBe(true);
       });
 
       // Test search strategy enums
       const validSearchStrategies = ['fast', 'auto', 'deep'];
 
-      validSearchStrategies.forEach(strategy => {
+      validSearchStrategies.forEach((strategy) => {
         expect(SearchStrategySchema.safeParse(strategy).success).toBe(true);
       });
     });
@@ -429,10 +435,10 @@ describe('Tool Schema Validation Tests - T22', () => {
         if (result.success) {
           // Verify structure if it passes
           expect(result.data).toHaveProperty('items');
-          expect(Array.isArray(result.data.items)).toBe(true);
+          expect(Array.isArray(result['data.items'])).toBe(true);
         } else {
           // Verify proper error handling if it fails
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
         }
       });
 
@@ -444,10 +450,10 @@ describe('Tool Schema Validation Tests - T22', () => {
         if (result.success) {
           // Verify structure if it passes
           expect(result.data).toHaveProperty('query');
-          expect(typeof result.data.query).toBe('string');
+          expect(typeof result['data.query']).toBe('string');
         } else {
           // Verify proper error handling if it fails
-          expect(result.error).toBeInstanceOf(z.ZodError);
+          expect(result.error).toBeInstanceOf(z['Z']odError);
         }
       });
     });
@@ -522,16 +528,16 @@ describe('Tool Schema Validation Tests - T22', () => {
       // Should have sensible defaults applied
       const storeResult = MemoryStoreInputSchema.safeParse(v1StoreInput);
       if (storeResult.success) {
-        expect(storeResult.data.deduplication).toBeDefined();
-        expect(storeResult.data.global_ttl).toBeDefined();
-        expect(storeResult.data.global_truncation).toBeDefined();
+        expect(storeResult['data.deduplication']).toBeDefined();
+        expect(storeResult['data.global_ttl']).toBeDefined();
+        expect(storeResult['data.global_truncation']).toBeDefined();
       }
 
       const findResult = MemoryFindInputSchema.safeParse(v1FindInput);
       if (findResult.success) {
-        expect(findResult.data.search_strategy).toBeDefined();
-        expect(findResult.data.result_format).toBeDefined();
-        expect(findResult.data.limit).toBeDefined();
+        expect(findResult['data.search_strategy']).toBeDefined();
+        expect(findResult['data.result_format']).toBeDefined();
+        expect(findResult['data.limit']).toBeDefined();
       }
     });
 
@@ -557,11 +563,13 @@ describe('Tool Schema Validation Tests - T22', () => {
   describe('Validation Performance', () => {
     it('should validate large inputs efficiently', () => {
       const largeInput = {
-        items: Array(100).fill(null).map((_, i) => ({
-          kind: 'entity' as const,
-          content: `Entity ${i} with some content`,
-          data: { index: i, timestamp: new Date().toISOString() },
-        })),
+        items: Array(100)
+          .fill(null)
+          .map((_, i) => ({
+            kind: 'entity' as const,
+            content: `Entity ${i} with some content`,
+            data: { index: i, timestamp: new Date().toISOString() },
+          })),
       };
 
       const startTime = performance.now();

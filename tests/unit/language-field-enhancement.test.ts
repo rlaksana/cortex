@@ -21,8 +21,8 @@ describe('Language Field Enhancement', () => {
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
 
-      expect(enhancedItem.data.detected_lang).toBe('id');
-      expect(enhancedItem.data.lang_confidence).toBeGreaterThan(0);
+      expect(enhancedItem['data.detected_lang']).toBe('id');
+      expect(enhancedItem['data.lang_confidence']).toBeGreaterThan(0);
     });
 
     it('should add English language detection', () => {
@@ -37,8 +37,8 @@ describe('Language Field Enhancement', () => {
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
 
-      expect(enhancedItem.data.detected_lang).toBe('en');
-      expect(enhancedItem.data.lang_confidence).toBeGreaterThan(0);
+      expect(enhancedItem['data.detected_lang']).toBe('en');
+      expect(enhancedItem['data.lang_confidence']).toBeGreaterThan(0);
     });
 
     it('should detect mixed language content', () => {
@@ -53,7 +53,7 @@ describe('Language Field Enhancement', () => {
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
 
-      expect(enhancedItem.data.detected_lang).toBe('mixed');
+      expect(enhancedItem['data.detected_lang']).toBe('mixed');
     });
 
     it('should handle empty or unknown content', () => {
@@ -67,8 +67,8 @@ describe('Language Field Enhancement', () => {
 
       const enhancedItem = languageService.enhanceItemWithLanguage(baseItem);
 
-      expect(enhancedItem.data.detected_lang).toBe('unknown');
-      expect(enhancedItem.data.lang_confidence).toBe(0);
+      expect(enhancedItem['data.detected_lang']).toBe('unknown');
+      expect(enhancedItem['data.lang_confidence']).toBe(0);
     });
 
     it('should preserve all original fields', () => {
@@ -92,9 +92,9 @@ describe('Language Field Enhancement', () => {
       expect(enhancedItem.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
       expect(enhancedItem.metadata).toEqual({ source: 'monitoring' });
       expect(enhancedItem.created_at).toBe('2025-01-01T00:00:00Z');
-      expect(enhancedItem.data.title).toBe('Test Incident');
-      expect(enhancedItem.data.severity).toBe('high');
-      expect(enhancedItem.data.detected_lang).toBe('en');
+      expect(enhancedItem['data.title']).toBe('Test Incident');
+      expect(enhancedItem['data.severity']).toBe('high');
+      expect(enhancedItem['data.detected_lang']).toBe('en');
     });
   });
 
@@ -205,7 +205,7 @@ describe('Language Field Enhancement', () => {
 
       expect(highConfidenceItems.length).toBeGreaterThanOrEqual(1);
       highConfidenceItems.forEach((item) => {
-        expect(item.data.lang_confidence).toBeGreaterThanOrEqual(0.7);
+        expect(item['data.lang_confidence']).toBeGreaterThanOrEqual(0.7);
       });
     });
   });
@@ -227,8 +227,8 @@ describe('Language Field Enhancement', () => {
       const enhanced1 = languageService.enhanceItemWithLanguage(itemWithBodyText);
       const enhanced2 = languageService.enhanceItemWithLanguage(itemWithDescription);
 
-      expect(enhanced1.data.detected_lang).toBe('id');
-      expect(enhanced2.data.detected_lang).toBe('en');
+      expect(enhanced1['data.detected_lang']).toBe('id');
+      expect(enhanced2['data.detected_lang']).toBe('en');
     });
 
     it('should update language fields on existing items', () => {
@@ -247,11 +247,11 @@ describe('Language Field Enhancement', () => {
 
       const updatedItem = languageService.updateLanguageFields(baseItem, languageResult);
 
-      expect(updatedItem.data.detected_lang).toBe('en');
-      expect(updatedItem.data.lang_confidence).toBe(0.95);
-      expect(updatedItem.data.lang_indonesian_ratio).toBe(0.05);
-      expect(updatedItem.data.lang_english_ratio).toBe(0.95);
-      expect(updatedItem.data.content).toBe('Original content'); // Original content preserved
+      expect(updatedItem['data.detected_lang']).toBe('en');
+      expect(updatedItem['data.lang_confidence']).toBe(0.95);
+      expect(updatedItem['data.lang_indonesian_ratio']).toBe(0.05);
+      expect(updatedItem['data.lang_english_ratio']).toBe(0.95);
+      expect(updatedItem['data.content']).toBe('Original content'); // Original content preserved
     });
   });
 });

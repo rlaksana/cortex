@@ -27,32 +27,32 @@ describe('Simple Chunking Integration Test', () => {
     expect(chunkedItems.length).toBeGreaterThan(1);
 
     // Find parent and children
-    const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
-    const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+    const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+    const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
 
     expect(parentItem).toBeDefined();
     expect(childItems.length).toBeGreaterThan(0);
 
     // Verify parent item has correct metadata
-    expect(parentItem!.data.is_chunk).toBe(false);
-    expect(parentItem!.data.parent_id).toBeUndefined();
-    expect(parentItem!.data.chunk_index).toBe(0);
-    expect(parentItem!.data.total_chunks).toBe(childItems.length);
+    expect(parentItem!.data['is_chunk']).toBe(false);
+    expect(parentItem!.data['parent_id']).toBeUndefined();
+    expect(parentItem!.data['chunk_index']).toBe(0);
+    expect(parentItem!.data['total_chunks']).toBe(childItems.length);
     expect(parentItem!.data.original_length).toBe(largeContent.length);
     expect(parentItem!.data.chunk_overlap).toBe(200);
 
     // Verify child items have correct metadata
     childItems.forEach((child, index) => {
-      expect(child.data.is_chunk).toBe(true);
-      expect(child.data.parent_id).toBe('test-parent-id');
-      expect(child.data.chunk_index).toBe(index);
-      expect(child.data.total_chunks).toBe(childItems.length);
-      expect(child.data.original_length).toBe(largeContent.length);
-      expect(child.data.chunk_overlap).toBe(200);
+      expect(child['data.is_chunk']).toBe(true);
+      expect(child['data.parent_id']).toBe('test-parent-id');
+      expect(child['data.chunk_index']).toBe(index);
+      expect(child['data.total_chunks']).toBe(childItems.length);
+      expect(child['data.original_length']).toBe(largeContent.length);
+      expect(child['data.chunk_overlap']).toBe(200);
     });
 
     // Verify chunk_index is sequential
-    const chunkIndexes = childItems.map((child) => child.data.chunk_index).sort((a, b) => a - b);
+    const chunkIndexes = childItems.map((child) => child['data.chunk_index']).sort((a, b) => a - b);
     expect(chunkIndexes[0]).toBe(0);
     for (let i = 0; i < chunkIndexes.length; i++) {
       expect(chunkIndexes[i]).toBe(i);
@@ -75,16 +75,16 @@ describe('Simple Chunking Integration Test', () => {
     };
 
     const chunkedItems = service.createChunkedItems(baseItem);
-    const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+    const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
 
     // Verify metadata is preserved
     childItems.forEach((child) => {
       expect(child.kind).toBe('runbook');
       expect(child.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
-      expect(child.metadata.author).toBe('test-author');
-      expect(child.metadata.version).toBe('1.0');
-      expect(child.data.title).toBe('Test Runbook');
-      expect(child.data.category).toBe('test');
+      expect(child.metadata['author']).toBe('test-author');
+      expect(child.metadata['version']).toBe('1.0');
+      expect(child['data.title']).toBe('Test Runbook');
+      expect(child['data.category']).toBe('test');
     });
   });
 
@@ -104,9 +104,9 @@ describe('Simple Chunking Integration Test', () => {
 
     // Should have only one item
     expect(chunkedItems).toHaveLength(1);
-    expect(chunkedItems[0].data.is_chunk).toBe(false);
-    expect(chunkedItems[0].data.total_chunks).toBe(1);
-    expect(chunkedItems[0].data.chunk_index).toBe(0);
+    expect(chunkedItems[0].data['is_chunk']).toBe(false);
+    expect(chunkedItems[0].data['total_chunks']).toBe(1);
+    expect(chunkedItems[0].data['chunk_index']).toBe(0);
     expect(chunkedItems[0].data.original_length).toBe(smallContent.length);
     expect(chunkedItems[0].data.chunk_overlap).toBe(0);
   });

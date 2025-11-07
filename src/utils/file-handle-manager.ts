@@ -17,7 +17,7 @@
  * @since 2025
  */
 
-import { promises as fs, constants } from 'node:fs';
+import { promises as fs, constants } from 'fs';
 type BufferEncoding =
   | 'ascii'
   | 'utf8'
@@ -30,10 +30,10 @@ type BufferEncoding =
   | 'latin1'
   | 'binary'
   | 'hex';
-import { resolve } from 'node:path';
+import { resolve } from 'path';
 import { EventEmitter } from 'node:events';
 import { setImmediate } from 'node:timers';
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 import { generateCorrelationId } from './correlation-id.js';
 
 /**

@@ -191,19 +191,19 @@ node bench/run-benchmarks.js stress -c 1000 -n 10000 -r 30000
 
 ### Memory Store SLAs
 
-| Operation | p95 Target | p99 Target | Throughput Target | Error Rate Target |
-|-----------|------------|------------|-------------------|-------------------|
-| Single Item | <200ms | <500ms | >100 ops/s | <1% |
-| Batch Store | <800ms | <2000ms | >80 ops/s | <2% |
-| Concurrent | <500ms | <1000ms | >70 ops/s | <3% |
+| Operation   | p95 Target | p99 Target | Throughput Target | Error Rate Target |
+| ----------- | ---------- | ---------- | ----------------- | ----------------- |
+| Single Item | <200ms     | <500ms     | >100 ops/s        | <1%               |
+| Batch Store | <800ms     | <2000ms    | >80 ops/s         | <2%               |
+| Concurrent  | <500ms     | <1000ms    | >70 ops/s         | <3%               |
 
 ### Memory Find SLAs
 
-| Operation | p95 Target | p99 Target | Throughput Target | Error Rate Target |
-|-----------|------------|------------|-------------------|-------------------|
-| Simple Search | <400ms | <1000ms | >200 ops/s | <1% |
-| Complex Search | <1000ms | <2000ms | >80 ops/s | <2% |
-| Graph Expansion | <2000ms | <5000ms | >40 ops/s | <2% |
+| Operation       | p95 Target | p99 Target | Throughput Target | Error Rate Target |
+| --------------- | ---------- | ---------- | ----------------- | ----------------- |
+| Simple Search   | <400ms     | <1000ms    | >200 ops/s        | <1%               |
+| Complex Search  | <1000ms    | <2000ms    | >80 ops/s         | <2%               |
+| Graph Expansion | <2000ms    | <5000ms    | >40 ops/s         | <2%               |
 
 ## Results and Reports
 
@@ -289,14 +289,14 @@ Baseline performance metrics are stored in `fixtures/bench/baseline-performance.
 
 ```typescript
 interface BenchmarkConfig {
-  name: string;                    // Benchmark suite name
-  version: string;                 // Version identifier
-  outputDir: string;               // Output directory
-  warmupIterations: number;        // Warmup iterations
-  benchmarkIterations: number;     // Benchmark iterations
-  scenarioDelay?: number;          // Delay between scenarios
+  name: string; // Benchmark suite name
+  version: string; // Version identifier
+  outputDir: string; // Output directory
+  warmupIterations: number; // Warmup iterations
+  benchmarkIterations: number; // Benchmark iterations
+  scenarioDelay?: number; // Delay between scenarios
   enableMemoryProfiling?: boolean; // Memory profiling
-  maxDuration?: number;            // Maximum test duration
+  maxDuration?: number; // Maximum test duration
 }
 ```
 
@@ -304,11 +304,11 @@ interface BenchmarkConfig {
 
 ```typescript
 interface LoadTestConfig {
-  concurrency: number;             // Concurrent operations
-  operations: number;              // Total operations
-  operationDelay?: number;         // Delay between operations
-  rampUpTime?: number;             // Ramp-up time (ms)
-  dataConfig?: TestDataConfig;     // Test data configuration
+  concurrency: number; // Concurrent operations
+  operations: number; // Total operations
+  operationDelay?: number; // Delay between operations
+  rampUpTime?: number; // Ramp-up time (ms)
+  dataConfig?: TestDataConfig; // Test data configuration
   parameters?: Record<string, any>; // Custom parameters
 }
 ```
@@ -318,6 +318,7 @@ interface LoadTestConfig {
 ### Running Benchmarks
 
 1. **System Preparation**
+
    ```bash
    # Close unnecessary applications
    # Ensure sufficient system resources
@@ -325,6 +326,7 @@ interface LoadTestConfig {
    ```
 
 2. **Baseline Establishment**
+
    ```bash
    # Establish baseline for your system
    npm run bench:baseline
@@ -344,6 +346,7 @@ interface LoadTestConfig {
 ### Performance Analysis
 
 1. **Compare Against Baseline**
+
    ```bash
    # Compare current results with baseline
    node bench/run-benchmarks.js compare baseline.json current.json

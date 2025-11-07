@@ -1,0 +1,295 @@
+discovery:
+  expect_tools: ['memory_store', 'memory_find', 'system_status']
+  validate_schemas: true
+
+tests:
+  # Basic MCP Protocol Tests
+  - name: 'Initialize MCP'
+    calls:
+      - tool: 'initialize'
+        params:
+          protocolVersion: '2024-11-05'
+          capabilities: {}
+          clientInfo:
+            name: 'mcp-tester'
+            version: '1.0.0'
+    expect:
+      success: true
+      result:
+        contains: 'cortex'
+
+  - name: 'List Tools'
+    calls:
+      - tool: 'tools/list'
+        params: {}
+    expect:
+      success: true
+      result:
+        tools:
+          count: 3 # Should have exactly 3 tools
+
+  # Memory Store Tool Tests
+  - name: 'Memory Store - Basic Validation'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            - kind: 'entity'
+              data:
+                title: 'Test Entity'
+                description: 'Test entity for MCP validation'
+              scope:
+                project: 'mcp-test'
+    expect:
+      success: true
+      result:
+        stored:
+          count: 1
+
+  - name: 'Memory Store - With Insights Enabled'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            - kind: 'decision'
+              data:
+                title: 'Test Decision'
+                rationale: 'Testing decision with insights'
+                alternatives: ['Option A', 'Option B']
+              scope:
+                project: 'mcp-test'
+          enable_insights: true
+          enable_contradiction_detection: true
+    expect:
+      success: true
+      result:
+        insights:
+          exists: true
+
+  # Memory Find Tool Tests
+  - name: 'Memory Find - Basic Search'
+    calls:
+      - tool: 'memory_find'
+        params:
+          query: 'Test Entity'
+          limit: 10
+          mode: 'auto'
+    expect:
+      success: true
+      result:
+        items:
+          type: array
+        total:
+          type: number
+          min: 0
+
+  - name: 'Memory Find - With Types Filter'
+    calls:
+      - tool: 'memory_find'
+        params:
+          query: 'decision'
+          types: ['decision']
+          limit: 5
+    expect:
+      success: true
+      result:
+        strategy:
+          contains: 'semantic'
+
+  # System Status Tool Tests
+  - name: 'System Status - Health Check'
+    calls:
+      - tool: 'system_status'
+        params:
+          operation: 'health'
+    expect:
+      success: true
+      result:
+        capabilities:
+          exists: true
+
+  - name: 'System Status - Database Stats'
+    calls:
+      - tool: 'system_status'
+        params:
+          operation: 'stats'
+    expect:
+      success: true
+      result:
+        backend:
+          exists: true
+
+  # Advanced Feature Tests
+  - name: 'Memory Store - Batch with Multiple Knowledge Types'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            - kind: 'entity'
+              data:
+                title: 'User Authentication Service'
+                description: 'Service for handling user authentication'
+              scope:
+                project: 'mcp-advanced-test'
+            - kind: 'decision'
+              data:
+                title: 'Use OAuth 2.0'
+                rationale: 'Industry standard authentication protocol'
+                alternatives: ['Basic Auth', 'JWT']
+              scope:
+                project: 'mcp-advanced-test'
+            - kind: 'todo'
+              data:
+                title: 'Implement OAuth 2.0 flow'
+                status: 'pending'
+                priority: 'high'
+              scope:
+                project: 'mcp-advanced-test'
+    expect:
+      success: true
+      result:
+        stored:
+          count: 3
+        summary:
+          total: 3
+          stored: 3
+
+  # Performance Tests
+  - name: 'Memory Store - Performance Test (Multiple Items)'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            # Generate 10 test items
+            - kind: 'observation'
+              data:
+                title: 'Performance Test Observation 1'
+                content: 'Test observation for performance validation'
+              scope:
+                project: 'mcp-perf-test'
+            - kind: 'observation'
+              data:
+                title: 'Performance Test Observation 2'
+                content: 'Another test observation for performance validation'
+              scope:
+                project: 'mcp-perf-test'
+            - kind: 'entity'
+              data:
+                title: 'Performance Entity'
+                description: 'Entity for performance testing'
+              scope:
+                project: 'mcp-perf-test'
+    expect:
+      success: true
+      result:
+        stored:
+          count: 3
+        audit_metadata:
+          exists: true
+
+  # Error Handling Tests
+  - name: 'Memory Store - Invalid Input Handling'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items: [] # Empty array should be handled gracefully
+    expect:
+      success: false
+      error:
+        contains: 'items'
+
+  - name: 'Memory Find - Empty Query Handling'
+    calls:
+      - tool: 'memory_find'
+        params:
+          query: ''
+    expect:
+      success: false
+      error:
+        contains: 'query'
+
+  # AI Features Tests (Z.AI Integration)
+  - name: 'Memory Store - AI Insights Generation'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            - kind: 'decision'
+              data:
+                title: 'Database Migration Strategy'
+                rationale: 'Need to migrate from MySQL to PostgreSQL for better performance'
+                alternatives: ['Stay with MySQL', 'Migrate to MongoDB']
+                impact: 'High - affects all data operations'
+                risks: ['Data loss during migration', 'Downtime']
+              scope:
+                project: 'mcp-ai-test'
+            - kind: 'risk'
+              data:
+                title: 'Database Migration Risk'
+                description: 'Risk of data corruption during migration process'
+                probability: 'Medium'
+                impact: 'High'
+                mitigation: 'Comprehensive backup and rollback plan'
+              scope:
+                project: 'mcp-ai-test'
+          enable_insights: true
+          insight_config:
+            strategies: ['pattern_recognition', 'knowledge_gap', 'relationship_analysis']
+            confidence_threshold: 0.7
+    expect:
+      success: true
+      result:
+        insights:
+          exists: true
+        autonomous_context:
+          exists: true
+
+  - name: 'Memory Store - Contradiction Detection'
+    calls:
+      - tool: 'memory_store'
+        params:
+          items:
+            - kind: 'decision'
+              data:
+                title: 'Use Microservices Architecture'
+                rationale: 'Microservices provide better scalability and maintainability'
+                decision_date: '2025-01-01'
+                status: 'approved'
+              scope:
+                project: 'mcp-contradiction-test'
+            - kind: 'decision'
+              data:
+                title: 'Use Monolithic Architecture'
+                rationale: 'Monolithic architecture is simpler to develop and deploy'
+                decision_date: '2025-01-15' # Later date but contradictory decision
+                status: 'approved'
+              scope:
+                project: 'mcp-contradiction-test'
+          enable_contradiction_detection: true
+          contradiction_config:
+            strategies: ['semantic', 'logical', 'temporal']
+            confidence_threshold: 0.8
+    expect:
+      success: true
+      result:
+        contradictions:
+          exists: true # Should detect contradictions between the two decisions
+
+  # Comprehensive Search Test
+  - name: 'Memory Find - Comprehensive Search with Expansion'
+    calls:
+      - tool: 'memory_find'
+        params:
+          query: 'architecture decision microservices'
+          limit: 20
+          mode: 'deep'
+          expand: 'relations'
+          scope:
+            project: 'mcp-contradiction-test'
+    expect:
+      success: true
+      result:
+        strategy_details:
+          exists: true
+        search_id:
+          exists: true

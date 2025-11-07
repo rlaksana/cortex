@@ -5,7 +5,7 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import { performanceCollector, PerformanceAlert } from './performance-collector.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface DashboardConfig {
   enableMetricsEndpoint?: boolean;

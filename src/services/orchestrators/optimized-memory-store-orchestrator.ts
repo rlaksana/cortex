@@ -9,7 +9,7 @@
  * - Circuit breaker for memory pressure scenarios
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { MemoryStoreOrchestrator } from './memory-store-orchestrator.js';
 import { memoryManager } from '../memory/memory-manager-service.js';
 import type { MemoryStoreResponse, KnowledgeItem } from '../../types/core-interfaces.js';

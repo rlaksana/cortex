@@ -20,16 +20,9 @@ export default defineConfig({
       'tests/contract/**/*.test.ts',
       'tests/validation/**/*.test.ts',
       'tests/**/*.spec.ts',
-      'src/**/__tests__/**/*.test.ts'
+      'src/**/__tests__/**/*.test.ts',
     ],
-    exclude: [
-      'tests/e2e/**',
-      'node_modules',
-      'dist/',
-      'coverage/',
-      '**/*.d.ts',
-      'scripts/**'
-    ],
+    exclude: ['tests/e2e/**', 'node_modules', 'dist/', 'coverage/', '**/*.d.ts', 'scripts/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov', 'clover', 'text-summary'],
@@ -53,7 +46,7 @@ export default defineConfig({
         '*.spec.ts',
         '*.config.ts',
         '*.config.js',
-        '**/*.d.ts'
+        '**/*.d.ts',
       ],
 
       // Dual threshold configuration
@@ -67,7 +60,8 @@ export default defineConfig({
         },
 
         // Critical path thresholds (≥90%) - Core MCP tools and services
-        'src/index.ts': { // Main MCP server
+        'src/index.ts': {
+          // Main MCP server
           branches: 90,
           functions: 90,
           lines: 90,

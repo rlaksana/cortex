@@ -71,7 +71,7 @@ describe('MCP Server Graceful Shutdown', () => {
     // Cleanup any test server
     if (testServer && !testServer.killed) {
       testServer.kill('SIGTERM');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
     // Cleanup shutdown manager
@@ -107,11 +107,11 @@ describe('MCP Server Graceful Shutdown', () => {
       // Simulate SIGINT
       process.emit('SIGINT', 'SIGINT');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'SIGINT',
-        error: undefined
+        error: undefined,
       });
     });
 
@@ -122,11 +122,11 @@ describe('MCP Server Graceful Shutdown', () => {
       // Simulate SIGTERM
       process.emit('SIGTERM', 'SIGTERM');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'SIGTERM',
-        error: undefined
+        error: undefined,
       });
     });
 
@@ -137,11 +137,11 @@ describe('MCP Server Graceful Shutdown', () => {
       // Simulate SIGUSR2
       process.emit('SIGUSR2', 'SIGUSR2');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'SIGUSR2',
-        error: undefined
+        error: undefined,
       });
     });
 
@@ -154,11 +154,11 @@ describe('MCP Server Graceful Shutdown', () => {
       // Simulate uncaught exception
       process.emit('uncaughtException', testError);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'uncaughtException',
-        error: testError
+        error: testError,
       });
     });
 
@@ -172,11 +172,11 @@ describe('MCP Server Graceful Shutdown', () => {
       // Simulate unhandled rejection
       process.emit('unhandledRejection', testError, testPromise);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'unhandledRejection',
-        error: testError
+        error: testError,
       });
     });
 
@@ -186,18 +186,18 @@ describe('MCP Server Graceful Shutdown', () => {
 
       // Send multiple signals
       process.emit('SIGINT', 'SIGINT');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       process.emit('SIGINT', 'SIGINT');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       process.emit('SIGTERM', 'SIGTERM');
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should only trigger shutdown once
       expect(shutdownSpy).toHaveBeenCalledTimes(1);
       expect(shutdownSpy).toHaveBeenCalledWith({
         reason: 'SIGINT',
-        error: undefined
+        error: undefined,
       });
     });
   });
@@ -219,7 +219,7 @@ describe('MCP Server Graceful Shutdown', () => {
           } catch (error) {
             logger.warn('Failed to close Qdrant client', { error });
           }
-        }
+        },
       });
 
       await shutdownManager.initiateShutdown('test-qdrant-cleanup');
@@ -238,9 +238,9 @@ describe('MCP Server Graceful Shutdown', () => {
         critical: false,
         operation: async () => {
           // Simulate HTTP client cleanup
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           httpClientsClosed();
-        }
+        },
       });
 
       await shutdownManager.initiateShutdown('test-http-cleanup');
@@ -259,7 +259,7 @@ describe('MCP Server Graceful Shutdown', () => {
         critical: false, // Non-critical, should not prevent shutdown
         operation: async () => {
           throw new Error('Connection close failed');
-        }
+        },
       });
 
       // Should still complete shutdown despite non-critical failure
@@ -269,7 +269,7 @@ describe('MCP Server Graceful Shutdown', () => {
         'Cleanup operation failed: failing-connection',
         expect.objectContaining({
           error: 'Connection close failed',
-          critical: false
+          critical: false,
         })
       );
     });
@@ -285,7 +285,7 @@ describe('MCP Server Graceful Shutdown', () => {
         critical: true, // Critical, should prevent shutdown
         operation: async () => {
           throw new Error('Critical connection close failed');
-        }
+        },
       });
 
       try {
@@ -293,7 +293,9 @@ describe('MCP Server Graceful Shutdown', () => {
       } catch (error) {
         criticalErrorThrown = true;
         expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Critical cleanup operation failed: critical-connection');
+        expect((error as Error).message).toContain(
+          'Critical cleanup operation failed: critical-connection'
+        );
       }
 
       expect(criticalErrorThrown).toBe(true);
@@ -324,7 +326,7 @@ describe('MCP Server Graceful Shutdown', () => {
         critical: true,
         operation: async () => {
           await Promise.all(operationsStarted);
-        }
+        },
       });
 
       const startTime = Date.now();
@@ -347,8 +349,8 @@ describe('MCP Server Graceful Shutdown', () => {
         timeout: 500, // Short timeout
         critical: false,
         operation: async () => {
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second operation
-        }
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 second operation
+        },
       });
 
       const startTime = Date.now();
@@ -375,25 +377,25 @@ describe('MCP Server Graceful Shutdown', () => {
           priority: 1,
           timeout: 1000,
           critical: false,
-          operation: async () => new Promise(resolve => setTimeout(resolve, 100))
+          operation: async () => new Promise((resolve) => setTimeout(resolve, 100)),
         },
         {
           name: 'operation-2',
           priority: 2,
           timeout: 1000,
           critical: false,
-          operation: async () => new Promise(resolve => setTimeout(resolve, 200))
+          operation: async () => new Promise((resolve) => setTimeout(resolve, 200)),
         },
         {
           name: 'operation-3',
           priority: 3,
           timeout: 1000,
           critical: false,
-          operation: async () => new Promise(resolve => setTimeout(resolve, 50))
-        }
+          operation: async () => new Promise((resolve) => setTimeout(resolve, 50)),
+        },
       ];
 
-      operations.forEach(op => shutdownManager.addCleanupOperation(op));
+      operations.forEach((op) => shutdownManager.addCleanupOperation(op));
 
       await shutdownManager.initiateShutdown('test-tracking');
 
@@ -402,9 +404,9 @@ describe('MCP Server Graceful Shutdown', () => {
           completed: {
             'operation-1': true,
             'operation-2': true,
-            'operation-3': true
+            'operation-3': true,
           },
-          errors: 0
+          errors: 0,
         })
       );
     });
@@ -448,10 +450,10 @@ describe('MCP Server Graceful Shutdown', () => {
         operation: async () => {
           // Simulate memory-intensive operation
           const data = new Array(10000).fill(0).map(() => Math.random());
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
           // Clear data
           data.length = 0;
-        }
+        },
       });
 
       await shutdownManager.initiateShutdown('test-memory-cleanup');
@@ -492,7 +494,7 @@ describe('MCP Server Graceful Shutdown', () => {
         forceTimeout: 15000,
         enableDrainMode: true,
         drainTimeout: 2000,
-        cleanupOperations: []
+        cleanupOperations: [],
       });
 
       expect(testManager.getRemainingShutdownTime()).toBe(0);
@@ -537,7 +539,7 @@ describe('MCP Server Graceful Shutdown', () => {
 
       expect(emergencySpy).toHaveBeenCalledWith({
         reason: 'test emergency',
-        code: 2
+        code: 2,
       });
     });
 
@@ -586,7 +588,7 @@ describe('MCP Server Graceful Shutdown', () => {
         forceTimeout: 8000,
         enableDrainMode: false,
         drainTimeout: 1000,
-        cleanupOperations: []
+        cleanupOperations: [],
       });
 
       const health = customManager.healthCheck();
@@ -601,7 +603,7 @@ describe('MCP Server Graceful Shutdown', () => {
         priority: 1,
         timeout: 1000,
         critical: false,
-        operation: async () => {}
+        operation: async () => {},
       };
 
       shutdownManager.addCleanupOperation(operation);
@@ -627,7 +629,7 @@ describe('MCP Server Graceful Shutdown', () => {
       try {
         serverProcess = spawn('node', [serverPath], {
           stdio: ['pipe', 'pipe', 'pipe'],
-          env: { ...process.env, NODE_ENV: 'test' }
+          env: { ...process.env, NODE_ENV: 'test' },
         });
 
         // Wait for server to start
@@ -651,7 +653,7 @@ describe('MCP Server Graceful Shutdown', () => {
 
   describe('Resource Leak Detection', () => {
     it('should detect open file handles after shutdown', async () => {
-      const initialHandles = process._getActiveHandles().length;
+      const initialHandles = process['_']getActiveHandles().length;
 
       // Create some file handles
       const fs = require('fs');
@@ -675,7 +677,7 @@ describe('MCP Server Graceful Shutdown', () => {
           } catch (error) {
             // Files may already be deleted
           }
-        }
+        },
       });
 
       await shutdownManager.initiateShutdown('test-file-handles');
@@ -685,14 +687,14 @@ describe('MCP Server Graceful Shutdown', () => {
         global.gc();
       }
 
-      const finalHandles = process._getActiveHandles().length;
+      const finalHandles = process['_']getActiveHandles().length;
 
       // Should not have leaked handles
       expect(finalHandles).toBeLessThanOrEqual(initialHandles + 1); // Allow some variance
     });
 
     it('should detect network socket leaks after shutdown', async () => {
-      const initialSockets = process._getActiveRequests().length;
+      const initialSockets = process['_']getActiveRequests().length;
 
       // Create some network requests
       const https = require('https');
@@ -710,7 +712,7 @@ describe('MCP Server Graceful Shutdown', () => {
             res.on('end', resolve);
           });
           req.end();
-        })
+        }),
       ];
 
       // Wait for requests to complete
@@ -718,7 +720,7 @@ describe('MCP Server Graceful Shutdown', () => {
 
       await shutdownManager.initiateShutdown('test-socket-cleanup');
 
-      const finalSockets = process._getActiveRequests().length;
+      const finalSockets = process['_']getActiveRequests().length;
 
       // Should not have leaked sockets
       expect(finalSockets).toBeLessThanOrEqual(initialSockets + 2); // Allow some variance

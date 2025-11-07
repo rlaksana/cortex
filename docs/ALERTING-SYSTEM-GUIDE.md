@@ -7,6 +7,7 @@ The MCP Cortex Alerting System is a comprehensive, production-ready alerting and
 ## Features
 
 ### 🔔 Alert Management
+
 - **Multi-channel alerting**: Email, Slack, PagerDuty, Microsoft Teams, SMS, Webhooks
 - **Advanced alert rules**: Flexible conditions with time-based evaluation
 - **Alert lifecycle**: Creation, acknowledgment, escalation, resolution
@@ -14,6 +15,7 @@ The MCP Cortex Alerting System is a comprehensive, production-ready alerting and
 - **Cooldown periods**: Prevent alert spam and notification fatigue
 
 ### 👥 On-Call Management
+
 - **Scheduling and rotations**: Daily, weekly, monthly rotations
 - **Escalation policies**: Multi-level escalation with configurable delays
 - **Handoff workflows**: Smooth transition between on-call engineers
@@ -21,6 +23,7 @@ The MCP Cortex Alerting System is a comprehensive, production-ready alerting and
 - **Vacation and override management**: Temporary coverage and scheduling changes
 
 ### 📖 Runbook Integration
+
 - **Automated runbooks**: Step-by-step incident response procedures
 - **Template system**: Reusable runbook templates for common scenarios
 - **Execution tracking**: Monitor runbook progress and results
@@ -28,6 +31,7 @@ The MCP Cortex Alerting System is a comprehensive, production-ready alerting and
 - **Verification steps**: Ensure incident resolution before closing
 
 ### 🧪 Testing and Validation
+
 - **Fault injection**: Simulate real-world failure scenarios
 - **Comprehensive test suites**: Unit, integration, and end-to-end testing
 - **Load testing**: Validate system performance under stress
@@ -35,6 +39,7 @@ The MCP Cortex Alerting System is a comprehensive, production-ready alerting and
 - **Validation reporting**: Detailed test results and recommendations
 
 ### 📊 Metrics and Dashboards
+
 - **Real-time metrics**: Alert volumes, response times, system health
 - **Historical analysis**: Trends, patterns, and performance data
 - **Predictive analytics**: Forecast alert volumes and system load
@@ -439,9 +444,7 @@ console.log(`- Success rate: ${testResults.overall.successRate}%`);
 
 ```typescript
 // Test specific fault scenario
-const faultTestResult = await alertSystemIntegrationService.runFaultScenarioTest(
-  'database-down'
-);
+const faultTestResult = await alertSystemIntegrationService.runFaultScenarioTest('database-down');
 
 console.log('Fault Test Results:');
 console.log(`- Duration: ${faultTestResult.duration}ms`);
@@ -481,15 +484,11 @@ alertMetricsService.defineCustomMetric({
 });
 
 // Record custom metric values
-alertMetricsService.recordCustomMetric(
-  'alert_processing_time',
-  150,
-  {
-    severity: 'critical',
-    rule: 'database-down',
-    component: 'database',
-  }
-);
+alertMetricsService.recordCustomMetric('alert_processing_time', 150, {
+  severity: 'critical',
+  rule: 'database-down',
+  component: 'database',
+});
 ```
 
 ## Configuration

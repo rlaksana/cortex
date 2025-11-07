@@ -25,15 +25,15 @@ class ESLintAIAgent {
       dryRun: options.dryRun || false,
       maxIssuesPerBatch: options.maxIssuesPerBatch || 20,
       outputDir: options.outputDir || path.join(process.cwd(), 'artifacts', 'eslint'),
-      ...options
+      ...options,
     };
 
     this.eslint = new ESLint({
       fix: true,
       overrideConfig: {
         extends: ['@typescript-eslint/recommended'],
-        rules: this.options.ruleOverrides || {}
-      }
+        rules: this.options.ruleOverrides || {},
+      },
     });
 
     this.results = {
@@ -41,7 +41,7 @@ class ESLintAIAgent {
       fixedIssues: 0,
       processedFiles: 0,
       issueBreakdown: {},
-      startTime: Date.now()
+      startTime: Date.now(),
     };
 
     // Ensure output directory exists
@@ -60,23 +60,30 @@ class ESLintAIAgent {
       const results = await this.eslint.lintFiles(filePatterns);
 
       // Filter out files with no issues
-      const filesWithIssues = results.filter(result =>
-        result.errorCount > 0 || result.warningCount > 0
+      const filesWithIssues = results.filter(
+        (result) => result.errorCount > 0 || result.warningCount > 0
       );
 
       console.log(chalk.green(`✅ Found issues in ${filesWithIssues.length} files`));
 
       // Save detailed results to JSON
       const outputPath = path.join(this.options.outputDir, `eslint-results-${Date.now()}.json`);
-      fs.writeFileSync(outputPath, JSON.stringify({
-        metadata: {
-          timestamp: new Date().toISOString(),
-          totalFiles: results.length,
-          filesWithIssues: filesWithIssues.length,
-          options: this.options
-        },
-        results: filesWithIssues
-      }, null, 2));
+      fs.writeFileSync(
+        outputPath,
+        JSON.stringify(
+          {
+            metadata: {
+              timestamp: new Date().toISOString(),
+              totalFiles: results.length,
+              filesWithIssues: filesWithIssues.length,
+              options: this.options,
+            },
+            results: filesWithIssues,
+          },
+          null,
+          2
+        )
+      );
 
       return filesWithIssues;
     } catch (error) {
@@ -93,17 +100,17 @@ class ESLintAIAgent {
     const fileBreakdown = {};
     let totalIssues = 0;
 
-    results.forEach(fileResult => {
+    results.forEach((fileResult) => {
       const filePath = fileResult.filePath;
       fileBreakdown[filePath] = {
         errorCount: fileResult.errorCount,
         warningCount: fileResult.warningCount,
         fixableErrorCount: fileResult.fixableErrorCount,
         fixableWarningCount: fileResult.fixableWarningCount,
-        messages: []
+        messages: [],
       };
 
-      fileResult.messages.forEach(message => {
+      fileResult.messages.forEach((message) => {
         const ruleId = message.ruleId || 'unknown';
 
         if (!ruleBreakdown[ruleId]) {
@@ -111,7 +118,7 @@ class ESLintAIAgent {
             count: 0,
             fixable: 0,
             severity: {},
-            examples: []
+            examples: [],
           };
         }
 
@@ -130,7 +137,7 @@ class ESLintAIAgent {
             line: message.line,
             column: message.column,
             message: message.message,
-            fixable: !!message.fix
+            fixable: !!message.fix,
           });
         }
 
@@ -140,7 +147,7 @@ class ESLintAIAgent {
           column: message.column,
           message: message.message,
           severity: message.severity,
-          fixable: !!message.fix
+          fixable: !!message.fix,
         });
 
         totalIssues++;
@@ -155,10 +162,10 @@ class ESLintAIAgent {
         totalIssues,
         totalFiles: results.length,
         filesWithIssues: Object.keys(fileBreakdown).length,
-        mostCommonRules: this.getTopRules(ruleBreakdown, 5)
+        mostCommonRules: this.getTopRules(ruleBreakdown, 5),
       },
       ruleBreakdown,
-      fileBreakdown
+      fileBreakdown,
     };
   }
 
@@ -167,13 +174,13 @@ class ESLintAIAgent {
    */
   getTopRules(ruleBreakdown, limit = 10) {
     return Object.entries(ruleBreakdown)
-      .sort(([,a], [,b]) => b.count - a.count)
+      .sort(([, a], [, b]) => b.count - a.count)
       .slice(0, limit)
       .map(([ruleId, data]) => ({
         ruleId,
         count: data.count,
         fixable: data.fixable,
-        fixablePercentage: Math.round((data.fixable / data.count) * 100)
+        fixablePercentage: Math.round((data.fixable / data.count) * 100),
       }));
   }
 
@@ -192,14 +199,14 @@ class ESLintAIAgent {
 
       // Collect all violations for this rule
       Object.entries(fileBreakdown).forEach(([filePath, fileData]) => {
-        fileData.messages.forEach(msg => {
+        fileData.messages.forEach((msg) => {
           if (msg.ruleId === ruleId) {
             violations.push({
               file: filePath,
               line: msg.line,
               column: msg.column,
               message: msg.message,
-              fixable: msg.fixable
+              fixable: msg.fixable,
             });
           }
         });
@@ -214,7 +221,7 @@ class ESLintAIAgent {
         count: rule.count,
         fixable: rule.fixable,
         fixStrategy,
-        violations: violations.slice(0, this.options.maxIssuesPerBatch)
+        violations: violations.slice(0, this.options.maxIssuesPerBatch),
       });
     }
 
@@ -230,34 +237,36 @@ class ESLintAIAgent {
         type: 'removal',
         description: 'Remove unused variables and imports',
         action: 'delete-unused',
-        confidence: 'high'
+        confidence: 'high',
       },
       '@typescript-eslint/no-explicit-any': {
         type: 'refactor',
         description: 'Replace any types with proper TypeScript types',
         action: 'type-replacement',
-        confidence: 'medium'
+        confidence: 'medium',
       },
       '@typescript-eslint/no-require-imports': {
         type: 'convert',
         description: 'Convert require() statements to ES6 imports',
         action: 'import-conversion',
-        confidence: 'high'
+        confidence: 'high',
       },
       '@typescript-eslint/no-wrapper-object-types': {
         type: 'refactor',
         description: 'Replace wrapper object types (String, Number) with primitives',
         action: 'type-primitive-conversion',
-        confidence: 'high'
-      }
+        confidence: 'high',
+      },
     };
 
-    return strategies[ruleId] || {
-      type: 'manual',
-      description: `Manual fix required for ${ruleId}`,
-      action: 'manual-review',
-      confidence: 'low'
-    };
+    return (
+      strategies[ruleId] || {
+        type: 'manual',
+        description: `Manual fix required for ${ruleId}`,
+        action: 'manual-review',
+        confidence: 'low',
+      }
+    );
   }
 
   /**
@@ -288,11 +297,13 @@ class ESLintAIAgent {
     for (const suggestion of suggestions) {
       if (suggestion.fixStrategy.confidence === 'high' && suggestion.fixable > 0) {
         try {
-          console.log(chalk.yellow(`Applying fixes for ${suggestion.ruleId} (${suggestion.fixable} issues)`));
+          console.log(
+            chalk.yellow(`Applying fixes for ${suggestion.ruleId} (${suggestion.fixable} issues)`)
+          );
 
           if (!this.options.dryRun) {
             // Apply fixes using ESLint's built-in fixer
-            const targetFiles = suggestion.violations.map(v => v.file);
+            const targetFiles = suggestion.violations.map((v) => v.file);
             await this.eslint.lintFiles(targetFiles);
 
             // Write fixes to files
@@ -301,10 +312,14 @@ class ESLintAIAgent {
           }
 
           fixedCount += suggestion.fixable;
-          console.log(chalk.green(`✅ Fixed ${suggestion.fixable} issues for ${suggestion.ruleId}`));
-
+          console.log(
+            chalk.green(`✅ Fixed ${suggestion.fixable} issues for ${suggestion.ruleId}`)
+          );
         } catch (error) {
-          console.error(chalk.red(`❌ Failed to apply fixes for ${suggestion.ruleId}:`), error.message);
+          console.error(
+            chalk.red(`❌ Failed to apply fixes for ${suggestion.ruleId}:`),
+            error.message
+          );
         }
       }
     }
@@ -328,22 +343,30 @@ class ESLintAIAgent {
 - **Processing Time**: ${Math.round((Date.now() - this.results.startTime) / 1000)}s
 
 ## Top Issue Categories
-${this.getTopRules(this.results.issueBreakdown, 10).map((rule, index) =>
-  `${index + 1}. **${rule.ruleId}**: ${rule.count} issues (${rule.fixable} fixable)`
-).join('\n')}
+${this.getTopRules(this.results.issueBreakdown, 10)
+  .map(
+    (rule, index) =>
+      `${index + 1}. **${rule.ruleId}**: ${rule.count} issues (${rule.fixable} fixable)`
+  )
+  .join('\n')}
 
 ## Fix Suggestions by Priority
-${suggestions.map((suggestion, index) => `
+${suggestions
+  .map(
+    (suggestion, index) => `
 ### ${index + 1}. ${suggestion.ruleId} (Priority: ${suggestion.priority})
 - **Count**: ${suggestion.count} issues
 - **Fixable**: ${suggestion.fixable} issues
 - **Strategy**: ${suggestion.fixStrategy.description}
 - **Confidence**: ${suggestion.fixStrategy.confidence}
 - **Sample Issues**:
-${suggestion.violations.slice(0, 3).map(v =>
-  `  - \`${v.file}:${v.line}:${v.column}\`: ${v.message}`
-).join('\n')}
-`).join('\n')}
+${suggestion.violations
+  .slice(0, 3)
+  .map((v) => `  - \`${v.file}:${v.line}:${v.column}\`: ${v.message}`)
+  .join('\n')}
+`
+  )
+  .join('\n')}
 
 ## Next Steps
 1. Review high-priority fixable issues
@@ -406,9 +429,8 @@ ${suggestion.violations.slice(0, 3).map(v =>
         fixed: fixedCount,
         remaining: parsedResults.summary.totalIssues - fixedCount,
         reportPath,
-        suggestions
+        suggestions,
       };
-
     } catch (error) {
       console.error(chalk.red('💥 ESLint AI Agent failed:'), error.message);
       throw error;
@@ -421,10 +443,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);
   const options = {
     dryRun: args.includes('--dry-run'),
-    maxIssuesPerBatch: 20
+    maxIssuesPerBatch: 20,
   };
 
-  const filePatterns = args.filter(arg => !arg.startsWith('--')) || ['.'];
+  const filePatterns = args.filter((arg) => !arg.startsWith('--')) || ['.'];
 
   const agent = new ESLintAIAgent(options);
   agent.execute(filePatterns).catch(console.error);

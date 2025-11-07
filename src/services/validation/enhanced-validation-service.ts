@@ -8,7 +8,7 @@
  * @version 2.0.0 - T20 Implementation
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   EnhancedValidationService,
   MCPValidationIntegration,

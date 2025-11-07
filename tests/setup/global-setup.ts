@@ -7,7 +7,7 @@
  */
 
 import { vi } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from 'crypto';
 
 // Global test configuration
 declare global {
@@ -34,12 +34,12 @@ export default async function setup(): Promise<GlobalTestContext> {
   const testStartTime = Date.now();
 
   // Set global environment
-  process.env.NODE_ENV = 'test';
-  process.env.CI = 'true';
-  process.env.TEST_RUN_ID = testRunId;
+  process.env['NODE_ENV'] = 'test';
+  process.env['CI'] = 'true';
+  process.env['TEST_RUN_ID'] = testRunId;
 
   // Mock external services by default
-  if (process.env.__MOCK_EXTERNAL_SERVICES__ === 'true') {
+  if (process.env['__MOCK_EXTERNAL_SERVICES__'] === 'true') {
     await setupExternalServiceMocks();
   }
 

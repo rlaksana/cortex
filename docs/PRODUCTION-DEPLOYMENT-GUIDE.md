@@ -30,6 +30,7 @@
 The Cortex Memory MCP Server is a production-ready AI knowledge management system that provides semantic search, memory storage, and intelligent deduplication through the Model Context Protocol (MCP). This guide covers comprehensive deployment procedures for production environments.
 
 ### Key System Characteristics
+
 - **Database Backend:** Qdrant vector database ONLY (no PostgreSQL dependencies)
 - **Architecture:** Microservices-ready with stateless application design
 - **Scalability:** Horizontal scaling supported with load balancing
@@ -38,6 +39,7 @@ The Cortex Memory MCP Server is a production-ready AI knowledge management syste
 - **High Availability:** Graceful shutdown and circuit breaker patterns
 
 ### Production Readiness Status
+
 - ✅ Core Infrastructure: 100% Complete
 - ✅ Security Features: Production Ready
 - ✅ Monitoring & Health Checks: Fully Implemented
@@ -352,24 +354,28 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 #### Computing Resources
 
 **Cortex MCP Application (Per Instance):**
+
 - **CPU:** 2 cores minimum, 4 cores recommended
 - **Memory:** 4GB minimum, 8GB recommended
 - **Storage:** 20GB SSD for application and logs
 - **Network:** 1Gbps connectivity
 
 **Qdrant Vector Database (Per Node):**
+
 - **CPU:** 4 cores minimum, 8 cores recommended
 - **Memory:** 8GB minimum, 16GB recommended
 - **Storage:** 100GB SSD minimum, scales with data volume
 - **Network:** 1Gbps connectivity
 
 **Supporting Services:**
+
 - **Redis Cache:** 2GB memory, 2 cores
 - **Monitoring Stack:** 4 cores, 8GB memory combined
 
 #### Network Requirements
 
 **Ports:**
+
 - **80/443:** Load balancer (HTTP/HTTPS)
 - **3000:** Cortex MCP application
 - **6333/6334:** Qdrant database (HTTP/gRPC)
@@ -377,6 +383,7 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 - **9090:** Metrics endpoint
 
 **Bandwidth:**
+
 - **Minimum:** 100 Mbps sustained
 - **Recommended:** 1 Gbps with burst capability
 
@@ -420,6 +427,7 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 #### Cloud Platform Recommendations
 
 **AWS Architecture:**
+
 - **Compute:** ECS Fargate or EKS with 3+ instances
 - **Database:** Qdrant on EC2 with Auto Scaling or managed service
 - **Load Balancer:** Application Load Balancer (ALB)
@@ -428,6 +436,7 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 - **Storage:** EBS gp3 volumes for database
 
 **Google Cloud Platform:**
+
 - **Compute:** Cloud Run or GKE with 3+ instances
 - **Database:** Qdrant on GCE with managed instance groups
 - **Load Balancer:** Cloud Load Balancing
@@ -435,6 +444,7 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 - **Monitoring:** Cloud Monitoring + Prometheus/Grafana
 
 **Azure:**
+
 - **Compute:** Azure Container Instances or AKS
 - **Database:** Qdrant on Azure VMs with availability sets
 - **Load Balancer:** Azure Load Balancer
@@ -446,12 +456,14 @@ QDRANT_COLLECTION_NAME=cortex-memory-production
 #### Qdrant Vector Database Storage
 
 **Per Million Vectors:**
+
 - **Base Storage:** ~2GB (1536 dimensions × 4 bytes × 1M)
 - **Overhead:** ~50% for indexes and metadata
 - **Total:** ~3GB per million vectors
 - **Recommended:** 5GB per million for growth
 
 **Storage Planning:**
+
 ```bash
 # Example calculation for 10 million vectors
 Base_Storage = 10M × 1536 × 4 bytes = ~61GB
@@ -463,12 +475,14 @@ Recommended_Provisioning = 91GB × 1.5 = ~137GB
 #### Application Storage
 
 **Log Storage:**
+
 - **Application Logs:** 1GB per month per instance
 - **Access Logs:** 500MB per month per instance
 - **Error Logs:** 100MB per month per instance
 - **Total:** ~1.6GB per month per instance
 
 **Backup Storage:**
+
 - **Database Snapshots:** 10% of database size daily
 - **Log Archives:** 50% of active logs
 - **Configuration Backups:** 100MB
@@ -820,6 +834,7 @@ echo "🚀 Ready for production deployment!"
 ## Pre-Flight Manual Checklist
 
 ### Security
+
 - [ ] All secrets configured and validated
 - [ ] SSL/TLS certificates valid (30+ days)
 - [ ] CORS restricted to specific domains
@@ -828,6 +843,7 @@ echo "🚀 Ready for production deployment!"
 - [ ] Firewall rules verified
 
 ### Performance
+
 - [ ] System resources meet minimum requirements
 - [ ] Database connectivity verified
 - [ ] API latency under 1 second
@@ -835,6 +851,7 @@ echo "🚀 Ready for production deployment!"
 - [ ] Caching layer operational
 
 ### Configuration
+
 - [ ] Environment variables validated
 - [ ] Production scope configured
 - [ ] Feature flags set appropriately
@@ -842,6 +859,7 @@ echo "🚀 Ready for production deployment!"
 - [ ] Monitoring endpoints accessible
 
 ### Dependencies
+
 - [ ] Qdrant cluster operational
 - [ ] Redis cache running (if used)
 - [ ] Monitoring stack deployed
@@ -856,9 +874,10 @@ echo "🚀 Ready for production deployment!"
 ### 🚀 Automated Deployment (Recommended)
 
 #### Prerequisites
+
 - Production environment access
 - Docker and Docker Compose installed
--kubectl configured (for Kubernetes)
+  -kubectl configured (for Kubernetes)
 - All secrets configured in secret manager
 
 #### Step 1: Build and Push Container Image
@@ -1234,12 +1253,12 @@ metadata:
   name: cortex-mcp-role
   namespace: cortex-mcp
 rules:
-  - apiGroups: [""]
-    resources: ["configmaps", "secrets"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list"]
+  - apiGroups: ['']
+    resources: ['configmaps', 'secrets']
+    verbs: ['get', 'list']
+  - apiGroups: ['']
+    resources: ['pods']
+    verbs: ['get', 'list']
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -1316,10 +1335,10 @@ services:
     networks:
       - cortex-network
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "100m"
-        max-file: "5"
+        max-size: '100m'
+        max-file: '5'
 
   nginx:
     image: nginx:alpine
@@ -2347,7 +2366,7 @@ main "$@"
 
 #### Automated Validation Report Generator
 
-```bash
+````bash
 #!/bin/bash
 # scripts/generate-validation-report.sh
 
@@ -2543,7 +2562,7 @@ else
   echo "🔧 Please review the report and address the issues."
   exit 1
 fi
-```
+````
 
 ---
 
@@ -2570,7 +2589,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - alertmanager:9093
+            - alertmanager:9093
 
 scrape_configs:
   # Cortex MCP Application Metrics
@@ -2647,9 +2666,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "High error rate detected in Cortex MCP"
-          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/high-error-rate"
+          summary: 'High error rate detected in Cortex MCP'
+          description: 'Error rate is {{ $value | humanizePercentage }} for the last 5 minutes'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/high-error-rate'
 
       # High Response Time Alert
       - alert: CortexHighResponseTime
@@ -2659,9 +2678,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "High response time detected in Cortex MCP"
-          description: "95th percentile response time is {{ $value }}s"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/high-response-time"
+          summary: 'High response time detected in Cortex MCP'
+          description: '95th percentile response time is {{ $value }}s'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/high-response-time'
 
       # Memory Usage Alert
       - alert: CortexHighMemoryUsage
@@ -2671,9 +2690,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "High memory usage on Cortex MCP"
-          description: "Memory usage is {{ $value | humanizePercentage }}"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/high-memory-usage"
+          summary: 'High memory usage on Cortex MCP'
+          description: 'Memory usage is {{ $value | humanizePercentage }}'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/high-memory-usage'
 
       # CPU Usage Alert
       - alert: CortexHighCPUUsage
@@ -2683,9 +2702,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "High CPU usage on Cortex MCP"
-          description: "CPU usage is {{ $value }}%"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/high-cpu-usage"
+          summary: 'High CPU usage on Cortex MCP'
+          description: 'CPU usage is {{ $value }}%'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/high-cpu-usage'
 
       # Pod Crash Looping Alert
       - alert: CortexPodCrashLooping
@@ -2695,9 +2714,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "Cortex MCP pod is crash looping"
-          description: "Pod {{ $labels.pod }} is restarting frequently"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/pod-crash-looping"
+          summary: 'Cortex MCP pod is crash looping'
+          description: 'Pod {{ $labels.pod }} is restarting frequently'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/pod-crash-looping'
 
       # Database Connection Issues
       - alert: CortexDatabaseConnectionIssues
@@ -2707,9 +2726,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "Database connection issues detected"
-          description: "{{ $value }} failed database connections in the last 2 minutes"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/database-connection-issues"
+          summary: 'Database connection issues detected'
+          description: '{{ $value }} failed database connections in the last 2 minutes'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/database-connection-issues'
 
       # OpenAI API Issues
       - alert: CortexOpenAI APIIssues
@@ -2719,9 +2738,9 @@ groups:
           severity: warning
           service: cortex-mcp
         annotations:
-          summary: "OpenAI API issues detected"
-          description: "OpenAI API failure rate is {{ $value | humanizePercentage }}"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/openai-api-issues"
+          summary: 'OpenAI API issues detected'
+          description: 'OpenAI API failure rate is {{ $value | humanizePercentage }}'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/openai-api-issues'
 
       # Disk Space Alert
       - alert: CortexLowDiskSpace
@@ -2731,9 +2750,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "Low disk space on Cortex MCP"
-          description: "Disk space is {{ $value }}% available"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/low-disk-space"
+          summary: 'Low disk space on Cortex MCP'
+          description: 'Disk space is {{ $value }}% available'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/low-disk-space'
 
       # Service Unavailable Alert
       - alert: CortexServiceUnavailable
@@ -2743,9 +2762,9 @@ groups:
           severity: critical
           service: cortex-mcp
         annotations:
-          summary: "Cortex MCP service is unavailable"
-          description: "Cortex MCP service has been down for more than 1 minute"
-          runbook_url: "https://docs.cortex-memory.com/runbooks/service-unavailable"
+          summary: 'Cortex MCP service is unavailable'
+          description: 'Cortex MCP service has been down for more than 1 minute'
+          runbook_url: 'https://docs.cortex-memory.com/runbooks/service-unavailable'
 
   - name: cortex-mcp-business-alerts
     rules:
@@ -2758,8 +2777,8 @@ groups:
           service: cortex-mcp
           type: business
         annotations:
-          summary: "Low memory storage operations"
-          description: "Memory storage operations rate is {{ $value }} ops/sec"
+          summary: 'Low memory storage operations'
+          description: 'Memory storage operations rate is {{ $value }} ops/sec'
 
       # High Memory Deduplication Rate
       - alert: CortexHighDeduplicationRate
@@ -2770,8 +2789,8 @@ groups:
           service: cortex-mcp
           type: business
         annotations:
-          summary: "High deduplication rate detected"
-          description: "Deduplication rate is {{ $value | humanizePercentage }}"
+          summary: 'High deduplication rate detected'
+          description: 'Deduplication rate is {{ $value | humanizePercentage }}'
 ```
 
 #### Grafana Dashboard Configuration
@@ -2787,7 +2806,7 @@ groups:
       {
         "title": "Request Rate",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
         "targets": [
           {
             "expr": "rate(http_requests_total[5m])",
@@ -2795,13 +2814,13 @@ groups:
             "refId": "A"
           }
         ],
-        "yAxes": [{"label": "Requests/sec"}],
+        "yAxes": [{ "label": "Requests/sec" }],
         "xAxes": [{}]
       },
       {
         "title": "Response Time",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
         "targets": [
           {
             "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
@@ -2819,13 +2838,13 @@ groups:
             "refId": "C"
           }
         ],
-        "yAxes": [{"label": "Response Time (s)"}],
+        "yAxes": [{ "label": "Response Time (s)" }],
         "xAxes": [{}]
       },
       {
         "title": "Error Rate",
         "type": "singlestat",
-        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 8},
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 },
         "targets": [
           {
             "expr": "rate(http_requests_total{status=~\"5..\"}[5m]) / rate(http_requests_total[5m]) * 100",
@@ -2833,17 +2852,17 @@ groups:
           }
         ],
         "valueMaps": [
-          {"value": "null", "text": "N/A"},
-          {"from": 0, "to": 1, "color": "green"},
-          {"from": 1, "to": 5, "color": "yellow"},
-          {"from": 5, "to": 100, "color": "red"}
+          { "value": "null", "text": "N/A" },
+          { "from": 0, "to": 1, "color": "green" },
+          { "from": 1, "to": 5, "color": "yellow" },
+          { "from": 5, "to": 100, "color": "red" }
         ],
         "thresholds": "1,5"
       },
       {
         "title": "Memory Operations",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 8},
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 },
         "targets": [
           {
             "expr": "rate(memory_store_operations_total[5m])",
@@ -2856,13 +2875,13 @@ groups:
             "refId": "B"
           }
         ],
-        "yAxes": [{"label": "Operations/sec"}],
+        "yAxes": [{ "label": "Operations/sec" }],
         "xAxes": [{}]
       },
       {
         "title": "Database Performance",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 8},
+        "gridPos": { "h": 8, "w": 12, "x": 18, "y": 8 },
         "targets": [
           {
             "expr": "qdrant_request_duration_seconds",
@@ -2875,13 +2894,13 @@ groups:
             "refId": "B"
           }
         ],
-        "yAxes": [{"label": "Time (s) / Rate"}],
+        "yAxes": [{ "label": "Time (s) / Rate" }],
         "xAxes": [{}]
       },
       {
         "title": "System Resources",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
         "targets": [
           {
             "expr": "rate(process_cpu_seconds_total[5m]) * 100",
@@ -2894,33 +2913,31 @@ groups:
             "refId": "B"
           }
         ],
-        "yAxes": [{"label": "CPU % / Memory MB"}],
+        "yAxes": [{ "label": "CPU % / Memory MB" }],
         "xAxes": [{}]
       },
       {
         "title": "Qdrant Collection Size",
         "type": "singlestat",
-        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 16},
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 16 },
         "targets": [
           {
             "expr": "qdrant_collection_vectors_count",
             "refId": "A"
           }
         ],
-        "valueMaps": [
-          {"value": "null", "text": "N/A"}
-        ],
+        "valueMaps": [{ "value": "null", "text": "N/A" }],
         "fieldConfig": {
           "defaults": {
             "unit": "short",
-            "thresholds": {"steps": [{"color": "green"}, {"color": "red"}]}
+            "thresholds": { "steps": [{ "color": "green" }, { "color": "red" }] }
           }
         }
       },
       {
         "title": "OpenAI API Usage",
         "type": "graph",
-        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 16},
+        "gridPos": { "h": 8, "w": 12, "x": 18, "y": 16 },
         "targets": [
           {
             "expr": "rate(openai_api_requests_total[5m])",
@@ -2933,11 +2950,11 @@ groups:
             "refId": "B"
           }
         ],
-        "yAxes": [{"label": "Rate"}],
+        "yAxes": [{ "label": "Rate" }],
         "xAxes": [{}]
       }
     ],
-    "time": {"from": "now-1h", "to": "now"},
+    "time": { "from": "now-1h", "to": "now" },
     "refresh": "30s"
   }
 }
@@ -3130,7 +3147,12 @@ export class CortexMetrics {
     this.httpRequestsTotal.inc({ method, route, status_code: statusCode });
   }
 
-  observeHttpRequestDuration(method: string, route: string, statusCode: string, duration: number): void {
+  observeHttpRequestDuration(
+    method: string,
+    route: string,
+    statusCode: string,
+    duration: number
+  ): void {
     this.httpRequestDuration.observe({ method, route, status_code: statusCode }, duration);
   }
 
@@ -3265,7 +3287,10 @@ export class StructuredLogger {
   }
 }
 
-export const structuredLogger = new StructuredLogger('cortex-mcp', process.env.NODE_ENV || 'development');
+export const structuredLogger = new StructuredLogger(
+  'cortex-mcp',
+  process.env.NODE_ENV || 'development'
+);
 ```
 
 ---

@@ -81,8 +81,8 @@ describe('ValidatorRegistry', () => {
       const mockIncidentValidator: BusinessValidator = {
         getType: () => 'incident',
         validate: async (item: KnowledgeItem) => ({
-          valid: item.data.severity === 'critical',
-          errors: item.data.severity !== 'critical' ? ['Incident must have critical severity'] : [],
+          valid: item['data.severity'] === 'critical',
+          errors: item['data.severity'] !== 'critical' ? ['Incident must have critical severity'] : [],
           warnings: [],
         }),
       };

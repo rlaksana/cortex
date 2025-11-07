@@ -1211,15 +1211,15 @@ describe('Service Type Contracts', () => {
         expect(() => new Date(decision.timestamp)).not.toThrow();
       });
 
-      if (securityContext.metadata.location) {
-        expect(securityContext.metadata.location).toBeTypeOf('object');
+      if (securityContext.metadata['location']) {
+        expect(securityContext.metadata['location']).toBeTypeOf('object');
       }
 
-      if (securityContext.metadata.device) {
+      if (securityContext.metadata['device']) {
         expect(['desktop', 'mobile', 'tablet', 'server', 'iot']).toContain(
-          securityContext.metadata.device.type
+          securityContext.metadata['device'].type
         );
-        expect(securityContext.metadata.device.trusted).toBeTypeOf('boolean');
+        expect(securityContext.metadata['device'].trusted).toBeTypeOf('boolean');
       }
     });
 

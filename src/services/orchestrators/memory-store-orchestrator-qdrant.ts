@@ -38,8 +38,8 @@
  * @since 2025
  */
 
-import { createHash } from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import { createHash } from 'crypto';
+import { logger } from '@/utils/logger.js';
 // import { violatesADRImmutability, violatesSpecWriteLock } from '../../schemas/knowledge-types.js';
 // import { ImmutabilityViolationError } from '../../utils/immutability.js';
 import { validationService } from '../validation/validation-service.js';
@@ -60,7 +60,7 @@ import { BaselineTelemetry } from '../telemetry/baseline-telemetry.js';
 // import { ChunkingService } from '../chunking/chunking-service.js'; // Will be used when store orchestrator is integrated
 import { LanguageEnhancementService } from '../language/language-enhancement-service.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { structuredLogger } from '../../monitoring/structured-logger.js';
+import { structuredLogger } from '@/utils/logger.js';
 import { createStoreObservability } from '../../utils/observability-helper.js';
 import { OperationType } from '../../monitoring/operation-types.js';
 import { generateCorrelationId } from '../../utils/correlation-id.js';

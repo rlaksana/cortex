@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cortex-test": {
+      "command": "node",
+      "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\test-mcp-entry.js"],
+      "env": {
+        "LOG_LEVEL": "info",
+        "NODE_ENV": "test"
+      }
+    }
+  }
+}

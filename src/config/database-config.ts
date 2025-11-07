@@ -16,7 +16,7 @@
  * @since 2025
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { environment } from './environment.js';
 import type { DatabaseConfig } from '../db/database-interface.js';
 

@@ -12,7 +12,10 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@vitest/runne
 import { QdrantAdapter } from '../../src/db/adapters/qdrant-adapter.js';
 import { QdrantGracefulDegradationManager } from '../../src/monitoring/graceful-degradation-manager.js';
 import { InMemoryFallbackStorage } from '../../src/db/adapters/in-memory-fallback-storage.js';
-import { QdrantDegradationDetector, DegradationLevel } from '../../src/monitoring/degradation-detector.js';
+import {
+  QdrantDegradationDetector,
+  DegradationLevel,
+} from '../../src/monitoring/degradation-detector.js';
 import { QdrantDegradationNotifier } from '../../src/monitoring/degradation-notifier.js';
 import { QdrantErrorBudgetTracker } from '../../src/monitoring/error-budget-tracker.js';
 import type { KnowledgeItem, SearchQuery } from '../../src/types/core-interfaces.js';
@@ -28,7 +31,10 @@ describe('Qdrant Graceful Degradation', () => {
       id: 'test-item-1',
       kind: 'entity',
       scope: { project: 'test-project' },
-      data: { title: 'Test Item 1', content: 'This is a test item for graceful degradation testing' },
+      data: {
+        title: 'Test Item 1',
+        content: 'This is a test item for graceful degradation testing',
+      },
       created_at: new Date().toISOString(),
     },
     {
@@ -48,9 +54,9 @@ describe('Qdrant Graceful Degradation', () => {
 
   beforeEach(async () => {
     // Set environment variables for testing
-    process.env.QDRANT_URL = 'http://localhost:6333';
-    process.env.QDRANT_GRACEFUL_DEGRADATION = 'true';
-    process.env.OPENAI_API_KEY = 'test-key';
+    process.env['QDRANT_URL'] = 'http://localhost:6333';
+    process.env['QDRANT_GRACEFUL_DEGRADATION'] = 'true';
+    process.env['OPENAI_API_KEY'] = 'test-key';
 
     // Create Qdrant adapter with test configuration
     qdrantAdapter = new QdrantAdapter({
@@ -73,7 +79,7 @@ describe('Qdrant Graceful Degradation', () => {
     degradationManager = new QdrantGracefulDegradationManager(qdrantAdapter, {
       failover: {
         enabled: true,
-        triggerLevel: DegradationLevel.WARNING, // Lower threshold for testing
+        triggerLevel: DegradationLevel['WARNING'], // Lower threshold for testing
         minDurationBeforeFailover: 1000, // 1 second for fast testing
         maxFailoverAttempts: 3,
         failoverCooldownMs: 5000,
@@ -118,9 +124,9 @@ describe('Qdrant Graceful Degradation', () => {
     }
 
     // Reset environment variables
-    delete process.env.QDRANT_URL;
-    delete process.env.QDRANT_GRACEFUL_DEGRADATION;
-    delete process.env.OPENAI_API_KEY;
+    delete process.env['QDRANT_URL'];
+    delete process.env['QDRANT_GRACEFUL_DEGRADATION'];
+    delete process.env['OPENAI_API_KEY'];
   });
 
   describe('In-Memory Fallback Storage', () => {
@@ -266,7 +272,7 @@ describe('Qdrant Graceful Degradation', () => {
         {
           autoFailover: {
             enabled: true,
-            triggerLevel: DegradationLevel.CRITICAL,
+            triggerLevel: DegradationLevel['CRITICAL'],
             minDurationBeforeFailover: 100,
             maxFailoverAttempts: 1,
             failoverCooldownMs: 1000,
@@ -281,7 +287,7 @@ describe('Qdrant Graceful Degradation', () => {
       detector.start();
 
       // Wait for auto-failover to trigger
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       expect(failoverSpy).toHaveBeenCalled();
 
@@ -295,7 +301,7 @@ describe('Qdrant Graceful Degradation', () => {
 
       const state = degradationManager.getCurrentState();
       expect(state).toBeDefined();
-      expect(state.currentLevel).toBe(DegradationLevel.HEALTHY);
+      expect(state.currentLevel).toBe(DegradationLevel['HEALTHY']);
       expect(state.isInFailover).toBe(false);
     });
 
@@ -364,7 +370,7 @@ describe('Qdrant Graceful Degradation', () => {
       const degradationEvent = {
         id: 'test-event',
         timestamp: new Date(),
-        level: DegradationLevel.DEGRADED,
+        level: DegradationLevel['DEGRADED'],
         trigger: 'test',
         description: 'Test degradation',
         metrics: {},
@@ -378,7 +384,7 @@ describe('Qdrant Graceful Degradation', () => {
       const userMessage = notifier.getUserFacingMessage();
       expect(userMessage).toBeDefined();
       expect(userMessage?.message).toContain('degraded');
-      expect(userMessage?.level).toBe(DegradationLevel.DEGRADED);
+      expect(userMessage?.level).toBe(DegradationLevel['DEGRADED']);
     });
   });
 
@@ -454,7 +460,7 @@ describe('Qdrant Graceful Degradation', () => {
       }
 
       // Wait for alert processing
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(alertSpy).toHaveBeenCalled();
 
@@ -639,7 +645,7 @@ describe('Qdrant Graceful Degradation', () => {
         scope: { project: 'performance-test' },
         data: {
           title: `Performance Test Item ${i}`,
-          content: `Content for performance test item ${i}`.repeat(10)
+          content: `Content for performance test item ${i}`.repeat(10),
         },
         created_at: new Date().toISOString(),
       }));
@@ -661,19 +667,21 @@ describe('Qdrant Graceful Degradation', () => {
 
       // Perform concurrent store operations
       const concurrentStores = Array.from({ length: 10 }, (_, i) =>
-        degradationManager.store([{
-          id: `concurrent-${i}`,
-          kind: 'entity',
-          scope: { project: 'concurrency-test' },
-          data: { title: `Concurrent Item ${i}` },
-          created_at: new Date().toISOString(),
-        }])
+        degradationManager.store([
+          {
+            id: `concurrent-${i}`,
+            kind: 'entity',
+            scope: { project: 'concurrency-test' },
+            data: { title: `Concurrent Item ${i}` },
+            created_at: new Date().toISOString(),
+          },
+        ])
       );
 
       const results = await Promise.all(concurrentStores);
 
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.success).toBe(true);
       });
 

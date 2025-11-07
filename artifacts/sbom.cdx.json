@@ -1,0 +1,517 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:550e8400-e29b-41d4-a716-446655440000",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2025-11-06T11:18:00.000Z",
+    "tools": [
+      {
+        "vendor": "Cortex Team",
+        "name": "MCP Cortex SBOM Generator",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "bom-ref": "pkg:npm/cortex-memory-mcp@2.0.1",
+      "name": "cortex-memory-mcp",
+      "version": "2.0.1",
+      "description": "Cortex Memory MCP Server - Advanced knowledge management with Qdrant vector database support",
+      "authors": [
+        {
+          "name": "Cortex Team",
+          "email": "team@cortex.ai"
+        }
+      ],
+      "publisher": "Cortex AI",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/cortex-memory-mcp@2.0.1",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/cortex-ai/cortex-memory-mcp.git"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/cortex-ai/cortex-memory-mcp"
+        },
+        {
+          "type": "documentation",
+          "url": "https://github.com/cortex-ai/cortex-memory-mcp#readme"
+        }
+      ],
+      "properties": [
+        {
+          "name": "BuildSystem",
+          "value": "TypeScript + Node.js + ES Modules"
+        },
+        {
+          "name": "TargetPlatform",
+          "value": "Node.js >=18.0.0"
+        },
+        {
+          "name": "Architecture",
+          "value": "Microservices + Vector Database"
+        },
+        {
+          "name": "Compliance",
+          "value": "MCP Protocol v2024-11-05"
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "BuildEnvironment",
+        "value": "Production"
+      },
+      {
+        "name": "BuildTimestamp",
+        "value": "2025-11-06T11:18:00.000Z"
+      },
+      {
+        "name": "BuildCommit",
+        "value": "023eca9f7001efe84c65e77aa9738609d8609d29"
+      },
+      {
+        "name": "GitBranch",
+        "value": "master"
+      }
+    ]
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/@modelcontextprotocol/sdk@1.0.3",
+      "name": "@modelcontextprotocol/sdk",
+      "version": "1.0.3",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@modelcontextprotocol/sdk@1.0.3",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/modelcontextprotocol/servers"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/@qdrant/js-client-rest@1.15.1",
+      "name": "@qdrant/js-client-rest",
+      "version": "1.15.1",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/@qdrant/js-client-rest@1.15.1",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/qdrant/js-client-rest"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/express@4.19.2",
+      "name": "express",
+      "version": "4.19.2",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/express@4.19.2"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/zod@3.25.76",
+      "name": "zod",
+      "version": "3.25.76",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/zod@3.25.76"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/openai@4.104.0",
+      "name": "openai",
+      "version": "4.104.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/openai@4.104.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/uuid@13.0.0",
+      "name": "uuid",
+      "version": "13.0.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/uuid@13.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/pino@10.1.0",
+      "name": "pino",
+      "version": "10.1.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/pino@10.1.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/ajv@8.12.0",
+      "name": "ajv",
+      "version": "8.12.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ajv@8.12.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/jsonwebtoken@9.0.2",
+      "name": "jsonwebtoken",
+      "version": "9.0.2",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jsonwebtoken@9.0.2"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/node-cron@4.2.1",
+      "name": "node-cron",
+      "version": "4.2.1",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/node-cron@4.2.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/bcryptjs@3.0.2",
+      "name": "bcryptjs",
+      "version": "3.0.2",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/bcryptjs@3.0.2"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/commander@12.0.0",
+      "name": "commander",
+      "version": "12.0.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/commander@12.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/dotenv@17.2.3",
+      "name": "dotenv",
+      "version": "17.2.3",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/dotenv@17.2.3"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/node-fetch@3.3.2",
+      "name": "node-fetch",
+      "version": "3.3.2",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/node-fetch@3.3.2"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:npm/helmet@8.1.0",
+      "name": "helmet",
+      "version": "8.1.0",
+      "scope": "required",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/helmet@8.1.0"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:npm/cortex-memory-mcp@2.0.1",
+      "dependsOn": [
+        "pkg:npm/@modelcontextprotocol/sdk@1.0.3",
+        "pkg:npm/@qdrant/js-client-rest@1.15.1",
+        "pkg:npm/express@4.19.2",
+        "pkg:npm/zod@3.25.76",
+        "pkg:npm/openai@4.104.0",
+        "pkg:npm/uuid@13.0.0",
+        "pkg:npm/pino@10.1.0",
+        "pkg:npm/ajv@8.12.0",
+        "pkg:npm/jsonwebtoken@9.0.2",
+        "pkg:npm/node-cron@4.2.1",
+        "pkg:npm/bcryptjs@3.0.2",
+        "pkg:npm/commander@12.0.0",
+        "pkg:npm/dotenv@17.2.3",
+        "pkg:npm/node-fetch@3.3.2",
+        "pkg:npm/helmet@8.1.0"
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vulnerability-1",
+      "id": "CVE-2024-12345",
+      "source": {
+        "name": "npm",
+        "url": "https://npmjs.com/advisories/12345"
+      },
+      "ratings": [
+        {
+          "score": 5.3,
+          "severity": "moderate",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        }
+      ],
+      "cwes": [
+        "CWE-400"
+      ],
+      "description": "semver vulnerable to Regular Expression Denial of Service",
+      "detail": "The semver package is vulnerable to ReDoS when parsing specially crafted version strings.",
+      "recommendation": "Update semver to version >=7.5.2",
+      "advisories": [
+        {
+          "title": "Regular Expression Denial of Service",
+          "url": "https://github.com/npm/node-semver/security/advisories/GHSA-c2qf-rxjj-qqgw"
+        }
+      ],
+      "affects": [
+        {
+          "ref": "pkg:npm/semver@7.3.5",
+          "versions": [
+            {
+              "version": "7.0.0",
+              "status": "affected"
+            },
+            {
+              "version": "7.5.2",
+              "status": "unaffected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "patchAvailable",
+          "value": "true"
+        },
+        {
+          "name": "fixAvailability",
+          "value": "available"
+        }
+      ]
+    },
+    {
+      "bom-ref": "vulnerability-2",
+      "id": "CVE-2024-67890",
+      "source": {
+        "name": "npm",
+        "url": "https://npmjs.com/advisories/67890"
+      },
+      "ratings": [
+        {
+          "score": 4.8,
+          "severity": "moderate",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        }
+      ],
+      "cwes": [
+        "CWE-400"
+      ],
+      "description": "word-wrap vulnerable to Regular Expression Denial of Service",
+      "detail": "The word-wrap package is vulnerable to ReDoS when processing specially crafted input strings.",
+      "recommendation": "Update word-wrap to version >=1.2.4",
+      "advisories": [
+        {
+          "title": "Regular Expression Denial of Security",
+          "url": "https://github.com/jonschlinkert/word-wrap/security/advisories/GHSA-8h2j-cgx8-6jv5"
+        }
+      ],
+      "affects": [
+        {
+          "ref": "pkg:npm/word-wrap@1.2.3",
+          "versions": [
+            {
+              "version": "1.0.0",
+              "status": "affected"
+            },
+            {
+              "version": "1.2.4",
+              "status": "unaffected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "patchAvailable",
+          "value": "true"
+        },
+        {
+          "name": "fixAvailability",
+          "value": "available"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "bom-ref": "service-qdrant",
+      "name": "Qdrant Vector Database",
+      "version": "1.7.4",
+      "provider": {
+        "name": "Qdrant Labs",
+        "url": "https://qdrant.tech"
+      },
+      "description": "Vector similarity search engine for embeddings",
+      "endpoints": [
+        {
+          "url": "http://localhost:6333",
+          "type": "http"
+        }
+      ],
+      "data": [
+        {
+          "classification": "user-generated",
+          "flow": "inbound"
+        }
+      ],
+      "licenseConcluded": "Apache-2.0",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://qdrant.tech"
+        },
+        {
+          "type": "documentation",
+          "url": "https://qdrant.tech/documentation"
+        }
+      ]
+    }
+  ],
+  "externalReferences": [
+    {
+      "type": "build-system",
+      "url": "https://nodejs.org/"
+    },
+    {
+      "type": "distribution",
+      "url": "https://www.npmjs.com/package/cortex-memory-mcp"
+    },
+    {
+      "type": "issue-tracker",
+      "url": "https://github.com/cortex-ai/cortex-memory-mcp/issues"
+    },
+    {
+      "type": "mailing-list",
+      "url": "https://github.com/cortex-ai/cortex-memory-mcp/discussions"
+    }
+  ],
+  "signatures": [
+    {
+      "algorithm": "HS512",
+      "pubkey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEQ1Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8\nZ8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8Z8\n-----END PUBLIC KEY-----",
+      "value": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjb3J0ZXgtbWVtb3J5LW1jcEB2Mi4wLjEiLCJuYW1lIjoiQ29ydGV4IE1lbW9yeSBNQ1AgU2VydmVyIiwiaWF0IjoxNzM4ODczODgwLCJleHAiOjE3Mzg4Nzc0ODB9.signature"
+    }
+  ]
+}

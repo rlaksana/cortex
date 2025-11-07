@@ -17,7 +17,11 @@ import { SearchStrategyManager } from '../../src/services/search/search-strategy
 import { QdrantAdapter } from '../../src/db/adapters/qdrant-adapter.js';
 import { MemoryStoreOrchestratorQdrant } from '../../src/services/orchestrators/memory-store-orchestrator-qdrant.js';
 import { MemoryFindOrchestratorQdrant } from '../../src/services/orchestrators/memory-find-orchestrator-qdrant.js';
-import { searchErrorHandler, ErrorCategory, ErrorSeverity } from '../../src/services/search/search-error-handler.js';
+import {
+  searchErrorHandler,
+  ErrorCategory,
+  ErrorSeverity,
+} from '../../src/services/search/search-error-handler.js';
 import type { SearchQuery, SearchResult, KnowledgeItem } from '../../src/types/core-interfaces.js';
 
 // Mock logger to avoid noise in tests
@@ -53,10 +57,7 @@ class ChaosEngine {
     this.callCounters.delete(operation);
   }
 
-  async executeWithChaos<T>(
-    operation: string,
-    normalOperation: () => Promise<T>
-  ): Promise<T> {
+  async executeWithChaos<T>(operation: string, normalOperation: () => Promise<T>): Promise<T> {
     const config = this.activeChaos.get(operation);
     if (!config) {
       return normalOperation();
@@ -71,7 +72,7 @@ class ChaosEngine {
     if (shouldFail) {
       // Simulate latency before failure
       if (config.latencyMs > 0) {
-        await new Promise(resolve => setTimeout(resolve, config.latencyMs));
+        await new Promise((resolve) => setTimeout(resolve, config.latencyMs));
       }
 
       // Throw appropriate error based on error type
@@ -97,14 +98,15 @@ class ChaosEngine {
 
     // Execute normal operation with potential latency
     if (config.latencyMs > 0 && Math.random() < 0.5) {
-      await new Promise(resolve => setTimeout(resolve, config.latencyMs * 0.5));
+      await new Promise((resolve) => setTimeout(resolve, config.latencyMs * 0.5));
     }
 
     return normalOperation();
   }
 
   getChaosStats(): Record<string, { calls: number; active: boolean; config: ChaosConfig | null }> {
-    const stats: Record<string, { calls: number; active: boolean; config: ChaosConfig | null }> = {};
+    const stats: Record<string, { calls: number; active: boolean; config: ChaosConfig | null }> =
+      {};
 
     for (const [operation, config] of this.activeChaos.entries()) {
       stats[operation] = {
@@ -201,7 +203,7 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Some failures expected during blips
           }
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         // Verify resilience to network blips
@@ -209,8 +211,9 @@ describe('Chaos Testing Infrastructure', () => {
         expect(successRate).toBeGreaterThan(0.7); // At least 70% success rate
 
         // Verify successful results maintain quality
-        const successfulResults = results.filter(r => r.results && r.results.length > 0);
-        const avgConfidence = successfulResults.reduce((sum, r) => sum + r.confidence, 0) / successfulResults.length;
+        const successfulResults = results.filter((r) => r.results && r.results.length > 0);
+        const avgConfidence =
+          successfulResults.reduce((sum, r) => sum + r.confidence, 0) / successfulResults.length;
         expect(avgConfidence).toBeGreaterThan(0.6);
 
         // Verify circuit breaker behavior
@@ -249,9 +252,7 @@ describe('Chaos Testing Infrastructure', () => {
           }
 
           return chaosEngine.executeWithChaos('vector_search', async () => {
-            return [
-              { id: 'recovery-result', content: 'recovery test result', score: 0.85 },
-            ];
+            return [{ id: 'recovery-result', content: 'recovery test result', score: 0.85 }];
           });
         });
 
@@ -265,25 +266,27 @@ describe('Chaos Testing Infrastructure', () => {
         const startTime = Date.now();
 
         // Continue testing through outage and recovery
-        while (Date.now() - startTime < 3000) { // 3 second test
+        while (Date.now() - startTime < 3000) {
+          // 3 second test
           try {
             const result = await searchManager.executeSearch(query, 'auto');
             results.push({ ...result, timestamp: Date.now() });
           } catch (error) {
             // Expect failures during outage
           }
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
 
         // Should have recovered after outage
-        const recoveryTime = results.find(r => r.results && r.results.length > 0)?.timestamp;
+        const recoveryTime = results.find((r) => r.results && r.results.length > 0)?.timestamp;
         expect(recoveryTime).toBeDefined();
         expect(recoveryTime! - startTime).toBeGreaterThan(outageDuration);
 
         // Post-recovery results should maintain quality
-        const recoveredResults = results.filter(r => r.results && r.results.length > 0);
+        const recoveredResults = results.filter((r) => r.results && r.results.length > 0);
         if (recoveredResults.length > 0) {
-          const avgConfidence = recoveredResults.reduce((sum, r) => sum + r.confidence, 0) / recoveredResults.length;
+          const avgConfidence =
+            recoveredResults.reduce((sum, r) => sum + r.confidence, 0) / recoveredResults.length;
           expect(avgConfidence).toBeGreaterThan(0.7);
         }
 
@@ -333,19 +336,22 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Some failures expected
           }
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise((resolve) => setTimeout(resolve, 150));
         }
 
         // Should have mixed vector and fallback results
-        const vectorResults = results.filter(r => r.vectorUsed && !r.degraded);
-        const fallbackResults = results.filter(r => r.degraded && r.fallbackReason?.includes('fallback'));
+        const vectorResults = results.filter((r) => r.vectorUsed && !r.degraded);
+        const fallbackResults = results.filter(
+          (r) => r.degraded && r.fallbackReason?.includes('fallback')
+        );
 
         expect(results.length).toBeGreaterThan(totalRequests * 0.6); // At least 60% overall success
         expect(fallbackResults.length).toBeGreaterThan(0); // Should have fallback usage
 
         // All successful results should have reasonable quality
         const allSuccessful = [...vectorResults, ...fallbackResults];
-        const avgConfidence = allSuccessful.reduce((sum, r) => sum + r.confidence, 0) / allSuccessful.length;
+        const avgConfidence =
+          allSuccessful.reduce((sum, r) => sum + r.confidence, 0) / allSuccessful.length;
         expect(avgConfidence).toBeGreaterThan(0.5);
 
         // Verify fallback metrics
@@ -368,9 +374,7 @@ describe('Chaos Testing Infrastructure', () => {
 
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           return chaosEngine.executeWithChaos('vector_search', async () => {
-            return [
-              { id: 'latency-result', content: 'latency test result', score: 0.8 },
-            ];
+            return [{ id: 'latency-result', content: 'latency test result', score: 0.8 }];
           });
         });
 
@@ -395,7 +399,7 @@ describe('Chaos Testing Infrastructure', () => {
         }
 
         // Analyze latency handling
-        const executionTimes = results.map(r => r.executionTime);
+        const executionTimes = results.map((r) => r.executionTime);
         const avgExecutionTime = executionTimes.reduce((a, b) => a + b, 0) / executionTimes.length;
         const maxExecutionTime = Math.max(...executionTimes);
 
@@ -409,7 +413,7 @@ describe('Chaos Testing Infrastructure', () => {
         expect(maxExecutionTime).toBeLessThan(10000); // Less than 10 seconds max
 
         // Verify adaptive timeout handling
-        const timeoutHandledResults = results.filter(r => r.metadata?.timeoutExtended);
+        const timeoutHandledResults = results.filter((r) => r.metadata?.timeoutExtended);
         expect(timeoutHandledResults.length).toBeGreaterThan(0);
       });
 
@@ -426,15 +430,17 @@ describe('Chaos Testing Infrastructure', () => {
           return 'good';
         });
 
-        vi.spyOn(searchManager as any, 'getAdaptiveTimeout').mockImplementation((baseTimeout, networkCondition) => {
-          const multipliers = {
-            good: 1.0,
-            degraded: 1.5,
-            poor: 2.0,
-            recovery: 1.25,
-          };
-          return baseTimeout * (multipliers[networkCondition as keyof typeof multipliers] || 1.0);
-        });
+        vi.spyOn(searchManager as any, 'getAdaptiveTimeout').mockImplementation(
+          (baseTimeout, networkCondition) => {
+            const multipliers = {
+              good: 1.0,
+              degraded: 1.5,
+              poor: 2.0,
+              recovery: 1.25,
+            };
+            return baseTimeout * (multipliers[networkCondition as keyof typeof multipliers] || 1.0);
+          }
+        );
 
         vi.spyOn(searchManager as any, 'performVectorSearch').mockImplementation(async () => {
           const condition = searchManager['assessNetworkCondition']();
@@ -449,9 +455,10 @@ describe('Chaos Testing Infrastructure', () => {
             recovery: 1.0,
           };
 
-          const delay = baseDelay * (conditionDelays[condition as keyof typeof conditionDelays] || 1.0);
+          const delay =
+            baseDelay * (conditionDelays[condition as keyof typeof conditionDelays] || 1.0);
 
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
 
           if (delay > timeout) {
             throw new Error(`Adaptive timeout exceeded: ${delay}ms > ${timeout}ms`);
@@ -477,18 +484,18 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Some timeouts expected in poor conditions
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
         // Should adapt to changing network conditions
         expect(results.length).toBeGreaterThan(5); // At least 50% success
 
         // Results should show adaptive timeout usage
-        const adaptiveTimeoutResults = results.filter(r => r.metadata?.adaptiveTimeout);
+        const adaptiveTimeoutResults = results.filter((r) => r.metadata?.adaptiveTimeout);
         expect(adaptiveTimeoutResults.length).toBeGreaterThan(0);
 
         // Different network conditions should be reflected in metadata
-        const conditions = results.map(r => r.metadata?.networkCondition).filter(Boolean);
+        const conditions = results.map((r) => r.metadata?.networkCondition).filter(Boolean);
         expect(new Set(conditions).size).toBeGreaterThan(1); // Multiple conditions encountered
       });
     });
@@ -537,7 +544,7 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Some failures expected
           }
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
 
         // Should handle 500 errors gracefully
@@ -545,19 +552,24 @@ describe('Chaos Testing Infrastructure', () => {
         expect(successRate).toBeGreaterThan(0.6); // At least 60% success rate
 
         // Should have fallback results for 500 errors
-        const fallbackResults = results.filter(r => r.fallback || r.degraded);
+        const fallbackResults = results.filter((r) => r.fallback || r.degraded);
         expect(fallbackResults.length).toBeGreaterThan(0);
 
         // Results should maintain reasonable quality
-        const allResults = results.filter(r => r.items && r.items.length > 0);
-        const avgScore = allResults.reduce((sum, r) =>
-          sum + (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) / (r.items?.length || 1), 0
-        ) / allResults.length;
+        const allResults = results.filter((r) => r.items && r.items.length > 0);
+        const avgScore =
+          allResults.reduce(
+            (sum, r) =>
+              sum +
+              (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) /
+                (r.items?.length || 1),
+            0
+          ) / allResults.length;
         expect(avgScore).toBeGreaterThan(0.5);
 
         // Verify error categorization
         const errorMetrics = searchErrorHandler.getMetrics();
-        expect(errorMetrics.errorsByCategory[ErrorCategory.DATABASE]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['DATABASE']]).toBeGreaterThan(0);
       });
 
       it('should implement circuit breaker for repeated Qdrant failures', async () => {
@@ -572,9 +584,7 @@ describe('Chaos Testing Infrastructure', () => {
 
         vi.spyOn(memoryFindOrchestrator as any, 'searchKnowledge').mockImplementation(async () => {
           return chaosEngine.executeWithChaos('qdrant_search', async () => {
-            return [
-              { id: 'qdrant-circuit-test', content: 'circuit test result', score: 0.8 },
-            ];
+            return [{ id: 'qdrant-circuit-test', content: 'circuit test result', score: 0.8 }];
           });
         });
 
@@ -594,12 +604,12 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Expected failures
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
         // Circuit breaker should be activated
         const circuitBreakers = searchErrorHandler.getAllCircuitBreakerStates();
-        const qdrantBreaker = circuitBreakers.find(cb => cb.service === 'qdrant_search');
+        const qdrantBreaker = circuitBreakers.find((cb) => cb.service === 'qdrant_search');
         expect(qdrantBreaker?.isOpen).toBe(true);
 
         // Should have logged circuit breaker activation
@@ -619,7 +629,8 @@ describe('Chaos Testing Infrastructure', () => {
         }
 
         // Requests should fail fast when circuit is open
-        const avgFailFastTime = fastFailResults.reduce((sum, r) => sum + r.responseTime, 0) / fastFailResults.length;
+        const avgFailFastTime =
+          fastFailResults.reduce((sum, r) => sum + r.responseTime, 0) / fastFailResults.length;
         expect(avgFailFastTime).toBeLessThan(1000); // Less than 1 second for fast fail
       });
 
@@ -660,18 +671,19 @@ describe('Chaos Testing Infrastructure', () => {
         const startTime = Date.now();
 
         // Continue testing through failure and recovery
-        while (Date.now() - startTime < 4000) { // 4 second test
+        while (Date.now() - startTime < 4000) {
+          // 4 second test
           try {
             const result = await memoryFindOrchestrator.find(searchRequest);
             results.push({ ...result, timestamp: Date.now() });
           } catch (error) {
             // Expect failures during outage
           }
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
 
         // Should have successful results after recovery
-        const successfulResults = results.filter(r => r.items && r.items.length > 0);
+        const successfulResults = results.filter((r) => r.items && r.items.length > 0);
         expect(successfulResults.length).toBeGreaterThan(0);
 
         // Recovery should happen within expected timeframe
@@ -683,14 +695,19 @@ describe('Chaos Testing Infrastructure', () => {
         }
 
         // Post-recovery results should maintain quality
-        const avgScore = successfulResults.reduce((sum, r) =>
-          sum + (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) / (r.items?.length || 1), 0
-        ) / successfulResults.length;
+        const avgScore =
+          successfulResults.reduce(
+            (sum, r) =>
+              sum +
+              (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) /
+                (r.items?.length || 1),
+            0
+          ) / successfulResults.length;
         expect(avgScore).toBeGreaterThan(0.7);
 
         // Verify circuit breaker reset after recovery
         const circuitBreakers = searchErrorHandler.getAllCircuitBreakerStates();
-        const qdrantBreaker = circuitBreakers.find(cb => cb.service === 'qdrant_search');
+        const qdrantBreaker = circuitBreakers.find((cb) => cb.service === 'qdrant_search');
         if (qdrantBreaker) {
           expect(qdrantBreaker.isOpen).toBe(false);
         }
@@ -744,18 +761,18 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             // Some failures expected
           }
-          await new Promise(resolve => setTimeout(resolve, 150));
+          await new Promise((resolve) => setTimeout(resolve, 150));
         }
 
         // Should have mixed full and partial results
-        const fullResults = results.filter(r => r.items?.length === 3);
-        const partialResults = results.filter(r => r.items?.length === 2);
+        const fullResults = results.filter((r) => r.items?.length === 3);
+        const partialResults = results.filter((r) => r.items?.length === 2);
 
         expect(results.length).toBeGreaterThan(5); // Most requests should succeed
         expect(partialResults.length).toBeGreaterThan(0); // Should have partial results
 
         // Partial results should be marked appropriately
-        partialResults.forEach(result => {
+        partialResults.forEach((result) => {
           expect(result.metadata?.partialResult).toBe(true);
           expect(result.metadata?.originalRequestSize).toBe(3);
           expect(result.metadata?.actualResponseSize).toBe(2);
@@ -763,9 +780,14 @@ describe('Chaos Testing Infrastructure', () => {
 
         // Even partial results should maintain minimum quality
         const allResults = [...fullResults, ...partialResults];
-        const avgScore = allResults.reduce((sum, r) =>
-          sum + (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) / (r.items?.length || 1), 0
-        ) / allResults.length;
+        const avgScore =
+          allResults.reduce(
+            (sum, r) =>
+              sum +
+              (r.items?.reduce((s: number, item: any) => s + (item.score || 0), 0) || 0) /
+                (r.items?.length || 1),
+            0
+          ) / allResults.length;
         expect(avgScore).toBeGreaterThan(0.6);
       });
     });
@@ -785,7 +807,7 @@ describe('Chaos Testing Infrastructure', () => {
 
         vi.spyOn(searchManager as any, 'performSlowOperation').mockImplementation(async () => {
           return chaosEngine.executeWithChaos('slow_operation', async () => {
-            await new Promise(resolve => setTimeout(resolve, 100)); // Normal operation
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Normal operation
             return { data: 'operation result', timestamp: Date.now() };
           });
         });
@@ -806,27 +828,37 @@ describe('Chaos Testing Infrastructure', () => {
           } catch (error) {
             try {
               const fallback = await searchManager['getFallbackForTimeout']();
-              results.push({ ...fallback, executionTime: Date.now() - startTime, type: 'fallback' });
+              results.push({
+                ...fallback,
+                executionTime: Date.now() - startTime,
+                type: 'fallback',
+              });
             } catch (fallbackError) {
-              results.push({ error: fallbackError.message, executionTime: Date.now() - startTime, type: 'failed' });
+              results.push({
+                error: fallbackError.message,
+                executionTime: Date.now() - startTime,
+                type: 'failed',
+              });
             }
           }
         }
 
         // Should have mixed normal and fallback results
-        const normalResults = results.filter(r => r.type === 'normal');
-        const fallbackResults = results.filter(r => r.type === 'fallback');
-        const failedResults = results.filter(r => r.type === 'failed');
+        const normalResults = results.filter((r) => r.type === 'normal');
+        const fallbackResults = results.filter((r) => r.type === 'fallback');
+        const failedResults = results.filter((r) => r.type === 'failed');
 
         expect(results.length).toBe(6);
         expect(fallbackResults.length).toBeGreaterThan(0);
 
         // Fallback results should be faster than timeouts
-        const avgFallbackTime = fallbackResults.reduce((sum, r) => sum + r.executionTime, 0) / fallbackResults.length;
+        const avgFallbackTime =
+          fallbackResults.reduce((sum, r) => sum + r.executionTime, 0) / fallbackResults.length;
         expect(avgFallbackTime).toBeLessThan(5000); // Less than 5 seconds
 
         // Normal results should be within reasonable time
-        const avgNormalTime = normalResults.reduce((sum, r) => sum + r.executionTime, 0) / normalResults.length;
+        const avgNormalTime =
+          normalResults.reduce((sum, r) => sum + r.executionTime, 0) / normalResults.length;
         expect(avgNormalTime).toBeLessThan(15000); // Less than 15 seconds (allows for some delay)
       });
 
@@ -834,38 +866,45 @@ describe('Chaos Testing Infrastructure', () => {
         let escalationLevel = 0;
         const maxEscalation = 3;
 
-        vi.spyOn(searchManager as any, 'getEscalatedTimeout').mockImplementation((baseTimeout, level) => {
-          return baseTimeout * Math.pow(1.5, level);
-        });
-
-        vi.spyOn(searchManager as any, 'executeWithEscalation').mockImplementation(async (operation) => {
-          const baseTimeout = 3000;
-          const currentTimeout = searchManager['getEscalatedTimeout'](baseTimeout, escalationLevel);
-
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error(`Timeout after ${currentTimeout}ms`)), currentTimeout)
-          );
-
-          try {
-            const result = await Promise.race([
-              operation(),
-              timeoutPromise
-            ]);
-            escalationLevel = 0; // Reset on success
-            return result;
-          } catch (error) {
-            if (error.message.includes('Timeout') && escalationLevel < maxEscalation) {
-              escalationLevel++;
-              return searchManager['executeWithEscalation'](operation);
-            }
-            throw error;
+        vi.spyOn(searchManager as any, 'getEscalatedTimeout').mockImplementation(
+          (baseTimeout, level) => {
+            return baseTimeout * Math.pow(1.5, level);
           }
-        });
+        );
+
+        vi.spyOn(searchManager as any, 'executeWithEscalation').mockImplementation(
+          async (operation) => {
+            const baseTimeout = 3000;
+            const currentTimeout = searchManager['getEscalatedTimeout'](
+              baseTimeout,
+              escalationLevel
+            );
+
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(
+                () => reject(new Error(`Timeout after ${currentTimeout}ms`)),
+                currentTimeout
+              )
+            );
+
+            try {
+              const result = await Promise.race([operation(), timeoutPromise]);
+              escalationLevel = 0; // Reset on success
+              return result;
+            } catch (error) {
+              if (error.message.includes('Timeout') && escalationLevel < maxEscalation) {
+                escalationLevel++;
+                return searchManager['executeWithEscalation'](operation);
+              }
+              throw error;
+            }
+          }
+        );
 
         // Mock operation that takes progressively longer
         let operationDelay = 2000;
         vi.spyOn(searchManager as any, 'mockOperation').mockImplementation(async () => {
-          await new Promise(resolve => setTimeout(resolve, operationDelay));
+          await new Promise((resolve) => setTimeout(resolve, operationDelay));
           operationDelay += 1000; // Increase delay each time
           return { success: true, delay: operationDelay - 1000 };
         });
@@ -880,13 +919,17 @@ describe('Chaos Testing Infrastructure', () => {
             );
             results.push({ ...result, executionTime: Date.now() - startTime, escalationLevel });
           } catch (error) {
-            results.push({ error: error.message, executionTime: Date.now() - startTime, escalationLevel });
+            results.push({
+              error: error.message,
+              executionTime: Date.now() - startTime,
+              escalationLevel,
+            });
           }
         }
 
         // Should show escalation behavior
-        const successfulResults = results.filter(r => !r.error);
-        const failedResults = results.filter(r => r.error);
+        const successfulResults = results.filter((r) => !r.error);
+        const failedResults = results.filter((r) => r.error);
 
         expect(results.length).toBe(4);
         expect(escalationLevel).toBeGreaterThan(0); // Should have escalated
@@ -895,7 +938,7 @@ describe('Chaos Testing Infrastructure', () => {
         expect(successfulResults.length).toBeGreaterThan(0);
 
         // Verify timeout escalation tracking
-        results.forEach(result => {
+        results.forEach((result) => {
           expect(result.escalationLevel).toBeDefined();
           if (result.escalationLevel > 0) {
             expect(result.executionTime).toBeGreaterThan(3000); // Should exceed base timeout
@@ -909,27 +952,29 @@ describe('Chaos Testing Infrastructure', () => {
         let failureCount = 0;
         let recoveryAttempt = 0;
 
-        vi.spyOn(searchManager as any, 'executeWithBackoff').mockImplementation(async (operation, maxRetries = 3) => {
-          for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-              const result = await operation();
-              failureCount = 0; // Reset on success
-              return result;
-            } catch (error) {
-              failureCount++;
-              recoveryAttempt++;
+        vi.spyOn(searchManager as any, 'executeWithBackoff').mockImplementation(
+          async (operation, maxRetries = 3) => {
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+              try {
+                const result = await operation();
+                failureCount = 0; // Reset on success
+                return result;
+              } catch (error) {
+                failureCount++;
+                recoveryAttempt++;
 
-              if (attempt === maxRetries) {
-                throw error;
+                if (attempt === maxRetries) {
+                  throw error;
+                }
+
+                // Exponential backoff
+                const backoffDelay = Math.min(1000 * Math.pow(2, attempt), 5000);
+                await new Promise((resolve) => setTimeout(resolve, backoffDelay));
               }
-
-              // Exponential backoff
-              const backoffDelay = Math.min(1000 * Math.pow(2, attempt), 5000);
-              await new Promise(resolve => setTimeout(resolve, backoffDelay));
             }
+            throw new Error('Max retries exceeded');
           }
-          throw new Error('Max retries exceeded');
-        });
+        );
 
         // Mock operation that fails initially then succeeds
         vi.spyOn(searchManager as any, 'flakyOperation').mockImplementation(async () => {
@@ -947,26 +992,35 @@ describe('Chaos Testing Infrastructure', () => {
             const result = await searchManager['executeWithBackoff'](() =>
               searchManager['flakyOperation']()
             );
-            results.push({ ...result, executionTime: Date.now() - startTime, retries: recoveryAttempt });
+            results.push({
+              ...result,
+              executionTime: Date.now() - startTime,
+              retries: recoveryAttempt,
+            });
           } catch (error) {
-            results.push({ error: error.message, executionTime: Date.now() - startTime, retries: recoveryAttempt });
+            results.push({
+              error: error.message,
+              executionTime: Date.now() - startTime,
+              retries: recoveryAttempt,
+            });
           }
           recoveryAttempt = 0; // Reset for next test
           failureCount = 0;
         }
 
         // Should recover from failures with retries
-        const successfulResults = results.filter(r => !r.error);
+        const successfulResults = results.filter((r) => !r.error);
         expect(successfulResults.length).toBeGreaterThan(0);
 
         // Successful results should show retry attempts
-        successfulResults.forEach(result => {
+        successfulResults.forEach((result) => {
           expect(result.retries).toBeGreaterThan(0);
           expect(result.success).toBe(true);
         });
 
         // Recovery should happen within reasonable time
-        const avgRecoveryTime = successfulResults.reduce((sum, r) => sum + r.executionTime, 0) / successfulResults.length;
+        const avgRecoveryTime =
+          successfulResults.reduce((sum, r) => sum + r.executionTime, 0) / successfulResults.length;
         expect(avgRecoveryTime).toBeLessThan(10000); // Less than 10 seconds average recovery
       });
 
@@ -977,26 +1031,35 @@ describe('Chaos Testing Infrastructure', () => {
           failedComponents: [] as string[],
         };
 
-        vi.spyOn(searchManager as any, 'updateSystemState').mockImplementation((component, status) => {
-          // Remove component from all states first
-          systemState.healthyComponents = systemState.healthyComponents.filter(c => c !== component);
-          systemState.degradedComponents = systemState.degradedComponents.filter(c => c !== component);
-          systemState.failedComponents = systemState.failedComponents.filter(c => c !== component);
+        vi.spyOn(searchManager as any, 'updateSystemState').mockImplementation(
+          (component, status) => {
+            // Remove component from all states first
+            systemState.healthyComponents = systemState.healthyComponents.filter(
+              (c) => c !== component
+            );
+            systemState.degradedComponents = systemState.degradedComponents.filter(
+              (c) => c !== component
+            );
+            systemState.failedComponents = systemState.failedComponents.filter(
+              (c) => c !== component
+            );
 
-          // Add component to appropriate state
-          if (status === 'healthy') {
-            systemState.healthyComponents.push(component);
-          } else if (status === 'degraded') {
-            systemState.degradedComponents.push(component);
-          } else if (status === 'failed') {
-            systemState.failedComponents.push(component);
+            // Add component to appropriate state
+            if (status === 'healthy') {
+              systemState.healthyComponents.push(component);
+            } else if (status === 'degraded') {
+              systemState.degradedComponents.push(component);
+            } else if (status === 'failed') {
+              systemState.failedComponents.push(component);
+            }
           }
-        });
+        );
 
         vi.spyOn(searchManager as any, 'getSystemHealthStatus').mockImplementation(() => {
-          const totalComponents = systemState.healthyComponents.length +
-                                systemState.degradedComponents.length +
-                                systemState.failedComponents.length;
+          const totalComponents =
+            systemState.healthyComponents.length +
+            systemState.degradedComponents.length +
+            systemState.failedComponents.length;
 
           if (systemState.failedComponents.length > 0) {
             return 'critical';
@@ -1018,11 +1081,11 @@ describe('Chaos Testing Infrastructure', () => {
           stateTransitions.push({ component, status: 'failed', timestamp: Date.now() });
 
           // Component recovers
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           searchManager['updateSystemState'](component, 'degraded');
           stateTransitions.push({ component, status: 'degraded', timestamp: Date.now() });
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
           searchManager['updateSystemState'](component, 'healthy');
           stateTransitions.push({ component, status: 'healthy', timestamp: Date.now() });
         }
@@ -1040,13 +1103,13 @@ describe('Chaos Testing Infrastructure', () => {
         expect(systemState.failedComponents).toHaveLength(0);
 
         // Verify health reporting during recovery
-        const healthReports = stateTransitions.map(transition => ({
+        const healthReports = stateTransitions.map((transition) => ({
           ...transition,
           systemStatus: searchManager['getSystemHealthStatus'](),
         }));
 
         // Should show accurate system status throughout recovery
-        healthReports.forEach(report => {
+        healthReports.forEach((report) => {
           expect(['healthy', 'degraded', 'critical', 'unknown']).toContain(report.systemStatus);
         });
       });
@@ -1057,9 +1120,11 @@ describe('Chaos Testing Infrastructure', () => {
     it('should demonstrate circuit breaker patterns during chaos', async () => {
       const circuitBreakerStates = [];
 
-      vi.spyOn(searchManager as any, 'trackCircuitBreakerState').mockImplementation((service, state) => {
-        circuitBreakerStates.push({ service, state, timestamp: Date.now() });
-      });
+      vi.spyOn(searchManager as any, 'trackCircuitBreakerState').mockImplementation(
+        (service, state) => {
+          circuitBreakerStates.push({ service, state, timestamp: Date.now() });
+        }
+      );
 
       // Inject chaos to trigger circuit breaker
       chaosEngine.injectChaos('test_service', {
@@ -1078,7 +1143,8 @@ describe('Chaos Testing Infrastructure', () => {
         } finally {
           const currentState = searchErrorHandler.getCircuitBreakerState('test_service');
           if (currentState) {
-            searchManager['trackCircuitBreakerState']('test_service',
+            searchManager['trackCircuitBreakerState'](
+              'test_service',
               currentState.isOpen ? 'open' : currentState.isHalfOpen ? 'half-open' : 'closed'
             );
           }
@@ -1096,11 +1162,11 @@ describe('Chaos Testing Infrastructure', () => {
         } catch (error) {
           results.push({ error: error.message, phase: 'trigger' });
         }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       // Phase 2: Wait for circuit breaker timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Phase 3: Test half-open state
       for (let i = 0; i < 3; i++) {
@@ -1110,33 +1176,35 @@ describe('Chaos Testing Infrastructure', () => {
         } catch (error) {
           results.push({ error: error.message, phase: 'recovery' });
         }
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       // Verify circuit breaker lifecycle
-      const stateChanges = circuitBreakerStates.filter((state, index, array) =>
-        index === 0 || state.state !== array[index - 1].state
+      const stateChanges = circuitBreakerStates.filter(
+        (state, index, array) => index === 0 || state.state !== array[index - 1].state
       );
 
       expect(stateChanges.length).toBeGreaterThan(0);
 
       // Should go through: closed -> open -> half-open -> closed
       const expectedSequence = ['closed', 'open', 'half-open', 'closed'];
-      const actualSequence = stateChanges.map(change => change.state);
+      const actualSequence = stateChanges.map((change) => change.state);
 
       // Check if we see the expected circuit breaker behavior
       expect(actualSequence).toContain('open');
-      expect(stateChanges.some(change => change.state === 'open')).toBe(true);
+      expect(stateChanges.some((change) => change.state === 'open')).toBe(true);
 
       // Verify fast-fail behavior when circuit is open
-      const openStateResults = results.filter(r =>
-        circuitBreakerStates.some(state =>
-          state.timestamp <= Date.now() && state.state === 'open'
+      const openStateResults = results.filter((r) =>
+        circuitBreakerStates.some(
+          (state) => state.timestamp <= Date.now() && state.state === 'open'
         )
       );
 
       // Should have failed fast during open state
-      expect(results.some(r => r.error?.includes('fast fail') || r.phase === 'trigger')).toBe(true);
+      expect(results.some((r) => r.error?.includes('fast fail') || r.phase === 'trigger')).toBe(
+        true
+      );
     });
   });
 });

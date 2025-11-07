@@ -54,7 +54,7 @@ global.testUtils = {
    * Create a test timer with configurable delay
    */
   async delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   },
 
   /**
@@ -71,7 +71,9 @@ global.testUtils = {
    * Generate random test data
    */
   generateRandomString(length: number = 10): string {
-    return Math.random().toString(36).substring(2, 2 + length);
+    return Math.random()
+      .toString(36)
+      .substring(2, 2 + length);
   },
 
   generateRandomEmail(): string {
@@ -167,9 +169,9 @@ global.setupGlobalMocks = () => {
   };
 
   // Mock process.env for consistent test environment
-  process.env.NODE_ENV = 'test';
-  process.env.QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
-  process.env.LOG_LEVEL = 'error'; // Reduce log noise in tests
+  process.env['NODE_ENV'] = 'test';
+  process.env['QDRANT_URL'] = process.env['QDRANT_URL'] || 'http://localhost:6333';
+  process.env['LOG_LEVEL'] = 'error'; // Reduce log noise in tests
 
   // Create global Qdrant test double
   global.testState.qdrantTestDouble = createPerfectQdrantTestDouble();
@@ -215,7 +217,9 @@ global.performanceUtils = {
   /**
    * Monitor memory usage during test
    */
-  async monitorMemoryUsage<T>(fn: () => Promise<T>): Promise<{ result: T; memoryBefore: any; memoryAfter: any; delta: any }> {
+  async monitorMemoryUsage<T>(
+    fn: () => Promise<T>
+  ): Promise<{ result: T; memoryBefore: any; memoryAfter: any; delta: any }> {
     const memoryBefore = this.getMemoryUsage();
     const result = await fn();
     const memoryAfter = this.getMemoryUsage();
@@ -246,7 +250,9 @@ global.errorUtils = {
     }
 
     if (expectedMessage && !error.message.includes(expectedMessage)) {
-      throw new Error(`Expected error message to contain "${expectedMessage}", got "${error.message}"`);
+      throw new Error(
+        `Expected error message to contain "${expectedMessage}", got "${error.message}"`
+      );
     }
   },
 
@@ -321,7 +327,9 @@ afterEach(() => {
 
   // Log test performance if it exceeds threshold
   if (testDuration > global.testConfig.performance.maxResponseTime) {
-    console.warn(`Test "${global.testState.currentTest}" took ${testDuration}ms (threshold: ${global.testConfig.performance.maxResponseTime}ms)`);
+    console.warn(
+      `Test "${global.testState.currentTest}" took ${testDuration}ms (threshold: ${global.testConfig.performance.maxResponseTime}ms)`
+    );
   }
 });
 
@@ -360,13 +368,19 @@ declare global {
     createTestKnowledgeItems: (count: number, overrides?: any) => any[];
     validateKnowledgeItem: (item: any) => boolean;
     deepClone: <T>(obj: T) => T;
-    waitForCondition: (condition: () => boolean | Promise<boolean>, timeout?: number, interval?: number) => Promise<void>;
+    waitForCondition: (
+      condition: () => boolean | Promise<boolean>,
+      timeout?: number,
+      interval?: number
+    ) => Promise<void>;
   };
 
   var performanceUtils: {
     getMemoryUsage: () => any;
     assertPerformance: (responseTime: number, operation: string) => void;
-    monitorMemoryUsage: <T>(fn: () => Promise<T>) => Promise<{ result: T; memoryBefore: any; memoryAfter: any; delta: any }>;
+    monitorMemoryUsage: <T>(
+      fn: () => Promise<T>
+    ) => Promise<{ result: T; memoryBefore: any; memoryAfter: any; delta: any }>;
   };
 
   var errorUtils: {
@@ -383,7 +397,4 @@ declare global {
   var cleanupGlobalState: () => void;
 }
 
-export {
-  QdrantTestDouble,
-  createPerfectQdrantTestDouble,
-};
+export { QdrantTestDouble, createPerfectQdrantTestDouble };

@@ -6,7 +6,10 @@
  */
 
 import { EnhancedDeduplicationService } from './dist/services/deduplication/enhanced-deduplication-service.js';
-import { DEFAULT_DEDUPLICATION_CONFIG, DEDUPE_PRESETS } from './dist/config/deduplication-config.js';
+import {
+  DEFAULT_DEDUPLICATION_CONFIG,
+  DEDUPE_PRESETS,
+} from './dist/config/deduplication-config.js';
 
 // Test results tracking
 let testResults = {
@@ -104,8 +107,18 @@ function generateSimilarItem(baseItem, similarity = 0.85) {
 
 // Calculate text similarity using Jaccard similarity (same as in the service)
 function calculateTextSimilarity(text1, text2) {
-  const words1 = new Set(text1.toLowerCase().split(/\s+/).filter((word) => word.length > 2));
-  const words2 = new Set(text2.toLowerCase().split(/\s+/).filter((word) => word.length > 2));
+  const words1 = new Set(
+    text1
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length > 2)
+  );
+  const words2 = new Set(
+    text2
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length > 2)
+  );
 
   if (words1.size === 0 && words2.size === 0) return 1.0;
   if (words1.size === 0 || words2.size === 0) return 0.0;
@@ -137,12 +150,12 @@ async function testMergeStrategiesLogic() {
       // Test 1: Process unique items (should be stored)
       const uniqueItems = [
         generateTestItem({ title: `Unique ${strategy} 1` }),
-        generateTestItem({ title: `Unique ${strategy} 2` })
+        generateTestItem({ title: `Unique ${strategy} 2` }),
       ];
 
       const uniqueResult = await service.processItems(uniqueItems);
 
-      const allStored = uniqueResult.results.every(r => r.action === 'stored');
+      const allStored = uniqueResult.results.every((r) => r.action === 'stored');
       const hasSummary = !!uniqueResult.summary;
       const hasAuditLogs = uniqueResult.auditLog.length > 0;
 
@@ -158,14 +171,14 @@ async function testMergeStrategiesLogic() {
 
       // Test 2: Test configuration
       const currentConfig = service.getConfig();
-      const configCorrect = currentConfig.mergeStrategy === strategy &&
-                           currentConfig.contentSimilarityThreshold === 0.8;
+      const configCorrect =
+        currentConfig.mergeStrategy === strategy &&
+        currentConfig.contentSimilarityThreshold === 0.8;
 
       logTest(`Strategy ${strategy} - Configuration`, configCorrect, {
         mergeStrategy: currentConfig.mergeStrategy,
         threshold: currentConfig.contentSimilarityThreshold,
       });
-
     } catch (error) {
       logTest(`Strategy ${strategy}`, false, { error: error.message });
     }
@@ -178,15 +191,40 @@ async function testSimilarityThresholdsLogic() {
 
   const baseItem = generateTestItem({
     title: 'Base Title',
-    content: 'Base content for similarity testing.'
+    content: 'Base content for similarity testing.',
   });
 
   const testCases = [
     { item: baseItem, expectedSimilarity: 1.0, description: 'identical content' },
-    { item: generateTestItem({ title: baseItem.data.title, content: baseItem.data.content }), expectedSimilarity: 1.0, description: 'exact duplicate' },
-    { item: generateTestItem({ title: baseItem.data.title + ' Modified', content: baseItem.data.content }), expectedMinSimilarity: 0.8, description: 'title modified' },
-    { item: generateTestItem({ title: baseItem.data.title, content: baseItem.data.content + ' Extra content' }), expectedMinSimilarity: 0.8, description: 'content extended' },
-    { item: generateTestItem({ title: 'Different Title', content: 'Completely different content here' }), expectedMaxSimilarity: 0.7, description: 'completely different' },
+    {
+      item: generateTestItem({ title: baseItem.data.title, content: baseItem.data.content }),
+      expectedSimilarity: 1.0,
+      description: 'exact duplicate',
+    },
+    {
+      item: generateTestItem({
+        title: baseItem.data.title + ' Modified',
+        content: baseItem.data.content,
+      }),
+      expectedMinSimilarity: 0.8,
+      description: 'title modified',
+    },
+    {
+      item: generateTestItem({
+        title: baseItem.data.title,
+        content: baseItem.data.content + ' Extra content',
+      }),
+      expectedMinSimilarity: 0.8,
+      description: 'content extended',
+    },
+    {
+      item: generateTestItem({
+        title: 'Different Title',
+        content: 'Completely different content here',
+      }),
+      expectedMaxSimilarity: 0.7,
+      description: 'completely different',
+    },
   ];
 
   for (const testCase of testCases) {
@@ -206,7 +244,10 @@ async function testSimilarityThresholdsLogic() {
 
     logTest(`Similarity - ${testCase.description}`, passed, {
       calculated: similarity.toFixed(3),
-      expected: testCase.expectedSimilarity || `>= ${testCase.expectedMinSimilarity}` || `<= ${testCase.expectedMaxSimilarity}`,
+      expected:
+        testCase.expectedSimilarity ||
+        `>= ${testCase.expectedMinSimilarity}` ||
+        `<= ${testCase.expectedMaxSimilarity}`,
     });
   }
 }
@@ -230,8 +271,8 @@ async function testTimeWindowLogic() {
       const service = new EnhancedDeduplicationService(config);
       const currentConfig = service.getConfig();
 
-      const configCorrect = currentConfig.dedupeWindowDays === days &&
-                           currentConfig.timeBasedDeduplication === true;
+      const configCorrect =
+        currentConfig.dedupeWindowDays === days && currentConfig.timeBasedDeduplication === true;
 
       logTest(`Time Window ${days} days - Configuration`, configCorrect, {
         configuredDays: currentConfig.dedupeWindowDays,
@@ -257,16 +298,20 @@ async function testTimeWindowLogic() {
       const newTimestamp = new Date(newItem.created_at).getTime();
       const baseTimestamp = baseTime.getTime();
 
-      const oldIsOlder = oldTimestamp < baseTimestamp - (days * 24 * 60 * 60 * 1000);
-      const recentIsWithinWindow = Math.abs(recentTimestamp - baseTimestamp) <= (days * 24 * 60 * 60 * 1000);
+      const oldIsOlder = oldTimestamp < baseTimestamp - days * 24 * 60 * 60 * 1000;
+      const recentIsWithinWindow =
+        Math.abs(recentTimestamp - baseTimestamp) <= days * 24 * 60 * 60 * 1000;
       const newIsNewer = newTimestamp > baseTimestamp;
 
-      logTest(`Time Window ${days} days - Timestamp Logic`, oldIsOlder && recentIsWithinWindow && newIsNewer, {
-        oldIsOlder,
-        recentIsWithinWindow,
-        newIsNewer,
-      });
-
+      logTest(
+        `Time Window ${days} days - Timestamp Logic`,
+        oldIsOlder && recentIsWithinWindow && newIsNewer,
+        {
+          oldIsOlder,
+          recentIsWithinWindow,
+          newIsNewer,
+        }
+      );
     } catch (error) {
       logTest(`Time Window ${days} days`, false, { error: error.message });
     }
@@ -280,11 +325,19 @@ async function testCrossScopeLogic() {
   const scopeConfigurations = [
     {
       name: 'Cross-scope disabled',
-      config: { ...DEFAULT_DEDUPLICATION_CONFIG, crossScopeDeduplication: false, checkWithinScopeOnly: true },
+      config: {
+        ...DEFAULT_DEDUPLICATION_CONFIG,
+        crossScopeDeduplication: false,
+        checkWithinScopeOnly: true,
+      },
     },
     {
       name: 'Cross-scope enabled',
-      config: { ...DEFAULT_DEDUPLICATION_CONFIG, crossScopeDeduplication: true, checkWithinScopeOnly: false },
+      config: {
+        ...DEFAULT_DEDUPLICATION_CONFIG,
+        crossScopeDeduplication: true,
+        checkWithinScopeOnly: false,
+      },
     },
   ];
 
@@ -293,8 +346,9 @@ async function testCrossScopeLogic() {
       const service = new EnhancedDeduplicationService(scopeConfig.config);
       const currentConfig = service.getConfig();
 
-      const configCorrect = currentConfig.crossScopeDeduplication === scopeConfig.config.crossScopeDeduplication &&
-                           currentConfig.checkWithinScopeOnly === scopeConfig.config.checkWithinScopeOnly;
+      const configCorrect =
+        currentConfig.crossScopeDeduplication === scopeConfig.config.crossScopeDeduplication &&
+        currentConfig.checkWithinScopeOnly === scopeConfig.config.checkWithinScopeOnly;
 
       logTest(`Cross-Scope - ${scopeConfig.name}`, configCorrect, {
         crossScopeDeduplication: currentConfig.crossScopeDeduplication,
@@ -303,22 +357,25 @@ async function testCrossScopeLogic() {
 
       // Test scope filtering logic
       const sameScopeItem = generateTestItem({
-        scope: { org: 'test-org', project: 'test-project', branch: 'main' }
+        scope: { org: 'test-org', project: 'test-project', branch: 'main' },
       });
 
       const differentScopeItem = generateTestItem({
-        scope: { org: 'different-org', project: 'different-project', branch: 'develop' }
+        scope: { org: 'different-org', project: 'different-project', branch: 'develop' },
       });
 
       // Test that scope data is preserved correctly
       const sameScopeCorrect = sameScopeItem.scope.org === 'test-org';
       const differentScopeCorrect = differentScopeItem.scope.org === 'different-org';
 
-      logTest(`Cross-Scope - ${scopeConfig.name} - Scope Data`, sameScopeCorrect && differentScopeCorrect, {
-        sameScopeOrg: sameScopeItem.scope.org,
-        differentScopeOrg: differentScopeItem.scope.org,
-      });
-
+      logTest(
+        `Cross-Scope - ${scopeConfig.name} - Scope Data`,
+        sameScopeCorrect && differentScopeCorrect,
+        {
+          sameScopeOrg: sameScopeItem.scope.org,
+          differentScopeOrg: differentScopeItem.scope.org,
+        }
+      );
     } catch (error) {
       logTest(`Cross-Scope - ${scopeConfig.name}`, false, { error: error.message });
     }
@@ -335,16 +392,17 @@ async function testContentMergingLogic() {
       content: 'Original content paragraph 1.\nOriginal content paragraph 2.',
       description: 'Original description.',
       tags: ['original', 'test'],
-    }
+    },
   });
 
   const newItem = generateTestItem({
     data: {
       title: 'Updated Title',
-      content: 'Updated content paragraph 1.\nUpdated content paragraph 2.\nUpdated content paragraph 3.',
+      content:
+        'Updated content paragraph 1.\nUpdated content paragraph 2.\nUpdated content paragraph 3.',
       description: 'Updated description with more details.',
       tags: ['updated', 'test', 'new-tag'],
-    }
+    },
   });
 
   // Test content merging strategies
@@ -362,8 +420,8 @@ async function testContentMergingLogic() {
 
       // Test merge configuration
       const currentConfig = service.getConfig();
-      const configCorrect = currentConfig.mergeStrategy === strategy &&
-                           currentConfig.preserveMergeHistory === true;
+      const configCorrect =
+        currentConfig.mergeStrategy === strategy && currentConfig.preserveMergeHistory === true;
 
       logTest(`Content Merging ${strategy} - Configuration`, configCorrect, {
         mergeStrategy: currentConfig.mergeStrategy,
@@ -374,15 +432,18 @@ async function testContentMergingLogic() {
       const titleDifferent = baseItem.data.title !== newItem.data.title;
       const contentDifferent = baseItem.data.content !== newItem.data.content;
       const descriptionDifferent = baseItem.data.description !== newItem.data.description;
-      const hasNewTags = newItem.data.tags.some(tag => !baseItem.data.tags.includes(tag));
+      const hasNewTags = newItem.data.tags.some((tag) => !baseItem.data.tags.includes(tag));
 
-      logTest(`Content Merging ${strategy} - Difference Analysis`, titleDifferent && contentDifferent, {
-        titleDifferent,
-        contentDifferent,
-        descriptionDifferent,
-        hasNewTags,
-      });
-
+      logTest(
+        `Content Merging ${strategy} - Difference Analysis`,
+        titleDifferent && contentDifferent,
+        {
+          titleDifferent,
+          contentDifferent,
+          descriptionDifferent,
+          hasNewTags,
+        }
+      );
     } catch (error) {
       logTest(`Content Merging ${strategy}`, false, { error: error.message });
     }
@@ -429,26 +490,30 @@ async function testAuditLoggingLogic() {
       // Test audit log structure if enabled
       if (auditConfig.enabled && auditLogs.length > 0) {
         const sampleLog = auditLogs[0];
-        const hasRequiredFields = sampleLog.timestamp &&
-                                 sampleLog.itemId &&
-                                 sampleLog.action &&
-                                 sampleLog.strategy &&
-                                 sampleLog.similarityScore !== undefined;
+        const hasRequiredFields =
+          sampleLog.timestamp &&
+          sampleLog.itemId &&
+          sampleLog.action &&
+          sampleLog.strategy &&
+          sampleLog.similarityScore !== undefined;
 
         const hasConfigSnapshot = !!sampleLog.configSnapshot;
 
-        logTest(`Audit Logging - ${auditConfig.name} - Structure`, hasRequiredFields && hasConfigSnapshot, {
-          hasTimestamp: !!sampleLog.timestamp,
-          hasItemId: !!sampleLog.itemId,
-          hasAction: !!sampleLog.action,
-          hasStrategy: !!sampleLog.strategy,
-          hasConfigSnapshot,
-        });
+        logTest(
+          `Audit Logging - ${auditConfig.name} - Structure`,
+          hasRequiredFields && hasConfigSnapshot,
+          {
+            hasTimestamp: !!sampleLog.timestamp,
+            hasItemId: !!sampleLog.itemId,
+            hasAction: !!sampleLog.action,
+            hasStrategy: !!sampleLog.strategy,
+            hasConfigSnapshot,
+          }
+        );
 
         // Store audit logs for analysis
         testResults.auditLogs.push(...auditLogs);
       }
-
     } catch (error) {
       logTest(`Audit Logging - ${auditConfig.name}`, false, { error: error.message });
     }
@@ -479,7 +544,7 @@ async function testPerformanceLogic() {
       const testBatch = Array.from({ length: perfConfig.batchSize }, (_, i) =>
         generateTestItem({
           title: `Performance Test Item ${i}`,
-          content: `Content for performance testing item ${i} with some unique content.`
+          content: `Content for performance testing item ${i} with some unique content.`,
         })
       );
 
@@ -519,7 +584,6 @@ async function testPerformanceLogic() {
         avgProcessingTime: metrics.avgProcessingTime,
         duplicatesFound: metrics.duplicatesFound,
       });
-
     } catch (error) {
       logTest(`Performance - ${perfConfig.name}`, false, { error: error.message });
     }
@@ -552,7 +616,6 @@ async function testEdgeCasesLogic() {
       firstAction: identicalResult.results[0].action,
       secondAction: identicalResult.results[1].action,
     });
-
   } catch (error) {
     logTest('Edge Case: Identical Content', false, { error: error.message });
   }
@@ -573,13 +636,12 @@ async function testEdgeCasesLogic() {
     const emptyResult = await service.processItems(emptyItems);
 
     const hasEmptyResults = emptyResult.results.length === 2;
-    const processedEmpty = emptyResult.results.every(r => r.action);
+    const processedEmpty = emptyResult.results.every((r) => r.action);
 
     logTest('Edge Case: Empty Content', hasEmptyResults && processedEmpty, {
       resultsCount: emptyResult.results.length,
       allProcessed: processedEmpty,
     });
-
   } catch (error) {
     logTest('Edge Case: Empty Content', false, { error: error.message });
   }
@@ -589,7 +651,7 @@ async function testEdgeCasesLogic() {
   const longContent = 'A'.repeat(10000); // 10KB of content
   const longItem = generateTestItem({
     title: 'Long Content Test',
-    content: longContent
+    content: longContent,
   });
 
   try {
@@ -607,7 +669,6 @@ async function testEdgeCasesLogic() {
       contentLength: longContent.length,
       action: longResult.results[0].action,
     });
-
   } catch (error) {
     logTest('Edge Case: Long Content', false, { error: error.message });
   }
@@ -635,7 +696,6 @@ async function testEdgeCasesLogic() {
       hasTitle: !!specialItem.data.title,
       hasContent: !!specialItem.data.content,
     });
-
   } catch (error) {
     logTest('Edge Case: Special Characters', false, { error: error.message });
   }
@@ -675,7 +735,6 @@ async function testConfigurationPresets() {
         hasAuditLog,
         presetValues: Object.keys(presetConfig),
       });
-
     } catch (error) {
       logTest(`Preset ${presetName}`, false, { error: error.message });
     }
@@ -690,12 +749,16 @@ function generateTestReport() {
 
   console.log(`\n📈 Test Summary:`);
   console.log(`   Total Tests: ${testResults.totalTests}`);
-  console.log(`   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
-  console.log(`   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
+  console.log(
+    `   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
 
   if (testResults.errors.length > 0) {
     console.log(`\n❌ Errors:`);
-    testResults.errors.forEach(error => {
+    testResults.errors.forEach((error) => {
       console.log(`   ${error.test}: ${error.error}`);
     });
   }
@@ -712,16 +775,21 @@ function generateTestReport() {
       return acc;
     }, {});
 
-    const similarityScores = testResults.auditLogs.map(log => log.similarityScore).filter(s => s > 0);
-    const avgSimilarity = similarityScores.length > 0
-      ? similarityScores.reduce((sum, score) => sum + score, 0) / similarityScores.length
-      : 0;
+    const similarityScores = testResults.auditLogs
+      .map((log) => log.similarityScore)
+      .filter((s) => s > 0);
+    const avgSimilarity =
+      similarityScores.length > 0
+        ? similarityScores.reduce((sum, score) => sum + score, 0) / similarityScores.length
+        : 0;
 
     console.log(`   Total Audit Entries: ${testResults.auditLogs.length}`);
     console.log(`   Actions Distribution:`, actions);
     console.log(`   Strategies Used:`, strategies);
     console.log(`   Average Similarity: ${avgSimilarity.toFixed(3)}`);
-    console.log(`   Similarity Range: ${Math.min(...similarityScores).toFixed(3)} - ${Math.max(...similarityScores).toFixed(3)}`);
+    console.log(
+      `   Similarity Range: ${Math.min(...similarityScores).toFixed(3)} - ${Math.max(...similarityScores).toFixed(3)}`
+    );
   } else {
     console.log(`   No audit logs collected`);
   }
@@ -740,7 +808,9 @@ function generateTestReport() {
 
   console.log(`   Merge Strategy Analysis:`);
   Object.entries(strategyAnalysis).forEach(([strategy, stats]) => {
-    console.log(`     ${strategy}: ${stats.total} total, ${stats.stored} stored, ${stats.merged} merged, ${stats.skipped} skipped`);
+    console.log(
+      `     ${strategy}: ${stats.total} total, ${stats.stored} stored, ${stats.merged} merged, ${stats.skipped} skipped`
+    );
   });
 
   console.log(`\n✅ Test Suite Complete`);
@@ -774,7 +844,6 @@ async function runDeduplicationLogicTests() {
     await testConfigurationPresets();
 
     return generateTestReport();
-
   } catch (error) {
     console.error('❌ Test suite failed:', error);
     throw error;
@@ -784,11 +853,11 @@ async function runDeduplicationLogicTests() {
 // Run tests if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runDeduplicationLogicTests()
-    .then(report => {
+    .then((report) => {
       console.log('\n🎉 All tests completed!');
       process.exit(report.failedTests > 0 ? 1 : 0);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('💥 Test suite crashed:', error);
       process.exit(1);
     });

@@ -9,6 +9,7 @@ Phase 3 completes the Cortex Memory MCP's search functionality maturity by imple
 ### 1. Three Stabilized Search Strategies
 
 #### Fast Mode (`mode: 'fast'`)
+
 - **Description**: Keyword-only search for quick results
 - **Use Case**: Quick lookups, simple keyword matching
 - **Vector Required**: No
@@ -16,6 +17,7 @@ Phase 3 completes the Cortex Memory MCP's search functionality maturity by imple
 - **Implementation**: Direct keyword matching without vector embeddings
 
 #### Auto Mode (`mode: 'auto'`) - Default
+
 - **Description**: Hybrid approach that automatically selects the best method
 - **Use Case**: General-purpose searches with balanced performance
 - **Vector Required**: No (degrades gracefully)
@@ -23,6 +25,7 @@ Phase 3 completes the Cortex Memory MCP's search functionality maturity by imple
 - **Implementation**: Uses vector search when available, falls back to keyword search
 
 #### Deep Mode (`mode: 'deep'`)
+
 - **Description**: Comprehensive search with vector embeddings and relations
 - **Use Case**: Complex queries requiring high accuracy and context
 - **Vector Required**: Yes (degrades to auto mode)
@@ -32,6 +35,7 @@ Phase 3 completes the Cortex Memory MCP's search functionality maturity by imple
 ### 2. Vector Backend Degradation
 
 When the vector backend is unavailable:
+
 - **Deep mode** automatically degrades to **auto mode**
 - **Auto mode** falls back to **keyword search**
 - **Fast mode** continues unaffected (doesn't require vectors)
@@ -39,6 +43,7 @@ When the vector backend is unavailable:
 - **Fallback reasons** are provided in metadata
 
 #### Degradation Flow:
+
 ```
 Deep (vector unavailable) → Auto → Fast (if auto also fails)
 Auto (vector unavailable) → Fast (always works)
@@ -50,21 +55,25 @@ Fast → Fast (no degradation needed)
 Supports four expansion modes:
 
 #### Relations Expansion (`expand: 'relations'`)
+
 - Finds related items through defined relationships
 - Expands search to include connected knowledge items
 - Useful for discovering related concepts and decisions
 
 #### Parents Expansion (`expand: 'parents'`)
+
 - Finds items that reference the target item
 - Traces backward through relationships
 - Useful for understanding what depends on a decision or entity
 
 #### Children Expansion (`expand: 'children'`)
+
 - Finds items referenced by the target item
 - Traces forward through relationships
 - Useful for understanding the impact scope of decisions
 
 #### No Expansion (`expand: 'none'`) - Default
+
 - Returns only direct search results
 - Best performance for simple lookups
 
@@ -73,6 +82,7 @@ Supports four expansion modes:
 Implements **branch > project > org** precedence:
 
 #### Priority Order:
+
 1. **Explicitly provided scope parameters**
 2. **Environment variables**:
    - `CORTEX_BRANCH` (highest precedence)
@@ -81,6 +91,7 @@ Implements **branch > project > org** precedence:
 3. **Default org scope** for backward compatibility
 
 #### Scope Matching Logic:
+
 ```typescript
 // Branch has highest precedence - must match exactly
 if (filterScope.branch && resultScope.branch !== filterScope.branch) {
@@ -101,6 +112,7 @@ if (filterScope.org && resultScope.org !== filterScope.org) {
 ### 5. Enhanced Response Metadata
 
 #### Observability Metadata:
+
 ```typescript
 {
   observability: {
@@ -116,6 +128,7 @@ if (filterScope.org && resultScope.org !== filterScope.org) {
 ```
 
 #### Strategy Details:
+
 ```typescript
 {
   strategy_details: {
@@ -132,6 +145,7 @@ if (filterScope.org && resultScope.org !== filterScope.org) {
 ## Usage Examples
 
 ### Basic Search with Auto Mode
+
 ```typescript
 const result = await memoryFind({
   query: 'authentication decisions',
@@ -141,6 +155,7 @@ const result = await memoryFind({
 ```
 
 ### Fast Search for Quick Results
+
 ```typescript
 const result = await memoryFind({
   query: 'oauth',
@@ -150,6 +165,7 @@ const result = await memoryFind({
 ```
 
 ### Deep Search with Graph Expansion
+
 ```typescript
 const result = await memoryFind({
   query: 'security architecture',
@@ -163,6 +179,7 @@ const result = await memoryFind({
 ```
 
 ### Search with Strategy Details
+
 ```typescript
 const result = await memoryFindWithStrategy({
   query: 'database schema',
@@ -171,11 +188,14 @@ const result = await memoryFindWithStrategy({
 });
 
 console.log(`Strategy used: ${result.strategy_details.selected_strategy}`);
-console.log(`Vector backend: ${result.strategy_details.vector_backend_available ? 'Available' : 'Unavailable'}`);
+console.log(
+  `Vector backend: ${result.strategy_details.vector_backend_available ? 'Available' : 'Unavailable'}`
+);
 console.log(`Degraded: ${result.strategy_details.degradation_applied ? 'Yes' : 'No'}`);
 ```
 
 ### Getting Available Strategies
+
 ```typescript
 const strategies = await getSearchStrategies();
 console.log('Available strategies:', strategies.strategies);
@@ -185,11 +205,13 @@ console.log('Vector backend status:', strategies.vector_backend_status);
 ## Error Handling and Fallbacks
 
 ### Primary Fallback Strategy
+
 1. **Deep mode fails** → Try auto mode
 2. **Auto mode fails** → Try fast mode
 3. **All strategies fail** → Return structured error response
 
 ### Error Response Format
+
 ```typescript
 {
   results: [],
@@ -215,16 +237,19 @@ console.log('Vector backend status:', strategies.vector_backend_status);
 ## Performance Characteristics
 
 ### Search Strategy Performance
+
 - **Fast**: ~10-50ms (keyword only)
 - **Auto**: ~50-200ms (hybrid approach)
 - **Deep**: ~200-500ms (vector + relations, when available)
 
 ### Graph Expansion Impact
+
 - **Relations**: +100-300ms
 - **Parents/Children**: +50-200ms each
 - **Combined expansions**: +300-500ms total
 
 ### Degradation Impact
+
 - **Vector unavailable**: 20-50% confidence reduction
 - **Graph fallback**: Minimal impact on result count
 - **Strategy fallback**: Transparent to user, documented in metadata
@@ -232,6 +257,7 @@ console.log('Vector backend status:', strategies.vector_backend_status);
 ## Testing
 
 The Phase 3 implementation includes comprehensive tests covering:
+
 - All three search strategies
 - Vector backend degradation scenarios
 - Graph expansion functionality
@@ -241,6 +267,7 @@ The Phase 3 implementation includes comprehensive tests covering:
 - Error handling and fallbacks
 
 Run tests with:
+
 ```bash
 npm test -- phase3-search-strategies.test.ts
 ```
@@ -248,6 +275,7 @@ npm test -- phase3-search-strategies.test.ts
 ## Backward Compatibility
 
 Phase 3 maintains full backward compatibility:
+
 - Existing `memoryFind()` calls continue to work
 - Response format includes legacy fields (`items`, `total`)
 - Default behavior remains unchanged (auto mode, no expansion)
@@ -256,10 +284,13 @@ Phase 3 maintains full backward compatibility:
 ## Migration Guide
 
 ### From Pre-Phase 3
+
 No changes required - existing code continues to work.
 
 ### To Use New Features
+
 1. **Add mode parameter** for strategy control:
+
    ```typescript
    // Before
    await memoryFind({ query: 'test' });
@@ -269,14 +300,16 @@ No changes required - existing code continues to work.
    ```
 
 2. **Add expand parameter** for graph traversal:
+
    ```typescript
    await memoryFind({
      query: 'test',
-     expand: 'relations'
+     expand: 'relations',
    });
    ```
 
 3. **Use enhanced wrapper** for detailed information:
+
    ```typescript
    const result = await memoryFindWithStrategy({
      query: 'test',
@@ -289,6 +322,7 @@ No changes required - existing code continues to work.
 ## Configuration
 
 ### Environment Variables
+
 ```bash
 # Optional scope defaults
 CORTEX_ORG=my-organization
@@ -301,6 +335,7 @@ QDRANT_COLLECTION_NAME=cortex-memory
 ```
 
 ### Performance Tuning
+
 - Adjust `limit` parameter for result count
 - Use `fast` mode for high-throughput scenarios
 - Use `deep` mode only when high accuracy is required
@@ -309,12 +344,15 @@ QDRANT_COLLECTION_NAME=cortex-memory
 ## Monitoring and Observability
 
 ### Search ID Tracking
+
 Each search receives a unique ID for tracking:
+
 ```
 search_1730641234567_abc123def
 ```
 
 ### Metrics Available
+
 - Strategy selection distribution
 - Vector backend availability rate
 - Degradation frequency and reasons
@@ -323,7 +361,9 @@ search_1730641234567_abc123def
 - Performance by strategy type
 
 ### Log Format
+
 Enhanced logging includes:
+
 - Search ID for correlation
 - Strategy used and whether degraded
 - Vector backend status
@@ -334,6 +374,7 @@ Enhanced logging includes:
 ## Future Enhancements
 
 ### Planned Improvements
+
 - Real vector backend integration (currently simulated)
 - Advanced graph algorithms for relation discovery
 - Caching for frequently executed searches
@@ -341,6 +382,7 @@ Enhanced logging includes:
 - Custom scoring algorithms per knowledge type
 
 ### Extension Points
+
 - Custom search strategies
 - Pluggable graph traversal algorithms
 - Custom scope resolution logic

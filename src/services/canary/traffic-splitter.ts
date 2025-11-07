@@ -16,7 +16,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { metricsService } from '../monitoring/metrics-service.js';
 import { featureFlagService } from '../feature-flag/feature-flag-service.js';
 
@@ -1195,6 +1195,8 @@ class RateLimiter {
     counter.count++;
     return true;
   }
+
+  keyExtractor?: unknown
 }
 
 // Export singleton instance

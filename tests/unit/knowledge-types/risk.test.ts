@@ -99,17 +99,17 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('risk');
-        expect(result.data.data.title).toBe(
+        expect(result['data.kind']).toBe('risk');
+        expect(result['data.data'].title).toBe(
           'Critical security vulnerability in authentication system'
         );
-        expect(result.data.data.category).toBe('security');
-        expect(result.data.data.risk_level).toBe('critical');
-        expect(result.data.data.probability).toBe('very_likely');
-        expect(result.data.data.status).toBe('active');
-        expect(result.data.data.mitigation_strategies).toHaveLength(4);
-        expect(result.data.data.owner).toBe('security-team-lead');
-        expect(result.data.data.monitoring_indicators).toHaveLength(3);
+        expect(result['data.data'].category).toBe('security');
+        expect(result['data.data'].risk_level).toBe('critical');
+        expect(result['data.data'].probability).toBe('very_likely');
+        expect(result['data.data'].status).toBe('active');
+        expect(result['data.data'].mitigation_strategies).toHaveLength(4);
+        expect(result['data.data'].owner).toBe('security-team-lead');
+        expect(result['data.data'].monitoring_indicators).toHaveLength(3);
       }
     });
 
@@ -133,14 +133,14 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toBe('API rate limiting may be insufficient');
-        expect(result.data.data.category).toBe('technical');
-        expect(result.data.data.risk_level).toBe('medium');
-        expect(result.data.data.probability).toBe('possible');
-        expect(result.data.data.status).toBe('active');
-        expect(result.data.data.mitigation_strategies).toBeUndefined();
-        expect(result.data.data.owner).toBeUndefined();
-        expect(result.data.data.monitoring_indicators).toBeUndefined();
+        expect(result['data.data'].title).toBe('API rate limiting may be insufficient');
+        expect(result['data.data'].category).toBe('technical');
+        expect(result['data.data'].risk_level).toBe('medium');
+        expect(result['data.data'].probability).toBe('possible');
+        expect(result['data.data'].status).toBe('active');
+        expect(result['data.data'].mitigation_strategies).toBeUndefined();
+        expect(result['data.data'].owner).toBeUndefined();
+        expect(result['data.data'].monitoring_indicators).toBeUndefined();
       }
     });
 
@@ -255,7 +255,7 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
         const result = RiskSchema.safeParse(risk);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.category).toBe(category);
+          expect(result['data.data'].category).toBe(category);
         }
       });
 
@@ -297,7 +297,7 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
         const result = RiskSchema.safeParse(risk);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.risk_level).toBe(risk_level);
+          expect(result['data.data'].risk_level).toBe(risk_level);
         }
       });
 
@@ -345,7 +345,7 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
         const result = RiskSchema.safeParse(risk);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.probability).toBe(probability);
+          expect(result['data.data'].probability).toBe(probability);
         }
       });
 
@@ -387,7 +387,7 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
         const result = RiskSchema.safeParse(risk);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.status).toBe(status);
+          expect(result['data.data'].status).toBe(status);
         }
       });
 
@@ -448,7 +448,7 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.review_date).toBe('2025-02-15T14:30:00Z');
+        expect(result['data.data'].review_date).toBe('2025-02-15T14:30:00Z');
       }
     });
 
@@ -495,10 +495,10 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.trigger_events).toHaveLength(3);
-        expect(result.data.data.mitigation_strategies).toHaveLength(2);
-        expect(result.data.data.related_decisions).toHaveLength(2);
-        expect(result.data.data.monitoring_indicators).toHaveLength(3);
+        expect(result['data.data'].trigger_events).toHaveLength(3);
+        expect(result['data.data'].mitigation_strategies).toHaveLength(2);
+        expect(result['data.data'].related_decisions).toHaveLength(2);
+        expect(result['data.data'].monitoring_indicators).toHaveLength(3);
       }
     });
 
@@ -523,10 +523,10 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.trigger_events).toEqual([]);
-        expect(result.data.data.mitigation_strategies).toEqual([]);
-        expect(result.data.data.related_decisions).toEqual([]);
-        expect(result.data.data.monitoring_indicators).toEqual([]);
+        expect(result['data.data'].trigger_events).toEqual([]);
+        expect(result['data.data'].mitigation_strategies).toEqual([]);
+        expect(result['data.data'].related_decisions).toEqual([]);
+        expect(result['data.data'].monitoring_indicators).toEqual([]);
       }
     });
   });
@@ -637,12 +637,12 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       expect(mockQdrant.upsert).toHaveBeenCalledTimes(4);
 
       const storedCalls = mockQdrant.upsert.mock.calls;
-      expect(storedCalls[0][0][0].payload.data.category).toBe('operational');
-      expect(storedCalls[0][0][0].payload.data.risk_level).toBe('high');
-      expect(storedCalls[1][0][0].payload.data.category).toBe('compliance');
-      expect(storedCalls[2][0][0].payload.data.category).toBe('business');
-      expect(storedCalls[2][0][0].payload.data.status).toBe('accepted');
-      expect(storedCalls[3][0][0].payload.data.risk_level).toBe('low');
+      expect(storedCalls[0][0][0].payload['data.category']).toBe('operational');
+      expect(storedCalls[0][0][0].payload['data.risk_level']).toBe('high');
+      expect(storedCalls[1][0][0].payload['data.category']).toBe('compliance');
+      expect(storedCalls[2][0][0].payload['data.category']).toBe('business');
+      expect(storedCalls[2][0][0].payload['data.status']).toBe('accepted');
+      expect(storedCalls[3][0][0].payload['data.risk_level']).toBe('low');
     });
 
     it('should handle invalid risks in batch', async () => {
@@ -1063,8 +1063,8 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.status).toBe('accepted');
-        expect(result.data.data.risk_level).toBe('low');
+        expect(result['data.data'].status).toBe('accepted');
+        expect(result['data.data'].risk_level).toBe('low');
       }
     });
 
@@ -1118,8 +1118,8 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.impact_description).toContain('$50M');
-        expect(result.data.data.impact_description).toContain('10 million customers');
+        expect(result['data.data'].impact_description).toContain('$50M');
+        expect(result['data.data'].impact_description).toContain('10 million customers');
       }
     });
   });
@@ -1158,11 +1158,11 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(risk);
       expect(result.kind).toBe('risk');
-      expect(result.data.title).toBe('Cloud provider service level agreement violations');
-      expect(result.data.category).toBe('operational');
+      expect(result['data.title']).toBe('Cloud provider service level agreement violations');
+      expect(result['data.category']).toBe('operational');
       expect(result.tags.cloud).toBe(true);
       expect(result.source.actor).toBe('risk-assessment-tool');
-      expect(result.ttl_policy).toBe('90d');
+      expect(result['ttl_policy']).toBe('90d');
     });
 
     it('should handle risk with comprehensive metadata', () => {
@@ -1216,9 +1216,9 @@ describe('Risk Knowledge Type - Comprehensive Testing', () => {
       const result = RiskSchema.safeParse(risk);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toContain('bias');
-        expect(result.data.tags.ai).toBe(true);
-        expect(result.data.tags.ethics).toBe(true);
+        expect(result['data.data'].title).toContain('bias');
+        expect(result['data.tags'].ai).toBe(true);
+        expect(result['data.tags'].ethics).toBe(true);
       }
     });
 

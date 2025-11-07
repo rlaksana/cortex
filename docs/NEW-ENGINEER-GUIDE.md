@@ -88,12 +88,12 @@ Cortex Memory MCP Architecture
 
 ### Key Components
 
-| Component | Purpose | Technology |
-|-----------|---------|------------|
-| **MCP Server** | Main application server | Node.js + TypeScript |
-| **Qdrant** | Vector database for semantic search | Rust-based vector DB |
-| **OpenAI API** | Text embeddings generation | GPT embedding models |
-| **MCP Protocol** | Communication with AI agents | Model Context Protocol |
+| Component        | Purpose                             | Technology             |
+| ---------------- | ----------------------------------- | ---------------------- |
+| **MCP Server**   | Main application server             | Node.js + TypeScript   |
+| **Qdrant**       | Vector database for semantic search | Rust-based vector DB   |
+| **OpenAI API**   | Text embeddings generation          | GPT embedding models   |
+| **MCP Protocol** | Communication with AI agents        | Model Context Protocol |
 
 ## 📚 Knowledge Management Basics
 
@@ -101,42 +101,46 @@ Cortex Memory MCP Architecture
 
 Cortex supports 16 different types of knowledge:
 
-| Type | Use Case | Example |
-|------|----------|---------|
-| **entity** | Core concepts, objects | "User Authentication System" |
-| **observation** | Facts, data points | "Performance improved by 25%" |
-| **decision** | Architecture decisions | "Use OAuth 2.0 for authentication" |
-| **issue** | Problems, bugs | "Database connection timeouts" |
-| **todo** | Tasks, action items | "Implement rate limiting" |
-| **runbook** | Procedures, guides | "Server recovery steps" |
-| **incident** | System incidents | "Production outage at 2:15 PM" |
-| **release** | Deployment info | "Version 2.1.0 deployment" |
-| **risk** | Risk assessments | "Database single point of failure" |
-| **assumption** | Business/technical assumptions | "Users have modern browsers" |
+| Type            | Use Case                       | Example                            |
+| --------------- | ------------------------------ | ---------------------------------- |
+| **entity**      | Core concepts, objects         | "User Authentication System"       |
+| **observation** | Facts, data points             | "Performance improved by 25%"      |
+| **decision**    | Architecture decisions         | "Use OAuth 2.0 for authentication" |
+| **issue**       | Problems, bugs                 | "Database connection timeouts"     |
+| **todo**        | Tasks, action items            | "Implement rate limiting"          |
+| **runbook**     | Procedures, guides             | "Server recovery steps"            |
+| **incident**    | System incidents               | "Production outage at 2:15 PM"     |
+| **release**     | Deployment info                | "Version 2.1.0 deployment"         |
+| **risk**        | Risk assessments               | "Database single point of failure" |
+| **assumption**  | Business/technical assumptions | "Users have modern browsers"       |
 
 ### Storing Knowledge
 
 ```javascript
 // Store a decision
 await call_tool('memory_store', {
-  items: [{
-    kind: 'decision',
-    data: {
-      title: 'Use PostgreSQL for production',
-      rationale: 'Proven scalability and ACID compliance',
-      alternatives: ['MongoDB', 'MySQL']
+  items: [
+    {
+      kind: 'decision',
+      data: {
+        title: 'Use PostgreSQL for production',
+        rationale: 'Proven scalability and ACID compliance',
+        alternatives: ['MongoDB', 'MySQL'],
+      },
+      scope: { project: 'my-app', branch: 'main' },
     },
-    scope: { project: 'my-app', branch: 'main' }
-  }]
+  ],
 });
 
 // Store an observation
 await call_tool('memory_store', {
-  items: [{
-    kind: 'observation',
-    content: 'API response time improved by 40% after caching implementation',
-    metadata: { metric: 'response_time', improvement: '40%' }
-  }]
+  items: [
+    {
+      kind: 'observation',
+      content: 'API response time improved by 40% after caching implementation',
+      metadata: { metric: 'response_time', improvement: '40%' },
+    },
+  ],
 });
 ```
 
@@ -148,14 +152,14 @@ await call_tool('memory_find', {
   query: 'authentication security decisions',
   types: ['decision'],
   scope: { project: 'my-app' },
-  limit: 5
+  limit: 5,
 });
 
 // Search for recent performance issues
 await call_tool('memory_find', {
   query: 'slow database queries performance',
   types: ['issue', 'observation'],
-  limit: 10
+  limit: 10,
 });
 ```
 
@@ -365,13 +369,13 @@ curl http://localhost:6333/metrics
 
 ### Must-Read Documents
 
-| Document | Purpose | Location |
-|----------|---------|----------|
-| **Quick Start** | Fastest way to get running | `docs/SETUP-QUICK-START.md` |
-| **API Reference** | Complete API documentation | `docs/API-REFERENCE.md` |
-| **Architecture** | System design overview | `docs/ARCH-SYSTEM.md` |
-| **Operations Guide** | Production operations | `docs/OPS-DISASTER-RECOVERY.md` |
-| **Backup Guide** | Data backup/restore | `docs/OPS-BACKUP-MIGRATION.md` |
+| Document             | Purpose                    | Location                        |
+| -------------------- | -------------------------- | ------------------------------- |
+| **Quick Start**      | Fastest way to get running | `docs/SETUP-QUICK-START.md`     |
+| **API Reference**    | Complete API documentation | `docs/API-REFERENCE.md`         |
+| **Architecture**     | System design overview     | `docs/ARCH-SYSTEM.md`           |
+| **Operations Guide** | Production operations      | `docs/OPS-DISASTER-RECOVERY.md` |
+| **Backup Guide**     | Data backup/restore        | `docs/OPS-BACKUP-MIGRATION.md`  |
 
 ### Quick Access Commands
 
@@ -443,11 +447,11 @@ npm run deploy:validate
 
 ### Environment Configuration
 
-| Environment | Port | Database | Use |
-|-------------|------|----------|-----|
-| **Development** | 3001 | Local Qdrant | Local development |
-| **Staging** | 3002 | Staging Qdrant | Testing/QA |
-| **Production** | 3000 | Production Qdrant | Live traffic |
+| Environment     | Port | Database          | Use               |
+| --------------- | ---- | ----------------- | ----------------- |
+| **Development** | 3001 | Local Qdrant      | Local development |
+| **Staging**     | 3002 | Staging Qdrant    | Testing/QA        |
+| **Production**  | 3000 | Production Qdrant | Live traffic      |
 
 ## 📊 Monitoring & Observability
 
@@ -489,12 +493,12 @@ grep "ERROR" /app/logs/cortex-mcp.log | tail -20
 
 ### Communication Channels
 
-| Channel | Purpose | Access |
-|---------|---------|--------|
-| **#cortex-mcp** | General discussion | All team members |
-| **#cortex-alerts** | Production alerts | Ops team |
-| **#cortex-dev** | Development discussions | Developers |
-| **#cortex-reviews** | Code reviews | All team members |
+| Channel             | Purpose                 | Access           |
+| ------------------- | ----------------------- | ---------------- |
+| **#cortex-mcp**     | General discussion      | All team members |
+| **#cortex-alerts**  | Production alerts       | Ops team         |
+| **#cortex-dev**     | Development discussions | Developers       |
+| **#cortex-reviews** | Code reviews            | All team members |
 
 ### Code Review Process
 
@@ -556,24 +560,28 @@ npm run performance:analyze
 ### Training Plan
 
 **Week 1**: Setup and Basic Operations
+
 - Complete this guide
 - Set up development environment
 - Make first code contribution
 - Understand basic architecture
 
 **Week 2**: Development Practices
+
 - Learn code structure and patterns
 - Write and run tests
 - Participate in code reviews
 - Understand deployment process
 
 **Week 3**: Operations and Monitoring
+
 - Learn backup/restore procedures
 - Understand monitoring setup
 - Handle basic troubleshooting
 - Participate in on-call rotation
 
 **Week 4**: Advanced Topics
+
 - Performance optimization
 - Security best practices
 - Architecture decisions
@@ -648,14 +656,14 @@ npm run help             # List all available scripts
 
 ### Important Files
 
-| File | Purpose |
-|------|---------|
-| `README.md` | Project overview and quick start |
-| `docs/NEW-ENGINEER-GUIDE.md` | This guide |
-| `docs/API-REFERENCE.md` | Complete API documentation |
-| `docs/OPS-DISASTER-RECOVERY.md` | Operations manual |
-| `.env.example` | Environment template |
-| `package.json` | Project configuration and scripts |
+| File                            | Purpose                           |
+| ------------------------------- | --------------------------------- |
+| `README.md`                     | Project overview and quick start  |
+| `docs/NEW-ENGINEER-GUIDE.md`    | This guide                        |
+| `docs/API-REFERENCE.md`         | Complete API documentation        |
+| `docs/OPS-DISASTER-RECOVERY.md` | Operations manual                 |
+| `.env.example`                  | Environment template              |
+| `package.json`                  | Project configuration and scripts |
 
 ### Contact Information
 

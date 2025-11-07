@@ -15,22 +15,26 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '../../utils/logger.js';
-import { createHash } from 'node:crypto';
+import { logger } from '@/utils/logger.js';
+import { createHash } from 'crypto';
 import { promisify } from 'node:util';
-import { exec } from 'node:child_process';
-import { readFile, writeFile, readdir, stat, unlink } from 'node:fs/promises';
-import { join, dirname, basename } from 'node:path';
+import { exec } from 'child_process';
+import { readFile, writeFile, readdir, stat, unlink } from 'fs/promises';
+import { join, dirname, basename } from 'path';
 import {
-  scheduleJob,
-  RecurrenceRule,
-  Job as NodeCronJob
+  schedule,
+  ScheduledTask
 } from 'node-cron';
 import type {
   QdrantCollectionInfo,
   QdrantCollectionStats,
   QdrantAdapter
-} from './qdrant-adapter.js';
+} from './adapters/qdrant-adapter.js';
+
+/**
+ * Recurrence rule for scheduling backups using cron expressions
+ */
+export type RecurrenceRule = string;
 
 /**
  * Backup configuration interface
@@ -73,7 +77,7 @@ export interface BackupConfig {
   performance: {
     maxConcurrentBackups: number;
     bandwidthThrottleMBps?: number;
-    priority: 'low' | 'normal' | 'high';
+    priority: 'low' | 'normal' | 'high' | 'critical';
   };
 }
 
@@ -191,7 +195,7 @@ export interface DisasterRecoveryStatus {
 export class QdrantBackupService {
   private client: QdrantClient;
   private config: BackupConfig;
-  private backupJobs: Map<string, NodeCronJob> = new Map();
+  private backupJobs: Map<string, ScheduledTask> = new Map();
   private activeBackups: Map<string, Promise<any>> = new Map();
   private backupRegistry: Map<string, BackupMetadata> = new Map();
   private restoreTestResults: Map<string, RestoreTestResult> = new Map();
@@ -789,7 +793,7 @@ export class QdrantBackupService {
 
   private async startScheduledJobs(): Promise<void> {
     // Schedule full backups
-    const fullBackupJob = scheduleJob(this.config.schedule.fullBackup, async () => {
+    const fullBackupJob = schedule(this.config.schedule.fullBackup, async () => {
       await this.createFullBackup().catch(error => {
         logger.error({ error }, 'Scheduled full backup failed');
       });
@@ -797,7 +801,7 @@ export class QdrantBackupService {
     this.backupJobs.set('fullBackup', fullBackupJob);
 
     // Schedule incremental backups
-    const incrementalBackupJob = scheduleJob(this.config.schedule.incrementalBackup, async () => {
+    const incrementalBackupJob = schedule(this.config.schedule.incrementalBackup, async () => {
       await this.createIncrementalBackup().catch(error => {
         logger.error({ error }, 'Scheduled incremental backup failed');
       });
@@ -805,7 +809,7 @@ export class QdrantBackupService {
     this.backupJobs.set('incrementalBackup', incrementalBackupJob);
 
     // Schedule restore tests
-    const restoreTestJob = scheduleJob(this.config.schedule.restoreTest, async () => {
+    const restoreTestJob = schedule(this.config.schedule.restoreTest, async () => {
       await this.performRestoreTest().catch(error => {
         logger.error({ error }, 'Scheduled restore test failed');
       });
@@ -813,7 +817,7 @@ export class QdrantBackupService {
     this.backupJobs.set('restoreTest', restoreTestJob);
 
     // Schedule consistency checks
-    const consistencyCheckJob = scheduleJob(this.config.schedule.consistencyCheck, async () => {
+    const consistencyCheckJob = schedule(this.config.schedule.consistencyCheck, async () => {
       await this.performConsistencyValidation().catch(error => {
         logger.error({ error }, 'Scheduled consistency check failed');
       });

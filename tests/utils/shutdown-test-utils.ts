@@ -24,10 +24,10 @@ export interface TestServerOptions {
 
 export interface ResourceSnapshot {
   timestamp: number;
-  memory: NodeJS.MemoryUsage;
+  memory: NodeJS['M']emoryUsage;
   handles: number;
   requests: number;
-  cpuUsage: NodeJS.CpuUsage;
+  cpuUsage: NodeJS['C']puUsage;
   openFiles?: string[];
 }
 
@@ -83,12 +83,12 @@ export class TestServerManager extends EventEmitter {
       ...process.env,
       NODE_ENV: 'test',
       LOG_LEVEL: this.options.logOutput ? 'debug' : 'info',
-      ...this.options.env
+      ...this.options.env,
     };
 
     this.process = spawn('node', [serverPath, ...args], {
       stdio: ['pipe', 'pipe', 'pipe'],
-      env
+      env,
     });
 
     this.startTime = performance.now();
@@ -128,7 +128,7 @@ export class TestServerManager extends EventEmitter {
   /**
    * Stop the server with specified signal
    */
-  async stop(signal: NodeJS.Signals = 'SIGINT'): Promise<number | null> {
+  async stop(signal: NodeJS['S']ignals = 'SIGINT'): Promise<number | null> {
     if (!this.process) {
       throw new Error('Server not started');
     }
@@ -190,7 +190,7 @@ export class TestServerManager extends EventEmitter {
       './dist/index.js',
       './dist/src/index.js',
       './src/index.ts',
-      './index.js'
+      './index.js',
     ];
 
     for (const serverPath of possiblePaths) {
@@ -222,12 +222,15 @@ export class TestServerManager extends EventEmitter {
       }, 10000);
 
       const checkStarted = () => {
-        if (this.output.some(line =>
-          line.includes('started') ||
-          line.includes('listening') ||
-          line.includes('ready') ||
-          line.includes('Server running')
-        )) {
+        if (
+          this.output.some(
+            (line) =>
+              line.includes('started') ||
+              line.includes('listening') ||
+              line.includes('ready') ||
+              line.includes('Server running')
+          )
+        ) {
           clearTimeout(timeout);
           resolve();
           return;
@@ -274,9 +277,9 @@ export class ResourceMonitor {
     const snapshot: ResourceSnapshot = {
       timestamp: performance.now(),
       memory: process.memoryUsage(),
-      handles: process._getActiveHandles().length,
-      requests: process._getActiveRequests().length,
-      cpuUsage: process.cpuUsage()
+      handles: process['_']getActiveHandles().length,
+      requests: process['_']getActiveRequests().length,
+      cpuUsage: process.cpuUsage(),
     };
 
     if (process.platform !== 'win32') {
@@ -305,7 +308,10 @@ export class ResourceMonitor {
   /**
    * Calculate difference between two snapshots
    */
-  calculateDiff(before: ResourceSnapshot, after: ResourceSnapshot): {
+  calculateDiff(
+    before: ResourceSnapshot,
+    after: ResourceSnapshot
+  ): {
     memory: { heapUsed: number; heapTotal: number; external: number; rss: number };
     handles: number;
     requests: number;
@@ -315,10 +321,10 @@ export class ResourceMonitor {
         heapUsed: after.memory.heapUsed - before.memory.heapUsed,
         heapTotal: after.memory.heapTotal - before.memory.heapTotal,
         external: after.memory.external - before.memory.external,
-        rss: after.memory.rss - before.memory.rss
+        rss: after.memory.rss - before.memory.rss,
       },
       handles: after.handles - before.handles,
-      requests: after.requests - before.requests
+      requests: after.requests - before.requests,
     };
   }
 
@@ -354,10 +360,10 @@ export class ShutdownTestExecutor {
       resources: {
         before: this.resourceMonitor.takeSnapshot('before-start'),
         after: {} as ResourceSnapshot,
-        diff: {} as any
+        diff: {} as any,
       },
       errors: [],
-      warnings: []
+      warnings: [],
     };
 
     const startTime = performance.now();
@@ -365,7 +371,7 @@ export class ShutdownTestExecutor {
     try {
       const server = new TestServerManager({
         ...options,
-        logOutput: options.logOutput || false
+        logOutput: options.logOutput || false,
       });
 
       // Take snapshot after server start
@@ -409,7 +415,6 @@ export class ShutdownTestExecutor {
       result.passed = await this.evaluateTestSuccess(testName, exitCode, result);
 
       server.cleanup();
-
     } catch (error) {
       result.errors.push(error instanceof Error ? error.message : String(error));
       result.passed = false;
@@ -435,7 +440,9 @@ export class ShutdownTestExecutor {
 
     // Test-specific evaluation
     if (testName.includes('SIGINT') || testName.includes('SIGTERM')) {
-      return exitCode === 0 && this.outputContains(result.output, ['SIGINT', 'SIGTERM', 'shutdown']);
+      return (
+        exitCode === 0 && this.outputContains(result.output, ['SIGINT', 'SIGTERM', 'shutdown'])
+      );
     }
 
     if (testName.includes('graceful')) {
@@ -475,7 +482,7 @@ export class ShutdownTestExecutor {
    */
   private outputContains(output: string[], keywords: string[]): boolean {
     const outputText = output.join(' ').toLowerCase();
-    return keywords.some(keyword => outputText.includes(keyword.toLowerCase()));
+    return keywords.some((keyword) => outputText.includes(keyword.toLowerCase()));
   }
 
   /**
@@ -527,7 +534,7 @@ export class ShutdownTestUtils {
     for (let i = 0; i < concurrency; i++) {
       promises.push(
         fetch('http://httpbin.org/delay/1', {
-          signal: AbortSignal.timeout(5000)
+          signal: AbortSignal.timeout(5000),
         }).catch(() => {}) // Ignore errors
       );
     }
@@ -540,7 +547,7 @@ export class ShutdownTestUtils {
    */
   static generateReport(results: ShutdownTestResult[]): string {
     const totalTests = results.length;
-    const passedTests = results.filter(r => r.passed).length;
+    const passedTests = results.filter((r) => r.passed).length;
     const failedTests = totalTests - passedTests;
 
     const report = [
@@ -554,10 +561,10 @@ export class ShutdownTestUtils {
       `Success Rate: ${Math.round((passedTests / totalTests) * 100)}%`,
       '',
       '## Test Results',
-      ''
+      '',
     ];
 
-    results.forEach(result => {
+    results.forEach((result) => {
       const status = result.passed ? '✅ PASS' : '❌ FAIL';
       report.push(`${status} ${result.testName} (${Math.round(result.duration)}ms)`);
 
@@ -571,12 +578,12 @@ export class ShutdownTestUtils {
 
       if (result.errors.length > 0) {
         report.push('   Errors:');
-        result.errors.forEach(error => report.push(`     - ${error}`));
+        result.errors.forEach((error) => report.push(`     - ${error}`));
       }
 
       if (result.warnings.length > 0) {
         report.push('   Warnings:');
-        result.warnings.forEach(warning => report.push(`     - ${warning}`));
+        result.warnings.forEach((warning) => report.push(`     - ${warning}`));
       }
 
       report.push('');

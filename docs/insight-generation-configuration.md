@@ -165,6 +165,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ## Insight Types Configuration
 
 ### Pattern Recognition
+
 - **Purpose**: Identify recurring patterns and keywords
 - **Default Confidence**: 0.7
 - **Typical Use Cases**:
@@ -189,6 +190,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ```
 
 ### Connection Analysis
+
 - **Purpose**: Find relationships between items
 - **Default Confidence**: 0.6
 - **Typical Use Cases**:
@@ -214,6 +216,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ```
 
 ### Action Recommendations
+
 - **Purpose**: Suggest actionable steps
 - **Default Confidence**: 0.8 (higher threshold)
 - **Typical Use Cases**:
@@ -241,6 +244,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ```
 
 ### Anomaly Detection
+
 - **Purpose**: Detect unusual patterns
 - **Default Confidence**: 0.9 (highest threshold)
 - **Default State**: Disabled (noise prevention)
@@ -267,6 +271,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ```
 
 ### Trend Analysis
+
 - **Purpose**: Identify temporal trends
 - **Default Confidence**: 0.7
 - **Default State**: Disabled (requires historical data)
@@ -297,6 +302,7 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ## Best Practices
 
 ### Production Deployment
+
 1. **Start Disabled**: Always begin with `INSIGHT_GENERATION_ENABLED=false`
 2. **Enable Gradually**: Enable one insight type at a time
 3. **Monitor Performance**: Watch performance impact metrics closely
@@ -304,12 +310,14 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 5. **Set Limits**: Configure appropriate batch and per-item limits
 
 ### Performance Optimization
+
 1. **Enable Caching**: Keep `INSIGHT_GENERATION_CACHE_TTL` at reasonable values
 2. **Filter Early**: Use appropriate confidence thresholds
 3. **Batch Processing**: Process items in optimal batch sizes
 4. **Monitor Impact**: Keep performance impact under configured thresholds
 
 ### Development and Testing
+
 1. **Enable All Types**: Use development environment to test all insight types
 2. **Lower Thresholds**: Use lower confidence thresholds for testing
 3. **Increase Limits**: Use higher batch limits for comprehensive testing
@@ -320,18 +328,21 @@ console.log(`Error rate: ${metrics.error_rate * 100}%`);
 ### Common Issues
 
 **No Insights Generated**
+
 - Check if insight generation is enabled
 - Verify confidence thresholds aren't too high
 - Ensure sufficient data for analysis
 - Check if specific insight types are enabled
 
 **High Performance Impact**
+
 - Reduce `INSIGHT_GENERATION_MAX_INSIGHTS_PER_BATCH`
 - Increase `INSIGHT_GENERATION_CONFIDENCE_THRESHOLD`
 - Disable noisy insight types (anomalies, trends)
 - Reduce processing timeout
 
 **Insight Quality Issues**
+
 - Adjust confidence thresholds per insight type
 - Enable/disable specific insight types based on use case
 - Review insight filtering and prioritization settings

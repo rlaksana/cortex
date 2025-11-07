@@ -15,6 +15,7 @@ export type SearchStrategy =
   | 'fallback'
   | 'autonomous_deduplication'
   | 'system_operation'
+  | 'health_check'
   | 'error';
 
 export interface UnifiedResponseMeta {
@@ -170,5 +171,25 @@ export function migrateLegacyResponse(
   return {
     ...legacyResponse,
     meta,
+  };
+}
+
+/**
+ * Factory function to create MCP-compliant response
+ */
+export function createMcpResponse<T = any>(params: {
+  data: T;
+  meta: UnifiedResponseMeta;
+  rate_limit?: {
+    allowed: boolean;
+    remaining: number;
+    reset_time: string;
+    identifier: string;
+  };
+}): UnifiedToolResponse<T> {
+  return {
+    data: params.data,
+    meta: params.meta,
+    ...(params.rate_limit && { rate_limit: params.rate_limit }),
   };
 }

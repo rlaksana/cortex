@@ -151,15 +151,9 @@ echo "✅ Ready to commit with confidence!"
     console.log('📁 Creating configuration files...');
 
     // Create directories
-    const directories = [
-      'scripts',
-      '.github/workflows',
-      '.husky',
-      'coverage',
-      'test-results'
-    ];
+    const directories = ['scripts', '.github/workflows', '.husky', 'coverage', 'test-results'];
 
-    directories.forEach(dir => {
+    directories.forEach((dir) => {
       const fullPath = join(this.projectRoot, dir);
       if (!existsSync(fullPath)) {
         mkdirSync(fullPath, { recursive: true });
@@ -174,11 +168,11 @@ echo "✅ Ready to commit with confidence!"
         performance: {
           operations: 100,
           timeLimit: 1000,
-          maxPerOperation: 100
+          maxPerOperation: 100,
         },
         memory: {
-          limitMB: 100
-        }
+          limitMB: 100,
+        },
       },
       stages: [
         { name: 'Type Check', command: 'npm run type-check', critical: true },
@@ -186,8 +180,12 @@ echo "✅ Ready to commit with confidence!"
         { name: 'Unit Tests', command: 'npm run test:unit', critical: true },
         { name: 'Integration Tests', command: 'npm run test:integration', critical: true },
         { name: 'Coverage Check', command: 'npm run test:coverage:ci', critical: true },
-        { name: 'Performance Smoke Test', command: 'npm run test:integration:performance', critical: true }
-      ]
+        {
+          name: 'Performance Smoke Test',
+          command: 'npm run test:integration:performance',
+          critical: true,
+        },
+      ],
     };
 
     const configPath = join(this.projectRoot, 'quality-gate.config.json');
@@ -243,7 +241,7 @@ test-results.xml
       'quality-gate:ci': 'node scripts/quality-gate.mjs --strict',
       'pre-commit': 'node scripts/pre-commit-check.mjs',
       'quality:dashboard': 'open scripts/quality-gate-dashboard.html',
-      'setup:quality-gate': 'node scripts/setup-quality-gate.mjs'
+      'setup:quality-gate': 'node scripts/setup-quality-gate.mjs',
     };
 
     // Merge with existing scripts
@@ -261,7 +259,7 @@ test-results.xml
     // Ensure Node.js engine requirement
     packageJson.engines = {
       ...packageJson.engines,
-      node: '>=20.0.0'
+      node: '>=20.0.0',
     };
 
     writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
@@ -301,7 +299,7 @@ test-results.xml
       'scripts/quality-gate.mjs',
       'scripts/pre-commit-check.mjs',
       'scripts/generate-coverage-badge.js',
-      'scripts/quality-gate-dashboard.html'
+      'scripts/quality-gate-dashboard.html',
     ];
 
     for (const script of requiredScripts) {
@@ -317,7 +315,7 @@ test-results.xml
     const requiredConfigs = [
       'quality-gate.config.json',
       '.github/workflows/quality-gate.yml',
-      '.husky/pre-commit'
+      '.husky/pre-commit',
     ];
 
     for (const config of requiredConfigs) {
@@ -350,12 +348,12 @@ test-results.xml
       console.log('✅ All components installed successfully!');
     } else {
       console.log(`⚠️  ${this.errors.length} error(s) occurred during setup:`);
-      this.errors.forEach(error => console.log(`   ❌ ${error}`));
+      this.errors.forEach((error) => console.log(`   ❌ ${error}`));
     }
 
     if (this.warnings.length > 0) {
       console.log(`\n⚠️  ${this.warnings.length} warning(s):`);
-      this.warnings.forEach(warning => console.log(`   ⚠️  ${warning}`));
+      this.warnings.forEach((warning) => console.log(`   ⚠️  ${warning}`));
     }
 
     console.log('\n🚀 Next steps:');
@@ -390,7 +388,7 @@ test-results.xml
 // Run setup if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const setup = new QualityGateSetup();
-  setup.setup().catch(error => {
+  setup.setup().catch((error) => {
     console.error('❌ Setup failed:', error);
     process.exit(1);
   });

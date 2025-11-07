@@ -41,20 +41,47 @@ function validateTruncationImplementation() {
   allChecksPass &= checkFileExists('src/services/truncation/truncation-service.ts');
 
   console.log('\n🔧 Configuration Implementation:');
-  allChecksPass &= checkFileContains('src/config/truncation-config.ts', /interface TruncationConfig/);
-  allChecksPass &= checkFileContains('src/config/truncation-config.ts', /interface TruncationResult/);
-  allChecksPass &= checkFileContains('src/config/truncation-config.ts', /export const DEFAULT_TRUNCATION_CONFIG/);
+  allChecksPass &= checkFileContains(
+    'src/config/truncation-config.ts',
+    /interface TruncationConfig/
+  );
+  allChecksPass &= checkFileContains(
+    'src/config/truncation-config.ts',
+    /interface TruncationResult/
+  );
+  allChecksPass &= checkFileContains(
+    'src/config/truncation-config.ts',
+    /export const DEFAULT_TRUNCATION_CONFIG/
+  );
 
   console.log('\n🛠️  Service Implementation:');
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /export class TruncationService/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /async processContent/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /class TokenEstimator/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /class ContentTypeDetector/);
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /export class TruncationService/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /async processContent/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /class TokenEstimator/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /class ContentTypeDetector/
+  );
 
   console.log('\n📊 Metrics Integration:');
   allChecksPass &= checkFileContains('src/services/metrics/system-metrics.ts', /truncation: {/);
-  allChecksPass &= checkFileContains('src/services/metrics/system-metrics.ts', /store_truncated_total/);
-  allChecksPass &= checkFileContains('src/services/metrics/system-metrics.ts', /updateTruncationMetrics/);
+  allChecksPass &= checkFileContains(
+    'src/services/metrics/system-metrics.ts',
+    /store_truncated_total/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/metrics/system-metrics.ts',
+    /updateTruncationMetrics/
+  );
 
   console.log('\n🏗️  Environment Configuration:');
   allChecksPass &= checkFileContains('src/config/environment.ts', /getTruncationConfig/);
@@ -79,18 +106,33 @@ function validateTruncationImplementation() {
   // Check for truncation strategies
   console.log('\n   Truncation Strategies:');
   allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /hardCutoff/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /preserveSentences/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /preserveJsonStructure/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /smartContent/);
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /preserveSentences/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /preserveJsonStructure/
+  );
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /smartContent/
+  );
 
   // Check for content type detection
   console.log('\n   Content Type Detection:');
   allChecksPass &= checkFileContains('src/config/truncation-config.ts', /CONTENT_TYPE_PATTERNS/);
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /detectContentType/);
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /detectContentType/
+  );
 
   // Check for metrics tracking
   console.log('\n   Metrics Tracking:');
-  allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /updateMetrics/);
+  allChecksPass &= checkFileContains(
+    'src/services/truncation/truncation-service.ts',
+    /updateMetrics/
+  );
   allChecksPass &= checkFileContains('src/services/truncation/truncation-service.ts', /getMetrics/);
 
   // Check for configuration options

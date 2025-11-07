@@ -16,7 +16,7 @@
  * @module services/__tests__/chaos-testing
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
 import { sliSloMonitorService } from '../metrics/sli-slo-monitor.js';
 import { retryPolicyManager } from '../../utils/retry-policy.js';

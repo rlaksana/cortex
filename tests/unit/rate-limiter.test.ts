@@ -39,7 +39,7 @@ describe('RateLimitService', () => {
       const result = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
 
@@ -47,7 +47,7 @@ describe('RateLimitService', () => {
       expect(result.current_usage.tokens_available).toBeLessThan(100); // Started with 100, used 1
       expect(result.entity_id).toBe('test-api-key');
       expect(result.entity_type).toBe('api_key');
-      expect(result.operation).toBe(OperationType.MEMORY_FIND);
+      expect(result.operation).toBe(OperationType['MEMORY_FIND']);
     });
 
     it('should block requests that exceed burst capacity', async () => {
@@ -58,7 +58,7 @@ describe('RateLimitService', () => {
       const requests = [];
       for (let i = 0; i < 101; i++) {
         requests.push(
-          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1)
+          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1)
         );
       }
 
@@ -77,14 +77,14 @@ describe('RateLimitService', () => {
 
       // Exhaust initial capacity
       for (let i = 0; i < 2000; i++) {
-        await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1);
+        await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1);
       }
 
       // Should be blocked
       const blockedResult = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
       expect(blockedResult.allowed).toBe(false);
@@ -97,7 +97,7 @@ describe('RateLimitService', () => {
       const resultAfterRefill = await newRateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
       expect(resultAfterRefill.allowed).toBe(true);
@@ -115,7 +115,7 @@ describe('RateLimitService', () => {
       const requests = [];
       for (let i = 0; i < 1001; i++) {
         requests.push(
-          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1)
+          rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1)
         );
       }
 
@@ -138,14 +138,14 @@ describe('RateLimitService', () => {
 
       // Exhaust limits for entity-1
       for (let i = 0; i < 101; i++) {
-        await rateLimiter.checkRateLimit('entity-1', 'api_key', OperationType.MEMORY_FIND, 1);
+        await rateLimiter.checkRateLimit('entity-1', 'api_key', OperationType['MEMORY_FIND'], 1);
       }
 
       // entity-1 should be blocked
       const entity1Result = await rateLimiter.checkRateLimit(
         'entity-1',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
       expect(entity1Result.allowed).toBe(false);
@@ -154,7 +154,7 @@ describe('RateLimitService', () => {
       const entity2Result = await rateLimiter.checkRateLimit(
         'entity-2',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
       expect(entity2Result.allowed).toBe(true);
@@ -169,7 +169,7 @@ describe('RateLimitService', () => {
         const result = await rateLimiter.checkRateLimit(
           'org-123',
           'organization',
-          OperationType.MEMORY_STORE,
+          OperationType['MEMORY_STORE'],
           1
         );
         expect(result.allowed).toBe(true);
@@ -185,7 +185,7 @@ describe('RateLimitService', () => {
       const findResult = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
       expect(findResult.allowed).toBe(true);
@@ -193,7 +193,7 @@ describe('RateLimitService', () => {
       const storeResult = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_STORE,
+        OperationType['MEMORY_STORE'],
         1
       );
       expect(storeResult.allowed).toBe(true);
@@ -208,8 +208,8 @@ describe('RateLimitService', () => {
       rateLimiter.configureEntity('test-api-key', 'api_key', 'free');
 
       // Make some requests
-      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1);
-      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1);
+      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1);
+      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1);
 
       const usage = rateLimiter.getEntityUsage('test-api-key', 'api_key');
       expect(usage.tier).toBe('free');
@@ -221,7 +221,7 @@ describe('RateLimitService', () => {
       rateLimiter.configureEntity('test-api-key', 'api_key', 'free');
 
       // Make some requests
-      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1);
+      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1);
 
       const metrics = rateLimiter.getMetrics();
       expect(metrics.total_checks).toBeGreaterThan(0);
@@ -235,7 +235,7 @@ describe('RateLimitService', () => {
       const result = await rateLimiter.checkRateLimit(
         'unknown-entity',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1
       );
 
@@ -250,7 +250,7 @@ describe('RateLimitService', () => {
       const result = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         1000
       );
 
@@ -262,7 +262,7 @@ describe('RateLimitService', () => {
       rateLimiter.configureEntity('test-api-key', 'api_key', 'free');
 
       // Make some requests
-      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType.MEMORY_FIND, 1);
+      await rateLimiter.checkRateLimit('test-api-key', 'api_key', OperationType['MEMORY_FIND'], 1);
 
       // Reset limits
       rateLimiter.resetEntityLimits('test-api-key', 'api_key');
@@ -271,7 +271,7 @@ describe('RateLimitService', () => {
       const result = await rateLimiter.checkRateLimit(
         'test-api-key',
         'api_key',
-        OperationType.MEMORY_FIND,
+        OperationType['MEMORY_FIND'],
         100
       );
       expect(result.allowed).toBe(true);

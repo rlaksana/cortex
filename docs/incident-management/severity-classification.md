@@ -9,6 +9,7 @@ This document defines the comprehensive incident severity classification system 
 ### Classification Criteria
 
 All incidents are classified based on four primary criteria:
+
 1. **Business Impact**: Effect on revenue, operations, and strategic objectives
 2. **Customer Impact**: Effect on customers, users, and end-user experience
 3. **Technical Impact**: Effect on systems, data, and technical infrastructure
@@ -16,21 +17,23 @@ All incidents are classified based on four primary criteria:
 
 ### Severity Levels Overview
 
-| Severity | Description | Response Time | Resolution Target | Escalation Level |
-|----------|-------------|---------------|-------------------|------------------|
-| **SEV-1** | Critical business impact | 5 minutes | 1 hour | Executive level |
-| **SEV-2** | Significant business impact | 15 minutes | 4 hours | Management level |
-| **SEV-3** | Moderate business impact | 1 hour | 24 hours | Team lead level |
-| **SEV-4** | Low business impact | 4 hours | 72 hours | Individual level |
+| Severity  | Description                 | Response Time | Resolution Target | Escalation Level |
+| --------- | --------------------------- | ------------- | ----------------- | ---------------- |
+| **SEV-1** | Critical business impact    | 5 minutes     | 1 hour            | Executive level  |
+| **SEV-2** | Significant business impact | 15 minutes    | 4 hours           | Management level |
+| **SEV-3** | Moderate business impact    | 1 hour        | 24 hours          | Team lead level  |
+| **SEV-4** | Low business impact         | 4 hours       | 72 hours          | Individual level |
 
 ## 🚨 SEV-1: Critical Incidents
 
 ### Definition
+
 Incidents with critical impact on business operations, significant customer disruption, major revenue loss, or regulatory compliance violations. These incidents require immediate executive attention and cross-organizational coordination.
 
 ### Impact Criteria
 
 #### **Business Impact (Must meet at least ONE)**
+
 - Revenue loss > $10,000 per hour
 - Complete service outage for >50% of customers
 - Critical business process completely non-functional
@@ -38,6 +41,7 @@ Incidents with critical impact on business operations, significant customer disr
 - Immediate threat to business continuity
 
 #### **Customer Impact (Must meet at least ONE)**
+
 - Complete service unavailability for all customers
 - Data loss or corruption affecting customers
 - Security breach exposing customer data
@@ -45,6 +49,7 @@ Incidents with critical impact on business operations, significant customer disr
 - Customer safety or legal compliance issues
 
 #### **Technical Impact (Must meet at least ONE)**
+
 - Complete system or infrastructure failure
 - Database corruption or permanent data loss
 - Security breach or active attack in progress
@@ -52,6 +57,7 @@ Incidents with critical impact on business operations, significant customer disr
 - Widespread system compromise
 
 #### **Compliance Impact (Must meet at least ONE)**
+
 - Regulatory compliance violation
 - Legal or contractual breach
 - Reportable data breach
@@ -61,24 +67,28 @@ Incidents with critical impact on business operations, significant customer disr
 ### Response Requirements
 
 #### **Team Activation**
+
 - **Immediate**: Full incident response team activation
 - **Leadership**: Incident Commander (Director level or above)
 - **Executive**: C-level notification within 15 minutes
 - **Cross-functional**: All relevant departments immediately involved
 
 #### **Communication Cadence**
+
 - **Internal Updates**: Every 15 minutes
 - **Management Updates**: Every 30 minutes
 - **Executive Updates**: Every 30 minutes
 - **Customer Updates**: As needed based on impact
 
 #### **Resolution Timeline**
+
 - **Initial Response**: 5 minutes
 - **Assessment Complete**: 15 minutes
 - **Solution Implementation**: 45 minutes
 - **Total Resolution Target**: 1 hour
 
 ### Examples
+
 - Complete service outage
 - Data breach exposing customer information
 - Production database corruption
@@ -90,11 +100,13 @@ Incidents with critical impact on business operations, significant customer disr
 ## ⚠️ SEV-2: Significant Incidents
 
 ### Definition
+
 Incidents with significant impact on business operations or customer experience that require immediate attention and coordinated response. These incidents affect key business functions or a substantial portion of customers.
 
 ### Impact Criteria
 
 #### **Business Impact (Must meet at least ONE)**
+
 - Revenue loss $1,000-$10,000 per hour
 - Major service degradation affecting >25% of customers
 - Important business process severely impaired
@@ -102,6 +114,7 @@ Incidents with significant impact on business operations or customer experience 
 - Significant operational disruption
 
 #### **Customer Impact (Must meet at least ONE)**
+
 - Major service degradation or partial outage
 - Critical functionality unavailable for subset of customers
 - Performance issues affecting core user experience
@@ -109,6 +122,7 @@ Incidents with significant impact on business operations or customer experience 
 - Security concern requiring immediate attention
 
 #### **Technical Impact (Must meet at least ONE)**
+
 - Major system component failure
 - Significant performance degradation
 - Database performance issues or partial unavailability
@@ -116,6 +130,7 @@ Incidents with significant impact on business operations or customer experience 
 - Multiple service dependencies affected
 
 #### **Compliance Impact (Must meet at least ONE)**
+
 - Potential compliance violation
 - Near-miss security incident
 - Audit finding requiring immediate action
@@ -125,24 +140,28 @@ Incidents with significant impact on business operations or customer experience 
 ### Response Requirements
 
 #### **Team Activation**
+
 - **Immediate**: Core incident response team activation
 - **Leadership**: Incident Commander (Manager level or above)
 - **Management**: Department head notification within 1 hour
 - **Cross-functional**: Relevant teams involved as needed
 
 #### **Communication Cadence**
+
 - **Internal Updates**: Every 1 hour
 - **Management Updates**: Every 2 hours
 - **Customer Updates**: Every 4 hours or as needed
 - **Partner Updates**: As needed
 
 #### **Resolution Timeline**
+
 - **Initial Response**: 15 minutes
 - **Assessment Complete**: 1 hour
 - **Solution Implementation**: 3 hours
 - **Total Resolution Target**: 4 hours
 
 ### Examples
+
 - Major service degradation
 - Critical feature unavailable
 - Significant performance issues
@@ -154,11 +173,13 @@ Incidents with significant impact on business operations or customer experience 
 ## 📋 SEV-3: Moderate Incidents
 
 ### Definition
+
 Incidents with moderate impact on business operations or customer experience that require timely response and resolution. These incidents affect some customers or non-critical business functions.
 
 ### Impact Criteria
 
 #### **Business Impact (Must meet at least ONE)**
+
 - Revenue loss $100-$1,000 per hour
 - Minor service degradation affecting <25% of customers
 - Non-critical business process impaired
@@ -166,6 +187,7 @@ Incidents with moderate impact on business operations or customer experience tha
 - Minor operational disruption
 
 #### **Customer Impact (Must meet at least ONE)**
+
 - Minor service degradation or intermittent issues
 - Non-critical functionality unavailable
 - Performance issues affecting some users
@@ -173,6 +195,7 @@ Incidents with moderate impact on business operations or customer experience tha
 - Limited customer impact
 
 #### **Technical Impact (Must meet at least ONE)**
+
 - Single system component failure
 - Minor performance degradation
 - Background processing issues
@@ -180,6 +203,7 @@ Incidents with moderate impact on business operations or customer experience tha
 - Monitoring or reporting issues
 
 #### **Compliance Impact (Must meet at least ONE)**
+
 - Minor compliance concerns
 - Documentation gaps
 - Process deviations
@@ -189,24 +213,28 @@ Incidents with moderate impact on business operations or customer experience tha
 ### Response Requirements
 
 #### **Team Activation**
+
 - **Standard**: On-call team response
 - **Leadership**: Team lead or senior engineer
 - **Management**: Notification as needed
 - **Cross-functional**: Limited involvement as needed
 
 #### **Communication Cadence**
+
 - **Internal Updates**: Every 4 hours
 - **Management Updates**: Every 8 hours or as needed
 - **Customer Updates**: Every 12 hours or as needed
 - **Status Page**: Update as needed
 
 #### **Resolution Timeline**
+
 - **Initial Response**: 1 hour
 - **Assessment Complete**: 4 hours
 - **Solution Implementation**: 20 hours
 - **Total Resolution Target**: 24 hours
 
 ### Examples
+
 - Minor service degradation
 - Non-critical feature issues
 - Background processing delays
@@ -218,11 +246,13 @@ Incidents with moderate impact on business operations or customer experience tha
 ## 📝 SEV-4: Low Incidents
 
 ### Definition
+
 Incidents with minimal business impact that can be addressed through standard operating procedures. These incidents typically affect individual users, have limited customer impact, or represent minor system issues.
 
 ### Impact Criteria
 
 #### **Business Impact (Must meet at least ONE)**
+
 - Revenue loss <$100 per hour
 - No customer impact or minimal internal impact
 - Cosmetic or minor UI issues
@@ -230,6 +260,7 @@ Incidents with minimal business impact that can be addressed through standard op
 - No operational disruption
 
 #### **Customer Impact (Must meet at least ONE)**
+
 - Individual user issues
 - Cosmetic or minor UI problems
 - Documentation errors
@@ -237,6 +268,7 @@ Incidents with minimal business impact that can be addressed through standard op
 - No impact on core functionality
 
 #### **Technical Impact (Must meet at least ONE)**
+
 - Logging or monitoring issues
 - Minor bugs or cosmetic issues
 - Performance within acceptable range
@@ -244,6 +276,7 @@ Incidents with minimal business impact that can be addressed through standard op
 - Development or staging environment issues
 
 #### **Compliance Impact (Must meet at least ONE)**
+
 - Documentation improvements
 - Process optimization opportunities
 - Low-risk security findings
@@ -253,24 +286,28 @@ Incidents with minimal business impact that can be addressed through standard op
 ### Response Requirements
 
 #### **Team Activation**
+
 - **Standard**: Individual assignment
 - **Leadership**: Self-managed or team lead oversight
 - **Management**: Notification for pattern/trend issues
 - **Cross-functional**: Limited or no involvement
 
 #### **Communication Cadence**
+
 - **Internal Updates**: Every 24 hours or as needed
 - **Management Updates**: Weekly or for trends
 - **Customer Updates**: As needed
 - **Documentation**: Update as part of resolution
 
 #### **Resolution Timeline**
+
 - **Initial Response**: 4 hours
 - **Assessment Complete**: 24 hours
 - **Solution Implementation**: 48 hours
 - **Total Resolution Target**: 72 hours
 
 ### Examples
+
 - Documentation errors
 - Cosmetic UI issues
 - Individual user problems
@@ -284,17 +321,20 @@ Incidents with minimal business impact that can be addressed through standard op
 ### Initial Classification
 
 #### **Classification Authority**
+
 - **SEV-1**: Incident Commander or on-call manager can declare
 - **SEV-2**: On-call engineer can propose, manager approval
 - **SEV-3**: On-call engineer can classify
 - **SEV-4**: On-call engineer can classify
 
 #### **Classification Timeline**
+
 - **Initial Assessment**: Within 5 minutes of incident detection
 - **Classification Confirmation**: Within 15 minutes of detection
 - **Classification Review**: Every 30 minutes for SEV-1/SEV-2, every 2 hours for SEV-3/SEV-4
 
 #### **Classification Decision Tree**
+
 ```
 Is there immediate business continuity threat?
 ├─ YES → SEV-1 (Critical)
@@ -310,12 +350,14 @@ Is there immediate business continuity threat?
 ### Severity Escalation
 
 #### **Automatic Escalation Triggers**
+
 - **Time-based**: Resolution time exceeding 150% of target
 - **Impact-based**: Customer impact increasing beyond initial assessment
 - **Scope-based**: Additional systems or customers affected
 - **Business-based**: Revenue impact exceeding classification threshold
 
 #### **Manual Escalation Process**
+
 1. **Request**: Any team member can request severity reclassification
 2. **Assessment**: Incident Commander evaluates against criteria
 3. **Decision**: Severity adjusted based on current impact
@@ -323,6 +365,7 @@ Is there immediate business continuity threat?
 5. **Response**: Response plan adjusted to new severity level
 
 #### **Escalation Timelines**
+
 - **SEV-4 to SEV-3**: Immediately upon meeting criteria
 - **SEV-3 to SEV-2**: Within 15 minutes of criteria meeting
 - **SEV-2 to SEV-1**: Within 5 minutes of criteria meeting
@@ -330,12 +373,14 @@ Is there immediate business continuity threat?
 ### Severity De-escalation
 
 #### **De-escalation Criteria**
+
 - **Issue Resolution**: Root cause addressed and service restored
 - **Impact Reduction**: Business impact reduced below threshold
 - **Customer Recovery**: All customers have service restored
 - **Verification**: Systems stable for minimum time period
 
 #### **De-escalation Process**
+
 1. **Assessment**: Incident Commander evaluates current state
 2. **Verification**: Technical team confirms resolution
 3. **Stability Period**: Minimum observation time based on severity
@@ -351,6 +396,7 @@ Is there immediate business continuity threat?
 ### Business Impact Assessment
 
 #### **Revenue Impact Calculation**
+
 ```
 Hourly Revenue Loss = (Affected Revenue per Hour) × (Impact Percentage)
 
@@ -364,6 +410,7 @@ Impact Percentage Categories:
 ```
 
 #### **Customer Impact Assessment**
+
 ```
 Customer Impact Score = (Number of Affected Customers ÷ Total Customers) × 100
 
@@ -376,6 +423,7 @@ Impact Categories:
 ```
 
 #### **Operational Impact Assessment**
+
 ```
 Operational Impact Categories:
 • Critical: Business-critical processes completely non-functional
@@ -388,16 +436,18 @@ Operational Impact Categories:
 ### Technical Impact Assessment
 
 #### **System Impact Matrix**
-| System Component | Critical | Major | Moderate | Minor |
-|------------------|----------|-------|----------|-------|
-| Production Database | SEV-1 | SEV-1 | SEV-2 | SEV-3 |
-| Application Servers | SEV-1 | SEV-2 | SEV-3 | SEV-4 |
-| API Services | SEV-1 | SEV-2 | SEV-3 | SEV-4 |
-| Background Processing | SEV-2 | SEV-3 | SEV-3 | SEV-4 |
-| Monitoring/Logging | SEV-3 | SEV-3 | SEV-4 | SEV-4 |
-| Development Tools | SEV-4 | SEV-4 | SEV-4 | SEV-4 |
+
+| System Component      | Critical | Major | Moderate | Minor |
+| --------------------- | -------- | ----- | -------- | ----- |
+| Production Database   | SEV-1    | SEV-1 | SEV-2    | SEV-3 |
+| Application Servers   | SEV-1    | SEV-2 | SEV-3    | SEV-4 |
+| API Services          | SEV-1    | SEV-2 | SEV-3    | SEV-4 |
+| Background Processing | SEV-2    | SEV-3 | SEV-3    | SEV-4 |
+| Monitoring/Logging    | SEV-3    | SEV-3 | SEV-4    | SEV-4 |
+| Development Tools     | SEV-4    | SEV-4 | SEV-4    | SEV-4 |
 
 #### **Data Impact Assessment**
+
 ```
 Data Impact Categories:
 • Critical: Permanent data loss or corruption affecting customers
@@ -410,6 +460,7 @@ Data Impact Categories:
 ### Compliance Impact Assessment
 
 #### **Regulatory Impact Categories**
+
 ```
 Compliance Impact Levels:
 • Critical: Active regulatory violation or reportable breach
@@ -420,19 +471,21 @@ Compliance Impact Levels:
 ```
 
 #### **Compliance Assessment Matrix**
-| Regulation | Critical Impact | Major Impact | Moderate Impact | Minor Impact |
-|------------|-----------------|--------------|-----------------|--------------|
-| GDPR/Data Protection | SEV-1 | SEV-1 | SEV-2 | SEV-3 |
-| SOX/Financial | SEV-1 | SEV-2 | SEV-3 | SEV-4 |
-| HIPAA/Healthcare | SEV-1 | SEV-1 | SEV-2 | SEV-3 |
-| PCI/DSS | SEV-1 | SEV-2 | SEV-3 | SEV-4 |
-| Industry Specific | SEV-1 | SEV-2 | SEV-3 | SEV-4 |
+
+| Regulation           | Critical Impact | Major Impact | Moderate Impact | Minor Impact |
+| -------------------- | --------------- | ------------ | --------------- | ------------ |
+| GDPR/Data Protection | SEV-1           | SEV-1        | SEV-2           | SEV-3        |
+| SOX/Financial        | SEV-1           | SEV-2        | SEV-3           | SEV-4        |
+| HIPAA/Healthcare     | SEV-1           | SEV-1        | SEV-2           | SEV-3        |
+| PCI/DSS              | SEV-1           | SEV-2        | SEV-3           | SEV-4        |
+| Industry Specific    | SEV-1           | SEV-2        | SEV-3           | SEV-4        |
 
 ## 📋 Classification Documentation
 
 ### Incident Classification Record
 
 #### **Required Information**
+
 ```
 Incident Classification Record:
 - Incident ID: INC-[YYYYMMDD]-[NUMBER]
@@ -450,6 +503,7 @@ Incident Classification Record:
 ```
 
 #### **Classification Changes**
+
 ```
 Severity Change Record:
 - From: [SEV-X] To: [SEV-Y]
@@ -463,12 +517,14 @@ Severity Change Record:
 ### Quality Assurance
 
 #### **Classification Audit Process**
+
 1. **Monthly Review**: Sample of incidents reviewed for classification accuracy
 2. **Trend Analysis**: Classification patterns and trends analyzed
 3. **Feedback Loop**: Lessons learned fed back into classification process
 4. **Training Updates**: Classification guidelines updated based on findings
 
 #### **Classification Metrics**
+
 - **Classification Accuracy**: Percentage of incidents correctly classified
 - **Reclassification Rate**: Percentage of incidents requiring severity changes
 - **Response Time Compliance**: Percentage meeting response time objectives
@@ -488,18 +544,21 @@ Severity Change Record:
 ## Quick Reference
 
 ### Severity Decision Guide
+
 - **SEV-1**: Business continuity threatened, major revenue loss, data breach
 - **SEV-2**: Significant impact, SLA breach, critical functionality affected
 - **SEV-3**: Moderate impact, some customers affected, non-critical issues
 - **SEV-4**: Minimal impact, individual issues, minor bugs
 
 ### Response Time Targets
+
 - **SEV-1**: 5 minutes response, 1 hour resolution
 - **SEV-2**: 15 minutes response, 4 hours resolution
 - **SEV-3**: 1 hour response, 24 hours resolution
 - **SEV-4**: 4 hours response, 72 hours resolution
 
 ### Escalation Triggers
+
 - Time exceeding 150% of target
 - Impact increasing beyond assessment
 - Additional systems/customers affected
@@ -507,4 +566,4 @@ Severity Change Record:
 
 ---
 
-*This document should be reviewed quarterly and updated based on incident trends and business changes.*
+_This document should be reviewed quarterly and updated based on incident trends and business changes._

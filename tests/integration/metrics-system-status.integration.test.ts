@@ -22,9 +22,9 @@ vi.mock('../../src/utils/logger.js', () => ({
 }));
 
 // Mock environment
-process.env.NODE_ENV = 'test';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.QDRANT_COLLECTION_NAME = 'test-collection';
+process.env['NODE_ENV'] = 'test';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['QDRANT_COLLECTION_NAME'] = 'test-collection';
 
 describe('Metrics and System Status Integration', () => {
   let server: Server;
@@ -142,7 +142,9 @@ describe('Metrics and System Status Integration', () => {
             vector_operations: metrics.observability.vector_operations > 0,
             chunking_enabled: metrics.chunking.items_chunked > 0,
             cleanup_enabled: metrics.cleanup.cleanup_operations_run > 0,
-            deduplication_enabled: metrics.dedupe_hits.duplicates_detected > 0 || metrics.dedupe_rate.items_processed > 0,
+            deduplication_enabled:
+              metrics.dedupe_hits.duplicates_detected > 0 ||
+              metrics.dedupe_rate.items_processed > 0,
             rate_limiting_enabled: metrics.rate_limiting.total_requests > 0,
             truncation_protection: metrics.truncation.store_truncated_total > 0,
             performance_trending: true,
@@ -150,9 +152,18 @@ describe('Metrics and System Status Integration', () => {
             anomaly_detection: true,
           },
           performance_indicators: {
-            avg_response_time_ms: metrics.performance.avg_store_duration_ms + metrics.performance.avg_find_duration_ms,
-            error_rate: metrics.errors.total_errors / (metrics.store_count.total + metrics.find_count.total + metrics.purge_count.total) * 100,
-            dedupe_efficiency: metrics.dedupe_hits.duplicates_detected / Math.max(metrics.dedupe_rate.items_processed, 1) * 100,
+            avg_response_time_ms:
+              metrics.performance.avg_store_duration_ms + metrics.performance.avg_find_duration_ms,
+            error_rate:
+              (metrics.errors.total_errors /
+                (metrics.store_count.total +
+                  metrics.find_count.total +
+                  metrics.purge_count.total)) *
+              100,
+            dedupe_efficiency:
+              (metrics.dedupe_hits.duplicates_detected /
+                Math.max(metrics.dedupe_rate.items_processed, 1)) *
+              100,
             chunking_success_rate: metrics.chunking.chunking_success_rate,
             cleanup_success_rate: metrics.cleanup.cleanup_success_rate,
           },
@@ -161,14 +172,14 @@ describe('Metrics and System Status Integration', () => {
             memory_usage_kb: metrics.memory.memory_usage_kb,
             active_actors: metrics.rate_limiting.active_actors,
             active_knowledge_items: metrics.memory.active_knowledge_items,
-          }
+          },
         },
         performance_trending: {
           status: performanceTrendingService.getStatus(),
           trend_analysis: performanceTrendingService.getTrendAnalysis(1),
           active_alerts: performanceTrendingService.getActiveAlerts(),
-          export_available: true
-        }
+          export_available: true,
+        },
       };
 
       // Verify structure
@@ -214,7 +225,7 @@ describe('Metrics and System Status Integration', () => {
         });
 
         // Wait for trending collection
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        await new Promise((resolve) => setTimeout(resolve, 1200));
       }
 
       const status = performanceTrendingService.getStatus();
@@ -237,7 +248,7 @@ describe('Metrics and System Status Integration', () => {
           data: { success: true, kind: 'entity' },
           duration_ms: 50,
         });
-        await new Promise(resolve => setTimeout(resolve, 600));
+        await new Promise((resolve) => setTimeout(resolve, 600));
       }
 
       // Inject a performance spike
@@ -247,7 +258,7 @@ describe('Metrics and System Status Integration', () => {
         duration_ms: 500, // Much higher than baseline
       });
 
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
       // Check that trending service is collecting data
       const status = performanceTrendingService.getStatus();
@@ -256,7 +267,7 @@ describe('Metrics and System Status Integration', () => {
 
     it('should export metrics in different formats', async () => {
       // Wait for some data collection
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
       const jsonExport = performanceTrendingService.exportMetrics('json');
       const prometheusExport = performanceTrendingService.exportMetrics('prometheus');
@@ -307,8 +318,13 @@ describe('Metrics and System Status Integration', () => {
         memoryUsage: '2.5 KB',
         totalRequests: metrics.rate_limiting.total_requests,
         blockedRequests: metrics.rate_limiting.blocked_requests,
-        blockRate: metrics.rate_limiting.total_requests > 0 ?
-          ((metrics.rate_limiting.blocked_requests / metrics.rate_limiting.total_requests) * 100).toFixed(1) : 0,
+        blockRate:
+          metrics.rate_limiting.total_requests > 0
+            ? (
+                (metrics.rate_limiting.blocked_requests / metrics.rate_limiting.total_requests) *
+                100
+              ).toFixed(1)
+            : 0,
         configurations: {
           memory_store: { limit: 100, windowMs: 60000 },
           memory_find: { limit: 200, windowMs: 60000 },
@@ -342,15 +358,27 @@ describe('Metrics and System Status Integration', () => {
         { operation: 'store', data: { success: true, kind: 'entity' }, duration: 120 },
         { operation: 'store', data: { success: true, kind: 'relation' }, duration: 95 },
         { operation: 'find', data: { success: true, mode: 'auto' }, duration: 65 },
-        { operation: 'chunking', data: { items_chunked: 1, chunks_generated: 4, success: true }, duration: 180 },
-        { operation: 'dedupe_hits', data: { duplicates_detected: 2, similarity_score: 0.87, merge_operation: true }, duration: 140 },
-        { operation: 'cleanup', data: { items_deleted: 8, success: true, operation_type: 'expired' }, duration: 300 },
+        {
+          operation: 'chunking',
+          data: { items_chunked: 1, chunks_generated: 4, success: true },
+          duration: 180,
+        },
+        {
+          operation: 'dedupe_hits',
+          data: { duplicates_detected: 2, similarity_score: 0.87, merge_operation: true },
+          duration: 140,
+        },
+        {
+          operation: 'cleanup',
+          data: { items_deleted: 8, success: true, operation_type: 'expired' },
+          duration: 300,
+        },
       ];
 
       // Execute workflow
       for (const step of workflow) {
         systemMetricsService.updateMetrics(step);
-        await new Promise(resolve => setTimeout(resolve, 800)); // Allow trending collection
+        await new Promise((resolve) => setTimeout(resolve, 800)); // Allow trending collection
       }
 
       // Verify all operations are tracked
@@ -386,7 +414,7 @@ describe('Metrics and System Status Integration', () => {
             deduplication_enabled: metrics.dedupe_hits.duplicates_detected > 0,
             performance_trending: true,
           },
-        }
+        },
       };
 
       expect(systemStatus.performance_trending.export_available).toBe(true);
@@ -404,7 +432,7 @@ describe('Metrics and System Status Integration', () => {
       });
 
       // Wait for trending to collect
-      await new Promise(resolve => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
       // Verify consistency
       const systemMetrics = systemMetricsService.getMetrics();

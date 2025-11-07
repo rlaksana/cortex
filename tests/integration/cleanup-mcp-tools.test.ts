@@ -13,9 +13,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock environment
-process.env.NODE_ENV = 'test';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
+process.env['NODE_ENV'] = 'test';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['QDRANT_COLLECTION_NAME'] = 'test-cortex-memory';
 
 // Mock cleanup worker and dependencies
 vi.mock('../../src/services/cleanup-worker.service.js');
@@ -185,7 +185,12 @@ describe('MCP Cleanup Tools Integration', () => {
         mode: 'cleanup',
         operations: [
           { type: 'expired', description: 'Remove expired items', enabled: true, priority: 1 },
-          { type: 'orphaned', description: 'Remove orphaned relationships', enabled: true, priority: 2 },
+          {
+            type: 'orphaned',
+            description: 'Remove orphaned relationships',
+            enabled: true,
+            priority: 2,
+          },
           { type: 'duplicate', description: 'Remove duplicate items', enabled: true, priority: 3 },
         ],
         metrics: {
@@ -270,7 +275,9 @@ describe('MCP Cleanup Tools Integration', () => {
       expect(result.content[0].type).toBe('confirmation_result');
       expect(result.content[0].confirmed).toBe(true);
 
-      expect(mockCleanupWorker.confirmCleanup).toHaveBeenCalledWith('cleanup_confirm_valid_token_123');
+      expect(mockCleanupWorker.confirmCleanup).toHaveBeenCalledWith(
+        'cleanup_confirm_valid_token_123'
+      );
     });
 
     it('should reject cleanup operation with invalid token', async () => {
@@ -383,8 +390,20 @@ describe('MCP Cleanup Tools Integration', () => {
           safety_confirmations: { required: false, confirmed: true },
           errors: [],
           warnings: [],
-          performance: { total_duration_ms: 200, items_processed_per_second: 125, memory_usage_mb: 2.1 },
-          operations: [{ type: 'expired', description: 'Remove expired items', enabled: true, priority: 1, estimated_items: 25 }],
+          performance: {
+            total_duration_ms: 200,
+            items_processed_per_second: 125,
+            memory_usage_mb: 2.1,
+          },
+          operations: [
+            {
+              type: 'expired',
+              description: 'Remove expired items',
+              enabled: true,
+              priority: 1,
+              estimated_items: 25,
+            },
+          ],
         },
         {
           operation_id: 'cleanup_002',
@@ -409,8 +428,20 @@ describe('MCP Cleanup Tools Integration', () => {
           safety_confirmations: { required: false, confirmed: true },
           errors: [],
           warnings: [],
-          performance: { total_duration_ms: 150, items_processed_per_second: 200, memory_usage_mb: 1.8 },
-          operations: [{ type: 'expired', description: 'Remove expired items', enabled: true, priority: 1, estimated_items: 30 }],
+          performance: {
+            total_duration_ms: 150,
+            items_processed_per_second: 200,
+            memory_usage_mb: 1.8,
+          },
+          operations: [
+            {
+              type: 'expired',
+              description: 'Remove expired items',
+              enabled: true,
+              priority: 1,
+              estimated_items: 30,
+            },
+          ],
         },
       ];
 
@@ -439,13 +470,39 @@ describe('MCP Cleanup Tools Integration', () => {
         operation_id: `cleanup_${String(i + 1).padStart(3, '0')}`,
         timestamp: new Date().toISOString(),
         mode: 'dry_run',
-        metrics: { cleanup_deleted_total: 0, cleanup_dryrun_total: 10, cleanup_by_type: {}, cleanup_duration: {}, cleanup_errors: [], expired_items_deleted: 0, orphaned_items_deleted: 0, duplicate_items_deleted: 0, metrics_items_deleted: 0, logs_items_deleted: 0, items_per_second: 100, average_batch_duration_ms: 50, total_batches_processed: 1 },
+        metrics: {
+          cleanup_deleted_total: 0,
+          cleanup_dryrun_total: 10,
+          cleanup_by_type: {},
+          cleanup_duration: {},
+          cleanup_errors: [],
+          expired_items_deleted: 0,
+          orphaned_items_deleted: 0,
+          duplicate_items_deleted: 0,
+          metrics_items_deleted: 0,
+          logs_items_deleted: 0,
+          items_per_second: 100,
+          average_batch_duration_ms: 50,
+          total_batches_processed: 1,
+        },
         backup_created: undefined,
         safety_confirmations: { required: false, confirmed: true },
         errors: [],
         warnings: [],
-        performance: { total_duration_ms: 100, items_processed_per_second: 100, memory_usage_mb: 1.5 },
-        operations: [{ type: 'expired', description: 'Remove expired items', enabled: true, priority: 1, estimated_items: 10 }],
+        performance: {
+          total_duration_ms: 100,
+          items_processed_per_second: 100,
+          memory_usage_mb: 1.5,
+        },
+        operations: [
+          {
+            type: 'expired',
+            description: 'Remove expired items',
+            enabled: true,
+            priority: 1,
+            estimated_items: 10,
+          },
+        ],
       }));
 
       mockCleanupWorker.getOperationHistory.mockReturnValue(mockHistory);
@@ -472,7 +529,21 @@ describe('MCP Cleanup Tools Integration', () => {
         timestamp: new Date().toISOString(),
         mode: 'dry_run',
         operations: [],
-        metrics: { cleanup_deleted_total: 0, cleanup_dryrun_total: 0, cleanup_by_type: {}, cleanup_duration: {}, cleanup_errors: [], expired_items_deleted: 0, orphaned_items_deleted: 0, duplicate_items_deleted: 0, metrics_items_deleted: 0, logs_items_deleted: 0, items_per_second: 0, average_batch_duration_ms: 0, total_batches_processed: 0 },
+        metrics: {
+          cleanup_deleted_total: 0,
+          cleanup_dryrun_total: 0,
+          cleanup_by_type: {},
+          cleanup_duration: {},
+          cleanup_errors: [],
+          expired_items_deleted: 0,
+          orphaned_items_deleted: 0,
+          duplicate_items_deleted: 0,
+          metrics_items_deleted: 0,
+          logs_items_deleted: 0,
+          items_per_second: 0,
+          average_batch_duration_ms: 0,
+          total_batches_processed: 0,
+        },
         backup_created: undefined,
         safety_confirmations: { required: false, confirmed: true },
         errors: [],
@@ -546,13 +617,39 @@ describe('MCP Cleanup Tools Integration', () => {
         operation_id: 'concurrent_test',
         timestamp: new Date().toISOString(),
         mode: 'dry_run',
-        operations: [{ type: 'expired', description: 'Remove expired items', enabled: true, priority: 1, estimated_items: 10 }],
-        metrics: { cleanup_deleted_total: 0, cleanup_dryrun_total: 10, cleanup_by_type: {}, cleanup_duration: {}, cleanup_errors: [], expired_items_deleted: 0, orphaned_items_deleted: 0, duplicate_items_deleted: 0, metrics_items_deleted: 0, logs_items_deleted: 0, items_per_second: 100, average_batch_duration_ms: 100, total_batches_processed: 1 },
+        operations: [
+          {
+            type: 'expired',
+            description: 'Remove expired items',
+            enabled: true,
+            priority: 1,
+            estimated_items: 10,
+          },
+        ],
+        metrics: {
+          cleanup_deleted_total: 0,
+          cleanup_dryrun_total: 10,
+          cleanup_by_type: {},
+          cleanup_duration: {},
+          cleanup_errors: [],
+          expired_items_deleted: 0,
+          orphaned_items_deleted: 0,
+          duplicate_items_deleted: 0,
+          metrics_items_deleted: 0,
+          logs_items_deleted: 0,
+          items_per_second: 100,
+          average_batch_duration_ms: 100,
+          total_batches_processed: 1,
+        },
         backup_created: undefined,
         safety_confirmations: { required: false, confirmed: true },
         errors: [],
         warnings: [],
-        performance: { total_duration_ms: 100, items_processed_per_second: 100, memory_usage_mb: 1.0 },
+        performance: {
+          total_duration_ms: 100,
+          items_processed_per_second: 100,
+          memory_usage_mb: 1.0,
+        },
       };
 
       mockCleanupWorker.runCleanup.mockResolvedValue(mockReport);
@@ -571,7 +668,7 @@ describe('MCP Cleanup Tools Integration', () => {
       const results = await Promise.all(promises);
 
       // All requests should complete successfully
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.content).toBeDefined();
         expect(result.content[0].type).toBe('cleanup_report');
       });

@@ -16,7 +16,7 @@
  * @since 2025
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 
 /**

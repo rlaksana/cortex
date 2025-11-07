@@ -18,23 +18,23 @@ This runbook provides comprehensive incident response procedures for the MCP Cor
 
 ### Severity Levels
 
-| Severity | Definition | Response Time | Resolution Time | SLA Impact |
-|----------|------------|---------------|----------------|------------|
-| **SEV-0** | Complete system outage, all users affected | 5 minutes | 30 minutes | Critical |
-| **SEV-1** | Major functionality degraded, most users affected | 15 minutes | 2 hours | High |
-| **SEV-2** | Partial functionality loss, some users affected | 30 minutes | 4 hours | Medium |
-| **SEV-3** | Minor issues, limited impact | 2 hours | 1 business day | Low |
-| **SEV-4** | Documentation or minor UI issues | 24 hours | 1 week | Minimal |
+| Severity  | Definition                                        | Response Time | Resolution Time | SLA Impact |
+| --------- | ------------------------------------------------- | ------------- | --------------- | ---------- |
+| **SEV-0** | Complete system outage, all users affected        | 5 minutes     | 30 minutes      | Critical   |
+| **SEV-1** | Major functionality degraded, most users affected | 15 minutes    | 2 hours         | High       |
+| **SEV-2** | Partial functionality loss, some users affected   | 30 minutes    | 4 hours         | Medium     |
+| **SEV-3** | Minor issues, limited impact                      | 2 hours       | 1 business day  | Low        |
+| **SEV-4** | Documentation or minor UI issues                  | 24 hours      | 1 week          | Minimal    |
 
 ### Service Impact Matrix
 
-| Component | SEV-0 Impact | SEV-1 Impact | SEV-2 Impact | SEV-3 Impact |
-|-----------|--------------|--------------|--------------|--------------|
-| **Qdrant Database** | 100% data loss | Search unavailable | Slow queries | Occasional timeouts |
-| **MCP Server** | No API responses | API failures 50%+ | API failures 10-50% | API failures <10% |
-| **Authentication** | Complete auth failure | Intermittent auth | Slow auth | Minor auth delays |
-| **Monitoring** | No metrics | Incomplete metrics | Delayed metrics | Minor metric gaps |
-| **Backups** | No backups | Failed backups | Late backups | Backup warnings |
+| Component           | SEV-0 Impact          | SEV-1 Impact       | SEV-2 Impact        | SEV-3 Impact        |
+| ------------------- | --------------------- | ------------------ | ------------------- | ------------------- |
+| **Qdrant Database** | 100% data loss        | Search unavailable | Slow queries        | Occasional timeouts |
+| **MCP Server**      | No API responses      | API failures 50%+  | API failures 10-50% | API failures <10%   |
+| **Authentication**  | Complete auth failure | Intermittent auth  | Slow auth           | Minor auth delays   |
+| **Monitoring**      | No metrics            | Incomplete metrics | Delayed metrics     | Minor metric gaps   |
+| **Backups**         | No backups            | Failed backups     | Late backups        | Backup warnings     |
 
 ---
 
@@ -43,6 +43,7 @@ This runbook provides comprehensive incident response procedures for the MCP Cor
 ### Step 1: Incident Acknowledgment (T+0 to T+5min)
 
 **Actions Required:**
+
 1. **Acknowledge** incident in primary channels (Slack, PagerDuty)
 2. **Create** incident channel: `#incidents-cortex-YYYY-MM-DD-HHMM`
 3. **Assign** incident commander and technical lead
@@ -50,6 +51,7 @@ This runbook provides comprehensive incident response procedures for the MCP Cor
 5. **Initial assessment**: What's broken? Who's impacted?
 
 **Commands:**
+
 ```bash
 # Enable emergency logging
 export LOG_LEVEL=debug
@@ -63,6 +65,7 @@ npm run ops:emergency --mode=incident --severity=SEV-0
 ```
 
 **Response Template:**
+
 ```
 🚨 **INCIDENT DECLARED** 🚨
 - Service: MCP Cortex Memory Server
@@ -79,6 +82,7 @@ npm run ops:emergency --mode=incident --severity=SEV-0
 **Triage Checklist:**
 
 #### 2.1 System Health Assessment
+
 ```bash
 # Core system checks
 npm run ops:health
@@ -97,6 +101,7 @@ free -h
 ```
 
 #### 2.2 Database Connectivity
+
 ```bash
 # Qdrant health checks
 curl -s http://localhost:6333/collections/cortex-memory | jq .
@@ -108,6 +113,7 @@ npm run db:health
 ```
 
 #### 2.3 Network & External Dependencies
+
 ```bash
 # Network connectivity
 ping -c 3 qdrant-server
@@ -120,6 +126,7 @@ npm run ops:status
 ```
 
 #### 2.4 Recent Changes Analysis
+
 ```bash
 # Recent deployments
 git log --oneline --since="24 hours ago"
@@ -146,6 +153,7 @@ Are external dependencies available? → No → External Service Workarounds
 ### Qdrant Database Recovery
 
 #### Scenario 1: Qdrant Service Down
+
 ```bash
 # Restart Qdrant service
 sudo systemctl restart qdrant
@@ -160,6 +168,7 @@ curl -s http://localhost:6333/collections/cortex-memory | jq '.status'
 ```
 
 #### Scenario 2: Collection Corruption
+
 ```bash
 # Export current data (if possible)
 curl -X POST http://localhost:6333/collections/cortex-memory/points/export \
@@ -177,6 +186,7 @@ npm run ops:restore --backup=latest
 ```
 
 #### Scenario 3: Performance Degradation
+
 ```bash
 # Check Qdrant metrics
 curl -s http://localhost:6333/telemetry | jq .
@@ -193,6 +203,7 @@ sudo systemctl restart qdrant
 ### MCP Server Recovery
 
 #### Scenario 1: Service Crash
+
 ```bash
 # Check service status
 systemctl status cortex-mcp --no-pager -l
@@ -206,6 +217,7 @@ sudo journalctl -u cortex-mcp -f --no-pager
 ```
 
 #### Scenario 2: Memory Issues
+
 ```bash
 # Check memory usage
 ps aux | grep -E "(node|cortex)" | sort -rk4 | head -10
@@ -220,6 +232,7 @@ npm run ops:metrics | grep -E "(memory|heap)"
 ```
 
 #### Scenario 3: Configuration Issues
+
 ```bash
 # Validate configuration
 npm run prod:validate
@@ -236,6 +249,7 @@ sudo systemctl restart cortex-mcp
 ### Monitoring & Alerting Recovery
 
 #### Scenario 1: Monitoring Stack Down
+
 ```bash
 # Restart monitoring services
 docker-compose -f docker/monitoring-stack.yml restart
@@ -249,6 +263,7 @@ curl -s http://localhost:3000/metrics | jq .
 ```
 
 #### Scenario 2: Alerting System Failure
+
 ```bash
 # Reconfigure alerting
 npm run monitor:alerts
@@ -267,9 +282,11 @@ curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[]'
 ### Internal Communication
 
 #### Incident Channel Updates
+
 **Frequency**: Every 15 minutes for SEV-0/1, every 30 minutes for SEV-2/3
 
 **Update Format:**
+
 ```
 📊 **Incident Update** 📊
 - Time: [current timestamp]
@@ -281,11 +298,13 @@ curl -s http://localhost:9090/api/v1/rules | jq '.data.groups[].rules[]'
 ```
 
 #### Stakeholder Notifications
+
 **Immediate**: SEV-0 incidents - notify within 5 minutes
 **Standard**: SEV-1 incidents - notify within 15 minutes
 **Delayed**: SEV-2/3 incidents - notify within 30 minutes
 
 **Notification Template:**
+
 ```
 🚨 **Service Incident Notification** 🚨
 Service: MCP Cortex Memory Server
@@ -299,11 +318,13 @@ Follow: #incidents-cortex-[timestamp]
 ### External Communication
 
 #### Customer Communication
+
 **SEV-0**: Immediately, then every 30 minutes
 **SEV-1**: Within 30 minutes, then every hour
 **SEV-2/3**: Within 2 hours, then every 4 hours
 
 **External Status Page Template:**
+
 ```
 🔧 **Service Status Update** 🔧
 Service: MCP Cortex Memory Server
@@ -321,6 +342,7 @@ Next Update: [time of next update]
 ### Step 1: Service Restoration Verification
 
 **Verification Checklist:**
+
 - [ ] All health checks passing
 - [ ] API response times < 100ms
 - [ ] Database queries completing successfully
@@ -329,6 +351,7 @@ Next Update: [time of next update]
 - [ ] Customer-reported issues resolved
 
 **Verification Commands:**
+
 ```bash
 # Comprehensive health check
 npm run gates:validate
@@ -369,27 +392,32 @@ timeout 1800 npm run ops:health | tee recovery-monitor.log
    - Action items
 
 **Documentation Template:**
+
 ```markdown
 # Incident Report: [Incident Name]
 
 ## Executive Summary
+
 - **Incident ID**: INC-[YYYYMMDD]-[sequence]
 - **Severity**: SEV-X
 - **Duration**: [start] to [end] ([total duration])
 - **Business Impact**: [description]
 
 ## Timeline
-| Time | Action | Owner |
-|------|--------|-------|
+
+| Time   | Action            | Owner           |
+| ------ | ----------------- | --------------- |
 | [time] | Incident detected | [system/person] |
-| [time] | Initial response | [person] |
-| [time] | [specific action] | [person] |
-| [time] | Service restored | [person] |
+| [time] | Initial response  | [person]        |
+| [time] | [specific action] | [person]        |
+| [time] | Service restored  | [person]        |
 
 ## Root Cause Analysis
+
 **Primary Cause**: [technical explanation]
 
 **Contributing Factors**:
+
 - [factor 1]
 - [factor 2]
 
@@ -397,30 +425,38 @@ timeout 1800 npm run ops:health | tee recovery-monitor.log
 [Logs, metrics, configuration details]
 
 ## Resolution
+
 **Immediate Actions**:
+
 - [action 1]
 - [action 2]
 
 **Permanent Fixes**:
+
 - [fix 1]
 - [fix 2]
 
 ## Impact Assessment
+
 **Affected Services**: [list]
 **Affected Users**: [count/percentage]
 **Data Impact**: [description]
 **Business Impact**: [description]
 
 ## Lessons Learned
+
 **What Went Well**:
+
 - [item 1]
 - [item 2]
 
 **Areas for Improvement**:
+
 - [item 1]
 - [item 2]
 
 **Action Items**:
+
 - [ ] [action item] - Owner: [name] - Due: [date]
 - [ ] [action item] - Owner: [name] - Due: [date]
 ```
@@ -428,18 +464,21 @@ timeout 1800 npm run ops:health | tee recovery-monitor.log
 ### Step 3: Follow-up Actions
 
 **Immediate (24 hours)**:
+
 - Schedule post-mortem meeting
 - Create action items in Jira
 - Update monitoring thresholds
 - Update runbooks based on lessons learned
 
 **Short-term (1 week)**:
+
 - Implement permanent fixes
 - Improve monitoring and alerting
 - Update documentation
 - Conduct blameless post-mortem
 
 **Long-term (1 month)**:
+
 - Review incident trends
 - Update disaster recovery procedures
 - Implement architectural improvements
@@ -451,30 +490,33 @@ timeout 1800 npm run ops:health | tee recovery-monitor.log
 
 ### Escalation Matrix
 
-| Level | Contact | When to Escalate | Escalation Time |
-|-------|---------|------------------|-----------------|
-| **L1** | On-call Engineer | Standard incidents | 0 minutes |
-| **L2** | Senior Engineer | Complex technical issues | 15 minutes |
-| **L3** | Staff Engineer | Architecture/system issues | 30 minutes |
-| **Manager** | Engineering Manager | Business impact > 1 hour | 1 hour |
-| **Director** | Director of Engineering | Multi-service impact | 2 hours |
-| **VP** | VP of Engineering | Major customer impact | 4 hours |
+| Level        | Contact                 | When to Escalate           | Escalation Time |
+| ------------ | ----------------------- | -------------------------- | --------------- |
+| **L1**       | On-call Engineer        | Standard incidents         | 0 minutes       |
+| **L2**       | Senior Engineer         | Complex technical issues   | 15 minutes      |
+| **L3**       | Staff Engineer          | Architecture/system issues | 30 minutes      |
+| **Manager**  | Engineering Manager     | Business impact > 1 hour   | 1 hour          |
+| **Director** | Director of Engineering | Multi-service impact       | 2 hours         |
+| **VP**       | VP of Engineering       | Major customer impact      | 4 hours         |
 
 ### Escalation Triggers
 
 **Immediate Escalation (SEV-0)**:
+
 - Complete system outage
 - Data corruption or loss
 - Security breach
 - Customer revenue impact > $10K/hour
 
 **Standard Escalation (SEV-1)**:
+
 - Major functionality degradation
-- >50% of users affected
+- > 50% of users affected
 - Critical customer impact
 - Estimated resolution > 4 hours
 
 **Deferred Escalation (SEV-2/3)**:
+
 - Partial functionality loss
 - Minor customer impact
 - Estimated resolution > 24 hours
@@ -499,18 +541,21 @@ npm run ops:status --format=executive --severity=SEV-0
 ### Key Performance Indicators
 
 **Availability Metrics**:
+
 - API Uptime: Target 99.9%
 - Database Uptime: Target 99.9%
 - Response Time: Target < 100ms (p95)
 - Error Rate: Target < 0.1%
 
 **Incident Response Metrics**:
+
 - Mean Time to Detection (MTTD): Target < 5 minutes
 - Mean Time to Acknowledgment (MTTA): Target < 15 minutes
 - Mean Time to Resolution (MTTR): Target < 2 hours for SEV-0/1
 - Mean Time Between Failures (MTBF): Target > 30 days
 
 **Health Check Commands**:
+
 ```bash
 # Real-time monitoring
 npm run ops:metrics
@@ -531,12 +576,14 @@ npm run monitor:alerts --test-all
 ### Incident Response Drills
 
 **Monthly Drill Schedule**:
+
 - **Week 1**: Tabletop exercise (SEV-1 scenario)
 - **Week 2**: Technical simulation (Qdrant outage)
 - **Week 3**: Communication drill (customer notification)
 - **Week 4**: Escalation procedure review
 
 **Drill Commands**:
+
 ```bash
 # Start incident response drill
 npm run ops:emergency --mode=drill --scenario=database-outage
@@ -551,12 +598,14 @@ npm run ops:report --type=drill --date=$(date +%Y-%m-%d)
 ### Runbook Validation
 
 **Quarterly Validation**:
+
 - All recovery procedures tested
 - Contact information verified
 - Monitoring thresholds validated
 - Documentation accuracy checked
 
 **Validation Commands**:
+
 ```bash
 # Test all recovery procedures
 npm run test:runbook-validation
@@ -574,30 +623,30 @@ npm run monitor:verify
 
 ### Primary Contacts
 
-| Role | Name | Phone | Slack | Email |
-|------|------|-------|-------|-------|
-| **Incident Commander** | [Name] | +1-XXX-XXX-XXXX | @incident-commander | [email] |
-| **Tech Lead - Database** | [Name] | +1-XXX-XXX-XXXX | @db-lead | [email] |
-| **Tech Lead - Backend** | [Name] | +1-XXX-XXX-XXXX | @backend-lead | [email] |
-| **DevOps Engineer** | [Name] | +1-XXX-XXX-XXXX | @devops-lead | [email] |
-| **Product Manager** | [Name] | +1-XXX-XXX-XXXX | @product-manager | [email] |
+| Role                     | Name   | Phone           | Slack               | Email   |
+| ------------------------ | ------ | --------------- | ------------------- | ------- |
+| **Incident Commander**   | [Name] | +1-XXX-XXX-XXXX | @incident-commander | [email] |
+| **Tech Lead - Database** | [Name] | +1-XXX-XXX-XXXX | @db-lead            | [email] |
+| **Tech Lead - Backend**  | [Name] | +1-XXX-XXX-XXXX | @backend-lead       | [email] |
+| **DevOps Engineer**      | [Name] | +1-XXX-XXX-XXXX | @devops-lead        | [email] |
+| **Product Manager**      | [Name] | +1-XXX-XXX-XXXX | @product-manager    | [email] |
 
 ### Escalation Contacts
 
-| Role | Name | Phone | Slack | Email |
-|------|------|-------|-------|-------|
-| **Engineering Manager** | [Name] | +1-XXX-XXX-XXXX | @eng-manager | [email] |
+| Role                        | Name   | Phone           | Slack         | Email   |
+| --------------------------- | ------ | --------------- | ------------- | ------- |
+| **Engineering Manager**     | [Name] | +1-XXX-XXX-XXXX | @eng-manager  | [email] |
 | **Director of Engineering** | [Name] | +1-XXX-XXX-XXXX | @director-eng | [email] |
-| **VP of Engineering** | [Name] | +1-XXX-XXX-XXXX | @vp-eng | [email] |
-| **CTO** | [Name] | +1-XXX-XXX-XXXX | @cto | [email] |
+| **VP of Engineering**       | [Name] | +1-XXX-XXX-XXXX | @vp-eng       | [email] |
+| **CTO**                     | [Name] | +1-XXX-XXX-XXXX | @cto          | [email] |
 
 ### External Contacts
 
-| Service | Contact | Phone | Email |
-|---------|---------|-------|-------|
-| **Qdrant Support** | [Contact] | +1-XXX-XXX-XXXX | [email] |
-| **Cloud Provider** | [Provider] | [hotline] | [email] |
-| **Security Team** | [Contact] | +1-XXX-XXX-XXXX | [email] |
+| Service            | Contact    | Phone           | Email   |
+| ------------------ | ---------- | --------------- | ------- |
+| **Qdrant Support** | [Contact]  | +1-XXX-XXX-XXXX | [email] |
+| **Cloud Provider** | [Provider] | [hotline]       | [email] |
+| **Security Team**  | [Contact]  | +1-XXX-XXX-XXXX | [email] |
 
 ---
 
@@ -606,6 +655,7 @@ npm run monitor:verify
 ### A. Command Reference
 
 **Emergency Commands**:
+
 ```bash
 # System emergency stop
 npm run ops:emergency --stop-all
@@ -624,6 +674,7 @@ npm run ops:backup --snapshot=emergency-$(date +%Y%m%d-%H%M%S)
 ```
 
 **Diagnostic Commands**:
+
 ```bash
 # Generate system report
 npm run system:diagnose
@@ -638,6 +689,7 @@ npm run performance:analyze --output=/tmp/perf-analysis-$(date +%Y%m%d).json
 ### B. Monitoring Dashboard References
 
 **Primary Dashboards**:
+
 - Main System Dashboard: [Link]
 - Database Performance: [Link]
 - API Metrics: [Link]
@@ -650,18 +702,21 @@ npm run performance:analyze --output=/tmp/perf-analysis-$(date +%Y%m%d).json
 ### C. Runbook Maintenance
 
 **Monthly Reviews**:
+
 - Contact list updates
 - Procedure validation
 - Metrics threshold review
 - Documentation updates
 
 **Quarterly Reviews**:
+
 - Full runbook audit
 - Scenario updates
 - Tool integration updates
 - Training material updates
 
 **Change Management**:
+
 - All changes must be approved
 - Version control required
 - Rollback procedures mandatory

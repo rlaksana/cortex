@@ -45,7 +45,7 @@ async function testCircuitBreaker() {
       if (Math.random() < 0.99) {
         await circuitBreaker.execute(async () => {
           // Simulate successful operation
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
           return 'success';
         }, 'test_operation');
         successCount++;
@@ -75,7 +75,9 @@ async function testCircuitBreaker() {
 
   // Verify circuit remains closed with 99% success rate
   const success = stats.state === 'closed' && !stats.isOpen;
-  console.log(`\n${success ? '✅' : '❌'} Circuit breaker ${success ? 'remains CLOSED' : 'opened unexpectedly'} with 99% success rate`);
+  console.log(
+    `\n${success ? '✅' : '❌'} Circuit breaker ${success ? 'remains CLOSED' : 'opened unexpectedly'} with 99% success rate`
+  );
 
   // Test with higher failure rate (should open circuit)
   console.log('\n🔄 Simulating operations with 10% failure rate...');
@@ -86,7 +88,7 @@ async function testCircuitBreaker() {
       // 90% success rate (10% failure rate)
       if (Math.random() < 0.9) {
         await circuitBreaker.execute(async () => {
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 20));
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 20));
           return 'success';
         }, 'test_operation');
       } else {
@@ -151,11 +153,13 @@ async function testCircuitBreaker() {
 
 // Run the test
 testCircuitBreaker()
-  .then(isProductionReady => {
-    console.log(`\n${isProductionReady ? '🚀' : '⚠️'} Circuit breaker implementation ${isProductionReady ? 'is ready for production' : 'needs attention'}`);
+  .then((isProductionReady) => {
+    console.log(
+      `\n${isProductionReady ? '🚀' : '⚠️'} Circuit breaker implementation ${isProductionReady ? 'is ready for production' : 'needs attention'}`
+    );
     process.exit(isProductionReady ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('💥 Test failed:', error);
     process.exit(1);
   });

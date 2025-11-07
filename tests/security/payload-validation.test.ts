@@ -23,17 +23,20 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Create a very large payload (>10MB)
       const largeContent = 'A'.repeat(11 * 1024 * 1024); // 11MB
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: largeContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: largeContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('payload too large');
@@ -43,17 +46,20 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Create a reasonably sized payload (<5MB)
       const normalContent = 'A'.repeat(1024 * 1024); // 1MB
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: normalContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: normalContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(true);
     });
@@ -62,24 +68,30 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test entity size limit
       const entityContent = 'x'.repeat(5 * 1024 * 1024); // 5MB
-      const entityResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: entityContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const entityResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: entityContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       // Test observation size limit (should be smaller)
       const observationContent = 'x'.repeat(2 * 1024 * 1024); // 2MB
-      const observationResult = await memoryStore.store({
-        kind: 'observation' as const,
-        content: observationContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const observationResult = await memoryStore.store(
+        {
+          kind: 'observation' as const,
+          content: observationContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       // Both should succeed as they're within their respective limits
       expect(entityResult.success).toBe(true);
@@ -92,7 +104,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const maliciousContent = `
@@ -105,11 +117,14 @@ describe('Security Tests - Payload Validation', () => {
         </script>
       `;
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: maliciousContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: maliciousContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('malicious content detected');
@@ -119,7 +134,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const htmlContent = `
@@ -131,11 +146,14 @@ describe('Security Tests - Payload Validation', () => {
         </div>
       `;
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: htmlContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: htmlContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       if (result.success) {
         // If accepted, should be sanitized
@@ -152,7 +170,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const validStructuredData = {
@@ -160,15 +178,18 @@ describe('Security Tests - Payload Validation', () => {
         properties: {
           value: 123,
           active: true,
-          tags: ['tag1', 'tag2']
-        }
+          tags: ['tag1', 'tag2'],
+        },
       };
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        data: validStructuredData,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          data: validStructuredData,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(true);
 
@@ -176,11 +197,14 @@ describe('Security Tests - Payload Validation', () => {
       const circularData: any = { name: 'Circular' };
       circularData.self = circularData;
 
-      const circularResult = await memoryStore.store({
-        kind: 'entity' as const,
-        data: circularData,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const circularResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          data: circularData,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(circularResult.success).toBe(false);
       expect(circularResult.error).toContain('circular reference');
@@ -192,14 +216,14 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test missing required kind field
       const invalidItem = {
         content: 'Test content',
         // Missing kind field
-        scope: { tenant: 'test-tenant', org: 'test-org' }
+        scope: { tenant: 'test-tenant', org: 'test-org' },
       };
 
       const result = await memoryStore.store(invalidItem, userContext);
@@ -212,13 +236,13 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const invalidKind = {
         kind: 'invalid-kind' as any,
         content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
+        scope: { tenant: 'test-tenant', org: 'test-org' },
       };
 
       const result = await memoryStore.store(invalidKind, userContext);
@@ -231,14 +255,17 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: 'invalid-uuid-format',
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('invalid UUID format');
@@ -248,7 +275,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test invalid scope structure
@@ -258,7 +285,7 @@ describe('Security Tests - Payload Validation', () => {
         scope: {
           tenant: 'test-tenant',
           // Missing required org field
-        }
+        },
       };
 
       const result = await memoryStore.store(invalidScope, userContext);
@@ -273,7 +300,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const unicodeContent = `
@@ -283,11 +310,14 @@ describe('Security Tests - Payload Validation', () => {
         Zero-width characters: ​
       `;
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: unicodeContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: unicodeContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(true);
     });
@@ -296,7 +326,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const dangerousContent = `
@@ -305,11 +335,14 @@ describe('Security Tests - Payload Validation', () => {
         Backdoor: \r\nSet-Cookie: admin=true
       `;
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: dangerousContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: dangerousContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('invalid characters');
@@ -319,7 +352,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const headerInjection = `
@@ -330,11 +363,14 @@ describe('Security Tests - Payload Validation', () => {
         Malicious content
       `;
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: headerInjection,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: headerInjection,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('header injection');
@@ -346,7 +382,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Create oversized batch (>100 items)
@@ -355,13 +391,16 @@ describe('Security Tests - Payload Validation', () => {
         oversizedBatch.push({
           kind: 'entity' as const,
           content: `Batch item ${i}`,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
+          scope: { tenant: 'test-tenant', org: 'test-org' },
         });
       }
 
-      const result = await memoryStore.store({
-        items: oversizedBatch
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          items: oversizedBatch,
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('batch size exceeded');
@@ -371,7 +410,7 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Create batch with large total size (>50MB)
@@ -380,13 +419,16 @@ describe('Security Tests - Payload Validation', () => {
         largeBatch.push({
           kind: 'entity' as const,
           content: 'x'.repeat(6 * 1024 * 1024), // 6MB each
-          scope: { tenant: 'test-tenant', org: 'test-org' }
+          scope: { tenant: 'test-tenant', org: 'test-org' },
         });
       }
 
-      const result = await memoryStore.store({
-        items: largeBatch
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          items: largeBatch,
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('batch payload too large');
@@ -396,30 +438,33 @@ describe('Security Tests - Payload Validation', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const mixedBatch = [
         {
           kind: 'entity' as const,
           content: 'Valid item',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
+          scope: { tenant: 'test-tenant', org: 'test-org' },
         },
         {
           kind: 'invalid-kind' as any,
           content: 'Invalid item',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
+          scope: { tenant: 'test-tenant', org: 'test-org' },
         },
         {
           kind: 'entity' as const,
           content: 'Another valid item',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
       ];
 
-      const result = await memoryStore.store({
-        items: mixedBatch
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          items: mixedBatch,
+        },
+        userContext
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('invalid item in batch');

@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { ProductionLogger } from './production-logger.js';
+import { ProductionLogger } from '@/utils/logger.js';
 
 export interface ShutdownConfig {
   timeout: number;
@@ -38,7 +38,7 @@ export interface ShutdownState {
 
 export class GracefulShutdownManager extends EventEmitter {
   private config: ShutdownConfig;
-  private logger: ProductionLogger;
+  private logger: { info: (...a:any[])=>void; warn:(...a:any[])=>void; error:(...a:any[])=>void; debug?: (...a:any[])=>void };
   private state: ShutdownState;
   private shutdownTimer: NodeJS.Timeout | null = null;
   private forceTimer: NodeJS.Timeout | null = null;
@@ -46,7 +46,7 @@ export class GracefulShutdownManager extends EventEmitter {
   constructor(config?: Partial<ShutdownConfig>) {
     super();
 
-    this.logger = new ProductionLogger('graceful-shutdown');
+    this.logger = ProductionLogger;
 
     this.config = {
       timeout: parseInt(process.env.SHUTDOWN_TIMEOUT || '30000'), // 30 seconds
@@ -387,7 +387,7 @@ export class GracefulShutdownManager extends EventEmitter {
    */
   addCleanupOperation(operation: CleanupOperation): void {
     this.config.cleanupOperations.push(operation);
-    this.logger.debug(`Added cleanup operation: ${operation.name}`);
+    this.logger.debug?.(`Added cleanup operation: ${operation.name}`);
   }
 
   /**
@@ -395,7 +395,7 @@ export class GracefulShutdownManager extends EventEmitter {
    */
   removeCleanupOperation(name: string): void {
     this.config.cleanupOperations = this.config.cleanupOperations.filter((op) => op.name !== name);
-    this.logger.debug(`Removed cleanup operation: ${name}`);
+    this.logger.debug?.(`Removed cleanup operation: ${name}`);
   }
 
   /**

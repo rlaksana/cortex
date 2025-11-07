@@ -9,9 +9,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock environment for testing
-process.env.OPENAI_API_KEY = 'test-key';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.NODE_ENV = 'test';
+process.env['OPENAI_API_KEY'] = 'test-key';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['NODE_ENV'] = 'test';
 
 describe('MCP TTL Functionality Integration Tests', () => {
   describe('TTL Policy Validation through MCP', () => {
@@ -23,20 +23,22 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'user',
-                name: 'test_user_default_ttl',
-                data: { email: 'test@example.com' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'user',
+                  name: 'test_user_default_ttl',
+                  data: { email: 'test@example.com' },
+                },
+                scope: { project: 'ttl-test', branch: 'main' },
+                ttl: {
+                  policy: 'default',
+                },
               },
-              scope: { project: 'ttl-test', branch: 'main' },
-              ttl: {
-                policy: 'default'
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       // Validate request structure
@@ -55,21 +57,23 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'temp_data',
-                name: 'short_lived_item',
-                data: { value: 'expires_quickly' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'temp_data',
+                  name: 'short_lived_item',
+                  data: { value: 'expires_quickly' },
+                },
+                scope: { project: 'ttl-test', branch: 'main' },
+                ttl: {
+                  policy: 'short',
+                  auto_extend: false,
+                },
               },
-              scope: { project: 'ttl-test', branch: 'main' },
-              ttl: {
-                policy: 'short',
-                auto_extend: false
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items[0].ttl.policy).toBe('short');
@@ -86,24 +90,26 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'decision',
-              data: {
-                title: 'Architecture Decision',
-                rationale: 'Long-term architectural choice',
-                alternatives: ['Option A', 'Option B'],
-                status: 'accepted'
+            items: [
+              {
+                kind: 'decision',
+                data: {
+                  title: 'Architecture Decision',
+                  rationale: 'Long-term architectural choice',
+                  alternatives: ['Option A', 'Option B'],
+                  status: 'accepted',
+                },
+                scope: { project: 'architecture', branch: 'main' },
+                ttl: {
+                  policy: 'long',
+                  expires_at: futureDate.toISOString(),
+                  auto_extend: true,
+                  extend_threshold_days: 30,
+                },
               },
-              scope: { project: 'architecture', branch: 'main' },
-              ttl: {
-                policy: 'long',
-                expires_at: futureDate.toISOString(),
-                auto_extend: true,
-                extend_threshold_days: 30
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items[0].ttl.policy).toBe('long');
@@ -120,30 +126,32 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'runbook',
-              data: {
-                title: 'Critical Recovery Procedure',
-                description: 'Essential recovery steps for production incidents',
-                steps: [
-                  { step: 1, action: 'Assess impact', owner: 'on-call' },
-                  { step: 2, action: 'Communicate status', owner: 'on-call' },
-                  { step: 3, action: 'Implement fix', owner: 'engineering' }
-                ],
-                triggers: ['production_outage', 'security_incident'],
-                escalation_policy: {
-                  level_1: { team: 'on-call', timeout_minutes: 15 },
-                  level_2: { team: 'engineering', timeout_minutes: 30 },
-                  level_3: { team: 'management', timeout_minutes: 60 }
-                }
+            items: [
+              {
+                kind: 'runbook',
+                data: {
+                  title: 'Critical Recovery Procedure',
+                  description: 'Essential recovery steps for production incidents',
+                  steps: [
+                    { step: 1, action: 'Assess impact', owner: 'on-call' },
+                    { step: 2, action: 'Communicate status', owner: 'on-call' },
+                    { step: 3, action: 'Implement fix', owner: 'engineering' },
+                  ],
+                  triggers: ['production_outage', 'security_incident'],
+                  escalation_policy: {
+                    level_1: { team: 'on-call', timeout_minutes: 15 },
+                    level_2: { team: 'engineering', timeout_minutes: 30 },
+                    level_3: { team: 'management', timeout_minutes: 60 },
+                  },
+                },
+                scope: { project: 'operations', branch: 'main' },
+                ttl: {
+                  policy: 'permanent',
+                },
               },
-              scope: { project: 'operations', branch: 'main' },
-              ttl: {
-                policy: 'permanent'
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items[0].ttl.policy).toBe('permanent');
@@ -159,32 +167,42 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'incident',
-              data: {
-                title: 'API Performance Degradation',
-                severity: 'medium',
-                status: 'investigating',
-                impact: {
-                  affected_services: ['user-api', 'order-api'],
-                  user_impact: 'medium',
-                  business_impact: 'low'
+            items: [
+              {
+                kind: 'incident',
+                data: {
+                  title: 'API Performance Degradation',
+                  severity: 'medium',
+                  status: 'investigating',
+                  impact: {
+                    affected_services: ['user-api', 'order-api'],
+                    user_impact: 'medium',
+                    business_impact: 'low',
+                  },
+                  timeline: [
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Alert triggered',
+                      source: 'monitoring',
+                    },
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Investigation started',
+                      source: 'on-call',
+                    },
+                  ],
                 },
-                timeline: [
-                  { timestamp: new Date().toISOString(), event: 'Alert triggered', source: 'monitoring' },
-                  { timestamp: new Date().toISOString(), event: 'Investigation started', source: 'on-call' }
-                ]
+                scope: { project: 'incidents', branch: 'main' },
+                ttl: {
+                  policy: 'default',
+                  expires_at: customExpiryDate.toISOString(),
+                  auto_extend: false,
+                  max_extensions: 0,
+                },
               },
-              scope: { project: 'incidents', branch: 'main' },
-              ttl: {
-                policy: 'default',
-                expires_at: customExpiryDate.toISOString(),
-                auto_extend: false,
-                max_extensions: 0
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       const ttlConfig = memoryStoreRequest.params.arguments.items[0].ttl;
@@ -203,27 +221,29 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'active_session',
-                name: 'user_session_123',
+            items: [
+              {
+                kind: 'entity',
                 data: {
-                  user_id: 'user_456',
-                  last_activity: new Date().toISOString(),
-                  session_data: { preferences: {} }
-                }
+                  entity_type: 'active_session',
+                  name: 'user_session_123',
+                  data: {
+                    user_id: 'user_456',
+                    last_activity: new Date().toISOString(),
+                    session_data: { preferences: {} },
+                  },
+                },
+                scope: { project: 'sessions', branch: 'production' },
+                ttl: {
+                  policy: 'default',
+                  auto_extend: true,
+                  extend_threshold_days: 3,
+                  max_extensions: 10,
+                },
               },
-              scope: { project: 'sessions', branch: 'production' },
-              ttl: {
-                policy: 'default',
-                auto_extend: true,
-                extend_threshold_days: 3,
-                max_extensions: 10
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       const ttlConfig = memoryStoreRequest.params.arguments.items[0].ttl;
@@ -251,13 +271,13 @@ describe('MCP TTL Functionality Integration Tests', () => {
                   title: 'Temporary Task',
                   priority: 'low',
                   status: 'pending',
-                  assignee: 'dev_1'
+                  assignee: 'dev_1',
                 },
                 scope: { project: 'project-x', branch: 'main' },
                 ttl: {
                   policy: 'short',
-                  expires_at: shortExpiry.toISOString()
-                }
+                  expires_at: shortExpiry.toISOString(),
+                },
               },
               {
                 kind: 'risk',
@@ -270,16 +290,16 @@ describe('MCP TTL Functionality Integration Tests', () => {
                     {
                       strategy: 'Architecture review',
                       status: 'planned',
-                      owner: 'architecture_team'
-                    }
-                  ]
+                      owner: 'architecture_team',
+                    },
+                  ],
                 },
                 scope: { project: 'architecture', branch: 'main' },
                 ttl: {
                   policy: 'long',
                   expires_at: longExpiry.toISOString(),
-                  auto_extend: true
-                }
+                  auto_extend: true,
+                },
               },
               {
                 kind: 'decision',
@@ -287,16 +307,16 @@ describe('MCP TTL Functionality Integration Tests', () => {
                   title: 'Permanent Policy Decision',
                   rationale: 'Company-wide policy',
                   alternatives: [],
-                  status: 'adopted'
+                  status: 'adopted',
                 },
                 scope: { project: 'company-policy', branch: 'main' },
                 ttl: {
-                  policy: 'permanent'
-                }
-              }
-            ]
-          }
-        }
+                  policy: 'permanent',
+                },
+              },
+            ],
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items).toHaveLength(3);
@@ -327,12 +347,12 @@ describe('MCP TTL Functionality Integration Tests', () => {
             ttl_filters: {
               include_expired: false,
               min_days_remaining: 1,
-              max_days_remaining: 30
+              max_days_remaining: 30,
             },
             search_strategy: 'auto',
-            limit: 50
-          }
-        }
+            limit: 50,
+          },
+        },
       };
 
       expect(memoryFindRequest.params.name).toBe('memory_find');
@@ -355,12 +375,12 @@ describe('MCP TTL Functionality Integration Tests', () => {
             types: ['incident'],
             ttl_filters: {
               include_expired: true,
-              expired_before: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+              expired_before: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
             },
             search_strategy: 'deep',
-            limit: 100
-          }
-        }
+            limit: 100,
+          },
+        },
       };
 
       const ttlFilters = memoryFindRequest.params.arguments.ttl_filters;
@@ -381,12 +401,12 @@ describe('MCP TTL Functionality Integration Tests', () => {
             types: ['section', 'runbook'],
             ttl_filters: {
               policies: ['permanent', 'long'],
-              include_expired: false
+              include_expired: false,
             },
             search_strategy: 'fast',
-            limit: 25
-          }
-        }
+            limit: 25,
+          },
+        },
       };
 
       const ttlFilters = memoryFindRequest.params.arguments.ttl_filters;
@@ -408,13 +428,13 @@ describe('MCP TTL Functionality Integration Tests', () => {
             include_detailed_metrics: true,
             response_formatting: {
               verbose: true,
-              include_timestamps: true
+              include_timestamps: true,
             },
             filters: {
-              components: ['ttl_manager', 'expiration_scheduler']
-            }
-          }
-        }
+              components: ['ttl_manager', 'expiration_scheduler'],
+            },
+          },
+        },
       };
 
       expect(systemStatusRequest.params.name).toBe('system_status');
@@ -436,13 +456,13 @@ describe('MCP TTL Functionality Integration Tests', () => {
               ttl_specific: {
                 cleanup_expired_before: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
                 dry_run: false,
-                batch_size: 100
+                batch_size: 100,
               },
               require_confirmation: false,
-              enable_backup: true
-            }
-          }
-        }
+              enable_backup: true,
+            },
+          },
+        },
       };
 
       const cleanupConfig = systemStatusRequest.params.arguments.cleanup_config;
@@ -463,14 +483,14 @@ describe('MCP TTL Functionality Integration Tests', () => {
             operation: 'telemetry',
             filters: {
               metrics: ['ttl_distribution', 'expiration_trends', 'auto_extension_stats'],
-              time_range_hours: 24
+              time_range_hours: 24,
             },
             response_formatting: {
               verbose: true,
-              include_timestamps: true
-            }
-          }
-        }
+              include_timestamps: true,
+            },
+          },
+        },
       };
 
       const filters = systemStatusRequest.params.arguments.filters;
@@ -490,20 +510,22 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'test',
-                name: 'invalid_ttl_test',
-                data: { value: 'test' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'test',
+                  name: 'invalid_ttl_test',
+                  data: { value: 'test' },
+                },
+                scope: { project: 'test', branch: 'main' },
+                ttl: {
+                  policy: 'invalid_policy' as any,
+                },
               },
-              scope: { project: 'test', branch: 'main' },
-              ttl: {
-                policy: 'invalid_policy' as any
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       // This should result in a validation error
@@ -520,25 +542,29 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'observation',
-              data: {
-                title: 'Already Expired Observation',
-                content: 'This should be immediately expired',
-                source: 'test_suite',
-                confidence: 1.0
+            items: [
+              {
+                kind: 'observation',
+                data: {
+                  title: 'Already Expired Observation',
+                  content: 'This should be immediately expired',
+                  source: 'test_suite',
+                  confidence: 1.0,
+                },
+                scope: { project: 'test', branch: 'main' },
+                ttl: {
+                  policy: 'default',
+                  expires_at: pastDate.toISOString(),
+                },
               },
-              scope: { project: 'test', branch: 'main' },
-              ttl: {
-                policy: 'default',
-                expires_at: pastDate.toISOString()
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
-      expect(memoryStoreRequest.params.arguments.items[0].ttl.expires_at).toBe(pastDate.toISOString());
+      expect(memoryStoreRequest.params.arguments.items[0].ttl.expires_at).toBe(
+        pastDate.toISOString()
+      );
       expect(new Date(pastDate)).toBeInstanceOf(Date);
     });
 
@@ -550,25 +576,27 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'todo',
-              data: {
-                title: 'Task with Extension Limit',
-                priority: 'medium',
-                status: 'in_progress',
-                assignee: 'developer_1',
-                extension_count: 5
+            items: [
+              {
+                kind: 'todo',
+                data: {
+                  title: 'Task with Extension Limit',
+                  priority: 'medium',
+                  status: 'in_progress',
+                  assignee: 'developer_1',
+                  extension_count: 5,
+                },
+                scope: { project: 'project-x', branch: 'main' },
+                ttl: {
+                  policy: 'default',
+                  auto_extend: true,
+                  max_extensions: 5,
+                  extend_threshold_days: 7,
+                },
               },
-              scope: { project: 'project-x', branch: 'main' },
-              ttl: {
-                policy: 'default',
-                auto_extend: true,
-                max_extensions: 5,
-                extend_threshold_days: 7
-              }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
       const ttlConfig = memoryStoreRequest.params.arguments.items[0].ttl;
@@ -586,8 +614,8 @@ describe('MCP TTL Functionality Integration Tests', () => {
           policy: 'default',
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           auto_extend: true,
-          max_extensions: 3
-        }
+          max_extensions: 3,
+        },
       ];
 
       validTTLConfigs.forEach((config, index) => {
@@ -625,10 +653,10 @@ describe('MCP TTL Functionality Integration Tests', () => {
           data: {
             entity_type: 'test_entity',
             name: `entity_${i}`,
-            data: { index: i, policy }
+            data: { index: i, policy },
           },
           scope: { project: 'batch-test', branch: 'main' },
-          ttl: { policy }
+          ttl: { policy },
         });
       }
 
@@ -643,10 +671,10 @@ describe('MCP TTL Functionality Integration Tests', () => {
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
-              similarity_threshold: 0.9
-            }
-          }
-        }
+              similarity_threshold: 0.9,
+            },
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items).toHaveLength(100);
@@ -668,17 +696,17 @@ describe('MCP TTL Functionality Integration Tests', () => {
             ttl_filters: {
               include_expired: false,
               min_days_remaining: 7,
-              policies: ['default', 'long']
+              policies: ['default', 'long'],
             },
             graph_expansion: {
               enabled: true,
               expansion_type: 'relations',
               max_depth: 2,
-              max_nodes: 50
+              max_nodes: 50,
             },
-            limit: 100
-          }
-        }
+            limit: 100,
+          },
+        },
       };
 
       const request = complexSearchRequest.params.arguments;
@@ -697,32 +725,34 @@ describe('MCP TTL Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'decision',
-              data: {
-                title: 'Use PostgreSQL for Production',
-                rationale: 'ACID compliance and reliability',
-                alternatives: ['MongoDB', 'MySQL'],
-                status: 'accepted',
-                decision_maker: 'architecture_team',
-                impact_assessment: 'high'
+            items: [
+              {
+                kind: 'decision',
+                data: {
+                  title: 'Use PostgreSQL for Production',
+                  rationale: 'ACID compliance and reliability',
+                  alternatives: ['MongoDB', 'MySQL'],
+                  status: 'accepted',
+                  decision_maker: 'architecture_team',
+                  impact_assessment: 'high',
+                },
+                scope: { project: 'architecture', branch: 'main' },
+                ttl: {
+                  policy: 'long',
+                  auto_extend: true,
+                  extend_threshold_days: 90,
+                },
+                deduplication_key: 'postgres_production_decision',
               },
-              scope: { project: 'architecture', branch: 'main' },
-              ttl: {
-                policy: 'long',
-                auto_extend: true,
-                extend_threshold_days: 90
-              },
-              deduplication_key: 'postgres_production_decision'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'prefer_existing',
               similarity_threshold: 0.95,
-              check_within_scope_only: true
-            }
-          }
-        }
+              check_within_scope_only: true,
+            },
+          },
+        },
       };
 
       const item = memoryStoreRequest.params.arguments.items[0];
@@ -744,7 +774,7 @@ describe('MCP TTL Functionality Integration Tests', () => {
             types: ['incident', 'runbook', 'decision'],
             ttl_filters: {
               include_expired: false,
-              policies: ['permanent', 'long']
+              policies: ['permanent', 'long'],
             },
             graph_expansion: {
               enabled: true,
@@ -753,13 +783,13 @@ describe('MCP TTL Functionality Integration Tests', () => {
               max_nodes: 100,
               direction: 'both',
               filters: {
-                edge_types: ['documents_incident', 'resolves_issue', 'mitigates_risk']
-              }
+                edge_types: ['documents_incident', 'resolves_issue', 'mitigates_risk'],
+              },
             },
             search_strategy: 'deep',
-            limit: 50
-          }
-        }
+            limit: 50,
+          },
+        },
       };
 
       const request = memoryFindRequest.params.arguments;

@@ -666,7 +666,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts/
-          pattern: "*-node-${{ matrix.node-version }}"
+          pattern: '*-node-${{ matrix.node-version }}'
           merge-multiple: true
 
       - name: Generate Proof Pack Report
@@ -944,7 +944,17 @@ jobs:
   ci-status:
     name: CI Pipeline Status
     runs-on: ubuntu-latest
-    needs: [type-check, lint, security-scan, unit-tests, performance-gates, integration-tests, artifact-collection, readiness-gates]
+    needs:
+      [
+        type-check,
+        lint,
+        security-scan,
+        unit-tests,
+        performance-gates,
+        integration-tests,
+        artifact-collection,
+        readiness-gates,
+      ]
     if: always()
 
     steps:

@@ -21,7 +21,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 function log(level, message) {
@@ -30,10 +30,18 @@ function log(level, message) {
   console.log(`${color}[${timestamp}] ${level.toUpperCase()}: ${message}${colors.reset}`);
 }
 
-function success(message) { log('green', message); }
-function error(message) { log('red', message); }
-function warning(message) { log('yellow', message); }
-function info(message) { log('blue', message); }
+function success(message) {
+  log('green', message);
+}
+function error(message) {
+  log('red', message);
+}
+function warning(message) {
+  log('yellow', message);
+}
+function info(message) {
+  log('blue', message);
+}
 
 function execCommand(command) {
   try {
@@ -44,8 +52,14 @@ function execCommand(command) {
 }
 
 function compareVersions(actual, expected) {
-  const actualParts = actual.replace(/[^\d.]/g, '').split('.').map(Number);
-  const expectedParts = expected.replace(/[^\d.]/g, '').split('.').map(Number);
+  const actualParts = actual
+    .replace(/[^\d.]/g, '')
+    .split('.')
+    .map(Number);
+  const expectedParts = expected
+    .replace(/[^\d.]/g, '')
+    .split('.')
+    .map(Number);
 
   const maxLength = Math.max(actualParts.length, expectedParts.length);
 
@@ -112,7 +126,11 @@ function verifyToolchain() {
     try {
       const nodeVersion = execCommand('node --version');
       const nodeCheck = checkVersion('Node.js', nodeVersion, toolchainConfig.node.version);
-      const nodeMinCheck = checkMinimumVersion('Node.js', nodeVersion, toolchainConfig.node.minimum);
+      const nodeMinCheck = checkMinimumVersion(
+        'Node.js',
+        nodeVersion,
+        toolchainConfig.node.minimum
+      );
 
       if (!nodeCheck || !nodeMinCheck) {
         allChecksPassed = false;
@@ -141,8 +159,16 @@ function verifyToolchain() {
       const tscVersion = execCommand('npx tsc --version');
       const versionMatch = tscVersion.match(/Version (\d+\.\d+\.\d+)/);
       if (versionMatch) {
-        const tsCheck = checkVersion('TypeScript', versionMatch[1], toolchainConfig.typescript.version);
-        const tsMinCheck = checkMinimumVersion('TypeScript', versionMatch[1], toolchainConfig.typescript.minimum);
+        const tsCheck = checkVersion(
+          'TypeScript',
+          versionMatch[1],
+          toolchainConfig.typescript.version
+        );
+        const tsMinCheck = checkMinimumVersion(
+          'TypeScript',
+          versionMatch[1],
+          toolchainConfig.typescript.minimum
+        );
 
         if (!tsCheck || !tsMinCheck) {
           allChecksPassed = false;
@@ -178,7 +204,9 @@ function verifyToolchain() {
       if (prettierVersion.includes(tools.prettier)) {
         success(`✓ Prettier ${tools.prettier} found`);
       } else {
-        warning(`⚠ Prettier version mismatch: found ${prettierVersion}, expected ${tools.prettier}`);
+        warning(
+          `⚠ Prettier version mismatch: found ${prettierVersion}, expected ${tools.prettier}`
+        );
       }
     } catch (err) {
       error('Prettier not found or not executable');
@@ -221,7 +249,6 @@ function verifyToolchain() {
       warning('Please update your development environment to match the expected versions.');
       process.exit(1);
     }
-
   } catch (err) {
     error(`Toolchain verification failed: ${err.message}`);
     process.exit(1);

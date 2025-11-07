@@ -7,6 +7,7 @@
 **Purpose**: Store knowledge with automatic semantic deduplication (85% similarity threshold)
 
 **Basic Usage:**
+
 ```json
 {
   "name": "memory_store",
@@ -23,6 +24,7 @@
 ```
 
 **Batch Storage:**
+
 ```json
 {
   "name": "memory_store",
@@ -47,6 +49,7 @@
 ### 2. memory_find - Search Knowledge
 
 **Basic Search:**
+
 ```json
 {
   "name": "memory_find",
@@ -58,6 +61,7 @@
 ```
 
 **Advanced Search with Filters:**
+
 ```json
 {
   "name": "memory_find",
@@ -73,6 +77,7 @@
 ```
 
 **Performance Modes:**
+
 - `"fast"`: Keyword search, ≤20 results, fastest
 - `"auto"`: Hybrid semantic+keyword, ≤50 results, balanced
 - `"deep"`: Full semantic + graph expansion, ≤100 results, most comprehensive
@@ -80,6 +85,7 @@
 ### 3. system_status - System Operations (11-in-1)
 
 #### Health & Monitoring
+
 ```json
 {
   "name": "system_status",
@@ -100,6 +106,7 @@
 ```
 
 #### Document Operations
+
 ```json
 {
   "name": "system_status",
@@ -123,6 +130,7 @@
 ```
 
 #### Advanced Storage with Merge
+
 ```json
 {
   "name": "system_status",
@@ -142,6 +150,7 @@
 ```
 
 #### Maintenance Operations
+
 ```json
 {
   "name": "system_status",
@@ -157,86 +166,95 @@
 
 ## 📚 Knowledge Types Explained
 
-| Type | Use Case | Example |
-|------|----------|---------|
-| `entity` | Core concepts/objects | "User", "Database", "API" |
-| `relation` | Relationships | "User HAS Profile", "API USES Database" |
-| `observation` | Fine-grained data | "Response time: 200ms" |
-| `section` | Document sections | "Chapter 1: Introduction" |
-| `runbook` | Procedures | "Database backup steps" |
-| `change` | Code changes | "Fixed login bug in auth service" |
-| `issue` | Problems/tracking | "Login fails on Safari" |
-| `decision` | Architecture decisions | "Use OAuth 2.0 for authentication" |
-| `todo` | Tasks/actions | "Implement password reset" |
-| `release_note` | Release info | "Version 2.1.0 released" |
-| `ddl` | Schema changes | "CREATE TABLE users..." |
-| `pr_context` | Pull request data | "PR #123: Add user registration" |
-| `incident` | Incidents | "Database outage 2025-11-03" |
-| `release` | Deployments | "Production deploy v2.1.0" |
-| `risk` | Risk assessments | "Password complexity insufficient" |
-| `assumption` | Assumptions | "Users have modern browsers" |
+| Type           | Use Case               | Example                                 |
+| -------------- | ---------------------- | --------------------------------------- |
+| `entity`       | Core concepts/objects  | "User", "Database", "API"               |
+| `relation`     | Relationships          | "User HAS Profile", "API USES Database" |
+| `observation`  | Fine-grained data      | "Response time: 200ms"                  |
+| `section`      | Document sections      | "Chapter 1: Introduction"               |
+| `runbook`      | Procedures             | "Database backup steps"                 |
+| `change`       | Code changes           | "Fixed login bug in auth service"       |
+| `issue`        | Problems/tracking      | "Login fails on Safari"                 |
+| `decision`     | Architecture decisions | "Use OAuth 2.0 for authentication"      |
+| `todo`         | Tasks/actions          | "Implement password reset"              |
+| `release_note` | Release info           | "Version 2.1.0 released"                |
+| `ddl`          | Schema changes         | "CREATE TABLE users..."                 |
+| `pr_context`   | Pull request data      | "PR #123: Add user registration"        |
+| `incident`     | Incidents              | "Database outage 2025-11-03"            |
+| `release`      | Deployments            | "Production deploy v2.1.0"              |
+| `risk`         | Risk assessments       | "Password complexity insufficient"      |
+| `assumption`   | Assumptions            | "Users have modern browsers"            |
 
 ## 🎯 AI Agent Usage Patterns
 
 ### Pattern 1: Learn User Preferences
+
 ```javascript
 // Store what you learn
 await memory_store({
-  items: [{
-    kind: 'entity',
-    content: 'User prefers concise responses',
-    metadata: { category: 'communication-style' }
-  }]
+  items: [
+    {
+      kind: 'entity',
+      content: 'User prefers concise responses',
+      metadata: { category: 'communication-style' },
+    },
+  ],
 });
 
 // Later, retrieve preferences
 await memory_find({
   query: 'user communication preferences',
-  types: ['entity', 'observation']
+  types: ['entity', 'observation'],
 });
 ```
 
 ### Pattern 2: Track Project Decisions
+
 ```javascript
 // Store decision
 await memory_store({
-  items: [{
-    kind: 'decision',
-    content: 'Use PostgreSQL for user data storage',
-    metadata: { rationale: 'ACID compliance needed', alternatives: 'MongoDB, MySQL' },
-    scope: { project: 'user-service', branch: 'main' }
-  }]
+  items: [
+    {
+      kind: 'decision',
+      content: 'Use PostgreSQL for user data storage',
+      metadata: { rationale: 'ACID compliance needed', alternatives: 'MongoDB, MySQL' },
+      scope: { project: 'user-service', branch: 'main' },
+    },
+  ],
 });
 
 // Find all decisions for project
 await memory_find({
   query: 'database architecture decisions',
   types: ['decision'],
-  scope: { project: 'user-service' }
+  scope: { project: 'user-service' },
 });
 ```
 
 ### Pattern 3: Monitor System Health
+
 ```javascript
 // Check system status
 const health = await system_status({
-  operation: 'health'
+  operation: 'health',
 });
 
 // Get performance metrics
 const metrics = await system_status({
   operation: 'metrics',
-  summary: true
+  summary: true,
 });
 
 // Take action based on results
 if (health.status !== 'healthy') {
   await memory_store({
-    items: [{
-      kind: 'incident',
-      content: `System health issue detected: ${health.status}`,
-      metadata: { severity: 'high', timestamp: new Date().toISOString() }
-    }]
+    items: [
+      {
+        kind: 'incident',
+        content: `System health issue detected: ${health.status}`,
+        metadata: { severity: 'high', timestamp: new Date().toISOString() },
+      },
+    ],
   });
 }
 ```
@@ -254,6 +272,7 @@ if (health.status !== 'healthy') {
 ## 🔧 Error Handling
 
 Always check response format:
+
 ```json
 {
   "success": true/false,
@@ -264,6 +283,7 @@ Always check response format:
 ```
 
 For search results:
+
 ```json
 {
   "items": [...],

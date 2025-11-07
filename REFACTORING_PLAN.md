@@ -9,6 +9,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
 ### Priority 1: Critical Functions (>100 lines)
 
 #### 1. Memory Store Orchestrator Qdrant - `storeItems` Method
+
 - **File**: `src/services/orchestrators/memory-store-orchestrator-qdrant.ts`
 - **Lines**: 163-433 (270+ lines)
 - **Current Issues**:
@@ -18,6 +19,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
   - Mixed concerns (business logic with orchestration)
 
 #### 2. Chunking Service - `createChunkedItems` Method
+
 - **File**: `src/services/chunking/chunking-service.ts`
 - **Lines**: 447-581 (134 lines)
 - **Current Issues**:
@@ -29,6 +31,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
 ### Priority 2: High Priority Functions (70-100 lines)
 
 #### 3. Deduplication Service - `isDuplicate` Method
+
 - **File**: `src/services/deduplication/deduplication-service.ts`
 - **Lines**: 144-251 (107 lines)
 - **Current Issues**:
@@ -38,6 +41,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
   - Audit logging mixed with business logic
 
 #### 4. Deduplication Service - `upsertWithMerge` Method
+
 - **File**: `src/services/deduplication/deduplication-service.ts`
 - **Lines**: 498-590 (92 lines)
 - **Current Issues**:
@@ -48,6 +52,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
 ### Priority 3: Medium Priority Functions (50-70 lines)
 
 #### 5. Memory Find Orchestrator Qdrant - `executeSearch` Method
+
 - **File**: `src/services/orchestrators/memory-find-orchestrator-qdrant.ts`
 - **Lines**: 346-419 (73 lines)
 - **Current Issues**:
@@ -56,6 +61,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
   - Multiple response building steps
 
 #### 6. Memory Find Orchestrator Qdrant - `rankResults` Method
+
 - **File**: `src/services/orchestrators/memory-find-orchestrator-qdrant.ts`
 - **Lines**: 566-629 (63 lines)
 - **Current Issues**:
@@ -63,6 +69,7 @@ This document outlines a comprehensive refactoring plan for complex functions (>
   - Multiple processing paths
 
 #### 7. Chunking Service - `validateChunks` Method
+
 - **File**: `src/services/chunking/chunking-service.ts`
 - **Lines**: 756-833 (77 lines)
 - **Current Issues**:
@@ -73,34 +80,44 @@ This document outlines a comprehensive refactoring plan for complex functions (>
 ## Refactoring Strategy
 
 ### 1. Extract Helper Functions
+
 Break down complex methods into smaller, focused helper functions:
+
 - **Rate Limiting**: Extract rate limit checking logic
 - **Validation**: Extract input validation logic
 - **Processing**: Extract core processing logic
 - **Error Handling**: Extract error handling and recovery logic
 
 ### 2. Apply Single Responsibility Principle
+
 Ensure each function has a single, well-defined responsibility:
+
 - **Orchestration**: High-level flow control
 - **Business Logic**: Domain-specific operations
 - **Data Processing**: Data transformation and manipulation
 - **Validation**: Input validation and business rule checking
 
 ### 3. Reduce Cyclomatic Complexity
+
 Simplify conditional logic and reduce nesting:
+
 - **Early Returns**: Use early returns to reduce nesting
 - **Guard Clauses**: Check for error conditions early
 - **Strategy Pattern**: Replace complex conditionals with strategy objects
 - **Command Pattern**: Encapsulate operations as objects
 
 ### 4. Create Composable Function Chains
+
 Build pipelines of small, composable functions:
+
 - **Data Flow**: Transform data through a series of pure functions
 - **Error Boundaries**: Handle errors at appropriate levels
 - **Middleware Pattern**: Apply transformations as middleware
 
 ### 5. Improve Testability
+
 Design functions that are easy to test:
+
 - **Pure Functions**: Minimize side effects
 - **Dependency Injection**: Pass dependencies as parameters
 - **Small Units**: Test individual functions in isolation
@@ -110,6 +127,7 @@ Design functions that are easy to test:
 ### 1. MemoryStoreOrchestratorQdrant.storeItems Method
 
 **Current Structure (270+ lines)**:
+
 ```typescript
 async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
   // Rate limiting
@@ -124,6 +142,7 @@ async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemorySto
 ```
 
 **Proposed Refactored Structure**:
+
 ```typescript
 async storeItems(items: unknown[], authContext?: AuthContext): Promise<MemoryStoreResponse> {
   const context = await this.initializeStorageContext(items, authContext);
@@ -141,6 +160,7 @@ private buildStorageResponse(processed: ProcessedItems, context: StorageContext)
 ### 2. ChunkingService.createChunkedItems Method
 
 **Current Structure (134 lines)**:
+
 ```typescript
 async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
   // Content extraction
@@ -152,6 +172,7 @@ async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
 ```
 
 **Proposed Refactored Structure**:
+
 ```typescript
 async createChunkedItems(item: KnowledgeItem): Promise<KnowledgeItem[]> {
   const content = this.extractContentForChunking(item);
@@ -172,6 +193,7 @@ private createChunkedItemHierarchy(item: KnowledgeItem, chunks: ChunkedContent[]
 ### 3. DeduplicationService.isDuplicate Method
 
 **Current Structure (107 lines)**:
+
 ```typescript
 async isDuplicate(item: KnowledgeItem): Promise<DuplicateAnalysis> {
   // Scope analysis
@@ -183,6 +205,7 @@ async isDuplicate(item: KnowledgeItem): Promise<DuplicateAnalysis> {
 ```
 
 **Proposed Refactored Structure**:
+
 ```typescript
 async isDuplicate(item: KnowledgeItem): Promise<DuplicateAnalysis> {
   const context = this.createDuplicateAnalysisContext(item);
@@ -205,18 +228,22 @@ private analyzeContentMatch(match: ContentMatchResult, context: DuplicateAnalysi
 ## Implementation Approach
 
 ### Phase 1: Critical Functions
+
 1. Refactor `MemoryStoreOrchestratorQdrant.storeItems`
 2. Refactor `ChunkingService.createChunkedItems`
 
 ### Phase 2: High Priority Functions
+
 3. Refactor `DeduplicationService.isDuplicate`
 4. Refactor `DeduplicationService.upsertWithMerge`
 
 ### Phase 3: Medium Priority Functions
+
 5. Refactor remaining functions (50-70 lines)
 6. Apply consistent patterns across all refactored code
 
 ### Phase 4: Verification
+
 7. Create comprehensive tests
 8. Verify functionality preservation
 9. Performance testing
@@ -224,23 +251,27 @@ private analyzeContentMatch(match: ContentMatchResult, context: DuplicateAnalysi
 ## Safe Refactoring Practices
 
 ### 1. Maintain Function Signatures
+
 - Keep existing public method signatures unchanged
 - Preserve all input/output contracts
 - Maintain backward compatibility
 
 ### 2. Preserve All Side Effects
+
 - Maintain logging behavior
 - Preserve audit trails
 - Keep error handling patterns
 - Ensure performance characteristics
 
 ### 3. Comprehensive Testing
+
 - Unit tests for each new helper function
 - Integration tests for refactored methods
 - Regression tests for existing behavior
 - Performance benchmarks
 
 ### 4. Incremental Implementation
+
 - Refactor one function at a time
 - Commit changes frequently
 - Run tests after each change
@@ -249,21 +280,25 @@ private analyzeContentMatch(match: ContentMatchResult, context: DuplicateAnalysi
 ## Expected Benefits
 
 ### 1. Maintainability
+
 - Smaller, focused functions easier to understand
 - Clear separation of concerns
 - Reduced cognitive load for developers
 
 ### 2. Testability
+
 - Individual functions can be tested in isolation
 - Mock dependencies easily
 - Better test coverage
 
 ### 3. Reusability
+
 - Helper functions can be reused in other contexts
 - Common patterns extracted into utilities
 - Consistent error handling
 
 ### 4. Performance
+
 - Early returns reduce unnecessary processing
 - Smaller functions optimize better
 - Reduced memory footprint
@@ -271,16 +306,19 @@ private analyzeContentMatch(match: ContentMatchResult, context: DuplicateAnalysi
 ## Risk Mitigation
 
 ### 1. Functional Equivalence
+
 - Comprehensive test suites before refactoring
 - Side-by-side comparison of outputs
 - Behavioral verification tests
 
 ### 2. Performance Impact
+
 - Benchmark current performance
 - Monitor performance during refactoring
 - Performance regression tests
 
 ### 3. Error Handling
+
 - Preserve all error handling paths
 - Maintain error messages and codes
 - Ensure consistent error propagation
@@ -288,21 +326,25 @@ private analyzeContentMatch(match: ContentMatchResult, context: DuplicateAnalysi
 ## Success Criteria
 
 ### 1. Functionality
+
 - [ ] All existing functionality preserved
 - [ ] No breaking changes to public APIs
 - [ ] All tests pass
 
 ### 2. Code Quality
+
 - [ ] Functions under 50 lines
 - [ ] Cyclomatic complexity reduced
 - [ ] Clear separation of concerns
 
 ### 3. Maintainability
+
 - [ ] Code readability improved
 - [ ] Documentation updated
 - [ ] Consistent patterns applied
 
 ### 4. Performance
+
 - [ ] No performance regression
 - [ ] Memory usage optimized
 - [ ] Error handling preserved

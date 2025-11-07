@@ -10,7 +10,7 @@ import {
   MEMORY_STORE_JSON_SCHEMA,
   MEMORY_FIND_JSON_SCHEMA,
   SYSTEM_STATUS_JSON_SCHEMA,
-  PERFORMANCE_MONITORING_JSON_SCHEMA
+  PERFORMANCE_MONITORING_JSON_SCHEMA,
 } from '../../src/schemas/json-schemas.js';
 
 describe('JSON Schema Validation', () => {
@@ -64,7 +64,9 @@ describe('JSON Schema Validation', () => {
 
     it('should have valid PERFORMANCE_MONITORING_JSON_SCHEMA structure', () => {
       expect(PERFORMANCE_MONITORING_JSON_SCHEMA).toBeDefined();
-      expect(PERFORMANCE_MONITORING_JSON_SCHEMA.$schema).toBe('http://json-schema.org/draft-07/schema#');
+      expect(PERFORMANCE_MONITORING_JSON_SCHEMA.$schema).toBe(
+        'http://json-schema.org/draft-07/schema#'
+      );
       expect(PERFORMANCE_MONITORING_JSON_SCHEMA.type).toBe('object');
       expect(PERFORMANCE_MONITORING_JSON_SCHEMA.required).toContain('operation');
 
@@ -117,10 +119,10 @@ describe('JSON Schema Validation', () => {
             kind: 'entity',
             content: 'Test entity content',
             scope: {
-              project: 'test-project'
-            }
-          }
-        ]
+              project: 'test-project',
+            },
+          },
+        ],
       };
 
       // This would normally use a JSON Schema validator
@@ -134,7 +136,7 @@ describe('JSON Schema Validation', () => {
       const validInput = {
         query: 'test search',
         limit: 10,
-        types: ['entity', 'observation']
+        types: ['entity', 'observation'],
       };
 
       expect(validInput.query).toBe('test search');
@@ -145,7 +147,7 @@ describe('JSON Schema Validation', () => {
     it('should validate valid system status input', () => {
       const validInput = {
         operation: 'health',
-        include_detailed_metrics: true
+        include_detailed_metrics: true,
       };
 
       expect(validInput.operation).toBe('health');
@@ -157,8 +159,8 @@ describe('JSON Schema Validation', () => {
         operation: 'get_metrics',
         categories: ['performance'],
         time_window: {
-          last_hours: 24
-        }
+          last_hours: 24,
+        },
       };
 
       expect(validInput.operation).toBe('get_metrics');
@@ -180,7 +182,7 @@ function calculateSchemaComplexity(schema: any): number {
 
     complexity += depth; // Each nested level adds complexity
 
-    Object.keys(obj).forEach(key => {
+    Object.keys(obj).forEach((key) => {
       complexity += 1; // Each property adds complexity
 
       if (key === 'properties' || key === 'items') {
@@ -203,7 +205,7 @@ function calculateMaxNestingDepth(schema: any, currentDepth: number = 0): number
 
   let maxDepth = currentDepth;
 
-  Object.keys(schema).forEach(key => {
+  Object.keys(schema).forEach((key) => {
     if (key === 'properties' || key === 'items') {
       const depth = calculateMaxNestingDepth(schema[key], currentDepth + 1);
       maxDepth = Math.max(maxDepth, depth);

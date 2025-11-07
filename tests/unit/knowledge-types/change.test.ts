@@ -91,13 +91,13 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('change');
-        expect(result.data.data.change_type).toBe('feature_add');
-        expect(result.data.data.subject_ref).toBe('PR-1234');
-        expect(result.data.data.summary).toContain('user authentication');
-        expect(result.data.data.affected_files).toHaveLength(5);
-        expect(result.data.data.author).toBe('john.doe@example.com');
-        expect(result.data.data.commit_sha).toBe('a1b2c3d4e5f6789012345678901234567890abcd');
+        expect(result['data.kind']).toBe('change');
+        expect(result['data.data'].change_type).toBe('feature_add');
+        expect(result['data.data'].subject_ref).toBe('PR-1234');
+        expect(result['data.data'].summary).toContain('user authentication');
+        expect(result['data.data'].affected_files).toHaveLength(5);
+        expect(result['data.data'].author).toBe('john.doe@example.com');
+        expect(result['data.data'].commit_sha).toBe('a1b2c3d4e5f6789012345678901234567890abcd');
       }
     });
 
@@ -118,13 +118,13 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.change_type).toBe('bugfix');
-        expect(result.data.data.subject_ref).toBe('commit-abc123');
-        expect(result.data.data.summary).toBe('Fix memory leak in data processing service');
-        expect(result.data.data.details).toBeUndefined();
-        expect(result.data.data.affected_files).toBeUndefined();
-        expect(result.data.data.author).toBeUndefined();
-        expect(result.data.data.commit_sha).toBeUndefined();
+        expect(result['data.data'].change_type).toBe('bugfix');
+        expect(result['data.data'].subject_ref).toBe('commit-abc123');
+        expect(result['data.data'].summary).toBe('Fix memory leak in data processing service');
+        expect(result['data.data'].details).toBeUndefined();
+        expect(result['data.data'].affected_files).toBeUndefined();
+        expect(result['data.data'].author).toBeUndefined();
+        expect(result['data.data'].commit_sha).toBeUndefined();
       }
     });
 
@@ -231,7 +231,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
         const result = ChangeSchema.safeParse(change);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.change_type).toBe(changeType);
+          expect(result['data.data'].change_type).toBe(changeType);
         }
       });
     });
@@ -286,9 +286,9 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.affected_files).toHaveLength(5);
-        expect(result.data.data.affected_files).toContain('src/auth/auth.service.ts');
-        expect(result.data.data.affected_files).toContain('docs/authentication.md');
+        expect(result['data.data'].affected_files).toHaveLength(5);
+        expect(result['data.data'].affected_files).toContain('src/auth/auth.service.ts');
+        expect(result['data.data'].affected_files).toContain('docs/authentication.md');
       }
     });
 
@@ -307,7 +307,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.affected_files).toEqual([]);
+        expect(result['data.data'].affected_files).toEqual([]);
       }
     });
 
@@ -334,9 +334,9 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.affected_files).toHaveLength(7);
-        expect(result.data.data.affected_files[0]).toContain('user-management.controller.ts');
-        expect(result.data.data.affected_files[6]).toContain('migration');
+        expect(result['data.data'].affected_files).toHaveLength(7);
+        expect(result['data.data'].affected_files[0]).toContain('user-management.controller.ts');
+        expect(result['data.data'].affected_files[6]).toContain('migration');
       }
     });
   });
@@ -769,11 +769,11 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(change);
       expect(result.kind).toBe('change');
-      expect(result.data.change_type).toBe('feature_remove');
+      expect(result['data.change_type']).toBe('feature_remove');
       expect(result.tags.deprecation).toBe(true);
       expect(result.tags.breaking_change).toBe(true);
       expect(result.source.actor).toBe('tech-lead');
-      expect(result.ttl_policy).toBe('permanent');
+      expect(result['ttl_policy']).toBe('permanent');
       expect(result.scope.environment).toBe('production');
     });
 
@@ -855,7 +855,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.author).toBe('developer.name@company.com');
+        expect(result['data.data'].author).toBe('developer.name@company.com');
       }
     });
 
@@ -874,7 +874,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.commit_sha).toBe('a1b2c3d4e5f6789012345678901234567890abcd');
+        expect(result['data.data'].commit_sha).toBe('a1b2c3d4e5f6789012345678901234567890abcd');
       }
     });
 
@@ -893,8 +893,8 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.author).toBeUndefined();
-        expect(result.data.data.commit_sha).toBeUndefined();
+        expect(result['data.data'].author).toBeUndefined();
+        expect(result['data.data'].commit_sha).toBeUndefined();
       }
     });
   });
@@ -928,7 +928,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
         const result = ChangeSchema.safeParse(change);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.subject_ref).toBe(subjectRef);
+          expect(result['data.data'].subject_ref).toBe(subjectRef);
         }
       });
     });
@@ -947,7 +947,7 @@ describe('Change Knowledge Type - Comprehensive Testing', () => {
       const result = ChangeSchema.safeParse(change);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.subject_ref).toBe('PR-1234_feature-auth_OAuth2.0');
+        expect(result['data.data'].subject_ref).toBe('PR-1234_feature-auth_OAuth2.0');
       }
     });
   });

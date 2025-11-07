@@ -340,24 +340,28 @@ docker start qdrant
 ### Common Issues
 
 **Degradation not triggering:**
+
 - Check configuration thresholds
 - Verify Qdrant health monitor is running
 - Review circuit breaker status
 - Check error budget settings
 
 **Failover not working:**
+
 - Ensure graceful degradation is enabled
 - Check fallback storage initialization
 - Verify operation interception
 - Review error logs for issues
 
 **Recovery not happening:**
+
 - Check health check configuration
 - Verify consecutive success requirements
 - Review failback logic
 - Check for manual intervention blocks
 
 **Memory issues in fallback:**
+
 - Adjust maxMemoryUsageMB configuration
 - Enable compression if needed
 - Review TTL policies

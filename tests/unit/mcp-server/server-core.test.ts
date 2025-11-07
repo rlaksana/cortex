@@ -937,20 +937,20 @@ describe('MCP Server Core Functionality', () => {
   describe('Configuration and Environment', () => {
     test('should handle test environment configuration', () => {
       // Assert
-      expect(process.env.NODE_ENV).toBe('test');
-      expect(process.env.QDRANT_URL).toBe('http://localhost:6333');
-      expect(process.env.QDRANT_COLLECTION_NAME).toBe('test-collection');
+      expect(process.env['NODE_ENV']).toBe('test');
+      expect(process.env['QDRANT_URL']).toBe('http://localhost:6333');
+      expect(process.env['QDRANT_COLLECTION_NAME']).toBe('test-collection');
     });
 
     test('should handle missing environment variables', () => {
       // Arrange
       const originalEnv = process.env;
       process.env = { ...originalEnv };
-      delete process.env.QDRANT_URL;
+      delete process.env['QDRANT_URL'];
 
       // Act & Assert - Should not throw
       expect(() => {
-        process.env.QDRANT_URL = process.env.QDRANT_URL || 'http://localhost:6333';
+        process.env['QDRANT_URL'] = process.env['QDRANT_URL'] || 'http://localhost:6333';
       }).not.toThrow();
 
       // Cleanup

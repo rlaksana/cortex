@@ -974,7 +974,7 @@ describe('QdrantAdapter - Error Handling and Resilience', () => {
       },
     };
 
-    itemWithInvalidPayload.data.circular = itemWithInvalidPayload.data;
+    itemWithInvalidPayload['data.circular'] = itemWithInvalidPayload.data;
 
     const result = await adapter.store([itemWithInvalidPayload]);
 

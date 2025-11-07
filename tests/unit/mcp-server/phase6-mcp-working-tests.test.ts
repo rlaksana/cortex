@@ -386,7 +386,7 @@ describe('Phase 6 MCP - Chunking Behavior', () => {
           },
         });
         // Test the logic conceptually
-        expect(chunkingService.shouldChunk(item.data.content)).toBe(true);
+        expect(chunkingService.shouldChunk(item['data.content'])).toBe(true);
       });
 
       nonChunkableTypes.forEach((type) => {

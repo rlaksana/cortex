@@ -15,9 +15,9 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '../../utils/logger.js';
-import { writeFile, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { logger } from '@/utils/logger.js';
+import { writeFile, readFile } from 'fs/promises';
+import { join } from 'path';
 
 /**
  * Monitoring configuration
@@ -69,6 +69,7 @@ export interface MonitoringConfiguration {
     widgets: DashboardWidget[];
   };
   healthChecks: {
+    enabled: boolean;
     frequency: number; // Minutes
     timeout: number; // Seconds
     retries: number;
@@ -107,7 +108,7 @@ export interface AlertChannel {
     phoneNumbers?: string[];
 
     // Teams configuration
-    webhookUrl?: string;
+    teamsWebhookUrl?: string;
 
     // Common configuration
     enabled?: boolean;
@@ -565,9 +566,9 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
 
       // Collect recent performance metrics
       const performanceMetrics: PerformanceMetric[] = [];
-      for (const metricList of this.metrics.values()) {
+      Array.from(this.metrics.values()).forEach(metricList => {
         performanceMetrics.push(...metricList.slice(-100)); // Last 100 metrics per type
-      }
+      });
 
       // Calculate trends
       const trends = await this.calculateTrends();
@@ -1128,7 +1129,12 @@ export class BackupRecoveryMonitoringService extends EventEmitter {
   }> {
     // Implementation would calculate trends from historical data
     const now = new Date();
-    const trends = {
+    const trends: {
+      backupPerformance: Array<{ timestamp: string; value: number }>;
+      restorePerformance: Array<{ timestamp: string; value: number }>;
+      successRate: Array<{ timestamp: string; value: number }>;
+      capacityUtilization: Array<{ timestamp: string; value: number }>;
+    } = {
       backupPerformance: [],
       restorePerformance: [],
       successRate: [],

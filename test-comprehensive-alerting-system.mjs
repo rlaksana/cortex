@@ -29,11 +29,7 @@ const TEST_CONFIG = {
   enableIntegrations: false, // Set to true to test real integrations
   verboseLogging: true,
   testTimeout: 60000, // 1 minute per test
-  scenarios: [
-    'database-down',
-    'circuit-breaker-open',
-    'memory-pressure',
-  ],
+  scenarios: ['database-down', 'circuit-breaker-open', 'memory-pressure'],
 };
 
 /**
@@ -72,7 +68,6 @@ async function runComprehensiveAlertTests() {
 
     // Step 10: Generate final report
     await generateFinalReport();
-
   } catch (error) {
     console.error('❌ Test execution failed:', error);
     process.exit(1);
@@ -102,7 +97,6 @@ async function initializeAlertSystem() {
     // Wait for system to stabilize
     await sleep(2000);
     console.log('✅ Alert system initialization completed\n');
-
   } catch (error) {
     console.error('❌ Failed to initialize alert system:', error);
     throw error;
@@ -123,16 +117,15 @@ async function testSystemHealth() {
 
     if (health.issues.length > 0) {
       console.log('⚠️  Health Issues:');
-      health.issues.forEach(issue => console.log(`   - ${issue}`));
+      health.issues.forEach((issue) => console.log(`   - ${issue}`));
     }
 
     if (health.recommendations.length > 0) {
       console.log('💡 Recommendations:');
-      health.recommendations.forEach(rec => console.log(`   - ${rec}`));
+      health.recommendations.forEach((rec) => console.log(`   - ${rec}`));
     }
 
     console.log('✅ System health check completed\n');
-
   } catch (error) {
     console.error('❌ System health check failed:', error);
     throw error;
@@ -150,9 +143,11 @@ async function testAlertRuleConfiguration() {
     const rules = alertManagementService.getAlertRules();
     console.log(`📋 Found ${rules.length} configured alert rules`);
 
-    rules.forEach(rule => {
+    rules.forEach((rule) => {
       console.log(`   - ${rule.name} (${rule.severity}): ${rule.enabled ? 'ENABLED' : 'DISABLED'}`);
-      console.log(`     Condition: ${rule.condition.metric} ${rule.condition.operator} ${rule.condition.threshold}`);
+      console.log(
+        `     Condition: ${rule.condition.metric} ${rule.condition.operator} ${rule.condition.threshold}`
+      );
       console.log(`     Actions: ${rule.actions.length} notification channels`);
     });
 
@@ -196,7 +191,6 @@ async function testAlertRuleConfiguration() {
     }
 
     console.log('✅ Alert rule configuration test completed\n');
-
   } catch (error) {
     console.error('❌ Alert rule configuration test failed:', error);
     throw error;
@@ -214,7 +208,7 @@ async function testNotificationChannels() {
     const channels = notificationChannelRegistry.getAll();
     console.log(`📡 Available notification channels: ${channels.length}`);
 
-    channels.forEach(channel => {
+    channels.forEach((channel) => {
       console.log(`   - ${channel.type}: Available`);
     });
 
@@ -251,7 +245,6 @@ async function testNotificationChannels() {
     }
 
     console.log('✅ Notification channels test completed\n');
-
   } catch (error) {
     console.error('❌ Notification channels test failed:', error);
     throw error;
@@ -269,7 +262,7 @@ async function testOnCallManagement() {
     const users = onCallManagementService.getAllUsers();
     console.log(`👥 On-call users: ${users.length}`);
 
-    users.forEach(user => {
+    users.forEach((user) => {
       console.log(`   - ${user.name} (${user.email})`);
       console.log(`     Skills: ${user.skills.join(', ')}`);
       console.log(`     Max alerts: ${user.maxConcurrentAlerts}`);
@@ -279,7 +272,7 @@ async function testOnCallManagement() {
     const assignments = onCallManagementService.getCurrentAssignments();
     console.log(`📋 Current on-call assignments: ${assignments.length}`);
 
-    assignments.forEach(assignment => {
+    assignments.forEach((assignment) => {
       console.log(`   - ${assignment.userId}: ${assignment.start} to ${assignment.end}`);
     });
 
@@ -292,7 +285,6 @@ async function testOnCallManagement() {
     console.log(`   - Average response time: ${metrics.averageResponseTime}ms`);
 
     console.log('✅ On-call management test completed\n');
-
   } catch (error) {
     console.error('❌ On-call management test failed:', error);
     throw error;
@@ -310,7 +302,7 @@ async function testRunbookIntegration() {
     const runbooks = runbookIntegrationService.getAllRunbooks();
     console.log(`📚 Available runbooks: ${runbooks.length}`);
 
-    runbooks.forEach(runbook => {
+    runbooks.forEach((runbook) => {
       console.log(`   - ${runbook.name} (${runbook.category})`);
       console.log(`     Severity: ${runbook.severity}`);
       console.log(`     Duration: ${runbook.estimatedDuration} minutes`);
@@ -342,13 +334,12 @@ async function testRunbookIntegration() {
     const recommendations = await runbookIntegrationService.getRunbookRecommendations(mockAlert);
     console.log(`🎯 Runbook recommendations for test alert: ${recommendations.length}`);
 
-    recommendations.slice(0, 3).forEach(rec => {
+    recommendations.slice(0, 3).forEach((rec) => {
       console.log(`   - ${rec.runbookId}: ${rec.confidence}% confidence`);
       console.log(`     Explanation: ${rec.explanation}`);
     });
 
     console.log('✅ Runbook integration test completed\n');
-
   } catch (error) {
     console.error('❌ Runbook integration test failed:', error);
     throw error;
@@ -376,12 +367,11 @@ async function testFaultScenarios() {
 
         if (!result.success && result.recommendations.length > 0) {
           console.log('   Recommendations:');
-          result.recommendations.forEach(rec => console.log(`     - ${rec}`));
+          result.recommendations.forEach((rec) => console.log(`     - ${rec}`));
         }
 
         // Wait between scenarios
         await sleep(3000);
-
       } catch (error) {
         console.error(`   ❌ Scenario ${scenarioName} failed:`, error);
       }
@@ -390,7 +380,6 @@ async function testFaultScenarios() {
     }
 
     console.log('✅ Fault scenario tests completed\n');
-
   } catch (error) {
     console.error('❌ Fault scenario tests failed:', error);
     throw error;
@@ -414,7 +403,7 @@ async function testComprehensiveSystemTests() {
     console.log(`   Success rate: ${results.overall.successRate.toFixed(1)}%`);
 
     console.log('📋 Suite Results:');
-    results.suites.forEach(suite => {
+    results.suites.forEach((suite) => {
       const status = suite.passed ? '✅' : '❌';
       console.log(`   ${status} ${suite.suiteName} (${suite.category}): ${suite.duration}ms`);
       if (suite.error) {
@@ -424,11 +413,10 @@ async function testComprehensiveSystemTests() {
 
     if (results.recommendations.length > 0) {
       console.log('💡 Recommendations:');
-      results.recommendations.forEach(rec => console.log(`   - ${rec}`));
+      results.recommendations.forEach((rec) => console.log(`   - ${rec}`));
     }
 
     console.log('✅ Comprehensive system tests completed\n');
-
   } catch (error) {
     console.error('❌ Comprehensive system tests failed:', error);
     throw error;
@@ -454,22 +442,30 @@ async function testMetricsAndDashboards() {
     console.log(`   Performance:`);
     console.log(`     - Alert throughput: ${metrics.performance.alertThroughput.toFixed(2)}/sec`);
     console.log(`     - Notification latency: ${metrics.performance.notificationLatency}ms`);
-    console.log(`     - System load: CPU ${metrics.performance.systemLoad.cpu}%, Memory ${metrics.performance.systemLoad.memory}%`);
+    console.log(
+      `     - System load: CPU ${metrics.performance.systemLoad.cpu}%, Memory ${metrics.performance.systemLoad.memory}%`
+    );
 
     // Get dashboard data
     const dashboardData = await alertSystemIntegrationService.getDashboardData();
     if (dashboardData) {
       console.log('📊 Dashboard data retrieved successfully');
-      console.log(`   Health components: ${Object.keys(dashboardData.health.componentHealth).length}`);
-      console.log(`   Trend data points available: ${dashboardData.trends.alertVolume.hourly.length} (hourly)`);
+      console.log(
+        `   Health components: ${Object.keys(dashboardData.health.componentHealth).length}`
+      );
+      console.log(
+        `   Trend data points available: ${dashboardData.trends.alertVolume.hourly.length} (hourly)`
+      );
     }
 
     // Test custom metrics
-    alertMetricsService.recordCustomMetric('test_metric', 42, { component: 'test', type: 'validation' });
+    alertMetricsService.recordCustomMetric('test_metric', 42, {
+      component: 'test',
+      type: 'validation',
+    });
     console.log('✅ Custom metric recorded successfully');
 
     console.log('✅ Metrics and dashboard tests completed\n');
-
   } catch (error) {
     console.error('❌ Metrics and dashboard tests failed:', error);
     throw error;
@@ -510,11 +506,15 @@ async function generateFinalReport() {
     console.log('');
 
     console.log('🔧 Component Status:');
-    status.components.forEach(component => {
-      const statusIcon = component.status === 'healthy' ? '✅' :
-                         component.status === 'degraded' ? '⚠️' : '❌';
-      console.log(`   ${statusIcon} ${component.name} (${component.type}): ${component.status.toUpperCase()}`);
-      console.log(`      Response time: ${component.responseTime}ms, Error rate: ${component.errorRate}%`);
+    status.components.forEach((component) => {
+      const statusIcon =
+        component.status === 'healthy' ? '✅' : component.status === 'degraded' ? '⚠️' : '❌';
+      console.log(
+        `   ${statusIcon} ${component.name} (${component.type}): ${component.status.toUpperCase()}`
+      );
+      console.log(
+        `      Response time: ${component.responseTime}ms, Error rate: ${component.errorRate}%`
+      );
     });
     console.log('');
 
@@ -532,29 +532,30 @@ async function generateFinalReport() {
     console.log('🧪 Test Results Summary:');
     Object.entries(testResults).forEach(([test, passed]) => {
       const status = passed ? '✅' : '❌';
-      const testName = test.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+      const testName = test.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
       console.log(`   ${status} ${testName}: ${passed ? 'PASSED' : 'FAILED'}`);
     });
     console.log('');
 
     const overallSuccess = Object.values(testResults).every(Boolean);
-    console.log(`🎯 OVERALL RESULT: ${overallSuccess ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}`);
+    console.log(
+      `🎯 OVERALL RESULT: ${overallSuccess ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}`
+    );
 
     if (status.health.issues.length > 0) {
       console.log('');
       console.log('⚠️  Outstanding Issues:');
-      status.health.issues.forEach(issue => console.log(`   - ${issue}`));
+      status.health.issues.forEach((issue) => console.log(`   - ${issue}`));
     }
 
     if (status.health.recommendations.length > 0) {
       console.log('');
       console.log('💡 Recommendations:');
-      status.health.recommendations.forEach(rec => console.log(`   - ${rec}`));
+      status.health.recommendations.forEach((rec) => console.log(`   - ${rec}`));
     }
 
     console.log('');
     console.log('🎉 Comprehensive MCP Cortex Alerting System Test Completed!');
-
   } catch (error) {
     console.error('❌ Failed to generate final report:', error);
   }
@@ -579,7 +580,6 @@ async function cleanup() {
     }
 
     console.log('✅ Cleanup completed');
-
   } catch (error) {
     console.error('❌ Cleanup failed:', error);
   }
@@ -589,7 +589,7 @@ async function cleanup() {
  * Helper function to sleep
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -613,7 +613,7 @@ process.on('SIGTERM', () => {
 
 // Run the tests
 if (import.meta.url === `file://${process.argv[1]}`) {
-  runComprehensiveAlertTests().catch(error => {
+  runComprehensiveAlertTests().catch((error) => {
     console.error('💥 Test execution failed catastrophically:', error);
     process.exit(1);
   });

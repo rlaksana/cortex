@@ -328,7 +328,7 @@ describe('SecurityMiddleware', () => {
 
       // Assert
       expect(mockRequest.body.user.name).not.toContain('<script>');
-      expect(mockRequest.body.metadata.description).not.toContain('javascript:');
+      expect(mockRequest.body.metadata['description']).not.toContain('javascript:');
       expect(mockNext).toHaveBeenCalled();
     });
 

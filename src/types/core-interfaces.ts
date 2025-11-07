@@ -91,6 +91,10 @@ export interface SearchQuery {
   limit?: number;
   top_k?: number;
   expand?: 'relations' | 'parents' | 'children' | 'none'; // P4-T4.2: Graph expansion options
+
+  text?: unknown
+
+  filters?: unknown
 }
 
 export interface ItemResult {

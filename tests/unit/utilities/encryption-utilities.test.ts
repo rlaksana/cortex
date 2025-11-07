@@ -48,7 +48,7 @@ class MockEncryptionUtils {
 
   static encryptAES(data: string, key: Buffer): { encrypted: Buffer; iv: Buffer; tag: Buffer } {
     const iv = this.generateIV();
-    const cipher = crypto.createCipher(this.AES_ALGORITHM, key);
+    const cipher = crypto.createCipher(this['AES_ALGORITHM'], key);
     if (cipher.setAAD) {
       cipher.setAAD(Buffer.from('additional-data'));
     }
@@ -61,7 +61,7 @@ class MockEncryptionUtils {
   }
 
   static decryptAES(encryptedData: Buffer, key: Buffer, iv: Buffer, tag: Buffer): string {
-    const decipher = crypto.createDecipher(this.AES_ALGORITHM, key);
+    const decipher = crypto.createDecipher(this['AES_ALGORITHM'], key);
     if (decipher.setAAD) {
       decipher.setAAD(Buffer.from('additional-data'));
     }
@@ -76,7 +76,7 @@ class MockEncryptionUtils {
   }
 
   // Asymmetric Encryption (RSA)
-  static generateRSAKeyPair(keySize: number = 2048): crypto.KeyPairSyncResult<string, string> {
+  static generateRSAKeyPair(keySize: number = 2048): crypto['K']eyPairSyncResult<string, string> {
     return crypto.generateKeyPairSync('rsa', {
       modulusLength: keySize,
       publicKeyEncoding: { type: 'spki', format: 'pem' },
@@ -88,7 +88,7 @@ class MockEncryptionUtils {
     return crypto.publicEncrypt(
       {
         key: publicKey,
-        padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+        padding: crypto.constants['RSA_PKCS1_OAEP_PADDING'],
         oaepHash: 'sha256',
       },
       Buffer.from(data)
@@ -100,7 +100,7 @@ class MockEncryptionUtils {
       .privateDecrypt(
         {
           key: privateKey,
-          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
+          padding: crypto.constants['RSA_PKCS1_OAEP_PADDING'],
           oaepHash: 'sha256',
         },
         encryptedData
@@ -109,19 +109,19 @@ class MockEncryptionUtils {
   }
 
   // Hash Generation and Validation
-  static generateHash(data: string, algorithm: string = this.HASH_ALGORITHM): string {
+  static generateHash(data: string, algorithm: string = this['HASH_ALGORITHM']): string {
     return crypto.createHash(algorithm).update(data).digest('hex');
   }
 
   static generateHMAC(
     data: string,
     secret: string,
-    algorithm: string = this.HASH_ALGORITHM
+    algorithm: string = this['HASH_ALGORITHM']
   ): string {
     return crypto.createHmac(algorithm, secret).update(data).digest('hex');
   }
 
-  static verifyHash(data: string, hash: string, algorithm: string = this.HASH_ALGORITHM): boolean {
+  static verifyHash(data: string, hash: string, algorithm: string = this['HASH_ALGORITHM']): boolean {
     const computedHash = this.generateHash(data, algorithm);
     return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(computedHash));
   }
@@ -130,7 +130,7 @@ class MockEncryptionUtils {
     data: string,
     hmac: string,
     secret: string,
-    algorithm: string = this.HASH_ALGORITHM
+    algorithm: string = this['HASH_ALGORITHM']
   ): boolean {
     const computedHMAC = this.generateHMAC(data, secret, algorithm);
     return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(computedHMAC));
@@ -138,14 +138,14 @@ class MockEncryptionUtils {
 
   // Digital Signatures
   static signData(data: string, privateKey: string): Buffer {
-    const sign = crypto.createSign(this.SIGNATURE_ALGORITHM);
+    const sign = crypto.createSign(this['SIGNATURE_ALGORITHM']);
     sign.update(data);
     return sign.sign(privateKey);
   }
 
   static verifySignature(data: string, signature: Buffer, publicKey: string): boolean {
     try {
-      const verify = crypto.createVerify(this.SIGNATURE_ALGORITHM);
+      const verify = crypto.createVerify(this['SIGNATURE_ALGORITHM']);
       verify.update(data);
       return verify.verify(publicKey, signature);
     } catch (error) {

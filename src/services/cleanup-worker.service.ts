@@ -8,7 +8,7 @@
  * @module services/cleanup-worker.service
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   runExpiryWorker,
   runExpiryWorkerWithReport,

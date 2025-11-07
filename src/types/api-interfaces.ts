@@ -136,6 +136,12 @@ export interface ApiMetrics {
   client?: string;
   totalRequests?: number;
   averageResponseTime?: number;
+
+  successfulRequests?: unknown
+
+  failedRequests?: unknown
+
+  endpointMetrics?: unknown
 }
 
 export interface ServiceEndpoint {

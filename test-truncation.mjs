@@ -12,7 +12,10 @@ async function testTruncation() {
 
   // Test 1: Basic content truncation
   console.log('\n1️⃣  Testing basic content truncation');
-  const longText = 'This is a very long text that should definitely exceed the default character limits. '.repeat(200);
+  const longText =
+    'This is a very long text that should definitely exceed the default character limits. '.repeat(
+      200
+    );
   console.log(`Original length: ${longText.length} characters`);
 
   const result1 = await truncationService.processContent(longText);
@@ -36,9 +39,9 @@ async function testTruncation() {
         properties: {
           visible: true,
           priority: i % 3,
-          score: Math.random() * 100
-        }
-      }
+          score: Math.random() * 100,
+        },
+      },
     })),
     settings: {
       theme: 'dark',
@@ -52,9 +55,9 @@ async function testTruncation() {
         export: true,
         import: true,
         sharing: true,
-        collaboration: true
-      }
-    }
+        collaboration: true,
+      },
+    },
   };
 
   const jsonString = JSON.stringify(largeJson, null, 2);
@@ -64,7 +67,16 @@ async function testTruncation() {
   console.log(`Truncated: ${result2.meta.truncated}`);
   console.log(`Final JSON length: ${result2.truncated.length} characters`);
   console.log(`Strategy used: ${result2.meta.strategy}`);
-  console.log(`Valid JSON: ${(() => { try { JSON.parse(result2.truncated.content); return true; } catch { return false; } })()}`);
+  console.log(
+    `Valid JSON: ${(() => {
+      try {
+        JSON.parse(result2.truncated.content);
+        return true;
+      } catch {
+        return false;
+      }
+    })()}`
+  );
 
   // Test 3: Code content truncation
   console.log('\n3️⃣  Testing code content truncation');
@@ -175,15 +187,20 @@ ${'## Extra Section ' + Math.floor(Math.random() * 1000) + '\n\nThis is an extra
 
   // Test 5: Different strategies
   console.log('\n5️⃣  Testing different truncation strategies');
-  const testText = 'This is a test sentence. This is another sentence. This is a third sentence. This is a fourth sentence. This is a fifth sentence. '.repeat(10);
+  const testText =
+    'This is a test sentence. This is another sentence. This is a third sentence. This is a fourth sentence. This is a fifth sentence. '.repeat(
+      10
+    );
 
   const strategies = ['hard_cutoff', 'preserve_sentences', 'smart_content'];
   for (const strategy of strategies) {
     const result = await truncationService.processContent(testText, {
       maxChars: 200,
-      strategy
+      strategy,
     });
-    console.log(`${strategy}: ${result.truncated.length} chars, ends with complete sentence: ${result.truncated.content.trim().endsWith('.')}`);
+    console.log(
+      `${strategy}: ${result.truncated.length} chars, ends with complete sentence: ${result.truncated.content.trim().endsWith('.')}`
+    );
   }
 
   // Test 6: Metrics

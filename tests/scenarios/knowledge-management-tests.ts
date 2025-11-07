@@ -4,7 +4,14 @@
  * Comprehensive test scenarios for all knowledge management operations
  */
 
-import { type TestScenario, type TestContext, TestAssertions, memoryFind, memoryStore, softDelete } from '../framework/test-setup';
+import {
+  type TestScenario,
+  type TestContext,
+  TestAssertions,
+  memoryFind,
+  memoryStore,
+  softDelete,
+} from '../framework/test-setup';
 
 /**
  * Test scenario for basic knowledge CRUD operations
@@ -224,8 +231,8 @@ export const advancedSearchFunctionality: TestScenario = {
         const entity1 = context.dataFactory.createEntity({ name: 'Service A' });
         const entity2 = context.dataFactory.createEntity({ name: 'Service B' });
         const relation = context.dataFactory.createRelation({
-          from_entity_id: entity1.data.id,
-          to_entity_id: entity2.data.id,
+          from_entity_id: entity1['data.id'],
+          to_entity_id: entity2['data.id'],
         });
 
         await memoryStore([entity1, entity2, relation]);
@@ -349,7 +356,7 @@ export const similarityAndDeduplication: TestScenario = {
           id: storeResult.stored[0].id, // Same ID to trigger update
           title: 'OAuth Implementation Decision',
           rationale: 'Updated rationale for OAuth implementation with additional details.',
-          component: originalItem.data.component,
+          component: originalItem['data.component'],
         });
 
         const updateResult = await memoryStore([similarItem]);
@@ -387,9 +394,9 @@ export const immutabilityAndBusinessRules: TestScenario = {
         const modification = context.dataFactory.createDecision({
           id: storeResult.stored[0].id,
           status: 'deprecated',
-          title: decision.data.title,
-          component: decision.data.component,
-          rationale: decision.data.rationale,
+          title: decision['data.title'],
+          component: decision['data.component'],
+          rationale: decision['data.rationale'],
         });
 
         const modifyResult = await memoryStore([modification]);

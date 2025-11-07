@@ -11,7 +11,7 @@
 
 import { EventEmitter } from 'events';
 import { performance } from 'perf_hooks';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Performance metric types
@@ -983,7 +983,8 @@ export class EnhancedPerformanceCollector extends EventEmitter {
       },
     };
   }
-}
+
+  getCurrentMetrics?: unknown|undefined}
 
 // Export singleton instance
 export const enhancedPerformanceCollector = new EnhancedPerformanceCollector();

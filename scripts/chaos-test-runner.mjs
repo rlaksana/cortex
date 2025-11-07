@@ -24,8 +24,8 @@ class ChaosTestRunner {
         failedTests: 0,
         averageRecoveryTime: 0,
         maxDowntime: 0,
-        performanceImpact: 0
-      }
+        performanceImpact: 0,
+      },
     };
     this.qdrantProcess = null;
     this.testLog = [];
@@ -87,10 +87,14 @@ class ChaosTestRunner {
 
     // Try alternative Qdrant startup
     try {
-      const result = await this.executeCommand('qdrant', ['--service-mode', '--host', 'localhost', '--port', '6333'], {
-        detached: true,
-        stdio: 'ignore'
-      });
+      const result = await this.executeCommand(
+        'qdrant',
+        ['--service-mode', '--host', 'localhost', '--port', '6333'],
+        {
+          detached: true,
+          stdio: 'ignore',
+        }
+      );
       this.log('Qdrant started as background process');
       return true;
     } catch (error) {
@@ -132,10 +136,12 @@ class ChaosTestRunner {
 
     try {
       const result = await this.executeCommand('npx', [
-        'vitest', 'run',
+        'vitest',
+        'run',
         '--reporter=json',
-        '--config', 'vitest.config.ts',
-        'tests/integration/real-qdrant-chaos.test.ts'
+        '--config',
+        'vitest.config.ts',
+        'tests/integration/real-qdrant-chaos.test.ts',
       ]);
 
       const duration = Date.now() - startTime;
@@ -153,7 +159,7 @@ class ChaosTestRunner {
         success: true,
         duration,
         results: testResults,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -162,7 +168,7 @@ class ChaosTestRunner {
         success: false,
         duration,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -174,7 +180,7 @@ class ChaosTestRunner {
       testFiles: [],
       numTotalTests: 0,
       numPassedTests: 0,
-      numFailedTests: 0
+      numFailedTests: 0,
     };
 
     for (const line of lines) {
@@ -199,24 +205,27 @@ class ChaosTestRunner {
       requests: [],
       errors: [],
       startTime,
-      endTime: null
+      endTime: null,
     };
 
     const interval = setInterval(async () => {
       try {
         const requestStart = Date.now();
-        const response = await this.executeCommand('curl', ['-s', 'http://localhost:6333/collections']);
+        const response = await this.executeCommand('curl', [
+          '-s',
+          'http://localhost:6333/collections',
+        ]);
         const requestTime = Date.now() - requestStart;
 
         results.requests.push({
           timestamp: Date.now(),
           responseTime: requestTime,
-          success: response.code === 0
+          success: response.code === 0,
         });
       } catch (error) {
         results.errors.push({
           timestamp: Date.now(),
-          error: error.message
+          error: error.message,
         });
       }
     }, 100); // Request every 100ms
@@ -226,12 +235,15 @@ class ChaosTestRunner {
     results.endTime = Date.now();
 
     const totalRequests = results.requests.length;
-    const successfulRequests = results.requests.filter(r => r.success).length;
-    const averageResponseTime = totalRequests > 0
-      ? results.requests.reduce((sum, r) => sum + r.responseTime, 0) / totalRequests
-      : 0;
+    const successfulRequests = results.requests.filter((r) => r.success).length;
+    const averageResponseTime =
+      totalRequests > 0
+        ? results.requests.reduce((sum, r) => sum + r.responseTime, 0) / totalRequests
+        : 0;
 
-    this.log(`Performance test completed: ${totalRequests} requests, ${successfulRequests} successful, avg response time: ${averageResponseTime.toFixed(2)}ms`);
+    this.log(
+      `Performance test completed: ${totalRequests} requests, ${successfulRequests} successful, avg response time: ${averageResponseTime.toFixed(2)}ms`
+    );
 
     return results;
   }
@@ -245,7 +257,7 @@ class ChaosTestRunner {
       endTime: null,
       success: false,
       measurements: {},
-      error: null
+      error: null,
     };
 
     try {
@@ -314,7 +326,7 @@ class ChaosTestRunner {
       baseline: baselineTest,
       downTime: downTest,
       recovery: recoveryTest,
-      recoveryTime: Date.now() - new Date(scenario.endTime).getTime()
+      recoveryTime: Date.now() - new Date(scenario.endTime).getTime(),
     };
   }
 
@@ -333,15 +345,15 @@ class ChaosTestRunner {
     const testResults = await Promise.allSettled(concurrentTests);
     const loadResults = await loadPromise;
 
-    const successfulTests = testResults.filter(r => r.status === 'fulfilled').length;
+    const successfulTests = testResults.filter((r) => r.status === 'fulfilled').length;
 
     return {
       concurrentTests: {
         total: concurrentTests.length,
         successful: successfulTests,
-        failed: concurrentTests.length - successfulTests
+        failed: concurrentTests.length - successfulTests,
       },
-      loadTest: loadResults
+      loadTest: loadResults,
     };
   }
 
@@ -368,7 +380,7 @@ class ChaosTestRunner {
 
       return {
         partitionTest,
-        recoveryTest
+        recoveryTest,
       };
     } finally {
       process.env.QDRANT_URL = originalUrl;
@@ -380,9 +392,9 @@ class ChaosTestRunner {
     this.log(`Test started at: ${this.results.startTime}`);
 
     // Ensure Qdrant is running
-    if (!await this.checkQdrantHealth()) {
+    if (!(await this.checkQdrantHealth())) {
       this.log('Qdrant is not running, attempting to start...');
-      if (!await this.startQdrantService()) {
+      if (!(await this.startQdrantService())) {
         throw new Error('Failed to start Qdrant service');
       }
 
@@ -398,24 +410,29 @@ class ChaosTestRunner {
     try {
       // Run chaos scenarios
       await this.runChaosScenario('Qdrant Stop/Start', () => this.scenario1_QdrantStopStart());
-      await this.runChaosScenario('Circuit Breaker Stress', () => this.scenario2_CircuitBreakerStress());
-      await this.runChaosScenario('Network Partition Simulation', () => this.scenario3_NetworkPartitionSimulation());
+      await this.runChaosScenario('Circuit Breaker Stress', () =>
+        this.scenario2_CircuitBreakerStress()
+      );
+      await this.runChaosScenario('Network Partition Simulation', () =>
+        this.scenario3_NetworkPartitionSimulation()
+      );
 
       // Calculate summary
       this.results.endTime = new Date().toISOString();
       this.results.summary.totalTests = this.results.scenarios.length;
-      this.results.summary.passedTests = this.results.scenarios.filter(s => s.success).length;
-      this.results.summary.failedTests = this.results.scenarios.filter(s => !s.success).length;
+      this.results.summary.passedTests = this.results.scenarios.filter((s) => s.success).length;
+      this.results.summary.failedTests = this.results.scenarios.filter((s) => !s.success).length;
 
       this.log('\n🎉 Chaos test suite completed!');
-      this.log(`Results: ${this.results.summary.passedTests}/${this.results.summary.totalTests} scenarios passed`);
-
+      this.log(
+        `Results: ${this.results.summary.passedTests}/${this.results.summary.totalTests} scenarios passed`
+      );
     } catch (error) {
       this.log(`Chaos test suite failed: ${error.message}`, 'error');
       throw error;
     } finally {
       // Ensure Qdrant is running before exiting
-      if (!await this.checkQdrantHealth()) {
+      if (!(await this.checkQdrantHealth())) {
         this.log('Restoring Qdrant service...');
         await this.startQdrantService();
       }
@@ -426,10 +443,17 @@ class ChaosTestRunner {
     const resultsPath = path.join(process.cwd(), 'chaos-test-results.json');
 
     try {
-      await fs.writeFile(resultsPath, JSON.stringify({
-        ...this.results,
-        testLog: this.testLog
-      }, null, 2));
+      await fs.writeFile(
+        resultsPath,
+        JSON.stringify(
+          {
+            ...this.results,
+            testLog: this.testLog,
+          },
+          null,
+          2
+        )
+      );
 
       this.log(`📊 Results saved to: ${resultsPath}`);
 
@@ -439,7 +463,6 @@ class ChaosTestRunner {
       await fs.writeFile(summaryPath, summary);
 
       this.log(`📋 Summary report saved to: ${summaryPath}`);
-
     } catch (error) {
       this.log(`Failed to save results: ${error.message}`, 'error');
     }
@@ -471,7 +494,7 @@ class ChaosTestRunner {
 
     report += `## Key Findings\n\n`;
 
-    const successfulScenarios = scenarios.filter(s => s.success);
+    const successfulScenarios = scenarios.filter((s) => s.success);
 
     if (successfulScenarios.length > 0) {
       report += `### System Resilience\n`;
@@ -487,7 +510,7 @@ class ChaosTestRunner {
 
     if (summary.failedTests > 0) {
       report += `### Issues Identified\n`;
-      for (const scenario of scenarios.filter(s => !s.success)) {
+      for (const scenario of scenarios.filter((s) => !s.success)) {
         report += `- ${scenario.name}: ${scenario.error}\n`;
       }
       report += `\n`;

@@ -9,6 +9,7 @@ This report presents the comprehensive validation results for the Cortex MCP chu
 ## Test Methodology
 
 ### Test Environment
+
 - **Chunking Service**: ChunkingService with default configuration
 - **Chunk Size**: 1200 characters (maxCharsPerChunk)
 - **Overlap Size**: 200 characters (chunkOverlapSize)
@@ -16,11 +17,14 @@ This report presents the comprehensive validation results for the Cortex MCP chu
 - **Content Truncation Limit**: 8000 characters
 
 ### Accuracy Measurement
+
 Accuracy was calculated using a weighted combination of:
+
 - **Character-based similarity** (30%): Levenshtein distance
 - **Word-based similarity** (70%): Jaccard index on word sets
 
 ### Test Scenarios
+
 1. **Short Content** (< 1000 chars): No chunking expected
 2. **Medium Content** (1000-8000 chars): Standard chunking
 3. **Large Content** (> 8000 chars): Truncated then chunked
@@ -32,6 +36,7 @@ Accuracy was calculated using a weighted combination of:
 ### 1. Core Chunking Accuracy Tests
 
 #### Test 1: Large Document Accuracy (12,000 chars target)
+
 - **Status**: ⚠️ **PARTIAL SUCCESS**
 - **Actual Content Size**: 8,000 characters (truncated from 12,000)
 - **Chunks Created**: 7
@@ -41,6 +46,7 @@ Accuracy was calculated using a weighted combination of:
 **Issue**: Content truncation at 8,000 characters prevented full accuracy validation.
 
 #### Test 2: Very Large Document Performance (25,000 chars target)
+
 - **Status**: ❌ **BELOW REQUIREMENT**
 - **Actual Content Size**: 8,000 characters (truncated from 25,000)
 - **Chunks Created**: 7
@@ -51,6 +57,7 @@ Accuracy was calculated using a weighted combination of:
 **Analysis**: The 75% accuracy indicates significant content loss during chunking/reassembly, likely due to overlap detection issues.
 
 #### Test 3: Short Content Handling
+
 - **Status**: ✅ **SUCCESS**
 - **Content Size**: 52 characters
 - **Chunks Created**: 1 (no chunking applied)
@@ -59,6 +66,7 @@ Accuracy was calculated using a weighted combination of:
 ### 2. Chunk Quality Tests
 
 #### Test 4: Chunk Size Consistency
+
 - **Status**: ❌ **BELOW EXPECTATIONS**
 - **Content Size**: 8,000 characters (truncated)
 - **Chunks Created**: 7
@@ -67,6 +75,7 @@ Accuracy was calculated using a weighted combination of:
 - **Standard Deviation**: 252 characters
 
 **Issues Identified**:
+
 1. **Inconsistent chunk sizes**: High standard deviation (81% of average)
 2. **Small average size**: 309 chars is much smaller than expected 1200 chars
 3. **Size distribution**: Some chunks only 252 characters (below 50% of average)
@@ -74,21 +83,25 @@ Accuracy was calculated using a weighted combination of:
 ## Issues Identified
 
 ### 1. Content Truncation
+
 - **Problem**: CONTENT_TRUNCATION_LIMIT set to 8,000 characters
 - **Impact**: Prevents testing with documents > 8,000 characters
 - **Recommendation**: Increase limit for testing or create separate test configuration
 
 ### 2. Poor Chunk Size Consistency
+
 - **Problem**: High variance in chunk sizes (252-359 chars vs expected 1200)
 - **Impact**: May affect processing efficiency and content preservation
 - **Root Cause**: Overlap detection algorithm may be removing too much content
 
 ### 3. Low Reassembly Accuracy
+
 - **Problem**: Only 75% accuracy for large documents
 - **Impact**: Content loss during chunking/reassembly process
 - **Root Cause**: Overlap removal algorithm needs improvement
 
 ### 4. Chunk Size vs Configuration Mismatch
+
 - **Problem**: Expected 1200 char chunks but getting ~300 char chunks
 - **Impact**: More chunks than expected, potential performance impact
 - **Root Cause**: May be related to context addition or preprocessing
@@ -96,6 +109,7 @@ Accuracy was calculated using a weighted combination of:
 ## Detailed Analysis
 
 ### Chunk Size Distribution Analysis
+
 ```
 Expected: ~1200 characters per chunk
 Actual: 252-359 characters per chunk
@@ -104,6 +118,7 @@ Issue: 4x smaller than expected
 ```
 
 ### Content Preservation Analysis
+
 ```
 Original Content: 8,000 characters (truncated)
 Reassembled Content: ~6,000 characters (estimated)
@@ -112,6 +127,7 @@ Lost Content: ~2,000 characters (25% loss)
 ```
 
 ### Performance Analysis
+
 ```
 Chunking Speed: Excellent (6ms for 8k chars)
 Reassembly Speed: Excellent (<1ms)
@@ -164,12 +180,14 @@ Overall Performance: Meets expectations
 ## Compliance Status
 
 ### ≥99.5% Accuracy Requirement
+
 - **Status**: ❌ **NOT MET**
 - **Current Best**: 100% (small content), 75% (large content)
 - **Gap**: Need to improve reassembly accuracy for large documents
 - **Target**: Achieve ≥99.5% across all document sizes
 
 ### Performance Requirements
+
 - **Status**: ✅ **MET**
 - **Processing Speed**: < 5 seconds for large documents
 - **Memory Usage**: Within acceptable limits
@@ -186,6 +204,7 @@ The Cortex MCP chunking system shows excellent performance characteristics but f
 With focused improvements to the overlap detection algorithm and test configuration adjustments, the system should be able to meet the ≥99.5% accuracy requirement across all document sizes.
 
 ### Next Steps
+
 1. Fix overlap detection algorithm (Priority: High)
 2. Update test configuration for larger documents (Priority: High)
 3. Re-run validation tests (Priority: Medium)

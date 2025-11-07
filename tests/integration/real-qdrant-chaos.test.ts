@@ -16,12 +16,12 @@ describe('Real Qdrant Chaos Tests', () => {
 
   beforeEach(() => {
     // Set test environment
-    process.env.NODE_ENV = 'test';
-    process.env.QDRANT_URL = 'http://localhost:6333';
-    process.env.QDRANT_COLLECTION_NAME = 'test-chaos-memory';
+    process.env['NODE_ENV'] = 'test';
+    process.env['QDRANT_URL'] = 'http://localhost:6333';
+    process.env['QDRANT_COLLECTION_NAME'] = 'test-chaos-memory';
 
     // Store original Qdrant URL
-    originalQdrantUrl = process.env.QDRANT_URL;
+    originalQdrantUrl = process.env['QDRANT_URL'];
 
     // Create Qdrant adapter for real operations
     qdrantAdapter = new QdrantAdapter({
@@ -37,7 +37,7 @@ describe('Real Qdrant Chaos Tests', () => {
   afterEach(async () => {
     // Restore original Qdrant URL
     if (originalQdrantUrl) {
-      process.env.QDRANT_URL = originalQdrantUrl;
+      process.env['QDRANT_URL'] = originalQdrantUrl;
     }
 
     // Reset circuit breakers after each test
@@ -61,7 +61,7 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(healthyData.vectorBackend.status).toBe('healthy');
 
       // Simulate Qdrant failure by pointing to invalid host
-      process.env.QDRANT_URL = 'http://localhost:9999'; // Invalid port
+      process.env['QDRANT_URL'] = 'http://localhost:9999'; // Invalid port
 
       // Create new adapter with invalid host to force failures
       const invalidAdapter = new QdrantAdapter({
@@ -90,10 +90,10 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(degradedData.service.name).toBe('cortex-memory-mcp');
 
       // Restore Qdrant connection
-      process.env.QDRANT_URL = 'http://localhost:6333';
+      process.env['QDRANT_URL'] = 'http://localhost:6333';
 
       // Wait a moment for recovery
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Test recovery
       const recoveryResult = await handleSystemStatus({ operation: 'health' });
@@ -126,7 +126,7 @@ describe('Real Qdrant Chaos Tests', () => {
       dbCircuitBreaker.forceState('closed');
 
       // Wait for recovery timeout
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Verify circuit is closed
       expect(dbCircuitBreaker.isOpen()).toBe(false);
@@ -186,8 +186,8 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(results).toHaveLength(20);
 
       // Most should succeed
-      const successCount = results.filter(r =>
-        r.status === 'fulfilled' && r.value.content
+      const successCount = results.filter(
+        (r) => r.status === 'fulfilled' && r.value.content
       ).length;
 
       expect(successCount).toBeGreaterThan(15); // Allow for some failures
@@ -196,8 +196,12 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(duration).toBeLessThan(10000); // 10 seconds max
 
       // Verify responses are consistent
-      const successfulResults = results.filter(r => r.status === 'fulfilled') as PromiseFulfilledResult<any>[];
-      const healthStatuses = successfulResults.map(r => JSON.parse(r.value.content[0].text).service.status);
+      const successfulResults = results.filter(
+        (r) => r.status === 'fulfilled'
+      ) as PromiseFulfilledResult<any>[];
+      const healthStatuses = successfulResults.map(
+        (r) => JSON.parse(r.value.content[0].text).service.status
+      );
 
       // All successful responses should have the same status
       const uniqueStatuses = [...new Set(healthStatuses)];
@@ -251,9 +255,11 @@ describe('Real Qdrant Chaos Tests', () => {
         await Promise.allSettled(testPromises);
 
         // Calculate performance statistics
-        const avgResponseTime = performanceMetrics.responseTimes.length > 0
-          ? performanceMetrics.responseTimes.reduce((sum, time) => sum + time, 0) / performanceMetrics.responseTimes.length
-          : 0;
+        const avgResponseTime =
+          performanceMetrics.responseTimes.length > 0
+            ? performanceMetrics.responseTimes.reduce((sum, time) => sum + time, 0) /
+              performanceMetrics.responseTimes.length
+            : 0;
 
         const maxResponseTime = Math.max(...performanceMetrics.responseTimes, 0);
 
@@ -264,7 +270,6 @@ describe('Real Qdrant Chaos Tests', () => {
 
         // System should still respond somewhat consistently
         expect(performanceMetrics.successCount).toBeGreaterThan(0);
-
       } finally {
         clearInterval(chaosInterval);
         testCircuitBreaker.reset();
@@ -281,7 +286,7 @@ describe('Real Qdrant Chaos Tests', () => {
       ];
 
       for (const invalidUrl of invalidUrls) {
-        process.env.QDRANT_URL = invalidUrl;
+        process.env['QDRANT_URL'] = invalidUrl;
 
         // Create adapter with invalid URL
         const invalidAdapter = new QdrantAdapter({
@@ -308,7 +313,7 @@ describe('Real Qdrant Chaos Tests', () => {
 
     it('should test recovery from network partitions', async () => {
       // Simulate network partition by using invalid URL
-      process.env.QDRANT_URL = 'http://localhost:9999';
+      process.env['QDRANT_URL'] = 'http://localhost:9999';
 
       const partitionAdapter = new QdrantAdapter({
         url: 'http://localhost:9999',
@@ -330,10 +335,10 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(partitionData.service).toBeDefined();
 
       // Restore connection
-      process.env.QDRANT_URL = 'http://localhost:6333';
+      process.env['QDRANT_URL'] = 'http://localhost:6333';
 
       // Wait for recovery
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Test recovery
       const recoveryAdapter = new QdrantAdapter({
@@ -409,7 +414,7 @@ describe('Real Qdrant Chaos Tests', () => {
       expect(openStats.timeSinceStateChange).toBeGreaterThanOrEqual(0);
 
       // Test half-open state
-      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
       testCircuitBreaker.forceState('half-open');
 
       const halfOpenStats = testCircuitBreaker.getStats();

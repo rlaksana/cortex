@@ -29,22 +29,26 @@ Performance Testing System
 ## Performance Targets
 
 ### Knowledge Storage Operations
+
 - **p95 Latency**: < 1000ms (target), < 2000ms (max)
 - **p99 Latency**: < 2000ms (target), < 5000ms (max)
 - **Throughput**: > 100 ops/s (target), > 50 ops/s (min)
 - **Error Rate**: < 5% (target), < 5% (max)
 
 ### Search and Retrieval Operations
+
 - **p95 Latency**: < 500ms (target), < 1000ms (max)
 - **p99 Latency**: < 1000ms (target), < 2000ms (max)
 - **Throughput**: > 200 ops/s (target), > 100 ops/s (min)
 - **Error Rate**: < 2% (target), < 2% (max)
 
 ### Circuit Breaker Operations
+
 - **Response Time**: < 10ms (target), < 50ms (max)
 - **Throughput**: > 10,000 ops/s (target), > 5,000 ops/s (min)
 
 ### Health Check Operations
+
 - **p95 Latency**: < 100ms (target), < 500ms (max)
 - **Throughput**: > 1,000 ops/s (target), > 500 ops/s (min)
 
@@ -53,16 +57,19 @@ Performance Testing System
 ### Running Performance Tests
 
 #### Run All Performance Tests
+
 ```bash
 npm run perf:test
 ```
 
 #### Run Critical Path Tests
+
 ```bash
 npm run perf:test:critical
 ```
 
 #### Run Specific Test Suites
+
 ```bash
 # Knowledge storage tests
 npm run perf:test:storage
@@ -78,6 +85,7 @@ npm run perf:test:health-check
 ```
 
 #### Run with Verbose Output
+
 ```bash
 npm run perf:test:all
 ```
@@ -85,11 +93,13 @@ npm run perf:test:all
 ### Performance Gates
 
 #### Run Performance Gate (Critical Tests)
+
 ```bash
 npm run perf:gate
 ```
 
 #### Run Performance Gate for CI
+
 ```bash
 npm run perf:gate:ci
 ```
@@ -97,11 +107,13 @@ npm run perf:gate:ci
 ### Baseline Management
 
 #### Update Baseline
+
 ```bash
 npm run perf:baseline
 ```
 
 #### Run with Baseline Update
+
 ```bash
 node scripts/performance-ci-gate.js --update-baseline
 ```
@@ -109,16 +121,19 @@ node scripts/performance-ci-gate.js --update-baseline
 ### Dashboard and Reporting
 
 #### Generate Performance Dashboard
+
 ```bash
 npm run perf:dashboard
 ```
 
 #### Generate Complete Performance Report
+
 ```bash
 npm run perf:report
 ```
 
 #### Run Performance Validation
+
 ```bash
 npm run perf:validate
 ```
@@ -294,6 +309,7 @@ artifacts/performance/
 ### Accessing the Dashboard
 
 1. Generate the dashboard:
+
    ```bash
    npm run perf:dashboard
    ```

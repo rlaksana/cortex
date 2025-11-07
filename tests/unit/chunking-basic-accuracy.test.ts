@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import { KnowledgeItem } from '../../src/types/core-interfaces.js';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
@@ -25,7 +25,7 @@ describe('Basic Chunking Accuracy Validation - ≥99.5% Requirement', () => {
 
     chunkingService = new ChunkingService(
       1200, // maxCharsPerChunk
-      200,  // overlapSize
+      200, // overlapSize
       embeddingService as any
     );
   });
@@ -45,7 +45,7 @@ describe('Basic Chunking Accuracy Validation - ≥99.5% Requirement', () => {
     const wordSimilarity = calculateWordSimilarity(text1, text2);
 
     // Return weighted average
-    return (charSimilarity * 0.3) + (wordSimilarity * 0.7);
+    return charSimilarity * 0.3 + wordSimilarity * 0.7;
   }
 
   function calculateCharSimilarity(text1: string, text2: string): number {
@@ -59,13 +59,19 @@ describe('Basic Chunking Accuracy Validation - ≥99.5% Requirement', () => {
   }
 
   function calculateWordSimilarity(text1: string, text2: string): number {
-    const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const words1 = text1
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+    const words2 = text2
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
 
     const set1 = new Set(words1);
     const set2 = new Set(words2);
 
-    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const intersection = new Set([...set1].filter((x) => set2.has(x)));
     const union = new Set([...set1, ...set2]);
 
     return intersection.size / union.size;
@@ -89,8 +95,8 @@ describe('Basic Chunking Accuracy Validation - ≥99.5% Requirement', () => {
         } else {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
           );
         }
       }
@@ -147,7 +153,7 @@ The system is designed to scale horizontally using microservices architecture wi
 
 ## Future Enhancements
 
-Planned features include advanced analytics, AutoML capabilities, federated learning, and explainable AI tools. The technology roadmap focuses on cloud-native architecture, edge computing support, and integration of cutting-edge AI research.`
+Planned features include advanced analytics, AutoML capabilities, federated learning, and explainable AI tools. The technology roadmap focuses on cloud-native architecture, edge computing support, and integration of cutting-edge AI research.`,
     ];
 
     // Generate content by repeating sections
@@ -169,17 +175,17 @@ Planned features include advanced analytics, AutoML capabilities, federated lear
         scope: {
           project: 'accuracy-validation',
           branch: 'main',
-          org: 'test-organization'
+          org: 'test-organization',
         },
         data: {
           content: testContent,
           title: 'Large Document Accuracy Test',
-          category: 'technical-documentation'
+          category: 'technical-documentation',
         },
         metadata: {
           version: '1.0.0',
-          test_type: 'accuracy_validation'
-        }
+          test_type: 'accuracy_validation',
+        },
       };
 
       // Apply chunking
@@ -190,12 +196,12 @@ Planned features include advanced analytics, AutoML capabilities, federated lear
       // Verify chunking results
       expect(chunkedItems.length).toBeGreaterThan(1);
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       expect(parentItem).toBeDefined();
       expect(childChunks.length).toBeGreaterThan(1);
-      expect(parentItem?.data.total_chunks).toBe(childChunks.length);
+      expect(parentItem?.data['total_chunks']).toBe(childChunks.length);
 
       // Verify metadata integrity
       expect(parentItem?.data.original_length).toBe(testContent.length);
@@ -203,11 +209,11 @@ Planned features include advanced analytics, AutoML capabilities, federated lear
 
       // Reassemble chunks for accuracy testing
       const chunkContents = childChunks
-        .sort((a, b) => a.data.chunk_index - b.data.chunk_index)
-        .map(chunk => chunk.data.content);
+        .sort((a, b) => a['data.chunk_index'] - b['data.chunk_index'])
+        .map((chunk) => chunk['data.content']);
 
       // Remove chunk context markers (TITLE:, CHUNK X of Y, etc.)
-      const cleanedChunks = chunkContents.map(chunk => {
+      const cleanedChunks = chunkContents.map((chunk) => {
         return chunk
           .replace(/^TITLE: .*\n\n/, '')
           .replace(/^CHUNK \d+ of \d+\n\n/, '')
@@ -229,15 +235,15 @@ Planned features include advanced analytics, AutoML capabilities, federated lear
       expect(chunkingTime).toBeLessThan(5000); // Should complete within 5 seconds
 
       // Verify chunk quality
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
       const minChunkSize = Math.min(...chunkSizes);
       const maxChunkSize = Math.max(...chunkSizes);
 
       expect(avgChunkSize).toBeGreaterThan(800); // Reasonable average size
-      expect(avgChunkSize).toBeLessThan(1500);  // Not too large
+      expect(avgChunkSize).toBeLessThan(1500); // Not too large
       expect(minChunkSize).toBeGreaterThan(50); // No extremely small chunks
-      expect(maxChunkSize).toBeLessThan(2500);  // No extremely large chunks
+      expect(maxChunkSize).toBeLessThan(2500); // No extremely large chunks
 
       console.log(`Large Document Accuracy Test Results:`);
       console.log(`- Document size: ${testContent.length} characters`);
@@ -313,7 +319,7 @@ from datetime import datetime
 class AsyncDataProcessor:
     def __init__(self, max_concurrent: int = 10):
         self.max_concurrent = max_concurrent
-        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.semaphore = asyncio['S']emaphore(max_concurrent)
 
     async def process_batch(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         tasks = [self.process_single_item(item) for item in items]
@@ -406,26 +412,26 @@ ${'Additional technical content covering system architecture, deployment strateg
         scope: {
           project: 'mixed-content-test',
           branch: 'main',
-          org: 'test-organization'
+          org: 'test-organization',
         },
         data: {
           content: mixedContent,
           title: 'Mixed Content Accuracy Test',
-          category: 'comprehensive-documentation'
-        }
+          category: 'comprehensive-documentation',
+        },
       };
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Reassemble chunks for accuracy testing
       const chunkContents = childChunks
-        .sort((a, b) => a.data.chunk_index - b.data.chunk_index)
-        .map(chunk => chunk.data.content);
+        .sort((a, b) => a['data.chunk_index'] - b['data.chunk_index'])
+        .map((chunk) => chunk['data.content']);
 
-      const cleanedChunks = chunkContents.map(chunk => {
+      const cleanedChunks = chunkContents.map((chunk) => {
         return chunk
           .replace(/^TITLE: .*\n\n/, '')
           .replace(/^CHUNK \d+ of \d+\n\n/, '')
@@ -443,7 +449,7 @@ ${'Additional technical content covering system architecture, deployment strateg
       expect(reassembledContent).toContain('$\\sigma(z) = \\frac{1}{1 + e^{-z}}$');
       expect(reassembledContent).toContain('$z^{[l]} = W^{[l]} a^{[l-1]} + b^{[l]}$');
       expect(reassembledContent).toContain('$schema": "http://json-schema.org/draft-07/schema#"');
-      expect(reassembledContent).toContain('version: \'3.8\'');
+      expect(reassembledContent).toContain("version: '3.8'");
       expect(reassembledContent).toContain('POSTGRES_DB: myapp');
 
       // Calculate accuracy
@@ -467,20 +473,20 @@ ${'Additional technical content covering system architecture, deployment strateg
         kind: 'section',
         scope: {
           project: 'short-content-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: shortContent,
-          title: 'Short Content Test'
-        }
+          title: 'Short Content Test',
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
 
       // Should not be chunked
       expect(chunkedItems).toHaveLength(1);
-      expect(chunkedItems[0].data.is_chunk).toBe(false);
-      expect(chunkedItems[0].data.total_chunks).toBe(1);
+      expect(chunkedItems[0].data['is_chunk']).toBe(false);
+      expect(chunkedItems[0].data['total_chunks']).toBe(1);
       expect(chunkedItems[0].data.content).toBe(shortContent);
 
       console.log(`Short Content Test Results:`);
@@ -499,12 +505,12 @@ ${'Additional technical content covering system architecture, deployment strateg
         kind: 'section',
         scope: {
           project: 'performance-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: veryLargeContent,
-          title: 'Very Large Document Performance Test'
-        }
+          title: 'Very Large Document Performance Test',
+        },
       };
 
       // Measure chunking performance
@@ -515,27 +521,27 @@ ${'Additional technical content covering system architecture, deployment strateg
       // Performance assertions
       expect(chunkingTime).toBeLessThan(10000); // Should complete within 10 seconds
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Verify chunk distribution
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
       const minChunkSize = Math.min(...chunkSizes);
       const maxChunkSize = Math.max(...chunkSizes);
 
       expect(avgChunkSize).toBeGreaterThan(800); // Reasonable chunk size
-      expect(avgChunkSize).toBeLessThan(1500);  // Not too large
+      expect(avgChunkSize).toBeLessThan(1500); // Not too large
       expect(minChunkSize).toBeGreaterThan(50); // No extremely small chunks
-      expect(maxChunkSize).toBeLessThan(2500);  // No extremely large chunks
+      expect(maxChunkSize).toBeLessThan(2500); // No extremely large chunks
 
       // Test reassembly performance
       const reassemblyStartTime = Date.now();
       const chunkContents = childChunks
-        .sort((a, b) => a.data.chunk_index - b.data.chunk_index)
-        .map(chunk => chunk.data.content);
+        .sort((a, b) => a['data.chunk_index'] - b['data.chunk_index'])
+        .map((chunk) => chunk['data.content']);
 
-      const cleanedChunks = chunkContents.map(chunk => {
+      const cleanedChunks = chunkContents.map((chunk) => {
         return chunk
           .replace(/^TITLE: .*\n\n/, '')
           .replace(/^CHUNK \d+ of \d+\n\n/, '')
@@ -574,21 +580,22 @@ ${'Additional technical content covering system architecture, deployment strateg
         kind: 'section',
         scope: {
           project: 'chunk-quality-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: content,
-          title: 'Chunk Size Consistency Test'
-        }
+          title: 'Chunk Size Consistency Test',
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Analyze chunk size distribution
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
-      const variance = chunkSizes.reduce((sum, size) => sum + Math.pow(size - avgSize, 2), 0) / chunkSizes.length;
+      const variance =
+        chunkSizes.reduce((sum, size) => sum + Math.pow(size - avgSize, 2), 0) / chunkSizes.length;
       const stdDev = Math.sqrt(variance);
       const minSize = Math.min(...chunkSizes);
       const maxSize = Math.max(...chunkSizes);
@@ -600,10 +607,10 @@ ${'Additional technical content covering system architecture, deployment strateg
 
       // Test accuracy
       const chunkContents = childChunks
-        .sort((a, b) => a.data.chunk_index - b.data.chunk_index)
-        .map(chunk => chunk.data.content);
+        .sort((a, b) => a['data.chunk_index'] - b['data.chunk_index'])
+        .map((chunk) => chunk['data.content']);
 
-      const cleanedChunks = chunkContents.map(chunk => {
+      const cleanedChunks = chunkContents.map((chunk) => {
         return chunk
           .replace(/^TITLE: .*\n\n/, '')
           .replace(/^CHUNK \d+ of \d+\n\n/, '')

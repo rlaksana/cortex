@@ -90,6 +90,7 @@ npm run start:raw
 ### 4. Testing Suite
 
 #### Unit Tests
+
 ```bash
 # Run all unit tests
 npm run test:unit
@@ -102,6 +103,7 @@ npm run test:watch
 ```
 
 #### Integration Tests
+
 ```bash
 # Start Qdrant (required for integration tests)
 docker run -d --name qdrant -p 6333:6333 qdrant/qdrant:latest
@@ -117,6 +119,7 @@ npm run test:integration:performance
 ```
 
 #### Full Test Suite
+
 ```bash
 # Run complete test suite
 npm run test:all
@@ -193,6 +196,7 @@ npm run test:performance:search
 The project includes automated Git hooks that run on commit and push:
 
 ### Pre-commit Hooks
+
 - Type checking
 - Linting
 - Format validation
@@ -200,6 +204,7 @@ The project includes automated Git hooks that run on commit and push:
 - Unit tests
 
 ### Pre-push Hooks
+
 - Full test suite
 - Integration tests
 - Security audit
@@ -245,6 +250,7 @@ npm run deploy:validate
 ### Current System State (v2.0.1)
 
 **Resolved Issues ✅**:
+
 - Version inconsistency: package.json updated to v2.0.1 to match CHANGELOG.md
 - MCP validation script: Fixed regex syntax error in `scripts/validate-mcp-tools.js`
 - Coverage configuration: Re-enabled coverage in `vitest.config.ts` with proper thresholds
@@ -305,25 +311,29 @@ NODE_OPTIONS="--max-old-space-size=8192" npm run test:ci
 The proof pack passes successfully when:
 
 ### Quality Gates ✅
+
 - [ ] TypeScript compilation succeeds (`npm run type-check`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] Code formatting is valid (`npm run format:check`)
 - [ ] Quality gate passes (`npm run quality-gate:ci`)
 
 ### Testing ✅
+
 - [ ] All unit tests pass (`npm run test:unit`)
 - [ ] Integration tests pass (`npm run test:integration`)
 - [ ] Coverage thresholds met (`npm run verify-test-coverage`)
-   - **Note**: Coverage is enabled with thresholds: Lines ≥90%, Functions ≥90%, Branches ≥85%, Statements ≥90%
+  - **Note**: Coverage is enabled with thresholds: Lines ≥90%, Functions ≥90%, Branches ≥85%, Statements ≥90%
 - [ ] Security tests pass (`npm run test:security`)
 
 ### Build & Deployment ✅
+
 - [ ] Build succeeds (`npm run build`)
 - [ ] MCP tools validate (`npm run mcp:validate-tools`)
 - [ ] Documentation builds (`npm run docs:all`)
 - [ ] Package creation succeeds (`npm pack`)
 
 ### Performance ✅
+
 - [ ] Performance tests complete (`npm run test:performance`)
 - [ ] Memory usage within limits
 - [ ] Response times acceptable
@@ -413,6 +423,7 @@ After successful proof pack completion:
 ## Support
 
 For proof pack issues:
+
 1. Check this guide first
 2. Review troubleshooting section
 3. Check GitHub Issues

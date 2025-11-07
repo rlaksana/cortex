@@ -24,6 +24,7 @@ npm run test:shutdown:unit
 ## 📋 What's Tested
 
 ### ✅ Signal Handling
+
 - SIGINT (Ctrl+C) graceful shutdown
 - SIGTERM graceful shutdown
 - SIGUSR2 custom signal handling
@@ -32,18 +33,21 @@ npm run test:shutdown:unit
 - Unhandled promise rejection handling
 
 ### ✅ Connection Cleanup
+
 - Qdrant database connection cleanup
 - HTTP client connection cleanup
 - WebSocket connection cleanup
 - Network socket cleanup
 
 ### ✅ In-flight Operations
+
 - Graceful completion of active operations
 - Drain mode (stop accepting new requests)
 - Operation timeout handling
 - Concurrent operation management
 
 ### ✅ Resource Management
+
 - Memory leak detection
 - File handle cleanup
 - Timer and interval cleanup
@@ -51,12 +55,14 @@ npm run test:shutdown:unit
 - Process handle management
 
 ### ✅ Error Scenarios
+
 - Critical cleanup operation failures
 - Non-critical operation failures
 - Extended shutdown timeouts
 - Emergency shutdown procedures
 
 ### ✅ Stress Testing
+
 - High load shutdown scenarios
 - Memory pressure during shutdown
 - Rapid start/stop cycles
@@ -64,25 +70,27 @@ npm run test:shutdown:unit
 
 ## 📁 Test Files
 
-| File | Type | Description |
-|------|------|-------------|
-| `tests/integration/mcp-server-graceful-shutdown.test.ts` | Unit Tests | Vitest-based comprehensive unit tests |
-| `test-mcp-server-shutdown.js` | Integration | Simple Node.js script for basic validation |
-| `test-shutdown-comprehensive.mjs` | Integration | Advanced testing with resource monitoring |
-| `tests/utils/shutdown-test-utils.ts` | Utilities | Helper classes for shutdown testing |
-| `docs/SHUTDOWN-TESTING.md` | Documentation | Detailed testing guide |
+| File                                                     | Type          | Description                                |
+| -------------------------------------------------------- | ------------- | ------------------------------------------ |
+| `tests/integration/mcp-server-graceful-shutdown.test.ts` | Unit Tests    | Vitest-based comprehensive unit tests      |
+| `test-mcp-server-shutdown.js`                            | Integration   | Simple Node.js script for basic validation |
+| `test-shutdown-comprehensive.mjs`                        | Integration   | Advanced testing with resource monitoring  |
+| `tests/utils/shutdown-test-utils.ts`                     | Utilities     | Helper classes for shutdown testing        |
+| `docs/SHUTDOWN-TESTING.md`                               | Documentation | Detailed testing guide                     |
 
 ## 📊 Test Reports
 
 After running tests, you'll get:
 
 ### Console Output
+
 - Real-time test progress
 - Pass/fail status for each test
 - Resource usage summary
 - Success rate percentage
 
 ### JSON Report (`comprehensive-shutdown-test-report.json`)
+
 ```json
 {
   "timestamp": "2025-11-05T...",
@@ -100,6 +108,7 @@ After running tests, you'll get:
 ```
 
 ### Markdown Report (`comprehensive-shutdown-test-report.md`)
+
 - Human-readable test results
 - Detailed failure analysis
 - Resource usage trends
@@ -108,6 +117,7 @@ After running tests, you'll get:
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```bash
 NODE_ENV=test                    # Test environment
 LOG_LEVEL=debug                  # Verbose logging
@@ -118,6 +128,7 @@ DRAIN_TIMEOUT=10000              # Drain mode timeout (ms)
 ```
 
 ### Test Options
+
 - `--verbose`: Enable detailed logging
 - `--integration`: Run integration tests
 - `--stress`: Run stress tests
@@ -126,6 +137,7 @@ DRAIN_TIMEOUT=10000              # Drain mode timeout (ms)
 ## 🎯 Success Criteria
 
 ### ✅ Expected Behavior
+
 - Clean exit code (0)
 - All signals handled gracefully
 - No resource leaks (>50MB memory, >5 handles)
@@ -133,6 +145,7 @@ DRAIN_TIMEOUT=10000              # Drain mode timeout (ms)
 - Memory usage stable before/after
 
 ### ❌ Failure Indicators
+
 - Non-zero exit codes
 - Unhandled exceptions during shutdown
 - Resource leaks detected
@@ -142,6 +155,7 @@ DRAIN_TIMEOUT=10000              # Drain mode timeout (ms)
 ## 🐛 Troubleshooting
 
 ### Server Not Starting
+
 ```bash
 # Ensure server is built
 npm run build
@@ -151,6 +165,7 @@ ls -la dist/index.js
 ```
 
 ### Tests Timing Out
+
 ```bash
 # Increase timeout
 node test-shutdown-comprehensive.mjs --timeout 60000
@@ -160,6 +175,7 @@ DEBUG=* node test-shutdown-comprehensive.mjs --verbose
 ```
 
 ### Resource Leaks Detected
+
 - Review connection cleanup code in `src/monitoring/graceful-shutdown.ts`
 - Check for missing cleanup operations
 - Verify Qdrant client shutdown logic
@@ -185,6 +201,7 @@ DEBUG=* node test-shutdown-comprehensive.mjs --verbose
 ## 🚦 Integration
 
 ### CI/CD Pipeline
+
 ```yaml
 - name: Run Shutdown Tests
   run: |
@@ -200,12 +217,10 @@ DEBUG=* node test-shutdown-comprehensive.mjs --verbose
 ```
 
 ### Pre-commit Hooks
+
 ```json
 {
-  "pre-commit": [
-    "npm run test:shutdown",
-    "npm run test:shutdown:unit"
-  ]
+  "pre-commit": ["npm run test:shutdown", "npm run test:shutdown:unit"]
 }
 ```
 
@@ -213,23 +228,25 @@ DEBUG=* node test-shutdown-comprehensive.mjs --verbose
 
 Based on testing with the current implementation:
 
-| Metric | Expected | Actual |
-|--------|----------|--------|
-| Graceful shutdown time | <5s | ~2.3s |
-| Force shutdown time | <1s | ~0.1s |
-| Memory usage change | <50MB | ~5MB |
-| Handle count change | <5 | ~1 |
-| Success rate | >95% | 96% |
+| Metric                 | Expected | Actual |
+| ---------------------- | -------- | ------ |
+| Graceful shutdown time | <5s      | ~2.3s  |
+| Force shutdown time    | <1s      | ~0.1s  |
+| Memory usage change    | <50MB    | ~5MB   |
+| Handle count change    | <5       | ~1     |
+| Success rate           | >95%     | 96%    |
 
 ## 🤝 Contributing
 
 ### Adding New Tests
+
 1. Follow existing test patterns in `tests/integration/mcp-server-graceful-shutdown.test.ts`
 2. Use resource monitoring for cleanup validation
 3. Include proper error handling and timeout management
 4. Update documentation with new test scenarios
 
 ### Test Categories
+
 - **Signal Tests**: New signal types or handling scenarios
 - **Resource Tests**: New resource types or cleanup patterns
 - **Load Tests**: Different load patterns or stress scenarios
@@ -252,6 +269,7 @@ Based on testing with the current implementation:
 ## 📞 Support
 
 For issues with shutdown testing:
+
 1. Check the troubleshooting section above
 2. Review test logs for specific error details
 3. Verify server configuration and dependencies

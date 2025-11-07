@@ -21,7 +21,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { circuitBreakerManager } from './circuit-breaker.service.js';
 import type {
   ConnectionResult,

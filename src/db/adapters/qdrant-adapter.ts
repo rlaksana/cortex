@@ -19,8 +19,8 @@
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { OpenAI } from 'openai';
-import * as crypto from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import * as crypto from 'crypto';
+import { logger } from '@/utils/logger.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 import { getKeyVaultService } from '../../services/security/key-vault-service.js';
 import { EmbeddingService } from '../../services/embeddings/embedding-service.js';
@@ -577,36 +577,6 @@ export class QdrantAdapter implements IVectorAdapter {
             truncated: false,
           },
         };
-
-        const result = {
-          // Enhanced response format
-          items: itemResults,
-          summary,
-          // Legacy fields for backward compatibility
-          stored,
-          errors,
-          autonomous_context: autonomousContext,
-          // Observability metadata
-          observability: createStoreObservability(
-            true, // vector_used
-            false, // degraded (Qdrant adapter assumes not degraded)
-            Date.now() - startTime,
-            0.8 // confidence score
-          ),
-          // Required meta field for unified response format
-          meta: {
-            strategy: 'vector',
-            vector_used: true,
-            degraded: false,
-            source: 'qdrant-adapter',
-            execution_time_ms: Date.now() - startTime,
-            confidence_score: 0.8,
-            truncated: false,
-          },
-        };
-
-        this.logQdrantCircuitBreakerEvent('store_success', undefined, { itemCount: items.length });
-        return result;
       } catch (error) {
         logger.error({ error, itemCount: items.length }, 'Qdrant store operation failed');
         this.logQdrantCircuitBreakerEvent('store_failure', error, { itemCount: items.length });

@@ -1,4 +1,4 @@
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Generate highlighted snippet from text using simple text matching

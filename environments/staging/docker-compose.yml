@@ -1,0 +1,380 @@
+# ============================================================================
+# CORTEX MEMORY MCP - STAGING ENVIRONMENT CONFIGURATION
+# ============================================================================
+# Staging configuration for pre-production testing
+#
+# Features:
+# - Production-like configuration for testing
+# - Performance testing and validation
+# - Integration testing with realistic data volumes
+# - Security testing and vulnerability scanning
+#
+# Usage:
+#   docker-compose -f environments/staging/docker-compose.yml up -d
+#   docker-compose -f environments/staging/docker-compose.yml down
+
+version: '3.8'
+
+networks:
+  cortex-staging-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.23.0.0/16
+
+  cortex-staging-monitoring:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.24.0.0/16
+
+volumes:
+  qdrant-staging-data:
+    driver: local
+  prometheus-staging-data:
+    driver: local
+  grafana-staging-data:
+    driver: local
+  alertmanager-staging-data:
+    driver: local
+  cortex-staging-logs:
+    driver: local
+
+services:
+  # Qdrant Vector Database - Staging Configuration
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: cortex-qdrant-staging
+    restart: unless-stopped
+    ports:
+      - '16333:6333'  # HTTP API (different port to avoid conflicts)
+      - '16334:6334'  # gRPC API
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=24
+      - QDRANT__STORAGE__PERFORMANCE__SEARCH_RATE_LIMIT_DISABLED=false
+      - QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS=2
+      - QDRANT__STORAGE__PERFORMANCE__MAX_SEARCHES_PER_REQUEST=50
+    volumes:
+      - qdrant-staging-data:/qdrant/storage
+      - ../docker/qdrant/snapshots:/qdrant/snapshots
+    networks:
+      - cortex-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2.5G
+        reservations:
+          cpus: '0.75'
+          memory: 1.5G
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Cortex Memory MCP Service - Staging Configuration
+  cortex-mcp-staging:
+    build:
+      context: ../..
+      dockerfile: docker/Dockerfile
+      target: runtime
+    container_name: cortex-mcp-staging
+    restart: unless-stopped
+    ports:
+      - "13000:3000"  # Health check endpoint
+      - "19090:9090"  # Metrics endpoint
+    environment:
+      - NODE_ENV=staging
+      - LOG_LEVEL=info
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - MCP_SERVER_NAME=cortex-mcp-staging
+      - INSTANCE_ID=staging
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+      - HEALTH_CHECK_PORT=3000
+      - JWT_SECRET=${STAGING_JWT_SECRET:-staging-jwt-secret-change-me}
+      - API_KEY=${STAGING_API_KEY:-staging-api-key-change-me}
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=500  # Middle ground
+      - MEMORY_MAX_ITEMS=50000  # Middle ground
+      - EMBEDDING_MODEL=text-embedding-3-large
+      - OPENAI_API_KEY=${STAGING_OPENAI_API_KEY}
+      - BACKUP_SCHEDULE=0 3 * * *
+      - BACKUP_RETENTION_DAYS=14
+      - ENABLE_PERFORMANCE_MONITORING=true
+      - ENABLE_SECURITY_MONITORING=true
+    volumes:
+      - cortex-staging-logs:/app/logs
+      - ../docker/cortex/config:/app/config:ro
+    networks:
+      - cortex-staging-network
+      - cortex-staging-monitoring
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 4G
+        reservations:
+          cpus: '0.75'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Load Balancer for Staging
+  nginx-staging:
+    image: nginx:1.25-alpine
+    container_name: cortex-nginx-staging
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../docker/nginx/nginx-staging.conf:/etc/nginx/nginx.conf:ro
+      - ../docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ../docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-staging-logs:/var/log/nginx
+    networks:
+      - cortex-staging-network
+    depends_on:
+      - cortex-mcp-staging
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # Prometheus Metrics Collection - Staging
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: cortex-prometheus-staging
+    restart: unless-stopped
+    ports:
+      - "19091:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+      - '--web.external-url=http://localhost:19091'
+    volumes:
+      - ../docker/prometheus:/etc/prometheus:ro
+      - prometheus-staging-data:/prometheus
+    networks:
+      - cortex-staging-monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1.5G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "3"
+
+  # Grafana Dashboard - Staging
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: cortex-grafana-staging
+    restart: unless-stopped
+    ports:
+      - "13001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-staging-admin-change-me}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_SAMESITE=strict
+      - GF_SERVER_DOMAIN=cortex-staging.example.com
+      - GF_SERVER_ROOT_URL=http://cortex-staging.example.com:13001/
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${SMTP_HOST}
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${SMTP_FROM}
+    volumes:
+      - grafana-staging-data:/var/lib/grafana
+      - ../docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - cortex-staging-monitoring
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # Alertmanager - Staging
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: cortex-alertmanager-staging
+    restart: unless-stopped
+    ports:
+      - "19093:9093"
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:19093'
+    volumes:
+      - ../docker/alertmanager:/etc/alertmanager:ro
+      - alertmanager-staging-data:/alertmanager
+    networks:
+      - cortex-staging-monitoring
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # Node Exporter - Staging
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: cortex-node-exporter-staging
+    restart: unless-stopped
+    ports:
+      - "19100:9100"
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--no-collector.ipvs'
+      - '--no-collector.netdev'
+      - '--no-collector.netstat'
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - cortex-staging-monitoring
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+  # Redis for Staging (session management)
+  redis-staging:
+    image: redis:7-alpine
+    container_name: cortex-redis-staging
+    restart: unless-stopped
+    ports:
+      - "16379:6379"
+    command: redis-server --appendonly yes --requirepass ${STAGING_REDIS_PASSWORD:-staging-redis-password}
+    volumes:
+      - cortex-staging-redis-data:/data
+    networks:
+      - cortex-staging-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "2"
+
+volumes:
+  nginx-staging-logs:
+    driver: local
+  cortex-staging-redis-data:
+    driver: local

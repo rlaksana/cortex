@@ -23,7 +23,7 @@ const TEST_CONFIG = {
     'qdrant-happy-path.test.ts',
     'qdrant-degraded-path.test.ts',
     'chunk-reassembly.test.ts',
-    'performance-smoke.test.ts'
+    'performance-smoke.test.ts',
   ],
   vitestConfig: join(__dirname, '..', '..', 'vitest.integration.config.ts'),
 };
@@ -70,7 +70,11 @@ async function checkQdrantAvailability() {
   logHeader('Checking Qdrant Availability');
 
   return new Promise((resolve) => {
-    const testProcess = spawn('node', ['-e', `
+    const testProcess = spawn(
+      'node',
+      [
+        '-e',
+        `
       import('http').then(({ default: http }) => {
         const req = http.request('http://localhost:6333/health', (res) => {
           resolve(res.statusCode === 200);
@@ -82,10 +86,13 @@ async function checkQdrantAvailability() {
         });
         req.end();
       }).catch(() => resolve(false));
-    `], {
-      stdio: 'pipe',
-      shell: true
-    });
+    `,
+      ],
+      {
+        stdio: 'pipe',
+        shell: true,
+      }
+    );
 
     testProcess.on('close', (code) => {
       if (code === 0) {
@@ -112,16 +119,17 @@ async function runTestFile(testFile, qdrantAvailable) {
     ...process.env,
     NODE_ENV: 'test',
     QDRANT_AVAILABLE: qdrantAvailable.toString(),
-    INTEGRATION_TEST: 'true'
+    INTEGRATION_TEST: 'true',
   };
 
   return new Promise((resolve, reject) => {
     const args = [
       'run',
-      '--config', TEST_CONFIG.vitestConfig,
+      '--config',
+      TEST_CONFIG.vitestConfig,
       '--reporter=verbose',
       '--no-coverage',
-      testPath
+      testPath,
     ];
 
     if (TEST_CONFIG.parallel) {
@@ -131,7 +139,7 @@ async function runTestFile(testFile, qdrantAvailable) {
     const testProcess = spawn('npx', ['vitest', ...args], {
       stdio: 'inherit',
       env,
-      cwd: join(__dirname, '..', '..')
+      cwd: join(__dirname, '..', '..'),
     });
 
     testProcess.on('close', (code) => {
@@ -179,7 +187,7 @@ async function runTestSuite() {
 
   // Summary
   const totalTime = Date.now() - startTime;
-  const successfulTests = results.filter(r => r.success).length;
+  const successfulTests = results.filter((r) => r.success).length;
   const totalTests = results.length;
 
   logHeader('Test Suite Summary');
@@ -187,7 +195,7 @@ async function runTestSuite() {
   logInfo(`Qdrant status: ${qdrantAvailable ? 'Available' : 'Unavailable (fallback mode)'}`);
   logInfo(`Tests completed: ${successfulTests}/${totalTests}`);
 
-  results.forEach(result => {
+  results.forEach((result) => {
     if (result.success) {
       logSuccess(`✓ ${result.file}`);
     } else {

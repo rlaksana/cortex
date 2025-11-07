@@ -13,9 +13,9 @@
  * - Memory-only decryption (no persistent raw keys)
  */
 
-import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'crypto';
 import { promisify } from 'node:util';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 const scryptAsync = promisify(scrypt);
 

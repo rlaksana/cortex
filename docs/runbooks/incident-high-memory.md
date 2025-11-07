@@ -6,15 +6,16 @@ This incident response runbook addresses high memory pressure situations affecti
 
 ## Incident Classification
 
-| Severity | Memory Usage | Impact | Response Time | Recovery Time |
-|----------|-------------|--------|---------------|---------------|
-| **Critical** | >90% | Service failure, OOM kills | 2 minutes | 10 minutes |
-| **High** | 80-90% | Severe degradation, slow responses | 5 minutes | 30 minutes |
-| **Medium** | 70-80% | Performance issues, warnings | 15 minutes | 1 hour |
+| Severity     | Memory Usage | Impact                             | Response Time | Recovery Time |
+| ------------ | ------------ | ---------------------------------- | ------------- | ------------- |
+| **Critical** | >90%         | Service failure, OOM kills         | 2 minutes     | 10 minutes    |
+| **High**     | 80-90%       | Severe degradation, slow responses | 5 minutes     | 30 minutes    |
+| **Medium**   | 70-80%       | Performance issues, warnings       | 15 minutes    | 1 hour        |
 
 ## Symptoms and Detection
 
 ### Primary Symptoms
+
 - Slow API response times (>5 seconds)
 - Application timeouts
 - Out Of Memory (OOM) errors in logs
@@ -23,6 +24,7 @@ This incident response runbook addresses high memory pressure situations affecti
 - System becoming unresponsive
 
 ### Detection Methods
+
 ```bash
 # Quick memory pressure check (1 minute)
 echo "🔍 MEMORY PRESSURE DETECTION"
@@ -2331,24 +2333,26 @@ This guide provides comprehensive information about memory management in the Cor
 ### Memory Components
 
 ```
+
 Cortex MCP Memory Architecture
 ├── Application Layer (Node.js)
-│   ├── Heap Memory (JavaScript objects)
-│   ├── Stack Memory (function calls)
-│   └── External Memory (C++ addons)
+│ ├── Heap Memory (JavaScript objects)
+│ ├── Stack Memory (function calls)
+│ └── External Memory (C++ addons)
 ├── Vector Database (Qdrant)
-│   ├── Vector Storage (1536-dimensional)
-│   ├── Index Structures (HNSW)
-│   └── Query Cache
+│ ├── Vector Storage (1536-dimensional)
+│ ├── Index Structures (HNSW)
+│ └── Query Cache
 ├── System Memory
-│   ├── Page Cache
-│   ├── Buffer Cache
-│   └── Swap Space
+│ ├── Page Cache
+│ ├── Buffer Cache
+│ └── Swap Space
 └── Monitoring & Alerting
-    ├── Metrics Collection
-    ├── Threshold Monitoring
-    └── Automated Recovery
-```
+├── Metrics Collection
+├── Threshold Monitoring
+└── Automated Recovery
+
+````
 
 ## Memory Allocation Patterns
 
@@ -2375,14 +2379,16 @@ Cortex MCP Memory Architecture
 ```bash
 # Node.js GC optimization
 export NODE_OPTIONS="--max-old-space-size=4096 --optimize-for-size --gc-interval=100"
-```
+````
 
 #### 2. Memory Pooling
+
 - Use object pools for frequently allocated objects
 - Implement vector result pooling
 - Cache common query patterns
 
 #### 3. Streaming Results
+
 - Enable result streaming for large datasets
 - Implement pagination for vector searches
 - Use compression for network transfers
@@ -2390,6 +2396,7 @@ export NODE_OPTIONS="--max-old-space-size=4096 --optimize-for-size --gc-interval
 ### Database-Level Optimizations
 
 #### 1. Qdrant Configuration
+
 ```yaml
 storage:
   performance:
@@ -2402,6 +2409,7 @@ optimizers:
 ```
 
 #### 2. Vector Quantization
+
 - Use int8 quantization for 75% memory reduction
 - Maintain separate quantized and original vectors
 - Configure appropriate quantile thresholds
@@ -2409,6 +2417,7 @@ optimizers:
 ### System-Level Optimizations
 
 #### 1. Linux Memory Management
+
 ```bash
 # Optimize for memory-intensive applications
 echo 1 > /proc/sys/vm/overcommit_memory
@@ -2416,14 +2425,15 @@ echo 60 > /proc/sys/vm/swappiness
 ```
 
 #### 2. Container Resource Limits
+
 ```yaml
 resources:
   requests:
-    memory: "2Gi"
-    cpu: "1000m"
+    memory: '2Gi'
+    cpu: '1000m'
   limits:
-    memory: "4Gi"
-    cpu: "2000m"
+    memory: '4Gi'
+    cpu: '2000m'
 ```
 
 ## Monitoring Procedures
@@ -2445,6 +2455,7 @@ resources:
 ### Monitoring Tools
 
 1. **Built-in Scripts**:
+
    ```bash
    /usr/local/bin/comprehensive-memory-monitor.sh
    /usr/local/bin/automated-memory-test.sh
@@ -2459,31 +2470,39 @@ resources:
 ### Common Memory Issues
 
 #### 1. High Memory Usage (>90%)
+
 **Symptoms**: Slow responses, service degradation
 **Causes**: Memory leaks, inefficient queries, insufficient resources
 **Solutions**:
+
 - Run emergency memory recovery: `/usr/local/bin/emergency-memory-recovery.sh`
 - Identify memory leaks with profiling
 - Scale resources or optimize queries
 
 #### 2. Memory Leaks
+
 **Symptoms**: Gradual memory increase over time
 **Detection**:
+
 - Monitor memory growth trends
 - Use heap dumps for analysis
 - Check file descriptor usage
-**Solutions**:
+  **Solutions**:
 - Profile application with heapdump
 - Implement object pooling
 - Fix circular references
 
 #### 3. OOM (Out of Memory) Events
+
 **Symptoms**: Service crashes, kernel kills processes
 **Detection**:
+
 ```bash
 dmesg | grep -i "killed process"
 ```
+
 **Solutions**:
+
 - Increase memory limits
 - Optimize memory usage
 - Implement swap space
@@ -2491,18 +2510,21 @@ dmesg | grep -i "killed process"
 ### Recovery Procedures
 
 #### 1. Immediate Response (First 5 minutes)
+
 1. Assess memory usage: `free -h`
 2. Clear system caches: `sync && echo 3 > /proc/sys/vm/drop_caches`
 3. Restart memory-intensive services
 4. Monitor for improvement
 
 #### 2. Detailed Investigation (Minutes 5-15)
+
 1. Analyze memory allocation patterns
 2. Check for memory leaks
 3. Review application logs
 4. Generate heap dumps if needed
 
 #### 3. Long-term Resolution (Minutes 15-30)
+
 1. Implement memory optimizations
 2. Configure resource limits
 3. Set up enhanced monitoring
@@ -2549,12 +2571,14 @@ dmesg | grep -i "killed process"
 ### Memory Allocation Tuning
 
 #### Node.js Configuration
+
 ```bash
 # Optimize for memory efficiency
 NODE_OPTIONS="--max-old-space-size=4096 --optimize-for-size --max-semi-space-size=128"
 ```
 
 #### Qdrant Optimization
+
 ```yaml
 # Memory-efficient configuration
 quantization:
@@ -2568,11 +2592,13 @@ optimizers:
 ### Cache Optimization
 
 #### Application Caching
+
 - Use LRU cache with size limits
 - Implement cache eviction policies
 - Monitor cache hit rates
 
 #### Database Caching
+
 - Configure Qdrant query cache
 - Use result compression
 - Implement cache warming
@@ -2582,11 +2608,13 @@ optimizers:
 ### Memory Emergency Response
 
 1. **Assessment** (2 minutes):
+
    ```bash
    /usr/local/bin/rapid-memory-assessment.sh
    ```
 
 2. **Recovery** (2 minutes):
+
    ```bash
    /usr/local/bin/emergency-memory-recovery.sh
    ```
@@ -2613,6 +2641,7 @@ optimizers:
 ### Quick Reference Card
 
 #### Memory Commands
+
 ```bash
 # Check memory usage
 free -h
@@ -2631,11 +2660,13 @@ node --inspect index.js
 ```
 
 #### Alert Thresholds
+
 - Critical: >90%
 - Warning: 80-90%
 - Info: 70-80%
 
 #### Recovery Scripts
+
 - Emergency: `/usr/local/bin/emergency-memory-recovery.sh`
 - Monitoring: `/usr/local/bin/comprehensive-memory-monitor.sh`
 - Testing: `/usr/local/bin/automated-memory-test.sh`
@@ -2643,12 +2674,14 @@ node --inspect index.js
 ### Training Checklist
 
 #### For New Engineers
+
 - [ ] Understand memory architecture
 - [ ] Learn monitoring procedures
 - [ ] Practice emergency response
 - [ ] Review optimization techniques
 
 #### For Operations Team
+
 - [ ] Configure monitoring alerts
 - [ ] Set up automated testing
 - [ ] Create escalation procedures
@@ -2664,19 +2697,24 @@ EOF
 echo "✅ Memory management guide created"
 
 # Create training presentation
+
 echo ""
 echo "🎓 Creating Memory Management Training Presentation"
 echo "=================================================="
 
 cat > /app/docs/memory-training-presentation.md << 'EOF'
+
 # Memory Management Training
 
 ## Slide 1: Title Slide
+
 **Cortex MCP Memory Management**
-*Comprehensive Guide to Monitoring, Optimization, and Troubleshooting*
+_Comprehensive Guide to Monitoring, Optimization, and Troubleshooting_
 
 ## Slide 2: Learning Objectives
+
 **What You'll Learn Today**
+
 - Understand Cortex MCP memory architecture
 - Monitor memory usage effectively
 - Implement memory optimization strategies
@@ -2684,7 +2722,9 @@ cat > /app/docs/memory-training-presentation.md << 'EOF'
 - Respond to memory emergencies
 
 ## Slide 3: Memory Architecture Overview
+
 **System Components**
+
 ```
 Application (Node.js) → Qdrant (Vector DB) → System (Linux)
      ↓                      ↓                    ↓
@@ -2694,7 +2734,9 @@ Application (Node.js) → Qdrant (Vector DB) → System (Linux)
 ```
 
 ## Slide 4: Memory Usage Patterns
+
 **Where Does Memory Go?**
+
 - **Vectors**: 6KB per 1536-dimensional vector
 - **Search Results**: 1KB per result
 - **API Requests**: 1-10KB per request
@@ -2702,7 +2744,9 @@ Application (Node.js) → Qdrant (Vector DB) → System (Linux)
 - **System Overhead**: ~10% of total
 
 ## Slide 5: Monitoring Dashboard
+
 **Key Metrics to Watch**
+
 - Memory Usage Percentage (Critical: >90%)
 - Heap Size Trend
 - Qdrant Memory Usage
@@ -2710,72 +2754,91 @@ Application (Node.js) → Qdrant (Vector DB) → System (Linux)
 - Swap Usage
 
 ## Slide 6: Alert Thresholds
+
 **When to Act**
+
 - 🚨 **Critical** (>90%): Immediate action required
 - ⚠️ **Warning** (80-90%): Monitor closely
 - ✅ **Normal** (<80%): Continue monitoring
 
 ## Slide 7: Emergency Response
+
 **First 5 Minutes**
+
 1. **Assess**: `/usr/local/bin/rapid-memory-assessment.sh`
 2. **Recover**: `/usr/local/bin/emergency-memory-recovery.sh`
 3. **Decide**: `/usr/local/bin/memory-scaling-decision.sh`
 
 ## Slide 8: Common Issues
+
 **Memory Problems and Solutions**
+
 - **High Usage**: Clear caches, restart services
 - **Memory Leaks**: Profile with heapdump, fix code
 - **OOM Events**: Increase limits, optimize usage
 
 ## Slide 9: Optimization Techniques
+
 **Memory Efficiency Strategies**
+
 - Garbage collection tuning
 - Object pooling
 - Result streaming
 - Vector quantization
 
 ## Slide 10: Best Practices
+
 **Development Guidelines**
+
 - Memory-efficient coding
 - Regular testing
 - Code review checklist
 - Performance monitoring
 
 ## Slide 11: Hands-on Exercise
+
 **Practice Scenario**
+
 - Simulate high memory usage
 - Use monitoring tools
 - Practice recovery procedures
 - Document findings
 
 ## Slide 12: Q&A
+
 **Questions and Discussion**
 
 ## Slide 13: Resources
+
 **Documentation and Tools**
+
 - Memory Management Guide
 - Monitoring Scripts
 - Emergency Procedures
 - Contact Information
 
 ## Slide 14: Thank You
+
 **Questions?**
-*Contact: ops@yourcompany.com*
+_Contact: ops@yourcompany.com_
 EOF
 
 echo "✅ Training presentation created"
 
 # Create quick reference card
+
 echo ""
 echo "📋 Creating Memory Management Quick Reference Card"
 echo "=================================================="
 
 cat > /app/docs/memory-quick-reference.md << 'EOF'
+
 # Memory Management Quick Reference
 
 ## 🚨 Emergency Commands (First 5 Minutes)
 
 ### Assessment
+
 ```bash
 # Quick memory check
 free -h
@@ -2786,6 +2849,7 @@ ps aux --sort=-%mem | head -5
 ```
 
 ### Recovery
+
 ```bash
 # Clear system caches
 sync && echo 3 > /proc/sys/vm/drop_caches
@@ -2795,6 +2859,7 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 ```
 
 ### Scaling Decision
+
 ```bash
 # Determine if scaling is needed
 /usr/local/bin/memory-scaling-decision.sh
@@ -2803,6 +2868,7 @@ sync && echo 3 > /proc/sys/vm/drop_caches
 ## 📊 Monitoring Commands
 
 ### System Memory
+
 ```bash
 # Current usage
 free -h
@@ -2815,6 +2881,7 @@ ps aux --sort=-%mem | head -10
 ```
 
 ### Application Memory
+
 ```bash
 # Node.js process memory
 ps aux | grep "node.*index.js"
@@ -2824,6 +2891,7 @@ docker stats --no-stream
 ```
 
 ### Database Memory
+
 ```bash
 # Qdrant metrics
 curl -s http://localhost:6333/metrics | grep memory
@@ -2835,6 +2903,7 @@ curl -s http://localhost:6333/collections/cortex-memory
 ## 🔧 Optimization Commands
 
 ### Garbage Collection
+
 ```bash
 # Set GC options
 export NODE_OPTIONS="--max-old-space-size=4096 --optimize-for-size"
@@ -2844,6 +2913,7 @@ kill -USR2 <node-pid>
 ```
 
 ### Cache Management
+
 ```bash
 # Clear system caches
 sync && echo 3 > /proc/sys/vm/drop_caches
@@ -2853,6 +2923,7 @@ docker system prune -f
 ```
 
 ### Resource Limits
+
 ```bash
 # Check limits
 ulimit -a
@@ -2864,11 +2935,11 @@ ulimit -m unlimited  # Physical memory
 
 ## 🚨 Alert Thresholds
 
-| Level | Memory Usage | Action |
-|-------|-------------|--------|
-| Critical | >90% | Immediate action |
-| Warning | 80-90% | Monitor closely |
-| Info | 70-80% | Normal monitoring |
+| Level    | Memory Usage | Action            |
+| -------- | ------------ | ----------------- |
+| Critical | >90%         | Immediate action  |
+| Warning  | 80-90%       | Monitor closely   |
+| Info     | 70-80%       | Normal monitoring |
 
 ## 📱 Monitoring URLs
 
@@ -2885,6 +2956,7 @@ ulimit -m unlimited  # Physical memory
 ## 🔍 Troubleshooting Checklist
 
 ### High Memory Usage
+
 - [ ] Check system memory: `free -h`
 - [ ] Identify top processes: `ps aux --sort=-%mem`
 - [ ] Clear caches: `sync && echo 3 > /proc/sys/vm/drop_caches`
@@ -2892,12 +2964,14 @@ ulimit -m unlimited  # Physical memory
 - [ ] Monitor for improvement
 
 ### Memory Leaks
+
 - [ ] Monitor memory trends over time
 - [ ] Generate heap dump: `kill -USR2 <node-pid>`
 - [ ] Analyze heap dump with Chrome DevTools
 - [ ] Fix identified issues in code
 
 ### OOM Events
+
 - [ ] Check OOM logs: `dmesg | grep -i "killed process"`
 - [ ] Increase memory limits
 - [ ] Optimize memory usage
@@ -2905,12 +2979,12 @@ ulimit -m unlimited  # Physical memory
 
 ## 🛠️ Useful Scripts
 
-| Script | Purpose | Location |
-|--------|---------|----------|
+| Script                            | Purpose               | Location          |
+| --------------------------------- | --------------------- | ----------------- |
 | `comprehensive-memory-monitor.sh` | Continuous monitoring | `/usr/local/bin/` |
-| `emergency-memory-recovery.sh` | Emergency recovery | `/usr/local/bin/` |
-| `automated-memory-test.sh` | Load testing | `/usr/local/bin/` |
-| `memory-scaling-decision.sh` | Scaling decisions | `/usr/local/bin/` |
+| `emergency-memory-recovery.sh`    | Emergency recovery    | `/usr/local/bin/` |
+| `automated-memory-test.sh`        | Load testing          | `/usr/local/bin/` |
+| `memory-scaling-decision.sh`      | Scaling decisions     | `/usr/local/bin/` |
 
 ## 📚 Documentation
 
@@ -2919,7 +2993,8 @@ ulimit -m unlimited  # Physical memory
 - **Incident Reports**: `/tmp/incident_report_*.md`
 
 ---
-*Last Updated: $(date '+%Y-%m-%d')*
+
+_Last Updated: $(date '+%Y-%m-%d')_
 EOF
 
 echo "✅ Quick reference card created"
@@ -2936,7 +3011,8 @@ echo "1. Review the documentation with the team"
 echo "2. Conduct training sessions"
 echo "3. Update materials based on feedback"
 echo "4. Regularly review and update content"
-```
+
+````
 
 ### 4. System Configuration Review (5 minutes)
 
@@ -3240,11 +3316,12 @@ echo "1. Review the recommendations"
 echo "2. Implement suggested changes"
 echo "3. Test configuration updates"
 echo "4. Monitor for improvements"
-```
+````
 
 ## Communication Templates
 
 ### High Memory Pressure Alert
+
 ```
 🚨 ALERT: HIGH MEMORY PRESSURE DETECTED 🚨
 
@@ -3273,6 +3350,7 @@ Status Page: [URL]
 ```
 
 ### Memory Pressure Resolution
+
 ```
 ✅ RESOLVED: Memory Pressure Incident
 

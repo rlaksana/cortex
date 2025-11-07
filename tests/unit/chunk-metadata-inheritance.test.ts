@@ -108,8 +108,8 @@ describe('Chunk Metadata Inheritance', () => {
 
       // All chunks should inherit TTL policy from parent
       chunkedItems.forEach((item) => {
-        expect(item.data.ttl_policy).toBe('short');
-        expect(item.data.expires_at).toBeDefined();
+        expect(item['data.ttl_policy']).toBe('short');
+        expect(item['data.expires_at']).toBeDefined();
       });
     });
 
@@ -127,8 +127,8 @@ describe('Chunk Metadata Inheritance', () => {
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
       chunkedItems.forEach((item) => {
-        expect(item.data.ttl_policy).toBe('long'); // Default for sections
-        expect(item.data.expires_at).toBeDefined();
+        expect(item['data.ttl_policy']).toBe('long'); // Default for sections
+        expect(item['data.expires_at']).toBeDefined();
       });
     });
 
@@ -149,7 +149,7 @@ describe('Chunk Metadata Inheritance', () => {
       const chunkedItems = chunkingService.createChunkedItems(parentItem);
 
       chunkedItems.forEach((item) => {
-        expect(item.data.expires_at).toBe(expiresAt.toISOString());
+        expect(item['data.expires_at']).toBe(expiresAt.toISOString());
       });
     });
   });
@@ -170,10 +170,10 @@ describe('Chunk Metadata Inheritance', () => {
 
       // Find parent and children
       const parents = chunkedItems.filter(
-        (item) => item.data.is_chunk === false && item.metadata?.chunking_info?.is_parent === true
+        (item) => item['data.is_chunk'] === false && item.metadata?.chunking_info?.is_parent === true
       );
       const children = chunkedItems.filter(
-        (item) => item.data.is_chunk === true && item.metadata?.chunking_info?.is_child === true
+        (item) => item['data.is_chunk'] === true && item.metadata?.chunking_info?.is_child === true
       );
 
       // Should have exactly one parent
@@ -183,9 +183,9 @@ describe('Chunk Metadata Inheritance', () => {
       const parent = parents[0];
 
       // Parent should have correct metadata
-      expect(parent.data.total_chunks).toBe(children.length); // Total chunks includes children only
-      expect(parent.data.chunk_index).toBe(0);
-      expect(parent.data.is_chunk).toBe(false);
+      expect(parent['data.total_chunks']).toBe(children.length); // Total chunks includes children only
+      expect(parent['data.chunk_index']).toBe(0);
+      expect(parent['data.is_chunk']).toBe(false);
       expect(parent.metadata?.chunking_info).toMatchObject({
         was_chunked: true,
         is_parent: true,
@@ -194,10 +194,10 @@ describe('Chunk Metadata Inheritance', () => {
 
       // Children should have correct metadata
       children.forEach((child, index) => {
-        expect(child.data.parent_id).toBe(parent.id);
-        expect(child.data.chunk_index).toBe(index);
-        expect(child.data.total_chunks).toBe(children.length);
-        expect(child.data.is_chunk).toBe(true);
+        expect(child['data.parent_id']).toBe(parent.id);
+        expect(child['data.chunk_index']).toBe(index);
+        expect(child['data.total_chunks']).toBe(children.length);
+        expect(child['data.is_chunk']).toBe(true);
         expect(child.metadata?.chunking_info).toMatchObject({
           was_chunked: true,
           is_child: true,
@@ -228,9 +228,9 @@ describe('Chunk Metadata Inheritance', () => {
         was_chunked: false,
         total_chunks: 1,
       });
-      expect(item.data.is_chunk).toBe(false);
-      expect(item.data.total_chunks).toBe(1);
-      expect(item.data.chunk_index).toBe(0);
+      expect(item['data.is_chunk']).toBe(false);
+      expect(item['data.total_chunks']).toBe(1);
+      expect(item['data.chunk_index']).toBe(0);
     });
   });
 
@@ -268,8 +268,8 @@ describe('Chunk Metadata Inheritance', () => {
 
         // All chunks should have content
         chunkedItems.forEach((chunk) => {
-          expect(chunk.data.content).toBeDefined();
-          expect(typeof chunk.data.content).toBe('string');
+          expect(chunk['data.content']).toBeDefined();
+          expect(typeof chunk['data.content']).toBe('string');
         });
       });
     });
@@ -290,7 +290,7 @@ describe('Chunk Metadata Inheritance', () => {
       expect(chunkedItems.length).toBeGreaterThan(1);
 
       // Should combine fields for content
-      const parent = chunkedItems.find((item) => item.data.is_chunk === false);
+      const parent = chunkedItems.find((item) => item['data.is_chunk'] === false);
       expect(parent?.data.content).toContain('chunks created');
     });
   });
@@ -318,7 +318,7 @@ describe('TTL Utilities', () => {
 
       const inherited = inheritTTLFromParent(parent);
 
-      expect(inherited.ttl_policy).toBe('short');
+      expect(inherited['ttl_policy']).toBe('short');
       expect(inherited.expires_at).toBeDefined();
     });
 
@@ -346,7 +346,7 @@ describe('TTL Utilities', () => {
 
       const inherited = inheritTTLFromParent(parent);
 
-      expect(inherited.ttl_policy).toBe('permanent');
+      expect(inherited['ttl_policy']).toBe('permanent');
       expect(inherited.expires_at).toBeUndefined();
     });
   });

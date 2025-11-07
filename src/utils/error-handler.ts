@@ -5,7 +5,7 @@
  * across all service layers and entry points.
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 
 // Error severity levels
 export enum ErrorSeverity {

@@ -33,6 +33,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Use Case**: When you want to preserve existing knowledge exactly as-is.
 
 **Configuration**:
+
 ```json
 {
   "merge_strategy": "skip",
@@ -41,11 +42,13 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 **Results**:
+
 - Items above threshold are skipped
 - Existing content remains unchanged
 - Audit log records skip action with similarity score
 
 **Example Response**:
+
 ```json
 {
   "action": "skipped",
@@ -62,14 +65,16 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Use Case**: When historical records should take precedence over new information.
 
 **Configuration**:
+
 ```json
 {
   "merge_strategy": "prefer_existing",
-  "similarity_threshold": 0.80
+  "similarity_threshold": 0.8
 }
 ```
 
 **Results**:
+
 - Existing items are always preserved
 - New items are discarded when duplicates are found
 - Useful for maintaining data integrity
@@ -81,6 +86,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Use Case**: When recent information should override historical data.
 
 **Configuration**:
+
 ```json
 {
   "merge_strategy": "prefer_newer",
@@ -90,11 +96,13 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 **Logic**:
+
 1. Compare `created_at` and `updated_at` timestamps
 2. If newer item is within time window, replace existing
 3. Otherwise, keep existing item
 
 **Results**:
+
 - "updated" action when newer item replaces existing
 - "skipped" action when existing item is newer
 
@@ -105,6 +113,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Use Case**: When you want to combine knowledge from multiple sources.
 
 **Configuration**:
+
 ```json
 {
   "merge_strategy": "combine",
@@ -113,12 +122,14 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 **Merge Logic**:
+
 - **Content Fields**: Prefer longer, more complete content
 - **Metadata**: Merge metadata fields with newer values taking precedence
 - **Arrays**: Combine unique elements
 - **Object Fields**: Deep merge with conflict resolution
 
 **Merge Details**:
+
 ```json
 {
   "strategy": "combine",
@@ -136,6 +147,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Use Case**: When you want sophisticated decision-making for each duplicate.
 
 **Configuration**:
+
 ```json
 {
   "merge_strategy": "intelligent",
@@ -148,21 +160,25 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 **Decision Factors**:
 
 #### Time Analysis (40% weight)
+
 - **Newer content**: Prefer if recently updated and within time window
 - **Freshness bonus**: Items updated in last 24 hours get preference
 - **Historical preservation**: Very old items may be preserved for reference
 
 #### Scope Analysis (30% weight)
+
 - **Same scope preference**: Items in same project/org get preference
 - **Scope match score**: Higher score increases merge preference
 - **Cross-scope handling**: Different scopes may be kept separate
 
 #### Content Quality (20% weight)
+
 - **Completeness**: Longer, more detailed content preferred
 - **Structure**: Well-structured content with proper formatting
 - **Richness**: Items with more metadata and tags preferred
 
 #### Content Similarity (10% weight)
+
 - **High similarity (≥95%)**: May prefer newer version
 - **Medium similarity (85-95%)**: Usually combine content
 - **Low similarity (<85%)**: Store as separate items
@@ -177,6 +193,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ## Configuration Examples
 
 ### Strict Deduplication
+
 ```json
 {
   "dedupe_global_config": {
@@ -189,11 +206,12 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 ### Aggressive Merging
+
 ```json
 {
   "dedupe_global_config": {
     "enabled": true,
-    "similarity_threshold": 0.70,
+    "similarity_threshold": 0.7,
     "merge_strategy": "combine",
     "audit_logging": true
   }
@@ -201,6 +219,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 ### Time-Sensitive Processing
+
 ```json
 {
   "dedupe_global_config": {
@@ -224,6 +243,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 ```
 
 ### Intelligent Cross-Project Deduplication
+
 ```json
 {
   "dedupe_global_config": {
@@ -251,6 +271,7 @@ The Cortex Memory MCP server features advanced configurable deduplication with 5
 All deduplication decisions are logged with comprehensive details:
 
 ### Audit Entry Structure
+
 ```json
 {
   "timestamp": "2024-01-15T10:30:00Z",
@@ -279,6 +300,7 @@ All deduplication decisions are logged with comprehensive details:
 ```
 
 ### Performance Metrics
+
 ```json
 {
   "totalProcessed": 100,
@@ -292,26 +314,31 @@ All deduplication decisions are logged with comprehensive details:
 ## Best Practices
 
 ### 1. Choose Appropriate Similarity Threshold
+
 - **0.90-0.95**: For technical documentation, code, specifications
 - **0.80-0.90**: For business documents, decisions, requirements
 - **0.70-0.80**: For general knowledge, notes, observations
 
 ### 2. Configure Time Windows Appropriately
+
 - **1-7 days**: For fast-changing domains (news, incidents)
 - **30 days**: Standard for most business knowledge
 - **90+ days**: For stable reference material
 
 ### 3. Use Scope Filtering Effectively
+
 - Enable cross-scope deduplication for shared organizational knowledge
 - Use scope-only filtering for project-specific information
 - Consider org-level vs project-level separation needs
 
 ### 4. Monitor and Tune
+
 - Review audit logs regularly
 - Adjust thresholds based on false positive/negative rates
 - Monitor performance metrics for optimization opportunities
 
 ### 5. Test Different Strategies
+
 - Start with "intelligent" strategy for balanced approach
 - Use "skip" for data integrity requirements
 - Use "combine" for knowledge aggregation scenarios
@@ -320,22 +347,26 @@ All deduplication decisions are logged with comprehensive details:
 ## Troubleshooting
 
 ### High False Positive Rate
+
 - Increase similarity threshold
 - Enable scope-only filtering
 - Reduce time window
 
 ### High False Negative Rate
+
 - Decrease similarity threshold
 - Enable cross-scope deduplication
 - Increase time window
 - Enable semantic analysis
 
 ### Performance Issues
+
 - Reduce `maxItemsToCheck` setting
 - Enable batch processing
 - Consider disabling audit logging for high-volume scenarios
 
 ### Unexpected Merge Behavior
+
 - Review audit logs for decision rationale
 - Check configuration priority (global vs per-item)
 - Verify timestamp accuracy in source data

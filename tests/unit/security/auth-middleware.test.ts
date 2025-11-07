@@ -44,7 +44,7 @@ describe('AuthMiddleware', () => {
   const mockUser = {
     id: 'user-123',
     username: 'testuser',
-    role: UserRole._USER,
+    role: UserRole['_USER'],
   };
 
   const mockAuthContext: AuthContext = {
@@ -54,7 +54,7 @@ describe('AuthMiddleware', () => {
       ip_address: '192.168.1.100',
       user_agent: 'Mozilla/5.0 (Test Browser)',
     },
-    scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE],
+    scopes: [AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']],
     token_jti: 'token-123',
   };
 
@@ -100,7 +100,7 @@ describe('AuthMiddleware', () => {
     mockAuthService.createAuthContext.mockResolvedValue(mockAuthContext);
     mockAuthService.validateApiKeyWithDatabase.mockResolvedValue({
       user: mockUser,
-      scopes: [AuthScope._MEMORY_READ],
+      scopes: [AuthScope['_MEMORY_READ']],
       apiKeyInfo: { id: 'api-key-123', key_id: 'ck_test_123' },
     });
     mockAuthService.checkRateLimit.mockReturnValue(true);
@@ -507,7 +507,7 @@ describe('AuthMiddleware', () => {
       // Arrange
       mockRequest.headers.authorization = `Bearer ${validJwtToken}`;
       const config: AuthMiddlewareConfig = {
-        required_scopes: [AuthScope._MEMORY_READ],
+        required_scopes: [AuthScope['_MEMORY_READ']],
       };
       const middleware = authMiddleware.authenticate(config);
 
@@ -522,7 +522,7 @@ describe('AuthMiddleware', () => {
       // Arrange
       mockRequest.headers.authorization = `Bearer ${validJwtToken}`;
       const config: AuthMiddlewareConfig = {
-        required_scopes: [AuthScope._SYSTEM_MANAGE],
+        required_scopes: [AuthScope['_SYSTEM_MANAGE']],
       };
       const middleware = authMiddleware.authenticate(config);
 
@@ -543,7 +543,7 @@ describe('AuthMiddleware', () => {
       // Arrange
       mockRequest.headers.authorization = `Bearer ${validJwtToken}`;
       const config: AuthMiddlewareConfig = {
-        required_scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE],
+        required_scopes: [AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']],
       };
       const middleware = authMiddleware.authenticate(config);
 
@@ -558,7 +558,7 @@ describe('AuthMiddleware', () => {
       // Arrange
       mockRequest.headers.authorization = `Bearer ${validJwtToken}`;
       const config: AuthMiddlewareConfig = {
-        optional_scopes: [AuthScope._SEARCH_ADVANCED],
+        optional_scopes: [AuthScope['_SEARCH_ADVANCED']],
       };
       const middleware = authMiddleware.authenticate(config);
 
@@ -573,7 +573,7 @@ describe('AuthMiddleware', () => {
     test('should use requireScopes middleware for additional validation', async () => {
       // Arrange
       mockRequest.auth = mockAuthContext;
-      const middleware = authMiddleware.requireScopes([AuthScope._MEMORY_READ]);
+      const middleware = authMiddleware.requireScopes([AuthScope['_MEMORY_READ']]);
 
       // Act
       await middleware(mockRequest, mockResponse, mockNext);
@@ -584,7 +584,7 @@ describe('AuthMiddleware', () => {
 
     test('should reject requireScopes when no auth context', async () => {
       // Arrange
-      const middleware = authMiddleware.requireScopes([AuthScope._MEMORY_READ]);
+      const middleware = authMiddleware.requireScopes([AuthScope['_MEMORY_READ']]);
 
       // Act
       await middleware(mockRequest, mockResponse, mockNext);
@@ -602,7 +602,7 @@ describe('AuthMiddleware', () => {
     test('should use requireRole middleware for role-based access', async () => {
       // Arrange
       mockRequest.auth = mockAuthContext;
-      const middleware = authMiddleware.requireRole(UserRole._USER);
+      const middleware = authMiddleware.requireRole(UserRole['_USER']);
 
       // Act
       await middleware(mockRequest, mockResponse, mockNext);
@@ -615,9 +615,9 @@ describe('AuthMiddleware', () => {
       // Arrange
       mockRequest.auth = {
         ...mockAuthContext,
-        user: { ...mockUser, role: UserRole._READ_ONLY },
+        user: { ...mockUser, role: UserRole['_READ_ONLY'] },
       };
-      const middleware = authMiddleware.requireRole(UserRole._ADMIN);
+      const middleware = authMiddleware.requireRole(UserRole['_ADMIN']);
 
       // Act
       await middleware(mockRequest, mockResponse, mockNext);

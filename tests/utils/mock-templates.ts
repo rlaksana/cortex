@@ -56,9 +56,9 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
     getInstance: vi.fn(() => ({
       getQdrantConfig: vi.fn(() => ({
         type: 'qdrant',
-        url: config.QDRANT_URL,
-        apiKey: config.NODE_ENV === 'test' ? undefined : 'test-api-key',
-        vectorSize: config.VECTOR_SIZE,
+        url: config['QDRANT_URL'],
+        apiKey: config['NODE_ENV'] === 'test' ? undefined : 'test-api-key',
+        vectorSize: config['VECTOR_SIZE'],
         distance: 'Cosine',
         collectionName: 'test-cortex-memory',
         logQueries: false,
@@ -69,30 +69,30 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
         idleTimeoutMs: 30000,
       })),
       getEmbeddingConfig: vi.fn(() => ({
-        apiKey: config.OPENAI_API_KEY,
+        apiKey: config['OPENAI_API_KEY'],
         model: 'text-embedding-ada-002',
         batchSize: 10,
-        vectorSize: config.VECTOR_SIZE,
+        vectorSize: config['VECTOR_SIZE'],
       })),
       getSearchConfig: vi.fn(() => ({
-        limit: config.SEARCH_LIMIT,
-        threshold: config.SEARCH_THRESHOLD,
+        limit: config['SEARCH_LIMIT'],
+        threshold: config['SEARCH_THRESHOLD'],
         timeout: 30000,
       })),
       getCacheConfig: vi.fn(() => ({
-        enabled: config.ENABLE_CACHING,
+        enabled: config['ENABLE_CACHING'],
         ttl: 3600,
         maxSize: 1000,
       })),
       getMonitoringConfig: vi.fn(() => ({
-        enabled: config.ENABLE_METRICS,
+        enabled: config['ENABLE_METRICS'],
         healthCheckInterval: 60000,
-        logLevel: config.LOG_LEVEL,
+        logLevel: config['LOG_LEVEL'],
       })),
       getApiConfig: vi.fn(() => ({
         rateLimit: 100,
         timeout: 30000,
-        authEnabled: config.ENABLE_AUTH,
+        authEnabled: config['ENABLE_AUTH'],
       })),
       getBatchConfig: vi.fn(() => ({
         size: 50,
@@ -104,20 +104,20 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
         name: 'Cortex Memory MCP',
         version: '2.0.0',
         description: 'Test Environment',
-        environment: config.NODE_ENV,
+        environment: config['NODE_ENV'],
         database: 'qdrant',
       })),
-      isProductionMode: vi.fn(() => config.NODE_ENV === 'production'),
-      isDevelopmentMode: vi.fn(() => config.NODE_ENV === 'development'),
-      isTestMode: vi.fn(() => config.NODE_ENV === 'test'),
+      isProductionMode: vi.fn(() => config['NODE_ENV'] === 'production'),
+      isDevelopmentMode: vi.fn(() => config['NODE_ENV'] === 'development'),
+      isTestMode: vi.fn(() => config['NODE_ENV'] === 'test'),
       getFeatureFlag: vi.fn((flag: string) => {
         switch (flag) {
           case 'auth':
-            return config.ENABLE_AUTH;
+            return config['ENABLE_AUTH'];
           case 'caching':
-            return config.ENABLE_CACHING;
+            return config['ENABLE_CACHING'];
           case 'metrics':
-            return config.ENABLE_METRICS;
+            return config['ENABLE_METRICS'];
           case 'logging':
             return true;
           default:
@@ -137,9 +137,9 @@ export const createMockEnvironment = (overrides: MockEnvironmentConfig = {}) => 
         branch: 'test-branch',
       })),
       getSecurityConfig: vi.fn(() => ({
-        jwtSecret: config.JWT_SECRET,
-        jwtRefreshSecret: `${config.JWT_SECRET}-refresh`,
-        encryptionKey: config.ENCRYPTION_KEY,
+        jwtSecret: config['JWT_SECRET'],
+        jwtRefreshSecret: `${config['JWT_SECRET']}-refresh`,
+        encryptionKey: config['ENCRYPTION_KEY'],
       })),
       getRawConfig: vi.fn(() => config),
     })),

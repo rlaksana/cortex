@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Alert, AlertRule, AlertSeverity, AlertTestScenario, AlertTestResult } from './alert-management-service.js';
 import { SystemHealthResult, ComponentHealth, HealthStatus } from '../types/unified-health-interfaces.js';
 import { DependencyType } from '../services/deps-registry.js';
@@ -1128,7 +1128,7 @@ export class AlertTestingService extends EventEmitter {
           await this.executeGenericStep(step, execution);
       }
 
-      stepExecution.status = 'completed';
+      stepExecution.status = 'passed';
       stepExecution.completedAt = new Date();
       stepExecution.duration = Date.now() - startTime;
 
@@ -1183,17 +1183,8 @@ export class AlertTestingService extends EventEmitter {
       escalationsTriggered: 0,
       passed: true,
       details: {
-        alerts: [
-          {
-            id: 'alert-db-down-1',
-            ruleId: 'database-down',
-            severity: AlertSeverity.CRITICAL,
-            status: 'firing',
-            title: 'Database Connectivity Loss',
-            message: 'Database is not responding',
-            timestamp: new Date(),
-          },
-        ],
+        activeAlerts: [],
+        notifications: [],
       },
     } as AlertTestResult);
 
@@ -1215,17 +1206,8 @@ export class AlertTestingService extends EventEmitter {
       escalationsTriggered: 0,
       passed: true,
       details: {
-        alerts: [
-          {
-            id: 'alert-cb-open-1',
-            ruleId: 'circuit-breaker-open',
-            severity: AlertSeverity.WARNING,
-            status: 'firing',
-            title: 'Circuit Breaker Open',
-            message: 'Circuit breaker for embedding service is open',
-            timestamp: new Date(),
-          },
-        ],
+        activeAlerts: [],
+        notifications: [],
       },
     } as AlertTestResult);
 
@@ -1247,17 +1229,8 @@ export class AlertTestingService extends EventEmitter {
       escalationsTriggered: 0,
       passed: true,
       details: {
-        alerts: [
-          {
-            id: 'alert-memory-pressure-1',
-            ruleId: 'memory-pressure',
-            severity: AlertSeverity.WARNING,
-            status: 'firing',
-            title: 'High Memory Usage',
-            message: 'Memory usage is above threshold',
-            timestamp: new Date(),
-          },
-        ],
+        activeAlerts: [],
+        notifications: [],
       },
     } as AlertTestResult);
 

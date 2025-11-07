@@ -14,23 +14,23 @@ const config = {
   monitoring: {
     host: 'localhost',
     port: process.env.MONITORING_PORT || 9090,
-    path: '/metrics'
+    path: '/metrics',
   },
   grafana: {
     host: 'localhost',
     port: process.env.GRAFANA_PORT || 3000,
-    path: '/api/health'
+    path: '/api/health',
   },
   prometheus: {
     host: 'localhost',
     port: process.env.PROMETHEUS_PORT || 9091,
-    path: '/api/v1/query'
+    path: '/api/v1/query',
   },
   alertmanager: {
     host: 'localhost',
     port: process.env.ALERTMANAGER_PORT || 9093,
-    path: '/api/v1/alerts'
-  }
+    path: '/api/v1/alerts',
+  },
 };
 
 // Colors for console output
@@ -39,7 +39,7 @@ const colors = {
   red: '\x1b[31m',
   green: '\x1b[32m',
   yellow: '\x1b[33m',
-  blue: '\x1b[34m'
+  blue: '\x1b[34m',
 };
 
 function log(level, message) {
@@ -54,12 +54,12 @@ function makeRequest(options, data = null) {
 
     const req = protocol.request(options, (res) => {
       let body = '';
-      res.on('data', (chunk) => body += chunk);
+      res.on('data', (chunk) => (body += chunk));
       res.on('end', () => {
         resolve({
           statusCode: res.statusCode,
           headers: res.headers,
-          body: body
+          body: body,
         });
       });
     });
@@ -105,10 +105,10 @@ async function checkMetrics() {
       'cortex_qps',
       'cortex_latency_milliseconds',
       'cortex_memory_bytes',
-      'cortex_errors_total'
+      'cortex_errors_total',
     ];
 
-    const foundMetrics = keyMetrics.filter(metric => metrics.includes(metric));
+    const foundMetrics = keyMetrics.filter((metric) => metrics.includes(metric));
 
     if (foundMetrics.length === keyMetrics.length) {
       log('success', `All key metrics found (${foundMetrics.length}/${keyMetrics.length})`);
@@ -130,14 +130,14 @@ async function checkPrometheusTargets() {
   try {
     const options = {
       ...config.prometheus,
-      path: '/api/v1/targets'
+      path: '/api/v1/targets',
     };
 
     const response = await makeRequest(options);
     const data = JSON.parse(response.body);
 
     const cortexTarget = data.data.activeTargets.find(
-      target => target.labels.job === 'cortex-mcp'
+      (target) => target.labels.job === 'cortex-mcp'
     );
 
     if (cortexTarget) {
@@ -172,14 +172,16 @@ async function checkGrafanaDatasource() {
       ...config.grafana,
       path: '/api/datasources',
       headers: {
-        'Authorization': 'Basic ' + Buffer.from('admin:admin123').toString('base64')
-      }
+        Authorization: 'Basic ' + Buffer.from('admin:admin123').toString('base64'),
+      },
     };
 
     const response = await makeRequest(options);
     const datasources = JSON.parse(response.body);
 
-    const prometheusDs = datasources.find(ds => ds.name === 'Prometheus' && ds.type === 'prometheus');
+    const prometheusDs = datasources.find(
+      (ds) => ds.name === 'Prometheus' && ds.type === 'prometheus'
+    );
 
     if (prometheusDs) {
       log('success', 'Prometheus datasource found in Grafana');
@@ -205,8 +207,8 @@ async function checkAlerts() {
       ...config.prometheus,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     };
 
     const postData = 'query=ALERTS_FOR_STATE';
@@ -217,7 +219,7 @@ async function checkAlerts() {
 
     if (activeAlerts.length > 0) {
       log('warning', `${activeAlerts.length} active alerts found`);
-      activeAlerts.forEach(alert => {
+      activeAlerts.forEach((alert) => {
         const alertName = alert.metric.alertname;
         const severity = alert.metric.severity || 'unknown';
         log('info', `  - ${alertName} (${severity})`);
@@ -241,8 +243,8 @@ async function checkDashboardAvailability() {
       ...config.grafana,
       path: '/api/dashboards/home',
       headers: {
-        'Authorization': 'Basic ' + Buffer.from('admin:admin123').toString('base64')
-      }
+        Authorization: 'Basic ' + Buffer.from('admin:admin123').toString('base64'),
+      },
     };
 
     const response = await makeRequest(options);
@@ -351,7 +353,7 @@ if (command === '--help' || command === '-h') {
   console.log('');
   process.exit(0);
 } else {
-  main().catch(error => {
+  main().catch((error) => {
     log('error', `Verification failed: ${error.message}`);
     process.exit(1);
   });

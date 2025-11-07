@@ -19,23 +19,25 @@ This runbook provides comprehensive rollback procedures for the MCP Cortex Memor
 
 ### Rollback Types
 
-| Type | Trigger | Impact | Duration | Approval Required |
-|------|---------|--------|----------|-------------------|
-| **Application Rollback** | Deployment failure, performance degradation | Medium | 15-30 min | On-call Engineer |
-| **Database Rollback** | Schema issues, data corruption | High | 30-120 min | Engineering Manager |
-| **Configuration Rollback** | Configuration errors, env variable issues | Medium | 5-15 min | On-call Engineer |
-| **Infrastructure Rollback** | Cloud provider issues, network changes | High | 30-60 min | Director of Engineering |
-| **Emergency Rollback** | Data loss, security breach | Critical | 5-15 min | Any Engineer + Notification |
+| Type                        | Trigger                                     | Impact   | Duration   | Approval Required           |
+| --------------------------- | ------------------------------------------- | -------- | ---------- | --------------------------- |
+| **Application Rollback**    | Deployment failure, performance degradation | Medium   | 15-30 min  | On-call Engineer            |
+| **Database Rollback**       | Schema issues, data corruption              | High     | 30-120 min | Engineering Manager         |
+| **Configuration Rollback**  | Configuration errors, env variable issues   | Medium   | 5-15 min   | On-call Engineer            |
+| **Infrastructure Rollback** | Cloud provider issues, network changes      | High     | 30-60 min  | Director of Engineering     |
+| **Emergency Rollback**      | Data loss, security breach                  | Critical | 5-15 min   | Any Engineer + Notification |
 
 ### Rollback Triggers
 
 **Automatic Triggers**:
+
 - Health check failures (> 3 consecutive)
 - Error rate > 5% sustained for 5 minutes
 - Response time > 2 seconds sustained for 10 minutes
 - Database connection failures
 
 **Manual Triggers**:
+
 - Customer reported major issues
 - Performance degradation during load testing
 - Security vulnerability detection
@@ -48,6 +50,7 @@ This runbook provides comprehensive rollback procedures for the MCP Cortex Memor
 ### Step 1: Impact Assessment
 
 **Assessment Checklist**:
+
 ```bash
 # Determine rollback scope
 echo "Rollback Impact Assessment"
@@ -71,16 +74,17 @@ curl -s http://localhost:3000/metrics | grep -E "(active_users|sessions)"
 
 **Impact Assessment Matrix**:
 
-| Component | Current State | Last Known Good | Data Impact | User Impact |
-|-----------|---------------|-----------------|-------------|-------------|
-| **Application** | Version X.Y.Z | Version X.Y.(Z-1) | None | Medium |
-| **Database** | Schema v2.1 | Schema v2.0 | Possible | High |
-| **Configuration** | Config v1.3 | Config v1.2 | None | Low |
-| **Infrastructure** | Infra v3.0 | Infra v2.9 | None | High |
+| Component          | Current State | Last Known Good   | Data Impact | User Impact |
+| ------------------ | ------------- | ----------------- | ----------- | ----------- |
+| **Application**    | Version X.Y.Z | Version X.Y.(Z-1) | None        | Medium      |
+| **Database**       | Schema v2.1   | Schema v2.0       | Possible    | High        |
+| **Configuration**  | Config v1.3   | Config v1.2       | None        | Low         |
+| **Infrastructure** | Infra v3.0    | Infra v2.9        | None        | High        |
 
 ### Step 2: Preparation Checklist
 
 **Preparation Commands**:
+
 ```bash
 # Create rollback snapshot
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
@@ -107,6 +111,7 @@ slack-notify --channel="#incidents" --message="Rollback initiated for MCP Cortex
 ```
 
 **Pre-Rollback Validation**:
+
 ```bash
 # Verify rollback target exists
 docker images | grep cortex
@@ -128,6 +133,7 @@ top -b -n1 | head -5
 ### Scenario 1: Docker Container Rollback
 
 **Rollback Steps**:
+
 ```bash
 # 1. Identify current version
 CURRENT_IMAGE=$(docker ps --format "{{.Image}}" | grep cortex)
@@ -163,6 +169,7 @@ timeout 300 bash -c 'while true; do curl -s http://localhost:3000/health; sleep 
 ```
 
 **Rollback Verification**:
+
 ```bash
 # Health checks
 npm run prod:health
@@ -179,6 +186,7 @@ npm run test:integration:performance
 ### Scenario 2: System Service Rollback
 
 **Rollback Steps**:
+
 ```bash
 # 1. Identify current version
 systemctl status cortex-mcp --no-pager -l
@@ -215,6 +223,7 @@ curl -s http://localhost:3000/health | jq .
 ### Scenario 3: Cloud Deployment Rollback
 
 **Kubernetes Rollback**:
+
 ```bash
 # 1. Check current deployment
 kubectl get pods -n cortex
@@ -239,6 +248,7 @@ kubectl exec -it deployment/cortex-mcp -n cortex -- npm run prod:health
 ```
 
 **Terraform Infrastructure Rollback**:
+
 ```bash
 # 1. Identify current state
 terraform state list
@@ -268,6 +278,7 @@ terraform plan
 ### Scenario 1: Qdrant Data Recovery
 
 **Data Recovery Steps**:
+
 ```bash
 # 1. Assess current state
 curl -s http://localhost:6333/collections | jq .
@@ -313,6 +324,7 @@ tail -f /app/logs/cortex-mcp.log &
 ### Scenario 2: Schema Rollback
 
 **Schema Rollback Steps**:
+
 ```bash
 # 1. Identify current schema version
 CURRENT_SCHEMA=$(curl -s http://localhost:6333/collections/cortex-memory | jq -r '.result.config.params.vectors.size')
@@ -370,6 +382,7 @@ sudo systemctl start cortex-mcp
 ### Scenario 3: Point-in-Time Recovery
 
 **Point-in-Time Recovery**:
+
 ```bash
 # 1. Identify recovery point
 RECOVERY_TIME="2025-11-05T14:30:00Z"
@@ -414,6 +427,7 @@ npm run test:integration:happy
 ### Scenario 1: Environment Variable Rollback
 
 **Environment Rollback**:
+
 ```bash
 # 1. Identify current configuration
 env | grep -E "(QDRANT|OPENAI|NODE|CORTEX)" | sort > /tmp/current-env-$(date +%Y%m%d-%H%M%S).env
@@ -456,6 +470,7 @@ npm run test:connection
 ### Scenario 2: Database Configuration Rollback
 
 **Database Configuration**:
+
 ```bash
 # 1. Current Qdrant configuration
 curl -s http://localhost:6333/collections/cortex-memory | jq '.result.config'
@@ -493,6 +508,7 @@ curl -X POST http://localhost:6333/collections/cortex-memory/points/search \
 ### Scenario 1: Network Configuration Rollback
 
 **Network Rollback**:
+
 ```bash
 # 1. Identify current network configuration
 iptables -L -n -v
@@ -520,6 +536,7 @@ curl -I https://api.openai.com/v1/models
 ### Scenario 2: Docker Network Rollback
 
 **Docker Network Rollback**:
+
 ```bash
 # 1. Current Docker network state
 docker network ls
@@ -557,6 +574,7 @@ docker exec cortex-mcp curl -s http://qdrant:6333/health
 ### Emergency Scenario: Data Corruption Detected
 
 **Immediate Actions**:
+
 ```bash
 # 1. STOP ALL SERVICES IMMEDIATELY
 sudo systemctl stop cortex-mcp
@@ -599,6 +617,7 @@ timeout 1800 /app/scripts/health-monitor.sh
 ### Emergency Scenario: Security Breach Response
 
 **Security Rollback**:
+
 ```bash
 # 1. Isolate affected systems
 sudo systemctl stop cortex-mcp
@@ -633,6 +652,7 @@ security-team-notify --incident="security_breach_rollback" --severity=critical
 ### Step 1: Health Checks
 
 **Comprehensive Health Verification**:
+
 ```bash
 # 1. Basic health checks
 npm run prod:health
@@ -660,6 +680,7 @@ npm run security:audit
 ### Step 2: Data Integrity Validation
 
 **Data Verification**:
+
 ```bash
 # 1. Database integrity
 curl -s http://localhost:6333/collections/cortex-memory | jq '.result.points_count'
@@ -697,6 +718,7 @@ curl -X POST http://localhost:3000/api/v1/memory/find \
 ### Step 3: Performance Validation
 
 **Performance Checks**:
+
 ```bash
 # 1. Response time validation
 TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/health)
@@ -729,6 +751,7 @@ fi
 ### Real-time Monitoring
 
 **Monitoring Commands**:
+
 ```bash
 # 1. Health monitoring loop
 timeout 1800 bash -c '
@@ -760,12 +783,14 @@ iostat -x 30
 ### Alert Thresholds
 
 **Post-Rollback Alert Thresholds**:
+
 - Error rate > 1% (normally > 0.1%)
 - Response time > 500ms (normally > 100ms)
 - Memory usage > 4GB (normally > 2GB)
 - Database connection errors > 0
 
 **Alert Commands**:
+
 ```bash
 # Custom alert thresholds
 export ALERT_ERROR_RATE_THRESHOLD=1.0
@@ -783,10 +808,12 @@ npm run monitor:alerts --custom-thresholds
 ### Rollback Report Template
 
 **Required Information**:
+
 ```markdown
 # Rollback Report
 
 ## Executive Summary
+
 - **Incident ID**: INC-[YYYYMMDD]-[sequence]
 - **Rollback Type**: [application/database/configuration/infrastructure]
 - **Trigger**: [rollback reason]
@@ -794,83 +821,105 @@ npm run monitor:alerts --custom-thresholds
 - **Impact**: [description of impact]
 
 ## Rollback Details
+
 ### Source Version
+
 - **Version**: [version rolled back from]
 - **Deployment Time**: [deployment time]
 - **Issues Identified**: [list of issues]
 
 ### Target Version
+
 - **Version**: [version rolled back to]
 - **Last Known Good**: [date/time when version was stable]
 - **Features Lost**: [features reverted]
 
 ## Rollback Process
+
 ### Pre-Rollback Actions
+
 - [ ] Impact assessment completed
 - [ ] Backup created
 - [ ] Rollback plan documented
 - [ ] Stakeholders notified
 
 ### Rollback Execution
+
 - [ ] Services stopped
 - [ ] Configuration restored
 - [ ] Services restarted
 - [ ] Health checks passed
 
 ### Post-Rollback Verification
+
 - [ ] Basic functionality verified
 - [ ] Performance validated
 - [ ] Data integrity confirmed
 - [ ] Monitoring stable
 
 ## Impact Assessment
+
 ### User Impact
+
 - **Affected Users**: [count/percentage]
 - **Duration of Impact**: [time period]
 - **Customer Complaints**: [count]
 - **SLA Impact**: [description]
 
 ### Business Impact
+
 - **Revenue Impact**: [description]
 - **Brand Impact**: [description]
 - **Operational Impact**: [description]
 
 ## Root Cause Analysis
+
 ### Primary Cause
+
 [Technical explanation of what went wrong]
 
 ### Contributing Factors
+
 - [factor 1]
 - [factor 2]
 - [factor 3]
 
 ### Detection Gaps
+
 [What could have been detected earlier]
 
 ## Lessons Learned
+
 ### What Went Well
+
 - [item 1]
 - [item 2]
 
 ### Areas for Improvement
+
 - [item 1]
 - [item 2]
 
 ### Action Items
+
 - [ ] [action item] - Owner: [name] - Due: [date]
 - [ ] [action item] - Owner: [name] - Due: [date]
 - [ ] [action item] - Owner: [name] - Due: [date]
 
 ## Preventive Measures
+
 ### Technical Improvements
+
 - [improvement 1]
 - [improvement 2]
 
 ### Process Improvements
+
 - [improvement 1]
 - [improvement 2]
 
 ### Monitoring Improvements
+
 - [improvement 1]
 - [improvement 2]
 ```
@@ -882,6 +931,7 @@ npm run monitor:alerts --custom-thresholds
 ### Automated Rollback Script
 
 **Emergency Rollback Automation**:
+
 ```bash
 #!/bin/bash
 # emergency-rollback.sh - Automated emergency rollback procedure
@@ -952,6 +1002,7 @@ echo "=== Emergency Rollback Completed Successfully ==="
 ```
 
 **Rollback Validation Script**:
+
 ```bash
 #!/bin/bash
 # validate-rollback.sh - Post-rollback validation
@@ -1031,15 +1082,15 @@ fi
 
 ### A. Rollback Decision Matrix
 
-| Condition | Rollback Recommended | Time to Decide | Risk Level |
-|-----------|---------------------|----------------|------------|
-| API error rate > 5% | Yes | 5 minutes | Medium |
-| Response time > 2s | Yes | 10 minutes | Low |
-| Database connection failures | Yes | Immediate | High |
-| Data corruption detected | Yes | Immediate | Critical |
-| Security vulnerability | Yes | Immediate | Critical |
-| Customer complaints > 10 | Yes | 15 minutes | Medium |
-| Performance degradation > 50% | Yes | 10 minutes | Medium |
+| Condition                     | Rollback Recommended | Time to Decide | Risk Level |
+| ----------------------------- | -------------------- | -------------- | ---------- |
+| API error rate > 5%           | Yes                  | 5 minutes      | Medium     |
+| Response time > 2s            | Yes                  | 10 minutes     | Low        |
+| Database connection failures  | Yes                  | Immediate      | High       |
+| Data corruption detected      | Yes                  | Immediate      | Critical   |
+| Security vulnerability        | Yes                  | Immediate      | Critical   |
+| Customer complaints > 10      | Yes                  | 15 minutes     | Medium     |
+| Performance degradation > 50% | Yes                  | 10 minutes     | Medium     |
 
 ### B. Rollback Contact Information
 
@@ -1055,12 +1106,14 @@ fi
 ### C. Rollback Metrics
 
 **Key Performance Indicators**:
+
 - Mean Time to Rollback (MTTR): Target < 30 minutes
 - Rollback Success Rate: Target > 95%
 - Post-Rollback Stability: Target 99.9% uptime
 - Customer Impact: Target < 15 minutes downtime
 
 **Rollback Tracking**:
+
 ```bash
 # Track rollback metrics
 npm run ops:metrics:rollback

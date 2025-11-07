@@ -182,9 +182,9 @@ describe('MCP Tool Definition and Registration', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.items).toHaveLength(1);
-        expect(result.data.items[0].kind).toBe('entity');
-        expect(result.data.items[0].scope.project).toBe('test-project');
+        expect(result['data.items']).toHaveLength(1);
+        expect(result['data.items'][0].kind).toBe('entity');
+        expect(result['data.items'][0].scope.project).toBe('test-project');
       }
     });
 
@@ -193,9 +193,9 @@ describe('MCP Tool Definition and Registration', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.query).toBe('test query');
-        expect(result.data.mode).toBe('auto');
-        expect(result.data.top_k).toBe(10);
+        expect(result['data.query']).toBe('test query');
+        expect(result['data.mode']).toBe('auto');
+        expect(result['data.top_k']).toBe(10);
       }
     });
 
@@ -269,8 +269,8 @@ describe('MCP Tool Definition and Registration', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.items[0].data.stakeholders).toHaveLength(3);
-        expect(result.data.items[0].data.impacts.technical).toHaveLength(2);
+        expect(result['data.items'][0].data.stakeholders).toHaveLength(3);
+        expect(result['data.items'][0].data.impacts.technical).toHaveLength(2);
       }
     });
 
@@ -284,9 +284,9 @@ describe('MCP Tool Definition and Registration', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.types).toHaveLength(5);
-        expect(result.data.types).toContain('entity');
-        expect(result.data.types).toContain('decision');
+        expect(result['data.types']).toHaveLength(5);
+        expect(result['data.types']).toContain('entity');
+        expect(result['data.types']).toContain('decision');
       }
     });
 
@@ -299,11 +299,11 @@ describe('MCP Tool Definition and Registration', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.query).toBe('minimal test query');
-        expect(result.data.scope).toBeUndefined();
-        expect(result.data.types).toBeUndefined();
-        expect(result.data.mode).toBeUndefined();
-        expect(result.data.top_k).toBeUndefined();
+        expect(result['data.query']).toBe('minimal test query');
+        expect(result['data.scope']).toBeUndefined();
+        expect(result['data.types']).toBeUndefined();
+        expect(result['data.mode']).toBeUndefined();
+        expect(result['data.top_k']).toBeUndefined();
       }
     });
   });
@@ -1551,7 +1551,7 @@ describe('Performance and Optimization', () => {
 
       const l2Result = await mockPerformanceMonitor.checkCache(cacheKey, 'L2');
       expect(l2Result).toEqual(cachedResults);
-      expect(l2Result.metadata.cache).toBe('L1_hit');
+      expect(l2Result.metadata['cache']).toBe('L1_hit');
 
       // Second call - L1 hit
       const l1HitResult = await mockPerformanceMonitor.checkCache(cacheKey, 'L1');
@@ -1723,8 +1723,8 @@ describe('Performance and Optimization', () => {
 
       expect(result.results).toBeDefined();
       expect(Object.keys(result.results)).toHaveLength(3);
-      expect(result.metadata.batchExecution.queryCount).toBe(3);
-      expect(result.metadata.batchExecution.cacheHits).toBe(1);
+      expect(result.metadata['batchExecution'].queryCount).toBe(3);
+      expect(result.metadata['batchExecution'].cacheHits).toBe(1);
     });
   });
 

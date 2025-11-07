@@ -20,8 +20,8 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { createHash, randomBytes } from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import { createHash, randomBytes } from 'crypto';
+import { logger } from '@/utils/logger.js';
 import type { TenantConfig } from './tenant-isolation-service.js';
 
 // === Type Definitions ===
@@ -123,11 +123,11 @@ export interface TenantOffboardingRequest {
     export_required: boolean;
     export_destination?: string;
     retention_period_days: number;
-    compliance_requirements: ('GDPR' | 'CCPA' | 'HIPAA' | 'SOX')[];
+    compliance_requirements: ('GDPR' | 'CCPA' | 'HIPAA' | 'SOX' | 'PCI-DSS')[];
   };
 
   /** Request status */
-  status: 'pending' | 'under_review' | 'approved' | 'in_progress' | 'completed' | 'failed';
+  status: 'pending' | 'under_review' | 'approved' | 'rejected' | 'in_progress' | 'completed' | 'failed';
 
   /** Review information */
   review_info?: {
@@ -764,7 +764,7 @@ export class TenantGovernanceService extends EventEmitter {
           issue: 90,
           todo: 90,
         },
-        compliance_frameworks: request.requirements.compliance_frameworks,
+        compliance_frameworks: request.requirements.compliance_frameworks.filter(framework => framework !== 'PCI-DSS') as Array<"GDPR" | "HIPAA" | "CCPA" | "SOX">,
         audit_logging_enabled: true,
         cost_allocation_tags: {
           organization: request.tenant_info.organization_name,
@@ -888,7 +888,7 @@ export class TenantGovernanceService extends EventEmitter {
         timestamp: new Date().toISOString(),
         action: 'offboarding_started',
         actor: 'system',
-        details: { phases: request.offboarding_plan.phases.length },
+        details: { phases: request.offboarding_plan?.phases.length || 0 },
       });
 
       this.offboardingRequests.set(requestId, request);
@@ -1499,6 +1499,10 @@ export class TenantGovernanceService extends EventEmitter {
             requests_per_second: 50,
             burst_capacity: 75,
             window_ms: 1000,
+            tool_limits: {
+              'memory_store': { requests_per_second: 25, burst_capacity: 40 },
+              'memory_find': { requests_per_second: 30, burst_capacity: 45 },
+            },
           },
           resource_quotas: {
             cpu_limit_percent: 5,
@@ -1528,6 +1532,10 @@ export class TenantGovernanceService extends EventEmitter {
             requests_per_second: 100,
             burst_capacity: 150,
             window_ms: 1000,
+            tool_limits: {
+              'memory_store': { requests_per_second: 50, burst_capacity: 75 },
+              'memory_find': { requests_per_second: 60, burst_capacity: 90 },
+            },
           },
           resource_quotas: {
             cpu_limit_percent: 10,
@@ -1557,6 +1565,10 @@ export class TenantGovernanceService extends EventEmitter {
             requests_per_second: 500,
             burst_capacity: 750,
             window_ms: 1000,
+            tool_limits: {
+              'memory_store': { requests_per_second: 250, burst_capacity: 375 },
+              'memory_find': { requests_per_second: 300, burst_capacity: 450 },
+            },
           },
           resource_quotas: {
             cpu_limit_percent: 25,
@@ -1586,6 +1598,10 @@ export class TenantGovernanceService extends EventEmitter {
             requests_per_second: 2000,
             burst_capacity: 3000,
             window_ms: 1000,
+            tool_limits: {
+              'memory_store': { requests_per_second: 1000, burst_capacity: 1500 },
+              'memory_find': { requests_per_second: 1200, burst_capacity: 1800 },
+            },
           },
           resource_quotas: {
             cpu_limit_percent: 50,

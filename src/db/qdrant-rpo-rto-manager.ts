@@ -14,9 +14,9 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
-import { writeFile, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { logger } from '@/utils/logger.js';
+import { writeFile, readFile } from 'fs/promises';
+import { join } from 'path';
 import type {
   BackupConfiguration,
   RestoreTestResult,

@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Production-specific optimizations
+    "moduleResolution": "node",
+    "lib": ["ES2022"],
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "noEmitOnError": true,
+    "incremental": false,
+    "composite": false,
+    "removeComments": true,
+    "stripInternal": true,
+    "importHelpers": false,
+    "downlevelIteration": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": [
+    "src/index.ts",
+    "src/silent-mcp-entry.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/test/**"
+  ],
+  "references": []
+}

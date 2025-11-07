@@ -16,10 +16,10 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
-import { metricsService } from '../monitoring/metrics-service.js';
-import { HealthStatus, AlertSeverity } from '../types/unified-health-interfaces.js';
-import { monitoringHealthCheckService } from '../monitoring/health-check-service.js';
+import { logger } from '../../utils/logger.js';
+import { metricsService } from '../metrics/metrics-service.js';
+import { HealthStatus, AlertSeverity } from '../../types/unified-health-interfaces.js';
+import { monitoringHealthCheckService } from '../health/health-check-service.js';
 
 // ============================================================================
 // Types and Interfaces

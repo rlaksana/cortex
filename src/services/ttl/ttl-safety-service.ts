@@ -17,7 +17,7 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { ttlPolicyService } from './ttl-policy-service.js';
 import { enhancedExpiryUtils } from '../../utils/enhanced-expiry-utils.js';
 import type { TTLCalculationResult } from './ttl-policy-service.js';

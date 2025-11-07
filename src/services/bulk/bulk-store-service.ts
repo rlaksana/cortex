@@ -16,7 +16,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { MemoryStoreOrchestratorQdrant } from '../orchestrators/memory-store-orchestrator-qdrant.js';
 import { RetryWorkerService } from '../workers/retry-worker-service.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';

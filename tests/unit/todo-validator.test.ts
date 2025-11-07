@@ -197,8 +197,8 @@ describe('TodoValidator - P5-T5.1 Business Rules', () => {
         'Todo marked as done without completed_at timestamp - auto-setting current time'
       );
       // Check that completed_at was auto-set
-      expect(todoBeingCompleted.data.completed_at).toBeDefined();
-      expect(todoBeingCompleted.data.completed_at).toMatch(
+      expect(todoBeingCompleted['data.completed_at']).toBeDefined();
+      expect(todoBeingCompleted['data.completed_at']).toMatch(
         /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
       );
     });

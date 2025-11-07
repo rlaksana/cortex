@@ -7,6 +7,7 @@ This document describes the implementation of a comprehensive truncation configu
 ## Features Implemented
 
 ### 1. Configuration System
+
 - **Environment variables** for all truncation settings
 - **Content type-specific limits** (text, JSON, code, markdown, etc.)
 - **Configurable strategies** (hard, soft, intelligent)
@@ -14,6 +15,7 @@ This document describes the implementation of a comprehensive truncation configu
 - **Warning and logging configuration**
 
 ### 2. Truncation Service
+
 - **Intelligent content detection** using regex patterns
 - **Multiple truncation strategies**:
   - Hard cutoff (simple character limit)
@@ -26,6 +28,7 @@ This document describes the implementation of a comprehensive truncation configu
 - **Performance metrics** and processing time tracking
 
 ### 3. Metadata and Response Integration
+
 - **meta.truncated field** in all API responses
 - **Detailed truncation information** including:
   - Original vs truncated length
@@ -37,6 +40,7 @@ This document describes the implementation of a comprehensive truncation configu
 - **Backward compatibility** with existing interfaces
 
 ### 4. Metrics and Monitoring
+
 - **store_truncated_total** metric for tracking truncation occurrences
 - **store_truncated_chars_total** for total characters removed
 - **store_truncated_tokens_total** for total tokens removed
@@ -87,11 +91,11 @@ import { truncationService } from './services/truncation/truncation-service.js';
 
 // Process content with automatic truncation
 const result = await truncationService.processContent(
-  "This is a very long text that might exceed limits...",
+  'This is a very long text that might exceed limits...',
   {
     contentType: 'text',
     maxChars: 1000,
-    strategy: 'preserve_sentences'
+    strategy: 'preserve_sentences',
   }
 );
 
@@ -111,8 +115,8 @@ const response = await memoryStore([
     kind: 'entity',
     content: 'Very long content that exceeds limits...',
     scope: { project: 'my-project' },
-    data: { title: 'Test Entity' }
-  }
+    data: { title: 'Test Entity' },
+  },
 ]);
 
 console.log(response.meta.truncated); // true if any items were truncated
@@ -157,37 +161,49 @@ console.log(response.meta.warnings); // user-facing warnings
 ## Truncation Strategies
 
 ### 1. Hard Cutoff
+
 Simple character limit truncation at the exact limit.
+
 - **Best for**: Simple text where structure doesn't matter
 - **Performance**: Fastest
 - **Quality**: Basic
 
 ### 2. Preserve Sentences
+
 Maintains complete sentences when truncating.
+
 - **Best for**: Articles, descriptions, narratives
 - **Performance**: Fast
 - **Quality**: Good readability
 
 ### 3. Preserve JSON Structure
+
 Ensures valid JSON after truncation by intelligently removing fields.
+
 - **Best for**: JSON objects, configuration data
 - **Performance**: Medium
 - **Quality**: Maintains data integrity
 
 ### 4. Preserve Code Blocks
+
 Keeps complete functions, methods, and code structures.
+
 - **Best for**: Source code, technical documentation
 - **Performance**: Medium
 - **Quality**: Maintains syntax validity
 
 ### 5. Preserve Markdown Structure
+
 Maintains headings, lists, and markdown formatting.
+
 - **Best for**: Documentation, README files
 - **Performance**: Medium
 - **Quality**: Good structure preservation
 
 ### 6. Smart Content
+
 Intelligently analyzes content and preserves the most important parts.
+
 - **Best for**: Mixed content, complex documents
 - **Performance**: Slower but comprehensive
 - **Quality**: Best overall
@@ -223,6 +239,7 @@ console.log(metrics.truncation);
 ### Monitoring Integration
 
 The truncation system integrates with the existing metrics system to provide:
+
 - **Real-time monitoring** of truncation events
 - **Performance tracking** for processing times
 - **Content type analysis** for optimization
@@ -232,16 +249,19 @@ The truncation system integrates with the existing metrics system to provide:
 ## Error Handling and Resilience
 
 ### Graceful Degradation
+
 - If truncation fails, the original content is preserved
 - Errors are logged but don't prevent storage operations
 - Fallback strategies are available
 
 ### Configuration Validation
+
 - Environment variables are validated on startup
 - Invalid configurations are logged with clear error messages
 - Default values ensure system continues to operate
 
 ### Content Detection
+
 - Multiple fallback methods for content type detection
 - Regex pattern matching with progressive fallbacks
 - Safe JSON parsing with error handling
@@ -249,18 +269,21 @@ The truncation system integrates with the existing metrics system to provide:
 ## Performance Considerations
 
 ### Optimization Features
+
 - **Lazy evaluation** - content is only processed when needed
 - **Early exit** - no processing if content is within limits
 - **Caching** - content type detection results are cached
 - **Parallel processing** - batch operations are handled efficiently
 
 ### Processing Time
+
 - **Hard cutoff**: < 1ms
 - **Preserve sentences**: 1-5ms
 - **Structure preservation**: 5-20ms
 - **Smart content**: 10-50ms
 
 ### Memory Usage
+
 - **Minimal overhead** for non-truncated content
 - **Temporary objects** are cleaned up properly
 - **Streaming support** for very large content
@@ -268,11 +291,13 @@ The truncation system integrates with the existing metrics system to provide:
 ## Security Considerations
 
 ### Input Validation
+
 - Content is sanitized before processing
 - Malicious patterns are detected and handled
 - Size limits prevent resource exhaustion
 
 ### Information Disclosure
+
 - Truncation indicators don't reveal sensitive content
 - Error messages don't expose system internals
 - Metrics are aggregated to prevent privacy issues
@@ -280,18 +305,21 @@ The truncation system integrates with the existing metrics system to provide:
 ## Testing and Validation
 
 ### Unit Tests
+
 - Content type detection accuracy
 - Truncation strategy correctness
 - Metrics collection precision
 - Error handling robustness
 
 ### Integration Tests
+
 - Memory store integration
 - API response format validation
 - Metrics system integration
 - Configuration loading tests
 
 ### Performance Tests
+
 - Large content processing
 - Batch operation efficiency
 - Memory usage validation
@@ -300,6 +328,7 @@ The truncation system integrates with the existing metrics system to provide:
 ## Future Enhancements
 
 ### Planned Features
+
 - **ML-based content analysis** for better preservation
 - **User-defined preservation rules**
 - **Content-aware token estimation**
@@ -307,6 +336,7 @@ The truncation system integrates with the existing metrics system to provide:
 - **Adaptive limit adjustment**
 
 ### Extensibility
+
 - Plugin system for custom strategies
 - Hook system for custom processing
 - Configuration API for dynamic updates
@@ -317,6 +347,7 @@ The truncation system integrates with the existing metrics system to provide:
 The truncation implementation provides a comprehensive, configurable, and observable system for handling content limits in the mcp-cortex project. It balances performance, quality, and user visibility while maintaining backward compatibility and system reliability.
 
 The system is designed to be:
+
 - **Configurable** through environment variables
 - **Observable** through comprehensive metrics
 - **User-friendly** with clear warnings and indicators

@@ -84,9 +84,9 @@ The Prometheus configuration is located in `prometheus/prometheus.yml`:
 scrape_configs:
   - job_name: 'cortex-mcp'
     static_configs:
-      - targets: ['localhost:9090']  # Your Cortex MCP host
-    scrape_interval: 15s            # How often to scrape
-    metrics_path: '/metrics'         # Metrics endpoint
+      - targets: ['localhost:9090'] # Your Cortex MCP host
+    scrape_interval: 15s # How often to scrape
+    metrics_path: '/metrics' # Metrics endpoint
 ```
 
 ### Alert Rules
@@ -149,46 +149,47 @@ receivers:
 
 ### Common Alert Scenarios
 
-| Alert | Cause | Action |
-|-------|-------|--------|
-| High P95 Latency | Performance bottleneck | Check resource usage, optimize queries |
-| High Memory Usage | Memory leak or high load | Investigate memory usage, restart if needed |
-| Circuit Breaker Open | Dependency failure | Check external service status |
-| Qdrant Connection Failure | Database connectivity issue | Check Qdrant service status |
-| High Error Rate | Application errors | Review application logs |
+| Alert                     | Cause                       | Action                                      |
+| ------------------------- | --------------------------- | ------------------------------------------- |
+| High P95 Latency          | Performance bottleneck      | Check resource usage, optimize queries      |
+| High Memory Usage         | Memory leak or high load    | Investigate memory usage, restart if needed |
+| Circuit Breaker Open      | Dependency failure          | Check external service status               |
+| Qdrant Connection Failure | Database connectivity issue | Check Qdrant service status                 |
+| High Error Rate           | Application errors          | Review application logs                     |
 
 ## Metrics Reference
 
 ### Core Metrics
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `cortex_qps` | gauge | Queries per second by operation |
+| Metric                        | Type      | Description                        |
+| ----------------------------- | --------- | ---------------------------------- |
+| `cortex_qps`                  | gauge     | Queries per second by operation    |
 | `cortex_latency_milliseconds` | histogram | Operation latency with percentiles |
-| `cortex_memory_bytes` | gauge | Memory usage by type |
-| `cortex_errors_total` | counter | Total errors by severity |
-| `cortex_operations_total` | counter | Total operations processed |
+| `cortex_memory_bytes`         | gauge     | Memory usage by type               |
+| `cortex_errors_total`         | counter   | Total errors by severity           |
+| `cortex_operations_total`     | counter   | Total operations processed         |
 
 ### Circuit Breaker Metrics
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `cortex_circuit_breaker_state` | gauge | Circuit breaker state (0=closed, 1=open, 2=half_open) |
-| `cortex_circuit_breaker_failures_total` | counter | Total failures |
-| `cortex_circuit_breaker_successes_total` | counter | Total successes |
+| Metric                                   | Type    | Description                                           |
+| ---------------------------------------- | ------- | ----------------------------------------------------- |
+| `cortex_circuit_breaker_state`           | gauge   | Circuit breaker state (0=closed, 1=open, 2=half_open) |
+| `cortex_circuit_breaker_failures_total`  | counter | Total failures                                        |
+| `cortex_circuit_breaker_successes_total` | counter | Total successes                                       |
 
 ### Quality Metrics
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `cortex_quality_percent` | gauge | Quality metrics (dedupe rate, cache hit rate, etc.) |
-| `cortex_connections_active` | gauge | Active connections |
+| Metric                      | Type  | Description                                         |
+| --------------------------- | ----- | --------------------------------------------------- |
+| `cortex_quality_percent`    | gauge | Quality metrics (dedupe rate, cache hit rate, etc.) |
+| `cortex_connections_active` | gauge | Active connections                                  |
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Prometheus not scraping metrics**
+
    ```bash
    # Check if metrics endpoint is accessible
    curl http://localhost:9090/metrics
@@ -208,6 +209,7 @@ receivers:
    - Check alert routing rules
 
 4. **High memory usage in monitoring stack**
+
    ```bash
    # Check Prometheus memory usage
    docker stats cortex-prometheus
@@ -219,11 +221,12 @@ receivers:
 ### Performance Tuning
 
 1. **Prometheus Optimization**
+
    ```yaml
    # In prometheus.yml
    storage:
      tsdb:
-       retention.time: 7d  # Reduce retention
+       retention.time: 7d # Reduce retention
        retention.size: 5GB # Reduce size limit
    ```
 
@@ -244,11 +247,13 @@ receivers:
 For production deployments:
 
 1. **Multiple Prometheus Instances**
+
    ```yaml
    # Use Prometheus federation or Thanos for HA
    ```
 
 2. **Grafana HA**
+
    ```yaml
    grafana:
      image: grafana/grafana:10.2.0
@@ -268,10 +273,11 @@ For production deployments:
 For long-term metrics retention:
 
 1. **Configure Remote Storage**
+
    ```yaml
    # In prometheus.yml
    remote_write:
-     - url: "http://your-storage:9201/api/v1/write"
+     - url: 'http://your-storage:9201/api/v1/write'
    ```
 
 2. **Use Cortex/VictoriaMetrics**
@@ -283,6 +289,7 @@ For long-term metrics retention:
 ### Authentication
 
 1. **Grafana Authentication**
+
    ```yaml
    environment:
      - GF_SECURITY_ADMIN_USER=admin
@@ -306,18 +313,21 @@ For long-term metrics retention:
 ### Regular Tasks
 
 1. **Monitor Disk Usage**
+
    ```bash
    df -h
    docker system df
    ```
 
 2. **Clean Up Old Data**
+
    ```bash
    # Clean up unused Docker resources
    docker system prune -f
    ```
 
 3. **Update Monitoring Stack**
+
    ```bash
    # Pull latest images
    docker-compose -f docker/monitoring-stack.yml pull
@@ -329,6 +339,7 @@ For long-term metrics retention:
 ### Backup and Recovery
 
 1. **Backup Configuration**
+
    ```bash
    tar -czf monitoring-config-backup.tar.gz prometheus/ grafana/ alertmanager/
    ```

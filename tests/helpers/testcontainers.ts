@@ -22,8 +22,8 @@ export async function getTestContainer(): Promise<{
   const grpcPort = container.getMappedPort(6334);
 
   // Configure connection to test container
-  process.env.QDRANT_URL = `http://${host}:${httpPort}`;
-  process.env.QDRANT_TIMEOUT = '30000';
+  process.env['QDRANT_URL'] = `http://${host}:${httpPort}`;
+  process.env['QDRANT_TIMEOUT'] = '30000';
 
   try {
     // Initialize Qdrant connection
@@ -65,7 +65,7 @@ export async function getTestContainer(): Promise<{
 export async function getTestClient(): Promise<QdrantClient> {
   // For tests that don't need a full container, use in-memory or mock Qdrant
   const client = new QdrantClient({
-    url: process.env.QDRANT_URL || 'http://localhost:6333',
+    url: process.env['QDRANT_URL'] || 'http://localhost:6333',
     timeout: 30000,
   });
 

@@ -11,7 +11,7 @@
 
 import { EventEmitter } from 'events';
 import { Request, Response } from 'express';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   circuitBreakerMonitor,
   type CircuitBreakerHealthStatus
@@ -26,6 +26,12 @@ import {
   type GrafanaDashboardData
 } from './retry-metrics-exporter.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
+
+type Risk = 'low' | 'medium' | 'high' | 'critical';
+const toRisk = (v: unknown): Risk => {
+  const k = String(v || '').toLowerCase();
+  return (k === 'critical' || k === 'high' || k === 'medium' || k === 'low' ? (k as Risk) : 'low');
+};
 
 /**
  * Dashboard configuration
@@ -634,7 +640,7 @@ export class EnhancedCircuitDashboard extends EventEmitter {
 
     // Current SLO status
     const availability = metrics.slo.successRateCompliance ? metrics.slo.successRateVariance : 95;
-    const latency = metrics.performance.responseTimeP95;
+    const latency = metrics.performance.p95ResponseTime;
     const errorRate = metrics.current.retryRatePercent;
 
     const sloTargets = {
@@ -678,7 +684,7 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     const targets = this.config.slo.targets;
 
     const availability = metrics.slo.successRateVariance || 100;
-    const latency = metrics.performance.responseTimeP95;
+    const latency = metrics.performance.p95ResponseTime;
     const errorRate = metrics.current.retryRatePercent;
 
     const compliance = availability >= targets.availability &&
@@ -764,7 +770,7 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     retryBudget?: RetryBudgetMetrics
   ): DashboardSnapshot['services'][0]['predictions'] {
     const predictions = {
-      riskLevel: 'low' as const,
+      riskLevel: 'low' as Risk,
       predictedFailure: null as Date | null,
       recommendations: [] as string[],
     };
@@ -978,6 +984,7 @@ export class EnhancedCircuitDashboard extends EventEmitter {
     return {
       serviceName,
       timestamp: new Date(),
+      performance: { averageResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, throughput: 0, errorRate: 0 },
       current: {
         usedRetriesMinute: 0,
         usedRetriesHour: 0,

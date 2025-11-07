@@ -33,25 +33,41 @@ vi.mock('openai', () => ({
   OpenAI: class {
     async embeddings() {
       return {
-        data: [{ embedding: Array(1536).fill(0.1) }]
+        data: [{ embedding: Array(1536).fill(0.1) }],
       };
     }
-  }
+  },
 }));
 
 // Mock Qdrant client
 vi.mock('@qdrant/js-client-rest', () => ({
   QdrantClient: class {
     constructor() {}
-    async getCollections() { return { collections: [] }; }
-    async createCollection() { return undefined; }
-    async upsert() { return { status: 'completed' }; }
-    async search() { return []; }
-    async getCollection() { return { points_count: 0, status: 'green' }; }
-    async delete() { return { status: 'completed' }; }
-    async count() { return { count: 0 }; }
-    async healthCheck() { return true; }
-  }
+    async getCollections() {
+      return { collections: [] };
+    }
+    async createCollection() {
+      return undefined;
+    }
+    async upsert() {
+      return { status: 'completed' };
+    }
+    async search() {
+      return [];
+    }
+    async getCollection() {
+      return { points_count: 0, status: 'green' };
+    }
+    async delete() {
+      return { status: 'completed' };
+    }
+    async count() {
+      return { count: 0 };
+    }
+    async healthCheck() {
+      return true;
+    }
+  },
 }));
 
 describe('MCP Knowledge Types Comprehensive Test', () => {
@@ -61,9 +77,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
 
   beforeEach(async () => {
     // Set up environment
-    process.env.OPENAI_API_KEY = 'test-key';
-    process.env.QDRANT_URL = 'http://localhost:6333';
-    process.env.NODE_ENV = 'test';
+    process.env['OPENAI_API_KEY'] = 'test-key';
+    process.env['QDRANT_URL'] = 'http://localhost:6333';
+    process.env['NODE_ENV'] = 'test';
 
     // Create MCP server
     server = createMcpServer();
@@ -90,14 +106,14 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           data: {
             email: 'john@example.com',
             role: 'developer',
-            department: 'engineering'
-          }
+            department: 'engineering',
+          },
         },
         scope: {
           project: 'user-management',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Entity: user john_doe, developer in engineering department'
+        content: 'Entity: user john_doe, developer in engineering department',
       };
 
       // Store entity via MCP
@@ -109,10 +125,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             items: [entityItem],
             deduplication: {
               enabled: true,
-              merge_strategy: 'intelligent'
-            }
-          }
-        }
+              merge_strategy: 'intelligent',
+            },
+          },
+        },
       });
 
       expect(storeResult.content).toBeDefined();
@@ -132,9 +148,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           arguments: {
             query: 'john doe developer',
             types: ['entity'],
-            limit: 10
-          }
-        }
+            limit: 10,
+          },
+        },
       });
 
       expect(searchResult.content).toBeDefined();
@@ -151,14 +167,14 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           target_entity: 'jane_smith',
           metadata: {
             project: 'web-platform',
-            since: '2024-01-15'
-          }
+            since: '2024-01-15',
+          },
         },
         scope: {
           project: 'team-structure',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Relation: john_doe works_with jane_smith on web-platform project'
+        content: 'Relation: john_doe works_with jane_smith on web-platform project',
       };
 
       const storeResult = await client.request({
@@ -166,9 +182,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [relationItem]
-          }
-        }
+            items: [relationItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -188,14 +204,14 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             timestamp: '2025-01-15T10:30:00Z',
             success: true,
             location: 'New York',
-            device: 'mobile'
-          }
+            device: 'mobile',
+          },
         },
         scope: {
           project: 'user-analytics',
-          branch: 'production'
+          branch: 'production',
         },
-        content: 'Observation: user login attempt from mobile device in New York'
+        content: 'Observation: user login attempt from mobile device in New York',
       };
 
       const storeResult = await client.request({
@@ -203,9 +219,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [observationItem]
-          }
-        }
+            items: [observationItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -224,14 +240,14 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           metadata: {
             author: 'technical-writer',
             last_updated: '2025-01-10',
-            version: '2.1'
-          }
+            version: '2.1',
+          },
         },
         scope: {
           project: 'api-docs',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Section: API Authentication Guide covering OAuth 2.0 implementation'
+        content: 'Section: API Authentication Guide covering OAuth 2.0 implementation',
       };
 
       const storeResult = await client.request({
@@ -239,9 +255,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [sectionItem]
-          }
-        }
+            items: [sectionItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -259,35 +275,35 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           prerequisites: [
             'Valid backup file available',
             'Database access credentials',
-            'Sufficient disk space'
+            'Sufficient disk space',
           ],
           steps: [
             'Stop application services',
             'Create current database backup',
             'Restore from backup file',
             'Verify data integrity',
-            'Restart application services'
+            'Restart application services',
           ],
           troubleshooting: {
             common_issues: [
               'Insufficient disk space',
               'Permission denied errors',
-              'Network connectivity issues'
+              'Network connectivity issues',
             ],
             solutions: [
               'Free up disk space before restoration',
               'Verify user permissions',
-              'Check network configuration'
-            ]
+              'Check network configuration',
+            ],
           },
           estimated_time: '30 minutes',
-          complexity: 'medium'
+          complexity: 'medium',
         },
         scope: {
           project: 'operations',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Runbook: Database Backup Restoration procedure with troubleshooting steps'
+        content: 'Runbook: Database Backup Restoration procedure with troubleshooting steps',
       };
 
       const storeResult = await client.request({
@@ -295,9 +311,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [runbookItem]
-          }
-        }
+            items: [runbookItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -319,24 +335,24 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           files_modified: [
             'src/auth/oauth.service.ts',
             'src/middleware/auth.middleware.ts',
-            'tests/auth/oauth.test.ts'
+            'tests/auth/oauth.test.ts',
           ],
           impact: {
             breaking_changes: false,
             api_changes: true,
-            database_changes: false
+            database_changes: false,
           },
           metadata: {
             author: 'backend-team',
             pull_request: '#1234',
-            commit_hash: 'abc123def456'
-          }
+            commit_hash: 'abc123def456',
+          },
         },
         scope: {
           project: 'user-service',
-          branch: 'feature/oauth-implementation'
+          branch: 'feature/oauth-implementation',
         },
-        content: 'Change: Add OAuth 2.0 authentication with JWT token support'
+        content: 'Change: Add OAuth 2.0 authentication with JWT token support',
       };
 
       const storeResult = await client.request({
@@ -344,9 +360,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [changeItem]
-          }
-        }
+            items: [changeItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -368,20 +384,20 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           steps_to_reproduce: [
             'Process large dataset (>100k records)',
             'Monitor memory usage',
-            'Observe continuous increase'
+            'Observe continuous increase',
           ],
           expected_behavior: 'Memory usage should remain stable',
           actual_behavior: 'Memory usage increases until application crashes',
           environment: 'production',
           affected_users: 'all',
           reported_by: 'monitoring-system',
-          assigned_to: 'backend-team'
+          assigned_to: 'backend-team',
         },
         scope: {
           project: 'data-processing',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Issue: Memory leak in batch processing causing application crashes'
+        content: 'Issue: Memory leak in batch processing causing application crashes',
       };
 
       const storeResult = await client.request({
@@ -389,9 +405,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [issueItem]
-          }
-        }
+            items: [issueItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -411,30 +427,30 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             {
               option: 'MongoDB',
               pros: ['Flexible schema', 'Horizontal scaling'],
-              cons: ['Weaker consistency', 'Less mature JSON features']
+              cons: ['Weaker consistency', 'Less mature JSON features'],
             },
             {
               option: 'MySQL',
               pros: ['Mature', 'Good performance'],
-              cons: ['Limited JSON support', 'Complex licensing']
-            }
+              cons: ['Limited JSON support', 'Complex licensing'],
+            },
           ],
           decision: 'PostgreSQL',
           impact: {
             level: 'high',
             affected_components: ['data-layer', 'migration-scripts', 'monitoring'],
-            migration_effort: 'medium'
+            migration_effort: 'medium',
           },
           status: 'accepted',
           decision_date: '2025-01-01',
           decision_maker: 'architecture-committee',
-          review_date: '2025-06-01'
+          review_date: '2025-06-01',
         },
         scope: {
           project: 'platform-architecture',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Decision: Use PostgreSQL as Primary Database for ACID compliance'
+        content: 'Decision: Use PostgreSQL as Primary Database for ACID compliance',
       };
 
       const storeResult = await client.request({
@@ -442,9 +458,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [decisionItem]
-          }
-        }
+            items: [decisionItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -472,7 +488,7 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             'Add health checks for pool',
             'Update database client code',
             'Add performance monitoring',
-            'Write integration tests'
+            'Write integration tests',
           ],
           dependencies: ['database-migration-completed'],
           definition_of_done: [
@@ -480,14 +496,14 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             'Performance tests show improvement',
             'Health checks working',
             'Documentation updated',
-            'Code reviewed and merged'
-          ]
+            'Code reviewed and merged',
+          ],
         },
         scope: {
           project: 'performance-improvements',
-          branch: 'feature/connection-pooling'
+          branch: 'feature/connection-pooling',
         },
-        content: 'Todo: Implement database connection pooling for performance improvement'
+        content: 'Todo: Implement database connection pooling for performance improvement',
       };
 
       const storeResult = await client.request({
@@ -495,9 +511,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [todoItem]
-          }
-        }
+            items: [todoItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -516,33 +532,32 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           version: '2.1.0',
           release_date: '2025-01-15',
           title: 'Performance Enhancements and Bug Fixes',
-          summary: 'This release includes significant performance improvements and critical bug fixes',
+          summary:
+            'This release includes significant performance improvements and critical bug fixes',
           features: [
             'Added database connection pooling',
             'Implemented response caching',
-            'Enhanced search performance'
+            'Enhanced search performance',
           ],
           bug_fixes: [
             'Fixed memory leak in batch processing',
             'Resolved authentication timeout issue',
-            'Fixed data validation errors'
+            'Fixed data validation errors',
           ],
           breaking_changes: [],
-          known_issues: [
-            'Minor UI glitch in Safari (under investigation)'
-          ],
+          known_issues: ['Minor UI glitch in Safari (under investigation)'],
           upgrade_notes: [
             'Database migration required',
             'Update configuration files',
-            'Clear cache after upgrade'
+            'Clear cache after upgrade',
           ],
-          contributor: 'release-team'
+          contributor: 'release-team',
         },
         scope: {
           project: 'platform',
-          branch: 'release/v2.1.0'
+          branch: 'release/v2.1.0',
         },
-        content: 'Release Note: Version 2.1.0 with performance enhancements and bug fixes'
+        content: 'Release Note: Version 2.1.0 with performance enhancements and bug fixes',
       };
 
       const storeResult = await client.request({
@@ -550,9 +565,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [releaseNoteItem]
-          }
-        }
+            items: [releaseNoteItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -591,17 +606,17 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             tables_added: ['user_preferences'],
             tables_modified: [],
             indexes_added: ['idx_user_preferences_user_id'],
-            estimated_downtime: '0 minutes'
+            estimated_downtime: '0 minutes',
           },
           rollback_plan: 'Execute down migration to remove table and indexes',
           tested: true,
-          test_results: 'All tests passed, performance impact minimal'
+          test_results: 'All tests passed, performance impact minimal',
         },
         scope: {
           project: 'database-migrations',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'DDL: Migration to add user_preferences table with proper indexing'
+        content: 'DDL: Migration to add user_preferences table with proper indexing',
       };
 
       const storeResult = await client.request({
@@ -609,9 +624,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [ddlItem]
-          }
-        }
+            items: [ddlItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -643,13 +658,13 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           labels: ['feature', 'authentication', 'security'],
           related_issues: ['#567', '#568'],
           approval_status: 'approved',
-          mergeable: true
+          mergeable: true,
         },
         scope: {
           project: 'user-service',
-          branch: 'feature/oauth-implementation'
+          branch: 'feature/oauth-implementation',
         },
-        content: 'PR Context: Add OAuth 2.0 authentication support with comprehensive testing'
+        content: 'PR Context: Add OAuth 2.0 authentication support with comprehensive testing',
       };
 
       const storeResult = await client.request({
@@ -657,9 +672,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [prContextItem]
-          }
-        }
+            items: [prContextItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -683,37 +698,37 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             affected_services: ['user-api', 'order-service', 'notification-service'],
             user_impact: 'high',
             business_impact: 'revenue loss',
-            estimated_affected_users: 50000
+            estimated_affected_users: 50000,
           },
           timeline: {
             detected_at: '2025-01-15T09:15:00Z',
             acknowledged_at: '2025-01-15T09:20:00Z',
             mitigated_at: '2025-01-15T10:30:00Z',
             resolved_at: '2025-01-15T11:45:00Z',
-            duration_minutes: 150
+            duration_minutes: 150,
           },
           root_cause: {
             primary: 'Database connection pool not properly configured for high traffic',
-            contributing: ['Insufficient monitoring', 'Missing alert thresholds']
+            contributing: ['Insufficient monitoring', 'Missing alert thresholds'],
           },
           resolution: {
             description: 'Increased connection pool size and added proper monitoring',
             permanent_fix: 'Updated configuration and added alerting',
-            preventive_measures: ['Add load testing', 'Implement circuit breakers']
+            preventive_measures: ['Add load testing', 'Implement circuit breakers'],
           },
           lessons_learned: [
             'Need better capacity planning',
             'Monitoring gaps identified',
-            'Response time can be improved'
+            'Response time can be improved',
           ],
           postmortem_required: true,
-          communication_sent: true
+          communication_sent: true,
         },
         scope: {
           project: 'incident-management',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Incident: Database connection pool exhaustion affecting multiple services'
+        content: 'Incident: Database connection pool exhaustion affecting multiple services',
       };
 
       const storeResult = await client.request({
@@ -721,9 +736,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [incidentItem]
-          }
-        }
+            items: [incidentItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -745,35 +760,27 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           deployed_at: '2025-01-15T10:30:00Z',
           environment: 'production',
           description: 'Performance enhancements and critical bug fixes',
-          features: [
-            'Database connection pooling',
-            'Response caching',
-            'Enhanced search'
-          ],
-          fixes: [
-            'Memory leak resolution',
-            'Authentication fixes',
-            'UI improvements'
-          ],
+          features: ['Database connection pooling', 'Response caching', 'Enhanced search'],
+          fixes: ['Memory leak resolution', 'Authentication fixes', 'UI improvements'],
           deployment_info: {
             deployment_strategy: 'blue-green',
             rollback_available: true,
             health_checks_passed: true,
-            monitoring_active: true
+            monitoring_active: true,
           },
           metrics: {
             deployment_duration_minutes: 45,
             rollback_time_seconds: 0,
-            post_deployment_issues: 0
+            post_deployment_issues: 0,
           },
           release_manager: 'devops-team',
-          approval_status: 'approved'
+          approval_status: 'approved',
         },
         scope: {
           project: 'platform',
-          branch: 'release/v2.1.0'
+          branch: 'release/v2.1.0',
         },
-        content: 'Release: v2.1.0 successfully deployed to production'
+        content: 'Release: v2.1.0 successfully deployed to production',
       };
 
       const storeResult = await client.request({
@@ -781,9 +788,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [releaseItem]
-          }
-        }
+            items: [releaseItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -804,11 +811,12 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           probability: 'medium',
           impact: 'high',
           risk_score: 12, // probability (3) x impact (4)
-          description: 'Heavy reliance on PostgreSQL-specific features may limit future flexibility',
+          description:
+            'Heavy reliance on PostgreSQL-specific features may limit future flexibility',
           triggers: [
             'Need to migrate to different database',
             'PostgreSQL licensing changes',
-            'Performance requirements exceed PostgreSQL capabilities'
+            'Performance requirements exceed PostgreSQL capabilities',
           ],
           mitigations: [
             {
@@ -816,30 +824,30 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
               implementation: 'Implement repository pattern with database-agnostic interfaces',
               owner: 'architecture-team',
               due_date: '2025-03-01',
-              status: 'in_progress'
+              status: 'in_progress',
             },
             {
               strategy: 'Multi-database testing',
               implementation: 'Set up testing environments with alternative databases',
               owner: 'qa-team',
               due_date: '2025-04-01',
-              status: 'planned'
-            }
+              status: 'planned',
+            },
           ],
           contingency_plans: [
             'Develop migration scripts for PostgreSQL alternatives',
             'Document PostgreSQL-specific features used',
-            'Evaluate cloud database services'
+            'Evaluate cloud database services',
           ],
           owner: 'cto',
           review_date: '2025-06-01',
-          status: 'active'
+          status: 'active',
         },
         scope: {
           project: 'platform-architecture',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Risk: Database vendor lock-in with medium probability and high impact'
+        content: 'Risk: Database vendor lock-in with medium probability and high impact',
       };
 
       const storeResult = await client.request({
@@ -847,9 +855,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [riskItem]
-          }
-        }
+            items: [riskItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -866,7 +874,8 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         data: {
           title: 'User adoption of new features will be high',
           category: 'business',
-          description: 'Assumes users will quickly adopt new features based on positive feedback from beta testing',
+          description:
+            'Assumes users will quickly adopt new features based on positive feedback from beta testing',
           impact_level: 'high',
           confidence_level: 'medium',
           validation_method: 'User feedback surveys and usage analytics',
@@ -876,25 +885,25 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           supporting_evidence: [
             'Beta testing showed 80% positive feedback',
             'Similar features in competitors have high adoption',
-            'User requests indicate high demand'
+            'User requests indicate high demand',
           ],
           risks_if_invalid: [
             'Lower than expected revenue',
             'Feature development resources wasted',
-            'Need for additional user training'
+            'Need for additional user training',
           ],
           monitoring_plan: [
             'Track feature adoption rates weekly',
             'Monitor user feedback channels',
-            'Analyze usage patterns and drop-off points'
+            'Analyze usage patterns and drop-off points',
           ],
-          status: 'active'
+          status: 'active',
         },
         scope: {
           project: 'product-development',
-          branch: 'main'
+          branch: 'main',
         },
-        content: 'Assumption: High user adoption of new features based on beta testing feedback'
+        content: 'Assumption: High user adoption of new features based on beta testing feedback',
       };
 
       const storeResult = await client.request({
@@ -902,9 +911,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [assumptionItem]
-          }
-        }
+            items: [assumptionItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -921,7 +930,7 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         { kind: 'entity' as const, ttl_policy: 'short' as const },
         { kind: 'decision' as const, ttl_policy: 'long' as const },
         { kind: 'incident' as const, ttl_policy: 'permanent' as const },
-        { kind: 'todo' as const, ttl_policy: 'default' as const }
+        { kind: 'todo' as const, ttl_policy: 'default' as const },
       ];
 
       for (const typeConfig of knowledgeTypesWithTTL) {
@@ -929,17 +938,17 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           kind: typeConfig.kind,
           data: {
             title: `Test ${typeConfig.kind} with TTL`,
-            description: `Testing ${typeConfig.ttl_policy} TTL policy`
+            description: `Testing ${typeConfig['ttl_policy']} TTL policy`,
           },
           scope: {
             project: 'ttl-testing',
-            branch: 'main'
+            branch: 'main',
           },
           ttl_config: {
-            policy: typeConfig.ttl_policy,
-            auto_extend: typeConfig.ttl_policy !== 'short'
+            policy: typeConfig['ttl_policy'],
+            auto_extend: typeConfig['ttl_policy'] !== 'short',
           },
-          content: `${typeConfig.kind} with ${typeConfig.ttl_policy} TTL policy`
+          content: `${typeConfig.kind} with ${typeConfig['ttl_policy']} TTL policy`,
         };
 
         const storeResult = await client.request({
@@ -949,11 +958,11 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             arguments: {
               items: [item],
               global_ttl: {
-                policy: typeConfig.ttl_policy,
-                auto_extend: true
-              }
-            }
-          }
+                policy: typeConfig['ttl_policy'],
+                auto_extend: true,
+              },
+            },
+          },
         });
 
         const resultData = JSON.parse(storeResult.content[0].text);
@@ -968,20 +977,20 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           kind: 'decision' as const,
           data: {
             title: 'Use OAuth 2.0 for Authentication',
-            rationale: 'Industry standard with robust security features'
+            rationale: 'Industry standard with robust security features',
           },
           scope: { project: 'auth-project', branch: 'main' },
-          content: 'Decision to use OAuth 2.0 for authentication'
+          content: 'Decision to use OAuth 2.0 for authentication',
         },
         {
           kind: 'decision' as const,
           data: {
             title: 'OAuth 2.0 Authentication Implementation',
-            rationale: 'Industry standard security approach with robust features'
+            rationale: 'Industry standard security approach with robust features',
           },
           scope: { project: 'auth-project', branch: 'main' },
-          content: 'Implementation of OAuth 2.0 authentication system'
-        }
+          content: 'Implementation of OAuth 2.0 authentication system',
+        },
       ];
 
       const storeResult = await client.request({
@@ -995,10 +1004,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
               merge_strategy: 'intelligent',
               similarity_threshold: 0.8,
               enable_intelligent_merging: true,
-              enable_audit_logging: true
-            }
-          }
-        }
+              enable_audit_logging: true,
+            },
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -1012,10 +1021,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         kind: 'entity' as const,
         data: {
           entity_type: 'user',
-          name: 'john_doe'
+          name: 'john_doe',
         },
         scope: { project: 'graph-test', branch: 'main' },
-        content: 'Entity: user john_doe'
+        content: 'Entity: user john_doe',
       };
 
       const relation = {
@@ -1023,10 +1032,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         data: {
           relation_type: 'works_with',
           source_entity: 'john_doe',
-          target_entity: 'jane_smith'
+          target_entity: 'jane_smith',
         },
         scope: { project: 'graph-test', branch: 'main' },
-        content: 'Relation: john_doe works_with jane_smith'
+        content: 'Relation: john_doe works_with jane_smith',
       };
 
       // Store both items
@@ -1035,9 +1044,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [entity, relation]
-          }
-        }
+            items: [entity, relation],
+          },
+        },
       });
 
       // Search with graph expansion
@@ -1052,10 +1061,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
               enabled: true,
               expansion_type: 'relations',
               max_depth: 2,
-              max_nodes: 10
-            }
-          }
-        }
+              max_nodes: 10,
+            },
+          },
+        },
       });
 
       const searchData = JSON.parse(searchResult.content[0].text);
@@ -1072,28 +1081,28 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           kind: 'decision' as const,
           data: { title: 'Database technology choice', decision: 'PostgreSQL' },
           scope: { project: 'architecture', branch: 'main' },
-          content: 'Decision to use PostgreSQL database'
+          content: 'Decision to use PostgreSQL database',
         },
         {
           kind: 'risk' as const,
           data: { title: 'Database risks', description: 'Vendor lock-in concerns' },
           scope: { project: 'architecture', branch: 'main' },
-          content: 'Risk assessment for database vendor lock-in'
+          content: 'Risk assessment for database vendor lock-in',
         },
         {
           kind: 'todo' as const,
           data: { title: 'Database setup', status: 'pending' },
           scope: { project: 'architecture', branch: 'main' },
-          content: 'Setup database configuration and connection pooling'
-        }
+          content: 'Setup database configuration and connection pooling',
+        },
       ];
 
       await client.request({
         method: 'tools/call',
         params: {
           name: 'memory_store',
-          arguments: { items }
-        }
+          arguments: { items },
+        },
       });
 
       // Search across all types
@@ -1104,9 +1113,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           arguments: {
             query: 'database',
             types: ['decision', 'risk', 'todo'],
-            limit: 10
-          }
-        }
+            limit: 10,
+          },
+        },
       });
 
       const searchData = JSON.parse(searchResult.content[0].text);
@@ -1122,23 +1131,23 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             query: 'test',
             scope: {
               project: 'test-project',
-              branch: 'main'
+              branch: 'main',
             },
             filters: {
               created_after: '2025-01-01T00:00:00Z',
-              confidence_min: 0.5
+              confidence_min: 0.5,
             },
             ttl_filters: {
               include_expired: false,
-              ttl_policies: ['default', 'long', 'permanent']
+              ttl_policies: ['default', 'long', 'permanent'],
             },
             formatting: {
               include_content: true,
               include_metadata: true,
-              include_confidence_scores: true
-            }
-          }
-        }
+              include_confidence_scores: true,
+            },
+          },
+        },
       });
 
       const searchData = JSON.parse(searchResult.content[0].text);
@@ -1157,10 +1166,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             include_detailed_metrics: true,
             response_formatting: {
               verbose: true,
-              include_timestamps: true
-            }
-          }
-        }
+              include_timestamps: true,
+            },
+          },
+        },
       });
 
       expect(healthResult.content).toBeDefined();
@@ -1181,9 +1190,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
           arguments: {
             operation: 'stats',
             stats_period_days: 30,
-            include_detailed_metrics: true
-          }
-        }
+            include_detailed_metrics: true,
+          },
+        },
       });
 
       const statsData = JSON.parse(statsResult.content[0].text);
@@ -1197,7 +1206,7 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
       const invalidItem = {
         kind: 'invalid_type' as any,
         data: { title: 'Invalid item' },
-        content: 'This should fail validation'
+        content: 'This should fail validation',
       };
 
       const storeResult = await client.request({
@@ -1205,9 +1214,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [invalidItem]
-          }
-        }
+            items: [invalidItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -1221,7 +1230,7 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         kind: 'entity' as const,
         // Missing required data fields
         scope: { project: 'test', branch: 'main' },
-        content: 'Incomplete entity'
+        content: 'Incomplete entity',
       };
 
       const storeResult = await client.request({
@@ -1229,9 +1238,9 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [incompleteItem]
-          }
-        }
+            items: [incompleteItem],
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);
@@ -1245,10 +1254,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
         kind: 'section' as const,
         data: {
           title: 'Large content section',
-          content: largeContent
+          content: largeContent,
         },
         scope: { project: 'test', branch: 'main' },
-        content: largeContent
+        content: largeContent,
       };
 
       const storeResult = await client.request({
@@ -1260,10 +1269,10 @@ describe('MCP Knowledge Types Comprehensive Test', () => {
             global_truncation: {
               enabled: true,
               max_chars: 5000,
-              mode: 'intelligent'
-            }
-          }
-        }
+              mode: 'intelligent',
+            },
+          },
+        },
       });
 
       const resultData = JSON.parse(storeResult.content[0].text);

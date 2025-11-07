@@ -26,8 +26,8 @@ describe('Search Degradation Behavior', () => {
     // Initialize memory store with test configuration
     memoryStore = new MemoryStoreManager({
       qdrant: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
-        apiKey: process.env.QDRANT_API_KEY,
+        url: process.env['QDRANT_URL'] || 'http://localhost:6333',
+        apiKey: process.env['QDRANT_API_KEY'],
         timeout: 30000,
       },
       enableVectorOperations: true,
@@ -122,13 +122,13 @@ describe('Search Degradation Behavior', () => {
       // Get baseline semantic search results
       const baselineResult = await searchService.performFallbackSearch(parsedQuery, {
         ...searchQuery,
-        searchStrategy: 'deep'
+        searchStrategy: 'deep',
       });
 
       // Get degraded search results (keyword fallback)
       const degradedResult = await searchService.performFallbackSearch(parsedQuery, {
         ...searchQuery,
-        searchStrategy: 'fast'
+        searchStrategy: 'fast',
       });
 
       // Both should succeed
@@ -192,9 +192,7 @@ describe('Search Degradation Behavior', () => {
       expect(result.search_metadata?.strategy_used).toBe('hybrid');
 
       // Results should include both AI-related items
-      const aiItems = result.items.filter(item =>
-        item.metadata?.domain === 'ai'
-      );
+      const aiItems = result.items.filter((item) => item.metadata?.domain === 'ai');
       expect(aiItems.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -294,16 +292,14 @@ describe('Search Degradation Behavior', () => {
       }
 
       // All queries should succeed
-      performanceMetrics.forEach(metric => {
+      performanceMetrics.forEach((metric) => {
         expect(metric.success).toBe(true);
         expect(metric.executionTime).toBeLessThan(5000); // 5 second max
         expect(metric.resultsCount).toBeGreaterThan(0);
       });
 
       // At least one query should have used fallback strategy
-      const fallbackQueries = performanceMetrics.filter(m =>
-        m.strategy !== 'semantic'
-      );
+      const fallbackQueries = performanceMetrics.filter((m) => m.strategy !== 'semantic');
       expect(fallbackQueries.length).toBeGreaterThan(0);
     });
   });
@@ -326,14 +322,14 @@ describe('Search Degradation Behavior', () => {
       const results = await Promise.all(queryPromises);
 
       // All queries should succeed
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.success).toBe(true);
         expect(result.items.length).toBeGreaterThan(0);
       });
 
       // Under load, some queries should use faster strategies
-      const fastStrategyResults = results.filter(r =>
-        r.search_metadata?.strategy_used === 'sparse'
+      const fastStrategyResults = results.filter(
+        (r) => r.search_metadata?.strategy_used === 'sparse'
       );
       expect(fastStrategyResults.length).toBeGreaterThan(0);
     });
@@ -370,18 +366,18 @@ describe('Search Degradation Behavior', () => {
 
       // Check performance thresholds
       const avgExecutionTime = executionTimes.reduce((a, b) => a + b) / executionTimes.length;
-      const successRate = results.filter(r => r.success).length / results.length;
+      const successRate = results.filter((r) => r.success).length / results.length;
 
       expect(avgExecutionTime).toBeLessThan(performanceThresholds.maxExecutionTime);
       expect(successRate).toBeGreaterThanOrEqual(performanceThresholds.minSuccessRate);
 
       // Check that fallback strategies maintain acceptable quality
-      const fallbackResults = results.filter(r =>
-        r.search_metadata?.strategy_used !== 'semantic'
+      const fallbackResults = results.filter(
+        (r) => r.search_metadata?.strategy_used !== 'semantic'
       );
 
       if (fallbackResults.length > 0) {
-        fallbackResults.forEach(result => {
+        fallbackResults.forEach((result) => {
           expect(result.items.length).toBeGreaterThan(0);
           expect(result.search_metadata?.quality_score).toBeGreaterThan(0.5);
         });
@@ -391,22 +387,23 @@ describe('Search Degradation Behavior', () => {
 
   // Helper function to create parsed query for search service
   function createParsedQuery(queryText: string): ParsedQuery {
-    const terms = queryText.toLowerCase()
+    const terms = queryText
+      .toLowerCase()
       .split(/\s+/)
-      .filter(term => term.length > 2)
+      .filter((term) => term.length > 2)
       .slice(0, 10); // Limit terms for testing
 
     return {
       terms,
       entities: [],
       filters: {
-        types: ['observation']
+        types: ['observation'],
       },
       modifiers: {
         exactMatch: false,
         includeRelated: false,
-        priority: 'relevant'
-      }
+        priority: 'relevant',
+      },
     };
   }
 
@@ -417,11 +414,11 @@ describe('Search Degradation Behavior', () => {
     let totalRelevance = 0;
     const terms = queryTerms.join(' ').toLowerCase().split(' ');
 
-    items.forEach(item => {
+    items.forEach((item) => {
       const content = (item.data?.content || item.content || '').toLowerCase();
       let itemRelevance = 0;
 
-      terms.forEach(term => {
+      terms.forEach((term) => {
         if (content.includes(term)) {
           itemRelevance += 1;
         }

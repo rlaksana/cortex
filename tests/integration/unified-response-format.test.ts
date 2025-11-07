@@ -8,7 +8,10 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createResponseMeta, UnifiedToolResponse } from '../../src/types/unified-response.interface.js';
+import {
+  createResponseMeta,
+  UnifiedToolResponse,
+} from '../../src/types/unified-response.interface.js';
 
 describe('Unified Response Format Integration Tests', () => {
   let server: Server;
@@ -21,7 +24,7 @@ describe('Unified Response Format Integration Tests', () => {
 
     // Get available tools
     const tools = await server.listTools();
-    testTools = tools.tools.filter(tool =>
+    testTools = tools.tools.filter((tool) =>
       ['memory_store', 'memory_find', 'system_status'].includes(tool.name)
     );
   });
@@ -44,8 +47,8 @@ describe('Unified Response Format Integration Tests', () => {
         ttl: '1h',
         additional: {
           operation_id: 'test-123',
-          debug_info: 'test'
-        }
+          debug_info: 'test',
+        },
       });
 
       expect(meta).toHaveProperty('strategy', 'auto');
@@ -64,7 +67,7 @@ describe('Unified Response Format Integration Tests', () => {
         strategy: 'fast',
         vector_used: false,
         degraded: true,
-        source: 'test_source'
+        source: 'test_source',
       });
 
       expect(meta).toHaveProperty('strategy', 'fast');
@@ -85,15 +88,15 @@ describe('Unified Response Format Integration Tests', () => {
             kind: 'entity',
             content: 'Test entity for unified response format',
             scope: { project: 'test-project' },
-            metadata: { test: true }
-          }
-        ]
+            metadata: { test: true },
+          },
+        ],
       };
 
       try {
         const response = await server.callTool({
           name: 'memory_store',
-          arguments: testData
+          arguments: testData,
         });
 
         expect(response).toHaveProperty('content');
@@ -116,14 +119,20 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('confidence_score');
 
         // Strategy should be one of the allowed values
-        expect(['autonomous_deduplication', 'skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent']).toContain(meta.strategy);
+        expect([
+          'autonomous_deduplication',
+          'skip',
+          'prefer_existing',
+          'prefer_newer',
+          'combine',
+          'intelligent',
+        ]).toContain(meta.strategy);
 
         // Should have additional metadata
         expect(meta).toHaveProperty('batch_id');
         expect(meta).toHaveProperty('items_processed');
         expect(meta).toHaveProperty('items_stored');
         expect(meta).toHaveProperty('items_errors');
-
       } catch (error) {
         // Skip test if server is not available or database issues
         console.warn('Memory store test skipped due to:', error);
@@ -136,15 +145,15 @@ describe('Unified Response Format Integration Tests', () => {
           {
             kind: 'invalid_kind',
             content: '',
-            scope: null
-          }
-        ]
+            scope: null,
+          },
+        ],
       };
 
       try {
         const response = await server.callTool({
           name: 'memory_store',
-          arguments: invalidData
+          arguments: invalidData,
         });
 
         expect(response).toHaveProperty('content');
@@ -158,7 +167,6 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('vector_used');
         expect(meta).toHaveProperty('degraded');
         expect(meta).toHaveProperty('source');
-
       } catch (error) {
         // Expected behavior for invalid input
         expect(error).toBeDefined();
@@ -171,13 +179,13 @@ describe('Unified Response Format Integration Tests', () => {
       const searchData = {
         query: 'test unified response format',
         limit: 5,
-        mode: 'auto'
+        mode: 'auto',
       };
 
       try {
         const response = await server.callTool({
           name: 'memory_find',
-          arguments: searchData
+          arguments: searchData,
         });
 
         expect(response).toHaveProperty('content');
@@ -199,7 +207,16 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('confidence_score');
 
         // Strategy should be one of the allowed search strategies
-        expect(['fast', 'auto', 'deep', 'semantic', 'keyword', 'hybrid', 'fallback', 'orchestrator_based']).toContain(meta.strategy);
+        expect([
+          'fast',
+          'auto',
+          'deep',
+          'semantic',
+          'keyword',
+          'hybrid',
+          'fallback',
+          'orchestrator_based',
+        ]).toContain(meta.strategy);
 
         // Should have additional search metadata
         expect(meta).toHaveProperty('search_id');
@@ -209,7 +226,6 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('expand');
         expect(meta).toHaveProperty('scope_applied');
         expect(meta).toHaveProperty('types_filter');
-
       } catch (error) {
         // Skip test if server is not available or database issues
         console.warn('Memory find test skipped due to:', error);
@@ -226,8 +242,8 @@ describe('Unified Response Format Integration Tests', () => {
             arguments: {
               query: 'test search mode validation',
               mode: mode,
-              limit: 3
-            }
+              limit: 3,
+            },
           });
 
           const responseData = JSON.parse(response.content[0].text);
@@ -238,7 +254,6 @@ describe('Unified Response Format Integration Tests', () => {
 
           // Mode should be reflected in additional metadata
           expect(meta.mode).toBe(mode);
-
         } catch (error) {
           console.warn(`Search mode ${mode} test skipped:`, error);
         }
@@ -251,7 +266,7 @@ describe('Unified Response Format Integration Tests', () => {
       try {
         const response = await server.callTool({
           name: 'system_status',
-          arguments: { operation: 'health' }
+          arguments: { operation: 'health' },
         });
 
         expect(response).toHaveProperty('content');
@@ -276,7 +291,6 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('service_status');
         expect(meta).toHaveProperty('uptime');
         expect(meta).toHaveProperty('timestamp');
-
       } catch (error) {
         console.warn('System status test skipped due to:', error);
       }
@@ -286,7 +300,7 @@ describe('Unified Response Format Integration Tests', () => {
       try {
         const response = await server.callTool({
           name: 'system_status',
-          arguments: { operation: 'invalid_operation' }
+          arguments: { operation: 'invalid_operation' },
         });
 
         // Should return some kind of error response
@@ -301,7 +315,6 @@ describe('Unified Response Format Integration Tests', () => {
         expect(meta).toHaveProperty('vector_used');
         expect(meta).toHaveProperty('degraded');
         expect(meta).toHaveProperty('source');
-
       } catch (error) {
         // Expected behavior for invalid operation
         expect(error).toBeDefined();
@@ -315,24 +328,24 @@ describe('Unified Response Format Integration Tests', () => {
         {
           tool: 'memory_store',
           args: {
-            items: [{ kind: 'entity', content: 'consistency test', scope: { project: 'test' } }]
-          }
+            items: [{ kind: 'entity', content: 'consistency test', scope: { project: 'test' } }],
+          },
         },
         {
           tool: 'memory_find',
-          args: { query: 'consistency test', limit: 1 }
+          args: { query: 'consistency test', limit: 1 },
         },
         {
           tool: 'system_status',
-          args: { operation: 'health' }
-        }
+          args: { operation: 'health' },
+        },
       ];
 
       for (const testCase of testCases) {
         try {
           const response = await server.callTool({
             name: testCase.tool,
-            arguments: testCase.args
+            arguments: testCase.args,
           });
 
           const responseData = JSON.parse(response.content[0].text);
@@ -355,7 +368,6 @@ describe('Unified Response Format Integration Tests', () => {
           // Source should be a non-empty string
           expect(typeof meta.source).toBe('string');
           expect(meta.source.length).toBeGreaterThan(0);
-
         } catch (error) {
           console.warn(`Consistency test for ${testCase.tool} skipped:`, error);
         }
@@ -366,7 +378,7 @@ describe('Unified Response Format Integration Tests', () => {
       try {
         const response = await server.callTool({
           name: 'memory_find',
-          arguments: { query: 'backward compatibility test' }
+          arguments: { query: 'backward compatibility test' },
         });
 
         const responseData = JSON.parse(response.content[0].text);
@@ -385,7 +397,6 @@ describe('Unified Response Format Integration Tests', () => {
         expect(responseData.meta.source).toBe(responseData.observability.source);
         expect(responseData.meta.vector_used).toBe(responseData.observability.vector_used);
         expect(responseData.meta.degraded).toBe(responseData.observability.degraded);
-
       } catch (error) {
         console.warn('Backward compatibility test skipped:', error);
       }
@@ -397,14 +408,14 @@ describe('Unified Response Format Integration Tests', () => {
       const invalidRequests = [
         { tool: 'memory_store', args: null },
         { tool: 'memory_find', args: {} }, // Missing required query
-        { tool: 'system_status', args: { operation: null } }
+        { tool: 'system_status', args: { operation: null } },
       ];
 
       for (const request of invalidRequests) {
         try {
           const response = await server.callTool({
             name: request.tool,
-            arguments: request.args
+            arguments: request.args,
           });
 
           // Should return error response with meta field
@@ -419,12 +430,10 @@ describe('Unified Response Format Integration Tests', () => {
             expect(meta).toHaveProperty('vector_used');
             expect(meta).toHaveProperty('degraded');
             expect(meta).toHaveProperty('source');
-
           } catch (parseError) {
             // If it's a raw error response, that's also acceptable
             expect(response.content[0].text).toBeDefined();
           }
-
         } catch (error) {
           // Error responses are expected for invalid inputs
           expect(error).toBeDefined();

@@ -15,18 +15,18 @@ const FAST_CHECKS = [
   {
     name: 'Type Check',
     command: 'npm run type-check',
-    critical: true
+    critical: true,
   },
   {
     name: 'Lint Check',
     command: 'npm run lint:quiet',
-    critical: true
+    critical: true,
   },
   {
     name: 'Quick Unit Tests',
     command: 'npm run test:unit -- --run --reporter=basic',
-    critical: false
-  }
+    critical: false,
+  },
 ];
 
 function runFastCheck(check) {
@@ -35,7 +35,7 @@ function runFastCheck(check) {
     const output = execSync(check.command, {
       encoding: 'utf8',
       stdio: 'pipe',
-      timeout: 60000 // 1 minute timeout
+      timeout: 60000, // 1 minute timeout
     });
     console.log(`✅ ${check.name} passed`);
     return { passed: true, output };
@@ -45,7 +45,7 @@ function runFastCheck(check) {
     return {
       passed: false,
       output: error.stdout || '',
-      error: error.stderr || error.message
+      error: error.stderr || error.message,
     };
   }
 }
@@ -68,11 +68,11 @@ function main() {
   }
 
   const duration = Date.now() - startTime;
-  const failed = results.filter(r => !r.passed);
-  const criticalFailed = failed.filter(r => r.critical);
+  const failed = results.filter((r) => !r.passed);
+  const criticalFailed = failed.filter((r) => r.critical);
 
   console.log(`\n📊 Pre-commit check summary (${(duration / 1000).toFixed(1)}s):`);
-  results.forEach(result => {
+  results.forEach((result) => {
     const status = result.passed ? '✅' : '❌';
     const critical = result.critical ? ' (critical)' : '';
     console.log(`  ${status} ${result.name}${critical}`);
@@ -80,7 +80,7 @@ function main() {
 
   if (criticalFailed.length > 0) {
     console.log('\n🔧 Commit blocked due to critical failures:');
-    criticalFailed.forEach(failure => {
+    criticalFailed.forEach((failure) => {
       console.log(`  • ${failure.name}: ${failure.error || 'Check failed'}`);
     });
     console.log('\n💡 To fix:');
@@ -92,7 +92,7 @@ function main() {
 
   if (failed.length > 0) {
     console.log('\n⚠️  Some non-critical checks failed, but commit allowed:');
-    failed.forEach(failure => {
+    failed.forEach((failure) => {
       console.log(`  • ${failure.name}`);
     });
     console.log('\n💡 Consider fixing these issues before pushing.');

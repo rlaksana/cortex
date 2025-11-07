@@ -18,6 +18,7 @@ This implementation provides comprehensive monitoring and alerting capabilities 
 - **Environment-based configuration**
 
 **Key Features**:
+
 ```typescript
 // Metrics endpoint with multiple formats
 GET /metrics?format=prometheus  # Prometheus format
@@ -33,11 +34,13 @@ GET /alerts      # Active alerts and warnings
 ### 2. Grafana Dashboard Configuration
 
 **Files**:
+
 - `grafana/dashboards/cortex.json` - Main dashboard
 - `grafana/provisioning/datasources/prometheus.yml` - Auto-configure datasource
 - `grafana/provisioning/dashboards/dashboards.yml` - Auto-load dashboards
 
 **Dashboard Features**:
+
 - **12 comprehensive panels** covering all aspects of system health
 - **Real-time metrics** with 30-second refresh
 - **Historical trends** and performance analysis
@@ -45,6 +48,7 @@ GET /alerts      # Active alerts and warnings
 - **Alert integration** with visual indicators
 
 **Key Panels**:
+
 1. System Status (overall health indicator)
 2. Service Uptime (hours)
 3. Operations per Second (total QPS)
@@ -63,6 +67,7 @@ GET /alerts      # Active alerts and warnings
 **File**: `prometheus/alerts/cortex.rules.yaml`
 
 **Alert Categories**:
+
 - **Performance Alerts**: P95 latency > 1000ms (5m), P99 latency > 2000ms (3m)
 - **Error Rate Alerts**: Error rate > 2% (5m)
 - **Resource Alerts**: Memory usage > 4GB (warning), > 6GB (critical)
@@ -71,6 +76,7 @@ GET /alerts      # Active alerts and warnings
 - **Business Alerts**: Unusual QPS patterns, low operation rates
 
 **Alert Examples**:
+
 ```yaml
 - alert: CortexHighLatencyP95
   expr: cortex_latency_milliseconds{quantile="0.95"} > 1000
@@ -78,8 +84,8 @@ GET /alerts      # Active alerts and warnings
   labels:
     severity: warning
   annotations:
-    summary: "High P95 latency detected in Cortex MCP"
-    action: "Investigate performance bottlenecks and consider scaling"
+    summary: 'High P95 latency detected in Cortex MCP'
+    action: 'Investigate performance bottlenecks and consider scaling'
 ```
 
 ### 4. Prometheus Service Discovery
@@ -87,6 +93,7 @@ GET /alerts      # Active alerts and warnings
 **File**: `prometheus/prometheus.yml`
 
 **Configuration Features**:
+
 - **Automatic service discovery** for Cortex MCP (port 9090)
 - **Qdrant database monitoring** (port 6333)
 - **Node Exporter integration** for system metrics (port 9100)
@@ -94,6 +101,7 @@ GET /alerts      # Active alerts and warnings
 - **Proper label management** for service identification
 
 **Scrape Configuration**:
+
 ```yaml
 scrape_configs:
   - job_name: 'cortex-mcp'
@@ -109,6 +117,7 @@ scrape_configs:
 **Enhancement**: `src/monitoring/monitoring-server.ts`
 
 **Circuit Breaker Metrics**:
+
 - `cortex_circuit_breaker_state`: Current state (0=closed, 1=open, 2=half_open)
 - `cortex_circuit_breaker_failures_total`: Total failures
 - `cortex_circuit_breaker_successes_total`: Total successes
@@ -121,6 +130,7 @@ scrape_configs:
 **Implementation**: Complete process memory tracking
 
 **Memory Metrics**:
+
 ```prometheus
 # Comprehensive memory metrics
 cortex_memory_bytes{type="resident_set"}          # RSS memory
@@ -135,6 +145,7 @@ cortex_memory_bytes{type="process_heap_used"}       # Heap used
 ```
 
 **Additional System Metrics**:
+
 - CPU usage percentages
 - Process information (PID, platform, architecture)
 - Service uptime in seconds
@@ -142,6 +153,7 @@ cortex_memory_bytes{type="process_heap_used"}       # Heap used
 ### 7. Business Metrics Implementation
 
 **Operations Metrics**:
+
 ```prometheus
 # Business operation tracking
 cortex_qps{operation="memory_store"}    # Store operations per second
@@ -152,6 +164,7 @@ cortex_connections_active                # Current active connections
 ```
 
 **Quality Metrics**:
+
 ```prometheus
 # Data quality and performance metrics
 cortex_quality_percent{metric="dedupe_rate"}      # Deduplication rate
@@ -165,12 +178,14 @@ cortex_quality_percent{metric="ttl_deleted_rate"}   # TTL deletion rate
 **Docker Compose Configuration**: `docker/monitoring-stack.yml`
 
 **Services**:
+
 - **Prometheus v2.45.0**: Metrics collection and storage
 - **Grafana v10.2.0**: Visualization and dashboards
 - **Alertmanager v0.26.0**: Alert routing and notification
 - **Node Exporter v1.6.1**: System metrics (optional)
 
 **Features**:
+
 - **Health checks** for all services
 - **Persistent data volumes** for metrics storage
 - **Network isolation** with dedicated monitoring network
@@ -182,16 +197,19 @@ cortex_quality_percent{metric="ttl_deleted_rate"}   # TTL deletion rate
 **File**: `alertmanager/alertmanager.yml`
 
 **Alert Routing**:
+
 - **Critical alerts**: Immediate notification to on-call team
 - **High severity**: DevOps team notification
 - **Warning alerts**: Team notification
 - **Info alerts**: Team notification (low priority)
 
 **Inhibition Rules**:
+
 - Suppress warning alerts when critical alerts exist
 - Prevent alert spam during widespread issues
 
 **Notification Channels**:
+
 - Email notifications with detailed alert information
 - Slack integration (configurable)
 - PagerDuty integration (configurable)
@@ -199,11 +217,13 @@ cortex_quality_percent{metric="ttl_deleted_rate"}   # TTL deletion rate
 ### 10. Setup Automation Scripts
 
 **Cross-Platform Scripts**:
+
 - `scripts/setup-monitoring.sh` (Linux/macOS)
 - `scripts/setup-monitoring.bat` (Windows)
 - `scripts/verify-monitoring.js` (Node.js verification)
 
 **Package.json Scripts**:
+
 ```json
 {
   "monitor:setup": "chmod +x scripts/setup-monitoring.sh && scripts/setup-monitoring.sh",
@@ -221,6 +241,7 @@ cortex_quality_percent{metric="ttl_deleted_rate"}   # TTL deletion rate
 **File**: `docs/MONITORING-SETUP.md`
 
 **Documentation Sections**:
+
 - **Quick Start Guide**: 4-step setup process
 - **Configuration Reference**: Environment variables and config files
 - **Dashboard Guide**: Panel descriptions and usage
@@ -258,18 +279,21 @@ npm run monitor:verify
 ## 📊 Key Metrics Available
 
 ### Performance Metrics
+
 - **Latency**: P50, P95, P99 response times
 - **Throughput**: Operations per second by type
 - **Error Rates**: Success/failure ratios
 - **Quality**: Cache hit rates, deduplication rates
 
 ### Resource Metrics
+
 - **Memory**: RSS, heap, external memory usage
 - **CPU**: Process CPU usage
 - **Connections**: Active connection count
 - **Uptime**: Service availability
 
 ### Business Metrics
+
 - **Operations**: Total operations processed
 - **Data Quality**: Deduplication and TTL metrics
 - **Circuit Breaker**: State changes and failure rates
@@ -293,27 +317,30 @@ METRICS_COLLECTION=true          # Enable metrics
 
 ### Alert Thresholds
 
-| Metric | Warning | Critical | Duration |
-|--------|---------|----------|----------|
-| P95 Latency | 1000ms | - | 5m |
-| P99 Latency | 2000ms | - | 3m |
-| Error Rate | 2% | - | 5m |
-| Memory Usage | 4GB | 6GB | 5m/2m |
-| QPS | 1000 ops/s | - | 2m |
+| Metric       | Warning    | Critical | Duration |
+| ------------ | ---------- | -------- | -------- |
+| P95 Latency  | 1000ms     | -        | 5m       |
+| P99 Latency  | 2000ms     | -        | 3m       |
+| Error Rate   | 2%         | -        | 5m       |
+| Memory Usage | 4GB        | 6GB      | 5m/2m    |
+| QPS          | 1000 ops/s | -        | 2m       |
 
 ## 🔒 Security Considerations
 
 ### Authentication
+
 - Grafana: Configurable admin credentials
 - Prometheus: Basic auth via reverse proxy
 - Metrics endpoint: Optional authentication
 
 ### Network Security
+
 - Docker network isolation
 - Port-based access control
 - TLS encryption (configurable)
 
 ### Data Protection
+
 - 15-day retention policy
 - 10GB storage limits
 - Secure alert routing
@@ -321,11 +348,13 @@ METRICS_COLLECTION=true          # Enable metrics
 ## 📈 Performance Impact
 
 ### Resource Requirements
+
 - **Monitoring Stack**: ~2GB RAM, 4 CPU cores
 - **Cortex MCP Overhead**: ~50MB RAM, <5% CPU
 - **Storage**: 10GB for 15-day retention
 
 ### Scalability
+
 - Horizontal scaling support
 - Remote write to long-term storage
 - Load balancer integration
@@ -333,11 +362,13 @@ METRICS_COLLECTION=true          # Enable metrics
 ## 🔄 Integration Points
 
 ### Existing Systems
+
 - **Circuit Breaker**: Automatic integration with existing implementation
 - **Performance Collector**: Leverages existing metrics infrastructure
 - **Health Check Service**: Integrated with existing health monitoring
 
 ### External Systems
+
 - **Slack**: Alert notifications
 - **PagerDuty**: Incident management
 - **Email**: Alert routing
@@ -346,12 +377,14 @@ METRICS_COLLECTION=true          # Enable metrics
 ## ✅ Validation Results
 
 ### Automated Verification
+
 - **Service Health**: All endpoints responding correctly
 - **Metrics Collection**: Key metrics available and properly formatted
 - **Dashboard Loading**: Grafana dashboards accessible and populated
 - **Alert Configuration**: Rules properly loaded and functional
 
 ### Manual Testing
+
 - **Alert Firing**: Verified alert conditions trigger correctly
 - **Dashboard Functionality**: All panels display expected data
 - **Performance**: Minimal impact on Cortex MCP performance
@@ -360,11 +393,13 @@ METRICS_COLLECTION=true          # Enable metrics
 ## 📋 Next Steps
 
 ### Immediate Actions
+
 1. **Configure Alert Channels**: Set up email/Slack notifications
 2. **Customize Thresholds**: Adjust alert thresholds based on SLA requirements
 3. **Team Training**: Ensure team understands dashboards and alerts
 
 ### Long-term Enhancements
+
 1. **Long-term Storage**: Configure remote write to Cortex/VictoriaMetrics
 2. **Additional Dashboards**: Create specialized dashboards for different teams
 3. **ML Anomaly Detection**: Implement intelligent alerting
@@ -373,18 +408,21 @@ METRICS_COLLECTION=true          # Enable metrics
 ## 🎯 Success Metrics
 
 ### Monitoring Coverage
+
 - ✅ 100% of critical services monitored
 - ✅ All key performance metrics tracked
 - ✅ Comprehensive alert coverage
 - ✅ Real-time dashboard visibility
 
 ### Operational Excellence
+
 - ✅ Sub-minute alert detection
 - ✅ Automated deployment and configuration
 - ✅ Cross-platform support
 - ✅ Production-ready reliability
 
 ### User Experience
+
 - ✅ Intuitive dashboard design
 - ✅ Actionable alert information
 - ✅ Comprehensive documentation

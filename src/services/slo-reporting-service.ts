@@ -98,7 +98,7 @@ export class SLOReportingService extends EventEmitter {
    */
   async performTrendAnalysis(
     sloId: string,
-    period?: TimeRange
+    period?: { start: Date; end: Date }
   ): Promise<SLOTrendAnalysis> {
     const slo = this.sloService.getSLO(sloId);
     if (!slo) {
@@ -653,7 +653,7 @@ export class SLOReportingService extends EventEmitter {
     const overallRisk = this.calculateOverallRisk(factors);
 
     return {
-      level: this.getRiskLevel(overallRisk),
+      level: this.getRiskLevel(overallRisk.score),
       probability: overallRisk.probability,
       impact: overallRisk.impact,
       score: overallRisk.score,

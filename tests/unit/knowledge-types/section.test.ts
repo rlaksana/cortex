@@ -74,11 +74,11 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const result = SectionSchema.safeParse(section);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('section');
-        expect(result.data.data.title).toBe('Authentication System Overview');
-        expect(result.data.data.body_md).toContain('# Authentication System');
-        expect(result.data.data.heading).toBe('Authentication Overview');
-        expect(result.data.data.citation_count).toBe(5);
+        expect(result['data.kind']).toBe('section');
+        expect(result['data.data'].title).toBe('Authentication System Overview');
+        expect(result['data.data'].body_md).toContain('# Authentication System');
+        expect(result['data.data'].heading).toBe('Authentication Overview');
+        expect(result['data.data'].citation_count).toBe(5);
       }
     });
 
@@ -99,10 +99,10 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const result = SectionSchema.safeParse(section);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toBe('API Reference');
-        expect(result.data.data.body_text).toContain('API reference');
-        expect(result.data.data.heading).toBe('API Documentation');
-        expect(result.data.data.body_md).toBeUndefined();
+        expect(result['data.data'].title).toBe('API Reference');
+        expect(result['data.data'].body_text).toContain('API reference');
+        expect(result['data.data'].heading).toBe('API Documentation');
+        expect(result['data.data'].body_md).toBeUndefined();
       }
     });
 
@@ -393,7 +393,7 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         const result = SectionSchema.safeParse(section);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.body_md).toContain(sectionData.title);
+          expect(result['data.data'].body_md).toContain(sectionData.title);
         }
       }
     });
@@ -428,7 +428,7 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         const result = SectionSchema.safeParse(section);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.body_text).toContain(sectionData.title);
+          expect(result['data.data'].body_text).toContain(sectionData.title);
         }
       }
     });
@@ -449,8 +449,8 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const result = SectionSchema.safeParse(section);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.body_md).toContain('# Dual Format');
-        expect(result.data.data.body_text).toContain('Plain text content');
+        expect(result['data.data'].body_md).toContain('# Dual Format');
+        expect(result['data.data'].body_text).toContain('Plain text content');
       }
     });
   });
@@ -507,7 +507,7 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         const result = SectionSchema.safeParse(section);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.citation_count).toBe(count);
+          expect(result['data.data'].citation_count).toBe(count);
         }
       }
     });
@@ -545,7 +545,7 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
         const result = SectionSchema.safeParse(section);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.title).toBe(sectionData.title);
+          expect(result['data.data'].title).toBe(sectionData.title);
         }
       }
     });
@@ -670,7 +670,7 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
       const result = SectionSchema.safeParse(section);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.body_text).toHaveLength(5000);
+        expect(result['data.data'].body_text).toHaveLength(5000);
       }
     });
 
@@ -723,10 +723,10 @@ describe('Section Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(section);
       expect(result.kind).toBe('section');
-      expect(result.data.citation_count).toBe(12);
+      expect(result['data.citation_count']).toBe(12);
       expect(result.tags.architecture).toBe(true);
       expect(result.source.actor).toBe('senior-architect');
-      expect(result.ttl_policy).toBe('long');
+      expect(result['ttl_policy']).toBe('long');
     });
 
     it('should handle TTL policy for sections', async () => {

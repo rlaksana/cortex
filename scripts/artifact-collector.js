@@ -33,7 +33,7 @@ const CONFIG = {
     performanceGates: 'artifacts/performance-gates',
     qualityGates: 'artifacts/quality-gates',
     alertingMonitoring: 'artifacts/alerting-monitoring',
-    logs: 'logs'
+    logs: 'logs',
   },
 
   // File patterns to collect
@@ -44,7 +44,7 @@ const CONFIG = {
     security: ['**/*.json', '**/*.html', '**/*.txt'],
     reports: ['**/*.json', '**/*.html', '**/*.md'],
     logs: ['**/*.log', '**/*.txt'],
-    artifacts: ['**/*.tar.gz', '**/*.zip']
+    artifacts: ['**/*.tar.gz', '**/*.zip'],
   },
 
   // Output configuration
@@ -55,8 +55,8 @@ const CONFIG = {
   // Artifact retention
   RETENTION: {
     days: 90,
-    maxArchives: 50
-  }
+    maxArchives: 50,
+  },
 };
 
 // Colors for console output
@@ -68,7 +68,7 @@ const COLORS = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -102,7 +102,9 @@ function getBuildMetadata() {
     try {
       gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
       gitBranch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
-      gitTag = execSync('git describe --tags --exact-match 2>/dev/null || echo "no-tag"', { encoding: 'utf8' }).trim();
+      gitTag = execSync('git describe --tags --exact-match 2>/dev/null || echo "no-tag"', {
+        encoding: 'utf8',
+      }).trim();
     } catch (error) {
       // Git commands failed, use defaults
     }
@@ -119,7 +121,7 @@ function getBuildMetadata() {
       nodeVersion: process.version,
       platform: process.platform,
       environment: process.env.NODE_ENV || 'development',
-      ci: process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+      ci: process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true',
     };
   } catch (error) {
     return {
@@ -133,7 +135,7 @@ function getBuildMetadata() {
       nodeVersion: process.version,
       platform: process.platform,
       environment: 'development',
-      ci: false
+      ci: false,
     };
   }
 }
@@ -149,7 +151,7 @@ function collectArtifacts(metadata) {
     collected: [],
     summaries: {},
     totalSize: 0,
-    totalFiles: 0
+    totalFiles: 0,
   };
 
   // Ensure output directory exists
@@ -170,13 +172,15 @@ function collectArtifacts(metadata) {
       artifacts.totalSize += categoryResult.summary.totalSize;
       artifacts.totalFiles += categoryResult.summary.fileCount;
 
-      logInfo(`  ${category}: ${categoryResult.summary.fileCount} files, ${(categoryResult.summary.totalSize / 1024 / 1024).toFixed(1)}MB`);
+      logInfo(
+        `  ${category}: ${categoryResult.summary.fileCount} files, ${(categoryResult.summary.totalSize / 1024 / 1024).toFixed(1)}MB`
+      );
     } else {
       artifacts.summaries[category] = {
         exists: false,
         fileCount: 0,
         totalSize: 0,
-        files: []
+        files: [],
       };
       logInfo(`  ${category}: Not found`);
     }
@@ -191,8 +195,8 @@ function collectArtifacts(metadata) {
       totalFiles: artifacts.totalFiles,
       totalSize: artifacts.totalSize,
       categories: Object.keys(artifacts.summaries).length,
-      collectedAt: new Date().toISOString()
-    }
+      collectedAt: new Date().toISOString(),
+    },
   };
 
   writeFileSync(join(artifactDir, 'artifact-manifest.json'), JSON.stringify(manifest, null, 2));
@@ -213,7 +217,7 @@ function collectCategoryArtifacts(category, sourceDir, targetDir) {
     exists: true,
     fileCount: 0,
     totalSize: 0,
-    files: []
+    files: [],
   };
 
   try {
@@ -221,9 +225,9 @@ function collectCategoryArtifacts(category, sourceDir, targetDir) {
     const files = execSync(`find "${sourceDir}" -type f | head -100`, { encoding: 'utf8' })
       .trim()
       .split('\n')
-      .filter(file => file.length > 0);
+      .filter((file) => file.length > 0);
 
-    files.forEach(file => {
+    files.forEach((file) => {
       try {
         const relativePath = file.replace(sourceDir + '/', '');
         const targetFile = join(categoryDir, relativePath);
@@ -242,17 +246,15 @@ function collectCategoryArtifacts(category, sourceDir, targetDir) {
           originalPath: file,
           relativePath,
           size: stats.size,
-          modified: stats.mtime.toISOString()
+          modified: stats.mtime.toISOString(),
         });
 
         summary.fileCount++;
         summary.totalSize += stats.size;
-
       } catch (error) {
         logInfo(`    Warning: Failed to copy ${file}: ${error.message}`);
       }
     });
-
   } catch (error) {
     logInfo(`  Warning: Could not list files in ${sourceDir}: ${error.message}`);
   }
@@ -261,7 +263,7 @@ function collectCategoryArtifacts(category, sourceDir, targetDir) {
     category,
     sourceDir,
     targetDir: categoryDir,
-    summary
+    summary,
   };
 }
 
@@ -286,17 +288,18 @@ function generateCollectionReport(artifacts, manifest, artifactDir) {
       totalFiles: artifacts.totalFiles,
       totalSize: artifacts.totalSize,
       avgFileSize: artifacts.totalFiles > 0 ? artifacts.totalSize / artifacts.totalFiles : 0,
-      largestCategory: Object.entries(artifacts.summaries)
-        .filter(([_, summary]) => summary.exists)
-        .sort(([_, a], [__, b]) => b.totalSize - a.totalSize)[0]?.[0] || 'none'
+      largestCategory:
+        Object.entries(artifacts.summaries)
+          .filter(([_, summary]) => summary.exists)
+          .sort(([_, a], [__, b]) => b.totalSize - a.totalSize)[0]?.[0] || 'none',
     },
     artifacts: {
       artifactId: manifest.artifactId,
       location: artifactDir,
       manifest: join(artifactDir, 'artifact-manifest.json'),
-      buildMetadata: join(artifactDir, 'build-metadata.json')
+      buildMetadata: join(artifactDir, 'build-metadata.json'),
     },
-    recommendations: generateCollectionRecommendations(artifacts)
+    recommendations: generateCollectionRecommendations(artifacts),
   };
 
   // Write JSON report
@@ -382,27 +385,43 @@ function generateHTMLCollectionReport(report) {
         </div>
 
         <div class="categories-grid">
-            ${categories.map(category => `
+            ${categories
+              .map(
+                (category) => `
             <div class="category-card ${category.summary.exists ? 'category-present' : 'category-missing'}">
                 <h3>${category.category.charAt(0).toUpperCase() + category.category.slice(1)}</h3>
-                ${category.summary.exists ? `
+                ${
+                  category.summary.exists
+                    ? `
                 <p><strong>Files:</strong> ${category.summary.fileCount}</p>
                 <p><strong>Size:</strong> ${(category.summary.totalSize / 1024 / 1024).toFixed(1)}MB</p>
-                ${category.summary.files.length > 0 ? `
+                ${
+                  category.summary.files.length > 0
+                    ? `
                 <div class="file-list">
-                    ${category.summary.files.slice(0, 10).map(file =>
-                      `<div style="padding: 2px 0; border-bottom: 1px solid #eee;">
+                    ${category.summary.files
+                      .slice(0, 10)
+                      .map(
+                        (file) =>
+                          `<div style="padding: 2px 0; border-bottom: 1px solid #eee;">
                         📄 ${file.relativePath} (${(file.size / 1024).toFixed(1)}KB)
                       </div>`
-                    ).join('')}
+                      )
+                      .join('')}
                     ${category.summary.files.length > 10 ? `<div style="text-align: center; color: #666; padding: 5px;">... and ${category.summary.files.length - 10} more files</div>` : ''}
                 </div>
-                ` : ''}
-                ` : `
+                `
+                    : ''
+                }
+                `
+                    : `
                 <p style="color: #f44336;">❌ Not found</p>
-                `}
+                `
+                }
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
 
         <div class="footer">
@@ -424,13 +443,13 @@ function generateCollectionRecommendations(artifacts) {
 
   // Check for missing critical artifacts
   const criticalCategories = ['coverage', 'testResults', 'build'];
-  criticalCategories.forEach(category => {
+  criticalCategories.forEach((category) => {
     if (!summaries[category]?.exists) {
       recommendations.push({
         priority: 'high',
         category: 'missing-artifacts',
         issue: `Critical artifact category missing: ${category}`,
-        action: `Ensure ${category} are generated before collection`
+        action: `Ensure ${category} are generated before collection`,
       });
     }
   });
@@ -442,7 +461,7 @@ function generateCollectionRecommendations(artifacts) {
         priority: 'medium',
         category: 'empty-artifacts',
         issue: `Artifact category exists but empty: ${category}`,
-        action: `Verify ${category} generation process`
+        action: `Verify ${category} generation process`,
       });
     }
   });
@@ -454,7 +473,7 @@ function generateCollectionRecommendations(artifacts) {
       priority: 'medium',
       category: 'size-optimization',
       issue: `Large artifact collection: ${totalSizeMB.toFixed(1)}MB`,
-      action: 'Consider cleaning up large files or implementing compression'
+      action: 'Consider cleaning up large files or implementing compression',
     });
   }
 
@@ -464,7 +483,7 @@ function generateCollectionRecommendations(artifacts) {
       priority: 'low',
       category: 'coverage-completeness',
       issue: 'Limited coverage artifacts detected',
-      action: 'Ensure HTML, JSON, and LCOV coverage reports are generated'
+      action: 'Ensure HTML, JSON, and LCOV coverage reports are generated',
     });
   }
 
@@ -482,10 +501,13 @@ function createArchive(artifactDir, metadata) {
 
   try {
     // Create compressed archive
-    execSync(`tar -czf "${archivePath}" -C "$(dirname "${artifactDir}")" "$(basename "${artifactDir}")"`, {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    });
+    execSync(
+      `tar -czf "${archivePath}" -C "$(dirname "${artifactDir}")" "$(basename "${artifactDir}")"`,
+      {
+        cwd: projectRoot,
+        stdio: 'pipe',
+      }
+    );
 
     const archiveSize = require('fs').statSync(archivePath).size;
     const archiveSizeMB = archiveSize / 1024 / 1024;
@@ -496,9 +518,8 @@ function createArchive(artifactDir, metadata) {
       archivePath,
       archiveName,
       size: archiveSize,
-      sizeMB: archiveSizeMB
+      sizeMB: archiveSizeMB,
     };
-
   } catch (error) {
     logError(`Failed to create archive: ${error.message}`);
     return null;
@@ -513,14 +534,17 @@ function cleanupOldArtifacts() {
 
   try {
     // Clean old archives
-    const archives = execSync(`find "${CONFIG.ARCHIVE_DIR}" -name "*.tar.gz" -type f -printf "%T@ %p\\n" | sort -n | head -n -${CONFIG.RETENTION.maxArchives}`, { encoding: 'utf8' })
+    const archives = execSync(
+      `find "${CONFIG.ARCHIVE_DIR}" -name "*.tar.gz" -type f -printf "%T@ %p\\n" | sort -n | head -n -${CONFIG.RETENTION.maxArchives}`,
+      { encoding: 'utf8' }
+    )
       .trim()
       .split('\n')
-      .filter(line => line.length > 0)
-      .map(line => line.split(' ')[1]);
+      .filter((line) => line.length > 0)
+      .map((line) => line.split(' ')[1]);
 
     if (archives.length > 0) {
-      archives.forEach(archive => {
+      archives.forEach((archive) => {
         try {
           require('fs').unlinkSync(archive);
           logInfo(`  Removed old archive: ${basename(archive)}`);
@@ -531,13 +555,16 @@ function cleanupOldArtifacts() {
     }
 
     // Clean old collected artifacts (older than retention period)
-    const oldArtifacts = execSync(`find "${CONFIG.OUTPUT_DIR}" -type d -mtime +${Math.floor(CONFIG.RETENTION.days / 7)} -printf "%p\\n"`, { encoding: 'utf8' })
+    const oldArtifacts = execSync(
+      `find "${CONFIG.OUTPUT_DIR}" -type d -mtime +${Math.floor(CONFIG.RETENTION.days / 7)} -printf "%p\\n"`,
+      { encoding: 'utf8' }
+    )
       .trim()
       .split('\n')
-      .filter(line => line.length > 0 && line !== CONFIG.OUTPUT_DIR);
+      .filter((line) => line.length > 0 && line !== CONFIG.OUTPUT_DIR);
 
     if (oldArtifacts.length > 0) {
-      oldArtifacts.forEach(artifact => {
+      oldArtifacts.forEach((artifact) => {
         try {
           execSync(`rm -rf "${artifact}"`, { stdio: 'pipe' });
           logInfo(`  Removed old artifact: ${basename(artifact)}`);
@@ -548,7 +575,6 @@ function cleanupOldArtifacts() {
     }
 
     logSuccess('Cleanup completed');
-
   } catch (error) {
     logInfo(`Cleanup warning: ${error.message}`);
   }
@@ -564,7 +590,9 @@ function main() {
 
     // Get build metadata
     const metadata = getBuildMetadata();
-    logInfo(`Collecting artifacts for: ${metadata.name} v${metadata.version} (build ${metadata.buildNumber})`);
+    logInfo(
+      `Collecting artifacts for: ${metadata.name} v${metadata.version} (build ${metadata.buildNumber})`
+    );
 
     // Collect artifacts
     const { artifacts, manifest, artifactDir } = collectArtifacts(metadata);
@@ -593,7 +621,7 @@ function main() {
 
     if (report.recommendations.length > 0) {
       logInfo('\n📋 Recommendations:');
-      report.recommendations.forEach(rec => {
+      report.recommendations.forEach((rec) => {
         logInfo(`  ${rec.category}: ${rec.issue}`);
       });
     }
@@ -601,7 +629,6 @@ function main() {
     logSuccess('\n✅ Artifact collection completed successfully');
     logInfo(`📄 Reports available in: ${CONFIG.REPORTS_DIR}`);
     logInfo(`📦 Archives available in: ${CONFIG.ARCHIVE_DIR}`);
-
   } catch (error) {
     logError(`Artifact collection failed: ${error.message}`);
     process.exit(1);

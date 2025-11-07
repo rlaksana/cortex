@@ -134,9 +134,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
       const result = schema.safeParse(config);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.type).toBe('qdrant');
-        expect(result.data.vectorSize).toBe(1536);
-        expect(result.data.distance).toBe('Cosine');
+        expect(result['data.type']).toBe('qdrant');
+        expect(result['data.vectorSize']).toBe(1536);
+        expect(result['data.distance']).toBe('Cosine');
       }
     });
 
@@ -237,9 +237,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
       const result = tableSchema.safeParse(table);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.columns).toHaveLength(4);
-        expect(result.data.indexes).toHaveLength(2);
-        expect(result.data.foreignKeys).toHaveLength(1);
+        expect(result['data.columns']).toHaveLength(4);
+        expect(result['data.indexes']).toHaveLength(2);
+        expect(result['data.foreignKeys']).toHaveLength(1);
       }
     });
 
@@ -2168,9 +2168,9 @@ describe('Database Type Schemas - Comprehensive Validation Testing', () => {
       const result = backwardCompatibleSchema.safeParse(legacyConfig);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.url).toBe('http://localhost:6333');
-        expect(result.data.vectorSize).toBe(1536);
-        expect(result.data.distance).toBe('Cosine');
+        expect(result['data.url']).toBe('http://localhost:6333');
+        expect(result['data.vectorSize']).toBe(1536);
+        expect(result['data.distance']).toBe('Cosine');
       }
     });
 

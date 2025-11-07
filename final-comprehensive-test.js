@@ -1,15 +1,15 @@
 import('./dist/services/memory-store.js')
   .then(({ memoryStore }) => {
-    import * as crypto from 'crypto';
+    import { createHash, randomUUID } from 'crypto';
 
     // Helper to generate proper SHA-256 checksum
     function generateChecksum(text) {
-      return crypto.createHash('sha256').update(text).digest('hex');
+      return createHash('sha256').update(text).digest('hex');
     }
 
     // Helper to generate UUIDs for entity references
     function generateUUID() {
-      return crypto.randomUUID();
+      return randomUUID();
     }
 
     const serviceId = generateUUID();

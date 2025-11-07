@@ -9,6 +9,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
 ### 1. Core TTL Services
 
 #### TTL Policy Service (`src/services/ttl/ttl-policy-service.ts`)
+
 - **Purpose**: Central TTL policy management and calculation engine
 - **Features**:
   - Standard TTL policies: default (30d), short (1d), long (90d), permanent (∞)
@@ -19,6 +20,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Audit logging for all policy operations
 
 #### Enhanced Expiry Utilities (`src/utils/enhanced-expiry-utils.ts`)
+
 - **Purpose**: Advanced expiry timestamp handling with timezone awareness
 - **Features**:
   - Timezone-aware expiry calculations
@@ -30,6 +32,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Cached timezone formatting for performance
 
 #### TTL Management Service (`src/services/ttl/ttl-management-service.ts`)
+
 - **Purpose**: High-level TTL operations and lifecycle management
 - **Features**:
   - Bulk TTL policy application
@@ -41,6 +44,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Dry-run capabilities for safe testing
 
 #### TTL Safety Service (`src/services/ttl/ttl-safety-service.ts`)
+
 - **Purpose**: Data loss prevention and safety validation
 - **Features**:
   - Multi-layer safety validation
@@ -54,6 +58,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
 ### 2. Database Integration
 
 #### Enhanced Qdrant Adapter (`src/db/adapters/qdrant-adapter.ts`)
+
 - **Updates**:
   - Enhanced TTL filtering support
   - Automatic exclusion of expired items from search results
@@ -65,6 +70,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
 ### 3. Configuration and Constants
 
 #### TTL Time Mappings (`src/constants/expiry-times.ts`)
+
 - **Standard Policies**:
   - `default`: 30 days (2,592,000,000 ms)
   - `short`: 1 day (86,400,000 ms)
@@ -72,18 +78,20 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - `permanent`: Infinity (9999-12-31T23:59:59.999Z)
 
 #### Environment Configuration (`src/config/environment.ts`)
+
 - **TTL Configuration Variables**:
   - `TTL_DEFAULT_DAYS`: Default TTL in days (default: 30)
   - `TTL_SHORT_DAYS`: Short TTL in days (default: 1)
   - `TTL_LONG_DAYS`: Long TTL in days (default: 90)
   - `TTL_WORKER_ENABLED`: Enable expiry worker (default: true)
-  - `TTL_WORKER_SCHEDULE`: Cleanup schedule (default: "0 2 * * *")
+  - `TTL_WORKER_SCHEDULE`: Cleanup schedule (default: "0 2 \* \* \*")
   - `TTL_WORKER_BATCH_SIZE`: Cleanup batch size (default: 100)
   - `TTL_WORKER_MAX_BATCHES`: Maximum cleanup batches (default: 50)
 
 ### 4. Integration Points
 
 #### Memory Store Orchestrator (`src/services/orchestrators/memory-store-orchestrator.ts`)
+
 - **Integration**: Replaced basic expiry calculation with comprehensive TTL policy service
 - **Benefits**:
   - Automatic business rule TTL application
@@ -91,6 +99,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Support for custom TTL policies
 
 #### Existing Expiry Worker (`src/services/expiry-worker.ts`)
+
 - **Compatibility**: Enhanced to work with new TTL filtering capabilities
 - **Improvements**: Better integration with Qdrant adapter's enhanced filtering
 
@@ -98,24 +107,24 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
 
 ### Automatic TTL Assignment by Knowledge Type
 
-| Knowledge Type | TTL Policy | Duration | Rationale |
-|----------------|------------|----------|-----------|
-| `incident` | `incident_permanent` | Permanent | Compliance requirements for incident logs |
-| `risk` | `risk_long` | 365 days | Long-term audit trail for risk assessments |
-| `decision` | `decision_long` | 180 days | Extended retention for decision logs |
-| `session` | `session_short` | 7 days | Privacy compliance for session data |
-| `entity` | `default` | 30 days | Standard retention for general entities |
-| `relation` | `default` | 30 days | Standard retention for relationships |
-| `observation` | `default` | 30 days | Standard retention for observations |
-| `todo` | `default` | 30 days | Standard retention for tasks |
-| `runbook` | `long` | 90 days | Extended retention for procedures |
-| `release_note` | `default` | 30 days | Standard retention for release notes |
-| `ddl` | `long` | 90 days | Extended retention for schema changes |
-| `pr_context` | `default` | 30 days | Standard retention for PR metadata |
-| `change` | `default` | 30 days | Standard retention for change records |
-| `issue` | `default` | 30 days | Standard retention for issue tracking |
-| `assumption` | `default` | 30 days | Standard retention for assumptions |
-| `section` | `default` | 30 days | Standard retention for documentation |
+| Knowledge Type | TTL Policy           | Duration  | Rationale                                  |
+| -------------- | -------------------- | --------- | ------------------------------------------ |
+| `incident`     | `incident_permanent` | Permanent | Compliance requirements for incident logs  |
+| `risk`         | `risk_long`          | 365 days  | Long-term audit trail for risk assessments |
+| `decision`     | `decision_long`      | 180 days  | Extended retention for decision logs       |
+| `session`      | `session_short`      | 7 days    | Privacy compliance for session data        |
+| `entity`       | `default`            | 30 days   | Standard retention for general entities    |
+| `relation`     | `default`            | 30 days   | Standard retention for relationships       |
+| `observation`  | `default`            | 30 days   | Standard retention for observations        |
+| `todo`         | `default`            | 30 days   | Standard retention for tasks               |
+| `runbook`      | `long`               | 90 days   | Extended retention for procedures          |
+| `release_note` | `default`            | 30 days   | Standard retention for release notes       |
+| `ddl`          | `long`               | 90 days   | Extended retention for schema changes      |
+| `pr_context`   | `default`            | 30 days   | Standard retention for PR metadata         |
+| `change`       | `default`            | 30 days   | Standard retention for change records      |
+| `issue`        | `default`            | 30 days   | Standard retention for issue tracking      |
+| `assumption`   | `default`            | 30 days   | Standard retention for assumptions         |
+| `section`      | `default`            | 30 days   | Standard retention for documentation       |
 
 ## Safety Mechanisms
 
@@ -145,6 +154,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
 ## Testing Coverage
 
 ### Unit Tests (`src/utils/__tests__/enhanced-expiry-utils.test.ts`)
+
 - **Coverage**: 95%+ of enhanced expiry utilities
 - **Test Categories**:
   - Expiry calculation with various options
@@ -155,6 +165,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Error scenarios and edge cases
 
 ### Integration Tests (`src/services/ttl/__tests__/ttl-integration.test.ts`)
+
 - **Coverage**: End-to-end TTL system workflows
 - **Test Categories**:
   - TTL Policy Service functionality
@@ -165,6 +176,7 @@ This document provides a comprehensive summary of the TTL (Time-To-Live) policy 
   - Performance and scalability testing
 
 ### Performance Benchmarks
+
 - **Large Batch Operations**: 1000+ items processed within 5 seconds
 - **Safety Validation**: 5000+ items validated within 2 seconds
 - **Memory Usage**: Efficient memory management with proper cleanup
@@ -182,12 +194,12 @@ const item = {
   id: 'item-1',
   kind: 'entity',
   scope: { org: 'my-org', project: 'my-project' },
-  data: { name: 'Test Item' }
+  data: { name: 'Test Item' },
 };
 
 const result = ttlPolicyService.calculateExpiry(item, {
   applyBusinessRules: true,
-  enableValidation: true
+  enableValidation: true,
 });
 
 console.log(result.expiryAt); // ISO timestamp
@@ -202,13 +214,17 @@ import { createTTLManagementService } from './src/services/ttl/index.js';
 const ttlService = createTTLManagementService(database);
 
 // Apply TTL policies to bulk items
-const result = await ttlService.applyTTLPolicy(items, {
-  forcePolicy: 'short'
-}, {
-  dryRun: true,
-  batchSize: 100,
-  generateAudit: true
-});
+const result = await ttlService.applyTTLPolicy(
+  items,
+  {
+    forcePolicy: 'short',
+  },
+  {
+    dryRun: true,
+    batchSize: 100,
+    generateAudit: true,
+  }
+);
 
 console.log(`${result.updated} items processed`);
 ```
@@ -218,15 +234,12 @@ console.log(`${result.updated} items processed`);
 ```typescript
 import { ttlSafetyService } from './src/services/ttl/index.js';
 
-const validation = await ttlSafetyService.validateTTLOperation(
-  items,
-  {
-    operationType: 'apply_policy',
-    itemCount: items.length,
-    affectedScopes: ['my-project'],
-    operationDetails: { policy: 'short' }
-  }
-);
+const validation = await ttlSafetyService.validateTTLOperation(items, {
+  operationType: 'apply_policy',
+  itemCount: items.length,
+  affectedScopes: ['my-project'],
+  operationDetails: { policy: 'short' },
+});
 
 if (!validation.isSafe) {
   console.log('Safety validation failed:', validation.errors);
@@ -274,13 +287,14 @@ const safetyConfig = {
   enableDryRunByDefault: true,
   requireApprovalForPermanentChanges: true,
   minimumGracePeriodHours: 24,
-  enableRollback: true
+  enableRollback: true,
 };
 ```
 
 ## Monitoring and Observability
 
 ### Key Metrics
+
 - **TTL Application Rate**: Number of items with TTL applied per hour
 - **Expiry Cleanup Rate**: Number of expired items cleaned up per day
 - **Policy Violation Rate**: Number of TTL policy violations detected
@@ -288,6 +302,7 @@ const safetyConfig = {
 - **Rollback Operations**: Number of rollback operations performed
 
 ### Log Examples
+
 ```
 [INFO] TTL policy applied: item-123, policy: default, expiry: 2025-02-01T12:00:00.000Z
 [WARN] Safety validation warning: 5 items expire within 24 hours
@@ -298,12 +313,14 @@ const safetyConfig = {
 ## Migration and Compatibility
 
 ### Backward Compatibility
+
 - Existing `expiry_at` timestamps continue to work
 - Legacy TTL calculations remain functional
 - Gradual migration path available
 - Zero-downtime deployment supported
 
 ### Migration Steps
+
 1. **Deploy TTL Services**: New services can be deployed alongside existing system
 2. **Configure Safety Policies**: Set appropriate safety thresholds
 3. **Enable Business Rules**: Activate knowledge type-specific TTL policies
@@ -313,6 +330,7 @@ const safetyConfig = {
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Machine Learning TTL Optimization**: AI-powered TTL policy optimization
 2. **Dynamic TTL Adjustment**: Automatic TTL adjustment based on usage patterns
 3. **Cross-Region TTL**: Support for multi-region TTL synchronization
@@ -320,6 +338,7 @@ const safetyConfig = {
 5. **Policy Templates**: Reusable TTL policy templates for different industries
 
 ### Extension Points
+
 - Custom TTL policy plugins
 - Additional safety validation rules
 - Custom timezone configurations
@@ -331,6 +350,7 @@ const safetyConfig = {
 The TTL policy system implementation provides a comprehensive, enterprise-grade solution for managing knowledge item expiry in Cortex Memory. The system balances powerful functionality with robust safety mechanisms, ensuring data protection while enabling flexible TTL management.
 
 ### Key Achievements
+
 - ✅ **Comprehensive TTL Policy System**: Complete policy management with business rules
 - ✅ **Advanced Expiry Handling**: Timezone-aware calculations with validation
 - ✅ **Enterprise Safety Mechanisms**: Multi-layer data loss prevention
@@ -340,6 +360,7 @@ The TTL policy system implementation provides a comprehensive, enterprise-grade 
 - ✅ **Backward Compatibility**: Seamless integration with existing systems
 
 ### Production Readiness
+
 - **Security**: Comprehensive validation and safety mechanisms
 - **Reliability**: Error handling, recovery, and rollback capabilities
 - **Performance**: Optimized for large-scale operations

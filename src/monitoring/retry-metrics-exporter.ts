@@ -11,7 +11,7 @@
 
 import { EventEmitter } from 'events';
 import { createWriteStream, WriteStream } from 'fs';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   retryBudgetMonitor,
   type RetryBudgetMetrics,

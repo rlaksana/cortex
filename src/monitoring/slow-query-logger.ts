@@ -9,7 +9,7 @@
  * - Query pattern analysis for optimization opportunities
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { OperationType } from './operation-types.js';
 import { performanceCollector } from './performance-collector.js';
 import { EventEmitter } from 'events';

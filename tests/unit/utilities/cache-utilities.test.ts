@@ -835,7 +835,7 @@ describe('Service Integration Patterns', () => {
       // First API call
       const response1 = await apiWithCache(endpoint, mockApiCall, apiCache);
       expect(mockApiCall).toHaveBeenCalledTimes(1);
-      expect(response1.data.result).toBe('success');
+      expect(response1['data.result']).toBe('success');
 
       // Second call within TTL - should use cache
       const response2 = await apiWithCache(endpoint, mockApiCall, apiCache);

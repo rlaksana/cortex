@@ -831,7 +831,7 @@ describe('API Type Validation', () => {
         },
       };
 
-      expect(response.data.id).toBe('123');
+      expect(response['data.id']).toBe('123');
       expect(response.status).toBe(200);
       expect(response.statusText).toBe('OK');
       expect(response.headers['x-request-id']).toBe('req-123');

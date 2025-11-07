@@ -17,7 +17,7 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Environment } from '../../config/environment.js';
 import { QdrantAdapter } from '../adapters/qdrant-adapter.js';
 import {

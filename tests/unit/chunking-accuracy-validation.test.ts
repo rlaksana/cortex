@@ -6,14 +6,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import { KnowledgeItem } from '../../src/types/core-interfaces.js';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
 import {
   getDocumentWithChunks,
   verifyDocumentReassembly,
-  type DocumentWithChunks
+  type DocumentWithChunks,
 } from '../../src/services/document-reassembly.js';
 
 describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
@@ -31,7 +31,7 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
 
     chunkingService = new ChunkingService(
       1200, // maxCharsPerChunk
-      200,  // overlapSize
+      200, // overlapSize
       embeddingService as any
     );
   });
@@ -55,7 +55,7 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
 
     // Semantic similarity (weighted by importance)
     // For testing purposes, we use a weighted average
-    return (charSimilarity * 0.2) + (wordSimilarity * 0.4) + (sequenceSimilarity * 0.4);
+    return charSimilarity * 0.2 + wordSimilarity * 0.4 + sequenceSimilarity * 0.4;
   }
 
   function calculateCharSimilarity(text1: string, text2: string): number {
@@ -69,13 +69,19 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
   }
 
   function calculateWordSimilarity(text1: string, text2: string): number {
-    const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-    const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const words1 = text1
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+    const words2 = text2
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
 
     const set1 = new Set(words1);
     const set2 = new Set(words2);
 
-    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const intersection = new Set([...set1].filter((x) => set2.has(x)));
     const union = new Set([...set1, ...set2]);
 
     return intersection.size / union.size;
@@ -84,7 +90,10 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
   function calculateSequenceSimilarity(text1: string, text2: string, n: number = 3): number {
     function getNGrams(text: string, n: number): Set<string> {
       const ngrams = new Set<string>();
-      const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+      const words = text
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 0);
 
       for (let i = 0; i <= words.length - n; i++) {
         ngrams.add(words.slice(i, i + n).join(' '));
@@ -96,7 +105,7 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
     const ngrams1 = getNGrams(text1, n);
     const ngrams2 = getNGrams(text2, n);
 
-    const intersection = new Set([...ngrams1].filter(x => ngrams2.has(x)));
+    const intersection = new Set([...ngrams1].filter((x) => ngrams2.has(x)));
     const union = new Set([...ngrams1, ...ngrams2]);
 
     return union.size > 0 ? intersection.size / union.size : 1.0;
@@ -120,8 +129,8 @@ describe('Chunking Accuracy Validation - ≥99.5% Requirement', () => {
         } else {
           matrix[i][j] = Math.min(
             matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
+            matrix[i][j - 1] + 1, // insertion
+            matrix[i - 1][j] + 1 // deletion
           );
         }
       }
@@ -351,7 +360,7 @@ Our system achieves the following performance metrics:
 - Dedicated R&D time for engineers
 - Collaboration with academic institutions
 - Industry conference participation
-- Internal tech talks and knowledge sharing`
+- Internal tech talks and knowledge sharing`,
     ];
 
     // Repeat sections to reach desired size
@@ -469,7 +478,7 @@ class ProcessingResult:
 class AsyncDataProcessor:
     def __init__(self, max_concurrent: int = 10):
         self.max_concurrent = max_concurrent
-        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.semaphore = asyncio['S']emaphore(max_concurrent)
         self.logger = logging.getLogger(__name__)
 
     async def process_batch(self, items: List[Dict[str, Any]]) -> List[ProcessingResult]:
@@ -801,7 +810,7 @@ Testing Unicode support: 🚀 🎯 ✅ ❌ 💡 📊 📈 💻 🌍
 
 ## Extreme Lengths
 
-${'This is a very long paragraph that tests the chunking system\'s ability to handle extreme content lengths. '.repeat(1000)}
+${"This is a very long paragraph that tests the chunking system's ability to handle extreme content lengths. ".repeat(1000)}
 
 ## Mixed Formats
 
@@ -847,7 +856,7 @@ This document tests various edge cases for the chunking system.
         scope: {
           project: 'chunking-accuracy-test',
           branch: 'main',
-          org: 'test-organization'
+          org: 'test-organization',
         },
         data: {
           content: largeContent,
@@ -855,15 +864,15 @@ This document tests various edge cases for the chunking system.
           category: 'technical-documentation',
           author: 'test-team',
           complexity: 'high',
-          expected_chunks: Math.ceil(largeContent.length / 1200)
+          expected_chunks: Math.ceil(largeContent.length / 1200),
         },
         metadata: {
           version: '1.0.0',
           test_type: 'accuracy-validation',
-          content_hash: createHash('sha256').update(largeContent).digest('hex')
+          content_hash: createHash('sha256').update(largeContent).digest('hex'),
         },
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
 
       // Apply chunking
@@ -874,19 +883,19 @@ This document tests various edge cases for the chunking system.
       // Verify chunking results
       expect(chunkedItems.length).toBeGreaterThan(2);
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       expect(parentItem).toBeDefined();
       expect(childChunks.length).toBeGreaterThan(1);
-      expect(parentItem?.data.total_chunks).toBe(childChunks.length);
+      expect(parentItem?.data['total_chunks']).toBe(childChunks.length);
 
       // Test document reassembly
       const reassemblyStartTime = Date.now();
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id, {
         include_metadata: true,
         preserve_chunk_markers: false,
-        sort_by_position: true
+        sort_by_position: true,
       });
       const reassemblyTime = Date.now() - reassemblyStartTime;
 
@@ -947,25 +956,25 @@ This document tests various edge cases for the chunking system.
         scope: {
           project: 'mixed-content-test',
           branch: 'main',
-          org: 'test-organization'
+          org: 'test-organization',
         },
         data: {
           content: mixedContent,
           title: 'Mixed Content Document',
           category: 'comprehensive-documentation',
           author: 'test-team',
-          content_types: ['code', 'tables', 'formulas', 'config']
+          content_types: ['code', 'tables', 'formulas', 'config'],
         },
         metadata: {
           version: '1.0.0',
-          test_type: 'mixed-content-validation'
-        }
+          test_type: 'mixed-content-validation',
+        },
       };
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Test reassembly
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
@@ -988,7 +997,7 @@ This document tests various edge cases for the chunking system.
       expect(reassembledContent).toContain('16GB');
 
       // Verify configuration files
-      expect(reassembledContent).toContain('version: \'3.8\'');
+      expect(reassembledContent).toContain("version: '3.8'");
       expect(reassembledContent).toContain('POSTGRES_DB: myapp');
       expect(reassembledContent).toContain('apiVersion: apps/v1');
 
@@ -1017,20 +1026,20 @@ This document tests various edge cases for the chunking system.
         kind: 'section',
         scope: {
           project: 'short-content-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: shortContent,
-          title: 'Short Content Test'
-        }
+          title: 'Short Content Test',
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
 
       // Should not be chunked
       expect(chunkedItems).toHaveLength(1);
-      expect(chunkedItems[0].data.is_chunk).toBe(false);
-      expect(chunkedItems[0].data.total_chunks).toBe(1);
+      expect(chunkedItems[0].data['is_chunk']).toBe(false);
+      expect(chunkedItems[0].data['total_chunks']).toBe(1);
       expect(chunkedItems[0].data.content).toBe(shortContent);
 
       console.log(`Short Content Test Results:`);
@@ -1047,18 +1056,18 @@ This document tests various edge cases for the chunking system.
         kind: 'incident',
         scope: {
           project: 'edge-case-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: edgeCaseContent,
           title: 'Edge Case Document',
-          test_type: 'edge_cases'
-        }
+          test_type: 'edge_cases',
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
       const reassembledContent = reassembledDoc!.reassembled_content;
@@ -1100,12 +1109,12 @@ This document tests various edge cases for the chunking system.
         kind: 'section',
         scope: {
           project: 'performance-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: veryLargeContent,
-          title: 'Very Large Document Performance Test'
-        }
+          title: 'Very Large Document Performance Test',
+        },
       };
 
       // Measure chunking performance
@@ -1116,19 +1125,19 @@ This document tests various edge cases for the chunking system.
       // Performance assertions
       expect(chunkingTime).toBeLessThan(10000); // Should complete within 10 seconds
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Verify chunk distribution
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
       const minChunkSize = Math.min(...chunkSizes);
       const maxChunkSize = Math.max(...chunkSizes);
 
       expect(avgChunkSize).toBeGreaterThan(800); // Reasonable chunk size
-      expect(avgChunkSize).toBeLessThan(1500);  // Not too large
+      expect(avgChunkSize).toBeLessThan(1500); // Not too large
       expect(minChunkSize).toBeGreaterThan(50); // No extremely small chunks
-      expect(maxChunkSize).toBeLessThan(2500);  // No extremely large chunks
+      expect(maxChunkSize).toBeLessThan(2500); // No extremely large chunks
 
       // Test reassembly performance
       const reassemblyStartTime = Date.now();
@@ -1160,18 +1169,18 @@ This document tests various edge cases for the chunking system.
         kind: 'section' as const,
         scope: {
           project: 'concurrent-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: generateLargeTechnicalDocument(12000),
-          title: `Concurrent Test Document ${i + 1}`
-        }
+          title: `Concurrent Test Document ${i + 1}`,
+        },
       }));
 
       // Process all documents concurrently
       const startTime = Date.now();
       const results = await Promise.all(
-        documents.map(doc => chunkingService.processItemsForStorage([doc]))
+        documents.map((doc) => chunkingService.processItemsForStorage([doc]))
       );
       const totalTime = Date.now() - startTime;
 
@@ -1182,13 +1191,15 @@ This document tests various edge cases for the chunking system.
       for (let index = 0; index < results.length; index++) {
         const chunkedItems = results[index];
         expect(chunkedItems.length).toBeGreaterThan(1);
-        const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-        const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+        const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+        const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
         expect(childChunks.length).toBeGreaterThan(1);
 
         const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
         const normalizedOriginal = documents[index].data.content.replace(/\s+/g, ' ').trim();
-        const normalizedReassembled = reassembledDoc!.reassembled_content.replace(/\s+/g, ' ').trim();
+        const normalizedReassembled = reassembledDoc!.reassembled_content
+          .replace(/\s+/g, ' ')
+          .trim();
         const similarityRatio = calculateTextSimilarity(normalizedOriginal, normalizedReassembled);
         expect(similarityRatio).toBeGreaterThanOrEqual(0.995);
       }
@@ -1196,7 +1207,7 @@ This document tests various edge cases for the chunking system.
       // Performance should be reasonable (concurrent processing should be faster than sequential)
       expect(totalTime).toBeLessThan(20000); // Should complete within 20 seconds
 
-      const totalCharacters = documents.reduce((sum, doc) => sum + doc.data.content.length, 0);
+      const totalCharacters = documents.reduce((sum, doc) => sum + doc['data.content'].length, 0);
       const throughput = totalCharacters / (totalTime / 1000); // characters per second
 
       console.log(`Concurrent Processing Test Results:`);
@@ -1217,21 +1228,22 @@ This document tests various edge cases for the chunking system.
         kind: 'section',
         scope: {
           project: 'chunk-quality-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: content,
-          title: 'Chunk Size Consistency Test'
-        }
+          title: 'Chunk Size Consistency Test',
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Analyze chunk size distribution
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
-      const variance = chunkSizes.reduce((sum, size) => sum + Math.pow(size - avgSize, 2), 0) / chunkSizes.length;
+      const variance =
+        chunkSizes.reduce((sum, size) => sum + Math.pow(size - avgSize, 2), 0) / chunkSizes.length;
       const stdDev = Math.sqrt(variance);
       const minSize = Math.min(...chunkSizes);
       const maxSize = Math.max(...chunkSizes);
@@ -1331,18 +1343,18 @@ ${'Extended research content, detailed technical explanations, mathematical deri
         kind: 'section',
         scope: {
           project: 'semantic-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: structuredContent,
           title: 'Quantum Computing Research Paper',
           document_type: 'research_paper',
-          has_structured_sections: true
-        }
+          has_structured_sections: true,
+        },
       };
 
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
       const reassembledDoc = await getDocumentWithChunks(chunkedItems[0].id);
       const reassembledContent = reassembledDoc!.reassembled_content;
 
@@ -1360,15 +1372,17 @@ ${'Extended research content, detailed technical explanations, mathematical deri
         '### 3.3 Financial Modeling',
         '## 4. Current Challenges',
         '## 5. Future Outlook',
-        '## 6. Conclusion'
+        '## 6. Conclusion',
       ];
 
-      expectedSections.forEach(section => {
+      expectedSections.forEach((section) => {
         expect(reassembledContent).toContain(section);
       });
 
       // Verify mathematical formulas are preserved
-      expect(reassembledContent).toContain('$|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle$');
+      expect(reassembledContent).toContain(
+        '$|\\psi\\rangle = \\alpha|0\\rangle + \\beta|1\\rangle$'
+      );
       expect(reassembledContent).toContain('$|\\alpha|^2 + |\\beta|^2 = 1$');
 
       // Calculate accuracy
@@ -1379,9 +1393,9 @@ ${'Extended research content, detailed technical explanations, mathematical deri
       expect(similarityRatio).toBeGreaterThanOrEqual(0.995);
 
       // Verify that chunks respect semantic boundaries where possible
-      const chunksWithBoundaries = childChunks.filter(chunk => {
-        const content = chunk.data.content;
-        return expectedSections.some(section => content.includes(section));
+      const chunksWithBoundaries = childChunks.filter((chunk) => {
+        const content = chunk['data.content'];
+        return expectedSections.some((section) => content.includes(section));
       });
 
       // Most chunks should contain some section markers
@@ -1432,13 +1446,13 @@ ${'x'.repeat(10000)}  // Very long word
         kind: 'incident',
         scope: {
           project: 'error-handling-test',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: malformedContent,
           title: 'Malformed Content Test',
-          test_type: 'error_resilience'
-        }
+          test_type: 'error_resilience',
+        },
       };
 
       // Should not throw errors
@@ -1446,8 +1460,8 @@ ${'x'.repeat(10000)}  // Very long word
 
       expect(chunkedItems.length).toBeGreaterThan(0);
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       if (childChunks.length > 0) {
         // Test reassembly

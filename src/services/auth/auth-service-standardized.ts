@@ -15,8 +15,8 @@
 
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import * as crypto from 'crypto';
+import { logger } from '@/utils/logger.js';
 import type { DatabaseManager } from '../../db/database-manager.js';
 import {
   ConfigurationError,

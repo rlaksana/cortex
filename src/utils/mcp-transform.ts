@@ -5,7 +5,7 @@
  * Handles the conversion between {content, metadata} and {data} fields
  */
 
-import * as crypto from 'node:crypto';
+import * as crypto from 'crypto';
 
 // Define KnowledgeItem interface to match index.ts requirements
 interface KnowledgeItem {

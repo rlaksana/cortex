@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { retryBudgetMonitor, type RetryBudgetConfig } from './retry-budget-monitor.js';
 import { retryMetricsExporter } from './retry-metrics-exporter.js';
 import { enhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';

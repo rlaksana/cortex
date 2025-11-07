@@ -17,7 +17,7 @@
  * @module utils/idempotency-manager
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import { createHash } from 'crypto';
 

@@ -6,7 +6,7 @@
  * then reassemble them in the correct order with proper metadata.
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { memoryFind } from './memory-find.js';
 import type { KnowledgeItem } from '../types/core-interfaces.js';
 import {
@@ -572,7 +572,7 @@ export async function verifyDocumentReassembly(docId: string): Promise<{
     const parentMetadata = result.parent.metadata?.chunking_info;
     if (parentMetadata?.original_content_hash) {
       const combinedContent = result.reassembled_content;
-      const { createHash } = await import('node:crypto');
+      const { createHash } = await import('crypto');
       const recomputedHash = createHash('sha256').update(combinedContent).digest('hex');
 
       // ENHANCED: More precise hash verification with normalization
@@ -655,7 +655,7 @@ export async function verifyDocumentReassembly(docId: string): Promise<{
  */
 async function verifyChunkHashes(chunks: KnowledgeItem[]): Promise<boolean> {
   try {
-    const { createHash } = await import('node:crypto');
+    const { createHash } = await import('crypto');
 
     for (const chunk of chunks) {
       if (chunk.data?.content && chunk.data?.chunk_hash) {
@@ -691,7 +691,7 @@ function verifyReassemblyKeys(chunks: KnowledgeItem[]): Promise<boolean> {
   try {
     for (const chunk of chunks) {
       if (chunk.data?.reassembly_key && chunk.data?.chunk_hash && chunk.data?.parent_id) {
-        const { createHash } = require('node:crypto');
+        const { createHash } = require('crypto');
         const expectedKey = chunk.data.reassembly_key;
         const keyData = `${chunk.data.parent_id}:${chunk.data.chunk_index}:${chunk.data.chunk_hash}`;
         const actualKey = createHash('sha256').update(keyData).digest('hex').substring(0, 16);

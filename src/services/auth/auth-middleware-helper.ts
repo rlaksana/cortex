@@ -7,7 +7,7 @@ import { AuthService } from './auth-service.js';
 import { AuthorizationService } from './authorization-service.js';
 // import { AuditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import { AuthContext, AuthScope, UserRole } from '../../types/auth-types.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface MCPAuthContext {
   user: {

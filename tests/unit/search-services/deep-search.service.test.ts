@@ -562,7 +562,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
           results.forEach((result) => {
             expect(result.metadata).toBeDefined();
             if (result.metadata?.created_at) {
-              const createdAt = new Date(result.metadata.created_at);
+              const createdAt = new Date(result.metadata['created_at']);
               expect(isValidDate(createdAt)).toBe(true);
             }
           });
@@ -654,8 +654,8 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
       // Results should include graph context
       const graphEnhancedResult = results.find((r) => r.metadata?.graphContext);
       if (graphEnhancedResult) {
-        expect(graphEnhancedResult.metadata.graphContext).toHaveProperty('nodes');
-        expect(graphEnhancedResult.metadata.graphContext).toHaveProperty('edges');
+        expect(graphEnhancedResult.metadata['graphContext']).toHaveProperty('nodes');
+        expect(graphEnhancedResult.metadata['graphContext']).toHaveProperty('edges');
       }
     });
 
@@ -719,7 +719,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         expect(result.metadata?.domain).toBeDefined();
 
         if (result.metadata?.relatedEntities) {
-          expect(Array.isArray(result.metadata.relatedEntities)).toBe(true);
+          expect(Array.isArray(result.metadata['relatedEntities'])).toBe(true);
         }
       });
     });
@@ -1647,7 +1647,7 @@ describe('Deep Search Service - Comprehensive Advanced Search Functionality', ()
         expect(result.metadata).toBeDefined();
         expect(result.metadata?.created_at).toBeTruthy();
 
-        const createdAt = new Date(result.metadata.created_at);
+        const createdAt = new Date(result.metadata['created_at']);
         const ageInDays = (currentDate.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
         // Temporal boost should be reflected in final score

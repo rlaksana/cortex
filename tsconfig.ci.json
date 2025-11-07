@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "composite": false,
+    "moduleResolution": "bundler",
+    "customConditions": ["node", "import", "default"]
+  },
+  "include": [
+    "src/index.ts",
+    "src/silent-mcp-entry.ts",
+    "src/monitoring/observability-dashboards.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/test/**"
+  ]
+}

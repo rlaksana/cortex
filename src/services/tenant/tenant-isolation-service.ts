@@ -19,7 +19,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { systemMetricsService } from '../metrics/system-metrics.js';
 import type { IVectorAdapter } from '../../db/interfaces/vector-adapter.interface.js';
 
@@ -622,8 +622,8 @@ export class TenantCircuitBreaker {
       state: this.getState(tenantId),
       failure_count: this.failureCounts.get(tenantId) || 0,
       success_count: this.successCounts.get(tenantId) || 0,
-      last_failure_time: this.lastFailureTimes.get(tenantId)?.toISOString(),
-      last_success_time: this.lastSuccessTimes.get(tenantId)?.toISOString(),
+      last_failure_time: new Date(this.lastFailureTimes.get(tenantId) || 0).toISOString(),
+      last_success_time: new Date(this.lastSuccessTimes.get(tenantId) || 0).toISOString(),
     };
   }
 
@@ -1528,7 +1528,7 @@ export class TenantMonitoringService extends EventEmitter {
       logger.info('Alert resolved', {
         alert_id: alertId,
         resolved_by: resolvedBy,
-        resolution_notes,
+        resolution_notes: resolutionNotes,
       });
 
       return true;
@@ -1564,6 +1564,7 @@ export class TenantIsolationService extends EventEmitter {
   private resourceManager: ResourceAllocationManager;
   private monitoringService: TenantMonitoringService;
   private loadTestFramework: MultiTenantLoadTestFramework;
+  private monitoringIntervals = new Map<string, NodeJS.Timeout>();
 
   constructor(vectorAdapter: IVectorAdapter) {
     super();
@@ -1726,7 +1727,7 @@ export class TenantIsolationService extends EventEmitter {
       network_bandwidth_mbps: Math.random() * 1,
     });
 
-    this.emit('request_success', { tenant_id: tenantId, response_time_ms });
+    this.emit('request_success', { tenant_id: tenantId, response_time_ms: responseTimeMs });
   }
 
   /**

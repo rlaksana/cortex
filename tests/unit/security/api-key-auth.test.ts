@@ -114,7 +114,7 @@ describe('ApiKeyService', () => {
       username: 'testuser',
       email: 'test@example.com',
       password_hash: 'hashedpassword',
-      role: UserRole._USER,
+      role: UserRole['_USER'],
       is_active: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -133,7 +133,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const request = {
         name: 'Test API Key',
-        scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE],
+        scopes: [AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']],
         description: 'Test key for unit testing',
       };
 
@@ -145,7 +145,7 @@ describe('ApiKeyService', () => {
       expect(result.api_key).toMatch(/^ck_/);
       expect(result.key_info).toBeDefined();
       expect(result.key_info.name).toBe('Test API Key');
-      expect(result.key_info.scopes).toEqual([AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE]);
+      expect(result.key_info.scopes).toEqual([AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']]);
       expect(result.key_info.is_active).toBe(true);
       expect(mockAuthService.generateApiKey).toHaveBeenCalled();
       expect(mockAuthService.hashApiKey).toHaveBeenCalled();
@@ -161,7 +161,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const request = {
         name: 'Expiring Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       };
 
@@ -174,10 +174,10 @@ describe('ApiKeyService', () => {
 
     test('should reject API key creation with unauthorized scopes', async () => {
       // Arrange
-      mockAuthService.getUserMaxScopes.mockReturnValue([AuthScope._MEMORY_READ]);
+      mockAuthService.getUserMaxScopes.mockReturnValue([AuthScope['_MEMORY_READ']]);
       const request = {
         name: 'Unauthorized Key',
-        scopes: [AuthScope._MEMORY_READ, AuthScope._SYSTEM_MANAGE], // User can't have SYSTEM_MANAGE
+        scopes: [AuthScope['_MEMORY_READ'], AuthScope['_SYSTEM_MANAGE']], // User can't have SYSTEM_MANAGE
       };
 
       // Act & Assert
@@ -190,7 +190,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const request = {
         name: 'Context Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       };
       const context = {
         ip_address: '192.168.1.100',
@@ -220,7 +220,7 @@ describe('ApiKeyService', () => {
       // First create an API key
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Test Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act
@@ -230,7 +230,7 @@ describe('ApiKeyService', () => {
       expect(result.valid).toBe(true);
       expect(result.api_key).toBeDefined();
       expect(result.user).toBeDefined();
-      expect(result.scopes).toEqual([AuthScope._MEMORY_READ]);
+      expect(result.scopes).toEqual([AuthScope['_MEMORY_READ']]);
       expect(mockAuditService.logSecurityAuditEvent).toHaveBeenCalledWith(
         expect.objectContaining({
           event_type: 'auth_success',
@@ -265,7 +265,7 @@ describe('ApiKeyService', () => {
       // Create and then revoke an API key
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Test Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       await apiKeyService.revokeApiKey(testUser, createResult.key_info.key_id);
 
@@ -285,7 +285,7 @@ describe('ApiKeyService', () => {
       // Create expired API key by directly manipulating the internal storage
       await apiKeyService.createApiKey(testUser, {
         name: 'Expired Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         expires_at: expiredDate,
       });
 
@@ -302,7 +302,7 @@ describe('ApiKeyService', () => {
       const apiKey = 'ck_test_1234567890123456789012abcdef';
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Test Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Get initial last_used (should be undefined)
@@ -336,11 +336,11 @@ describe('ApiKeyService', () => {
       // Arrange
       await apiKeyService.createApiKey(testUser, {
         name: 'Key 1',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       await apiKeyService.createApiKey(testUser, {
         name: 'Key 2',
-        scopes: [AuthScope._MEMORY_WRITE],
+        scopes: [AuthScope['_MEMORY_WRITE']],
       });
 
       // Act
@@ -356,7 +356,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Specific Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act
@@ -365,7 +365,7 @@ describe('ApiKeyService', () => {
       // Assert
       expect(key).toBeDefined();
       expect(key?.name).toBe('Specific Key');
-      expect(key?.scopes).toEqual([AuthScope._MEMORY_READ]);
+      expect(key?.scopes).toEqual([AuthScope['_MEMORY_READ']]);
     });
 
     test('should return null for non-existent API key', async () => {
@@ -380,7 +380,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Revocable Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       const context = { ip_address: '192.168.1.100', user_agent: 'Test-Client' };
 
@@ -411,7 +411,7 @@ describe('ApiKeyService', () => {
       // Arrange
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Updatable Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       const updates = {
         name: 'Updated Key Name',
@@ -429,18 +429,18 @@ describe('ApiKeyService', () => {
       expect(updated).toBeDefined();
       expect(updated?.name).toBe('Updated Key Name');
       expect(updated?.description).toBe('Updated description');
-      expect(updated?.scopes).toEqual([AuthScope._MEMORY_READ]); // Unchanged
+      expect(updated?.scopes).toEqual([AuthScope['_MEMORY_READ']]); // Unchanged
     });
 
     test('should reject unauthorized scope updates', async () => {
       // Arrange
-      mockAuthService.getUserMaxScopes.mockReturnValue([AuthScope._MEMORY_READ]);
+      mockAuthService.getUserMaxScopes.mockReturnValue([AuthScope['_MEMORY_READ']]);
       const createResult = await apiKeyService.createApiKey(testUser, {
         name: 'Scope Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       const updates = {
-        scopes: [AuthScope._MEMORY_READ, AuthScope._SYSTEM_MANAGE],
+        scopes: [AuthScope['_MEMORY_READ'], AuthScope['_SYSTEM_MANAGE']],
       };
 
       // Act & Assert
@@ -458,7 +458,7 @@ describe('ApiKeyService', () => {
 
       await apiKeyService.createApiKey(testUser, {
         name: 'Auth Context Key',
-        scopes: [AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE],
+        scopes: [AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']],
       });
 
       const validation = await apiKeyService.validateApiKey(apiKey, context);
@@ -471,7 +471,7 @@ describe('ApiKeyService', () => {
       expect(authContext.user.id).toBe(testUser.id);
       expect(authContext.user.username).toBe(testUser.username);
       expect(authContext.user.role).toBe(testUser.role);
-      expect(authContext.scopes).toEqual([AuthScope._MEMORY_READ, AuthScope._MEMORY_WRITE]);
+      expect(authContext.scopes).toEqual([AuthScope['_MEMORY_READ'], AuthScope['_MEMORY_WRITE']]);
       expect(authContext.session.ip_address).toBe('192.168.1.100');
       expect(authContext.session.user_agent).toBe('Test-Client');
     });
@@ -494,10 +494,10 @@ describe('ApiKeyService', () => {
       // Arrange
       const readOnlyUser = {
         ...testUser,
-        role: UserRole._READ_ONLY,
+        role: UserRole['_READ_ONLY'],
       };
       mockAuthService.getUserMaxScopes.mockReturnValue(
-        DEFAULT_ROLE_PERMISSIONS[UserRole._READ_ONLY].max_scopes
+        DEFAULT_ROLE_PERMISSIONS[UserRole['_READ_ONLY']].max_scopes
       );
 
       // Act & Assert
@@ -505,7 +505,7 @@ describe('ApiKeyService', () => {
       await expect(
         apiKeyService.createApiKey(readOnlyUser, {
           name: 'Read Key',
-          scopes: [AuthScope._MEMORY_READ, AuthScope._KNOWLEDGE_READ],
+          scopes: [AuthScope['_MEMORY_READ'], AuthScope['_KNOWLEDGE_READ']],
         })
       ).resolves.toBeDefined();
 
@@ -513,7 +513,7 @@ describe('ApiKeyService', () => {
       await expect(
         apiKeyService.createApiKey(readOnlyUser, {
           name: 'Admin Key',
-          scopes: [AuthScope._SYSTEM_MANAGE],
+          scopes: [AuthScope['_SYSTEM_MANAGE']],
         })
       ).rejects.toThrow('User not allowed to create API key with scopes: system:manage');
     });
@@ -575,7 +575,7 @@ describe('ApiKeyService', () => {
 
       await apiKeyService.createApiKey(testUser, {
         name: 'Multi-IP Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act - validate from different IPs
@@ -604,16 +604,16 @@ describe('ApiKeyService', () => {
       // Arrange
       await apiKeyService.createApiKey(testUser, {
         name: 'Active Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
       await apiKeyService.createApiKey(testUser, {
         name: 'Expired Key',
-        scopes: [AuthScope._MEMORY_WRITE],
+        scopes: [AuthScope['_MEMORY_WRITE']],
         expires_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       });
       await apiKeyService.createApiKey(testUser, {
         name: 'Another Key',
-        scopes: [AuthScope._KNOWLEDGE_READ],
+        scopes: [AuthScope['_KNOWLEDGE_READ']],
       });
 
       // Act
@@ -625,9 +625,9 @@ describe('ApiKeyService', () => {
       expect(stats.active_keys).toBe(2); // 2 active, 1 expired
       expect(stats.expired_keys).toBe(1);
       expect(stats.keys_by_scope).toEqual({
-        [AuthScope._MEMORY_READ]: 1,
-        [AuthScope._MEMORY_WRITE]: 1,
-        [AuthScope._KNOWLEDGE_READ]: 1,
+        [AuthScope['_MEMORY_READ']]: 1,
+        [AuthScope['_MEMORY_WRITE']]: 1,
+        [AuthScope['_KNOWLEDGE_READ']]: 1,
       });
       expect(stats.recent_usage).toBeInstanceOf(Array);
     });
@@ -636,7 +636,7 @@ describe('ApiKeyService', () => {
       // Arrange
       await apiKeyService.createApiKey(testUser, {
         name: 'Project Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         project_scopes: ['project-alpha', 'project-beta'],
       });
 
@@ -646,7 +646,7 @@ describe('ApiKeyService', () => {
       // Assert
       expect(stats.total_keys).toBe(1);
       expect(stats.keys_by_scope).toEqual({
-        [AuthScope._MEMORY_READ]: 1,
+        [AuthScope['_MEMORY_READ']]: 1,
       });
     });
 
@@ -674,7 +674,7 @@ describe('ApiKeyService', () => {
       for (let i = 0; i < 5; i++) {
         await apiKeyService.createApiKey(testUser, {
           name: `Expired Key ${i}`,
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
           expires_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
         });
       }
@@ -696,14 +696,14 @@ describe('ApiKeyService', () => {
       // Create old expired key
       await apiKeyService.createApiKey(testUser, {
         name: 'Old Expired Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         expires_at: oldDate,
       });
 
       // Create old inactive key
       const revokeResult = await apiKeyService.createApiKey(testUser, {
         name: 'Old Inactive Key',
-        scopes: [AuthScope._MEMORY_WRITE],
+        scopes: [AuthScope['_MEMORY_WRITE']],
       });
       await apiKeyService.revokeApiKey(testUser, revokeResult.key_info.key_id);
 
@@ -756,7 +756,7 @@ describe('ApiKeyService', () => {
       const apiKey = 'ck_test_1234567890123456789012abcdef';
       await apiKeyService.createApiKey(testUser, {
         name: 'Concurrent Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act - validate same key from multiple concurrent requests
@@ -780,7 +780,7 @@ describe('ApiKeyService', () => {
       const createPromises = Array.from({ length: keyCount }, (_, i) =>
         apiKeyService.createApiKey(testUser, {
           name: `Key ${i}`,
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         })
       );
       const createResults = await Promise.all(createPromises);
@@ -804,7 +804,7 @@ describe('ApiKeyService', () => {
       for (let i = 0; i < 10; i++) {
         const result = await apiKeyService.createApiKey(testUser, {
           name: `Load Test Key ${i}`,
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         });
         apiKeys.push(result.api_key);
       }
@@ -835,10 +835,10 @@ describe('ApiKeyService', () => {
         api_key: {
           id: 'test-key-id',
           user_id: testUser.id,
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         } as ApiKey,
         user: testUser,
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       };
 
       const context = {
@@ -861,7 +861,7 @@ describe('ApiKeyService', () => {
           ip_address: '192.168.1.100',
           user_agent: 'Test-Client/1.0',
         },
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         token_jti: 'test-key-id',
       });
     });
@@ -873,7 +873,7 @@ describe('ApiKeyService', () => {
 
       await apiKeyService.createApiKey(testUser, {
         name: 'Audit Trail Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act - perform various operations
@@ -936,7 +936,7 @@ describe('ApiKeyService', () => {
       await expect(
         apiKeyService.createApiKey(testUser, {
           name: 'Failure Test Key',
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         })
       ).rejects.toThrow('Hashing service unavailable');
     });
@@ -954,7 +954,7 @@ describe('ApiKeyService', () => {
       await expect(
         apiKeyService.createApiKey(inactiveUser, {
           name: 'Inactive User Key',
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         })
       ).resolves.toBeDefined(); // Current behavior
     });
@@ -967,7 +967,7 @@ describe('ApiKeyService', () => {
       // Act
       const result = await apiKeyService.createApiKey(testUser, {
         name: longName,
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
         description: longDescription,
       });
 
@@ -987,7 +987,7 @@ describe('ApiKeyService', () => {
       for (let i = 0; i < keyCount; i++) {
         const result = await apiKeyService.createApiKey(testUser, {
           name: `Security Test Key ${i}`,
-          scopes: [AuthScope._MEMORY_READ],
+          scopes: [AuthScope['_MEMORY_READ']],
         });
         generatedKeys.add(result.api_key);
       }
@@ -1010,7 +1010,7 @@ describe('ApiKeyService', () => {
 
       await apiKeyService.createApiKey(testUser, {
         name: 'Cross-Origin Key',
-        scopes: [AuthScope._MEMORY_READ],
+        scopes: [AuthScope['_MEMORY_READ']],
       });
 
       // Act
@@ -1030,24 +1030,24 @@ describe('ApiKeyService', () => {
       // Arrange
       const serviceUser = {
         ...testUser,
-        role: UserRole._SERVICE,
+        role: UserRole['_SERVICE'],
       };
       mockAuthService.getUserMaxScopes.mockReturnValue(
-        DEFAULT_ROLE_PERMISSIONS[UserRole._SERVICE].max_scopes
+        DEFAULT_ROLE_PERMISSIONS[UserRole['_SERVICE']].max_scopes
       );
 
       // Act & Assert
       await expect(
         apiKeyService.createApiKey(serviceUser, {
           name: 'Service Key',
-          scopes: [AuthScope._MEMORY_WRITE, AuthScope._KNOWLEDGE_WRITE],
+          scopes: [AuthScope['_MEMORY_WRITE'], AuthScope['_KNOWLEDGE_WRITE']],
         })
       ).resolves.toBeDefined();
 
       await expect(
         apiKeyService.createApiKey(serviceUser, {
           name: 'Invalid Service Key',
-          scopes: [AuthScope._USER_MANAGE], // Service accounts shouldn't manage users
+          scopes: [AuthScope['_USER_MANAGE']], // Service accounts shouldn't manage users
         })
       ).rejects.toThrow('User not allowed to create API key with scopes: user:manage');
     });

@@ -15,9 +15,9 @@ describe('System Status Chaos Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set test environment
-    process.env.NODE_ENV = 'test';
-    process.env.QDRANT_URL = 'http://localhost:6333';
-    process.env.QDRANT_COLLECTION_NAME = 'test-chaos-memory';
+    process.env['NODE_ENV'] = 'test';
+    process.env['QDRANT_URL'] = 'http://localhost:6333';
+    process.env['QDRANT_COLLECTION_NAME'] = 'test-chaos-memory';
   });
 
   afterEach(() => {
@@ -33,7 +33,8 @@ describe('System Status Chaos Tests', () => {
       const qdrantCircuitBreaker = circuitBreakerManager.getCircuitBreaker('qdrant-adapter');
 
       // Simulate circuit breaker failures for database services
-      const databaseManagerOpened = circuitBreakerManager.simulateServiceFailure('database-manager');
+      const databaseManagerOpened =
+        circuitBreakerManager.simulateServiceFailure('database-manager');
       const qdrantAdapterOpened = circuitBreakerManager.simulateServiceFailure('qdrant-adapter');
 
       expect(databaseManagerOpened || qdrantAdapterOpened).toBe(true);
@@ -59,14 +60,14 @@ describe('System Status Chaos Tests', () => {
         MemoryStoreOrchestrator: vi.fn().mockImplementation(() => ({
           storeItems: vi.fn().mockRejectedValue(timeoutError),
           isHealthy: vi.fn().mockResolvedValue(false),
-        }))
+        })),
       }));
 
       vi.doMock('../../src/services/orchestrators/memory-find-orchestrator.js', () => ({
         MemoryFindOrchestrator: vi.fn().mockImplementation(() => ({
           findItems: vi.fn().mockRejectedValue(timeoutError),
           isHealthy: vi.fn().mockResolvedValue(false),
-        }))
+        })),
       }));
 
       const startTime = Date.now();
@@ -101,7 +102,7 @@ describe('System Status Chaos Tests', () => {
             failureCount: failureCount,
             lastFailureTime: Date.now(),
           }),
-        }))
+        })),
       }));
 
       // First call should fail
@@ -128,7 +129,7 @@ describe('System Status Chaos Tests', () => {
         MemoryStoreOrchestrator: vi.fn().mockImplementation(() => ({
           storeItems: vi.fn().mockRejectedValue(new Error('Store service unavailable')),
           isHealthy: vi.fn().mockResolvedValue(false),
-        }))
+        })),
       }));
 
       vi.doMock('../../src/services/orchestrators/memory-find-orchestrator.js', () => ({
@@ -139,7 +140,7 @@ describe('System Status Chaos Tests', () => {
             observability: { strategy: 'fallback', degraded: true },
           }),
           isHealthy: vi.fn().mockResolvedValue(true),
-        }))
+        })),
       }));
 
       const result = await handleSystemStatus({ operation: 'health' });
@@ -161,14 +162,14 @@ describe('System Status Chaos Tests', () => {
             errors: [],
           }),
           isHealthy: vi.fn().mockResolvedValue(true),
-        }))
+        })),
       }));
 
       vi.doMock('../../src/services/orchestrators/memory-find-orchestrator.js', () => ({
         MemoryFindOrchestrator: vi.fn().mockImplementation(() => ({
           findItems: vi.fn().mockRejectedValue(new Error('Search service unavailable')),
           isHealthy: vi.fn().mockResolvedValue(false),
-        }))
+        })),
       }));
 
       const result = await handleSystemStatus({ operation: 'health' });
@@ -198,7 +199,9 @@ describe('System Status Chaos Tests', () => {
         const result = await handleSystemStatus({ operation: 'metrics' });
         const metricsData = JSON.parse(result.content[0].text);
 
-        expect(metricsData.health_status.resource_utilization.memory_usage_kb).toBeGreaterThan(800000);
+        expect(metricsData.health_status.resource_utilization.memory_usage_kb).toBeGreaterThan(
+          800000
+        );
         expect(metricsData.performance_indicators.error_rate).toBeDefined();
 
         // Should still respond despite high memory usage
@@ -213,27 +216,27 @@ describe('System Status Chaos Tests', () => {
       // Mock orchestrators that respond slowly under load
       vi.doMock('../../src/services/orchestrators/memory-store-orchestrator.js', () => ({
         MemoryStoreOrchestrator: vi.fn().mockImplementation(() => ({
-          storeItems: vi.fn().mockImplementation(() =>
-            new Promise(resolve => setTimeout(resolve, 100))
-          ),
+          storeItems: vi
+            .fn()
+            .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100))),
           isHealthy: vi.fn().mockResolvedValue(true),
-        }))
+        })),
       }));
 
       vi.doMock('../../src/services/orchestrators/memory-find-orchestrator.js', () => ({
         MemoryFindOrchestrator: vi.fn().mockImplementation(() => ({
-          findItems: vi.fn().mockImplementation(() =>
-            new Promise(resolve => setTimeout(resolve, 100))
-          ),
+          findItems: vi
+            .fn()
+            .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 100))),
           isHealthy: vi.fn().mockResolvedValue(true),
-        }))
+        })),
       }));
 
       // Fire multiple concurrent status requests
       const promises = Array.from({ length: 10 }, (_, i) =>
         handleSystemStatus({
           operation: 'health',
-          request_id: `burst_test_${i}`
+          request_id: `burst_test_${i}`,
         })
       );
 
@@ -241,7 +244,7 @@ describe('System Status Chaos Tests', () => {
 
       // All requests should complete successfully
       expect(results).toHaveLength(10);
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.content).toBeDefined();
         const healthData = JSON.parse(result.content[0].text);
         expect(healthData.service).toBeDefined();
@@ -269,7 +272,7 @@ describe('System Status Chaos Tests', () => {
             return Promise.resolve({ stored: [], summary: { total: 0, stored: 0 } });
           }),
           healthCheck: mockHealthCheck,
-        }))
+        })),
       }));
 
       // Test multiple status calls during intermittent failures
@@ -278,18 +281,18 @@ describe('System Status Chaos Tests', () => {
         const result = await handleSystemStatus({ operation: 'health' });
         results.push(result);
         // Small delay between calls
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
       expect(results).toHaveLength(5);
 
       // Some calls should succeed, some should fail gracefully
-      const successCount = results.filter(r => {
+      const successCount = results.filter((r) => {
         const healthData = JSON.parse(r.content[0].text);
         return healthData.service.status !== 'error';
       }).length;
 
-      const degradedCount = results.filter(r => {
+      const degradedCount = results.filter((r) => {
         const healthData = JSON.parse(r.content[0].text);
         return healthData.service.status === 'degraded';
       }).length;
@@ -305,14 +308,14 @@ describe('System Status Chaos Tests', () => {
         MemoryStoreOrchestrator: vi.fn().mockImplementation(() => ({
           storeItems: vi.fn().mockRejectedValue(new Error('ENOTFOUND')),
           healthCheck: vi.fn().mockRejectedValue(new Error('Network unreachable')),
-        }))
+        })),
       }));
 
       vi.doMock('../../src/services/orchestrators/memory-find-orchestrator.js', () => ({
         MemoryFindOrchestrator: vi.fn().mockImplementation(() => ({
           findItems: vi.fn().mockRejectedValue(new Error('ENOTFOUND')),
           healthCheck: vi.fn().mockRejectedValue(new Error('Network unreachable')),
-        }))
+        })),
       }));
 
       const result = await handleSystemStatus({ operation: 'health' });
@@ -351,7 +354,7 @@ describe('System Status Chaos Tests', () => {
             return Promise.resolve({ stored: [], summary: { total: 1, stored: 1 } });
           }),
           healthCheck: mockHealthCheck,
-        }))
+        })),
       }));
 
       // Initial check should show degraded status
@@ -376,14 +379,14 @@ describe('System Status Chaos Tests', () => {
       const mockHealthCheck = vi.fn().mockImplementation(async () => {
         callTimes.push(Date.now());
         callCount++;
-        await new Promise(resolve => setTimeout(resolve, 50)); // Add delay
+        await new Promise((resolve) => setTimeout(resolve, 50)); // Add delay
         throw new Error(`Service failure #${callCount}`);
       });
 
       vi.doMock('../../src/services/orchestrators/memory-store-orchestrator.js', () => ({
         MemoryStoreOrchestrator: vi.fn().mockImplementation(() => ({
           healthCheck: mockHealthCheck,
-        }))
+        })),
       }));
 
       // Make multiple calls to test backoff

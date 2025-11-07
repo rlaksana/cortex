@@ -43,7 +43,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_latency_p99',
@@ -53,7 +53,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -63,7 +63,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_error_rate',
@@ -73,8 +73,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: '%',
             type: 'error_rate',
             priority: 'critical',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'semantic', 'critical'],
         parameters: {
@@ -82,8 +82,8 @@ describe('Search and Retrieval Load Tests', () => {
           resultSize: 50,
           searchComplexity: 'medium',
           embeddingDimensions: 1536,
-          similarityThreshold: 0.7
-        }
+          similarityThreshold: 0.7,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -121,7 +121,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -131,8 +131,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'semantic', 'complex'],
         parameters: {
@@ -142,8 +142,8 @@ describe('Search and Retrieval Load Tests', () => {
           embeddingDimensions: 1536,
           similarityThreshold: 0.8,
           filters: ['type', 'date_range', 'tags'],
-          rankingAlgorithm: 'hybrid'
-        }
+          rankingAlgorithm: 'hybrid',
+        },
       };
 
       const result = await harness.runTest(config);
@@ -172,7 +172,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_latency_p99',
@@ -182,7 +182,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -192,8 +192,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'keyword', 'critical'],
         parameters: {
@@ -201,8 +201,8 @@ describe('Search and Retrieval Load Tests', () => {
           resultSize: 75,
           searchComplexity: 'low',
           indexingMethod: 'inverted_index',
-          queryOperators: ['AND', 'OR', 'NOT']
-        }
+          queryOperators: ['AND', 'OR', 'NOT'],
+        },
       };
 
       const result = await harness.runTest(config);
@@ -232,7 +232,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -242,8 +242,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'hybrid', 'critical'],
         parameters: {
@@ -253,8 +253,8 @@ describe('Search and Retrieval Load Tests', () => {
           weightingStrategy: 'adaptive',
           semanticWeight: 0.6,
           keywordWeight: 0.4,
-          fusionMethod: 'rank_fusion'
-        }
+          fusionMethod: 'rank_fusion',
+        },
       };
 
       const result = await harness.runTest(config);
@@ -283,7 +283,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -293,8 +293,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'concurrency', 'load'],
         parameters: {
@@ -304,9 +304,9 @@ describe('Search and Retrieval Load Tests', () => {
           queryDistribution: {
             semantic: 0.4,
             keyword: 0.4,
-            hybrid: 0.2
-          }
-        }
+            hybrid: 0.2,
+          },
+        },
       };
 
       const result = await harness.runTest(config);
@@ -336,7 +336,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'search_throughput',
@@ -346,8 +346,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'ranking', 'performance'],
         parameters: {
@@ -356,8 +356,8 @@ describe('Search and Retrieval Load Tests', () => {
           rankingComplexity: 'high',
           rankingFactors: ['relevance', 'recency', 'popularity', 'authority'],
           personalizationEnabled: true,
-          diversityAlgorithm: 'maximal_marginal_relevance'
-        }
+          diversityAlgorithm: 'maximal_marginal_relevance',
+        },
       };
 
       const result = await harness.runTest(config);
@@ -386,7 +386,7 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'memory_usage_peak',
@@ -396,8 +396,8 @@ describe('Search and Retrieval Load Tests', () => {
             unit: 'bytes',
             type: 'memory',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['search', 'memory', 'efficiency'],
         parameters: {
@@ -406,16 +406,16 @@ describe('Search and Retrieval Load Tests', () => {
           memoryOptimization: true,
           streamingResults: true,
           cacheEnabled: true,
-          cacheSize: 1000
-        }
+          cacheSize: 1000,
+        },
       };
 
       const result = await harness.runTest(config);
 
       expect(result.validation.passed).toBe(true);
       expect(result.results.metrics.latencies.p95).toBeLessThan(1200);
-      expect(result.metadata.systemMetrics.peakMemoryUsage).toBeLessThan(512 * 1024 * 1024);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].peakMemoryUsage).toBeLessThan(512 * 1024 * 1024);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
     }, 90000);
   });
 
@@ -426,11 +426,23 @@ describe('Search and Retrieval Load Tests', () => {
     console.log('Preparing search dataset for load testing...');
 
     const searchTerms = [
-      'machine learning', 'artificial intelligence', 'software development',
-      'database design', 'user experience', 'performance optimization',
-      'cloud computing', 'microservices', 'security', 'devops',
-      'data analysis', 'neural networks', 'natural language processing',
-      'computer vision', 'deep learning', 'algorithms', 'data structures'
+      'machine learning',
+      'artificial intelligence',
+      'software development',
+      'database design',
+      'user experience',
+      'performance optimization',
+      'cloud computing',
+      'microservices',
+      'security',
+      'devops',
+      'data analysis',
+      'neural networks',
+      'natural language processing',
+      'computer vision',
+      'deep learning',
+      'algorithms',
+      'data structures',
     ];
 
     const documentTypes = ['entity', 'observation', 'decision', 'task', 'documentation'];
@@ -456,8 +468,8 @@ describe('Search and Retrieval Load Tests', () => {
           tags: generateTags(term, domain, complexity),
           size: Math.floor(Math.random() * 4096) + 512, // 512-4608 bytes
           author: `author-${Math.floor(Math.random() * 10)}`,
-          priority: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)]
-        }
+          priority: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)],
+        },
       });
     }
 
@@ -473,7 +485,7 @@ describe('Search and Retrieval Load Tests', () => {
     const complexityAdditions = {
       1: `${term} is an important concept in modern technology.`,
       2: `${term} involves multiple aspects including theoretical foundations, practical applications, and future developments. The implementation of ${term} requires careful consideration of various factors.`,
-      3: `${term} represents a complex multidisciplinary field that encompasses theoretical frameworks, practical implementations, empirical evaluations, and future research directions. The sophisticated interplay between ${term} and related domains necessitates a comprehensive understanding of underlying principles, methodological approaches, and real-world implications. Advanced techniques in ${term} leverage cutting-edge methodologies and state-of-the-art technologies to address challenging problems and unlock new possibilities.`
+      3: `${term} represents a complex multidisciplinary field that encompasses theoretical frameworks, practical implementations, empirical evaluations, and future research directions. The sophisticated interplay between ${term} and related domains necessitates a comprehensive understanding of underlying principles, methodological approaches, and real-world implications. Advanced techniques in ${term} leverage cutting-edge methodologies and state-of-the-art technologies to address challenging problems and unlock new possibilities.`,
     };
 
     let content = baseContent + (complexityAdditions[complexity] || complexityAdditions[1]);
@@ -484,7 +496,7 @@ describe('Search and Retrieval Load Tests', () => {
       'Recent developments have significantly advanced our understanding.',
       'Practical applications demonstrate the value of these approaches.',
       'Theoretical foundations support the implementation strategies.',
-      'Empirical evidence validates the effectiveness of these methods.'
+      'Empirical evidence validates the effectiveness of these methods.',
     ];
 
     content += ' ' + variations[Math.floor(Math.random() * variations.length)];
@@ -501,12 +513,18 @@ describe('Search and Retrieval Load Tests', () => {
     const complexityTags = {
       1: ['basic', 'introduction', 'overview'],
       2: ['intermediate', 'detailed', 'comprehensive'],
-      3: ['advanced', 'expert', 'research', 'in-depth']
+      3: ['advanced', 'expert', 'research', 'in-depth'],
     };
 
     const additionalTags = [
-      'technology', 'innovation', 'analysis', 'optimization',
-      'implementation', 'strategy', 'methodology', 'framework'
+      'technology',
+      'innovation',
+      'analysis',
+      'optimization',
+      'implementation',
+      'strategy',
+      'methodology',
+      'framework',
     ];
 
     const tags = [...baseTags, ...(complexityTags[complexity] || [])];

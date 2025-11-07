@@ -125,11 +125,17 @@ async function testInsightGeneration() {
 
         // Show type-specific data
         if (insight.type === 'pattern' && insight.pattern_data) {
-          console.log(`   Pattern: ${insight.pattern_data.pattern_type} (strength: ${insight.pattern_data.strength.toFixed(3)})`);
+          console.log(
+            `   Pattern: ${insight.pattern_data.pattern_type} (strength: ${insight.pattern_data.strength.toFixed(3)})`
+          );
         } else if (insight.type === 'connection' && insight.connection_data) {
-          console.log(`   Connection: ${insight.connection_data.connection_type} (strength: ${insight.connection_data.relationship_strength.toFixed(3)})`);
+          console.log(
+            `   Connection: ${insight.connection_data.connection_type} (strength: ${insight.connection_data.relationship_strength.toFixed(3)})`
+          );
         } else if (insight.type === 'recommendation' && insight.recommendation_data) {
-          console.log(`   Recommendation: ${insight.recommendation_data.action_type} (${insight.recommendation_data.priority} priority)`);
+          console.log(
+            `   Recommendation: ${insight.recommendation_data.action_type} (${insight.recommendation_data.priority} priority)`
+          );
         }
       });
     }
@@ -137,7 +143,7 @@ async function testInsightGeneration() {
     // Show any warnings
     if (response.warnings.length > 0) {
       console.log('\n⚠️  Warnings:');
-      response.warnings.forEach(warning => {
+      response.warnings.forEach((warning) => {
         console.log(`   - ${warning}`);
       });
     }
@@ -145,7 +151,7 @@ async function testInsightGeneration() {
     // Show any errors
     if (response.errors.length > 0) {
       console.log('\n❌ Errors:');
-      response.errors.forEach(error => {
+      response.errors.forEach((error) => {
         console.log(`   - ${error.error_type}: ${error.message}`);
       });
     }
@@ -154,7 +160,9 @@ async function testInsightGeneration() {
     const metrics = insightGenerationService.getMetrics();
     console.log('\n📈 Service Metrics:');
     console.log(`   Total Insights Generated: ${metrics.total_insights_generated}`);
-    console.log(`   Generation Success Rate: ${(metrics.generation_success_rate * 100).toFixed(1)}%`);
+    console.log(
+      `   Generation Success Rate: ${(metrics.generation_success_rate * 100).toFixed(1)}%`
+    );
     console.log(`   Average Processing Time: ${metrics.processing_time_avg.toFixed(1)}ms`);
     console.log(`   Average Performance Impact: ${metrics.performance_impact_avg.toFixed(2)}%`);
     console.log(`   Cache Hit Rate: ${(metrics.cache_hit_rate * 100).toFixed(1)}%`);
@@ -162,7 +170,6 @@ async function testInsightGeneration() {
     console.log(`   Last Updated: ${new Date(metrics.last_updated).toISOString()}`);
 
     console.log('\n🎉 Insight generation test completed successfully!');
-
   } catch (error) {
     console.error('❌ Error during insight generation test:', error.message);
     console.error(error.stack);

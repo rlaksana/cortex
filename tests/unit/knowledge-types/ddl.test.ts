@@ -78,12 +78,12 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const result = DDLSchema.safeParse(ddl);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('ddl');
-        expect(result.data.data.migration_id).toBe('001_initial_schema');
-        expect(result.data.data.ddl_text).toContain('CREATE TABLE users');
-        expect(result.data.data.checksum).toHaveLength(64);
-        expect(result.data.data.applied_at).toBe('2025-01-01T12:00:00Z');
-        expect(result.data.data.description).toBe('Initial user table creation with basic fields');
+        expect(result['data.kind']).toBe('ddl');
+        expect(result['data.data'].migration_id).toBe('001_initial_schema');
+        expect(result['data.data'].ddl_text).toContain('CREATE TABLE users');
+        expect(result['data.data'].checksum).toHaveLength(64);
+        expect(result['data.data'].applied_at).toBe('2025-01-01T12:00:00Z');
+        expect(result['data.data'].description).toBe('Initial user table creation with basic fields');
       }
     });
 
@@ -106,11 +106,11 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const result = DDLSchema.safeParse(ddl);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.migration_id).toBe('002_add_indexes');
-        expect(result.data.data.ddl_text).toBe('CREATE INDEX idx_users_email ON users(email);');
-        expect(result.data.data.checksum).toHaveLength(64);
-        expect(result.data.data.applied_at).toBeUndefined();
-        expect(result.data.data.description).toBeUndefined();
+        expect(result['data.data'].migration_id).toBe('002_add_indexes');
+        expect(result['data.data'].ddl_text).toBe('CREATE INDEX idx_users_email ON users(email);');
+        expect(result['data.data'].checksum).toHaveLength(64);
+        expect(result['data.data'].applied_at).toBeUndefined();
+        expect(result['data.data'].description).toBeUndefined();
       }
     });
 
@@ -257,7 +257,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         const result = DDLSchema.safeParse(ddl);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.ddl_text).toContain(ddlConfig.operation);
+          expect(result['data.data'].ddl_text).toContain(ddlConfig.operation);
         }
       });
     });
@@ -295,10 +295,10 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
       const result = DDLSchema.safeParse(ddl);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.ddl_text).toContain('CREATE TABLE orders');
-        expect(result.data.data.ddl_text).toContain('CREATE INDEX');
-        expect(result.data.data.ddl_text).toContain('CREATE TRIGGER');
-        expect(result.data.data.description).toBe(
+        expect(result['data.data'].ddl_text).toContain('CREATE TABLE orders');
+        expect(result['data.data'].ddl_text).toContain('CREATE INDEX');
+        expect(result['data.data'].ddl_text).toContain('CREATE TRIGGER');
+        expect(result['data.data'].description).toBe(
           'Complex order schema with table, indexes, and trigger'
         );
       }
@@ -932,7 +932,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(ddl);
       expect(result.kind).toBe('ddl');
-      expect(result.data.migration_id).toBe('001_validation_test');
+      expect(result['data.migration_id']).toBe('001_validation_test');
       expect(result.tags.environment).toBe('test');
       expect(result.tags.critical).toBe(true);
       expect(result.source.actor).toBe('test-suite');
@@ -1074,7 +1074,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         const result = DDLSchema.safeParse(ddl);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.migration_id).toBe(migrationId);
+          expect(result['data.data'].migration_id).toBe(migrationId);
         }
       });
     });
@@ -1141,7 +1141,7 @@ describe('DDL Knowledge Type - Comprehensive Testing', () => {
         const result = DDLSchema.safeParse(ddl);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.applied_at).toBe(timestamp);
+          expect(result['data.data'].applied_at).toBe(timestamp);
         }
       });
     });

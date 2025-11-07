@@ -24,7 +24,7 @@ import {
   CombineStrategy,
   IntelligentStrategy,
   DeduplicationStrategyFactory,
-  type DeduplicationStrategy
+  type DeduplicationStrategy,
 } from '../../src/services/deduplication/strategies/index.js';
 
 // Access global test utilities (they're attached to global by jest-setup.ts)
@@ -39,7 +39,7 @@ let preferExistingStrategy: PreferExistingStrategy;
 let preferNewerStrategy: PreferNewerStrategy;
 let combineStrategy: CombineStrategy;
 let intelligentStrategy: IntelligentStrategy;
-  describe('Deduplication Strategies Test Matrix', () => {
+describe('Deduplication Strategies Test Matrix', () => {
   let testItems: any[];
   let duplicateItems: any[];
 
@@ -47,27 +47,27 @@ let intelligentStrategy: IntelligentStrategy;
   beforeEach(() => {
     skipStrategy = new SkipStrategy({
       logSkippedItems: false,
-      performBasicValidation: true
+      performBasicValidation: true,
     });
 
     preferExistingStrategy = new PreferExistingStrategy({
       similarityThreshold: 0.85,
       comparisonMethod: 'first_encountered',
-      logDetailedActions: false
+      logDetailedActions: false,
     });
 
     preferNewerStrategy = new PreferNewerStrategy({
       similarityThreshold: 0.85,
       ageDeterminationMethod: 'created_at',
       tieBreaker: 'content_length',
-      logTimestampComparisons: false
+      logTimestampComparisons: false,
     });
 
     combineStrategy = new CombineStrategy({
       similarityThreshold: 0.8,
       contentMergeStrategy: 'intelligent_merge',
       metadataMergeStrategy: 'union',
-      maxItemsInMergeGroup: 5
+      maxItemsInMergeGroup: 5,
     });
 
     intelligentStrategy = new IntelligentStrategy({
@@ -78,15 +78,17 @@ let intelligentStrategy: IntelligentStrategy;
         exact: 0.95,
         semantic: 0.8,
         structural: 0.7,
-        overall: 0.75
-      }
+        overall: 0.75,
+      },
     });
   });
 
   beforeAll(() => {
     // Ensure testUtils is available
     if (!global.testUtils || !global.global.testUtils.createTestKnowledgeItem) {
-      throw new Error('global.testUtils.createTestKnowledgeItem is not available. Check jest-setup.ts configuration.');
+      throw new Error(
+        'global.testUtils.createTestKnowledgeItem is not available. Check jest-setup.ts configuration.'
+      );
     }
 
     // Generate comprehensive test data
@@ -95,41 +97,41 @@ let intelligentStrategy: IntelligentStrategy;
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Identical content that should be detected as duplicate' },
-        metadata: { category: 'test', priority: 'high' }
+        metadata: { category: 'test', priority: 'high' },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Identical content that should be detected as duplicate' },
-        metadata: { category: 'test', priority: 'high' }
+        metadata: { category: 'test', priority: 'high' },
       }),
 
       // Semantic duplicates
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Machine learning algorithms analyze data patterns' },
-        metadata: { category: 'ml', priority: 'medium' }
+        metadata: { category: 'ml', priority: 'medium' },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'Data analysis is performed by machine learning models' },
-        metadata: { category: 'ml', priority: 'medium' }
+        metadata: { category: 'ml', priority: 'medium' },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'entity',
         data: { content: 'AI systems use machine learning to analyze patterns in data' },
-        metadata: { category: 'ai', priority: 'medium' }
+        metadata: { category: 'ai', priority: 'medium' },
       }),
 
       // Hash collisions (same content, different formatting)
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'section',
         data: { content: 'The quick brown fox jumps over the lazy dog' },
-        metadata: { type: 'sentence' }
+        metadata: { type: 'sentence' },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'section',
         data: { content: 'the quick brown fox jumps over the lazy dog' }, // lowercase
-        metadata: { type: 'sentence' }
+        metadata: { type: 'sentence' },
       }),
 
       // Metadata-based duplicates
@@ -140,8 +142,8 @@ let intelligentStrategy: IntelligentStrategy;
           decision_id: 'DEC-001',
           author: 'john.doe',
           date: '2024-01-15',
-          category: 'technical'
-        }
+          category: 'technical',
+        },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'decision',
@@ -150,21 +152,21 @@ let intelligentStrategy: IntelligentStrategy;
           decision_id: 'DEC-001',
           author: 'john.doe',
           date: '2024-01-15',
-          category: 'technical'
-        }
+          category: 'technical',
+        },
       }),
 
       // Unique items (should not be deduplicated)
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'observation',
         data: { content: 'Unique observation content that has no duplicates' },
-        metadata: { category: 'unique' }
+        metadata: { category: 'unique' },
       }),
       global.global.testUtils.createTestKnowledgeItem({
         kind: 'runbook',
         data: { content: 'Step-by-step procedures for system recovery' },
-        metadata: { category: 'procedures', complexity: 'high' }
-      })
+        metadata: { category: 'procedures', complexity: 'high' },
+      }),
     ];
 
     duplicateItems = [
@@ -173,9 +175,9 @@ let intelligentStrategy: IntelligentStrategy;
         global.global.testUtils.createTestKnowledgeItem({
           kind: 'entity',
           data: { content: `Bulk test item ${i % 3}` }, // Creates intentional duplicates
-          metadata: { batch: 'bulk-test', index: i }
+          metadata: { batch: 'bulk-test', index: i },
         })
-      )
+      ),
     ];
   });
 
@@ -186,7 +188,7 @@ let intelligentStrategy: IntelligentStrategy;
       strategy = new ExactMatchStrategy({
         caseSensitive: false,
         ignoreWhitespace: true,
-        normalizeUnicode: true
+        normalizeUnicode: true,
       });
     });
 
@@ -204,7 +206,7 @@ let intelligentStrategy: IntelligentStrategy;
       const caseVariants = [
         global.testUtils.createTestKnowledgeItem({ data: { content: 'Test Content' } }),
         global.testUtils.createTestKnowledgeItem({ data: { content: 'test content' } }),
-        global.testUtils.createTestKnowledgeItem({ data: { content: 'TEST CONTENT' } })
+        global.testUtils.createTestKnowledgeItem({ data: { content: 'TEST CONTENT' } }),
       ];
 
       const result = await strategy.detectDuplicates(caseVariants);
@@ -218,7 +220,7 @@ let intelligentStrategy: IntelligentStrategy;
         global.testUtils.createTestKnowledgeItem({ data: { content: 'Test Content' } }),
         global.testUtils.createTestKnowledgeItem({ data: { content: 'Test   Content' } }),
         global.testUtils.createTestKnowledgeItem({ data: { content: 'Test\nContent' } }),
-        global.testUtils.createTestKnowledgeItem({ data: { content: '  Test Content  ' } })
+        global.testUtils.createTestKnowledgeItem({ data: { content: '  Test Content  ' } }),
       ];
 
       const result = await strategy.detectDuplicates(whitespaceVariants);
@@ -231,7 +233,7 @@ let intelligentStrategy: IntelligentStrategy;
       const unicodeVariants = [
         global.testUtils.createTestKnowledgeItem({ data: { content: 'café résumé' } }),
         global.testUtils.createTestKnowledgeItem({ data: { content: 'café résumé' } }), // Combining characters
-        global.testUtils.createTestKnowledgeItem({ data: { content: 'café résumé' } })
+        global.testUtils.createTestKnowledgeItem({ data: { content: 'café résumé' } }),
       ];
 
       const result = await strategy.detectDuplicates(unicodeVariants);
@@ -257,7 +259,7 @@ let intelligentStrategy: IntelligentStrategy;
       strategy = new SemanticSimilarityStrategy({
         threshold: 0.8,
         useEmbeddings: true,
-        embeddingModel: 'text-embedding-ada-002'
+        embeddingModel: 'text-embedding-ada-002',
       });
     });
 
@@ -286,8 +288,8 @@ let intelligentStrategy: IntelligentStrategy;
         global.testUtils.createTestKnowledgeItem({ data: { content: 'ML' } }),
         global.testUtils.createTestKnowledgeItem({ data: { content: 'Machine Learning' } }),
         global.testUtils.createTestKnowledgeItem({
-          data: { content: 'Machine Learning is a subset of artificial intelligence' }
-        })
+          data: { content: 'Machine Learning is a subset of artificial intelligence' },
+        }),
       ];
 
       const result = await strategy.detectDuplicates(lengthVariants);
@@ -302,7 +304,7 @@ let intelligentStrategy: IntelligentStrategy;
     it('should provide similarity scores', async () => {
       const result = await strategy.detectDuplicates(testItems);
 
-      result.duplicates.forEach(duplicate => {
+      result.duplicates.forEach((duplicate) => {
         expect(duplicate.similarity).toBeGreaterThan(0);
         expect(duplicate.similarity).toBeLessThanOrEqual(1);
         expect(typeof duplicate.similarity).toBe('number');
@@ -317,7 +319,7 @@ let intelligentStrategy: IntelligentStrategy;
       strategy = new ContentHashStrategy({
         algorithm: 'sha256',
         normalizeContent: true,
-        includeMetadata: false
+        includeMetadata: false,
       });
     });
 
@@ -345,10 +347,10 @@ let intelligentStrategy: IntelligentStrategy;
       const nonNormalizingStrategy = new ContentHashStrategy({ normalizeContent: false });
 
       const normalizedItem = global.testUtils.createTestKnowledgeItem({
-        data: { content: '  Test Content  ' }
+        data: { content: '  Test Content  ' },
       });
       const cleanItem = global.testUtils.createTestKnowledgeItem({
-        data: { content: 'Test Content' }
+        data: { content: 'Test Content' },
       });
 
       const normalizedHash1 = await normalizingStrategy.generateHash(normalizedItem);
@@ -365,7 +367,7 @@ let intelligentStrategy: IntelligentStrategy;
     it('should handle large content efficiently', async () => {
       const largeContent = 'Large content '.repeat(10000);
       const largeItem = global.testUtils.createTestKnowledgeItem({
-        data: { content: largeContent }
+        data: { content: largeContent },
       });
 
       const { result, time } = await global.testUtils.measureTime(async () => {
@@ -384,7 +386,7 @@ let intelligentStrategy: IntelligentStrategy;
       strategy = new MetadataBasedStrategy({
         keyFields: ['decision_id', 'author', 'date'],
         requireAllKeys: true,
-        ignoreContent: false
+        ignoreContent: false,
       });
     });
 
@@ -400,33 +402,35 @@ let intelligentStrategy: IntelligentStrategy;
     it('should respect key field configuration', async () => {
       const strictStrategy = new MetadataBasedStrategy({
         keyFields: ['decision_id', 'author', 'date'],
-        requireAllKeys: true
+        requireAllKeys: true,
       });
       const lenientStrategy = new MetadataBasedStrategy({
         keyFields: ['decision_id'],
-        requireAllKeys: false
+        requireAllKeys: false,
       });
 
       const strictResult = await strictStrategy.detectDuplicates(testItems);
       const lenientResult = await lenientStrategy.detectDuplicates(testItems);
 
-      expect(lenientResult.duplicates.length).toBeGreaterThanOrEqual(strictResult.duplicates.length);
+      expect(lenientResult.duplicates.length).toBeGreaterThanOrEqual(
+        strictResult.duplicates.length
+      );
     });
 
     it('should handle missing metadata gracefully', async () => {
       const itemsWithMissingMetadata = [
         global.testUtils.createTestKnowledgeItem({
           data: { content: 'Test 1' },
-          metadata: { decision_id: 'DEC-001' }
+          metadata: { decision_id: 'DEC-001' },
         }),
         global.testUtils.createTestKnowledgeItem({
           data: { content: 'Test 2' },
-          metadata: { decision_id: 'DEC-001', author: 'john.doe' }
+          metadata: { decision_id: 'DEC-001', author: 'john.doe' },
         }),
         global.testUtils.createTestKnowledgeItem({
           data: { content: 'Test 3' },
-          metadata: {} // No metadata
-        })
+          metadata: {}, // No metadata
+        }),
       ];
 
       const result = await strategy.detectDuplicates(itemsWithMissingMetadata);
@@ -439,7 +443,7 @@ let intelligentStrategy: IntelligentStrategy;
     it('should combine metadata and content analysis', async () => {
       const contentAwareStrategy = new MetadataBasedStrategy({
         keyFields: ['decision_id'],
-        ignoreContent: false
+        ignoreContent: false,
       });
 
       const result = await contentAwareStrategy.detectDuplicates(testItems);
@@ -458,9 +462,9 @@ let intelligentStrategy: IntelligentStrategy;
           { type: 'exact', weight: 0.4, config: {} },
           { type: 'semantic', weight: 0.3, config: { threshold: 0.7 } },
           { type: 'metadata', weight: 0.2, config: { keyFields: ['category'] } },
-          { type: 'hash', weight: 0.1, config: {} }
+          { type: 'hash', weight: 0.1, config: {} },
         ],
-        overallThreshold: 0.6
+        overallThreshold: 0.6,
       });
     });
 
@@ -475,7 +479,7 @@ let intelligentStrategy: IntelligentStrategy;
     it('should provide confidence scores for duplicate groups', async () => {
       const result = await strategy.detectDuplicates(testItems);
 
-      result.duplicates.forEach(duplicate => {
+      result.duplicates.forEach((duplicate) => {
         expect(duplicate.confidence).toBeGreaterThan(0);
         expect(duplicate.confidence).toBeLessThanOrEqual(1);
         expect(duplicate.matchedStrategies).toBeDefined();
@@ -488,16 +492,16 @@ let intelligentStrategy: IntelligentStrategy;
         strategies: [
           { type: 'exact', weight: 0.8, config: {} },
           { type: 'semantic', weight: 0.1, config: { threshold: 0.9 } },
-          { type: 'metadata', weight: 0.1, config: {} }
+          { type: 'metadata', weight: 0.1, config: {} },
         ],
-        overallThreshold: 0.5
+        overallThreshold: 0.5,
       });
 
       const result = await customStrategy.detectDuplicates(testItems);
 
       // Should prioritize exact matches
-      const exactDuplicates = result.duplicates.filter(d =>
-        d.matchedStrategies.some(s => s.type === 'exact')
+      const exactDuplicates = result.duplicates.filter((d) =>
+        d.matchedStrategies.some((s) => s.type === 'exact')
       );
 
       expect(exactDuplicates.length).toBeGreaterThanOrEqual(0);
@@ -507,9 +511,9 @@ let intelligentStrategy: IntelligentStrategy;
       const failingStrategy = new HybridStrategy({
         strategies: [
           { type: 'exact', weight: 0.5, config: {} },
-          { type: 'invalid_strategy', weight: 0.5, config: {} } // This should fail
+          { type: 'invalid_strategy', weight: 0.5, config: {} }, // This should fail
         ],
-        overallThreshold: 0.3
+        overallThreshold: 0.3,
       });
 
       const result = await failingStrategy.detectDuplicates(testItems);
@@ -528,15 +532,15 @@ let intelligentStrategy: IntelligentStrategy;
         ...Array.from({ length: 100 }, (_, i) =>
           global.testUtils.createTestKnowledgeItem({
             data: { content: `Performance test item ${i}` },
-            metadata: { performance: true, index: i }
+            metadata: { performance: true, index: i },
           })
-        )
+        ),
       ];
 
       const strategies = [
         new ExactMatchStrategy(),
         new ContentHashStrategy(),
-        new MetadataBasedStrategy({ keyFields: ['category'] })
+        new MetadataBasedStrategy({ keyFields: ['category'] }),
       ];
 
       for (const strategy of strategies) {
@@ -554,7 +558,7 @@ let intelligentStrategy: IntelligentStrategy;
       const concurrentStrategies = [
         new ExactMatchStrategy(),
         new SemanticSimilarityStrategy({ threshold: 0.7 }),
-        new ContentHashStrategy()
+        new ContentHashStrategy(),
       ];
 
       const concurrentPromises = concurrentStrategies.map(async (strategy, index) => {
@@ -593,7 +597,7 @@ let intelligentStrategy: IntelligentStrategy;
       // Store items with deduplication
       const storeResult = await memoryStore(testItems, {
         enableDeduplication: true,
-        deduplicationStrategy: 'hybrid'
+        deduplicationStrategy: 'hybrid',
       });
 
       expect(storeResult.items.length).toBeGreaterThan(0);
@@ -603,11 +607,11 @@ let intelligentStrategy: IntelligentStrategy;
       // Verify no duplicates were stored
       const findResult = await memoryFind({
         query: 'test content duplicate',
-        scope: { project: 'test-project' }
+        scope: { project: 'test-project' },
       });
 
       const contentHashes = new Set();
-      findResult.results.forEach(item => {
+      findResult.results.forEach((item) => {
         const contentHash = item.data?.content || '';
         expect(contentHashes.has(contentHash)).toBe(false);
         contentHashes.add(contentHash);
@@ -618,13 +622,13 @@ let intelligentStrategy: IntelligentStrategy;
       const strictConfig = {
         enableDeduplication: true,
         deduplicationStrategy: 'exact',
-        deduplicationThreshold: 0.95
+        deduplicationThreshold: 0.95,
       };
 
       const looseConfig = {
         enableDeduplication: true,
         deduplicationStrategy: 'semantic',
-        deduplicationThreshold: 0.6
+        deduplicationThreshold: 0.6,
       };
 
       const strictResult = await memoryStore(testItems, strictConfig);
@@ -642,7 +646,7 @@ let intelligentStrategy: IntelligentStrategy;
         new SemanticSimilarityStrategy(),
         new ContentHashStrategy(),
         new MetadataBasedStrategy(),
-        new HybridStrategy()
+        new HybridStrategy(),
       ];
 
       for (const strategy of strategies) {
@@ -659,7 +663,7 @@ let intelligentStrategy: IntelligentStrategy;
         undefined,
         { id: 'invalid', data: null },
         { id: 'incomplete' },
-        { data: { content: 'missing metadata' } }
+        { data: { content: 'missing metadata' } },
       ].filter(Boolean); // Remove null/undefined
 
       const strategy = new ExactMatchStrategy();
@@ -673,7 +677,7 @@ let intelligentStrategy: IntelligentStrategy;
     it('should handle circular references in metadata', async () => {
       const circularItem = global.testUtils.createTestKnowledgeItem({
         data: { content: 'Test content' },
-        metadata: { category: 'test' }
+        metadata: { category: 'test' },
       });
 
       // Create circular reference
@@ -688,7 +692,7 @@ let intelligentStrategy: IntelligentStrategy;
 
     it('should provide detailed error information', async () => {
       const strategy = new SemanticSimilarityStrategy({
-        embeddingModel: 'invalid-model-name'
+        embeddingModel: 'invalid-model-name',
       });
 
       try {

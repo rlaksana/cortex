@@ -369,7 +369,7 @@ export class MigrationRunner {
     // Simulate analysis results
     const mockSingletons: SingletonUsage[] = [
       {
-        file: 'src/index.ts',
+        file: 'src/index.js',
         line: 123,
         pattern: 'const env = Environment.getInstance();',
         singletonType: 'static-getter',
@@ -377,7 +377,7 @@ export class MigrationRunner {
         complexity: 'low',
       },
       {
-        file: 'src/db/database-manager.ts',
+        file: 'src/db/database-manager.js',
         line: 45,
         pattern: 'this.databaseFactory = DatabaseFactory.getInstance();',
         singletonType: 'static-getter',

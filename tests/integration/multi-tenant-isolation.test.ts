@@ -420,7 +420,7 @@ describe('Multi-Tenant Isolation Integration Tests', () => {
       }
 
       // Wait for recovery timeout
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      await new Promise((resolve) => setTimeout(resolve, 1100));
 
       // Record successes to close circuit
       for (let i = 0; i < 2; i++) {
@@ -515,7 +515,7 @@ describe('Multi-Tenant Isolation Integration Tests', () => {
       // Record usage that exceeds quotas
       await isolationService.recordResourceUsage('resource-test', {
         cpu_usage_percent: 15, // Exceeds 10% limit
-        memory_usage_mb: 600,  // Exceeds 512MB limit
+        memory_usage_mb: 600, // Exceeds 512MB limit
         db_connections_active: 6, // Exceeds 5 connection limit
         network_bandwidth_mbps: 5,
       });
@@ -594,9 +594,7 @@ describe('Multi-Tenant Isolation Integration Tests', () => {
           concurrent_tenants: 2,
           requests_per_second_per_tenant: 20,
           payload_size_bytes: 2048,
-          test_patterns: [
-            { pattern: 'high_cpu', weight: 1.0 },
-          ],
+          test_patterns: [{ pattern: 'high_cpu', weight: 1.0 }],
         },
         isolation_validation: {
           isolation_metrics: ['cpu_usage', 'throughput'],
@@ -614,11 +612,11 @@ describe('Multi-Tenant Isolation Integration Tests', () => {
       const results = await isolationService.executeLoadTest(scenario);
 
       // Check if noisy neighbor was detected (this is a simplified test)
-      const hasNoisyNeighbor = results.some(r => r.isolation_validation.noisy_neighbor_detected);
+      const hasNoisyNeighbor = results.some((r) => r.isolation_validation.noisy_neighbor_detected);
 
       // Results should be generated regardless of noisy neighbor detection
       expect(results).toHaveLength(2);
-      expect(results.every(r => r.isolation_validation.isolation_score >= 0)).toBe(true);
+      expect(results.every((r) => r.isolation_validation.isolation_score >= 0)).toBe(true);
     });
   });
 

@@ -8,11 +8,11 @@
  * - Correlation IDs for request tracing
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type { AuthContext } from '../types/auth-types.js';
 import { OperationType } from './operation-types.js';
 import { metricsService } from './metrics-service.js';
-import { slowQueryLogger } from './slow-query-logger.js';
+import { slowQueryLogger } from '@/utils/logger.js';
 
 /**
  * Search strategies for logging

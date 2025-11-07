@@ -61,6 +61,7 @@ The Qdrant health monitoring system provides comprehensive monitoring of the vec
 **Endpoints Available**:
 
 1. **Basic Health Check**
+
    ```typescript
    // Perform basic connectivity check
    const health = await qdrantMonitor.performHealthCheck();
@@ -68,6 +69,7 @@ The Qdrant health monitoring system provides comprehensive monitoring of the vec
    ```
 
 2. **Comprehensive Health Check**
+
    ```typescript
    // Full system health with metrics
    const comprehensive = await qdrantMonitor.performComprehensiveHealthCheck();
@@ -83,11 +85,11 @@ The Qdrant health monitoring system provides comprehensive monitoring of the vec
 
 ### Health Status Values
 
-| Status | Description | Action Required |
-|--------|-------------|-----------------|
-| `green` | Healthy | None |
-| `amber` | Degraded performance | Monitor closely |
-| `red` | Critical issues | Immediate investigation |
+| Status  | Description          | Action Required         |
+| ------- | -------------------- | ----------------------- |
+| `green` | Healthy              | None                    |
+| `amber` | Degraded performance | Monitor closely         |
+| `red`   | Critical issues      | Immediate investigation |
 
 ### Health Check Components
 
@@ -123,12 +125,12 @@ export interface HealthCheckConfig {
 
   // Performance thresholds
   thresholds: {
-    responseTimeWarning: number;      // Default: 1000ms
-    responseTimeCritical: number;     // Default: 5000ms
-    errorRateWarning: number;         // Default: 5%
-    errorRateCritical: number;        // Default: 15%
-    connectionTimeWarning: number;    // Default: 500ms
-    connectionTimeCritical: number;   // Default: 2000ms
+    responseTimeWarning: number; // Default: 1000ms
+    responseTimeCritical: number; // Default: 5000ms
+    errorRateWarning: number; // Default: 5%
+    errorRateCritical: number; // Default: 15%
+    connectionTimeWarning: number; // Default: 500ms
+    connectionTimeCritical: number; // Default: 2000ms
   };
 }
 ```
@@ -139,49 +141,49 @@ export interface HealthCheckConfig {
 
 ### Core Qdrant Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `QDRANT_URL` | string | `http://localhost:6333` | Qdrant server URL |
-| `QDRANT_API_KEY` | string | - | API authentication key (optional) |
-| `QDRANT_TIMEOUT` | number | `30000` | Request timeout in milliseconds |
-| `QDRANT_COLLECTION_PREFIX` | string | `cortex` | Collection name prefix |
+| Parameter                  | Type   | Default                 | Description                       |
+| -------------------------- | ------ | ----------------------- | --------------------------------- |
+| `QDRANT_URL`               | string | `http://localhost:6333` | Qdrant server URL                 |
+| `QDRANT_API_KEY`           | string | -                       | API authentication key (optional) |
+| `QDRANT_TIMEOUT`           | number | `30000`                 | Request timeout in milliseconds   |
+| `QDRANT_COLLECTION_PREFIX` | string | `cortex`                | Collection name prefix            |
 
 ### Connection Pool Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `QDRANT_POOL_MIN` | number | Environment-specific | Minimum connection pool size |
-| `QDRANT_POOL_MAX` | number | Environment-specific | Maximum connection pool size |
-| `QDRANT_IDLE_TIMEOUT_MS` | number | `30000` | Connection idle timeout |
-| `QDRANT_CONNECTION_TIMEOUT` | number | `10000` | Connection establishment timeout |
-| `QDRANT_MAX_CONNECTIONS` | number | `10` | Maximum concurrent connections |
+| Parameter                   | Type   | Default              | Description                      |
+| --------------------------- | ------ | -------------------- | -------------------------------- |
+| `QDRANT_POOL_MIN`           | number | Environment-specific | Minimum connection pool size     |
+| `QDRANT_POOL_MAX`           | number | Environment-specific | Maximum connection pool size     |
+| `QDRANT_IDLE_TIMEOUT_MS`    | number | `30000`              | Connection idle timeout          |
+| `QDRANT_CONNECTION_TIMEOUT` | number | `10000`              | Connection establishment timeout |
+| `QDRANT_MAX_CONNECTIONS`    | number | `10`                 | Maximum concurrent connections   |
 
 ### Vector Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `VECTOR_SIZE` | number | `1536` | Vector dimension size |
-| `VECTOR_DISTANCE` | string | `Cosine` | Distance metric (Cosine, Euclid, Dot, Manhattan) |
-| `EMBEDDING_MODEL` | string | `text-embedding-ada-002` | OpenAI embedding model |
-| `EMBEDDING_BATCH_SIZE` | number | `10` | Batch size for embedding operations |
+| Parameter              | Type   | Default                  | Description                                      |
+| ---------------------- | ------ | ------------------------ | ------------------------------------------------ |
+| `VECTOR_SIZE`          | number | `1536`                   | Vector dimension size                            |
+| `VECTOR_DISTANCE`      | string | `Cosine`                 | Distance metric (Cosine, Euclid, Dot, Manhattan) |
+| `EMBEDDING_MODEL`      | string | `text-embedding-ada-002` | OpenAI embedding model                           |
+| `EMBEDDING_BATCH_SIZE` | number | `10`                     | Batch size for embedding operations              |
 
 ### Circuit Breaker Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `CIRCUIT_BREAKER_ENABLED` | boolean | `true` | Enable circuit breaker |
-| `CIRCUIT_BREAKER_THRESHOLD` | number | `5` | Failure threshold for opening circuit |
-| `CIRCUIT_BREAKER_TIMEOUT` | number | `60000` | Recovery timeout in milliseconds |
-| `CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS` | number | `3` | Max calls in half-open state |
+| Parameter                             | Type    | Default | Description                           |
+| ------------------------------------- | ------- | ------- | ------------------------------------- |
+| `CIRCUIT_BREAKER_ENABLED`             | boolean | `true`  | Enable circuit breaker                |
+| `CIRCUIT_BREAKER_THRESHOLD`           | number  | `5`     | Failure threshold for opening circuit |
+| `CIRCUIT_BREAKER_TIMEOUT`             | number  | `60000` | Recovery timeout in milliseconds      |
+| `CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS` | number  | `3`     | Max calls in half-open state          |
 
 ### Health Check Configuration
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `HEALTH_CHECK_INTERVAL_MS` | number | `30000` | Health check interval |
-| `METRICS_COLLECTION_INTERVAL_MS` | number | `60000` | Metrics collection interval |
-| `ENABLE_HEALTH_CHECKS` | boolean | `true` | Enable health checks |
-| `ENABLE_METRICS_COLLECTION` | boolean | `true` | Enable metrics collection |
+| Parameter                        | Type    | Default | Description                 |
+| -------------------------------- | ------- | ------- | --------------------------- |
+| `HEALTH_CHECK_INTERVAL_MS`       | number  | `30000` | Health check interval       |
+| `METRICS_COLLECTION_INTERVAL_MS` | number  | `60000` | Metrics collection interval |
+| `ENABLE_HEALTH_CHECKS`           | boolean | `true`  | Enable health checks        |
+| `ENABLE_METRICS_COLLECTION`      | boolean | `true`  | Enable metrics collection   |
 
 ---
 
@@ -203,6 +205,7 @@ export interface HealthCheckConfig {
 ```
 
 **Development Characteristics**:
+
 - Smaller connection pools for resource efficiency
 - Detailed logging for debugging
 - Frequent health checks for immediate feedback
@@ -224,6 +227,7 @@ export interface HealthCheckConfig {
 ```
 
 **Test Characteristics**:
+
 - Minimal resource usage
 - Disabled health checks for faster test execution
 - Minimal logging for cleaner test output
@@ -245,6 +249,7 @@ export interface HealthCheckConfig {
 ```
 
 **Staging Characteristics**:
+
 - Production-like configuration for validation
 - Full monitoring enabled for performance testing
 - Moderate connection pools for resource balance
@@ -266,6 +271,7 @@ export interface HealthCheckConfig {
 ```
 
 **Production Characteristics**:
+
 - Optimized for performance and reliability
 - Larger connection pools for high throughput
 - Comprehensive monitoring and alerting
@@ -290,12 +296,12 @@ optimalPoolSize = (8 * 2) + 1 = 17
 
 #### Pool Tuning Recommendations
 
-| Environment | CPU Cores | Storage Type | Min Pool | Max Pool | Rationale |
-|-------------|-----------|--------------|----------|----------|-----------|
-| Development | 4-8 | SSD | 2 | 10 | Resource conservation |
-| Testing | 2-4 | SSD | 1 | 5 | Minimal footprint |
-| Staging | 8-16 | SSD/NVMe | 3 | 15 | Production simulation |
-| Production | 16+ | NVMe | 5 | 20+ | High throughput |
+| Environment | CPU Cores | Storage Type | Min Pool | Max Pool | Rationale             |
+| ----------- | --------- | ------------ | -------- | -------- | --------------------- |
+| Development | 4-8       | SSD          | 2        | 10       | Resource conservation |
+| Testing     | 2-4       | SSD          | 1        | 5        | Minimal footprint     |
+| Staging     | 8-16      | SSD/NVMe     | 3        | 15       | Production simulation |
+| Production  | 16+       | NVMe         | 5        | 20+      | High throughput       |
 
 ### Timeout Configuration
 
@@ -313,12 +319,12 @@ optimalPoolSize = (8 * 2) + 1 = 17
 
 #### Timeout Tuning by Operation
 
-| Operation Type | Recommended Timeout | Rationale |
-|----------------|-------------------|-----------|
-| Health Check | 5-10 seconds | Quick status verification |
-| Vector Search | 10-30 seconds | Depends on query complexity |
-| Vector Upsert | 30-60 seconds | Depends on batch size |
-| Collection Operations | 60-120 seconds | Administrative operations |
+| Operation Type        | Recommended Timeout | Rationale                   |
+| --------------------- | ------------------- | --------------------------- |
+| Health Check          | 5-10 seconds        | Quick status verification   |
+| Vector Search         | 10-30 seconds       | Depends on query complexity |
+| Vector Upsert         | 30-60 seconds       | Depends on batch size       |
+| Collection Operations | 60-120 seconds      | Administrative operations   |
 
 ### Circuit Breaker Tuning
 
@@ -337,11 +343,11 @@ optimalPoolSize = (8 * 2) + 1 = 17
 
 #### Circuit Breaker Strategy
 
-| Scenario | Failure Threshold | Recovery Timeout | Strategy |
-|----------|-------------------|------------------|----------|
-| High Latency | 3 | 30 seconds | Fast recovery |
-| Intermittent Failures | 5 | 60 seconds | Balanced approach |
-| Persistent Outages | 10 | 300 seconds | Conservative recovery |
+| Scenario              | Failure Threshold | Recovery Timeout | Strategy              |
+| --------------------- | ----------------- | ---------------- | --------------------- |
+| High Latency          | 3                 | 30 seconds       | Fast recovery         |
+| Intermittent Failures | 5                 | 60 seconds       | Balanced approach     |
+| Persistent Outages    | 10                | 300 seconds      | Conservative recovery |
 
 ### Memory Optimization
 
@@ -364,10 +370,10 @@ optimalBatchSize = min(1073741824 / (6144 * 4), 1000, 500) = min(43690, 1000, 50
 
 #### Memory Configuration
 
-| Configuration | Memory Usage | Recommended Settings |
-|---------------|--------------|---------------------|
-| Vector Cache | 30-50% of available RAM | `VECTOR_CACHE_SIZE=0.3` |
-| Connection Pool | 10-20% of available RAM | `QDRANT_POOL_MAX=20` |
+| Configuration     | Memory Usage            | Recommended Settings          |
+| ----------------- | ----------------------- | ----------------------------- |
+| Vector Cache      | 30-50% of available RAM | `VECTOR_CACHE_SIZE=0.3`       |
+| Connection Pool   | 10-20% of available RAM | `QDRANT_POOL_MAX=20`          |
 | Processing Buffer | 20-30% of available RAM | `PROCESSING_BUFFER_SIZE=0.25` |
 
 ---
@@ -423,7 +429,7 @@ grep "performance.*degradation" /var/log/cortex-mcp/app.log | tail -50
 // Generate weekly performance report
 const performanceReport = await qdrantMonitor.generatePerformanceReport({
   timeframe: '7d',
-  metrics: ['response_time', 'error_rate', 'throughput', 'resource_usage']
+  metrics: ['response_time', 'error_rate', 'throughput', 'resource_usage'],
 });
 
 console.log('Weekly Qdrant Performance Report:', performanceReport);
@@ -462,13 +468,11 @@ curl -s -X POST http://localhost:3000/admin/qdrant/maintenance/optimize
 // Analyze growth trends
 const capacityAnalysis = await qdrantMonitor.analyzeCapacityTrends({
   timeframe: '30d',
-  metrics: ['vector_count', 'storage_usage', 'memory_usage', 'query_volume']
+  metrics: ['vector_count', 'storage_usage', 'memory_usage', 'query_volume'],
 });
 
 // Generate capacity recommendations
-const recommendations = await qdrantMonitor.generateCapacityRecommendations(
-  capacityAnalysis
-);
+const recommendations = await qdrantMonitor.generateCapacityRecommendations(capacityAnalysis);
 ```
 
 #### Security Audit
@@ -493,6 +497,7 @@ openssl s_client -connect $(echo $QDRANT_URL | sed 's|http://||'):443 -servernam
 #### 1. Connection Failures
 
 **Symptoms**:
+
 - Health checks showing `red` status
 - Connection timeout errors
 - Circuit breaker in open state
@@ -517,6 +522,7 @@ curl -s -H "api-key: $QDRANT_API_KEY" $QDRANT_URL/collections
 **Solutions**:
 
 1. **Network Issues**:
+
    ```bash
    # Restart network services
    systemctl restart networking
@@ -527,6 +533,7 @@ curl -s -H "api-key: $QDRANT_API_KEY" $QDRANT_URL/collections
    ```
 
 2. **Qdrant Server Issues**:
+
    ```bash
    # Restart Qdrant service
    systemctl restart qdrant
@@ -549,6 +556,7 @@ curl -s -H "api-key: $QDRANT_API_KEY" $QDRANT_URL/collections
 #### 2. Performance Degradation
 
 **Symptoms**:
+
 - Response times > 5 seconds
 - Health checks showing `amber` status
 - High CPU/memory usage
@@ -575,6 +583,7 @@ curl -s -X POST $QDRANT_URL/collections/cortex/search \
 **Solutions**:
 
 1. **Index Optimization**:
+
    ```bash
    # Rebuild collection indexes
    curl -s -X POST $QDRANT_URL/collections/cortex/index
@@ -586,6 +595,7 @@ curl -s -X POST $QDRANT_URL/collections/cortex/search \
    ```
 
 2. **Resource Scaling**:
+
    ```bash
    # Increase memory allocation
    systemctl edit qdrant
@@ -602,15 +612,16 @@ curl -s -X POST $QDRANT_URL/collections/cortex/search \
      vector: embedding,
      limit: 10,
      search_params: {
-       hnsw_ef: 128,  // Increase for better recall
-       exact: false   // Use approximate search
-     }
+       hnsw_ef: 128, // Increase for better recall
+       exact: false, // Use approximate search
+     },
    };
    ```
 
 #### 3. Memory Issues
 
 **Symptoms**:
+
 - Out-of-memory errors
 - System swapping
 - Process crashes
@@ -635,6 +646,7 @@ curl -s $QDRANT_URL/collections/cortex | jq '.points_count'
 **Solutions**:
 
 1. **Memory Configuration**:
+
    ```bash
    # Increase Qdrant memory limit
    systemctl edit qdrant
@@ -647,6 +659,7 @@ curl -s $QDRANT_URL/collections/cortex | jq '.points_count'
    ```
 
 2. **Collection Optimization**:
+
    ```bash
    # Implement vector pagination
    curl -s -X POST $QDRANT_URL/collections/cortex/scroll \
@@ -662,6 +675,7 @@ curl -s $QDRANT_URL/collections/cortex | jq '.points_count'
 #### 4. Circuit Breaker Issues
 
 **Symptoms**:
+
 - Circuit breaker stuck in open state
 - No automatic recovery
 - High failure rates
@@ -682,6 +696,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
 **Solutions**:
 
 1. **Manual Circuit Reset**:
+
    ```bash
    # Reset circuit breaker via API
    curl -s -X POST http://localhost:3000/admin/circuit-breaker/reset \
@@ -695,12 +710,13 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
    ```
 
 2. **Threshold Adjustment**:
+
    ```typescript
    // Temporarily increase failure threshold
    const newConfig = {
-     failureThreshold: 10,  // Increase from 5
+     failureThreshold: 10, // Increase from 5
      recoveryTimeout: 30000, // Reduce from 60s
-     halfOpenMaxCalls: 5    // Increase from 3
+     halfOpenMaxCalls: 5, // Increase from 3
    };
 
    await circuitBreaker.updateConfig(newConfig);
@@ -711,6 +727,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
 #### Complete Outage Response
 
 1. **Immediate Assessment** (5 minutes):
+
    ```bash
    # Check all health endpoints
    for endpoint in /health /health/qdrant /health/summary; do
@@ -723,6 +740,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
    ```
 
 2. **Service Recovery** (10 minutes):
+
    ```bash
    # Restart services in order
    systemctl restart qdrant
@@ -734,6 +752,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
    ```
 
 3. **Fallback Activation** (15 minutes):
+
    ```bash
    # Activate degraded mode
    curl -s -X POST http://localhost:3000/admin/degradation/activate \
@@ -749,6 +768,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
 #### Performance Degradation Response
 
 1. **Performance Assessment** (5 minutes):
+
    ```bash
    # Check current metrics
    curl -s http://localhost:3000/metrics | grep qdrant_response_time
@@ -758,6 +778,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
    ```
 
 2. **Performance Optimization** (10 minutes):
+
    ```bash
    # Increase circuit breaker threshold
    curl -s -X PATCH http://localhost:3000/admin/circuit-breaker/qdrant \
@@ -852,7 +873,7 @@ grep "qdrant.*error" /var/log/cortex-mcp/app.log | tail -50
 # qdrant-config.yaml
 production:
   qdrant:
-    url: "https://qdrant-prod.example.com"
+    url: 'https://qdrant-prod.example.com'
     timeout: 30000
     pool:
       min: 5
@@ -873,7 +894,7 @@ production:
 
 staging:
   qdrant:
-    url: "https://qdrant-staging.example.com"
+    url: 'https://qdrant-staging.example.com'
     timeout: 30000
     pool:
       min: 3
@@ -895,40 +916,40 @@ staging:
 const qdrantDashboard = {
   panels: [
     {
-      title: "Qdrant Health Status",
-      type: "stat",
+      title: 'Qdrant Health Status',
+      type: 'stat',
       targets: [
         {
-          expr: "qdrant_health_status",
-          legendFormat: "{{status}}"
-        }
-      ]
+          expr: 'qdrant_health_status',
+          legendFormat: '{{status}}',
+        },
+      ],
     },
     {
-      title: "Response Time",
-      type: "graph",
+      title: 'Response Time',
+      type: 'graph',
       targets: [
         {
-          expr: "histogram_quantile(0.95, rate(qdrant_response_time_seconds_bucket[5m]))",
-          legendFormat: "95th percentile"
+          expr: 'histogram_quantile(0.95, rate(qdrant_response_time_seconds_bucket[5m]))',
+          legendFormat: '95th percentile',
         },
         {
-          expr: "histogram_quantile(0.50, rate(qdrant_response_time_seconds_bucket[5m]))",
-          legendFormat: "50th percentile"
-        }
-      ]
+          expr: 'histogram_quantile(0.50, rate(qdrant_response_time_seconds_bucket[5m]))',
+          legendFormat: '50th percentile',
+        },
+      ],
     },
     {
-      title: "Error Rate",
-      type: "graph",
+      title: 'Error Rate',
+      type: 'graph',
       targets: [
         {
-          expr: "rate(qdrant_errors_total[5m])",
-          legendFormat: "Error Rate"
-        }
-      ]
-    }
-  ]
+          expr: 'rate(qdrant_errors_total[5m])',
+          legendFormat: 'Error Rate',
+        },
+      ],
+    },
+  ],
 };
 ```
 
@@ -945,8 +966,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Qdrant is down"
-          description: "Qdrant health check has been failing for more than 1 minute"
+          summary: 'Qdrant is down'
+          description: 'Qdrant health check has been failing for more than 1 minute'
 
       - alert: QdrantHighLatency
         expr: histogram_quantile(0.95, rate(qdrant_response_time_seconds_bucket[5m])) > 5
@@ -954,8 +975,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "Qdrant high latency detected"
-          description: "95th percentile response time is above 5 seconds"
+          summary: 'Qdrant high latency detected'
+          description: '95th percentile response time is above 5 seconds'
 
       - alert: QdrantHighErrorRate
         expr: rate(qdrant_errors_total[5m]) / rate(qdrant_requests_total[5m]) > 0.1
@@ -963,8 +984,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Qdrant high error rate detected"
-          description: "Error rate is above 10% for more than 2 minutes"
+          summary: 'Qdrant high error rate detected'
+          description: 'Error rate is above 10% for more than 2 minutes'
 ```
 
 This comprehensive guide provides all the necessary information for monitoring, configuring, and maintaining the Qdrant vector database in the MCP Cortex system. Regular reference to this guide will help ensure optimal performance and reliability of the Qdrant integration.

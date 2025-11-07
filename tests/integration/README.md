@@ -65,6 +65,7 @@ node tests/integration/integration-test-runner.mjs
 Tests system functionality when Qdrant vector database is available and operational.
 
 **Key Test Areas:**
+
 - Basic memory operations (store/find)
 - Mixed item type handling (entity, relation, decision, etc.)
 - Advanced search functionality (semantic, hybrid, graph expansion)
@@ -73,6 +74,7 @@ Tests system functionality when Qdrant vector database is available and operatio
 - Scope and isolation boundaries
 
 **Success Criteria:**
+
 - All CRUD operations succeed
 - Vector search returns relevant results
 - Chunk reassembly maintains content integrity
@@ -83,6 +85,7 @@ Tests system functionality when Qdrant vector database is available and operatio
 Tests system resilience and graceful degradation when Qdrant is unavailable.
 
 **Key Test Areas:**
+
 - Degraded mode detection and fallback activation
 - Storage operations with fallback mechanisms
 - Keyword-based search as vector alternative
@@ -91,6 +94,7 @@ Tests system resilience and graceful degradation when Qdrant is unavailable.
 - Performance without vector operations
 
 **Success Criteria:**
+
 - System detects Qdrant unavailability
 - Fallback storage mechanisms activate
 - Search functionality continues with keyword matching
@@ -102,6 +106,7 @@ Tests system resilience and graceful degradation when Qdrant is unavailable.
 Tests the complete document chunking and reassembly pipeline.
 
 **Key Test Areas:**
+
 - Basic chunk reassembly (simple documents)
 - Partial reassembly (missing chunks)
 - Complex document handling (large, structured content)
@@ -111,6 +116,7 @@ Tests the complete document chunking and reassembly pipeline.
 - Concurrent reassembly operations
 
 **Success Criteria:**
+
 - Documents are correctly chunked based on size/type
 - Chunks preserve metadata and relationships
 - Reassembly maintains content order and integrity
@@ -123,6 +129,7 @@ Tests the complete document chunking and reassembly pipeline.
 Lightweight performance tests verifying system meets performance targets.
 
 **Performance Targets:**
+
 - **N=100 items storage:** <1 second
 - **Single query search:** <200ms
 - **10 concurrent searches:** <1.5 seconds
@@ -130,6 +137,7 @@ Lightweight performance tests verifying system meets performance targets.
 - **Memory usage:** <100MB increase for test dataset
 
 **Key Test Areas:**
+
 - Storage performance (batch operations)
 - Search performance (various query types)
 - Concurrent operation handling
@@ -138,6 +146,7 @@ Lightweight performance tests verifying system meets performance targets.
 - Scope-isolated operations
 
 **Success Criteria:**
+
 - All operations complete within target times
 - Memory usage remains within acceptable limits
 - Performance regressions detected and reported
@@ -150,6 +159,7 @@ Lightweight performance tests verifying system meets performance targets.
 Tests use realistic data that mirrors actual usage patterns:
 
 **Knowledge Item Types:**
+
 - `entity`: System components, services, concepts
 - `relation`: Dependencies, associations, connections
 - `decision`: Technical decisions, architectural choices
@@ -160,6 +170,7 @@ Tests use realistic data that mirrors actual usage patterns:
 - `section`: Documentation sections, specifications
 
 **Content Characteristics:**
+
 - Technical documentation with formatting
 - Code examples and configuration snippets
 - Performance metrics and measurements
@@ -202,6 +213,7 @@ wsl -d Ubuntu docker run -p 6333:6333 qdrant/qdrant:latest
 ```
 
 **Environment Variables:**
+
 ```bash
 QDRANT_URL=http://localhost:6333
 QDRANT_API_KEY=your-api-key-optional
@@ -258,6 +270,7 @@ Coverage reports saved to `coverage/` directory.
 ### Common Issues
 
 **Qdrant Connection Errors:**
+
 ```bash
 # Check if Qdrant is running
 curl http://localhost:6333/health
@@ -267,12 +280,14 @@ docker run -p 6333:6333 qdrant/qdrant:latest
 ```
 
 **Test Timeouts:**
+
 ```bash
 # Increase timeout in vitest.config.ts
 testTimeout: 120000, // 2 minutes
 ```
 
 **Memory Issues:**
+
 ```bash
 # Run tests with increased Node.js memory
 node --max-old-space-size=4096 node_modules/.bin/vitest run tests/integration/
@@ -354,17 +369,18 @@ This is expected behavior and validates the degraded path functionality.
 
 ### Current Baselines (as of Phase 6)
 
-| Operation | Target | Actual | Status |
-|-----------|--------|--------|--------|
-| Store 100 items | <1000ms | ~850ms | ✅ |
-| Single search | <200ms | ~110ms | ✅ |
-| 10 concurrent searches | <1500ms | ~1200ms | ✅ |
-| Mixed 50 operations | <2000ms | ~1600ms | ✅ |
-| Memory increase (100 items) | <100MB | ~45MB | ✅ |
+| Operation                   | Target  | Actual  | Status |
+| --------------------------- | ------- | ------- | ------ |
+| Store 100 items             | <1000ms | ~850ms  | ✅     |
+| Single search               | <200ms  | ~110ms  | ✅     |
+| 10 concurrent searches      | <1500ms | ~1200ms | ✅     |
+| Mixed 50 operations         | <2000ms | ~1600ms | ✅     |
+| Memory increase (100 items) | <100MB  | ~45MB   | ✅     |
 
 ### Regression Detection
 
 Performance regression testing automatically detects:
+
 - Storage operation slowdowns (>150% baseline)
 - Search performance degradation (>150% baseline)
 - Memory usage increases (>200% baseline)

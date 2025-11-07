@@ -18,33 +18,38 @@ This document provides step-by-step playbooks for responding to various disaster
 ## Service Outage Playbook
 
 ### Scenario
+
 Cortex MCP services become unavailable or are experiencing severe degradation.
 
 ### Severity Levels
+
 - **Level 1**: Single service outage (MCP or Qdrant)
 - **Level 2**: Multiple services affected
 - **Level 3**: Complete system outage
 
 ### Response Timeline
-| Time | Action | Owner |
-|------|--------|-------|
-| T+0 | Detection and initial assessment | Monitoring System |
-| T+5 | Incident activation | On-call Engineer |
-| T+15 | Service recovery attempt | Technical Lead |
-| T+30 | Escalation if needed | Incident Commander |
-| T+60 | Stakeholder communication | Communications Lead |
+
+| Time | Action                           | Owner               |
+| ---- | -------------------------------- | ------------------- |
+| T+0  | Detection and initial assessment | Monitoring System   |
+| T+5  | Incident activation              | On-call Engineer    |
+| T+15 | Service recovery attempt         | Technical Lead      |
+| T+30 | Escalation if needed             | Incident Commander  |
+| T+60 | Stakeholder communication        | Communications Lead |
 
 ### Step-by-Step Procedures
 
 #### Phase 1: Immediate Response (T+0 to T+5 minutes)
 
 **1.1 Detection and Assessment**
+
 - [ ] Verify alert accuracy
 - [ ] Check service status dashboards
 - [ ] Confirm user impact
 - [ ] Document initial findings
 
 **Commands:**
+
 ```bash
 # Check service status
 systemctl status cortex-mcp
@@ -60,12 +65,14 @@ tail -50 /var/log/qdrant/qdrant.log
 ```
 
 **1.2 Incident Activation**
+
 - [ ] Activate incident response team
 - [ ] Create incident channel
 - [ ] Document incident ID
 - [ ] Set up war room
 
 **Slack Command:**
+
 ```
 /incident activate service=cortex-mcp severity=high description="Service health check failing"
 ```
@@ -73,12 +80,14 @@ tail -50 /var/log/qdrant/qdrant.log
 #### Phase 2: Investigation (T+5 to T+15 minutes)
 
 **2.1 System Diagnostics**
+
 - [ ] Check system resources
 - [ ] Review recent changes
 - [ ] Analyze error patterns
 - [ ] Identify root cause
 
 **Commands:**
+
 ```bash
 # System resources
 free -h
@@ -95,6 +104,7 @@ journalctl -u cortex-mcp --no-pager -n 50
 ```
 
 **2.2 Impact Assessment**
+
 - [ ] Determine affected users
 - [ ] Assess business impact
 - [ ] Identify dependent services
@@ -103,12 +113,14 @@ journalctl -u cortex-mcp --no-pager -n 50
 #### Phase 3: Recovery (T+15 to T+30 minutes)
 
 **3.1 Service Recovery**
+
 - [ ] Attempt service restart
 - [ ] Verify configuration
 - [ ] Check dependencies
 - [ ] Validate functionality
 
 **Service Restart Commands:**
+
 ```bash
 # MCP Server restart
 systemctl restart cortex-mcp
@@ -122,12 +134,14 @@ curl -f http://localhost:6333/health
 ```
 
 **3.2 Recovery Validation**
+
 - [ ] Test API functionality
 - [ ] Verify data integrity
 - [ ] Check performance metrics
 - [ ] Confirm user access
 
 **Validation Commands:**
+
 ```bash
 # API functionality test
 curl -f -X POST http://localhost:3000/api/memory/find \
@@ -141,12 +155,14 @@ curl -s http://localhost:6333/collections/cortex-memory | jq '.result.points_cou
 #### Phase 4: Resolution (T+30+ minutes)
 
 **4.1 Full System Validation**
+
 - [ ] Complete health check
 - [ ] Performance validation
 - [ ] User access confirmation
 - [ ] Documentation update
 
 **4.2 Communication**
+
 - [ ] Update status page
 - [ ] Notify stakeholders
 - [ ] Send resolution notice
@@ -154,16 +170,17 @@ curl -s http://localhost:6333/collections/cortex-memory | jq '.result.points_cou
 
 ### Decision Points
 
-| Situation | Decision | Rationale |
-|-----------|----------|-----------|
-| Service fails to restart after 3 attempts | Escalate to Level 2 | Possible deeper infrastructure issue |
-| Multiple services affected | Activate major incident procedure | Coordination required across teams |
-| Data corruption suspected | Do not restart - investigate first | Risk of further damage |
-| Recovery time exceeds 30 minutes | Management notification | Business impact significant |
+| Situation                                 | Decision                           | Rationale                            |
+| ----------------------------------------- | ---------------------------------- | ------------------------------------ |
+| Service fails to restart after 3 attempts | Escalate to Level 2                | Possible deeper infrastructure issue |
+| Multiple services affected                | Activate major incident procedure  | Coordination required across teams   |
+| Data corruption suspected                 | Do not restart - investigate first | Risk of further damage               |
+| Recovery time exceeds 30 minutes          | Management notification            | Business impact significant          |
 
 ### Rollback Procedures
 
 If recovery attempts fail:
+
 1. **Stop all services** to prevent further damage
 2. **Preserve forensic evidence** (logs, metrics, configurations)
 3. **Activate disaster recovery plan**
@@ -182,6 +199,7 @@ If recovery attempts fail:
 ## Database Failure Playbook
 
 ### Scenario
+
 Qdrant database becomes unavailable, corrupted, or experiences performance issues.
 
 ### Response Procedures
@@ -189,12 +207,14 @@ Qdrant database becomes unavailable, corrupted, or experiences performance issue
 #### Phase 1: Detection (T+0 to T+5 minutes)
 
 **1.1 Identify Database Issues**
+
 - [ ] Database health check failures
 - [ ] Search query timeouts
 - [ ] Connection errors
 - [ ] Performance degradation
 
 **Commands:**
+
 ```bash
 # Database health
 curl -f http://localhost:6333/health
@@ -211,12 +231,14 @@ curl -X POST http://localhost:6333/collections/cortex-memory/search \
 #### Phase 2: Assessment (T+5 to T+15 minutes)
 
 **2.1 Determine Failure Type**
+
 - [ ] Service unavailable vs. performance issue
 - [ ] Data corruption assessment
 - [ ] Storage space check
 - [ ] Memory usage analysis
 
 **Commands:**
+
 ```bash
 # Check storage
 df -h /qdrant/storage
@@ -235,6 +257,7 @@ tail -50 /var/log/qdrant/qdrant.log | grep -i error
 **3.1 Database Recovery Steps**
 
 **Option A: Service Restart**
+
 ```bash
 # Attempt graceful restart
 systemctl restart qdrant
@@ -243,6 +266,7 @@ curl -f http://localhost:6333/health
 ```
 
 **Option B: Collection Recovery**
+
 ```bash
 # Recreate collection if corrupted
 curl -X PUT http://localhost:6333/collections/cortex-memory \
@@ -257,6 +281,7 @@ curl -X PUT http://localhost:6333/collections/cortex-memory \
 ```
 
 **Option C: Backup Restore**
+
 ```bash
 # Find latest backup
 latest_backup=$(find /backups/qdrant -name "*.snapshot.gz" -type f -printf '%T@ %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
@@ -271,6 +296,7 @@ curl -X POST "http://localhost:6333/collections/cortex-memory/snapshots/restore"
 #### Phase 4: Validation (T+45 to T+60 minutes)
 
 **4.1 Database Validation**
+
 - [ ] Health check passing
 - [ ] Collection accessible
 - [ ] Vector count verification
@@ -288,9 +314,11 @@ curl -X POST "http://localhost:6333/collections/cortex-memory/snapshots/restore"
 ## Network Partition Playbook
 
 ### Scenario
+
 Network connectivity issues between components or with external services.
 
 ### Detection Indicators
+
 - Connection timeouts
 - Intermittent service availability
 - High latency
@@ -301,12 +329,14 @@ Network connectivity issues between components or with external services.
 #### Phase 1: Isolation (T+0 to T+10 minutes)
 
 **1.1 Identify Scope**
+
 - [ ] Internal vs. external connectivity
 - [ ] Affected components identification
 - [ ] Network path analysis
 - [ ] Impact assessment
 
 **Commands:**
+
 ```bash
 # Check local connectivity
 ping -c 3 127.0.0.1
@@ -324,12 +354,14 @@ curl -s http://localhost:6333/health
 #### Phase 2: Recovery (T+10 to T+30 minutes)
 
 **2.1 Network Recovery**
+
 - [ ] Restart network services
 - [ ] Check firewall rules
 - [ ] Verify DNS resolution
 - [ ] Test load balancer health
 
 **Commands:**
+
 ```bash
 # Network service restart
 systemctl restart networking  # or appropriate service
@@ -347,6 +379,7 @@ nslookup cortex.ai
 #### Phase 3: Validation (T+30 to T+45 minutes)
 
 **3.1 Connectivity Validation**
+
 - [ ] End-to-end connectivity test
 - [ ] Service integration verification
 - [ ] Performance measurement
@@ -357,17 +390,20 @@ nslookup cortex.ai
 ## Security Incident Playbook
 
 ### Scenario
+
 Security breach, unauthorized access, or suspicious activity detected.
 
 ### Immediate Actions (T+0 to T+5 minutes)
 
 **1.1 Incident Activation**
+
 - [ ] Activate security incident response team
 - [ ] Isolate affected systems
 - [ ] Preserve forensic evidence
 - [ ] Initiate incident documentation
 
 **Commands:**
+
 ```bash
 # Preserve evidence
 cp -r /app/logs /tmp/evidence-$(date +%s)
@@ -381,12 +417,14 @@ systemctl stop cortex-mcp   # Stop affected services
 ### Investigation Phase (T+5 to T+30 minutes)
 
 **2.1 Security Assessment**
+
 - [ ] Access log analysis
 - [ ] Intrusion detection review
 - [ ] Malware scan
 - [ ] Data compromise assessment
 
 **Commands:**
+
 ```bash
 # Access log analysis
 grep -i "failed\|error\|unauthorized" /app/logs/cortex-mcp.log | tail -100
@@ -401,12 +439,14 @@ find /app -type f -exec md5sum {} \; > /tmp/filesums-$(date +%s)
 ### Recovery Phase (T+30 to T+120 minutes)
 
 **3.1 System Recovery**
+
 - [ ] Remove malicious software
 - [ ] Patch vulnerabilities
 - [ ] Rebuild from clean backups
 - [ ] Strengthen security measures
 
 **3.2 Security Validation**
+
 - [ ] Penetration testing
 - [ ] Security scan
 - [ ] Access control verification
@@ -424,9 +464,11 @@ find /app -type f -exec md5sum {} \; > /tmp/filesums-$(date +%s)
 ## Data Center Outage Playbook
 
 ### Scenario
+
 Complete data center failure or extended unavailability.
 
 ### Activation Criteria
+
 - Power failure
 - Network infrastructure failure
 - Environmental disaster
@@ -437,12 +479,14 @@ Complete data center failure or extended unavailability.
 #### Phase 1: Immediate Response (T+0 to T+15 minutes)
 
 **1.1 Disaster Declaration**
+
 - [ ] Activate disaster recovery team
 - [ ] Declare disaster status
 - [ ] Initiate failover procedures
 - [ ] Notify all stakeholders
 
 **1.2 Site Activation**
+
 - [ ] Activate secondary site
 - [ ] Start failover services
 - [ ] Update DNS records
@@ -451,12 +495,14 @@ Complete data center failure or extended unavailability.
 #### Phase 2: Failover Execution (T+15 to T+90 minutes)
 
 **2.1 Service Failover**
+
 - [ ] Database failover
 - [ ] Application startup
 - [ ] Configuration validation
 - [ ] Integration testing
 
 **2.2 Data Recovery**
+
 - [ ] Restore from offsite backups
 - [ ] Validate data integrity
 - [ ] Synchronize recent changes
@@ -465,6 +511,7 @@ Complete data center failure or extended unavailability.
 #### Phase 3: Validation (T+90 to T+120 minutes)
 
 **3.1 System Validation**
+
 - [ ] End-to-end testing
 - [ ] Performance validation
 - [ ] Security verification
@@ -483,9 +530,11 @@ Complete data center failure or extended unavailability.
 ## Performance Degradation Playbook
 
 ### Scenario
+
 System performance issues, slow response times, or resource exhaustion.
 
 ### Detection Thresholds
+
 - API response time > 2 seconds
 - Memory usage > 85%
 - CPU usage > 90%
@@ -497,12 +546,14 @@ System performance issues, slow response times, or resource exhaustion.
 #### Phase 1: Detection (T+0 to T+5 minutes)
 
 **1.1 Performance Assessment**
+
 - [ ] Identify affected metrics
 - [ ] Determine scope of impact
 - [ ] Check resource utilization
 - [ ] Analyze performance trends
 
 **Commands:**
+
 ```bash
 # Performance metrics
 curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/health
@@ -518,12 +569,14 @@ uptime
 #### Phase 2: Investigation (T+5 to T+20 minutes)
 
 **2.1 Root Cause Analysis**
+
 - [ ] Application profiling
 - [ ] Database query analysis
 - [ ] Network performance check
 - [ ] Resource bottleneck identification
 
 **Commands:**
+
 ```bash
 # Application profiling
 node --inspect dist/index.js
@@ -536,12 +589,14 @@ curl -s http://localhost:6333/metrics | grep qdrant
 #### Phase 3: Remediation (T+20 to T+45 minutes)
 
 **3.1 Performance Optimization**
+
 - [ ] Resource allocation adjustment
 - [ ] Query optimization
 - [ ] Caching strategy enhancement
 - [ ] Load balancing adjustment
 
 **3.2 Scaling Actions**
+
 - [ ] Horizontal scaling if needed
 - [ ] Vertical resource allocation
 - [ ] Service optimization
@@ -550,6 +605,7 @@ curl -s http://localhost:6333/metrics | grep qdrant
 #### Phase 4: Validation (T+45 to T+60 minutes)
 
 **4.1 Performance Validation**
+
 - [ ] Response time measurement
 - [ ] Resource utilization check
 - [ ] Load testing validation
@@ -568,18 +624,21 @@ curl -s http://localhost:6333/metrics | grep qdrant
 ### Incident Review Checklist
 
 **Technical Review:**
+
 - [ ] Root cause identification
 - [ ] Timeline reconstruction
 - [ ] Impact assessment
 - [ ] Resolution effectiveness
 
 **Process Review:**
+
 - [ ] Response timeline evaluation
 - [ ] Communication effectiveness
 - [ ] Escalation appropriateness
 - [ ] Tool utilization assessment
 
 **Lessons Learned:**
+
 - [ ] What went well
 - [ ] What could be improved
 - [ ] Preventive measures needed
@@ -595,18 +654,21 @@ curl -s http://localhost:6333/metrics | grep qdrant
 ### Follow-up Actions
 
 **Immediate (24 hours):**
+
 - [ ] Complete incident documentation
 - [ ] Update monitoring and alerting
 - [ ] Communicate lessons learned
 - [ ] Schedule follow-up meeting
 
 **Short-term (1 week):**
+
 - [ ] Implement preventive measures
 - [ ] Update playbooks and procedures
 - [ ] Conduct team training
 - [ ] Review tooling needs
 
 **Long-term (1 month):**
+
 - [ ] Evaluate DR plan effectiveness
 - [ ] Update infrastructure resilience
 - [ ] Schedule regular testing
@@ -618,21 +680,21 @@ curl -s http://localhost:6333/metrics | grep qdrant
 
 ### Emergency Contacts
 
-| Role | Contact | Method |
-|------|---------|--------|
-| **On-call Engineer** | oncall@cortex.ai | Phone: +1-555-CORTEX1 |
+| Role                   | Contact                      | Method                     |
+| ---------------------- | ---------------------------- | -------------------------- |
+| **On-call Engineer**   | oncall@cortex.ai             | Phone: +1-555-CORTEX1      |
 | **Incident Commander** | incident-commander@cortex.ai | Slack: @incident-commander |
-| **Technical Lead** | tech-lead@cortex.ai | Phone: +1-555-TECHLEAD |
-| **Security Team** | security@cortex.ai | Pager: security-alerts |
-| **Management** | exec@cortex.ai | Phone: +1-555-EXEC |
+| **Technical Lead**     | tech-lead@cortex.ai          | Phone: +1-555-TECHLEAD     |
+| **Security Team**      | security@cortex.ai           | Pager: security-alerts     |
+| **Management**         | exec@cortex.ai               | Phone: +1-555-EXEC         |
 
 ### External Contacts
 
-| Service | Contact | Method |
-|---------|---------|--------|
-| **Cloud Provider** | AWS Support | 1-800-AWS-HELP |
-| **DNS Provider** | Cloudflare Support | support@cloudflare.com |
-| **Security Advisor** | security-consultant@cortex.ai | Phone: +1-555-SECURE |
+| Service              | Contact                       | Method                 |
+| -------------------- | ----------------------------- | ---------------------- |
+| **Cloud Provider**   | AWS Support                   | 1-800-AWS-HELP         |
+| **DNS Provider**     | Cloudflare Support            | support@cloudflare.com |
+| **Security Advisor** | security-consultant@cortex.ai | Phone: +1-555-SECURE   |
 
 ### Communication Channels
 
@@ -646,11 +708,13 @@ curl -s http://localhost:6333/metrics | grep qdrant
 ## Tool Reference
 
 ### Monitoring Tools
+
 - **Grafana**: https://grafana.cortex.ai
 - **Prometheus**: https://prometheus.cortex.ai
 - **AlertManager**: https://alertmanager.cortex.ai
 
 ### Diagnostic Commands
+
 ```bash
 # System health
 ./ops/dr-validation.sh --type quick
@@ -663,6 +727,7 @@ curl -s http://localhost:6333/metrics | grep qdrant
 ```
 
 ### Documentation Links
+
 - **Architecture**: /docs/ARCH-SYSTEM.md
 - **API Reference**: /docs/API-REFERENCE.md
 - **Configuration**: /docs/CONFIG-DEPLOYMENT.md

@@ -5,7 +5,7 @@
  * API key scopes before executing the actual tool logic
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { validateToolScope } from './scope-middleware.js';
 import type { AuthContext } from '../types/auth-types.js';
 

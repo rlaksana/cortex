@@ -50,7 +50,7 @@ describe('Integration Tests - Qdrant Unavailable (Degraded Path)', () => {
     databaseManager = new DatabaseManager({
       qdrant: {
         url: 'http://localhost:6334', // Non-existent port to simulate failure
-        apiKey: process.env.QDRANT_API_KEY,
+        apiKey: process.env['QDRANT_API_KEY'],
         timeout: 5000, // Short timeout for faster failure detection
       },
       enableVectorOperations: true,
@@ -65,11 +65,7 @@ describe('Integration Tests - Qdrant Unavailable (Degraded Path)', () => {
     (databaseManager as any).qdrantClient = mockFailingQdrantClient;
 
     // Initialize services
-    chunkingService = new ChunkingService(
-      databaseManager,
-      embeddingService,
-      undefined,
-    );
+    chunkingService = new ChunkingService(databaseManager, embeddingService, undefined);
 
     // Replace semantic analyzer with mock
     const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
@@ -155,7 +151,7 @@ describe('Integration Tests - Qdrant Unavailable (Degraded Path)', () => {
       expect(storeResult.items).toHaveLength(2);
 
       // Items should have fallback-specific metadata
-      storeResult.items.forEach(item => {
+      storeResult.items.forEach((item) => {
         expect(item.metadata?.fallback_storage).toBe(true);
         expect(item.metadata?.storage_timestamp).toBeDefined();
       });
@@ -197,14 +193,15 @@ describe('Integration Tests - Qdrant Unavailable (Degraded Path)', () => {
       expect(searchResult.search_strategy).toBe('keyword');
 
       // Results should be based on keyword matching, not semantic similarity
-      const relevantResult = searchResult.results.find(r =>
-        r.content.toLowerCase().includes('oauth') ||
-        r.content.toLowerCase().includes('authentication')
+      const relevantResult = searchResult.results.find(
+        (r) =>
+          r.content.toLowerCase().includes('oauth') ||
+          r.content.toLowerCase().includes('authentication')
       );
       expect(relevantResult).toBeDefined();
 
       // Confidence scores should be based on keyword matching, not vector similarity
-      searchResult.results.forEach(result => {
+      searchResult.results.forEach((result) => {
         expect(result.confidence_score).toBeGreaterThan(0);
         expect(result.confidence_score).toBeLessThanOrEqual(1.0);
       });
@@ -280,17 +277,20 @@ This comprehensive test ensures that even without vector database capabilities, 
       const keywordTestData: MemoryStoreInput[] = [
         {
           kind: 'entity',
-          content: 'Payment processing gateway integration with Stripe API for credit card transactions',
+          content:
+            'Payment processing gateway integration with Stripe API for credit card transactions',
           scope: { project: 'payment-system' },
         },
         {
           kind: 'process',
-          content: 'User registration flow with email verification and password strength validation',
+          content:
+            'User registration flow with email verification and password strength validation',
           scope: { project: 'payment-system' },
         },
         {
           kind: 'observation',
-          content: 'System performance metrics show average response time of 150ms for API endpoints',
+          content:
+            'System performance metrics show average response time of 150ms for API endpoints',
           scope: { project: 'payment-system' },
         },
         {
@@ -313,8 +313,14 @@ This comprehensive test ensures that even without vector database capabilities, 
       const keywordSearches = [
         { query: 'payment processing stripe', expectedKeywords: ['payment', 'stripe'] },
         { query: 'user registration email', expectedKeywords: ['user', 'registration', 'email'] },
-        { query: 'performance response time', expectedKeywords: ['performance', 'response', 'time'] },
-        { query: 'microservices architecture migration', expectedKeywords: ['microservices', 'architecture'] },
+        {
+          query: 'performance response time',
+          expectedKeywords: ['performance', 'response', 'time'],
+        },
+        {
+          query: 'microservices architecture migration',
+          expectedKeywords: ['microservices', 'architecture'],
+        },
         { query: 'security sql injection', expectedKeywords: ['security', 'sql', 'injection'] },
       ];
 
@@ -329,8 +335,8 @@ This comprehensive test ensures that even without vector database capabilities, 
         expect(searchResult.fallback_mode).toBe(true);
 
         // Verify keyword matching worked correctly
-        const hasExpectedKeywords = searchResult.results.some(result =>
-          expectedKeywords.some(keyword =>
+        const hasExpectedKeywords = searchResult.results.some((result) =>
+          expectedKeywords.some((keyword) =>
             result.content.toLowerCase().includes(keyword.toLowerCase())
           )
         );
@@ -342,7 +348,7 @@ This comprehensive test ensures that even without vector database capabilities, 
           const firstContent = firstResult.content.toLowerCase();
 
           // First result should contain more query keywords
-          const firstKeywordCount = expectedKeywords.filter(keyword =>
+          const firstKeywordCount = expectedKeywords.filter((keyword) =>
             firstContent.includes(keyword.toLowerCase())
           ).length;
 
@@ -355,12 +361,14 @@ This comprehensive test ensures that even without vector database capabilities, 
       const complexTestData: MemoryStoreInput[] = [
         {
           kind: 'section',
-          content: 'The system architecture follows event-driven design patterns with Kafka message queues',
+          content:
+            'The system architecture follows event-driven design patterns with Kafka message queues',
           scope: { project: 'architecture-docs' },
         },
         {
           kind: 'section',
-          content: 'Database design uses PostgreSQL for relational data and MongoDB for document storage',
+          content:
+            'Database design uses PostgreSQL for relational data and MongoDB for document storage',
           scope: { project: 'architecture-docs' },
         },
         {
@@ -404,11 +412,11 @@ This comprehensive test ensures that even without vector database capabilities, 
 
         // Verify query terms are found in results
         const queryTerms = query.toLowerCase().split(' ');
-        const resultContents = searchResult.results.map(r => r.content.toLowerCase());
+        const resultContents = searchResult.results.map((r) => r.content.toLowerCase());
 
         // Each query should find at least one matching term
-        const hasMatchingTerms = queryTerms.some(term =>
-          resultContents.some(content => content.includes(term))
+        const hasMatchingTerms = queryTerms.some((term) =>
+          resultContents.some((content) => content.includes(term))
         );
         expect(hasMatchingTerms).toBe(true);
       }
@@ -462,7 +470,7 @@ This comprehensive test ensures that even without vector database capabilities, 
         expect(filteredResult.results.length).toBeLessThanOrEqual(1); // Should find at most 1 item per type
 
         // Verify all results are of the specified type
-        filteredResult.results.forEach(result => {
+        filteredResult.results.forEach((result) => {
           expect(result.kind).toBe(type);
         });
       }
@@ -522,8 +530,8 @@ Comprehensive training materials and documentation are maintained for all system
       expect(storeResult.items.length).toBeGreaterThan(1);
 
       // Verify chunking metadata is preserved
-      const chunks = storeResult.items.filter(item => item.metadata?.is_chunk);
-      const parent = storeResult.items.find(item => !item.metadata?.is_chunk);
+      const chunks = storeResult.items.filter((item) => item.metadata?.is_chunk);
+      const parent = storeResult.items.find((item) => !item.metadata?.is_chunk);
 
       expect(chunks.length).toBeGreaterThan(0);
       expect(parent).toBeDefined();
@@ -539,9 +547,10 @@ Comprehensive training materials and documentation are maintained for all system
       expect(searchResult.results.length).toBeGreaterThan(0);
 
       // Should find relevant chunks
-      const relevantChunks = searchResult.results.filter(result =>
-        result.content.toLowerCase().includes('user management') ||
-        result.content.toLowerCase().includes('security policies')
+      const relevantChunks = searchResult.results.filter(
+        (result) =>
+          result.content.toLowerCase().includes('user management') ||
+          result.content.toLowerCase().includes('security policies')
       );
       expect(relevantChunks.length).toBeGreaterThan(0);
     });
@@ -591,8 +600,8 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       expect(storeResult.success).toBe(true);
 
       // Verify metadata is preserved in parent and chunks
-      const parent = storeResult.items.find(item => !item.metadata?.is_chunk);
-      const chunks = storeResult.items.filter(item => item.metadata?.is_chunk);
+      const parent = storeResult.items.find((item) => !item.metadata?.is_chunk);
+      const chunks = storeResult.items.filter((item) => item.metadata?.is_chunk);
 
       expect(parent?.metadata?.title).toBe('Project Requirements Specification');
       expect(parent?.metadata?.category).toBe('requirements');
@@ -600,7 +609,7 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       expect(parent?.metadata?.version).toBe('2.1.0');
 
       // Chunks should inherit key metadata
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         expect(chunk.metadata?.category).toBe('requirements');
         expect(chunk.metadata?.author).toBe('product-team');
         expect(chunk.metadata?.parent_id).toBe(parent?.id);
@@ -618,7 +627,7 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       expect(searchResult.results.length).toBeGreaterThan(0);
 
       // Results should contain metadata context
-      searchResult.results.forEach(result => {
+      searchResult.results.forEach((result) => {
         if (result.metadata?.is_chunk) {
           expect(result.metadata?.parent_id).toBeDefined();
           expect(result.metadata?.total_chunks).toBeGreaterThan(0);
@@ -667,7 +676,7 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       expect(searchTime).toBeLessThan(2000); // Should complete in <2s
 
       // Verify search quality
-      searchResults.forEach(result => {
+      searchResults.forEach((result) => {
         expect(result.results.length).toBeGreaterThan(0);
         expect(result.fallback_mode).toBe(true);
       });
@@ -721,8 +730,9 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       // Results should be properly ranked
       if (largeDatasetSearch.results.length > 1) {
         for (let i = 0; i < largeDatasetSearch.results.length - 1; i++) {
-          expect(largeDatasetSearch.results[i].confidence_score)
-            .toBeGreaterThanOrEqual(largeDatasetSearch.results[i + 1].confidence_score);
+          expect(largeDatasetSearch.results[i].confidence_score).toBeGreaterThanOrEqual(
+            largeDatasetSearch.results[i + 1].confidence_score
+          );
         }
       }
     });
@@ -752,7 +762,7 @@ All communications shall be encrypted using TLS 1.3. User passwords shall be has
       (databaseManager as any).qdrantClient = mockQdrantClient;
 
       // Wait a moment for recovery detection
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Test that system recovers and can use both fallback and primary storage
       const recoveryData: MemoryStoreInput[] = [

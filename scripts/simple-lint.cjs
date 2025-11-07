@@ -59,7 +59,7 @@ async function simpleLint() {
       '.specify/**/*',
       'migrations/**/*',
       'docker/**/*',
-    ]
+    ],
   };
 
   // Simple syntax checker that just looks for obvious syntax errors
@@ -98,7 +98,6 @@ async function simpleLint() {
         // Might be missing return in arrow function
         // This is a weak heuristic, just to provide some validation
       }
-
     } catch (error) {
       errors.push(`${filePath}: ${error.message}`);
     }
@@ -145,10 +144,9 @@ async function simpleLint() {
       process.exit(0);
     } else {
       console.log('❌ Issues found:');
-      errors.forEach(error => console.log(`  ${error}`));
+      errors.forEach((error) => console.log(`  ${error}`));
       process.exit(1);
     }
-
   } catch (error) {
     console.error('💥 Error during linting:', error.message);
     process.exit(1);

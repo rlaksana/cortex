@@ -84,21 +84,21 @@ vi.mock('../../../src/config/environment.js', () => ({
       return {
         database: {
           type: 'qdrant',
-          url: this.config.QDRANT_URL,
-          vectorSize: parseInt(this.config.VECTOR_SIZE),
-          distance: this.config.VECTOR_DISTANCE,
+          url: this.config['QDRANT_URL'],
+          vectorSize: parseInt(this.config['VECTOR_SIZE']),
+          distance: this.config['VECTOR_DISTANCE'],
         },
         application: {
           name: 'Test Application',
           version: '2.0.0',
-          environment: this.config.NODE_ENV,
+          environment: this.config['NODE_ENV'],
         },
         features: {
           auth: false,
           caching: true,
           metrics: true,
         },
-        environment: this.config.NODE_ENV,
+        environment: this.config['NODE_ENV'],
       };
     }
   },
@@ -341,8 +341,8 @@ describe('Configuration Validation - Comprehensive Testing', () => {
 
     it('should require security settings in production', async () => {
       // Mock production environment
-      const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      const originalEnv = process.env['NODE_ENV'];
+      process.env['NODE_ENV'] = 'production';
 
       const prodConfig = {
         ...testConfig,
@@ -363,7 +363,7 @@ describe('Configuration Validation - Comprehensive Testing', () => {
         validator: (config: CompleteDatabaseConfig): ValidationError[] => {
           const errors: ValidationError[] = [];
 
-          if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+          if (!process.env['JWT_SECRET'] || process.env['JWT_SECRET'].length < 32) {
             errors.push({
               field: 'JWT_SECRET',
               message: 'JWT_SECRET is required in production environment',
@@ -383,7 +383,7 @@ describe('Configuration Validation - Comprehensive Testing', () => {
       // Should fail in production without proper security
       expect(result.errors.length).toBeGreaterThan(0);
 
-      process.env.NODE_ENV = originalEnv;
+      process.env['NODE_ENV'] = originalEnv;
     });
   });
 
@@ -746,7 +746,7 @@ describe('Configuration Validation - Comprehensive Testing', () => {
         ...testConfig,
         vector: {
           ...testConfig.vector,
-          batchSize: Number.MAX_SAFE_INTEGER,
+          batchSize: Number['MAX_SAFE_INTEGER'],
         },
       };
 

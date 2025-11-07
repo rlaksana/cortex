@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import { KnowledgeItem } from '../../src/types/core-interfaces.js';
 import { ChunkingService } from '../../src/services/chunking/chunking-service.js';
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
@@ -17,7 +17,7 @@ import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';
 import {
   getDocumentWithChunks,
   verifyDocumentReassembly,
-  type DocumentWithChunks
+  type DocumentWithChunks,
 } from '../../src/services/document-reassembly.js';
 
 describe('Semantic Chunking End-to-End with 99.5% Accuracy', () => {
@@ -35,7 +35,7 @@ describe('Semantic Chunking End-to-End with 99.5% Accuracy', () => {
 
     chunkingService = new ChunkingService(
       1200, // maxCharsPerChunk
-      200,  // overlapSize
+      200, // overlapSize
       embeddingService as any
     );
 
@@ -222,7 +222,7 @@ ${'Additional technical content and detailed case studies to extend document bey
         scope: {
           project: 'healthcare-ai-analysis',
           branch: 'main',
-          org: 'medical-research'
+          org: 'medical-research',
         },
         data: {
           content: largeTechnicalDoc,
@@ -231,7 +231,12 @@ ${'Additional technical content and detailed case studies to extend document bey
           author: 'ai-research-team',
           peer_reviewed: true,
           publication_date: '2025-01-15T10:00:00Z',
-          tags: ['healthcare', 'artificial-intelligence', 'machine-learning', 'medical-diagnostics'],
+          tags: [
+            'healthcare',
+            'artificial-intelligence',
+            'machine-learning',
+            'medical-diagnostics',
+          ],
         },
         metadata: {
           version: '2.1.0',
@@ -250,12 +255,12 @@ ${'Additional technical content and detailed case studies to extend document bey
       expect(chunkedItems.length).toBeGreaterThan(2); // Should create multiple chunks
 
       // Find parent and child items
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       expect(parentItem).toBeDefined();
       expect(childChunks.length).toBeGreaterThan(1);
-      expect(parentItem?.data.total_chunks).toBe(childChunks.length);
+      expect(parentItem?.data['total_chunks']).toBe(childChunks.length);
 
       // Validate metadata integrity
       expect(parentItem?.data.original_length).toBe(largeTechnicalDoc.length);
@@ -264,13 +269,13 @@ ${'Additional technical content and detailed case studies to extend document bey
 
       // Validate chunk metadata
       childChunks.forEach((chunk, index) => {
-        expect(chunk.data.parent_id).toBe(parentItem!.id);
-        expect(chunk.data.chunk_index).toBe(index);
-        expect(chunk.data.total_chunks).toBe(childChunks.length);
-        expect(chunk.data.is_chunk).toBe(true);
-        expect(chunk.data.original_length).toBe(largeTechnicalDoc.length);
-        expect(chunk.data.extracted_title).toBe('Artificial Intelligence in Modern Healthcare');
-        expect(chunk.data.position_ratio).toBeCloseTo(index / (childChunks.length - 1), 1);
+        expect(chunk['data.parent_id']).toBe(parentItem!.id);
+        expect(chunk['data.chunk_index']).toBe(index);
+        expect(chunk['data.total_chunks']).toBe(childChunks.length);
+        expect(chunk['data.is_chunk']).toBe(true);
+        expect(chunk['data.original_length']).toBe(largeTechnicalDoc.length);
+        expect(chunk['data.extracted_title']).toBe('Artificial Intelligence in Modern Healthcare');
+        expect(chunk['data.position_ratio']).toBeCloseTo(index / (childChunks.length - 1), 1);
       });
 
       // Test document reassembly
@@ -371,10 +376,10 @@ const pipeline = {
   stages: ['build', 'test', 'security-scan', 'deploy'],
   environment: {
     NODE_ENV: 'production',
-    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_URL: process.env['DATABASE_URL'],
     API_KEYS: {
-      STRIPE: process.env.STRIPE_SECRET_KEY,
-      SENDGRID: process.env.SENDGRID_API_KEY
+      STRIPE: process.env['STRIPE_SECRET_KEY'],
+      SENDGRID: process.env['SENDGRID_API_KEY']
     }
   },
   deployment: {
@@ -501,7 +506,7 @@ ${'Additional implementation details, technical specifications, and project docu
         scope: {
           project: 'digital-transformation',
           branch: 'main',
-          org: 'enterprise-tech'
+          org: 'enterprise-tech',
         },
         data: {
           content: mixedContentDoc,
@@ -520,8 +525,8 @@ ${'Additional implementation details, technical specifications, and project docu
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Test reassembly
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
@@ -738,7 +743,7 @@ ${'Additional research content, detailed methodologies, and extended case studie
         scope: {
           project: 'climate-research',
           branch: 'neural-networks',
-          org: 'scientific-institute'
+          org: 'scientific-institute',
         },
         data: {
           content: structuredContent,
@@ -758,8 +763,8 @@ ${'Additional research content, detailed methodologies, and extended case studie
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Verify semantic sections are preserved across chunk boundaries
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
@@ -1052,7 +1057,7 @@ ${'Additional technical content, code examples, and documentation to ensure comp
         kind: 'section',
         scope: {
           project: 'development-documentation',
-          branch: 'main'
+          branch: 'main',
         },
         data: {
           content: specialContent,
@@ -1064,8 +1069,8 @@ ${'Additional technical content, code examples, and documentation to ensure comp
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Test reassembly
       const reassembledDoc = await getDocumentWithChunks(parentItem!.id);
@@ -1086,7 +1091,7 @@ ${'Additional technical content, code examples, and documentation to ensure comp
       expect(reassembledContent).toContain('$a^{[l]} = \\sigma(z^{[l]})$');
 
       // Verify YAML and JSON configurations
-      expect(reassembledContent).toContain('version: \'3.8\'');
+      expect(reassembledContent).toContain("version: '3.8'");
       expect(reassembledContent).toContain('POSTGRES_DB: climate_db');
       expect(reassembledContent).toContain('$schema": "http://json-schema.org/draft-07/schema#"');
 
@@ -1135,15 +1140,15 @@ ${'Detailed technical documentation sections covering all aspects of the system 
       expect(chunkingTime).toBeLessThan(5000); // Should complete within 5 seconds
       expect(chunkedItems.length).toBeGreaterThan(10); // Should create multiple chunks
 
-      const parentItem = chunkedItems.find(item => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter(item => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Verify chunk distribution
-      const chunkSizes = childChunks.map(chunk => chunk.data.content.length);
+      const chunkSizes = childChunks.map((chunk) => chunk['data.content'].length);
       const avgChunkSize = chunkSizes.reduce((a, b) => a + b, 0) / chunkSizes.length;
 
       expect(avgChunkSize).toBeGreaterThan(800); // Reasonable chunk size
-      expect(avgChunkSize).toBeLessThan(1500);  // Not too large
+      expect(avgChunkSize).toBeLessThan(1500); // Not too large
 
       // Test reassembly performance
       const reassemblyStartTime = Date.now();
@@ -1174,7 +1179,7 @@ function calculateTextSimilarity(text1: string, text2: string): number {
   const wordSimilarity = calculateWordSimilarity(text1, text2);
 
   // Return weighted average (more weight to word similarity for semantic content)
-  return (charSimilarity * 0.3) + (wordSimilarity * 0.7);
+  return charSimilarity * 0.3 + wordSimilarity * 0.7;
 }
 
 function calculateCharSimilarity(text1: string, text2: string): number {
@@ -1188,13 +1193,19 @@ function calculateCharSimilarity(text1: string, text2: string): number {
 }
 
 function calculateWordSimilarity(text1: string, text2: string): number {
-  const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-  const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+  const words1 = text1
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0);
+  const words2 = text2
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 0);
 
   const set1 = new Set(words1);
   const set2 = new Set(words2);
 
-  const intersection = new Set([...set1].filter(x => set2.has(x)));
+  const intersection = new Set([...set1].filter((x) => set2.has(x)));
   const union = new Set([...set1, ...set2]);
 
   return intersection.size / union.size;
@@ -1218,8 +1229,8 @@ function calculateLevenshteinDistance(str1: string, str2: string): number {
       } else {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1 // deletion
         );
       }
     }

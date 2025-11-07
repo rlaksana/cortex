@@ -36,17 +36,19 @@ async function testQdrantRuntime() {
 
     // Test store operation in degraded mode
     console.log('💾 Testing store operation...');
-    const testItems = [{
-      kind: 'entity',
-      content: 'Test entity for runtime verification',
-      scope: { project: 'test', branch: 'main' }
-    }];
+    const testItems = [
+      {
+        kind: 'entity',
+        content: 'Test entity for runtime verification',
+        scope: { project: 'test', branch: 'main' },
+      },
+    ];
 
     const storeResult = await vectorDB.storeItems(testItems);
     console.log('Store Result:', {
       degradedMode: vectorDB.isDegradedMode(),
       itemsProcessed: storeResult.items.length,
-      errors: storeResult.errors.length
+      errors: storeResult.errors.length,
     });
 
     // Test search operation in degraded mode
@@ -55,7 +57,7 @@ async function testQdrantRuntime() {
     console.log('Search Result:', {
       degradedMode: vectorDB.isDegradedMode(),
       strategy: searchResult.strategy,
-      totalResults: searchResult.total
+      totalResults: searchResult.total,
     });
 
     // Test runtime status refresh
@@ -64,7 +66,6 @@ async function testQdrantRuntime() {
     console.log('Refreshed Status:', JSON.stringify(refreshedStatus, null, 2));
 
     console.log('✅ All tests completed successfully!');
-
   } catch (error) {
     console.error('❌ Test failed:', error);
     process.exit(1);

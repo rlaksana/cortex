@@ -11,7 +11,7 @@ import {
   securityChecker,
   validateSecurity,
   secureInput,
-  SecurityViolation
+  SecurityViolation,
 } from '../../../src/security/runtime-checks.js';
 
 describe('Security Runtime Checker', () => {
@@ -36,17 +36,17 @@ describe('Security Runtime Checker', () => {
       const violations = checker.validateInput(longInput);
 
       expect(violations.length).toBeGreaterThan(0);
-      const lengthViolation = violations.find(v => v.type === 'LENGTH_EXCEEDED');
+      const lengthViolation = violations.find((v) => v.type === 'LENGTH_EXCEEDED');
       expect(lengthViolation).toBeDefined();
       expect(lengthViolation?.severity).toBe('medium');
     });
 
     it('should detect blocked patterns', () => {
-      const sqlInput = "SELECT * FROM users WHERE id = 1";
+      const sqlInput = 'SELECT * FROM users WHERE id = 1';
       const violations = checker.validateInput(sqlInput);
 
       expect(violations.length).toBeGreaterThan(0);
-      const sqlViolation = violations.find(v => v.type === 'BLOCKED_PATTERN');
+      const sqlViolation = violations.find((v) => v.type === 'BLOCKED_PATTERN');
       expect(sqlViolation).toBeDefined();
       expect(sqlViolation?.severity).toBe('high');
     });
@@ -69,15 +69,15 @@ describe('Security Runtime Checker', () => {
   describe('SQL Injection Detection', () => {
     it('should detect SQL injection attempts', () => {
       const sqlInputs = [
-        "SELECT * FROM users",
+        'SELECT * FROM users',
         "'; DROP TABLE users; --",
         "1' OR '1'='1",
-        "UNION SELECT password FROM users",
+        'UNION SELECT password FROM users',
       ];
 
       for (const input of sqlInputs) {
         const violations = checker.validateInput(input);
-        const sqlViolation = violations.find(v => v.type === 'SQL_INJECTION');
+        const sqlViolation = violations.find((v) => v.type === 'SQL_INJECTION');
         expect(sqlViolation).toBeDefined();
         expect(sqlViolation?.severity).toMatch(/high|critical/);
       }
@@ -87,27 +87,27 @@ describe('Security Runtime Checker', () => {
       const dangerousInputs = [
         "LOAD_FILE('/etc/passwd')",
         "INTO OUTFILE '/tmp/shell.php'",
-        "SELECT * FROM INFORMATION_SCHEMA.TABLES",
+        'SELECT * FROM INFORMATION_SCHEMA['TABLES']',
       ];
 
       for (const input of dangerousInputs) {
         const violations = checker.validateInput(input);
-        const sqlViolation = violations.find(v => v.type === 'SQL_INJECTION');
+        const sqlViolation = violations.find((v) => v.type === 'SQL_INJECTION');
         expect(sqlViolation?.severity).toBe('critical');
       }
     });
 
     it('should not flag benign SQL-like text', () => {
       const benignInputs = [
-        "I selected the best option",
-        "Insert your name here",
-        "Update your profile",
-        "Delete this comment",
+        'I selected the best option',
+        'Insert your name here',
+        'Update your profile',
+        'Delete this comment',
       ];
 
       for (const input of benignInputs) {
         const violations = checker.validateInput(input);
-        const sqlViolation = violations.find(v => v.type === 'SQL_INJECTION');
+        const sqlViolation = violations.find((v) => v.type === 'SQL_INJECTION');
         expect(sqlViolation).toBeUndefined();
       }
     });
@@ -119,12 +119,12 @@ describe('Security Runtime Checker', () => {
         "<script>alert('XSS')</script>",
         "javascript:alert('XSS')",
         "<img src=x onerror=alert('XSS')>",
-        "<iframe src='javascript:alert(\"XSS\")'></iframe>",
+        '<iframe src=\'javascript:alert("XSS")\'></iframe>',
       ];
 
       for (const input of xssInputs) {
         const violations = checker.validateInput(input);
-        const xssViolation = violations.find(v => v.type === 'XSS');
+        const xssViolation = violations.find((v) => v.type === 'XSS');
         expect(xssViolation).toBeDefined();
         expect(xssViolation?.severity).toMatch(/medium|high|critical/);
       }
@@ -134,21 +134,21 @@ describe('Security Runtime Checker', () => {
       const scriptInput = "<script>alert('test')</script>";
       const violations = checker.validateInput(scriptInput);
 
-      const xssViolation = violations.find(v => v.type === 'XSS');
+      const xssViolation = violations.find((v) => v.type === 'XSS');
       expect(xssViolation?.severity).toBe('critical');
     });
 
     it('should not flag benign HTML-like text', () => {
       const benignInputs = [
-        "This is <strong>bold</strong> text",
-        "Visit www.example.com for more info",
-        "The <script> tag is used for JavaScript",
-        "JavaScript is a programming language",
+        'This is <strong>bold</strong> text',
+        'Visit www.example.com for more info',
+        'The <script> tag is used for JavaScript',
+        'JavaScript is a programming language',
       ];
 
       for (const input of benignInputs) {
         const violations = checker.validateInput(input);
-        const xssViolation = violations.find(v => v.type === 'XSS');
+        const xssViolation = violations.find((v) => v.type === 'XSS');
         expect(xssViolation).toBeUndefined();
       }
     });
@@ -157,16 +157,16 @@ describe('Security Runtime Checker', () => {
   describe('Path Traversal Detection', () => {
     it('should detect path traversal attempts', () => {
       const pathInputs = [
-        "../../../etc/passwd",
-        "..\\..\\windows\\system32\\config\\sam",
-        "/etc/passwd",
-        "C:\\Windows\\System32\\config\\SAM",
-        "%2e%2e%2f%2e%2e%2fetc%2fpasswd",
+        '../../../etc/passwd',
+        '..\\..\\windows\\system32\\config\\sam',
+        '/etc/passwd',
+        'C:\\Windows\\System32\\config\\SAM',
+        '%2e%2e%2f%2e%2e%2fetc%2fpasswd',
       ];
 
       for (const input of pathInputs) {
         const violations = checker.validateInput(input);
-        const pathViolation = violations.find(v => v.type === 'PATH_TRAVERSAL');
+        const pathViolation = violations.find((v) => v.type === 'PATH_TRAVERSAL');
         expect(pathViolation).toBeDefined();
         expect(pathViolation?.severity).toMatch(/high|critical/);
       }
@@ -177,24 +177,19 @@ describe('Security Runtime Checker', () => {
 
       // Valid path
       const violations1 = checker.validateFilePath('/var/www/uploads/file.txt', allowedPaths);
-      expect(violations1.filter(v => v.type === 'UNAUTHORIZED_PATH')).toHaveLength(0);
+      expect(violations1.filter((v) => v.type === 'UNAUTHORIZED_PATH')).toHaveLength(0);
 
       // Invalid path
       const violations2 = checker.validateFilePath('/etc/passwd', allowedPaths);
-      expect(violations2.some(v => v.type === 'UNAUTHORIZED_PATH')).toBe(true);
+      expect(violations2.some((v) => v.type === 'UNAUTHORIZED_PATH')).toBe(true);
     });
 
     it('should detect dangerous file extensions', () => {
-      const dangerousFiles = [
-        'script.exe',
-        'malware.bat',
-        'hack.ps1',
-        'virus.scr',
-      ];
+      const dangerousFiles = ['script.exe', 'malware.bat', 'hack.ps1', 'virus.scr'];
 
       for (const file of dangerousFiles) {
         const violations = checker.validateFilePath(file);
-        const extViolation = violations.find(v => v.type === 'DANGEROUS_EXTENSION');
+        const extViolation = violations.find((v) => v.type === 'DANGEROUS_EXTENSION');
         expect(extViolation).toBeDefined();
         expect(extViolation?.severity).toBe('medium');
       }
@@ -204,16 +199,16 @@ describe('Security Runtime Checker', () => {
   describe('Command Injection Detection', () => {
     it('should detect command injection attempts', () => {
       const commandInputs = [
-        "file.txt; rm -rf /",
-        "data | cat /etc/passwd",
-        "name && curl malicious.com",
-        "input `whoami` more",
-        "test $(ls -la) data",
+        'file.txt; rm -rf /',
+        'data | cat /etc/passwd',
+        'name && curl malicious.com',
+        'input `whoami` more',
+        'test $(ls -la) data',
       ];
 
       for (const input of commandInputs) {
         const violations = checker.validateInput(input);
-        const cmdViolation = violations.find(v => v.type === 'COMMAND_INJECTION');
+        const cmdViolation = violations.find((v) => v.type === 'COMMAND_INJECTION');
         expect(cmdViolation).toBeDefined();
         expect(cmdViolation?.severity).toMatch(/medium|high/);
       }
@@ -230,7 +225,7 @@ describe('Security Runtime Checker', () => {
 
       for (const input of dangerousCommands) {
         const violations = checker.validateInput(input);
-        const cmdViolation = violations.find(v => v.type === 'COMMAND_INJECTION');
+        const cmdViolation = violations.find((v) => v.type === 'COMMAND_INJECTION');
         expect(cmdViolation?.severity).toBe('high');
       }
     });
@@ -246,7 +241,7 @@ describe('Security Runtime Checker', () => {
 
       for (const url of safeUrls) {
         const violations = checker.validateUrl(url);
-        expect(violations.filter(v => v.severity === 'critical')).toHaveLength(0);
+        expect(violations.filter((v) => v.severity === 'critical')).toHaveLength(0);
       }
     });
 
@@ -260,7 +255,7 @@ describe('Security Runtime Checker', () => {
 
       for (const url of maliciousUrls) {
         const violations = checker.validateUrl(url);
-        const suspiciousViolation = violations.find(v => v.type === 'SUSPICIOUS_URL');
+        const suspiciousViolation = violations.find((v) => v.type === 'SUSPICIOUS_URL');
         expect(suspiciousViolation?.severity).toBe('critical');
       }
     });
@@ -270,23 +265,19 @@ describe('Security Runtime Checker', () => {
 
       // Valid domain
       const violations1 = checker.validateUrl('https://example.com/path', allowedDomains);
-      expect(violations1.filter(v => v.type === 'UNAUTHORIZED_DOMAIN')).toHaveLength(0);
+      expect(violations1.filter((v) => v.type === 'UNAUTHORIZED_DOMAIN')).toHaveLength(0);
 
       // Invalid domain
       const violations2 = checker.validateUrl('https://malicious.com/path', allowedDomains);
-      expect(violations2.some(v => v.type === 'UNAUTHORIZED_DOMAIN')).toBe(true);
+      expect(violations2.some((v) => v.type === 'UNAUTHORIZED_DOMAIN')).toBe(true);
     });
 
     it('should handle malformed URLs', () => {
-      const malformedUrls = [
-        'not-a-url',
-        'ht tp://broken-url',
-        '://missing-protocol.com',
-      ];
+      const malformedUrls = ['not-a-url', 'ht tp://broken-url', '://missing-protocol.com'];
 
       for (const url of malformedUrls) {
         const violations = checker.validateUrl(url);
-        const invalidViolation = violations.find(v => v.type === 'INVALID_URL');
+        const invalidViolation = violations.find((v) => v.type === 'INVALID_URL');
         expect(invalidViolation).toBeDefined();
         expect(invalidViolation?.severity).toBe('medium');
       }
@@ -370,7 +361,7 @@ describe('Security Runtime Checker', () => {
       const customChecker = new SecurityRuntimeChecker(config);
       const violations = customChecker.validateInput('This contains forbidden word');
 
-      expect(violations.some(v => v.type === 'CUSTOM_RULE')).toBe(true);
+      expect(violations.some((v) => v.type === 'CUSTOM_RULE')).toBe(true);
     });
   });
 
@@ -436,8 +427,9 @@ describe('Security Validation Functions', () => {
     it('should throw on violations when configured', () => {
       const instance = new TestClass();
 
-      expect(() => instance.strictProcess('<script>alert("XSS")</script>'))
-        .toThrow('Security violation');
+      expect(() => instance.strictProcess('<script>alert("XSS")</script>')).toThrow(
+        'Security violation'
+      );
     });
 
     it('should include context in validation', () => {

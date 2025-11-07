@@ -36,7 +36,7 @@ import type {
   EnhancedMemoryStoreInput,
   EnhancedMemoryFindInput,
   SystemStatusInput,
-  KnowledgeItem
+  KnowledgeItem,
 } from '../../src/types/core-interfaces.js';
 
 // Mock dependencies
@@ -195,7 +195,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         // Verify all complex nested structures are properly validated
         const item = complexInput.items[0];
         expect(item.scope.project).toBe('test-project');
-        expect(item.metadata.customFields.testId).toBe('complex-test-001');
+        expect(item.metadata['customFields'].testId).toBe('complex-test-001');
         expect(item.deduplication.similarity_threshold).toBe(0.85);
         expect(item.ttl_config.policy).toBe('default');
         expect(item.truncation_config.max_chars).toBe(10000);
@@ -289,11 +289,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         expect(validation.errors!.length).toBeGreaterThan(5); // Should catch multiple errors
 
         // Check specific error messages
-        const errorMessages = validation.errors!.map(e => e.message);
-        expect(errorMessages.some(msg => msg.includes('content'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('priority'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('similarity_threshold'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('policy'))).toBe(true);
+        const errorMessages = validation.errors!.map((e) => e.message);
+        expect(errorMessages.some((msg) => msg.includes('content'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('priority'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('similarity_threshold'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('policy'))).toBe(true);
       });
 
       it('should validate array inputs with complex item constraints', () => {
@@ -320,19 +320,23 @@ describe('Enhanced MCP Tool Contract Validation', () => {
                 complexity: ['simple', 'medium', 'complex'][i % 3],
               },
             },
-            ...(i % 3 === 0 ? {
-              deduplication: {
-                enabled: true,
-                similarity_threshold: 0.8 + (i % 3) * 0.05,
-                merge_strategy: ['prefer_existing', 'prefer_newer', 'intelligent'][i % 3],
-              },
-            } : {}),
-            ...(i % 5 === 0 ? {
-              ttl_config: {
-                policy: ['default', 'short', 'long'][i % 3],
-                auto_extend: i % 2 === 0,
-              },
-            } : {}),
+            ...(i % 3 === 0
+              ? {
+                  deduplication: {
+                    enabled: true,
+                    similarity_threshold: 0.8 + (i % 3) * 0.05,
+                    merge_strategy: ['prefer_existing', 'prefer_newer', 'intelligent'][i % 3],
+                  },
+                }
+              : {}),
+            ...(i % 5 === 0
+              ? {
+                  ttl_config: {
+                    policy: ['default', 'short', 'long'][i % 3],
+                    auto_extend: i % 2 === 0,
+                  },
+                }
+              : {}),
           })),
           deduplication: {
             enabled: true,
@@ -364,9 +368,13 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         const tooManyItemsInput = { ...arrayInput };
         tooManyItemsInput.items = tooManyItemsInput.items.slice(0, 150); // Exceeds max
 
-        const tooManyValidation = validateInputForVersion('memory_store', '1.2.0', tooManyItemsInput);
+        const tooManyValidation = validateInputForVersion(
+          'memory_store',
+          '1.2.0',
+          tooManyItemsInput
+        );
         expect(tooManyValidation.isValid).toBe(false);
-        expect(tooManyValidation.errors?.some(e => e.message.includes('items'))).toBe(true);
+        expect(tooManyValidation.errors?.some((e) => e.message.includes('items'))).toBe(true);
       });
     });
 
@@ -474,10 +482,10 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         // Verify complex nested output structures
         const item = complexOutput.items[0];
         expect(item.id).toBe('test-entity-001');
-        expect(item.metadata.confidence).toBe(0.88);
+        expect(item.metadata['confidence']).toBe(0.88);
         expect(item.relations).toHaveLength(1);
         expect(item.insights).toHaveLength(1);
-        expect(complexOutput.metadata.deduplication_stats.items_created).toBe(1);
+        expect(complexOutput.metadata['deduplication_stats'].items_created).toBe(1);
         expect(complexOutput.warnings).toHaveLength(1);
       });
 
@@ -645,7 +653,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         expect(searchResult.items[0].scope.project).toBe(storeResult.items[0].scope.project);
 
         // Validate search output
-        const searchOutputValidation = validateOutputForVersion('memory_find', '1.3.0', searchResult);
+        const searchOutputValidation = validateOutputForVersion(
+          'memory_find',
+          '1.3.0',
+          searchResult
+        );
         expect(searchOutputValidation.isValid).toBe(true);
       });
 
@@ -712,10 +724,27 @@ describe('Enhanced MCP Tool Contract Validation', () => {
 
     describe('Type System Compatibility', () => {
       it('should maintain type compatibility across tool versions', () => {
-        const entityTypes = ['entity', 'relation', 'observation', 'section', 'runbook', 'change', 'issue', 'decision', 'todo', 'release_note', 'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'];
+        const entityTypes = [
+          'entity',
+          'relation',
+          'observation',
+          'section',
+          'runbook',
+          'change',
+          'issue',
+          'decision',
+          'todo',
+          'release_note',
+          'ddl',
+          'pr_context',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
+        ];
 
         // Test all knowledge types with memory_store v1.2.0
-        entityTypes.forEach(kind => {
+        entityTypes.forEach((kind) => {
           const storeInput = {
             items: [
               {
@@ -746,7 +775,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
       it('should validate enum values across different tool contexts', () => {
         // Test strategy enums
         const validStrategies = ['fast', 'auto', 'deep'];
-        validStrategies.forEach(strategy => {
+        validStrategies.forEach((strategy) => {
           const searchInput = {
             query: 'strategy test',
             search_strategy: strategy,
@@ -759,7 +788,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
 
         // Test TTL policy enums
         const validPolicies = ['default', 'short', 'long', 'permanent'];
-        validPolicies.forEach(policy => {
+        validPolicies.forEach((policy) => {
           const storeInput = {
             items: [
               {
@@ -779,8 +808,14 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         });
 
         // Test merge strategy enums
-        const validMergeStrategies = ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'];
-        validMergeStrategies.forEach(strategy => {
+        const validMergeStrategies = [
+          'skip',
+          'prefer_existing',
+          'prefer_newer',
+          'combine',
+          'intelligent',
+        ];
+        validMergeStrategies.forEach((strategy) => {
           const storeInput = {
             items: [
               {
@@ -879,10 +914,18 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           items_per_second: 225,
         };
 
-        expect(storeMetrics.requests_per_second).toBeGreaterThanOrEqual(storeThroughput.min_requests_per_second);
-        expect(storeMetrics.requests_per_second).toBeLessThanOrEqual(storeThroughput.max_requests_per_second);
-        expect(storeMetrics.items_per_second).toBeGreaterThanOrEqual(storeThroughput.min_items_per_second);
-        expect(storeMetrics.items_per_second).toBeLessThanOrEqual(storeThroughput.max_items_per_second);
+        expect(storeMetrics.requests_per_second).toBeGreaterThanOrEqual(
+          storeThroughput.min_requests_per_second
+        );
+        expect(storeMetrics.requests_per_second).toBeLessThanOrEqual(
+          storeThroughput.max_requests_per_second
+        );
+        expect(storeMetrics.items_per_second).toBeGreaterThanOrEqual(
+          storeThroughput.min_items_per_second
+        );
+        expect(storeMetrics.items_per_second).toBeLessThanOrEqual(
+          storeThroughput.max_items_per_second
+        );
 
         // Test memory_find throughput
         const findThroughput = throughputContracts.memory_find['1.3.0'];
@@ -891,10 +934,18 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           results_per_second: 425,
         };
 
-        expect(findMetrics.requests_per_second).toBeGreaterThanOrEqual(findThroughput.min_requests_per_second);
-        expect(findMetrics.requests_per_second).toBeLessThanOrEqual(findThroughput.max_requests_per_second);
-        expect(findMetrics.results_per_second).toBeGreaterThanOrEqual(findThroughput.min_results_per_second);
-        expect(findMetrics.results_per_second).toBeLessThanOrEqual(findThroughput.max_results_per_second);
+        expect(findMetrics.requests_per_second).toBeGreaterThanOrEqual(
+          findThroughput.min_requests_per_second
+        );
+        expect(findMetrics.requests_per_second).toBeLessThanOrEqual(
+          findThroughput.max_requests_per_second
+        );
+        expect(findMetrics.results_per_second).toBeGreaterThanOrEqual(
+          findThroughput.min_results_per_second
+        );
+        expect(findMetrics.results_per_second).toBeLessThanOrEqual(
+          findThroughput.max_results_per_second
+        );
       });
     });
 
@@ -904,14 +955,14 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           memory_store: {
             '1.2.0': {
               max_memory_per_request: 100 * 1024 * 1024, // 100MB
-              max_memory_per_item: 10 * 1024 * 1024,    // 10MB
-              max_batch_memory: 500 * 1024 * 1024,     // 500MB
+              max_memory_per_item: 10 * 1024 * 1024, // 10MB
+              max_batch_memory: 500 * 1024 * 1024, // 500MB
             },
           },
           memory_find: {
             '1.3.0': {
-              max_memory_per_request: 50 * 1024 * 1024,  // 50MB
-              max_result_memory: 20 * 1024 * 1024,       // 20MB
+              max_memory_per_request: 50 * 1024 * 1024, // 50MB
+              max_result_memory: 20 * 1024 * 1024, // 20MB
             },
           },
         };
@@ -919,24 +970,34 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         // Test memory_store memory usage
         const storeMemoryContract = memoryContracts.memory_store['1.2.0'];
         const storeMemoryUsage = {
-          request_memory: 75 * 1024 * 1024,  // 75MB
-          item_memory: 8 * 1024 * 1024,      // 8MB per item
-          batch_memory: 350 * 1024 * 1024,   // 350MB for batch
+          request_memory: 75 * 1024 * 1024, // 75MB
+          item_memory: 8 * 1024 * 1024, // 8MB per item
+          batch_memory: 350 * 1024 * 1024, // 350MB for batch
         };
 
-        expect(storeMemoryUsage.request_memory).toBeLessThanOrEqual(storeMemoryContract.max_memory_per_request);
-        expect(storeMemoryUsage.item_memory).toBeLessThanOrEqual(storeMemoryContract.max_memory_per_item);
-        expect(storeMemoryUsage.batch_memory).toBeLessThanOrEqual(storeMemoryContract.max_batch_memory);
+        expect(storeMemoryUsage.request_memory).toBeLessThanOrEqual(
+          storeMemoryContract.max_memory_per_request
+        );
+        expect(storeMemoryUsage.item_memory).toBeLessThanOrEqual(
+          storeMemoryContract.max_memory_per_item
+        );
+        expect(storeMemoryUsage.batch_memory).toBeLessThanOrEqual(
+          storeMemoryContract.max_batch_memory
+        );
 
         // Test memory_find memory usage
         const findMemoryContract = memoryContracts.memory_find['1.3.0'];
         const findMemoryUsage = {
-          request_memory: 35 * 1024 * 1024,  // 35MB
-          result_memory: 15 * 1024 * 1024,   // 15MB
+          request_memory: 35 * 1024 * 1024, // 35MB
+          result_memory: 15 * 1024 * 1024, // 15MB
         };
 
-        expect(findMemoryUsage.request_memory).toBeLessThanOrEqual(findMemoryContract.max_memory_per_request);
-        expect(findMemoryUsage.result_memory).toBeLessThanOrEqual(findMemoryContract.max_result_memory);
+        expect(findMemoryUsage.request_memory).toBeLessThanOrEqual(
+          findMemoryContract.max_memory_per_request
+        );
+        expect(findMemoryUsage.result_memory).toBeLessThanOrEqual(
+          findMemoryContract.max_result_memory
+        );
       });
     });
   });
@@ -975,9 +1036,14 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           },
         ];
 
-        accessControlTests.forEach(test => {
-          const contract = BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[test.version];
-          const hasRequiredScopes = test.required_scopes.every(scope => test.user_scopes.includes(scope));
+        accessControlTests.forEach((test) => {
+          const contract =
+            BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[
+              test.version
+            ];
+          const hasRequiredScopes = test.required_scopes.every((scope) =>
+            test.user_scopes.includes(scope)
+          );
 
           expect(hasRequiredScopes).toBe(test.expected_access);
           expect(contract.required_scopes).toEqual(expect.arrayContaining(test.required_scopes));
@@ -991,8 +1057,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           { tool: 'system_status', version: '1.0.0', expected_isolation: false },
         ];
 
-        tenantIsolationTests.forEach(test => {
-          const contract = BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[test.version];
+        tenantIsolationTests.forEach((test) => {
+          const contract =
+            BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[
+              test.version
+            ];
           expect(contract.tenant_isolation).toBe(test.expected_isolation);
         });
       });
@@ -1042,7 +1111,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           },
         ];
 
-        securityTests.forEach(test => {
+        securityTests.forEach((test) => {
           const validation = validateInputForVersion('memory_store', '1.2.0', test.input);
 
           // Input should be valid (sanitized) but potentially flagged
@@ -1088,8 +1157,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           },
         ];
 
-        rateLimitTests.forEach(test => {
-          const contract = BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[test.version];
+        rateLimitTests.forEach((test) => {
+          const contract =
+            BUILTIN_TOOL_CONTRACTS[test.tool as keyof typeof BUILTIN_TOOL_CONTRACTS].contracts[
+              test.version
+            ];
           const limits = contract.rate_limits;
 
           expect(limits.requests_per_minute).toBe(test.limits.requests_per_minute);
@@ -1117,9 +1189,9 @@ describe('Enhanced MCP Tool Contract Validation', () => {
 
         // Check for specific breaking changes
         const breakingChanges = driftAnalysis.breakingChanges;
-        expect(breakingChanges.some(change =>
-          change.field.includes('idempotency_key')
-        )).toBe(true);
+        expect(breakingChanges.some((change) => change.field.includes('idempotency_key'))).toBe(
+          true
+        );
 
         // Verify non-breaking changes are also tracked
         expect(driftAnalysis.nonBreakingChanges.length).toBeGreaterThan(0);
@@ -1133,18 +1205,18 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         expect(migrationPlan.steps.length).toBeGreaterThan(0);
 
         // Verify migration steps are actionable
-        migrationPlan.steps.forEach(step => {
+        migrationPlan.steps.forEach((step) => {
           expect(step.description).toBeDefined();
           expect(step.action).toBeDefined();
           expect(step.severity).toMatch(/^(low|medium|high|critical)$/);
         });
 
         // Should have automated migration steps
-        const automatedSteps = migrationPlan.steps.filter(step => step.automated);
+        const automatedSteps = migrationPlan.steps.filter((step) => step.automated);
         expect(automatedSteps.length).toBeGreaterThan(0);
 
         // Should have manual intervention steps if needed
-        const manualSteps = migrationPlan.steps.filter(step => !step.automated);
+        const manualSteps = migrationPlan.steps.filter((step) => !step.automated);
         // Some breaking changes may require manual intervention
       });
     });
@@ -1173,7 +1245,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         ];
 
         // Test that v1.0.0 inputs work with v1.2.0
-        v1_0_0_inputs.forEach(input => {
+        v1_0_0_inputs.forEach((input) => {
           const v1_0_0_validation = validateInputForVersion('memory_store', '1.0.0', input);
           const v1_2_0_validation = validateInputForVersion('memory_store', '1.2.0', input);
 
@@ -1209,9 +1281,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
 
         // Should provide helpful error messages about version incompatibility
         expect(v1_0_0_validation.errors).toBeDefined();
-        expect(v1_0_0_validation.errors!.some(e =>
-          e.message.includes('version') || e.message.includes('not supported')
-        )).toBe(true);
+        expect(
+          v1_0_0_validation.errors!.some(
+            (e) => e.message.includes('version') || e.message.includes('not supported')
+          )
+        ).toBe(true);
       });
     });
   });
@@ -1339,12 +1413,14 @@ describe('Enhanced MCP Tool Contract Validation', () => {
               tags: [`batch-${Math.floor(i / 10)}`, `item-${i % 20}`],
               priority: ['low', 'medium', 'high'][i % 3],
             },
-            ...(i % 5 === 0 ? {
-              deduplication: {
-                enabled: true,
-                similarity_threshold: 0.8 + (i % 3) * 0.05,
-              },
-            } : {}),
+            ...(i % 5 === 0
+              ? {
+                  deduplication: {
+                    enabled: true,
+                    similarity_threshold: 0.8 + (i % 3) * 0.05,
+                  },
+                }
+              : {}),
           })),
           processing: {
             enable_validation: true,
@@ -1368,7 +1444,7 @@ describe('Enhanced MCP Tool Contract Validation', () => {
         expect(largeBatch.processing.enable_async_processing).toBe(true);
 
         // Validate content size constraints
-        largeBatch.items.forEach(item => {
+        largeBatch.items.forEach((item) => {
           expect(item.content.length).toBeGreaterThan(0);
           expect(item.content.length).toBeLessThanOrEqual(10000); // Max content length
         });
@@ -1418,15 +1494,19 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           },
         };
 
-        const partialValidation = validateInputForVersion('memory_store', '1.2.0', partialFailureInput);
+        const partialValidation = validateInputForVersion(
+          'memory_store',
+          '1.2.0',
+          partialFailureInput
+        );
         expect(partialValidation.isValid).toBe(false); // Overall validation fails
         expect(partialValidation.errors).toBeDefined();
         expect(partialValidation.errors!.length).toBeGreaterThan(1);
 
         // Should provide detailed error information
-        const errorMessages = partialValidation.errors!.map(e => e.message);
-        expect(errorMessages.some(msg => msg.includes('content'))).toBe(true);
-        expect(errorMessages.some(msg => msg.includes('kind'))).toBe(true);
+        const errorMessages = partialValidation.errors!.map((e) => e.message);
+        expect(errorMessages.some((msg) => msg.includes('content'))).toBe(true);
+        expect(errorMessages.some((msg) => msg.includes('kind'))).toBe(true);
 
         // Test error recovery with corrected input
         const correctedInput = {
@@ -1458,7 +1538,11 @@ describe('Enhanced MCP Tool Contract Validation', () => {
           },
         };
 
-        const correctedValidation = validateInputForVersion('memory_store', '1.2.0', correctedInput);
+        const correctedValidation = validateInputForVersion(
+          'memory_store',
+          '1.2.0',
+          correctedInput
+        );
         expect(correctedValidation.isValid).toBe(true);
       });
     });

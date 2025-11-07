@@ -168,7 +168,7 @@ describe('Core Interfaces', () => {
       expect(validKnowledgeItem.id).toBe('test-id-123');
       expect(validKnowledgeItem.kind).toBe('entity');
       expect(validKnowledgeItem.scope.project).toBe('test-project');
-      expect(validKnowledgeItem.data.title).toBe('Test Entity');
+      expect(validKnowledgeItem['data.title']).toBe('Test Entity');
       expect(validKnowledgeItem.metadata?.tags).toContain('test');
     });
 
@@ -316,7 +316,7 @@ describe('Core Interfaces', () => {
 
       expect(entityKnowledge.kind).toBe('entity');
       expect(relationKnowledge.kind).toBe('relation');
-      expect(relationKnowledge.data.from_id).toBe(entityKnowledge.id);
+      expect(relationKnowledge['data.from_id']).toBe(entityKnowledge.id);
     });
 
     test('should validate knowledge metadata interfaces', () => {
@@ -352,10 +352,10 @@ describe('Core Interfaces', () => {
         },
       };
 
-      expect(decisionKnowledge.data.title).toBe('Use TypeScript');
-      expect(decisionKnowledge.data.rationale).toBe('Type safety benefits');
-      expect(Array.isArray(decisionKnowledge.data.alternatives)).toBe(true);
-      expect(decisionKnowledge.data.impact).toBe('high');
+      expect(decisionKnowledge['data.title']).toBe('Use TypeScript');
+      expect(decisionKnowledge['data.rationale']).toBe('Type safety benefits');
+      expect(Array.isArray(decisionKnowledge['data.alternatives'])).toBe(true);
+      expect(decisionKnowledge['data.impact']).toBe('high');
     });
   });
 
@@ -608,7 +608,7 @@ describe('Core Interfaces', () => {
       expect(v1Interface.version).toBe('1.0.0');
       expect(v2Interface.version).toBe('2.0.0');
       expect(v2Interface.backwardsCompatible).toBe(true);
-      expect(v2Interface.data.description).toBe('Added in v2');
+      expect(v2Interface['data.description']).toBe('Added in v2');
     });
 
     test('should validate backward compatibility testing', () => {
@@ -981,7 +981,7 @@ describe('Core Interfaces', () => {
             customPatterns: [
               {
                 name: 'email',
-                pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+                pattern: /\b[A-Za-z0-9['_']%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
                 replacement: '***@***.***',
               },
             ],
@@ -1453,7 +1453,7 @@ describe('Core Interfaces', () => {
       expect(analyticsReport.id).toBe('report-123');
       expect(analyticsReport.visualizations).toHaveLength(1);
       expect(analyticsReport.visualizations[0].type).toBe('chart');
-      expect(analyticsReport.metadata.processingTimeMs).toBe(2500);
+      expect(analyticsReport.metadata['processingTimeMs']).toBe(2500);
     });
   });
 
@@ -1569,9 +1569,9 @@ describe('Core Interfaces', () => {
         updated_at: '2024-01-01T00:00:00Z',
       };
 
-      expect(complexKnowledgeItem.data.properties.nested.deeply.value).toBe('deep value');
-      expect(complexKnowledgeItem.data.properties.nested.deeply.array).toEqual([1, 2, 3]);
-      expect(complexKnowledgeItem.data.properties.nested.deeply.object.flag).toBe(true);
+      expect(complexKnowledgeItem['data.properties'].nested.deeply.value).toBe('deep value');
+      expect(complexKnowledgeItem['data.properties'].nested.deeply.array).toEqual([1, 2, 3]);
+      expect(complexKnowledgeItem['data.properties'].nested.deeply.object.flag).toBe(true);
       expect(complexKnowledgeItem.metadata?.custom.features).toContain('feature1');
       expect(complexKnowledgeItem.metadata?.custom.settings.threshold).toBe(0.8);
     });

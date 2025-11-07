@@ -26,7 +26,7 @@ const options = {
   failOnRegression: true,
   updateBaseline: false,
   verbose: false,
-  config: null
+  config: null,
 };
 
 for (let i = 0; i < args.length; i++) {
@@ -110,7 +110,7 @@ async function main() {
     const storage = new PerformanceArtifactStorage({
       baseDir: options.outputDir,
       maxArtifacts: 100,
-      retentionDays: 30
+      retentionDays: 30,
     });
 
     const regressionGuard = new CIRegressionGuard({
@@ -118,7 +118,7 @@ async function main() {
       reportsDir: join(options.outputDir, 'regression-reports'),
       performanceGateEnabled: options.failOnRegression,
       autoUpdateBaseline: options.updateBaseline,
-      ...config
+      ...config,
     });
 
     // Determine which tests to run
@@ -153,15 +153,15 @@ async function main() {
     console.log('🔍 Checking for Performance Regressions...');
     const regressionReports = await regressionGuard.checkRegressions(results);
 
-    const failedTests = regressionReports.filter(r => !r.ciGateStatus.passed);
-    const regressionDetected = regressionReports.some(r => r.regressionDetected);
+    const failedTests = regressionReports.filter((r) => !r.ciGateStatus.passed);
+    const regressionDetected = regressionReports.some((r) => r.regressionDetected);
 
     // Display results
     console.log('📊 Test Results Summary:');
     console.log(`  Total Tests: ${results.length}`);
     console.log(`  Passed: ${results.length - failedTests.length}`);
     console.log(`  Failed: ${failedTests.length}`);
-    console.log(`  Regressions: ${regressionReports.filter(r => r.regressionDetected).length}`);
+    console.log(`  Regressions: ${regressionReports.filter((r) => r.regressionDetected).length}`);
     console.log('');
 
     // Show detailed regression information
@@ -171,7 +171,9 @@ async function main() {
         console.log(`  ${report.testName}: ${report.assessment.summary}`);
         if (options.verbose && report.regressions.length > 0) {
           for (const regression of report.regressions) {
-            console.log(`    - ${regression.metric}: ${regression.current} (baseline: ${regression.baseline}, change: ${regression.changePercentage.toFixed(1)}%) [${regression.severity.toUpperCase()}]`);
+            console.log(
+              `    - ${regression.metric}: ${regression.current} (baseline: ${regression.baseline}, change: ${regression.changePercentage.toFixed(1)}%) [${regression.severity.toUpperCase()}]`
+            );
           }
         }
       }
@@ -198,24 +200,37 @@ async function main() {
 
     // Write CI results file
     const ciResultsPath = join(options.outputDir, 'ci-results.json');
-    require('fs').writeFileSync(ciResultsPath, JSON.stringify({
-      summary: ciResults.summary,
-      exitCode: ciResults.exitCode,
-      metrics: ciResults.metrics,
-      artifacts: ciResults.artifacts,
-      gateStatus,
-      duration: Date.now() - startTime,
-      timestamp: new Date().toISOString()
-    }, null, 2));
+    require('fs').writeFileSync(
+      ciResultsPath,
+      JSON.stringify(
+        {
+          summary: ciResults.summary,
+          exitCode: ciResults.exitCode,
+          metrics: ciResults.metrics,
+          artifacts: ciResults.artifacts,
+          gateStatus,
+          duration: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+        },
+        null,
+        2
+      )
+    );
 
     console.log(`📄 CI results written to: ${ciResultsPath}`);
     console.log('');
 
     // Performance summary table
     console.log('📈 Performance Summary:');
-    console.log('┌─────────────────────────────────────────────────────────────────────────────────────┐');
-    console.log('│ Test Name                              │ Status │ p95 (ms) │ p99 (ms) │ Throughput │');
-    console.log('├─────────────────────────────────────────────────────────────────────────────────────┤');
+    console.log(
+      '┌─────────────────────────────────────────────────────────────────────────────────────┐'
+    );
+    console.log(
+      '│ Test Name                              │ Status │ p95 (ms) │ p99 (ms) │ Throughput │'
+    );
+    console.log(
+      '├─────────────────────────────────────────────────────────────────────────────────────┤'
+    );
 
     for (const result of results) {
       const status = result.validation.passed ? '✅ PASS' : '❌ FAIL';
@@ -227,7 +242,9 @@ async function main() {
       console.log(`│ ${name} │ ${status} │ ${p95} │ ${p99} │ ${throughput} │`);
     }
 
-    console.log('└─────────────────────────────────────────────────────────────────────────────────────┘');
+    console.log(
+      '└─────────────────────────────────────────────────────────────────────────────────────┘'
+    );
     console.log('');
 
     // Exit with appropriate code
@@ -239,7 +256,6 @@ async function main() {
       console.log(`⏱️  Total duration: ${((Date.now() - startTime) / 1000).toFixed(2)}s`);
       process.exit(0);
     }
-
   } catch (error) {
     console.error('💥 Performance CI Gate failed with error:');
     console.error(error);
@@ -261,29 +277,28 @@ async function main() {
 function getTestConfigs(testSuite) {
   switch (testSuite) {
     case 'storage':
-      return PERFORMANCE_TEST_CONFIGS.filter(config =>
-        config.categories.includes('storage') || config.categories.includes('knowledge')
+      return PERFORMANCE_TEST_CONFIGS.filter(
+        (config) => config.categories.includes('storage') || config.categories.includes('knowledge')
       );
 
     case 'search':
-      return PERFORMANCE_TEST_CONFIGS.filter(config =>
-        config.categories.includes('search') || config.categories.includes('retrieval')
+      return PERFORMANCE_TEST_CONFIGS.filter(
+        (config) => config.categories.includes('search') || config.categories.includes('retrieval')
       );
 
     case 'circuit-breaker':
-      return PERFORMANCE_TEST_CONFIGS.filter(config =>
-        config.categories.includes('circuit_breaker') || config.categories.includes('resilience')
+      return PERFORMANCE_TEST_CONFIGS.filter(
+        (config) =>
+          config.categories.includes('circuit_breaker') || config.categories.includes('resilience')
       );
 
     case 'health-check':
-      return PERFORMANCE_TEST_CONFIGS.filter(config =>
-        config.categories.includes('health') || config.categories.includes('monitoring')
+      return PERFORMANCE_TEST_CONFIGS.filter(
+        (config) => config.categories.includes('health') || config.categories.includes('monitoring')
       );
 
     case 'critical':
-      return PERFORMANCE_TEST_CONFIGS.filter(config =>
-        config.categories.includes('critical')
-      );
+      return PERFORMANCE_TEST_CONFIGS.filter((config) => config.categories.includes('critical'));
 
     case 'all':
     default:

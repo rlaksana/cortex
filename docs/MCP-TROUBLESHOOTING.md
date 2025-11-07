@@ -5,6 +5,7 @@
 This comprehensive troubleshooting guide covers common issues, diagnostic procedures, and solutions for the Cortex Memory MCP Server v2.0. The guide is organized by symptom severity and includes step-by-step resolution procedures.
 
 **🚀 Quick Reference**:
+
 - ✅ **MCP Protocol Version**: 2024-11-05 (100% compliant)
 - ✅ **Production Status**: Fully operational with comprehensive monitoring
 - ⚠️ **Most Common Issues**: Configuration, database connectivity, and environment setup
@@ -29,6 +30,7 @@ This comprehensive troubleshooting guide covers common issues, diagnostic proced
 ### Server Won't Start
 
 **Symptoms**:
+
 - Server fails to start or crashes immediately
 - MCP tools not registering
 - Database connection errors
@@ -36,6 +38,7 @@ This comprehensive troubleshooting guide covers common issues, diagnostic proced
 **Immediate Actions**:
 
 1. **Check Environment Variables**:
+
 ```bash
 # Verify required environment variables
 echo "OPENAI_API_KEY: $OPENAI_API_KEY"
@@ -47,6 +50,7 @@ export OPENAI_API_KEY=your-api-key-here
 ```
 
 2. **Verify Qdrant is Running**:
+
 ```bash
 # Check if Qdrant is accessible
 curl -f http://localhost:6333/health || echo "Qdrant not accessible"
@@ -57,6 +61,7 @@ docker logs qdrant-container
 ```
 
 3. **Check Port Availability**:
+
 ```bash
 # Check if MCP port is available
 netstat -an | grep :3000 || echo "Port 3000 is free"
@@ -66,6 +71,7 @@ lsof -ti:3000 | xargs kill -9 2>/dev/null || true
 ```
 
 4. **Quick Reset**:
+
 ```bash
 # Clear caches and restart
 rm -rf .cache node_modules/.cache
@@ -76,6 +82,7 @@ npm start
 ### Tools Not Responding
 
 **Symptoms**:
+
 - MCP tools registered but not responding
 - Timeout errors when calling tools
 - Empty responses
@@ -83,6 +90,7 @@ npm start
 **Immediate Actions**:
 
 1. **Check MCP Server Status**:
+
 ```bash
 # Test MCP server directly
 curl -X POST http://localhost:3000/mcp \
@@ -91,12 +99,14 @@ curl -X POST http://localhost:3000/mcp \
 ```
 
 2. **Verify Tool Registration**:
+
 ```bash
 # Check if tools are properly registered
 npm run mcp:check-tools || echo "Tool registration issue"
 ```
 
 3. **Restart with Debug Logging**:
+
 ```bash
 # Enable debug mode
 DEBUG=cortex:* npm start
@@ -109,6 +119,7 @@ DEBUG=cortex:* npm start
 ### MCP Server Fails to Initialize
 
 **Error Messages**:
+
 - `Failed to initialize MCP server`
 - `Transport connection failed`
 - `Server startup timeout`
@@ -116,6 +127,7 @@ DEBUG=cortex:* npm start
 **Diagnosis**:
 
 1. **Check System Resources**:
+
 ```bash
 # Check available memory
 free -h || echo "Memory check"
@@ -128,6 +140,7 @@ node --version  # Should be 20+
 ```
 
 2. **Verify Dependencies**:
+
 ```bash
 # Check if all dependencies are installed
 npm list --depth=0
@@ -137,6 +150,7 @@ npm ci --force
 ```
 
 3. **Check Configuration Files**:
+
 ```bash
 # Verify .env file exists and is readable
 test -f .env && echo ".env exists" || echo ".env missing"
@@ -146,6 +160,7 @@ cat .env | grep -E "^(OPENAI_API_KEY|QDRANT_URL)" || echo "Check .env configurat
 **Solutions**:
 
 1. **Rebuild Project**:
+
 ```bash
 # Clean rebuild
 rm -rf dist
@@ -154,6 +169,7 @@ npm start
 ```
 
 2. **Reset Environment**:
+
 ```bash
 # Reset to known good state
 git checkout HEAD -- package-lock.json
@@ -165,6 +181,7 @@ cp .env.example .env
 ### Database Connection Failures
 
 **Error Messages**:
+
 - `Failed to connect to Qdrant`
 - `Connection timeout`
 - `Database not responding`
@@ -172,6 +189,7 @@ cp .env.example .env
 **Diagnosis**:
 
 1. **Test Qdrant Connection**:
+
 ```bash
 # Basic connectivity test
 curl -f http://localhost:6333/collections || echo "Qdrant collections endpoint failed"
@@ -184,6 +202,7 @@ curl http://localhost:6333/cluster
 ```
 
 2. **Check Qdrant Configuration**:
+
 ```bash
 # Verify Qdrant configuration
 docker ps | grep qdrant
@@ -196,6 +215,7 @@ ps aux | grep qdrant
 **Solutions**:
 
 1. **Restart Qdrant**:
+
 ```bash
 # Docker restart
 docker restart qdrant-container
@@ -206,6 +226,7 @@ curl http://localhost:6333/health
 ```
 
 2. **Reset Qdrant Collection**:
+
 ```bash
 # Delete and recreate collection (CAUTION: data loss)
 curl -X DELETE http://localhost:6333/collections/cortex-memory
@@ -219,6 +240,7 @@ curl -X DELETE http://localhost:6333/collections/cortex-memory
 ### Collection Creation Failures
 
 **Error Messages**:
+
 - `Failed to create collection`
 - `Collection already exists with different schema`
 - `Invalid collection configuration`
@@ -239,6 +261,7 @@ curl http://localhost:6333/collections/cortex-memory | jq '.result.config.params
 **Solutions**:
 
 1. **Reset Collection**:
+
 ```bash
 # Backup existing data (if needed)
 curl -X POST http://localhost:6333/collections/cortex-memory/points/scroll \
@@ -251,6 +274,7 @@ npm restart  # Will recreate with correct schema
 ```
 
 2. **Verify Vector Configuration**:
+
 ```bash
 # Check vector size matches OpenAI embeddings (1536)
 curl http://localhost:6333/collections/cortex-memory | \
@@ -261,6 +285,7 @@ curl http://localhost:6333/collections/cortex-memory | \
 ### Search Performance Issues
 
 **Symptoms**:
+
 - Slow search responses (>5 seconds)
 - Timeouts during search operations
 - High memory usage during searches
@@ -283,17 +308,19 @@ top -p $(pgrep -f qdrant)
 **Solutions**:
 
 1. **Optimize Search Parameters**:
+
 ```javascript
 // Use more targeted searches
 await client.callTool('memory_find', {
   query: 'specific terms',
-  limit: 10,        // Reduce limit
-  search_strategy: 'fast',  // Use fast mode for quick results
-  scope: { project: 'specific-project' }  // Narrow scope
+  limit: 10, // Reduce limit
+  search_strategy: 'fast', // Use fast mode for quick results
+  scope: { project: 'specific-project' }, // Narrow scope
 });
 ```
 
 2. **Add Search Indexes**:
+
 ```bash
 # Qdrant automatically creates HNSW index
 # Monitor index performance
@@ -307,6 +334,7 @@ curl http://localhost:6333/collections/cortex-memory/indexes
 ### Tool Registration Failures
 
 **Error Messages**:
+
 - `Failed to register tools`
 - `Invalid tool schema`
 - `MCP protocol version mismatch`
@@ -327,6 +355,7 @@ npm run mcp:test-protocol || echo "Protocol compliance test failed"
 **Solutions**:
 
 1. **Verify MCP Configuration**:
+
 ```bash
 # Check MCP client configuration
 cat ~/.claude/claude_desktop_config.json
@@ -337,6 +366,7 @@ grep -c "cortex" ~/.claude/claude_desktop_config.json
 ```
 
 2. **Reset MCP Connection**:
+
 ```bash
 # Restart Claude Desktop or MCP client
 # Clear MCP cache
@@ -347,6 +377,7 @@ rm -rf ~/.claude/cache
 ### JSON-RPC Errors
 
 **Error Messages**:
+
 - `Invalid JSON-RPC request`
 - `Method not found`
 - `Invalid params`
@@ -371,18 +402,21 @@ curl -X POST http://localhost:3000/mcp \
 **Solutions**:
 
 1. **Validate Request Format**:
+
 ```javascript
 // Ensure proper JSON-RPC 2.0 format
 const request = {
-  jsonrpc: "2.0",
+  jsonrpc: '2.0',
   id: Date.now(),
-  method: "tools/call",
+  method: 'tools/call',
   params: {
-    name: "memory_store",
+    name: 'memory_store',
     arguments: {
-      items: [/* valid items */]
-    }
-  }
+      items: [
+        /* valid items */
+      ],
+    },
+  },
 };
 ```
 
@@ -393,6 +427,7 @@ const request = {
 ### High Memory Usage
 
 **Symptoms**:
+
 - Memory usage continuously increasing
 - Node.js process using >1GB RAM
 - System becoming unresponsive
@@ -414,6 +449,7 @@ DEBUG=cortex:gc npm start
 **Solutions**:
 
 1. **Configure Node.js Memory Limits**:
+
 ```bash
 # Set appropriate memory limits
 export NODE_OPTIONS="--max-old-space-size=2048 --max-semi-space-size=256"
@@ -421,6 +457,7 @@ npm start
 ```
 
 2. **Enable Memory Monitoring**:
+
 ```bash
 # Add memory monitoring to environment
 export NODE_OPTIONS="--max-old-space-size=2048 --inspect"
@@ -431,6 +468,7 @@ npm start
 ```
 
 3. **Batch Processing Optimization**:
+
 ```javascript
 // Process items in smaller batches
 const batchSize = 10;
@@ -438,13 +476,14 @@ for (let i = 0; i < items.length; i += batchSize) {
   const batch = items.slice(i, i + batchSize);
   await client.callTool('memory_store', { items: batch });
   // Small delay between batches
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 ```
 
 ### Slow Response Times
 
 **Symptoms**:
+
 - Tool calls taking >10 seconds
 - Search operations timing out
 - System becoming sluggish
@@ -465,27 +504,29 @@ npm run profile:cpu
 **Solutions**:
 
 1. **Enable Caching**:
+
 ```javascript
 // Use search caching
 await client.callTool('memory_find', {
   query: 'frequently searched term',
   optimization: {
     enable_caching: true,
-    cache_ttl_seconds: 3600
-  }
+    cache_ttl_seconds: 3600,
+  },
 });
 ```
 
 2. **Optimize Search Strategy**:
+
 ```javascript
 // Use appropriate search modes
 await client.callTool('memory_find', {
   query: 'quick lookup',
-  search_strategy: 'fast',  // For quick results
-  limit: 5,                // Reduce result set
+  search_strategy: 'fast', // For quick results
+  limit: 5, // Reduce result set
   optimization: {
-    timeout_ms: 5000       // Set reasonable timeout
-  }
+    timeout_ms: 5000, // Set reasonable timeout
+  },
 });
 ```
 
@@ -496,6 +537,7 @@ await client.callTool('memory_find', {
 ### Environment Configuration Problems
 
 **Symptoms**:
+
 - Server starts but features not working
 - Missing or incorrect configuration values
 - Features using default values instead of custom settings
@@ -516,6 +558,7 @@ DEBUG=cortex:config npm start
 **Solutions**:
 
 1. **Create Complete .env File**:
+
 ```bash
 # Copy example configuration
 cp .env.example .env
@@ -525,6 +568,7 @@ nano .env
 ```
 
 2. **Required Minimum Configuration**:
+
 ```bash
 # Minimum required environment variables
 export OPENAI_API_KEY=sk-...
@@ -537,6 +581,7 @@ export LOG_LEVEL=info
 ### Database Configuration Issues
 
 **Symptoms**:
+
 - Qdrant connection failures
 - Collection creation errors
 - Search operations failing
@@ -558,6 +603,7 @@ curl $QDRANT_URL/collections/$QDRANT_COLLECTION_NAME | \
 **Solutions**:
 
 1. **Standard Qdrant Configuration**:
+
 ```bash
 # Default production configuration
 export QDRANT_URL=http://localhost:6333
@@ -574,6 +620,7 @@ export VECTOR_DISTANCE=Cosine
 ### Search Not Returning Results
 
 **Symptoms**:
+
 - Empty search results
 - No matches for known content
 - All confidence scores are 0
@@ -596,17 +643,19 @@ npm run test:embeddings
 **Solutions**:
 
 1. **Verify Data Storage**:
+
 ```javascript
 // Check if items were actually stored
 const result = await client.callTool('memory_find', {
   query: 'test',
   search_strategy: 'deep',
-  limit: 10
+  limit: 10,
 });
 console.log(`Found ${result.results.length} items`);
 ```
 
 2. **Check Embedding Generation**:
+
 ```bash
 # Test OpenAI API connectivity
 curl -H "Authorization: Bearer $OPENAI_API_KEY" \
@@ -619,6 +668,7 @@ npm run test:openai-embeddings
 ### Deduplication Not Working
 
 **Symptoms**:
+
 - Duplicate entries being stored
 - No deduplication warnings
 - Similar items not being detected
@@ -639,6 +689,7 @@ npm run debug:merge-history
 **Solutions**:
 
 1. **Configure Deduplication**:
+
 ```javascript
 // Enable intelligent deduplication
 await client.callTool('memory_store', {
@@ -648,19 +699,20 @@ await client.callTool('memory_store', {
     merge_strategy: 'intelligent',
     similarity_threshold: 0.85,
     enable_intelligent_merging: true,
-    enable_audit_logging: true
-  }
+    enable_audit_logging: true,
+  },
 });
 ```
 
 2. **Verify Similarity Threshold**:
+
 ```javascript
 // Adjust similarity threshold if too strict/lenient
 await client.callTool('memory_store', {
   items: [item],
   deduplication: {
-    similarity_threshold: 0.7  // Lower if no duplicates detected
-  }
+    similarity_threshold: 0.7, // Lower if no duplicates detected
+  },
 });
 ```
 
@@ -671,6 +723,7 @@ await client.callTool('memory_store', {
 ### Health Check Failures
 
 **Symptoms**:
+
 - Health endpoint returning errors
 - System showing unhealthy status
 - Monitoring alerts firing
@@ -693,6 +746,7 @@ npm run metrics:system
 **Solutions**:
 
 1. **Manual Health Check**:
+
 ```bash
 # Test each component manually
 curl http://localhost:3000/health
@@ -702,6 +756,7 @@ curl -H "Authorization: Bearer $OPENAI_API_KEY" \
 ```
 
 2. **Enable Detailed Monitoring**:
+
 ```javascript
 // Get detailed system status
 const health = await client.callTool('system_status', {
@@ -709,14 +764,15 @@ const health = await client.callTool('system_status', {
   include_detailed_metrics: true,
   response_formatting: {
     verbose: true,
-    include_raw_data: false
-  }
+    include_raw_data: false,
+  },
 });
 ```
 
 ### Performance Monitoring Issues
 
 **Symptoms**:
+
 - Missing performance metrics
 - Monitoring data not updating
 - Graphs showing flat lines
@@ -737,14 +793,15 @@ npm run monitor:resources
 **Solutions**:
 
 1. **Enable Metrics Collection**:
+
 ```javascript
 // Enable performance tracking
 await client.callTool('memory_find', {
   query: 'test search',
   analytics: {
     track_search_metrics: true,
-    include_performance_metrics: true
-  }
+    include_performance_metrics: true,
+  },
 });
 ```
 
@@ -755,6 +812,7 @@ await client.callTool('memory_find', {
 ### Docker Deployment Problems
 
 **Symptoms**:
+
 - Container fails to start
 - Health checks failing
 - Environment variables not loading
@@ -775,6 +833,7 @@ docker exec cortex-mcp-container curl http://localhost:3000/health
 **Solutions**:
 
 1. **Fix Docker Configuration**:
+
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -798,6 +857,7 @@ services:
 ```
 
 2. **Environment Variable Management**:
+
 ```bash
 # Create .env file for production
 cat > .env.production << EOF
@@ -814,6 +874,7 @@ docker-compose --env-file .env.production up -d
 ### Load Balancer Issues
 
 **Symptoms**:
+
 - Requests not being distributed
 - Health checks failing
 - SSL/TLS errors
@@ -834,6 +895,7 @@ openssl x509 -in /path/to/cert.crt -text -noout
 **Solutions**:
 
 1. **Configure Nginx Load Balancer**:
+
 ```nginx
 # /etc/nginx/sites-available/cortex-mcp
 upstream cortex_mcp {

@@ -10,8 +10,8 @@
  */
 
 import { EventEmitter } from 'events';
-import * as crypto from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import * as crypto from 'crypto';
+import { logger } from '@/utils/logger.js';
 import { calculateItemExpiry } from '../../utils/expiry-utils.js';
 import type {
   KnowledgeItem,

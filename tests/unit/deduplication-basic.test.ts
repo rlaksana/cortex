@@ -4,7 +4,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SkipStrategy, PreferExistingStrategy, PreferNewerStrategy, CombineStrategy, IntelligentStrategy } from '../../src/services/deduplication/strategies/index.js';
+import {
+  SkipStrategy,
+  PreferExistingStrategy,
+  PreferNewerStrategy,
+  CombineStrategy,
+  IntelligentStrategy,
+} from '../../src/services/deduplication/strategies/index.js';
 
 // Test data factory
 const createTestItem = (overrides: any = {}) => ({
@@ -15,7 +21,7 @@ const createTestItem = (overrides: any = {}) => ({
   metadata: {},
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
-  ...overrides
+  ...overrides,
 });
 
 describe('Basic Deduplication Strategy Tests', () => {
@@ -30,7 +36,7 @@ describe('Basic Deduplication Strategy Tests', () => {
       const items = [
         createTestItem({ data: { content: 'Same content' } }),
         createTestItem({ data: { content: 'Same content' } }),
-        createTestItem({ data: { content: 'Different content' } })
+        createTestItem({ data: { content: 'Different content' } }),
       ];
 
       const result = await strategy.detectDuplicates(items);
@@ -53,7 +59,7 @@ describe('Basic Deduplication Strategy Tests', () => {
 
     beforeEach(() => {
       strategy = new PreferExistingStrategy({
-        similarityThreshold: 0.8 // Lower threshold for testing
+        similarityThreshold: 0.8, // Lower threshold for testing
       });
     });
 
@@ -61,12 +67,12 @@ describe('Basic Deduplication Strategy Tests', () => {
       const items = [
         createTestItem({
           data: { content: 'Identical content' },
-          id: 'item1'
+          id: 'item1',
         }),
         createTestItem({
           data: { content: 'Identical content' },
-          id: 'item2'
-        })
+          id: 'item2',
+        }),
       ];
 
       const result = await strategy.detectDuplicates(items);
@@ -79,7 +85,7 @@ describe('Basic Deduplication Strategy Tests', () => {
     it('should not deduplicate different content', async () => {
       const items = [
         createTestItem({ data: { content: 'Content A' } }),
-        createTestItem({ data: { content: 'Content B' } })
+        createTestItem({ data: { content: 'Content B' } }),
       ];
 
       const result = await strategy.detectDuplicates(items);
@@ -94,18 +100,18 @@ describe('Basic Deduplication Strategy Tests', () => {
 
     beforeEach(() => {
       strategy = new PreferNewerStrategy({
-        similarityThreshold: 0.8
+        similarityThreshold: 0.8,
       });
     });
 
     it('should prefer newer item when timestamps differ', async () => {
       const olderItem = createTestItem({
         data: { content: 'Same content' },
-        created_at: '2024-01-01T00:00:00.000Z'
+        created_at: '2024-01-01T00:00:00.000Z',
       });
       const newerItem = createTestItem({
         data: { content: 'Same content' },
-        created_at: '2024-01-02T00:00:00.000Z'
+        created_at: '2024-01-02T00:00:00.000Z',
       });
 
       const result = await strategy.detectDuplicates([olderItem, newerItem]);
@@ -120,7 +126,7 @@ describe('Basic Deduplication Strategy Tests', () => {
 
     beforeEach(() => {
       strategy = new CombineStrategy({
-        similarityThreshold: 0.8
+        similarityThreshold: 0.8,
       });
     });
 
@@ -128,12 +134,12 @@ describe('Basic Deduplication Strategy Tests', () => {
       const items = [
         createTestItem({
           data: { content: 'First part' },
-          metadata: { source: 'doc1' }
+          metadata: { source: 'doc1' },
         }),
         createTestItem({
           data: { content: 'First part' },
-          metadata: { source: 'doc2' }
-        })
+          metadata: { source: 'doc2' },
+        }),
       ];
 
       const result = await strategy.detectDuplicates(items);
@@ -150,15 +156,15 @@ describe('Basic Deduplication Strategy Tests', () => {
     beforeEach(() => {
       strategy = new IntelligentStrategy({
         thresholds: {
-          overall: 0.6 // Lower threshold for testing
-        }
+          overall: 0.6, // Lower threshold for testing
+        },
       });
     });
 
     it('should analyze items without errors', async () => {
       const items = [
         createTestItem({ data: { content: 'Machine learning algorithms' } }),
-        createTestItem({ data: { content: 'AI algorithms for learning' } })
+        createTestItem({ data: { content: 'AI algorithms for learning' } }),
       ];
 
       const result = await strategy.detectDuplicates(items);

@@ -30,7 +30,7 @@ const COVERAGE_CONFIG = {
     statements: 85,
     branches: 85,
     functions: 85,
-    lines: 85
+    lines: 85,
   },
 
   // Critical path thresholds (≥90%)
@@ -38,7 +38,7 @@ const COVERAGE_CONFIG = {
     statements: 90,
     branches: 90,
     functions: 90,
-    lines: 90
+    lines: 90,
   },
 
   // Critical path patterns - core components that need higher coverage
@@ -54,16 +54,11 @@ const COVERAGE_CONFIG = {
     'src/services/auth/authorization-service.ts',
     'src/services/core-memory-find.ts',
     'src/schemas/json-schemas.ts',
-    'src/schemas/mcp-inputs.ts'
+    'src/schemas/mcp-inputs.ts',
   ],
 
   // Additional important directories (85% threshold)
-  IMPORTANT_DIRECTORIES: [
-    'src/services/**',
-    'src/db/**',
-    'src/utils/**',
-    'src/middleware/**'
-  ],
+  IMPORTANT_DIRECTORIES: ['src/services/**', 'src/db/**', 'src/utils/**', 'src/middleware/**'],
 
   // Exclude patterns
   EXCLUDE_PATTERNS: [
@@ -76,8 +71,8 @@ const COVERAGE_CONFIG = {
     '**/*.config.ts',
     '**/*.config.js',
     '**/*.test.ts',
-    '**/*.spec.ts'
-  ]
+    '**/*.spec.ts',
+  ],
 };
 
 // Colors for enhanced output
@@ -90,7 +85,7 @@ const COLORS = {
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
   bold: '\x1b[1m',
-  dim: '\x1b[2m'
+  dim: '\x1b[2m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -129,7 +124,7 @@ function runEnhancedCoverage() {
     execSync(coverageCommand, {
       cwd: projectRoot,
       stdio: 'inherit',
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
 
     logSuccess('Coverage analysis completed');
@@ -189,7 +184,7 @@ function checkGlobalThresholds(totalCoverage) {
   let allPassed = true;
   const metrics = ['statements', 'branches', 'functions', 'lines'];
 
-  metrics.forEach(metric => {
+  metrics.forEach((metric) => {
     const coverage = totalCoverage[metric]?.pct || 0;
     const threshold = COVERAGE_CONFIG.GLOBAL_THRESHOLDS[metric];
     const passed = coverage >= threshold;
@@ -198,7 +193,10 @@ function checkGlobalThresholds(totalCoverage) {
     const color = passed ? COLORS.green : COLORS.red;
     const indicator = getCoverageIndicator(coverage);
 
-    log(`   ${status} ${metric.toUpperCase()}: ${coverage.toFixed(1)}% ${indicator} (threshold: ${threshold}%)`, color);
+    log(
+      `   ${status} ${metric.toUpperCase()}: ${coverage.toFixed(1)}% ${indicator} (threshold: ${threshold}%)`,
+      color
+    );
 
     if (!passed) {
       allPassed = false;
@@ -224,12 +222,12 @@ function checkCriticalPathCoverage(perFileCoverage) {
   let analyzedPaths = 0;
 
   // Analyze critical path files
-  COVERAGE_CONFIG.CRITICAL_PATHS.forEach(pattern => {
-    const matchingFiles = Object.keys(perFileCoverage).filter(file =>
+  COVERAGE_CONFIG.CRITICAL_PATHS.forEach((pattern) => {
+    const matchingFiles = Object.keys(perFileCoverage).filter((file) =>
       file.match(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'))
     );
 
-    matchingFiles.forEach(filePath => {
+    matchingFiles.forEach((filePath) => {
       const fileCoverage = perFileCoverage[filePath];
       if (!fileCoverage) return;
 
@@ -253,10 +251,15 @@ function checkCriticalPathCoverage(perFileCoverage) {
 
       if (!passed) {
         criticalPathsPassed = false;
-        logCritical(`     ↳ CRITICAL: ${(threshold - overallCoverage).toFixed(1)}% points below critical threshold`);
+        logCritical(
+          `     ↳ CRITICAL: ${(threshold - overallCoverage).toFixed(1)}% points below critical threshold`
+        );
 
         // Show detailed metrics for failed critical paths
-        log(`     ↳ Details: S:${statements.toFixed(1)}% B:${branches.toFixed(1)}% F:${functions.toFixed(1)}% L:${lines.toFixed(1)}%`, COLORS.dim);
+        log(
+          `     ↳ Details: S:${statements.toFixed(1)}% B:${branches.toFixed(1)}% F:${functions.toFixed(1)}% L:${lines.toFixed(1)}%`,
+          COLORS.dim
+        );
       }
     });
   });
@@ -429,12 +432,12 @@ function generateCriticalPathHtml(perFileCoverage) {
   if (!perFileCoverage) return '<p>No per-file coverage data available</p>';
 
   let html = '';
-  COVERAGE_CONFIG.CRITICAL_PATHS.forEach(pattern => {
-    const matchingFiles = Object.keys(perFileCoverage).filter(file =>
+  COVERAGE_CONFIG.CRITICAL_PATHS.forEach((pattern) => {
+    const matchingFiles = Object.keys(perFileCoverage).filter((file) =>
       file.match(pattern.replace(/\*\*/g, '.*').replace(/\*/g, '[^/]*'))
     );
 
-    matchingFiles.forEach(filePath => {
+    matchingFiles.forEach((filePath) => {
       const fileCoverage = perFileCoverage[filePath];
       if (!fileCoverage) return;
 
@@ -472,33 +475,45 @@ function generateCoverageArtifact(totalCoverage, globalPassed, criticalPassed, h
     version: '2.0.1',
     thresholds: {
       global: COVERAGE_CONFIG.GLOBAL_THRESHOLDS,
-      critical: COVERAGE_CONFIG.CRITICAL_THRESHOLDS
+      critical: COVERAGE_CONFIG.CRITICAL_THRESHOLDS,
     },
     results: {
       global: {
         coverage: totalCoverage,
         passed: globalPassed,
         deficit: {
-          statements: Math.max(0, COVERAGE_CONFIG.GLOBAL_THRESHOLDS.statements - (totalCoverage.statements?.pct || 0)),
-          branches: Math.max(0, COVERAGE_CONFIG.GLOBAL_THRESHOLDS.branches - (totalCoverage.branches?.pct || 0)),
-          functions: Math.max(0, COVERAGE_CONFIG.GLOBAL_THRESHOLDS.functions - (totalCoverage.functions?.pct || 0)),
-          lines: Math.max(0, COVERAGE_CONFIG.GLOBAL_THRESHOLDS.lines - (totalCoverage.lines?.pct || 0))
-        }
+          statements: Math.max(
+            0,
+            COVERAGE_CONFIG.GLOBAL_THRESHOLDS.statements - (totalCoverage.statements?.pct || 0)
+          ),
+          branches: Math.max(
+            0,
+            COVERAGE_CONFIG.GLOBAL_THRESHOLDS.branches - (totalCoverage.branches?.pct || 0)
+          ),
+          functions: Math.max(
+            0,
+            COVERAGE_CONFIG.GLOBAL_THRESHOLDS.functions - (totalCoverage.functions?.pct || 0)
+          ),
+          lines: Math.max(
+            0,
+            COVERAGE_CONFIG.GLOBAL_THRESHOLDS.lines - (totalCoverage.lines?.pct || 0)
+          ),
+        },
       },
       critical: {
         passed: criticalPassed,
-        analyzedPaths: COVERAGE_CONFIG.CRITICAL_PATHS.length
-      }
+        analyzedPaths: COVERAGE_CONFIG.CRITICAL_PATHS.length,
+      },
     },
     artifacts: {
       htmlReport: htmlReportPath,
       coverageDir: join(projectRoot, 'coverage'),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     },
     status: {
       overall: globalPassed && criticalPassed ? 'PASS' : 'FAIL',
-      readyForProduction: globalPassed && criticalPassed
-    }
+      readyForProduction: globalPassed && criticalPassed,
+    },
   };
 
   // Save artifact
@@ -541,7 +556,12 @@ function enforceCoverageGates() {
   const htmlReportPath = generateEnhancedHtmlReport(totalCoverage, perFileCoverage);
 
   // Generate coverage artifact
-  const artifact = generateCoverageArtifact(totalCoverage, globalPassed, criticalPassed, htmlReportPath);
+  const artifact = generateCoverageArtifact(
+    totalCoverage,
+    globalPassed,
+    criticalPassed,
+    htmlReportPath
+  );
 
   // Final determination
   logInfo('\n🎯 FINAL COVERAGE GATE RESULTS:');
@@ -552,7 +572,10 @@ function enforceCoverageGates() {
 
   log(`   Global Coverage (≥85%): ${globalStatus}`, globalPassed ? COLORS.green : COLORS.red);
   log(`   Critical Paths (≥90%): ${criticalStatus}`, criticalPassed ? COLORS.green : COLORS.red);
-  log(`   Overall Status: ${overallStatus}`, (globalPassed && criticalPassed) ? COLORS.green : COLORS.red);
+  log(
+    `   Overall Status: ${overallStatus}`,
+    globalPassed && criticalPassed ? COLORS.green : COLORS.red
+  );
 
   if (globalPassed && criticalPassed) {
     logSuccess('\n🎉 All coverage gates PASSED! Ready for production deployment.');

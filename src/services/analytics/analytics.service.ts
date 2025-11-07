@@ -285,19 +285,19 @@ export class AnalyticsService {
     let data: any;
     switch (query.type) {
       case 'knowledge':
-        data = await this.getKnowledgeAnalytics(query.filter);
+        data = await this.getKnowledgeAnalytics(query.filters);
         break;
       case 'relationships':
-        data = await this.getRelationshipAnalytics(query.filter);
+        data = await this.getRelationshipAnalytics(query.filters);
         break;
       case 'performance':
-        data = await this.getPerformanceAnalytics(query.filter);
+        data = await this.getPerformanceAnalytics(query.filters);
         break;
       case 'user_behavior':
-        data = await this.getUserBehaviorAnalytics(query.filter);
+        data = await this.getUserBehaviorAnalytics(query.filters);
         break;
       case 'predictive':
-        data = await this.getPredictiveAnalytics(query.filter);
+        data = await this.getPredictiveAnalytics(query.filters);
         break;
       default:
         throw new Error(`Unknown analytics query type: ${query.type}`);
@@ -347,7 +347,7 @@ export class AnalyticsService {
       id: `comprehensive_${Date.now()}`,
       title: 'Comprehensive Analytics Report',
       generatedAt: new Date(),
-      timeRange: filter?.timeRange,
+      timeRange: filter?.dateRange,
       data: {
         knowledge: knowledgeAnalytics,
         relationships: relationshipAnalytics,

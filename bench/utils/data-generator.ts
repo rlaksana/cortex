@@ -11,7 +11,7 @@ import type {
   DataGeneratorConfig,
   TestDataset,
   TestItem,
-  TestRelationship
+  TestRelationship,
 } from '../framework/types.js';
 
 export class BenchmarkDataGenerator {
@@ -21,83 +21,89 @@ export class BenchmarkDataGenerator {
       'Product {product} in category {category} priced at ${price}',
       'Organization {company} founded in {year} with {employees} employees',
       'Service {service} providing {features} to customers in {region}',
-      'Device {device} model {model} with serial number {serial}'
+      'Device {device} model {model} with serial number {serial}',
     ],
     observation: [
       'User {user} logged in from {location} at {time}',
       'Product {product} viewed {count} times in the last {period}',
       'Service {service} responded with latency {latency}ms',
       'System alert: {alert_type} detected on {component}',
-      'Performance metric: {metric} = {value} at {timestamp}'
+      'Performance metric: {metric} = {value} at {timestamp}',
     ],
     decision: [
       'Approved request for {request} by {approver} on {date}',
       'Rejected {action} due to {reason}',
       'Implemented {feature} with priority {priority}',
       'Decided to migrate from {old_system} to {new_system}',
-      'Chose {vendor} for {service} contract'
+      'Chose {vendor} for {service} contract',
     ],
     issue: [
       'Bug reported in {component}: {description}',
       'Performance issue: {metric} exceeding threshold',
       'Security vulnerability identified in {system}',
       'Data inconsistency detected in {table}',
-      'Integration failure with {external_service}'
+      'Integration failure with {external_service}',
     ],
     todo: [
       'Implement {feature} for {module}',
       'Fix bug {bug_id} in {component}',
       'Review pull request #{pr_number}',
       'Update documentation for {api}',
-      'Optimize {operation} for better performance'
+      'Optimize {operation} for better performance',
     ],
     incident: [
       'Service outage: {service} unavailable for {duration}',
       'Database connection failure in {region}',
       'High memory usage detected on {server}',
       'Network partition affecting {services}',
-      'Deployment failure for {version}'
+      'Deployment failure for {version}',
     ],
     release: [
       'Version {version} released with {features_count} features',
       'Hotfix {hotfix_version} deployed to production',
       'Feature branch {branch} merged to main',
       'Rollback initiated for {deployment}',
-      'Canary deployment of {feature} to {percentage}% users'
+      'Canary deployment of {feature} to {percentage}% users',
     ],
     risk: [
       'Security risk: {vulnerability} in {component}',
       'Performance risk: {bottleneck} under load',
       'Data loss risk: {backup_issue}',
       'Compliance risk: {regulation} violation',
-      'Operational risk: {process_failure}'
+      'Operational risk: {process_failure}',
     ],
     assumption: [
       'Assume {system} can handle {load}',
       'Users will prefer {feature} over {alternative}',
       'Migration will complete within {timeframe}',
       'Third-party API {api} remains stable',
-      'Database queries will maintain {performance}'
+      'Database queries will maintain {performance}',
     ],
     runbook: [
       'Procedure for {incident_type} resolution',
       'Steps to deploy {service} to {environment}',
       'Recovery process for {failure_scenario}',
       'Maintenance checklist for {system}',
-      'Troubleshooting guide for {symptom}'
-    ]
+      'Troubleshooting guide for {symptom}',
+    ],
   };
 
   private readonly SAMPLE_DATA = {
     names: ['Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson', 'Eva Brown'],
-    emails: ['alice@example.com', 'bob@company.com', 'carol@org.com', 'david@business.com', 'eva@startup.com'],
+    emails: [
+      'alice@example.com',
+      'bob@company.com',
+      'carol@org.com',
+      'david@business.com',
+      'eva@startup.com',
+    ],
     roles: ['admin', 'user', 'manager', 'developer', 'analyst'],
     products: ['Widget Pro', 'Gadget X', 'Device Plus', 'Tool Master', 'System Core'],
     categories: ['electronics', 'software', 'hardware', 'services', 'infrastructure'],
     companies: ['TechCorp', 'DataSoft', 'CloudBase', 'InfoSys', 'NetWorks'],
     services: ['Authentication', 'Database', 'Storage', 'Compute', 'Network'],
     locations: ['New York', 'San Francisco', 'London', 'Tokyo', 'Sydney'],
-    components: ['API Gateway', 'Database', 'Cache', 'Message Queue', 'Load Balancer']
+    components: ['API Gateway', 'Database', 'Cache', 'Message Queue', 'Load Balancer'],
   };
 
   /**
@@ -112,10 +118,10 @@ export class BenchmarkDataGenerator {
         version: '1.0.0',
         created: new Date().toISOString(),
         itemCount: config.itemCount,
-        totalSize: 0
+        totalSize: 0,
       },
       items: [],
-      relationships: []
+      relationships: [],
     };
 
     // Generate items
@@ -134,10 +140,14 @@ export class BenchmarkDataGenerator {
     }
 
     // Calculate total size
-    dataset.metadata.totalSize = dataset.items.reduce((sum, item) => sum + item.size, 0);
+    dataset.metadata['totalSize'] = dataset.items.reduce((sum, item) => sum + item.size, 0);
 
-    console.log(`✅ Generated ${dataset.items.length} items and ${dataset.relationships.length} relationships`);
-    console.log(`📊 Total dataset size: ${(dataset.metadata.totalSize / 1024 / 1024).toFixed(2)}MB`);
+    console.log(
+      `✅ Generated ${dataset.items.length} items and ${dataset.relationships.length} relationships`
+    );
+    console.log(
+      `📊 Total dataset size: ${(dataset.metadata['totalSize'] / 1024 / 1024).toFixed(2)}MB`
+    );
 
     return dataset;
   }
@@ -150,15 +160,15 @@ export class BenchmarkDataGenerator {
     mkdirSync(dir, { recursive: true });
 
     // Save as JSON
-    const jsonPath = join(dir, `${dataset.metadata.name}.json`);
+    const jsonPath = join(dir, `${dataset.metadata['name']}.json`);
     writeFileSync(jsonPath, JSON.stringify(dataset, null, 2));
 
     // Save as NDJSON for streaming
-    const ndjsonPath = join(dir, `${dataset.metadata.name}.ndjson`);
+    const ndjsonPath = join(dir, `${dataset.metadata['name']}.ndjson`);
     const ndjsonContent = [
       JSON.stringify(dataset.metadata),
-      ...dataset.items.map(item => JSON.stringify(item)),
-      ...dataset.relationships.map(rel => JSON.stringify(rel))
+      ...dataset.items.map((item) => JSON.stringify(item)),
+      ...dataset.relationships.map((rel) => JSON.stringify(rel)),
     ].join('\n');
     writeFileSync(ndjsonPath, ndjsonContent);
 
@@ -171,7 +181,7 @@ export class BenchmarkDataGenerator {
    * Load dataset from file
    */
   async loadDataset(filePath: string): Promise<TestDataset> {
-    const content = await import('fs').then(fs => fs.readFileSync(filePath, 'utf-8'));
+    const content = await import('fs').then((fs) => fs.readFileSync(filePath, 'utf-8'));
     return JSON.parse(content) as TestDataset;
   }
 
@@ -191,7 +201,7 @@ export class BenchmarkDataGenerator {
       size,
       created: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
       tags: this.generateTags(type),
-      metadata: this.generateMetadata(type, index)
+      metadata: this.generateMetadata(type, index),
     };
   }
 
@@ -214,7 +224,7 @@ export class BenchmarkDataGenerator {
       target: target.id,
       type,
       weight: Math.random(),
-      created: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
+      created: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
     };
   }
 
@@ -225,20 +235,20 @@ export class BenchmarkDataGenerator {
     // Default weights based on typical usage patterns
     const weights: Record<string, number> = {
       entity: 0.25,
-      observation: 0.20,
-      decision: 0.10,
+      observation: 0.2,
+      decision: 0.1,
       issue: 0.08,
       todo: 0.12,
       incident: 0.05,
       release: 0.05,
       risk: 0.05,
       assumption: 0.05,
-      runbook: 0.05
+      runbook: 0.05,
     };
 
     // Use index-based selection for reproducible results
     const weightedTypes: string[] = [];
-    types.forEach(type => {
+    types.forEach((type) => {
       const count = Math.ceil((weights[type] || 0.1) * 100);
       for (let i = 0; i < count; i++) {
         weightedTypes.push(type);
@@ -253,7 +263,7 @@ export class BenchmarkDataGenerator {
    * Select a random template for the given type
    */
   private selectRandomTemplate(type: string): string {
-    const templates = this.CONTENT_TEMPLATES[type as keyof typeof this.CONTENT_TEMPLATES];
+    const templates = this['CONTENT_TEMPLATES'][type as keyof typeof this['CONTENT_TEMPLATES']];
     return templates[Math.floor(Math.random() * templates.length)];
   }
 
@@ -265,37 +275,47 @@ export class BenchmarkDataGenerator {
 
     // Replace placeholders with sample data
     const replacements: Record<string, () => string> = {
-      '{name}': () => this.randomElement(this.SAMPLE_DATA.names),
-      '{email}': () => this.randomElement(this.SAMPLE_DATA.emails),
-      '{role}': () => this.randomElement(this.SAMPLE_DATA.roles),
-      '{product}': () => this.randomElement(this.SAMPLE_DATA.products),
-      '{category}': () => this.randomElement(this.SAMPLE_DATA.categories),
-      '{company}': () => this.randomElement(this.SAMPLE_DATA.companies),
-      '{service}': () => this.randomElement(this.SAMPLE_DATA.services),
-      '{location}': () => this.randomElement(this.SAMPLE_DATA.locations),
-      '{component}': () => this.randomElement(this.SAMPLE_DATA.components),
+      '{name}': () => this.randomElement(this['SAMPLE_DATA'].names),
+      '{email}': () => this.randomElement(this['SAMPLE_DATA'].emails),
+      '{role}': () => this.randomElement(this['SAMPLE_DATA'].roles),
+      '{product}': () => this.randomElement(this['SAMPLE_DATA'].products),
+      '{category}': () => this.randomElement(this['SAMPLE_DATA'].categories),
+      '{company}': () => this.randomElement(this['SAMPLE_DATA'].companies),
+      '{service}': () => this.randomElement(this['SAMPLE_DATA'].services),
+      '{location}': () => this.randomElement(this['SAMPLE_DATA'].locations),
+      '{component}': () => this.randomElement(this['SAMPLE_DATA'].components),
       '{price}': () => `$${(Math.random() * 1000).toFixed(2)}`,
       '{year}': () => String(2010 + Math.floor(Math.random() * 14)),
       '{employees}': () => String(10 + Math.floor(Math.random() * 10000)),
       '{features}': () => this.generateFeatures(),
-      '{user}': () => this.randomElement(this.SAMPLE_DATA.names),
+      '{user}': () => this.randomElement(this['SAMPLE_DATA'].names),
       '{time}': () => new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
       '{count}': () => String(Math.floor(Math.random() * 1000)),
       '{period}': () => this.randomElement(['hour', 'day', 'week', 'month']),
       '{latency}': () => String(Math.floor(Math.random() * 1000)),
       '{alert_type}': () => this.randomElement(['CPU', 'Memory', 'Disk', 'Network']),
-      '{metric}': () => this.randomElement(['Response Time', 'Throughput', 'Error Rate', 'CPU Usage']),
+      '{metric}': () =>
+        this.randomElement(['Response Time', 'Throughput', 'Error Rate', 'CPU Usage']),
       '{value}': () => String(Math.random() * 100),
       '{timestamp}': () => new Date().toISOString(),
       '{request}': () => `REQ-${Math.floor(Math.random() * 100000)}`,
-      '{approver}': () => this.randomElement(this.SAMPLE_DATA.names),
+      '{approver}': () => this.randomElement(this['SAMPLE_DATA'].names),
       '{date}': () => new Date().toISOString().split('T')[0],
       '{action}': () => this.randomElement(['deployment', 'migration', 'update', 'deletion']),
-      '{reason}': () => this.randomElement(['security concerns', 'budget constraints', 'technical limitations', 'policy violation']),
-      '{feature}': () => this.randomElement(['Authentication', 'Authorization', 'Logging', 'Monitoring', 'Caching']),
+      '{reason}': () =>
+        this.randomElement([
+          'security concerns',
+          'budget constraints',
+          'technical limitations',
+          'policy violation',
+        ]),
+      '{feature}': () =>
+        this.randomElement(['Authentication', 'Authorization', 'Logging', 'Monitoring', 'Caching']),
       '{priority}': () => this.randomElement(['high', 'medium', 'low']),
-      '{old_system}': () => this.randomElement(['Legacy System', 'Old Database', 'Previous Version']),
-      '{new_system}': () => this.randomElement(['Modern Platform', 'New Database', 'Current Version']),
+      '{old_system}': () =>
+        this.randomElement(['Legacy System', 'Old Database', 'Previous Version']),
+      '{new_system}': () =>
+        this.randomElement(['Modern Platform', 'New Database', 'Current Version']),
       '{vendor}': () => this.randomElement(['AWS', 'Azure', 'Google Cloud', 'Oracle']),
       '{bug_id}': () => `BUG-${Math.floor(Math.random() * 10000)}`,
       '{pr_number}': () => String(Math.floor(Math.random() * 1000)),
@@ -305,25 +325,83 @@ export class BenchmarkDataGenerator {
       '{region}': () => this.randomElement(['US-East', 'US-West', 'EU-West', 'AP-Southeast']),
       '{server}': () => `server-${Math.floor(Math.random() * 10)}`,
       '{services}': () => this.randomServices(),
-      '{version}': () => `v${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
+      '{version}': () =>
+        `v${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`,
       '{features_count}': () => String(Math.floor(Math.random() * 20) + 1),
-      '{hotfix_version}': () => `v${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}.${Math.floor(Math.random() * 10)}`,
-      '{branch}': () => this.randomElement(['feature/new-auth', 'bugfix/payment', 'refactor/database', 'hotfix/security']),
-      '{deployment}': () => this.randomElement(['API Gateway', 'Database Migration', 'Frontend Update', 'Service Upgrade']),
+      '{hotfix_version}': () =>
+        `v${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}.${Math.floor(Math.random() * 10)}`,
+      '{branch}': () =>
+        this.randomElement([
+          'feature/new-auth',
+          'bugfix/payment',
+          'refactor/database',
+          'hotfix/security',
+        ]),
+      '{deployment}': () =>
+        this.randomElement([
+          'API Gateway',
+          'Database Migration',
+          'Frontend Update',
+          'Service Upgrade',
+        ]),
       '{percentage}': () => String(Math.floor(Math.random() * 100)),
-      '{vulnerability}': () => this.randomElement(['SQL Injection', 'XSS', 'CSRF', 'Buffer Overflow']),
-      '{bottleneck}': () => this.randomElement(['Database Query', 'API Response', 'Memory Allocation', 'Network I/O']),
+      '{vulnerability}': () =>
+        this.randomElement(['SQL Injection', 'XSS', 'CSRF', 'Buffer Overflow']),
+      '{bottleneck}': () =>
+        this.randomElement(['Database Query', 'API Response', 'Memory Allocation', 'Network I/O']),
       '{load}': () => `${Math.floor(Math.random() * 10000)} requests/second`,
-      '{backup_issue}': () => this.randomElement(['Incomplete backup', 'Corrupted backup', 'Missing backup', 'Backup delay']),
+      '{backup_issue}': () =>
+        this.randomElement([
+          'Incomplete backup',
+          'Corrupted backup',
+          'Missing backup',
+          'Backup delay',
+        ]),
       '{regulation}': () => this.randomElement(['GDPR', 'HIPAA', 'PCI-DSS', 'SOX']),
-      '{process_failure}': () => this.randomElement(['Deploy Pipeline', 'CI/CD Process', 'Monitoring Alert', 'Security Scan']),
+      '{process_failure}': () =>
+        this.randomElement([
+          'Deploy Pipeline',
+          'CI/CD Process',
+          'Monitoring Alert',
+          'Security Scan',
+        ]),
       '{timeframe}': () => this.randomElement(['1 week', '2 weeks', '1 month', '1 quarter']),
-      '{performance}': () => this.randomElement(['sub-second response', '99.9% uptime', '1000 req/s throughput', 'low memory usage']),
-      '{incident_type}': () => this.randomElement(['Service Outage', 'Performance Degradation', 'Security Incident', 'Data Loss']),
+      '{performance}': () =>
+        this.randomElement([
+          'sub-second response',
+          '99.9% uptime',
+          '1000 req/s throughput',
+          'low memory usage',
+        ]),
+      '{incident_type}': () =>
+        this.randomElement([
+          'Service Outage',
+          'Performance Degradation',
+          'Security Incident',
+          'Data Loss',
+        ]),
       '{environment}': () => this.randomElement(['development', 'staging', 'production']),
-      '{failure_scenario}': () => this.randomElement(['Database Connection Lost', 'Memory Exhaustion', 'Network Partition', 'Disk Full']),
-      '{system}': () => this.randomElement(['Authentication Service', 'Payment Gateway', 'User Management', 'Analytics Platform']),
-      '{symptom}': () => this.randomElement(['High CPU Usage', 'Memory Leaks', 'Slow Response Times', 'Connection Timeouts'])
+      '{failure_scenario}': () =>
+        this.randomElement([
+          'Database Connection Lost',
+          'Memory Exhaustion',
+          'Network Partition',
+          'Disk Full',
+        ]),
+      '{system}': () =>
+        this.randomElement([
+          'Authentication Service',
+          'Payment Gateway',
+          'User Management',
+          'Analytics Platform',
+        ]),
+      '{symptom}': () =>
+        this.randomElement([
+          'High CPU Usage',
+          'Memory Leaks',
+          'Slow Response Times',
+          'Connection Timeouts',
+        ]),
     };
 
     for (const [placeholder, generator] of Object.entries(replacements)) {
@@ -337,7 +415,16 @@ export class BenchmarkDataGenerator {
    * Generate features list
    */
   private generateFeatures(): string {
-    const features = ['authentication', 'authorization', 'logging', 'monitoring', 'caching', 'encryption', 'backup', 'scalability'];
+    const features = [
+      'authentication',
+      'authorization',
+      'logging',
+      'monitoring',
+      'caching',
+      'encryption',
+      'backup',
+      'scalability',
+    ];
     const count = Math.floor(Math.random() * 3) + 1;
     const selected = features.sort(() => Math.random() - 0.5).slice(0, count);
     return selected.join(', ');
@@ -348,17 +435,20 @@ export class BenchmarkDataGenerator {
    */
   private randomServices(): string {
     const count = Math.floor(Math.random() * 3) + 2;
-    const services = this.SAMPLE_DATA.services.sort(() => Math.random() - 0.5).slice(0, count);
+    const services = this['SAMPLE_DATA'].services.sort(() => Math.random() - 0.5).slice(0, count);
     return services.join(', ');
   }
 
   /**
    * Calculate content size with variance
    */
-  private calculateSize(content: string, sizeDistribution: DataGeneratorConfig['sizeDistribution']): number {
+  private calculateSize(
+    content: string,
+    sizeDistribution: DataGeneratorConfig['sizeDistribution']
+  ): number {
     const baseSize = Buffer.byteLength(content, 'utf8');
     const variance = sizeDistribution.max - sizeDistribution.min;
-    const targetSize = sizeDistribution.min + (Math.random() * variance);
+    const targetSize = sizeDistribution.min + Math.random() * variance;
 
     // Adjust content to match target size
     if (baseSize < targetSize) {
@@ -385,7 +475,7 @@ export class BenchmarkDataGenerator {
       release: ['deployment', 'version', 'launch'],
       risk: ['threat', 'vulnerability', 'exposure'],
       assumption: ['hypothesis', 'premise', 'belief'],
-      runbook: ['procedure', 'guide', 'process']
+      runbook: ['procedure', 'guide', 'process'],
     };
 
     const tags = tagSets[type] || ['general'];
@@ -400,7 +490,7 @@ export class BenchmarkDataGenerator {
     const baseMetadata = {
       index,
       generated: true,
-      benchmark: true
+      benchmark: true,
     };
 
     const typeSpecific: Record<string, Record<string, any>> = {
@@ -413,7 +503,7 @@ export class BenchmarkDataGenerator {
       release: { status: 'deployed', rollback: false },
       risk: { probability: 'medium', impact: 'high' },
       assumption: { validated: false, confidence: 'medium' },
-      runbook: { category: 'operational', automated: false }
+      runbook: { category: 'operational', automated: false },
     };
 
     return { ...baseMetadata, ...(typeSpecific[type] || {}) };
@@ -429,36 +519,38 @@ export class BenchmarkDataGenerator {
   /**
    * Generate predefined datasets for common benchmark scenarios
    */
-  async generatePredefinedDataset(type: 'small' | 'medium' | 'large' | 'enterprise'): Promise<TestDataset> {
+  async generatePredefinedDataset(
+    type: 'small' | 'medium' | 'large' | 'enterprise'
+  ): Promise<TestDataset> {
     const configs: Record<string, DataGeneratorConfig> = {
       small: {
         itemCount: 1000,
         itemTypes: ['entity', 'observation', 'decision'],
         sizeDistribution: { min: 100, max: 1000, average: 500 },
         relationshipDensity: 0.1,
-        embeddingDimensions: 512
+        embeddingDimensions: 512,
       },
       medium: {
         itemCount: 10000,
         itemTypes: ['entity', 'observation', 'decision', 'issue', 'todo'],
         sizeDistribution: { min: 200, max: 2000, average: 1000 },
         relationshipDensity: 0.15,
-        embeddingDimensions: 1024
+        embeddingDimensions: 1024,
       },
       large: {
         itemCount: 100000,
         itemTypes: ['entity', 'observation', 'decision', 'issue', 'todo', 'incident', 'release'],
         sizeDistribution: { min: 500, max: 5000, average: 2000 },
         relationshipDensity: 0.2,
-        embeddingDimensions: 1536
+        embeddingDimensions: 1536,
       },
       enterprise: {
         itemCount: 1000000,
-        itemTypes: Object.keys(this.CONTENT_TEMPLATES),
+        itemTypes: Object.keys(this['CONTENT_TEMPLATES']),
         sizeDistribution: { min: 1000, max: 10000, average: 5000 },
         relationshipDensity: 0.25,
-        embeddingDimensions: 1536
-      }
+        embeddingDimensions: 1536,
+      },
     };
 
     return this.generateDataset(configs[type]);

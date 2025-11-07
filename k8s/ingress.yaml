@@ -1,0 +1,342 @@
+# ============================================================================
+# CORTEX MEMORY MCP - INGRESS CONFIGURATION
+# ============================================================================
+
+---
+# Cortex MCP Application Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cortex-mcp-ingress
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-mcp
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: cortex-memory
+  annotations:
+    kubernetes.io/ingress.class: 'nginx'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/backend-protocol: 'HTTP'
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
+    nginx.ingress.kubernetes.io/rate-limit: '100'
+    nginx.ingress.kubernetes.io/rate-limit-window: '1m'
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    cert-manager.io/acme-challenge-type: 'http01'
+    cert-manager.io/acme-http01-edit-in-place: 'true'
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Original-URI $request_uri;
+      proxy_set_header Host $host;
+      proxy_set_header X-Original-Host $host;
+spec:
+  tls:
+    - hosts:
+        - cortex-mcp.example.com
+        - api.cortex-mcp.example.com
+      secretName: cortex-mcp-tls
+  rules:
+    - host: cortex-mcp.example.com
+      http:
+        paths:
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: cortex-mcp-service
+                port:
+                  number: 3000
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: cortex-mcp-service
+                port:
+                  number: 9090
+          - path: /mcp(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: cortex-mcp-service
+                port:
+                  number: 3000
+    - host: api.cortex-mcp.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cortex-mcp-service
+                port:
+                  number: 3000
+
+---
+# Grafana Monitoring Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: cortex-memory
+  annotations:
+    kubernetes.io/ingress.class: 'nginx'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/backend-protocol: 'HTTP'
+    nginx.ingress.kubernetes.io/proxy-body-size: '10m'
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '60'
+    nginx.ingress.kubernetes.io/proxy-send-timeout: '60'
+    nginx.ingress.kubernetes.io/rate-limit: '50'
+    nginx.ingress.kubernetes.io/rate-limit-window: '1m'
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+    cert-manager.io/acme-challenge-type: 'http01'
+    cert-manager.io/acme-http01-edit-in-place: 'true'
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Original-URI $request_uri;
+      proxy_set_header Host $host;
+      proxy_set_header X-Original-Host $host;
+      # Allow Grafana iframes
+      proxy_set_header X-Frame-Options "ALLOW-FROM https://cortex-mcp.example.com";
+spec:
+  tls:
+    - hosts:
+        - cortex-grafana.example.com
+      secretName: grafana-tls
+  rules:
+    - host: cortex-grafana.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  number: 3000
+
+---
+# Prometheus Ingress (Internal Only)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-ingress
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: cortex-memory
+  annotations:
+    kubernetes.io/ingress.class: 'nginx-internal'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/backend-protocol: 'HTTP'
+    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
+    nginx.ingress.kubernetes.io/whitelist-source-range: '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+spec:
+  tls:
+    - hosts:
+        - cortex-prometheus.internal.example.com
+      secretName: prometheus-tls
+  rules:
+    - host: cortex-prometheus.internal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090
+
+---
+# Alertmanager Ingress (Internal Only)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager-ingress
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: ingress
+    app.kubernetes.io/part-of: cortex-memory
+  annotations:
+    kubernetes.io/ingress.class: 'nginx-internal'
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    nginx.ingress.kubernetes.io/backend-protocol: 'HTTP'
+    nginx.ingress.kubernetes.io/proxy-body-size: '10m'
+    nginx.ingress.kubernetes.io/whitelist-source-range: '10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
+    cert-manager.io/cluster-issuer: 'letsencrypt-prod'
+spec:
+  tls:
+    - hosts:
+        - cortex-alertmanager.internal.example.com
+      secretName: alertmanager-tls
+  rules:
+    - host: cortex-alertmanager.internal.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: alertmanager
+                port:
+                  number: 9093
+
+---
+# Network Policy for Cortex MCP Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cortex-mcp-ingress-netpol
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-mcp
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cortex-mcp
+      app.kubernetes.io/component: application
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 9090
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: cortex-monitoring
+      ports:
+        - protocol: TCP
+          port: 9090
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: qdrant
+            namespaceSelector:
+              matchLabels:
+                name: cortex-mcp
+      ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 9090
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: qdrant
+            namespaceSelector:
+              matchLabels:
+                name: cortex-mcp
+      ports:
+        - protocol: TCP
+          port: 6333
+        - protocol: TCP
+          port: 6334
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 587
+        - protocol: TCP
+          port: 25
+
+---
+# Network Policy for Monitoring Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-ingress-netpol
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/part-of: cortex-memory
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: cortex-memory
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000 # Grafana
+        - protocol: TCP
+          port: 9090 # Prometheus
+        - protocol: TCP
+          port: 9093 # Alertmanager
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx-internal
+      ports:
+        - protocol: TCP
+          port: 9090 # Prometheus
+        - protocol: TCP
+          port: 9093 # Alertmanager
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: cortex-mcp
+      ports:
+        - protocol: TCP
+          port: 9090 # Prometheus (for metrics)
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 53
+        - protocol: UDP
+          port: 53
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 587
+        - protocol: TCP
+          port: 25

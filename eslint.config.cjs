@@ -218,6 +218,15 @@ module.exports = [
       'html/**/*',
       'tests/**/*',
 
+      // Exclude auxiliary packages and generated artifacts
+      'ts-fix/**/*',
+      'ts-fix/dist/**/*',
+
+      // Top-level dev utilities not part of core lint gate
+      'inspector-test-client.js',
+      'simple-mcp-entry.js',
+      'src/silent-mcp-entry.ts',
+
       // Specific problematic files
       'D*',
       'final-comprehensive-test.js',

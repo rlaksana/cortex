@@ -4,8 +4,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import * as crypto from 'node:crypto';
-import { logger } from '../utils/logger.js';
+import * as crypto from 'crypto';
+import { logger } from '@/utils/logger.js';
 import { AuthService } from '../services/auth/auth-service.js';
 import {
   AuthContext,

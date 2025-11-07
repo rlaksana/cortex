@@ -14,14 +14,14 @@ global:
 
 # Rule files for alerting
 rule_files:
-  - "alerts/*.yml"
+  - 'alerts/*.yml'
 
 # Alertmanager configuration
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
-          - alertmanager:9093
+            - alertmanager:9093
 
 # Scrape configurations
 scrape_configs:

@@ -66,7 +66,7 @@ describe('Key Vault Integration', () => {
     it('should fall back to environment variables when vault key missing', async () => {
       // Set test environment variable
       const testKey = 'test-openai-key';
-      process.env.TEST_OPENAI_API_KEY = 'sk-test-key-12345';
+      process.env['TEST_OPENAI_API_KEY'] = 'sk-test-key-12345';
 
       try {
         const key = await keyVault.get_key_by_name('test_openai_api_key');
@@ -75,13 +75,13 @@ describe('Key Vault Integration', () => {
         expect(key).toBeNull();
       } finally {
         // Clean up
-        delete process.env.TEST_OPENAI_API_KEY;
+        delete process.env['TEST_OPENAI_API_KEY'];
       }
     });
 
     it('should cache keys to reduce environment lookups', async () => {
       // Mock environment variable
-      process.env.OPENAI_API_KEY = 'sk-test-key-cached';
+      process.env['OPENAI_API_KEY'] = 'sk-test-key-cached';
 
       try {
         // First call should hit environment
@@ -93,7 +93,7 @@ describe('Key Vault Integration', () => {
         expect(key2?.value).toBe('sk-test-key-cached');
       } finally {
         // Clean up
-        delete process.env.OPENAI_API_KEY;
+        delete process.env['OPENAI_API_KEY'];
       }
     });
   });
@@ -151,7 +151,7 @@ describe('Key Vault Integration', () => {
 
     it('should delete keys from cache', async () => {
       // Mock environment variable
-      process.env.OPENAI_API_KEY = 'sk-test-to-delete';
+      process.env['OPENAI_API_KEY'] = 'sk-test-to-delete';
 
       try {
         // Cache the key
@@ -165,7 +165,7 @@ describe('Key Vault Integration', () => {
         const key = await keyVault.get_key_by_name('openai_api_key');
         expect(key?.value).toBe('sk-test-to-delete'); // Still gets from environment
       } finally {
-        delete process.env.OPENAI_API_KEY;
+        delete process.env['OPENAI_API_KEY'];
       }
     });
 

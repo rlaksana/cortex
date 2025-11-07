@@ -3,7 +3,7 @@
  * Handles intelligent content truncation with proper metadata and metrics
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { environment } from '../../config/environment.js';
 import type {
   TruncationConfig,

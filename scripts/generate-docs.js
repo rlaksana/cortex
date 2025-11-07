@@ -33,7 +33,6 @@ function generateDocs() {
     console.log('   - API Reference');
     console.log('   - Architecture Overview');
     console.log('   - Setup Guide');
-
   } catch (error) {
     console.error('❌ Error generating documentation:', error.message);
     process.exit(1);

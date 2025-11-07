@@ -97,11 +97,11 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNote);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('release_note');
-        expect(result.data.data.version).toBe('2.1.0');
-        expect(result.data.data.new_features).toHaveLength(3);
-        expect(result.data.data.bug_fixes).toHaveLength(3);
-        expect(result.data.data.breaking_changes).toHaveLength(2);
+        expect(result['data.kind']).toBe('release_note');
+        expect(result['data.data'].version).toBe('2.1.0');
+        expect(result['data.data'].new_features).toHaveLength(3);
+        expect(result['data.data'].bug_fixes).toHaveLength(3);
+        expect(result['data.data'].breaking_changes).toHaveLength(2);
       }
     });
 
@@ -122,10 +122,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNote);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.version).toBe('1.0.1');
-        expect(result.data.data.summary).toBe('Bug fix release');
-        expect(result.data.data.new_features).toBeUndefined();
-        expect(result.data.data.bug_fixes).toBeUndefined();
+        expect(result['data.data'].version).toBe('1.0.1');
+        expect(result['data.data'].summary).toBe('Bug fix release');
+        expect(result['data.data'].new_features).toBeUndefined();
+        expect(result['data.data'].bug_fixes).toBeUndefined();
       }
     });
 
@@ -200,10 +200,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNote);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(Array.isArray(result.data.data.new_features)).toBe(true);
-        expect(Array.isArray(result.data.data.bug_fixes)).toBe(true);
-        expect(result.data.data.new_features).toHaveLength(3);
-        expect(result.data.data.bug_fixes).toHaveLength(2);
+        expect(Array.isArray(result['data.data'].new_features)).toBe(true);
+        expect(Array.isArray(result['data.data'].bug_fixes)).toBe(true);
+        expect(result['data.data'].new_features).toHaveLength(3);
+        expect(result['data.data'].bug_fixes).toHaveLength(2);
       }
     });
 
@@ -352,9 +352,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validation = safeValidateKnowledgeItem(releaseNote);
       expect(validation.success).toBe(true);
       if (validation.success) {
-        expect(validation.data.kind).toBe('release_note');
-        expect(validation.data.data.version).toBe('3.0.0');
-        expect(validation.data.data.new_features).toHaveLength(3);
+        expect(validation['data.kind']).toBe('release_note');
+        expect(validation['data.data'].version).toBe('3.0.0');
+        expect(validation['data.data'].new_features).toHaveLength(3);
       }
     });
 
@@ -448,10 +448,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       expect(validation.success).toBe(true);
       if (validation.success) {
         // Verify content is searchable
-        expect(validation.data.data.summary).toContain('authentication');
-        expect(validation.data.data.new_features).toContain('OAuth 2.0 support');
-        expect(validation.data.data.bug_fixes).toContain('Fixed login issues');
-        expect(validation.data.tags?.security).toBe(true);
+        expect(validation['data.data'].summary).toContain('authentication');
+        expect(validation['data.data'].new_features).toContain('OAuth 2.0 support');
+        expect(validation['data.data'].bug_fixes).toContain('Fixed login issues');
+        expect(validation['data.tags']?.security).toBe(true);
       }
     });
 
@@ -469,9 +469,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validation = safeValidateKnowledgeItem(minimalReleaseNote);
       expect(validation.success).toBe(true);
       if (validation.success) {
-        expect(validation.data.data.summary).toBe('Bug fix release');
-        expect(validation.data.data.new_features).toBeUndefined();
-        expect(validation.data.data.bug_fixes).toBeUndefined();
+        expect(validation['data.data'].summary).toBe('Bug fix release');
+        expect(validation['data.data'].new_features).toBeUndefined();
+        expect(validation['data.data'].bug_fixes).toBeUndefined();
       }
     });
 
@@ -497,10 +497,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validation = safeValidateKnowledgeItem(richReleaseNote);
       expect(validation.success).toBe(true);
       if (validation.success) {
-        expect(validation.data.data.new_features).toHaveLength(3);
-        expect(validation.data.data.bug_fixes).toHaveLength(2);
-        expect(validation.data.data.breaking_changes).toHaveLength(1);
-        expect(validation.data.tags?.collaboration).toBe(true);
+        expect(validation['data.data'].new_features).toHaveLength(3);
+        expect(validation['data.data'].bug_fixes).toHaveLength(2);
+        expect(validation['data.data'].breaking_changes).toHaveLength(1);
+        expect(validation['data.tags']?.collaboration).toBe(true);
       }
     });
   });
@@ -523,9 +523,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validation = safeValidateKnowledgeItem(projectReleaseNote);
       expect(validation.success).toBe(true);
       if (validation.success) {
-        expect(validation.data.scope.project).toBe('project-alpha');
-        expect(validation.data.scope.branch).toBe('main');
-        expect(validation.data.data.version).toBe('1.0.0');
+        expect(validation['data.scope'].project).toBe('project-alpha');
+        expect(validation['data.scope'].branch).toBe('main');
+        expect(validation['data.data'].version).toBe('1.0.0');
       }
     });
 
@@ -564,13 +564,13 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       expect(developValidation.success).toBe(true);
 
       if (mainValidation.success && developValidation.success) {
-        expect(mainValidation.data.scope.project).toBe('web-platform');
-        expect(mainValidation.data.scope.branch).toBe('main');
-        expect(mainValidation.data.data.version).toBe('2.0.0');
+        expect(mainValidation['data.scope'].project).toBe('web-platform');
+        expect(mainValidation['data.scope'].branch).toBe('main');
+        expect(mainValidation['data.data'].version).toBe('2.0.0');
 
-        expect(developValidation.data.scope.project).toBe('web-platform');
-        expect(developValidation.data.scope.branch).toBe('develop');
-        expect(developValidation.data.data.version).toBe('1.9.0-beta');
+        expect(developValidation['data.scope'].project).toBe('web-platform');
+        expect(developValidation['data.scope'].branch).toBe('develop');
+        expect(developValidation['data.data'].version).toBe('1.9.0-beta');
       }
     });
 
@@ -634,9 +634,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(complexReleaseNote);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.new_features).toHaveLength(4);
-        expect(result.data.data.new_features[0].length).toBeGreaterThan(70);
-        expect(result.data.data.bug_fixes[0].length).toBeGreaterThan(70);
+        expect(result['data.data'].new_features).toHaveLength(4);
+        expect(result['data.data'].new_features[0].length).toBeGreaterThan(70);
+        expect(result['data.data'].bug_fixes[0].length).toBeGreaterThan(70);
       }
     });
 
@@ -664,9 +664,9 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(breakingReleaseNote);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.breaking_changes).toHaveLength(4);
-        expect(result.data.data.deprecations).toHaveLength(2);
-        expect(result.data.data.breaking_changes[0]).toContain('migration');
+        expect(result['data.data'].breaking_changes).toHaveLength(4);
+        expect(result['data.data'].deprecations).toHaveLength(2);
+        expect(result['data.data'].breaking_changes[0]).toContain('migration');
       }
     });
 
@@ -715,10 +715,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithEmptyArrays);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.new_features).toEqual([]);
-        expect(result.data.data.bug_fixes).toEqual([]);
-        expect(result.data.data.breaking_changes).toEqual([]);
-        expect(result.data.data.deprecations).toEqual([]);
+        expect(result['data.data'].new_features).toEqual([]);
+        expect(result['data.data'].bug_fixes).toEqual([]);
+        expect(result['data.data'].breaking_changes).toEqual([]);
+        expect(result['data.data'].deprecations).toEqual([]);
       }
     });
 
@@ -768,8 +768,8 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const validation = safeValidateKnowledgeItem(knowledgeItem);
       expect(validation.success).toBe(true);
       if (validation.success) {
-        expect(validation.data.kind).toBe('release_note');
-        expect(validation.data.data.version).toBe('3.2.1');
+        expect(validation['data.kind']).toBe('release_note');
+        expect(validation['data.data'].version).toBe('3.2.1');
       }
     });
 
@@ -788,7 +788,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithTTL);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.ttl_policy).toBe('short');
+        expect(result['data.ttl_policy']).toBe('short');
       }
     });
 
@@ -807,7 +807,7 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithIdempotency);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.idempotency_key).toBe('release-1.0.0-2025-01-15');
+        expect(result['data.idempotency_key']).toBe('release-1.0.0-2025-01-15');
       }
     });
 
@@ -837,10 +837,10 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(releaseNoteWithMetadata);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.tags?.major).toBe(true);
-        expect(result.data.tags?.feature).toBe('authentication');
-        expect(result.data.tags?.priority).toBe('high');
-        expect(result.data.source?.actor).toBe('release-coordinator');
+        expect(result['data.tags']?.major).toBe(true);
+        expect(result['data.tags']?.feature).toBe('authentication');
+        expect(result['data.tags']?.priority).toBe('high');
+        expect(result['data.source']?.actor).toBe('release-coordinator');
       }
     });
 
@@ -900,15 +900,15 @@ describe('Release Note Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseNoteSchema.safeParse(complexRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.version).toBe('10.0.0-enterprise');
-        expect(result.data.data.new_features).toHaveLength(5);
-        expect(result.data.data.bug_fixes).toHaveLength(4);
-        expect(result.data.data.breaking_changes).toHaveLength(4);
-        expect(result.data.data.deprecations).toHaveLength(4);
-        expect(result.data.scope.project).toBe('complex-enterprise-system');
-        expect(result.data.tags?.milestone).toBe(true);
-        expect(result.data.source?.actor).toBe('enterprise-release-team');
-        expect(result.data.ttl_policy).toBe('permanent');
+        expect(result['data.data'].version).toBe('10.0.0-enterprise');
+        expect(result['data.data'].new_features).toHaveLength(5);
+        expect(result['data.data'].bug_fixes).toHaveLength(4);
+        expect(result['data.data'].breaking_changes).toHaveLength(4);
+        expect(result['data.data'].deprecations).toHaveLength(4);
+        expect(result['data.scope'].project).toBe('complex-enterprise-system');
+        expect(result['data.tags']?.milestone).toBe(true);
+        expect(result['data.source']?.actor).toBe('enterprise-release-team');
+        expect(result['data.ttl_policy']).toBe('permanent');
       }
     });
   });

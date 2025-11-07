@@ -4,13 +4,18 @@ import { vi } from 'vitest';
 // Load test environment variables
 config({ path: '.env.test' });
 
+// Import Windows-specific test setup for Windows environments
+if (process.platform === 'win32') {
+  await import('./setup/windows-test-setup.js');
+}
+
 // Set test environment variables
-process.env.NODE_ENV = 'test';
-process.env.LOG_LEVEL = 'error'; // Minimize logs during testing
-process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
+process.env['NODE_ENV'] = 'test';
+process.env['LOG_LEVEL'] = 'error'; // Minimize logs during testing
+process.env['QDRANT_COLLECTION_NAME'] = 'test-cortex-memory';
 
 // Mock VectorDatabase for tests that expect it
-global.VectorDatabase = class MockVectorDatabase {
+global['V']ectorDatabase = class MockVectorDatabase {
   client: any;
 
   constructor() {

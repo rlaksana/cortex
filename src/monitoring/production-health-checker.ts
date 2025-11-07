@@ -22,8 +22,8 @@ import {
   type StandardHealthCheckConfig,
   type LegacyHealthCheckConfig,
 } from '../config/configuration-migration.js';
-import * as os from 'node:os';
-import * as fs from 'node:fs';
+import * as os from 'os';
+import * as fs from 'fs';
 
 // Re-export for backward compatibility
 export type { ProductionHealthResult as HealthCheckResult };

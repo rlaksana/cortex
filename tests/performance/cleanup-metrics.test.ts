@@ -221,8 +221,10 @@ describe('Cleanup Metrics Performance', () => {
       expect(duration).toBeLessThan(5000); // Should complete within 5 seconds
 
       // Verify type breakdown accuracy
-      const typeTotal = Object.values(report.metrics.cleanup_by_type)
-        .reduce((sum: number, count: number) => sum + count, 0);
+      const typeTotal = Object.values(report.metrics.cleanup_by_type).reduce(
+        (sum: number, count: number) => sum + count,
+        0
+      );
       expect(typeTotal).toBe(highVolumeCount - 5000);
     });
 
@@ -340,10 +342,15 @@ describe('Cleanup Metrics Performance', () => {
       // Verify metrics are consistent
       history.forEach((report: any, index: number) => {
         const originalReport = operationReports[index];
-        expect(report.metrics.cleanup_deleted_total).toBe(originalReport.metrics.cleanup_deleted_total);
-        expect(report.metrics.cleanup_dryrun_total).toBe(originalReport.metrics.cleanup_dryrun_total);
-        expect(JSON.stringify(report.metrics.cleanup_by_type))
-          .toBe(JSON.stringify(originalReport.metrics.cleanup_by_type));
+        expect(report.metrics.cleanup_deleted_total).toBe(
+          originalReport.metrics.cleanup_deleted_total
+        );
+        expect(report.metrics.cleanup_dryrun_total).toBe(
+          originalReport.metrics.cleanup_dryrun_total
+        );
+        expect(JSON.stringify(report.metrics.cleanup_by_type)).toBe(
+          JSON.stringify(originalReport.metrics.cleanup_by_type)
+        );
       });
     });
 
@@ -375,8 +382,7 @@ describe('Cleanup Metrics Performance', () => {
       const expectedItemsPerSecond = (itemCount - 200) / (expectedDuration / 1000);
       expect(report.metrics.items_per_second).toBeCloseTo(expectedItemsPerSecond, 1);
       expect(report.metrics.average_batch_duration_ms).toBe(expectedDuration);
-      expect(report.performance.items_processed_per_second)
-        .toBeCloseTo(expectedItemsPerSecond, 1);
+      expect(report.performance.items_processed_per_second).toBeCloseTo(expectedItemsPerSecond, 1);
     });
 
     it('should track error rates accurately', async () => {

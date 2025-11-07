@@ -9,9 +9,9 @@
  * - Performance optimization
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { qdrant } from '../../db/qdrant-client.js';
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import {
   DeduplicationConfig,

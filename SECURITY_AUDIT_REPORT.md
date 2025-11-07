@@ -8,7 +8,7 @@
 
 This comprehensive security audit of the MCP Cortex project reveals several areas requiring attention, including critical security vulnerabilities, failing authentication tests, and widespread security code quality issues. While dependency security is strong with zero CVEs, the codebase contains numerous security anti-patterns that require immediate remediation.
 
-**Overall Security Status: ⚠️  REQUIRES ATTENTION**
+**Overall Security Status: ⚠️ REQUIRES ATTENTION**
 
 ---
 
@@ -17,6 +17,7 @@ This comprehensive security audit of the MCP Cortex project reveals several area
 ### 1. Dependency Security Audit ✅ PASSED
 
 **npm audit Results:**
+
 - **Critical Vulnerabilities:** 0
 - **High Severity Vulnerabilities:** 0
 - **Moderate Vulnerabilities:** 0
@@ -28,6 +29,7 @@ This comprehensive security audit of the MCP Cortex project reveals several area
 ### 2. Static Application Security Testing (SAST) ❌ CRITICAL ISSUES
 
 **ESLint Security Analysis Results:**
+
 - **Security Errors:** 24 (CRITICAL)
 - **Security Warnings:** 609 (HIGH PRIORITY)
 - **Files with Issues:** 150+ across entire codebase
@@ -57,6 +59,7 @@ This comprehensive security audit of the MCP Cortex project reveals several area
 ### 3. Authentication & Authorization Tests ❌ CRITICAL FAILURES
 
 **Security Test Results:**
+
 - **Total Tests Run:** 107
 - **Failed Tests:** 28 (26% failure rate)
 - **Passed Tests:** 79
@@ -82,6 +85,7 @@ This comprehensive security audit of the MCP Cortex project reveals several area
 ### 4. License Compliance Review ✅ PASSED
 
 **Dependency License Analysis:**
+
 - **MIT License:** 599 packages (Primary license - compatible)
 - **ISC License:** 43 packages (Permissive - compatible)
 - **Apache-2.0:** 24 packages (Permissive - compatible)
@@ -98,9 +102,11 @@ This comprehensive security audit of the MCP Cortex project reveals several area
 ### 1. Regular Expression Denial of Service (ReDoS)
 
 **Location:** `src/utils/security.ts`
+
 ```typescript
 // VULNERABLE CODE:
-const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const ipv4Regex =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 ```
 
@@ -116,6 +122,7 @@ const ipv6Regex = /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
 ### 3. Insecure Dynamic Property Access
 
 **Pattern:** Unvalidated bracket notation access
+
 ```typescript
 // VULNERABLE PATTERN:
 obj[userInput] = value;
@@ -137,6 +144,7 @@ obj[userInput] = value;
 ### Immediate Actions (Critical Priority)
 
 1. **Fix ReDoS Vulnerabilities**
+
    ```typescript
    // Replace with safe implementation:
    import { isIP } from 'net';
@@ -191,30 +199,33 @@ obj[userInput] = value;
 
 ## 📊 Security Metrics
 
-| Category | Status | Count | Severity |
-|----------|--------|-------|----------|
-| Dependency CVEs | ✅ Clean | 0 | None |
-| SAST Errors | ❌ Critical | 24 | Critical |
-| SAST Warnings | ⚠️ High | 609 | High |
-| Auth Test Failures | ❌ Critical | 28 | Critical |
-| License Issues | ✅ Clean | 0 | None |
-| **Overall Score** | **⚠️ 48%** | **661** | **Critical** |
+| Category           | Status      | Count   | Severity     |
+| ------------------ | ----------- | ------- | ------------ |
+| Dependency CVEs    | ✅ Clean    | 0       | None         |
+| SAST Errors        | ❌ Critical | 24      | Critical     |
+| SAST Warnings      | ⚠️ High     | 609     | High         |
+| Auth Test Failures | ❌ Critical | 28      | Critical     |
+| License Issues     | ✅ Clean    | 0       | None         |
+| **Overall Score**  | **⚠️ 48%**  | **661** | **Critical** |
 
 ---
 
 ## 🔧 Remediation Timeline
 
 ### Week 1 (Critical)
+
 - [ ] Fix ReDoS vulnerabilities (8 instances)
 - [ ] Repair authentication test suite
 - [ ] Implement input sanitization for critical paths
 
 ### Week 2-3 (High Priority)
+
 - [ ] Address object injection vulnerabilities (100+ high-risk instances)
 - [ ] Implement secure property access patterns
 - [ ] Add security monitoring to CI/CD
 
 ### Week 4-8 (Medium Priority)
+
 - [ ] Review and fix remaining security warnings
 - [ ] Implement comprehensive security testing
 - [ ] Security architecture improvements
@@ -224,6 +235,7 @@ obj[userInput] = value;
 ## 📋 Compliance Status
 
 ### Standards Compliance:
+
 - **OWASP Top 10:** ⚠️ Partial compliance (A03:2021 - Injection identified)
 - **CVE Security:** ✅ Full compliance (0 CVEs)
 - **License Compliance:** ✅ Full compliance (permissive licenses only)
@@ -245,4 +257,4 @@ obj[userInput] = value;
 
 ---
 
-*This report contains sensitive security information. Handle according to your organization's security policies.*
+_This report contains sensitive security information. Handle according to your organization's security policies._

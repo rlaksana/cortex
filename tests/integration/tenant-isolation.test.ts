@@ -186,12 +186,9 @@ describe('Tenant Isolation', () => {
     });
 
     it('should handle missing tenant IDs in non-strict mode', () => {
-      const validation = tenantIsolation.validateTenantIsolation(
-        'memory_store',
-        null,
-        null,
-        { project: 'test-project' }
-      );
+      const validation = tenantIsolation.validateTenantIsolation('memory_store', null, null, {
+        project: 'test-project',
+      });
 
       expect(validation.isValid).toBe(true); // Non-strict mode allows missing tenants
     });
@@ -203,12 +200,9 @@ describe('Tenant Isolation', () => {
       };
       const strictTenantIsolation = new TenantIsolation(config);
 
-      const validation = strictTenantIsolation.validateTenantIsolation(
-        'memory_store',
-        null,
-        null,
-        { project: 'test-project' }
-      );
+      const validation = strictTenantIsolation.validateTenantIsolation('memory_store', null, null, {
+        project: 'test-project',
+      });
 
       expect(validation.isValid).toBe(false);
       expect(validation.errors).toContain('Tenant ID required in strict mode');
@@ -352,9 +346,7 @@ describe('Tenant Isolation', () => {
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
         error: 'Tenant validation failed',
-        details: expect.arrayContaining([
-          expect.stringContaining('Tenant mismatch'),
-        ]),
+        details: expect.arrayContaining([expect.stringContaining('Tenant mismatch')]),
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -505,12 +497,9 @@ describe('Tenant Isolation', () => {
       const start = Date.now();
 
       for (let i = 0; i < 1000; i++) {
-        tenantIsolation.validateTenantIsolation(
-          'memory_store',
-          `tenant-${i}`,
-          `tenant-${i}`,
-          { project: 'test-project' }
-        );
+        tenantIsolation.validateTenantIsolation('memory_store', `tenant-${i}`, `tenant-${i}`, {
+          project: 'test-project',
+        });
       }
 
       const duration = Date.now() - start;

@@ -17,7 +17,10 @@
  */
 
 import { EnhancedDeduplicationService } from './dist/services/deduplication/enhanced-deduplication-service.js';
-import { DEFAULT_DEDUPLICATION_CONFIG, DEDUPE_PRESETS } from './dist/config/deduplication-config.js';
+import {
+  DEFAULT_DEDUPLICATION_CONFIG,
+  DEDUPE_PRESETS,
+} from './dist/config/deduplication-config.js';
 
 // Test configuration
 const TEST_CONFIG = {
@@ -221,7 +224,9 @@ async function testMergeStrategies() {
           break;
 
         case 'intelligent':
-          expectedAction = ['merged', 'updated', 'skipped'].includes(results[0].action) ? results[0].action : 'merged';
+          expectedAction = ['merged', 'updated', 'skipped'].includes(results[0].action)
+            ? results[0].action
+            : 'merged';
           validationDetails = {
             action: results[0].action,
             hasReason: !!results[0].reason,
@@ -229,15 +234,15 @@ async function testMergeStrategies() {
           break;
       }
 
-      const passed = results.length === 1 &&
-                     (strategy === 'intelligent' || results[0].action === expectedAction);
+      const passed =
+        results.length === 1 &&
+        (strategy === 'intelligent' || results[0].action === expectedAction);
 
       logTest(`Merge Strategy ${strategy}`, passed, {
         ...validationDetails,
         duration: result.duration,
         memoryUsed: `${(result.memoryUsed / 1024 / 1024).toFixed(2)} MB`,
       });
-
     } catch (error) {
       logTest(`Merge Strategy ${strategy}`, false, { error: error.message });
     }
@@ -284,7 +289,6 @@ async function testSimilarityThresholds() {
         aboveAction: aboveResult.action,
         belowAction: belowResult.action,
       });
-
     } catch (error) {
       logTest(`Similarity Threshold ${threshold}`, false, { error: error.message });
     }
@@ -334,7 +338,9 @@ async function testTimeWindows() {
       // Old item should be stored (outside window)
       const oldStored = oldResult.results[0].action === 'stored';
       // Recent item should trigger deduplication (within window)
-      const recentDeduped = ['merged', 'updated', 'skipped'].includes(recentResult.results[0].action);
+      const recentDeduped = ['merged', 'updated', 'skipped'].includes(
+        recentResult.results[0].action
+      );
       // New item should be preferred
       const newPreferred = newResult.results[0].action === 'stored';
 
@@ -345,7 +351,6 @@ async function testTimeWindows() {
         recentAction: recentResult.results[0].action,
         newAction: newResult.results[0].action,
       });
-
     } catch (error) {
       logTest(`Time Window ${days} days`, false, { error: error.message });
     }
@@ -357,25 +362,25 @@ async function testCrossScopeDeduplication() {
   console.log('\n🧪 Testing Cross-Scope Deduplication');
 
   const baseItem = generateTestItem({
-    scope: { org: 'org-a', project: 'project-1', branch: 'main' }
+    scope: { org: 'org-a', project: 'project-1', branch: 'main' },
   });
 
   const sameScope = generateTestItem({
     title: baseItem.data.title,
     content: baseItem.data.content,
-    scope: { org: 'org-a', project: 'project-1', branch: 'main' }
+    scope: { org: 'org-a', project: 'project-1', branch: 'main' },
   });
 
   const differentProject = generateTestItem({
     title: baseItem.data.title,
     content: baseItem.data.content,
-    scope: { org: 'org-a', project: 'project-2', branch: 'main' }
+    scope: { org: 'org-a', project: 'project-2', branch: 'main' },
   });
 
   const differentOrg = generateTestItem({
     title: baseItem.data.title,
     content: baseItem.data.content,
-    scope: { org: 'org-b', project: 'project-1', branch: 'main' }
+    scope: { org: 'org-b', project: 'project-1', branch: 'main' },
   });
 
   // Test with cross-scope disabled
@@ -399,25 +404,36 @@ async function testCrossScopeDeduplication() {
     const serviceCross = new EnhancedDeduplicationService(configCross);
 
     // Test with cross-scope disabled
-    const noCrossResults = await serviceNoCross.processItems([sameScope, differentProject, differentOrg]);
+    const noCrossResults = await serviceNoCross.processItems([
+      sameScope,
+      differentProject,
+      differentOrg,
+    ]);
 
     // Test with cross-scope enabled
-    const crossResults = await serviceCross.processItems([sameScope, differentProject, differentOrg]);
+    const crossResults = await serviceCross.processItems([
+      sameScope,
+      differentProject,
+      differentOrg,
+    ]);
 
     // With cross-scope disabled: only same scope should be deduped
-    const noCrossSameScopeDeduped = ['skipped', 'merged', 'updated'].includes(noCrossResults.results[0].action);
+    const noCrossSameScopeDeduped = ['skipped', 'merged', 'updated'].includes(
+      noCrossResults.results[0].action
+    );
     const noCrossDifferentProjectStored = noCrossResults.results[1].action === 'stored';
     const noCrossDifferentOrgStored = noCrossResults.results[2].action === 'stored';
 
     // With cross-scope enabled: all should be deduped
-    const crossAllDeduped = noCrossResults.results.every(r =>
+    const crossAllDeduped = noCrossResults.results.every((r) =>
       ['skipped', 'merged', 'updated'].includes(r.action)
     );
 
-    const passed = noCrossSameScopeDeduped &&
-                  noCrossDifferentProjectStored &&
-                  noCrossDifferentOrgStored &&
-                  crossAllDeduped;
+    const passed =
+      noCrossSameScopeDeduped &&
+      noCrossDifferentProjectStored &&
+      noCrossDifferentOrgStored &&
+      crossAllDeduped;
 
     logTest('Cross-Scope Deduplication', passed, {
       noCrossSameScope: noCrossResults.results[0].action,
@@ -425,7 +441,6 @@ async function testCrossScopeDeduplication() {
       noCrossDifferentOrg: noCrossResults.results[2].action,
       crossAllDeduped: crossAllDeduped,
     });
-
   } catch (error) {
     logTest('Cross-Scope Deduplication', false, { error: error.message });
   }
@@ -444,22 +459,23 @@ async function testContentMerging() {
       metadata: {
         version: '1.0.0',
         author: 'original-author',
-      }
-    }
+      },
+    },
   });
 
   const newItem = generateTestItem({
     data: {
       title: 'Updated Title',
-      content: 'Updated content paragraph 1.\nUpdated content paragraph 2.\nUpdated content paragraph 3.',
+      content:
+        'Updated content paragraph 1.\nUpdated content paragraph 2.\nUpdated content paragraph 3.',
       description: 'Updated description with more details.',
       tags: ['updated', 'test', 'new-tag'],
       metadata: {
         version: '2.0.0',
         author: 'new-author',
         lastModified: new Date().toISOString(),
-      }
-    }
+      },
+    },
   });
 
   const mergeStrategies = ['combine', 'intelligent'];
@@ -495,10 +511,9 @@ async function testContentMerging() {
         });
       } else {
         logTest(`Content Merging ${strategy}`, false, {
-          error: 'No merge details found'
+          error: 'No merge details found',
         });
       }
-
     } catch (error) {
       logTest(`Content Merging ${strategy}`, false, { error: error.message });
     }
@@ -534,17 +549,17 @@ async function testAuditLogging() {
     const auditLogs = service.getAuditLog();
 
     const hasAuditLogs = auditLogs.length > 0;
-    const hasRequiredFields = auditLogs.every(log =>
-      log.timestamp &&
-      log.itemId &&
-      log.action &&
-      log.strategy &&
-      log.similarityScore !== undefined
+    const hasRequiredFields = auditLogs.every(
+      (log) =>
+        log.timestamp &&
+        log.itemId &&
+        log.action &&
+        log.strategy &&
+        log.similarityScore !== undefined
     );
 
-    const hasConfigSnapshot = auditLogs.every(log =>
-      log.configSnapshot &&
-      log.configSnapshot.mergeStrategy
+    const hasConfigSnapshot = auditLogs.every(
+      (log) => log.configSnapshot && log.configSnapshot.mergeStrategy
     );
 
     const passed = hasAuditLogs && hasRequiredFields && hasConfigSnapshot;
@@ -553,13 +568,14 @@ async function testAuditLogging() {
       totalLogs: auditLogs.length,
       hasRequiredFields,
       hasConfigSnapshot,
-      sampleLog: auditLogs[0] ? {
-        action: auditLogs[0].action,
-        strategy: auditLogs[0].strategy,
-        similarity: auditLogs[0].similarityScore,
-      } : null,
+      sampleLog: auditLogs[0]
+        ? {
+            action: auditLogs[0].action,
+            strategy: auditLogs[0].strategy,
+            similarity: auditLogs[0].similarityScore,
+          }
+        : null,
     });
-
   } catch (error) {
     logTest('Audit Logging', false, { error: error.message });
   }
@@ -586,7 +602,7 @@ async function testPerformance() {
     const testBatch = Array.from({ length: size }, (_, i) =>
       generateTestItem({
         title: `Performance Test Item ${i}`,
-        content: `Content for performance testing item ${i} with some unique content.`
+        content: `Content for performance testing item ${i} with some unique content.`,
       })
     );
 
@@ -617,7 +633,6 @@ async function testPerformance() {
         withinMemoryLimit,
         meetsThroughput,
       });
-
     } catch (error) {
       logTest(`Performance Batch ${size}`, false, { error: error.message });
     }
@@ -655,15 +670,15 @@ async function testEdgeCases() {
   console.log('\n  Testing threshold boundary');
   const base = generateTestItem({
     title: 'Base Title',
-    content: 'Base content for testing threshold boundaries.'
+    content: 'Base content for testing threshold boundaries.',
   });
   const justAbove = generateTestItem({
     title: 'Base Title',
-    content: 'Base content for testing threshold boundaries with extra.'
+    content: 'Base content for testing threshold boundaries with extra.',
   });
   const justBelow = generateTestItem({
     title: 'Different Title',
-    content: 'Completely different content here.'
+    content: 'Completely different content here.',
   });
 
   const thresholdService = new EnhancedDeduplicationService({
@@ -691,11 +706,11 @@ async function testEdgeCases() {
   console.log('\n  Testing conflicting metadata');
   const conflict1 = generateTestItem({
     title: 'Conflict Test',
-    metadata: { version: '1.0.0', priority: 'high', status: 'active' }
+    metadata: { version: '1.0.0', priority: 'high', status: 'active' },
   });
   const conflict2 = generateTestItem({
     title: 'Conflict Test',
-    metadata: { version: '2.0.0', priority: 'low', status: 'inactive' }
+    metadata: { version: '2.0.0', priority: 'low', status: 'inactive' },
   });
 
   const conflictService = new EnhancedDeduplicationService({
@@ -707,7 +722,8 @@ async function testEdgeCases() {
     const conflictResult = await conflictService.processItems([conflict2]);
 
     const hasMergeDetails = !!conflictResult.results[0].mergeDetails;
-    const hasConflictsResolved = conflictResult.results[0].mergeDetails?.conflictsResolved.length > 0;
+    const hasConflictsResolved =
+      conflictResult.results[0].mergeDetails?.conflictsResolved.length > 0;
 
     logTest('Edge Case: Conflicting Metadata', hasMergeDetails && hasConflictsResolved, {
       mergeDetails: conflictResult.results[0].mergeDetails,
@@ -731,7 +747,7 @@ async function testEdgeCases() {
 
     // Should handle gracefully without crashing
     const hasResults = malformedResult.results.length > 0;
-    const hasErrors = malformedResult.results.some(r => r.status === 'validation_error');
+    const hasErrors = malformedResult.results.some((r) => r.status === 'validation_error');
 
     logTest('Edge Case: Malformed Input', hasResults, {
       totalResults: malformedResult.results.length,
@@ -775,7 +791,6 @@ async function testIntegration() {
       hasSummary,
       auditLogCount: workflowResult.auditLog.length,
     });
-
   } catch (error) {
     logTest('Integration: End-to-End Workflow', false, { error: error.message });
   }
@@ -789,12 +804,16 @@ function generateTestReport() {
 
   console.log(`\n📈 Test Summary:`);
   console.log(`   Total Tests: ${testResults.totalTests}`);
-  console.log(`   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
-  console.log(`   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
+  console.log(
+    `   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
 
   if (testResults.errors.length > 0) {
     console.log(`\n❌ Errors:`);
-    testResults.errors.forEach(error => {
+    testResults.errors.forEach((error) => {
       console.log(`   ${error.test}: ${error.error}`);
     });
   }
@@ -826,7 +845,9 @@ function generateTestReport() {
 
     console.log(`   Strategies Used:`, strategies);
 
-    const avgSimilarity = testResults.auditLogs.reduce((sum, log) => sum + log.similarityScore, 0) / testResults.auditLogs.length;
+    const avgSimilarity =
+      testResults.auditLogs.reduce((sum, log) => sum + log.similarityScore, 0) /
+      testResults.auditLogs.length;
     console.log(`   Average Similarity: ${avgSimilarity.toFixed(3)}`);
   } else {
     console.log(`   No audit logs collected`);
@@ -838,15 +859,17 @@ function generateTestReport() {
     console.log(`   - Fix ${testResults.failedTests} failing tests`);
   }
 
-  const performanceTests = Object.entries(testResults.performanceMetrics)
-    .filter(([name]) => name.includes('batch_size_'));
+  const performanceTests = Object.entries(testResults.performanceMetrics).filter(([name]) =>
+    name.includes('batch_size_')
+  );
 
   if (performanceTests.length > 0) {
-    const avgThroughput = performanceTests.reduce((sum, [, metrics]) => {
-      const size = parseInt(metrics.result?.summary?.totalProcessed || '0');
-      const throughput = size / (metrics.duration / 1000);
-      return sum + throughput;
-    }, 0) / performanceTests.length;
+    const avgThroughput =
+      performanceTests.reduce((sum, [, metrics]) => {
+        const size = parseInt(metrics.result?.summary?.totalProcessed || '0');
+        const throughput = size / (metrics.duration / 1000);
+        return sum + throughput;
+      }, 0) / performanceTests.length;
 
     console.log(`   - Average throughput: ${avgThroughput.toFixed(2)} items/sec`);
 
@@ -880,7 +903,6 @@ async function runComprehensiveTests() {
     await testIntegration();
 
     generateTestReport();
-
   } catch (error) {
     console.error('❌ Test suite failed:', error);
     process.exit(1);

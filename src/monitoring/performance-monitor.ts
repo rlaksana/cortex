@@ -6,8 +6,8 @@
  */
 
 import { performance } from 'node:perf_hooks';
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { EventEmitter } from 'node:events';
 
 export interface PerformanceMetrics {

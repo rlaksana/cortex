@@ -7,7 +7,11 @@
  */
 
 import { describe, test, expect, jest, beforeAll } from 'vitest';
-import type { TraversalOptions, GraphNode, GraphTraversalResult } from '../../src/services/graph-traversal.js';
+import type {
+  TraversalOptions,
+  GraphNode,
+  GraphTraversalResult,
+} from '../../src/services/graph-traversal.js';
 
 // Mock the qdrant client
 vi.mock('../../src/db/qdrant-client.js', () => ({
@@ -35,7 +39,9 @@ describe('Graph Traversal Unit Tests', () => {
     };
   }
 
-  function createMockTraversalResult(overrides: Partial<GraphTraversalResult> = {}): GraphTraversalResult {
+  function createMockTraversalResult(
+    overrides: Partial<GraphTraversalResult> = {}
+  ): GraphTraversalResult {
     return {
       nodes: [createMockGraphNode()],
       edges: [],
@@ -203,7 +209,9 @@ describe('Graph Traversal Unit Tests', () => {
       ];
 
       // Sort by confidence (highest first)
-      const sortedNodes = nodes.sort((a, b) => (b.confidence_score || 0) - (a.confidence_score || 0));
+      const sortedNodes = nodes.sort(
+        (a, b) => (b.confidence_score || 0) - (a.confidence_score || 0)
+      );
 
       expect(sortedNodes[0].confidence_score).toBe(0.9);
       expect(sortedNodes[1].confidence_score).toBe(0.7);

@@ -1,0 +1,271 @@
+{
+  "version": "1.0.0",
+  "description": "TypeScript Error Budget Configuration",
+  "lastUpdated": "2025-01-07T00:00:00.000Z",
+  "errorBudget": {
+    "overall": {
+      "maxErrorCount": 0,
+      "maxErrorIncrease": 0,
+      "maxRegressionPercentage": 10,
+      "errorBudgetPeriod": "7d",
+      "alertThreshold": 80
+    },
+    "categories": {
+      "critical": {
+        "description": "Critical type errors that may impact runtime behavior",
+        "maxErrorCount": 0,
+        "maxErrorIncrease": 0,
+        "errorCodes": [2307, 2322, 2339, 2345, 2352, 2362, 2365],
+        "severity": "critical",
+        "rollbackThreshold": 1,
+        "blockMerge": true
+      },
+      "high": {
+        "description": "High severity type errors that indicate type system issues",
+        "maxErrorCount": 5,
+        "maxErrorIncrease": 2,
+        "errorCodes": [18048, 7005, 7006, 7016, 7017, 7023],
+        "severity": "high",
+        "rollbackThreshold": 10,
+        "blockMerge": true
+      },
+      "medium": {
+        "description": "Medium severity type warnings that should be addressed",
+        "maxErrorCount": 20,
+        "maxErrorIncrease": 5,
+        "errorCodes": [2564, 2391, 2367, 7031, 7034],
+        "severity": "medium",
+        "rollbackThreshold": 50,
+        "blockMerge": false
+      },
+      "low": {
+        "description": "Low severity informational messages",
+        "maxErrorCount": 50,
+        "maxErrorIncrease": 10,
+        "errorCodes": [7028, 7029, 7030],
+        "severity": "low",
+        "rollbackThreshold": 100,
+        "blockMerge": false
+      }
+    }
+  },
+  "errorCodeMapping": {
+    "2307": {
+      "code": "2307",
+      "name": "Cannot find module",
+      "category": "critical",
+      "description": "Module or declaration file cannot be found",
+      "commonCauses": [
+        "Missing dependencies",
+        "Incorrect import paths",
+        "Missing type declarations",
+        "Module resolution issues"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["install-dependencies", "fix-imports", "add-type-declarations"]
+    },
+    "2322": {
+      "code": "2322",
+      "name": "Type assignment error",
+      "category": "critical",
+      "description": "Type is not assignable to expected type",
+      "commonCauses": [
+        "Type mismatches",
+        "Missing type annotations",
+        "Incorrect generic usage",
+        "Interface/implementation mismatch"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["type-annotations", "interface-alignment", "generic-fixes"]
+    },
+    "2339": {
+      "code": "2339",
+      "name": "Property does not exist",
+      "category": "critical",
+      "description": "Property does not exist on type",
+      "commonCauses": [
+        "Missing interface properties",
+        "Optional property usage",
+        "Dynamic property access",
+        "Type definition incomplete"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["interface-properties", "optional-properties", "type-assertions"]
+    },
+    "18048": {
+      "code": "18048",
+      "name": "Implicit any error",
+      "category": "high",
+      "description": "Variable implicitly has 'any' type",
+      "commonCauses": [
+        "Missing type annotations",
+        "Function parameters without types",
+        "Generic type inference failure"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["type-annotations", "explicit-types", "generic-constraints"]
+    },
+    "7005": {
+      "code": "7005",
+      "name": "Variable used before assignment",
+      "category": "high",
+      "description": "Variable used before being assigned",
+      "commonCauses": [
+        "Uninitialized variables",
+        "Control flow analysis",
+        "Optional parameter usage"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["initialization", "definite-assignment", "null-checks"]
+    },
+    "7006": {
+      "code": "7006",
+      "name": "Parameter implicitly has any type",
+      "category": "high",
+      "description": "Function parameter implicitly has 'any' type",
+      "commonCauses": [
+        "Missing parameter types",
+        "Function expression typing",
+        "Callback parameter types"
+      ],
+      "automatedFixAvailable": true,
+      "fixStrategies": ["parameter-types", "interface-definitions", "function-signatures"]
+    }
+  },
+  "validationCriteria": {
+    "regressionDetection": {
+      "enabled": true,
+      "baselinePeriod": "30d",
+      "comparisonWindow": "7d",
+      "trendAnalysis": true,
+      "anomalyDetection": true
+    },
+    "performanceThresholds": {
+      "maxBuildTimeRegression": 50,
+      "maxBuildTimeAbsolute": 120000,
+      "maxMemoryUsageRegression": 30,
+      "maxMemoryUsageAbsolute": 4096
+    },
+    "qualityGates": {
+      "requireZeroCriticalErrors": true,
+      "requireErrorDecreaseTrend": false,
+      "requireStableErrorCount": true,
+      "allowTemporarySpike": false
+    }
+  },
+  "rollbackProcedures": {
+    "triggers": {
+      "criticalErrorIncrease": true,
+      "regressionThresholdExceeded": true,
+      "performanceRegression": true,
+      "newCriticalErrorCodes": true,
+      "errorBudgetExhausted": true
+    },
+    "actions": {
+      "blockMerge": true,
+      "createIncident": true,
+      "notifyTeam": true,
+      "autoRollback": false,
+      "requireManualApproval": true
+    },
+    "escalation": {
+      "level1": {
+        "condition": "Critical errors > 0",
+        "actions": ["block-merge", "notify-developer"]
+      },
+      "level2": {
+        "condition": "Regression > 20% OR Critical errors > 5",
+        "actions": ["block-merge", "notify-team", "create-incident"]
+      },
+      "level3": {
+        "condition": "Regression > 50% OR Build failure",
+        "actions": ["block-merge", "notify-all", "create-incident", "consider-rollout-rollback"]
+      }
+    }
+  },
+  "notifications": {
+    "channels": {
+      "slack": {
+        "enabled": true,
+        "webhookUrl": "${SLACK_WEBHOOK_URL}",
+        "channel": "#typescript-alerts",
+        "threshold": "high"
+      },
+      "github": {
+        "enabled": true,
+        "prComments": true,
+        "statusChecks": true,
+        "threshold": "medium"
+      },
+      "email": {
+        "enabled": false,
+        "recipients": ["team@example.com"],
+        "threshold": "critical"
+      }
+    },
+    "messageTemplates": {
+      "regression": {
+        "title": "🚨 TypeScript Regression Detected",
+        "body": "Regressions detected in {{repo}}. {{errorIncrease}} new errors detected. {{details}}"
+      },
+      "critical": {
+        "title": "🔥 Critical TypeScript Errors",
+        "body": "Critical TypeScript errors detected in {{repo}}. {{criticalCount}} critical errors require immediate attention."
+      },
+      "recovery": {
+        "title": "✅ TypeScript Regression Resolved",
+        "body": "TypeScript regressions resolved in {{repo}}. All checks passing."
+      }
+    }
+  },
+  "monitoring": {
+    "metrics": {
+      "errorCounts": true,
+      "errorTypes": true,
+      "errorFrequency": true,
+      "buildPerformance": true,
+      "trendAnalysis": true
+    },
+    "dashboards": {
+      "mainDashboard": "typescript-error-budget",
+      "trendDashboard": "typescript-trends",
+      "performanceDashboard": "typescript-performance"
+    },
+    "alerts": {
+      "errorBudgetAlert": {
+        "threshold": 80,
+        "period": "1h",
+        "severity": "warning"
+      },
+      "criticalErrorAlert": {
+        "threshold": 1,
+        "period": "5m",
+        "severity": "critical"
+      },
+      "regressionAlert": {
+        "threshold": 20,
+        "period": "30m",
+        "severity": "high"
+      }
+    }
+  },
+  "automation": {
+    "enabledFixes": [
+      "import-organization",
+      "type-annotation",
+      "interface-generation",
+      "unused-removal"
+    ],
+    "autoFixConditions": {
+      "maxErrorsPerFile": 10,
+      "maxComplexityIncrease": 20,
+      "requireTestCoverage": true
+    },
+    "scriptConfiguration": {
+      "dryRunMode": true,
+      "backupChanges": true,
+      "validateAfterFix": true,
+      "requireApproval": false
+    }
+  }
+}

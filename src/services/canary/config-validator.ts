@@ -15,7 +15,7 @@
  * @since 2025
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { CanaryDeploymentConfig } from './canary-orchestrator.js';
 import { CanaryHealthConfig } from './canary-health-monitor.js';
 import { RollbackConfig } from './rollback-service.js';

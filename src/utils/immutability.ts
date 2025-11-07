@@ -1,4 +1,4 @@
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 
 export class ImmutabilityViolationError extends Error {
   public readonly errorCode: string;

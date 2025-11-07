@@ -16,7 +16,7 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
 
 export interface SemanticBoundary {

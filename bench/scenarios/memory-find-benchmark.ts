@@ -18,8 +18,8 @@ export const simpleSearchBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 1000,
       averageItemSize: 1024,
-      sizeVariance: 0.2
-    }
+      sizeVariance: 0.2,
+    },
   },
   tags: ['search', 'simple', 'baseline'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -36,7 +36,7 @@ export const simpleSearchBenchmark: BenchmarkScenario = {
       'data backup',
       'user interface',
       'network connectivity',
-      'memory optimization'
+      'memory optimization',
     ];
 
     for (let i = 0; i < config.operations; i++) {
@@ -48,7 +48,7 @@ export const simpleSearchBenchmark: BenchmarkScenario = {
         const result = await memoryFind({
           query,
           limit: 10,
-          search_strategy: 'auto'
+          search_strategy: 'auto',
         });
 
         const endTime = performance.now();
@@ -58,28 +58,29 @@ export const simpleSearchBenchmark: BenchmarkScenario = {
           duration: endTime - startTime,
           query,
           resultCount: result.results?.length || 0,
-          hasMore: result.hasMore || false
+          hasMore: result.hasMore || false,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
+    const successful = results.filter((r) => r.success);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      averageResultCount: successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
-      results
+      averageResultCount:
+        successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -94,8 +95,8 @@ export const complexSearchBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 5000,
       averageItemSize: 2048,
-      sizeVariance: 0.3
-    }
+      sizeVariance: 0.3,
+    },
   },
   tags: ['search', 'complex', 'filters'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -108,32 +109,32 @@ export const complexSearchBenchmark: BenchmarkScenario = {
         query: 'security vulnerabilities authentication system',
         types: ['issue', 'risk'],
         limit: 20,
-        filters: { created_after: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() }
+        filters: { created_after: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() },
       },
       {
         query: 'performance optimization database queries',
         types: ['observation', 'decision'],
         limit: 15,
-        filters: { scope: { project: 'performance-analysis' } }
+        filters: { scope: { project: 'performance-analysis' } },
       },
       {
         query: 'user experience interface design',
         types: ['entity', 'observation'],
         limit: 25,
-        filters: { tags: ['frontend', 'ui'] }
+        filters: { tags: ['frontend', 'ui'] },
       },
       {
         query: 'deployment pipeline continuous integration',
         types: ['decision', 'release', 'runbook'],
         limit: 30,
-        filters: { created_after: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() }
+        filters: { created_after: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
       },
       {
         query: 'backup recovery disaster planning',
         types: ['runbook', 'incident', 'risk'],
         limit: 20,
-        filters: { tags: ['backup', 'recovery'] }
-      }
+        filters: { tags: ['backup', 'recovery'] },
+      },
     ];
 
     for (let i = 0; i < config.operations; i++) {
@@ -147,7 +148,7 @@ export const complexSearchBenchmark: BenchmarkScenario = {
           types: queryConfig.types as any,
           limit: queryConfig.limit,
           filters: queryConfig.filters,
-          search_strategy: 'deep'
+          search_strategy: 'deep',
         });
 
         const endTime = performance.now();
@@ -158,7 +159,7 @@ export const complexSearchBenchmark: BenchmarkScenario = {
           query: queryConfig.query,
           resultCount: result.results?.length || 0,
           hasMore: result.hasMore || false,
-          complexity: 'high'
+          complexity: 'high',
         });
       } catch (error) {
         const endTime = performance.now();
@@ -166,21 +167,22 @@ export const complexSearchBenchmark: BenchmarkScenario = {
           success: false,
           duration: endTime - startTime,
           error: error instanceof Error ? error.message : String(error),
-          complexity: 'high'
+          complexity: 'high',
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
+    const successful = results.filter((r) => r.success);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      averageResultCount: successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
-      results
+      averageResultCount:
+        successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -196,8 +198,8 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 10000,
       averageItemSize: 1536,
-      sizeVariance: 0.25
-    }
+      sizeVariance: 0.25,
+    },
   },
   tags: ['search', 'concurrent', 'load'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -216,7 +218,7 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
       'api integration',
       'data analysis',
       'network configuration',
-      'memory management'
+      'memory management',
     ];
 
     for (let i = 0; i < config.operations; i++) {
@@ -224,7 +226,7 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
         // Ramp-up delay
         if (config.rampUpTime) {
           const delay = (config.rampUpTime / config.operations) * index;
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
 
         const startTime = performance.now();
@@ -236,7 +238,7 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
           const result = await memoryFind({
             query,
             limit,
-            search_strategy: 'auto'
+            search_strategy: 'auto',
           });
 
           const endTime = performance.now();
@@ -247,7 +249,7 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
             query,
             resultCount: result.results?.length || 0,
             limit,
-            index
+            index,
           };
         } catch (error) {
           const endTime = performance.now();
@@ -255,7 +257,7 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
             success: false,
             duration: endTime - startTime,
             error: error instanceof Error ? error.message : String(error),
-            index
+            index,
           };
         }
       };
@@ -266,23 +268,24 @@ export const concurrentSearchBenchmark: BenchmarkScenario = {
     const operationResults = await Promise.all(promises);
     results.push(...operationResults);
 
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       failedOperations: failed.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      minDuration: Math.min(...successful.map(r => r.duration)),
-      maxDuration: Math.max(...successful.map(r => r.duration)),
+      minDuration: Math.min(...successful.map((r) => r.duration)),
+      maxDuration: Math.max(...successful.map((r) => r.duration)),
       concurrency: config.concurrency,
-      throughput: successful.length / (Math.max(...results.map(r => r.duration)) / 1000),
+      throughput: successful.length / (Math.max(...results.map((r) => r.duration)) / 1000),
       errorRate: (failed.length / results.length) * 100,
-      averageResultCount: successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
-      results
+      averageResultCount:
+        successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -297,8 +300,8 @@ export const graphExpansionBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 5000,
       averageItemSize: 1024,
-      relationshipDensity: 0.3
-    }
+      relationshipDensity: 0.3,
+    },
   },
   tags: ['search', 'graph', 'expansion'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -311,7 +314,7 @@ export const graphExpansionBenchmark: BenchmarkScenario = {
 
       try {
         const depth = 1 + (i % 3); // Depth 1, 2, or 3
-        const maxNodes = 20 + (depth * 10);
+        const maxNodes = 20 + depth * 10;
 
         const result = await memoryFind({
           query: 'system architecture',
@@ -320,8 +323,8 @@ export const graphExpansionBenchmark: BenchmarkScenario = {
             enabled: true,
             expansion_type: 'relations',
             max_depth: depth,
-            max_nodes: maxNodes
-          }
+            max_nodes: maxNodes,
+          },
         });
 
         const endTime = performance.now();
@@ -333,33 +336,37 @@ export const graphExpansionBenchmark: BenchmarkScenario = {
           maxNodes,
           resultCount: result.results?.length || 0,
           expandedNodes: result.graph_expansion?.nodes?.length || 0,
-          expansionCount: result.graph_expansion?.expansions?.length || 0
+          expansionCount: result.graph_expansion?.expansions?.length || 0,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
+    const successful = results.filter((r) => r.success);
 
-    const byDepth = successful.reduce((acc, result) => {
-      if (!acc[result.depth]) {
-        acc[result.depth] = [];
-      }
-      acc[result.depth].push(result);
-      return acc;
-    }, {} as Record<number, any[]>);
+    const byDepth = successful.reduce(
+      (acc, result) => {
+        if (!acc[result.depth]) {
+          acc[result.depth] = [];
+        }
+        acc[result.depth].push(result);
+        return acc;
+      },
+      {} as Record<number, any[]>
+    );
 
     const depthStats = Object.entries(byDepth).map(([depth, items]) => ({
       depth: parseInt(depth),
       count: items.length,
       averageDuration: items.reduce((sum, item) => sum + item.duration, 0) / items.length,
-      averageExpandedNodes: items.reduce((sum, item) => sum + (item.expandedNodes || 0), 0) / items.length
+      averageExpandedNodes:
+        items.reduce((sum, item) => sum + (item.expandedNodes || 0), 0) / items.length,
     }));
 
     return {
@@ -367,10 +374,11 @@ export const graphExpansionBenchmark: BenchmarkScenario = {
       successfulOperations: successful.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
       depthPerformance: depthStats,
-      averageExpandedNodes: successful.reduce((sum, r) => sum + (r.expandedNodes || 0), 0) / successful.length,
-      results
+      averageExpandedNodes:
+        successful.reduce((sum, r) => sum + (r.expandedNodes || 0), 0) / successful.length,
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -385,8 +393,8 @@ export const fuzzySearchBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 3000,
       averageItemSize: 1024,
-      sizeVariance: 0.2
-    }
+      sizeVariance: 0.2,
+    },
   },
   tags: ['search', 'fuzzy', 'tolerance'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -397,15 +405,15 @@ export const fuzzySearchBenchmark: BenchmarkScenario = {
     // Queries with intentional typos
     const fuzzyQueries = [
       'authentification', // authentication
-      'preformance',      // performance
-      'dataabse',         // database
-      'secuirty',         // security
-      'vulnerablities',   // vulnerabilities
-      'backp',            // backup
-      'deploymnet',       // deployment
-      'monitaring',       // monitoring
-      'optimisation',     // optimization
-      'intergration'      // integration
+      'preformance', // performance
+      'dataabse', // database
+      'secuirty', // security
+      'vulnerablities', // vulnerabilities
+      'backp', // backup
+      'deploymnet', // deployment
+      'monitaring', // monitoring
+      'optimisation', // optimization
+      'intergration', // integration
     ];
 
     for (let i = 0; i < config.operations; i++) {
@@ -419,7 +427,7 @@ export const fuzzySearchBenchmark: BenchmarkScenario = {
           query,
           limit: 15,
           search_strategy: searchStrategy,
-          filters: { fuzzy_matching: true }
+          filters: { fuzzy_matching: true },
         });
 
         const endTime = performance.now();
@@ -430,30 +438,31 @@ export const fuzzySearchBenchmark: BenchmarkScenario = {
           query,
           resultCount: result.results?.length || 0,
           searchStrategy,
-          hasCorrections: result.query_corrections?.length > 0
+          hasCorrections: result.query_corrections?.length > 0,
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
-    const withCorrections = successful.filter(r => r.hasCorrections);
+    const successful = results.filter((r) => r.success);
+    const withCorrections = successful.filter((r) => r.hasCorrections);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      averageResultCount: successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
+      averageResultCount:
+        successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
       correctionRate: (withCorrections.length / successful.length) * 100,
-      results
+      results,
     };
-  }
+  },
 };
 
 /**
@@ -468,8 +477,8 @@ export const largeResultSetBenchmark: BenchmarkScenario = {
     dataConfig: {
       itemCount: 20000,
       averageItemSize: 1024,
-      sizeVariance: 0.3
-    }
+      sizeVariance: 0.3,
+    },
   },
   tags: ['search', 'large-results', 'pagination'],
   async execute(config: LoadTestConfig): Promise<any> {
@@ -482,12 +491,12 @@ export const largeResultSetBenchmark: BenchmarkScenario = {
       const startMemory = process.memoryUsage();
 
       try {
-        const limit = 100 + (i * 50); // 100 to 1050 results
+        const limit = 100 + i * 50; // 100 to 1050 results
 
         const result = await memoryFind({
           query: 'system', // Broad query
           limit,
-          search_strategy: 'fast'
+          search_strategy: 'fast',
         });
 
         const endTime = performance.now();
@@ -501,29 +510,31 @@ export const largeResultSetBenchmark: BenchmarkScenario = {
           hasMore: result.hasMore || false,
           memoryDelta: {
             rss: endMemory.rss - startMemory.rss,
-            heapUsed: endMemory.heapUsed - startMemory.heapUsed
-          }
+            heapUsed: endMemory.heapUsed - startMemory.heapUsed,
+          },
         });
       } catch (error) {
         const endTime = performance.now();
         results.push({
           success: false,
           duration: endTime - startTime,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
-    const successful = results.filter(r => r.success);
+    const successful = results.filter((r) => r.success);
 
     return {
       totalOperations: results.length,
       successfulOperations: successful.length,
       averageDuration: successful.reduce((sum, r) => sum + r.duration, 0) / successful.length,
-      averageResultCount: successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
-      maxResultCount: Math.max(...successful.map(r => r.resultCount || 0)),
-      averageMemoryDelta: successful.reduce((sum, r) => sum + r.memoryDelta.rss, 0) / successful.length,
-      results
+      averageResultCount:
+        successful.reduce((sum, r) => sum + (r.resultCount || 0), 0) / successful.length,
+      maxResultCount: Math.max(...successful.map((r) => r.resultCount || 0)),
+      averageMemoryDelta:
+        successful.reduce((sum, r) => sum + r.memoryDelta.rss, 0) / successful.length,
+      results,
     };
-  }
+  },
 };

@@ -11,7 +11,7 @@ import {
   ChaosExperimentConfig,
   ChaosScenario,
   ExperimentExecutionContext,
-  ChaosScenarioType
+  ChaosScenarioType,
 } from '../../src/chaos-testing/types/chaos-testing-types';
 
 describe('Chaos Testing Framework', () => {
@@ -49,7 +49,7 @@ describe('Chaos Testing Framework', () => {
         safetyChecks: [],
         steadyStateDuration: 10,
         experimentDuration: 30,
-        recoveryDuration: 20
+        recoveryDuration: 20,
       };
 
       const scenario: ChaosScenario = {
@@ -64,19 +64,19 @@ describe('Chaos Testing Framework', () => {
             maxDegradationTime: 30000,
             minServiceAvailability: 95,
             expectedCircuitBreakerState: 'open',
-            userFacingErrors: []
+            userFacingErrors: [],
           },
           alerting: {
             expectedAlerts: [],
             maxAlertDelay: 30000,
             alertEscalation: false,
-            expectedSeverity: []
+            expectedSeverity: [],
           },
           recovery: {
             maxRecoveryTime: 60000,
             expectedFinalState: 'healthy',
             dataConsistency: true,
-            autoRecovery: true
+            autoRecovery: true,
           },
           performance: {
             maxResponseTimeIncrease: 100,
@@ -86,10 +86,10 @@ describe('Chaos Testing Framework', () => {
               maxCPUUsage: 80,
               maxMemoryUsage: 85,
               maxDiskIO: 70,
-              maxNetworkIO: 75
-            }
-          }
-        }
+              maxNetworkIO: 75,
+            },
+          },
+        },
       };
 
       const context: ExperimentExecutionContext = {
@@ -99,26 +99,26 @@ describe('Chaos Testing Framework', () => {
         blastRadiusControl: {
           maxAffectedComponents: 1,
           isolationZones: [],
-          failSafes: []
+          failSafes: [],
         },
         monitoring: {
           metricsCollectionInterval: 1000,
           alertingEnabled: true,
           loggingLevel: 'info',
-          tracingEnabled: true
+          tracingEnabled: true,
         },
         safety: {
           emergencyShutdown: false,
           maxAllowedDowntime: 30000,
           maxAllowedErrorRate: 10,
           healthCheckEndpoints: [],
-          rollbackProcedures: []
-        }
+          rollbackProcedures: [],
+        },
       };
 
-      await expect(
-        framework.executeExperiment(config, scenario, context)
-      ).rejects.toThrow('Safety validation failed');
+      await expect(framework.executeExperiment(config, scenario, context)).rejects.toThrow(
+        'Safety validation failed'
+      );
     });
   });
 
@@ -138,12 +138,12 @@ describe('Chaos Testing Framework', () => {
             threshold: 10,
             comparison: 'less_than',
             metric: 'error_rate_percentage',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         steadyStateDuration: 10,
         experimentDuration: 30,
-        recoveryDuration: 20
+        recoveryDuration: 20,
       };
 
       const scenario: ChaosScenario = {
@@ -156,13 +156,13 @@ describe('Chaos Testing Framework', () => {
           rampUpTime: 5,
           parameters: {
             latency: 500,
-            jitter: 100
-          }
+            jitter: 100,
+          },
         },
         injectionPoint: {
           component: 'http-client',
           layer: 'network',
-          target: 'outbound-calls'
+          target: 'outbound-calls',
         },
         verification: {
           gracefulDegradation: {
@@ -170,7 +170,7 @@ describe('Chaos Testing Framework', () => {
             maxDegradationTime: 15000,
             minServiceAvailability: 98,
             expectedCircuitBreakerState: 'closed',
-            userFacingErrors: []
+            userFacingErrors: [],
           },
           alerting: {
             expectedAlerts: [
@@ -178,18 +178,18 @@ describe('Chaos Testing Framework', () => {
                 name: 'HighLatencyDetected',
                 severity: 'warning',
                 source: 'network-monitor',
-                conditions: ['latency_threshold_exceeded']
-              }
+                conditions: ['latency_threshold_exceeded'],
+              },
             ],
             maxAlertDelay: 60000,
             alertEscalation: false,
-            expectedSeverity: ['warning']
+            expectedSeverity: ['warning'],
           },
           recovery: {
             maxRecoveryTime: 30000,
             expectedFinalState: 'healthy',
             dataConsistency: true,
-            autoRecovery: true
+            autoRecovery: true,
           },
           performance: {
             maxResponseTimeIncrease: 150,
@@ -199,10 +199,10 @@ describe('Chaos Testing Framework', () => {
               maxCPUUsage: 70,
               maxMemoryUsage: 75,
               maxDiskIO: 50,
-              maxNetworkIO: 60
-            }
-          }
-        }
+              maxNetworkIO: 60,
+            },
+          },
+        },
       };
 
       const context: ExperimentExecutionContext = {
@@ -216,23 +216,23 @@ describe('Chaos Testing Framework', () => {
             {
               trigger: 'error_rate > 10%',
               action: 'abort_experiment',
-              threshold: 10
-            }
-          ]
+              threshold: 10,
+            },
+          ],
         },
         monitoring: {
           metricsCollectionInterval: 2000,
           alertingEnabled: true,
           loggingLevel: 'info',
-          tracingEnabled: true
+          tracingEnabled: true,
         },
         safety: {
           emergencyShutdown: false,
           maxAllowedDowntime: 15000,
           maxAllowedErrorRate: 5,
           healthCheckEndpoints: ['/health', '/api/health'],
-          rollbackProcedures: ['rollback-chaos', 'restore-network']
-        }
+          rollbackProcedures: ['rollback-chaos', 'restore-network'],
+        },
       };
 
       const report = await framework.executeExperiment(config, scenario, context);
@@ -258,7 +258,7 @@ describe('Chaos Testing Framework', () => {
         safetyChecks: [],
         steadyStateDuration: 10,
         experimentDuration: 120,
-        recoveryDuration: 30
+        recoveryDuration: 30,
       };
 
       const scenario: ChaosScenario = {
@@ -270,13 +270,13 @@ describe('Chaos Testing Framework', () => {
           duration: 120,
           rampUpTime: 10,
           parameters: {
-            pressureLevel: 60
-          }
+            pressureLevel: 60,
+          },
         },
         injectionPoint: {
           component: 'system',
           layer: 'infrastructure',
-          target: 'memory'
+          target: 'memory',
         },
         verification: {
           gracefulDegradation: {
@@ -284,19 +284,19 @@ describe('Chaos Testing Framework', () => {
             maxDegradationTime: 30000,
             minServiceAvailability: 95,
             expectedCircuitBreakerState: 'closed',
-            userFacingErrors: []
+            userFacingErrors: [],
           },
           alerting: {
             expectedAlerts: [],
             maxAlertDelay: 60000,
             alertEscalation: false,
-            expectedSeverity: []
+            expectedSeverity: [],
           },
           recovery: {
             maxRecoveryTime: 30000,
             expectedFinalState: 'healthy',
             dataConsistency: true,
-            autoRecovery: true
+            autoRecovery: true,
           },
           performance: {
             maxResponseTimeIncrease: 50,
@@ -306,10 +306,10 @@ describe('Chaos Testing Framework', () => {
               maxCPUUsage: 80,
               maxMemoryUsage: 85,
               maxDiskIO: 50,
-              maxNetworkIO: 50
-            }
-          }
-        }
+              maxNetworkIO: 50,
+            },
+          },
+        },
       };
 
       const context: ExperimentExecutionContext = {
@@ -319,28 +319,28 @@ describe('Chaos Testing Framework', () => {
         blastRadiusControl: {
           maxAffectedComponents: 1,
           isolationZones: ['chaos-testing'],
-          failSafes: []
+          failSafes: [],
         },
         monitoring: {
           metricsCollectionInterval: 2000,
           alertingEnabled: true,
           loggingLevel: 'info',
-          tracingEnabled: true
+          tracingEnabled: true,
         },
         safety: {
           emergencyShutdown: false,
           maxAllowedDowntime: 30000,
           maxAllowedErrorRate: 5,
           healthCheckEndpoints: ['/health'],
-          rollbackProcedures: ['cleanup-memory', 'restore-system']
-        }
+          rollbackProcedures: ['cleanup-memory', 'restore-system'],
+        },
       };
 
       // Start experiment (don't await)
       const experimentPromise = framework.executeExperiment(config, scenario, context);
 
       // Wait a bit for experiment to start
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
       // Trigger emergency stop
       await framework.emergencyStop('Test emergency stop');
@@ -363,10 +363,10 @@ describe('Chaos Testing Framework', () => {
       'disk_exhaustion',
       'circuit_breaker_trip',
       'cascade_failure',
-      'partial_partition'
+      'partial_partition',
     ];
 
-    scenarioTypes.forEach(scenarioType => {
+    scenarioTypes.forEach((scenarioType) => {
       it(`should support ${scenarioType} scenario type`, async () => {
         const config: ChaosExperimentConfig = {
           id: `${scenarioType}-test`,
@@ -379,7 +379,7 @@ describe('Chaos Testing Framework', () => {
           safetyChecks: [],
           steadyStateDuration: 5,
           experimentDuration: 20,
-          recoveryDuration: 15
+          recoveryDuration: 15,
         };
 
         const scenario: ChaosScenario = {
@@ -390,12 +390,12 @@ describe('Chaos Testing Framework', () => {
             intensity: 20,
             duration: 20,
             rampUpTime: 5,
-            parameters: {}
+            parameters: {},
           },
           injectionPoint: {
             component: 'test-component',
             layer: 'application',
-            target: 'test-target'
+            target: 'test-target',
           },
           verification: {
             gracefulDegradation: {
@@ -403,19 +403,19 @@ describe('Chaos Testing Framework', () => {
               maxDegradationTime: 30000,
               minServiceAvailability: 95,
               expectedCircuitBreakerState: 'closed',
-              userFacingErrors: []
+              userFacingErrors: [],
             },
             alerting: {
               expectedAlerts: [],
               maxAlertDelay: 60000,
               alertEscalation: false,
-              expectedSeverity: []
+              expectedSeverity: [],
             },
             recovery: {
               maxRecoveryTime: 30000,
               expectedFinalState: 'healthy',
               dataConsistency: true,
-              autoRecovery: true
+              autoRecovery: true,
             },
             performance: {
               maxResponseTimeIncrease: 100,
@@ -425,10 +425,10 @@ describe('Chaos Testing Framework', () => {
                 maxCPUUsage: 80,
                 maxMemoryUsage: 85,
                 maxDiskIO: 70,
-                maxNetworkIO: 75
-              }
-            }
-          }
+                maxNetworkIO: 75,
+              },
+            },
+          },
         };
 
         const context: ExperimentExecutionContext = {
@@ -438,21 +438,21 @@ describe('Chaos Testing Framework', () => {
           blastRadiusControl: {
             maxAffectedComponents: 1,
             isolationZones: ['chaos-testing'],
-            failSafes: []
+            failSafes: [],
           },
           monitoring: {
             metricsCollectionInterval: 2000,
             alertingEnabled: true,
             loggingLevel: 'info',
-            tracingEnabled: true
+            tracingEnabled: true,
           },
           safety: {
             emergencyShutdown: false,
             maxAllowedDowntime: 30000,
             maxAllowedErrorRate: 10,
             healthCheckEndpoints: ['/health'],
-            rollbackProcedures: ['rollback-test']
-          }
+            rollbackProcedures: ['rollback-test'],
+          },
         };
 
         // This should not throw during initialization
@@ -475,7 +475,7 @@ describe('Chaos Testing Framework', () => {
         safetyChecks: [],
         steadyStateDuration: 5,
         experimentDuration: 15,
-        recoveryDuration: 10
+        recoveryDuration: 10,
       };
 
       const scenario: ChaosScenario = {
@@ -486,12 +486,12 @@ describe('Chaos Testing Framework', () => {
           intensity: 15,
           duration: 15,
           rampUpTime: 3,
-          parameters: { latency: 200, jitter: 50 }
+          parameters: { latency: 200, jitter: 50 },
         },
         injectionPoint: {
           component: 'test-component',
           layer: 'network',
-          target: 'test-target'
+          target: 'test-target',
         },
         verification: {
           gracefulDegradation: {
@@ -499,19 +499,19 @@ describe('Chaos Testing Framework', () => {
             maxDegradationTime: 20000,
             minServiceAvailability: 97,
             expectedCircuitBreakerState: 'closed',
-            userFacingErrors: []
+            userFacingErrors: [],
           },
           alerting: {
             expectedAlerts: [],
             maxAlertDelay: 60000,
             alertEscalation: false,
-            expectedSeverity: []
+            expectedSeverity: [],
           },
           recovery: {
             maxRecoveryTime: 20000,
             expectedFinalState: 'healthy',
             dataConsistency: true,
-            autoRecovery: true
+            autoRecovery: true,
           },
           performance: {
             maxResponseTimeIncrease: 80,
@@ -521,10 +521,10 @@ describe('Chaos Testing Framework', () => {
               maxCPUUsage: 75,
               maxMemoryUsage: 80,
               maxDiskIO: 60,
-              maxNetworkIO: 65
-            }
-          }
-        }
+              maxNetworkIO: 65,
+            },
+          },
+        },
       };
 
       const context: ExperimentExecutionContext = {
@@ -534,21 +534,21 @@ describe('Chaos Testing Framework', () => {
         blastRadiusControl: {
           maxAffectedComponents: 1,
           isolationZones: ['chaos-testing'],
-          failSafes: []
+          failSafes: [],
         },
         monitoring: {
           metricsCollectionInterval: 2000,
           alertingEnabled: true,
           loggingLevel: 'info',
-          tracingEnabled: true
+          tracingEnabled: true,
         },
         safety: {
           emergencyShutdown: false,
           maxAllowedDowntime: 20000,
           maxAllowedErrorRate: 8,
           healthCheckEndpoints: ['/health'],
-          rollbackProcedures: ['rollback-test']
-        }
+          rollbackProcedures: ['rollback-test'],
+        },
       };
 
       const report = await framework.executeExperiment(config, scenario, context);
@@ -563,9 +563,16 @@ describe('Chaos Testing Framework', () => {
       expect(report.artifacts).toBeDefined();
 
       // Verify phases
-      const expectedPhases = ['setup', 'steady_state', 'chaos_injection', 'verification', 'recovery', 'cleanup'];
-      const actualPhases = report.phases.map(p => p.name);
-      expectedPhases.forEach(phase => {
+      const expectedPhases = [
+        'setup',
+        'steady_state',
+        'chaos_injection',
+        'verification',
+        'recovery',
+        'cleanup',
+      ];
+      const actualPhases = report.phases.map((p) => p.name);
+      expectedPhases.forEach((phase) => {
         expect(actualPhases).toContain(phase);
       });
 

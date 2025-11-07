@@ -16,7 +16,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Alert, AlertSeverity, AlertRule, AlertAction } from './alert-management-service.js';
 import { OnCallMetrics } from './oncall-management-service.js';
 import { RunbookExecution } from './runbook-integration-service.js';
@@ -37,6 +37,9 @@ export interface AlertMetrics {
   byRule: Record<string, number>;
   byComponent: Record<string, number>;
   bySource: Record<string, number>;
+  notificationsSent: number;
+  notificationSuccessRate: number;
+  averageResponseTime: number;
   responseTime: ResponseTimeMetrics;
   resolutionTime: ResolutionTimeMetrics;
   notificationMetrics: NotificationMetrics;
@@ -1724,6 +1727,9 @@ export class AlertMetricsService extends EventEmitter {
       byRule: latestMetrics.byRule,
       byComponent: latestMetrics.byComponent,
       bySource: latestMetrics.bySource,
+      notificationsSent: latestMetrics.notificationsSent ?? latestMetrics.notificationMetrics?.sent ?? 0,
+      notificationSuccessRate: latestMetrics.notificationSuccessRate ?? latestMetrics.notificationMetrics?.successRate ?? 0,
+      averageResponseTime: latestMetrics.averageResponseTime ?? latestMetrics.responseTime?.average ?? 0,
       responseTime: latestMetrics.responseTime,
       resolutionTime: latestMetrics.resolutionTime,
       notificationMetrics: latestMetrics.notificationMetrics,
@@ -1766,6 +1772,9 @@ export class AlertMetricsService extends EventEmitter {
       resolved: 0,
       acknowledged: 0,
       suppressed: 0,
+      notificationsSent: 0,
+      notificationSuccessRate: 0,
+      averageResponseTime: 0,
       bySeverity: {
         [AlertSeverity.INFO]: 0,
         [AlertSeverity.WARNING]: 0,

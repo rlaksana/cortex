@@ -1,0 +1,325 @@
+/**
+ * Memory Handler Module
+ *
+ * Optimized MCP tool handlers for memory operations with
+ * reduced complexity and improved maintainability
+ *
+ * @author Cortex Team
+ * @version 2.0.0
+ * @since 2025
+ */
+
+import { logger } from '@/utils/logger.js';
+import { performanceMonitor } from '../utils/performance-monitor.js';
+import { MemoryStoreOrchestrator } from '../services/orchestrators/memory-store-orchestrator.js';
+import { MemoryFindOrchestrator } from '../services/orchestrators/memory-find-orchestrator.js';
+import { changeLoggerService } from '../services/logging/change-logger.js';
+import {
+  createMemoryStoreResponse,
+  createMemoryFindResponse,
+  createErrorResponse,
+} from '../utils/response-builder.js';
+import { createMcpResponse } from '../types/unified-response.interface.js';
+import type { UnifiedToolResponse } from '../types/unified-response.interface.js';
+
+// Initialize orchestrators
+const memoryStoreOrchestrator = new MemoryStoreOrchestrator();
+const memoryFindOrchestrator = new MemoryFindOrchestrator();
+
+/**
+ * Optimized memory store handler with reduced complexity
+ */
+export async function handleMemoryStore(args: {
+  items: any[];
+  dedupe_global_config?: {
+    enabled?: boolean;
+    similarity_threshold?: number;
+    merge_strategy?: string;
+    audit_logging?: boolean;
+  };
+}): Promise<any> {
+  const monitorId = performanceMonitor.startOperation('memory_store', {
+    itemCount: args.items?.length,
+  });
+  const startTime = Date.now();
+  const operationId = `store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    validateMemoryStoreArgs(args);
+
+    // Transform and store items
+    const transformedItems = await transformItems(args.items);
+    const response = await memoryStoreOrchestrator.storeItems(transformedItems);
+
+    await updateMetrics(response, transformedItems, args.items, startTime);
+
+    const responseData = {
+      success: response.errors.length === 0,
+      stored: response.stored,
+      errors: response.errors,
+      summary: response.summary,
+      total: args.items.length,
+      batchId: operationId,
+      autonomous_context: response.autonomous_context,
+    };
+
+    // Log structural changes for important item types
+    await logStructuralChanges(transformedItems);
+
+    performanceMonitor.completeOperation(monitorId);
+
+    const unifiedResponse = createMemoryStoreResponse(responseData, startTime, {
+      operationId,
+      itemCount: args.items.length,
+    });
+
+    return createMcpResponse(unifiedResponse.data);
+  } catch (error) {
+    performanceMonitor.completeOperation(monitorId, error as Error);
+
+    const errorResponse = createErrorResponse(error as Error, 'memory_store', startTime, {
+      operationId,
+    });
+
+    return createMcpResponse(errorResponse.data);
+  }
+}
+
+/**
+ * Optimized memory find handler with reduced complexity
+ */
+export async function handleMemoryFind(args: {
+  query: string;
+  limit?: number;
+  types?: string[];
+  scope?: any;
+  mode?: 'fast' | 'auto' | 'deep';
+  expand?: 'relations' | 'parents' | 'children' | 'none';
+}): Promise<any> {
+  const monitorId = performanceMonitor.startOperation('memory_find', {
+    query: args.query,
+    mode: args.mode || 'auto',
+    limit: args.limit,
+  });
+  const startTime = Date.now();
+  const searchId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    validateMemoryFindArgs(args);
+
+    // Execute search through orchestrator
+    const response = await memoryFindOrchestrator.findItems({
+      query: args.query,
+      limit: args.limit || 10,
+      types: args.types || [],
+      scope: args.scope,
+      mode: args.mode || 'auto',
+      expand: args.expand || 'none',
+    });
+
+    const responseData = {
+      query: args.query,
+      strategy: response.observability?.strategy || 'orchestrator_based',
+      confidence: response.observability?.confidence_average || 0,
+      total: response.total_count,
+      items: response.items,
+      searchId,
+      strategyDetails: createStrategyDetails(args, response),
+      observability: response.observability,
+    };
+
+    performanceMonitor.completeOperation(monitorId);
+
+    const unifiedResponse = createMemoryFindResponse(responseData, startTime, {
+      operationId: searchId,
+      mode: args.mode || 'auto',
+      expand: args.expand || 'none',
+    });
+
+    return createMcpResponse(unifiedResponse.data);
+  } catch (error) {
+    performanceMonitor.completeOperation(monitorId, error as Error);
+
+    const errorResponse = createErrorResponse(error as Error, 'memory_find', startTime, {
+      operationId: searchId,
+    });
+
+    return createMcpResponse(errorResponse.data);
+  }
+}
+
+/**
+ * Memory upsert with merge handler
+ */
+export async function handleMemoryUpsertWithMerge(args: {
+  items: any[];
+  merge_strategy?: string;
+}): Promise<any> {
+  const startTime = Date.now();
+  const operationId = `upsert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  try {
+    // Use memory store with merge strategy
+    return await handleMemoryStore({
+      ...args,
+      dedupe_global_config: {
+        enabled: true,
+        merge_strategy: args.merge_strategy || 'merge',
+        audit_logging: true,
+      },
+    });
+  } catch (error) {
+    const errorResponse = createErrorResponse(
+      error as Error,
+      'memory_upsert_with_merge',
+      startTime,
+      { operationId, mergeStrategy: args.merge_strategy }
+    );
+
+    return createMcpResponse(errorResponse.data);
+  }
+}
+
+/**
+ * Validation for memory store arguments
+ */
+function validateMemoryStoreArgs(args: any): void {
+  if (!args.items || !Array.isArray(args.items)) {
+    throw new Error('items must be an array');
+  }
+
+  if (args.items.length === 0) {
+    throw new Error('items array cannot be empty');
+  }
+
+  if (args.items.length > 1000) {
+    throw new Error('items array cannot exceed 1000 items per request');
+  }
+}
+
+/**
+ * Validation for memory find arguments
+ */
+function validateMemoryFindArgs(args: any): void {
+  if (!args.query || typeof args.query !== 'string') {
+    throw new Error('query is required and must be a string');
+  }
+
+  if (args.query.length > 1000) {
+    throw new Error('query cannot exceed 1000 characters');
+  }
+
+  if (args.limit && (args.limit < 1 || args.limit > 100)) {
+    throw new Error('limit must be between 1 and 100');
+  }
+}
+
+/**
+ * Transform items for storage
+ */
+async function transformItems(items: any[]): Promise<any[]> {
+  // Simplified transformation - in production would be more sophisticated
+  return items.map((item) => ({
+    ...item,
+    _timestamp: Date.now(),
+    _transformed: true,
+  }));
+}
+
+/**
+ * Update metrics after storage operation
+ */
+async function updateMetrics(
+  response: any,
+  transformedItems: any[],
+  originalItems: any[],
+  startTime: number
+): Promise<void> {
+  const duration = Date.now() - startTime;
+
+  // Simplified metrics update - in production would update actual metrics system
+  logger.debug(
+    {
+      duration,
+      storedCount: response.stored.length,
+      errorCount: response.errors.length,
+      transformSuccessRate: transformedItems.length / originalItems.length,
+    },
+    'Memory store operation completed'
+  );
+}
+
+/**
+ * Log structural changes for important item types
+ */
+async function logStructuralChanges(items: any[]): Promise<void> {
+  const structuralTypes = ['entity', 'relation', 'decision'];
+  const structuralItems = items.filter((item) => structuralTypes.includes(item.kind));
+
+  if (structuralItems.length === 0) {
+    return;
+  }
+
+  try {
+    await changeLoggerService.logChange({
+      type: 'structural',
+      category: 'feature',
+      title: `Memory store operation for ${structuralItems[0]?.kind}`,
+      description: `Stored ${structuralItems.length} items of type ${structuralItems[0]?.kind}`,
+      impact: 'medium',
+      scope: {
+        components: ['memory_system'],
+        database: true,
+      },
+      metadata: {
+        author: process.env['USER'] || 'system',
+        version: '2.0.0',
+      },
+    });
+  } catch (logError) {
+    logger.warn('Failed to log structural change:', logError);
+  }
+}
+
+/**
+ * Create strategy details for response
+ */
+function createStrategyDetails(args: any, response: any): any {
+  return {
+    selected_strategy: response.observability?.strategy || 'orchestrator_based',
+    vector_backend_available: response.observability?.vector_used,
+    degradation_applied: response.observability?.degraded,
+    fallback_reason: response.observability?.degraded
+      ? 'Search degraded due to backend limitations'
+      : undefined,
+    graph_expansion_applied: args.expand !== 'none',
+    scope_precedence_applied: !!args.scope,
+  };
+}
+
+/**
+ * Get handler statistics
+ */
+export function getMemoryHandlerStats(): {
+  operations: {
+    store: number;
+    find: number;
+    upsert: number;
+  };
+  orchestrators: {
+    storeInitialized: boolean;
+    findInitialized: boolean;
+  };
+} {
+  return {
+    operations: {
+      store: 0, // Would track actual operation counts
+      find: 0,
+      upsert: 0,
+    },
+    orchestrators: {
+      storeInitialized: !!memoryStoreOrchestrator,
+      findInitialized: !!memoryFindOrchestrator,
+    },
+  };
+}

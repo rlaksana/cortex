@@ -15,7 +15,7 @@
  * @module services/metrics
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface SystemMetrics {
   // Operation counts

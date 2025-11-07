@@ -13,10 +13,10 @@
  * @since 2025
  */
 
-import { createHash } from 'node:crypto';
-import { readFile, writeFile, readdir, unlink, stat } from 'node:fs/promises';
-import { join, basename, dirname } from 'node:path';
-import { logger } from '../../utils/logger.js';
+import { createHash } from 'crypto';
+import { readFile, writeFile, readdir, unlink, stat } from 'fs/promises';
+import { join, basename, dirname } from 'path';
+import { logger } from '@/utils/logger.js';
 import type { BackupMetadata, BackupConfiguration } from './qdrant-backup-config.js';
 
 /**
@@ -288,7 +288,7 @@ export class BackupRetentionManager {
       for (const backup of backups) {
         totalStorage += backup.size;
 
-        const ageInDays = this.calculateAgeInDays(backup.timestamp, now);
+        const ageInDays = this.calculateAgeInDays(backup.timestamp.toISOString(), now);
         totalAge += ageInDays;
         oldestAge = Math.max(oldestAge, ageInDays);
         newestAge = Math.min(newestAge, ageInDays);
@@ -362,7 +362,7 @@ export class BackupRetentionManager {
     this.retentionRegistry.set(backup.id, 'active');
 
     // Check if backup should be immediately archived based on policy
-    const ageInDays = this.calculateAgeInDays(backup.timestamp);
+    const ageInDays = this.calculateAgeInDays(backup.timestamp.toISOString());
     if (ageInDays >= this.config.retention.archivePolicy.afterDays) {
       await this.scheduleArchive(backup.id);
     }
@@ -482,7 +482,7 @@ export class BackupRetentionManager {
 
       const recommendations = this.generateComplianceRecommendations(statistics, regulations);
 
-      const legalHolds = []; // Would be populated from legal hold registry
+      const legalHolds: Array<{backupId: string; reason: string; placedAt: string; expiresAt?: string}> = []; // Would be populated from legal hold registry
 
       return {
         generatedAt: now,
@@ -501,7 +501,7 @@ export class BackupRetentionManager {
   // === Private Helper Methods ===
 
   private async evaluateBackupRetention(backup: BackupMetadata, now: Date): Promise<RetentionPolicyResult> {
-    const ageInDays = this.calculateAgeInDays(backup.timestamp, now);
+    const ageInDays = this.calculateAgeInDays(backup.timestamp.toISOString(), now);
     const lifecycle = this.retentionRegistry.get(backup.id) || 'active';
 
     // Check legal hold first
@@ -700,7 +700,7 @@ export class BackupRetentionManager {
 
   private determineOverallComplianceStatus(
     statistics: RetentionStatistics,
-    regulations: Array<{ status: 'compliant' | 'non-compliant' }>
+    regulations: Array<{ name: string; status: 'compliant' | 'non-compliant' }>
   ): 'compliant' | 'warning' | 'violation' {
     if (statistics.complianceStatus === 'violation' ||
         regulations.some(reg => reg.status === 'non-compliant')) {
@@ -717,7 +717,7 @@ export class BackupRetentionManager {
 
   private generateComplianceRecommendations(
     statistics: RetentionStatistics,
-    regulations: Array<{ status: 'compliant' | 'non-compliant' }>
+    regulations: Array<{ name: string; status: 'compliant' | 'non-compliant' }>
   ): string[] {
     const recommendations: string[] = [];
 

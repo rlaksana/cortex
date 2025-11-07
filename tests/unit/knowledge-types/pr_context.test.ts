@@ -80,15 +80,15 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('pr_context');
-        expect(result.data.data.pr_number).toBe(12345);
-        expect(result.data.data.title).toBe('Add OAuth 2.0 authentication to API gateway');
-        expect(result.data.data.author).toBe('john.doe');
-        expect(result.data.data.status).toBe('open');
-        expect(result.data.data.base_branch).toBe('main');
-        expect(result.data.data.head_branch).toBe('feature/oauth-authentication');
-        expect(result.data.data.description).toContain('OAuth 2.0');
-        expect(result.data.data.expires_at).toBe('2025-02-15T00:00:00Z');
+        expect(result['data.kind']).toBe('pr_context');
+        expect(result['data.data'].pr_number).toBe(12345);
+        expect(result['data.data'].title).toBe('Add OAuth 2.0 authentication to API gateway');
+        expect(result['data.data'].author).toBe('john.doe');
+        expect(result['data.data'].status).toBe('open');
+        expect(result['data.data'].base_branch).toBe('main');
+        expect(result['data.data'].head_branch).toBe('feature/oauth-authentication');
+        expect(result['data.data'].description).toContain('OAuth 2.0');
+        expect(result['data.data'].expires_at).toBe('2025-02-15T00:00:00Z');
       }
     });
 
@@ -112,13 +112,13 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.pr_number).toBe(1);
-        expect(result.data.data.title).toBe('Initial commit');
-        expect(result.data.data.author).toBe('alice');
-        expect(result.data.data.status).toBe('draft');
-        expect(result.data.data.description).toBeUndefined();
-        expect(result.data.data.merged_at).toBeUndefined();
-        expect(result.data.data.expires_at).toBeUndefined();
+        expect(result['data.data'].pr_number).toBe(1);
+        expect(result['data.data'].title).toBe('Initial commit');
+        expect(result['data.data'].author).toBe('alice');
+        expect(result['data.data'].status).toBe('draft');
+        expect(result['data.data'].description).toBeUndefined();
+        expect(result['data.data'].merged_at).toBeUndefined();
+        expect(result['data.data'].expires_at).toBeUndefined();
       }
     });
 
@@ -285,7 +285,7 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
         const result = PRContextSchema.safeParse(prContext);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.status).toBe(status);
+          expect(result['data.data'].status).toBe(status);
         }
       });
 
@@ -396,8 +396,8 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.merged_at).toBe('2025-01-15T14:30:00Z');
-        expect(result.data.data.expires_at).toBe('2025-02-14T14:30:00Z');
+        expect(result['data.data'].merged_at).toBe('2025-01-15T14:30:00Z');
+        expect(result['data.data'].expires_at).toBe('2025-02-14T14:30:00Z');
       }
     });
 
@@ -513,10 +513,10 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       expect(mockQdrant.upsert).toHaveBeenCalledTimes(4);
 
       const storedCalls = mockQdrant.upsert.mock.calls;
-      expect(storedCalls[0][0][0].payload.data.status).toBe('open');
-      expect(storedCalls[1][0][0].payload.data.status).toBe('merged');
-      expect(storedCalls[2][0][0].payload.data.status).toBe('closed');
-      expect(storedCalls[3][0][0].payload.data.status).toBe('draft');
+      expect(storedCalls[0][0][0].payload['data.status']).toBe('open');
+      expect(storedCalls[1][0][0].payload['data.status']).toBe('merged');
+      expect(storedCalls[2][0][0].payload['data.status']).toBe('closed');
+      expect(storedCalls[3][0][0].payload['data.status']).toBe('draft');
     });
 
     it('should handle invalid PR contexts in batch', async () => {
@@ -810,7 +810,7 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.description).toBe('');
+        expect(result['data.data'].description).toBe('');
       }
     });
 
@@ -833,9 +833,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.status).toBe('merged');
-        expect(result.data.data.merged_at).toBe('2025-01-20T09:15:30Z');
-        expect(result.data.data.expires_at).toBe('2025-02-19T09:15:30Z');
+        expect(result['data.data'].status).toBe('merged');
+        expect(result['data.data'].merged_at).toBe('2025-01-20T09:15:30Z');
+        expect(result['data.data'].expires_at).toBe('2025-02-19T09:15:30Z');
       }
     });
 
@@ -908,11 +908,11 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
 
       const result = validateKnowledgeItem(prContext);
       expect(result.kind).toBe('pr_context');
-      expect(result.data.pr_number).toBe(369);
-      expect(result.data.title).toBe('Implement CI/CD pipeline improvements');
+      expect(result['data.pr_number']).toBe(369);
+      expect(result['data.title']).toBe('Implement CI/CD pipeline improvements');
       expect(result.tags['ci-cd']).toBe(true);
       expect(result.source.actor).toBe('github-actions');
-      expect(result.ttl_policy).toBe('30d');
+      expect(result['ttl_policy']).toBe('30d');
     });
 
     it('should handle PR context with comprehensive metadata', () => {
@@ -949,9 +949,9 @@ describe('PR Context (pr_context) Knowledge Type - Comprehensive Testing', () =>
       const result = PRContextSchema.safeParse(prContext);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.pr_number).toBe(258);
-        expect(result.data.tags['websocket']).toBe(true);
-        expect(result.data.tags['real-time']).toBe(true);
+        expect(result['data.data'].pr_number).toBe(258);
+        expect(result['data.tags']['websocket']).toBe(true);
+        expect(result['data.tags']['real-time']).toBe(true);
       }
     });
 

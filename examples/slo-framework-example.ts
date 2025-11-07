@@ -40,12 +40,12 @@ async function setupWebServiceMonitoring() {
       id: 'web-service-availability',
       name: 'Web Service Availability',
       description: 'Percentage of successful HTTP requests',
-      type: SLIType.AVAILABILITY,
+      type: SLIType['AVAILABILITY'],
       unit: 'percent',
       measurement: {
         source: 'prometheus',
         method: 'http_requests_total',
-        aggregation: SLIAggregation.RATE,
+        aggregation: SLIAggregation['RATE'],
         window: {
           type: 'rolling',
           duration: 5 * 60 * 1000, // 5 minutes
@@ -70,12 +70,12 @@ async function setupWebServiceMonitoring() {
       id: 'web-service-latency',
       name: 'Web Service Response Time',
       description: '95th percentile response time',
-      type: SLIType.LATENCY,
+      type: SLIType['LATENCY'],
       unit: 'milliseconds',
       measurement: {
         source: 'prometheus',
         method: 'http_request_duration_seconds',
-        aggregation: SLIAggregation.P95,
+        aggregation: SLIAggregation['P95'],
         window: {
           type: 'rolling',
           duration: 5 * 60 * 1000,
@@ -109,7 +109,7 @@ async function setupWebServiceMonitoring() {
       sli: 'web-service-availability',
       objective: {
         target: 99.9,
-        period: SLOPeriod.ROLLING_30_DAYS,
+        period: SLOPeriod['ROLLING_30_DAYS'],
         window: {
           type: 'rolling',
           duration: 30 * 24 * 60 * 60 * 1000,
@@ -125,7 +125,7 @@ async function setupWebServiceMonitoring() {
               type: 'rolling',
               duration: 24 * 60 * 60 * 1000,
             },
-            severity: AlertSeverity.WARNING,
+            severity: AlertSeverity['WARNING'],
             alertWhenRemaining: 50,
           },
         ],
@@ -143,7 +143,7 @@ async function setupWebServiceMonitoring() {
                 duration: 15 * 60 * 1000,
               },
             },
-            severity: AlertSeverity.WARNING,
+            severity: AlertSeverity['WARNING'],
             threshold: 99.5,
             duration: 5 * 60 * 1000,
             cooldown: 15 * 60 * 1000,
@@ -179,7 +179,7 @@ async function setupWebServiceMonitoring() {
       sli: 'web-service-latency',
       objective: {
         target: 95, // 95% of requests under 500ms
-        period: SLOPeriod.ROLLING_30_DAYS,
+        period: SLOPeriod['ROLLING_30_DAYS'],
         window: {
           type: 'rolling',
           duration: 30 * 24 * 60 * 60 * 1000,
@@ -195,7 +195,7 @@ async function setupWebServiceMonitoring() {
               type: 'rolling',
               duration: 6 * 60 * 60 * 1000,
             },
-            severity: AlertSeverity.WARNING,
+            severity: AlertSeverity['WARNING'],
             alertWhenRemaining: 70,
           },
         ],
@@ -213,7 +213,7 @@ async function setupWebServiceMonitoring() {
                 duration: 10 * 60 * 1000,
               },
             },
-            severity: AlertSeverity.CRITICAL,
+            severity: AlertSeverity['CRITICAL'],
             threshold: 1000,
             duration: 2 * 60 * 1000,
             cooldown: 10 * 60 * 1000,
@@ -269,7 +269,6 @@ async function setupWebServiceMonitoring() {
       latencySLO: latencyResult,
       dashboard,
     };
-
   } catch (error) {
     console.error('❌ Failed to setup SLO monitoring:', error);
     throw error;
@@ -285,7 +284,7 @@ async function setupNotificationChannels() {
     name: 'Slack Notifications',
     type: 'slack',
     config: {
-      webhookUrl: process.env.SLACK_WEBHOOK_URL || 'https://hooks.slack.com/services/...',
+      webhookUrl: process.env['SLACK_WEBHOOK_URL'] || 'https://hooks.slack.com/services/...',
       channel: '#slo-alerts',
       username: 'SLO Bot',
     },
@@ -313,7 +312,7 @@ async function setupNotificationChannels() {
     name: 'PagerDuty Notifications',
     type: 'pagerduty',
     config: {
-      integrationKey: process.env.PAGERDUTY_INTEGRATION_KEY || '...',
+      integrationKey: process.env['PAGERDUTY_INTEGRATION_KEY'] || '...',
       severity: 'critical',
     },
     enabled: true,
@@ -362,7 +361,7 @@ async function simulateMeasurements() {
       value: 85 + Math.random() * 10, // 85% - 95% compliance
       quality: {
         completeness: 100,
-        accuracy: 0.90,
+        accuracy: 0.9,
         timeliness: 100,
         validity: true,
       },
@@ -375,7 +374,7 @@ async function simulateMeasurements() {
     await sloService.addMeasurements([availabilityMeasurement, latencyMeasurement]);
 
     // Small delay between measurements
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   console.log('✅ Simulated measurements added');
@@ -388,7 +387,9 @@ async function monitorSLOPerformance() {
   console.log('📈 Monitoring SLO performance...');
 
   // Get comprehensive SLO overview
-  const availabilityOverview = await sloIntegrationService.getSLOOverview('web-service-availability-slo');
+  const availabilityOverview = await sloIntegrationService.getSLOOverview(
+    'web-service-availability-slo'
+  );
   const latencyOverview = await sloIntegrationService.getSLOOverview('web-service-latency-slo');
 
   console.log('📊 Availability SLO Overview:', {
@@ -447,7 +448,7 @@ function setupAlertMonitoring() {
 
     if (evaluation.alerts.length > 0) {
       console.log(`   🚨 Alerts: ${evaluation.alerts.length}`);
-      evaluation.alerts.forEach(alert => {
+      evaluation.alerts.forEach((alert) => {
         console.log(`      - ${alert.title}: ${alert.message}`);
       });
     }
@@ -458,7 +459,7 @@ function setupAlertMonitoring() {
     console.log(`🚨 INCIDENT CREATED: ${incident.sloName}`);
     console.log(`   Severity: ${incident.severity}`);
     console.log(`   Impact Score: ${incident.impactAssessment.score}/100`);
-    console.log(`   Affected Services: ${incident.metadata.affectedServices.join(', ')}`);
+    console.log(`   Affected Services: ${incident.metadata['affectedServices'].join(', ')}`);
   });
 
   // Listen for budget alerts
@@ -489,9 +490,9 @@ async function generateCustomReports() {
   );
 
   console.log('📊 Monthly Report Generated:', {
-    period: `${monthlyReport.metadata.title}`,
-    slos: monthlyReport.metadata.slos.length,
-    generatedAt: monthlyReport.metadata.generatedAt,
+    period: `${monthlyReport.metadata['title']}`,
+    slos: monthlyReport.metadata['slos'].length,
+    generatedAt: monthlyReport.metadata['generatedAt'],
   });
 
   // Generate executive summary
@@ -527,7 +528,9 @@ async function demonstrateErrorBudgetManagement() {
   const errorBudgetService = sloIntegrationService['services'].errorBudgetService;
 
   // Get current error budgets
-  const availabilityBudget = await errorBudgetService.calculateErrorBudget('web-service-availability-slo');
+  const availabilityBudget = await errorBudgetService.calculateErrorBudget(
+    'web-service-availability-slo'
+  );
   const latencyBudget = await errorBudgetService.calculateErrorBudget('web-service-latency-slo');
 
   console.log('💰 Current Error Budgets:', {
@@ -546,8 +549,11 @@ async function demonstrateErrorBudgetManagement() {
   });
 
   // Get burn rate analysis
-  const availabilityBurnRate = await errorBudgetService.calculateBurnRateAnalysis('web-service-availability-slo');
-  const latencyBurnRate = await errorBudgetService.calculateBurnRateAnalysis('web-service-latency-slo');
+  const availabilityBurnRate = await errorBudgetService.calculateBurnRateAnalysis(
+    'web-service-availability-slo'
+  );
+  const latencyBurnRate =
+    await errorBudgetService.calculateBurnRateAnalysis('web-service-latency-slo');
 
   console.log('🔥 Burn Rate Analysis:', {
     availability: {
@@ -563,8 +569,11 @@ async function demonstrateErrorBudgetManagement() {
   });
 
   // Generate projections
-  const availabilityProjection = await errorBudgetService.generateBudgetProjection('web-service-availability-slo');
-  const latencyProjection = await errorBudgetService.generateBudgetProjection('web-service-latency-slo');
+  const availabilityProjection = await errorBudgetService.generateBudgetProjection(
+    'web-service-availability-slo'
+  );
+  const latencyProjection =
+    await errorBudgetService.generateBudgetProjection('web-service-latency-slo');
 
   console.log('🔮 Budget Projections:', {
     availability: {
@@ -610,7 +619,7 @@ async function main() {
     const setupResult = await setupWebServiceMonitoring();
 
     // Wait a bit for initial evaluations
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Monitor performance
     await monitorSLOPerformance();
@@ -630,7 +639,6 @@ async function main() {
       await cleanup();
       process.exit(0);
     }, 30000);
-
   } catch (error) {
     console.error('❌ Example failed:', error);
     await cleanup();
@@ -653,7 +661,7 @@ process.on('SIGTERM', async () => {
 
 // Run the example
 if (require.main === module) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('❌ Unhandled error:', error);
     process.exit(1);
   });

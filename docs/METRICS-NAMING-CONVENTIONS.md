@@ -14,11 +14,13 @@ This document defines the standardized naming conventions and categorization for
 ## 🎯 **Naming Convention Standards**
 
 ### **Format Pattern**
+
 ```
 {category}.{subcategory}.{metric_name}.{unit}
 ```
 
 ### **Naming Rules**
+
 - **Lowercase**: All metric names must be lowercase
 - **Underscore Separators**: Use underscores between words
 - **Hierarchical Structure**: Category → Subcategory → Specific metric
@@ -33,6 +35,7 @@ This document defines the standardized naming conventions and categorization for
 ### **1. Performance Metrics (`perf`)**
 
 #### **Response Time Metrics**
+
 ```
 perf.store.duration_ms          # Average store operation duration
 perf.find.duration_ms           # Average find operation duration
@@ -43,6 +46,7 @@ perf.total.duration_ms          # Total operation duration
 ```
 
 #### **Throughput Metrics**
+
 ```
 perf.operations.rate_per_sec    # Operations per second
 perf.store.rate_per_sec         # Store operations per second
@@ -53,6 +57,7 @@ perf.cleanup.rate_per_sec       # Cleanup operations per second
 ### **2. Database Metrics (`db`)**
 
 #### **Operation Metrics**
+
 ```
 db.items.total_count            # Total items in database
 db.items.by_type.{type}_count   # Items by knowledge type
@@ -63,6 +68,7 @@ db.collections.size_bytes       # Collection size in bytes
 ```
 
 #### **Connection Metrics**
+
 ```
 db.connections.active_count     # Active database connections
 db.connections.pool_size        # Connection pool size
@@ -73,6 +79,7 @@ db.connections.errors_count     # Connection errors count
 ### **3. Deduplication Metrics (`dedupe`)**
 
 #### **Detection Metrics**
+
 ```
 dedupe.items.processed_count    # Items processed for deduplication
 dedupe.duplicates_detected_count # Duplicates detected
@@ -82,6 +89,7 @@ dedupe.similarity.max_score     # Maximum similarity score
 ```
 
 #### **Merge Operation Metrics**
+
 ```
 dedupe.merge.total_count        # Total merge operations
 dedupe.merge.skip_count         # Items skipped (merge strategy)
@@ -93,6 +101,7 @@ dedupe.merge.conflicts_count    # Merge conflicts resolved
 ### **4. Validation Metrics (`validation`)**
 
 #### **Item Validation**
+
 ```
 validation.items.processed_count      # Items validated
 validation.items.failed_count         # Validation failures
@@ -101,6 +110,7 @@ validation.fail_rate_percent          # Validation failure rate
 ```
 
 #### **Schema Validation**
+
 ```
 validation.schema.pass_count          # Schema validation passes
 validation.schema.fail_count          # Schema validation failures
@@ -110,6 +120,7 @@ validation.schema.errors_by_type      # Errors by validation type
 ### **5. Chunking Metrics (`chunking`)**
 
 #### **Processing Metrics**
+
 ```
 chunking.items.processed_count        # Items chunked
 chunking.chunks.generated_count       # Chunks generated
@@ -119,6 +130,7 @@ chunking.success_rate_percent         # Chunking success rate
 ```
 
 #### **Semantic Analysis**
+
 ```
 chunking.semantic.boundaries_count   # Semantic boundaries found
 chunking.semantic.analysis_count      # Semantic analysis operations
@@ -128,6 +140,7 @@ chunking.semantic.accuracy_percent    # Semantic analysis accuracy
 ### **6. Cleanup Metrics (`cleanup`)**
 
 #### **Operation Metrics**
+
 ```
 cleanup.operations.run_count          # Cleanup operations run
 cleanup.items.deleted_count           # Items deleted
@@ -137,6 +150,7 @@ cleanup.success_rate_percent         # Cleanup success rate
 ```
 
 #### **Safety Metrics**
+
 ```
 cleanup.backup.operations_count       # Backup operations
 cleanup.backup.size_bytes             # Backup size
@@ -147,6 +161,7 @@ cleanup.confirmations.completed_count # Confirmations completed
 ### **7. System Metrics (`system`)**
 
 #### **Resource Metrics**
+
 ```
 system.memory.rss_bytes              # Resident set size
 system.memory.heap_used_bytes        # Heap memory used
@@ -156,6 +171,7 @@ system.uptime.seconds                # System uptime
 ```
 
 #### **Process Metrics**
+
 ```
 system.process.pid                    # Process ID
 system.process.threads_count         # Thread count
@@ -166,6 +182,7 @@ system.process.errors_count           # Process errors
 ### **8. Rate Limiting Metrics (`ratelimit`)**
 
 #### **Request Metrics**
+
 ```
 ratelimit.requests.total_count       # Total requests
 ratelimit.requests.blocked_count     # Blocked requests
@@ -174,6 +191,7 @@ ratelimit.block_rate_percent         # Block rate percentage
 ```
 
 #### **Policy Metrics**
+
 ```
 ratelimit.policies.active_count      # Active rate limit policies
 ratelimit.actors.active_count        # Active actors
@@ -183,6 +201,7 @@ ratelimit.windows.active_count       # Active time windows
 ### **9. Error Metrics (`errors`)**
 
 #### **General Error Metrics**
+
 ```
 errors.total_count                    # Total errors
 errors.by_type.{error_type}_count     # Errors by type
@@ -192,6 +211,7 @@ errors.recovery_success_rate_percent  # Recovery success rate
 ```
 
 #### **Circuit Breaker Metrics**
+
 ```
 errors.circuit_breaker.trips_count   # Circuit breaker trips
 errors.circuit_breaker.recovery_time_ms # Circuit breaker recovery time
@@ -201,6 +221,7 @@ errors.circuit_breaker.state          # Circuit breaker state (0=closed,1=open,2
 ### **10. Business Metrics (`business`)**
 
 #### **Knowledge Type Distribution**
+
 ```
 business.knowledge_types.{type}_count # Knowledge items by type
 business.scopes.active_count          # Active scopes
@@ -210,6 +231,7 @@ business.scopes.org_count             # Organization scopes
 ```
 
 #### **Content Metrics**
+
 ```
 business.content.avg_size_chars       # Average content size
 business.content.total_size_chars     # Total content size
@@ -222,6 +244,7 @@ business.content.expansion_count      # Content expansions
 ## 🏷️ **Tag Standards**
 
 ### **Standard Tags**
+
 - **`operation_type`**: `store`, `find`, `cleanup`, `validate`
 - **`knowledge_type`**: `entity`, `relation`, `observation`, etc.
 - **`scope`**: Project, branch, organization context
@@ -232,6 +255,7 @@ business.content.expansion_count      # Content expansions
 - **`actor_id`**: Unique actor identifier
 
 ### **Tag Formatting**
+
 - **Lowercase**: All tags must be lowercase
 - **Underscore Separators**: Use underscores for multi-word tags
 - **Consistent Values**: Use consistent value formats across tags
@@ -241,21 +265,25 @@ business.content.expansion_count      # Content expansions
 ## 📊 **Metric Types**
 
 ### **Counter Metrics**
+
 - **Purpose**: Counting events or occurrences
 - **Suffix**: `_count`
 - **Examples**: `requests.total_count`, `errors.total_count`
 
 ### **Gauge Metrics**
+
 - **Purpose**: Current values that can increase or decrease
 - **Suffix**: `_value`, `_bytes`, `_percent`
 - **Examples**: `system.memory.heap_used_bytes`, `system.cpu.utilization_percent`
 
 ### **Histogram Metrics**
+
 - **Purpose**: Distribution of values (durations, sizes)
 - **Suffix**: `_duration_ms`, `_size_bytes`
 - **Examples**: `perf.store.duration_ms`, `db.collections.size_bytes`
 
 ### **Rate Metrics**
+
 - **Purpose**: Rate of occurrences over time
 - **Suffix**: `_rate_per_sec`, `_percent`
 - **Examples**: `perf.operations.rate_per_sec`, `validation.fail_rate_percent`
@@ -265,21 +293,23 @@ business.content.expansion_count      # Content expansions
 ## 🔧 **Implementation Guidelines**
 
 ### **Code Integration**
+
 ```typescript
 // Example metric naming in code
 this.metrics.record('perf.store.duration_ms', duration, {
   operation_type: 'store',
   knowledge_type: item.kind,
-  status: 'success'
+  status: 'success',
 });
 
 this.metrics.increment('db.items.total_count', 1, {
   knowledge_type: item.kind,
-  scope: item.scope?.project || 'global'
+  scope: item.scope?.project || 'global',
 });
 ```
 
 ### **Monitoring Integration**
+
 ```yaml
 # Prometheus example
 - name: cortex_perf_store_duration_ms
@@ -292,6 +322,7 @@ this.metrics.increment('db.items.total_count', 1, {
 ```
 
 ### **Dashboard Organization**
+
 - **Performance Dashboard**: `perf.*` metrics
 - **Database Dashboard**: `db.*` metrics
 - **Business Dashboard**: `business.*` metrics
@@ -303,6 +334,7 @@ this.metrics.increment('db.items.total_count', 1, {
 ## 📋 **Quality Standards**
 
 ### **Metric Review Checklist**
+
 - [ ] Name follows naming convention pattern
 - [ ] Unit suffix is appropriate and consistent
 - [ ] Description is clear and meaningful
@@ -313,6 +345,7 @@ this.metrics.increment('db.items.total_count', 1, {
 - [ ] Historical data retention is defined
 
 ### **New Metric Process**
+
 1. **Review Naming Convention**: Ensure compliance with standards
 2. **Check for Duplicates**: Verify similar metrics don't exist
 3. **Define Purpose**: Clear documentation of metric purpose
@@ -326,6 +359,7 @@ this.metrics.increment('db.items.total_count', 1, {
 ## 🚀 **Best Practices**
 
 ### **Do's**
+
 - ✅ Use descriptive, self-explanatory names
 - ✅ Include units in metric names
 - ✅ Apply consistent tagging across similar metrics
@@ -334,6 +368,7 @@ this.metrics.increment('db.items.total_count', 1, {
 - ✅ Review metric usage regularly
 
 ### **Don'ts**
+
 - ❌ Use abbreviations or unclear acronyms
 - ❌ Mix naming conventions
 - ❌ Create duplicate or overlapping metrics
@@ -346,12 +381,14 @@ this.metrics.increment('db.items.total_count', 1, {
 ## 📞 **Support & Maintenance**
 
 ### **Metric Ownership**
+
 - **Performance Metrics**: Performance engineering team
 - **Database Metrics**: Database administration team
 - **Business Metrics**: Product and analytics team
 - **System Metrics**: DevOps and infrastructure team
 
 ### **Review Schedule**
+
 - **Weekly**: New metric reviews and compliance checks
 - **Monthly**: Dashboard optimization and alert tuning
 - **Quarterly**: Metric strategy and naming convention reviews
@@ -363,4 +400,4 @@ this.metrics.increment('db.items.total_count', 1, {
 **Review Date**: 2025-11-03
 **Next Review**: 2025-12-03
 
-*For questions or suggestions about metrics naming conventions, please contact the Cortex development team or create an issue in the project repository.*
+_For questions or suggestions about metrics naming conventions, please contact the Cortex development team or create an issue in the project repository._

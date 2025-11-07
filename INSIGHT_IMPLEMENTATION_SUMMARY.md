@@ -135,6 +135,7 @@ response.meta.insights = {
 ## Configuration Examples
 
 ### Development Environment
+
 ```bash
 INSIGHT_GENERATION_ENABLED=true
 INSIGHT_GENERATION_ENV_ENABLED=true
@@ -143,6 +144,7 @@ INSIGHT_GENERATION_MAX_INSIGHTS_PER_BATCH=20
 ```
 
 ### Production Environment
+
 ```bash
 INSIGHT_GENERATION_ENABLED=false
 INSIGHT_GENERATION_ENV_ENABLED=false
@@ -151,6 +153,7 @@ INSIGHT_GENERATION_PERFORMANCE_THRESHOLD=2
 ```
 
 ### Staging Environment
+
 ```bash
 INSIGHT_GENERATION_ENABLED=false
 INSIGHT_GENERATION_ENV_ENABLED=true
@@ -204,6 +207,7 @@ INSIGHT_GENERATION_ANOMALIES_ENABLED=false
 ## Usage Examples
 
 ### Basic Usage
+
 ```typescript
 const response = await memoryStore(knowledgeItems, { insight: true });
 
@@ -214,6 +218,7 @@ if (response.meta.insights) {
 ```
 
 ### Advanced Configuration
+
 ```typescript
 const insightResponse = await insightGenerationService.generateInsights({
   items: storedItems,
@@ -228,6 +233,7 @@ const insightResponse = await insightGenerationService.generateInsights({
 ```
 
 ### Metrics Monitoring
+
 ```typescript
 const metrics = insightGenerationService.getMetrics();
 console.log(`Success rate: ${metrics.generation_success_rate * 100}%`);
@@ -237,17 +243,20 @@ console.log(`Average impact: ${metrics.performance_impact_avg}%`);
 ## Future Extensibility
 
 ### New Insight Types
+
 - **Plugin Architecture**: Easy addition of new insight generators
 - **Configuration System**: Automatic inclusion in environment controls
 - **Type Safety**: Full TypeScript support for new types
 
 ### Advanced Features
+
 - **Machine Learning**: Integration with ML models for advanced insights
 - **Historical Analysis**: Enhanced trend analysis with time-series data
 - **Custom Rules**: User-defined insight generation rules
 - **API Integration**: External service integration for specialized insights
 
 ### Performance Optimizations
+
 - **Distributed Processing**: Multi-instance insight generation
 - **Streaming Processing**: Real-time insight generation
 - **Advanced Caching**: Multi-level caching strategies

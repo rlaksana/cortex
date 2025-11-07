@@ -16,7 +16,7 @@ const results = {
   total: 0,
   passed: 0,
   failed: 0,
-  scenarios: []
+  scenarios: [],
 };
 
 function addResult(test, passed, message, details = null) {
@@ -29,7 +29,7 @@ function addResult(test, passed, message, details = null) {
     passed,
     message,
     details,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   results.scenarios.push(result);
 
@@ -40,7 +40,7 @@ function addResult(test, passed, message, details = null) {
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function testMCPServerWithMainDi() {
@@ -58,7 +58,7 @@ async function testMCPServerWithMainDi() {
     // Test server startup with main-di
     console.log('Testing MCP server startup...');
     const mcpProcess = spawn('node', ['./dist/main-di.js'], {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     let serverReady = false;
@@ -102,15 +102,15 @@ async function testMCPServerWithMainDi() {
       params: {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
-        clientInfo: { name: 'test-client', version: '1.0.0' }
-      }
+        clientInfo: { name: 'test-client', version: '1.0.0' },
+      },
     };
 
     console.log('Sending initialize request...');
     mcpProcess.stdin.write(JSON.stringify(initRequest) + '\n');
     await sleep(1000);
 
-    const initResponse = responses.find(r => r.id === initRequest.id);
+    const initResponse = responses.find((r) => r.id === initRequest.id);
     if (initResponse && initResponse.result) {
       addResult('MCP Initialization', true, 'MCP server initialized successfully');
 
@@ -119,29 +119,38 @@ async function testMCPServerWithMainDi() {
         jsonrpc: '2.0',
         id: ++requestId,
         method: 'tools/list',
-        params: {}
+        params: {},
       };
 
       console.log('Sending list tools request...');
       mcpProcess.stdin.write(JSON.stringify(listToolsRequest) + '\n');
       await sleep(1000);
 
-      const toolsResponse = responses.find(r => r.id === listToolsRequest.id);
+      const toolsResponse = responses.find((r) => r.id === listToolsRequest.id);
       if (toolsResponse && toolsResponse.result && toolsResponse.result.tools) {
         const tools = toolsResponse.result.tools;
         addResult('Tool Discovery', true, `Found ${tools.length} tools`);
 
         // Check for required tools
-        const memoryStoreTool = tools.find(t => t.name === 'memory_store');
-        const memoryFindTool = tools.find(t => t.name === 'memory_find');
-        const systemStatusTool = tools.find(t => t.name === 'system_status');
+        const memoryStoreTool = tools.find((t) => t.name === 'memory_store');
+        const memoryFindTool = tools.find((t) => t.name === 'memory_find');
+        const systemStatusTool = tools.find((t) => t.name === 'system_status');
 
-        addResult('Memory Store Tool Available', !!memoryStoreTool,
-          memoryStoreTool ? 'memory_store tool found' : 'memory_store tool missing');
-        addResult('Memory Find Tool Available', !!memoryFindTool,
-          memoryFindTool ? 'memory_find tool found' : 'memory_find tool missing');
-        addResult('System Status Tool Available', !!systemStatusTool,
-          systemStatusTool ? 'system_status tool found' : 'system_status tool missing');
+        addResult(
+          'Memory Store Tool Available',
+          !!memoryStoreTool,
+          memoryStoreTool ? 'memory_store tool found' : 'memory_store tool missing'
+        );
+        addResult(
+          'Memory Find Tool Available',
+          !!memoryFindTool,
+          memoryFindTool ? 'memory_find tool found' : 'memory_find tool missing'
+        );
+        addResult(
+          'System Status Tool Available',
+          !!systemStatusTool,
+          systemStatusTool ? 'system_status tool found' : 'system_status tool missing'
+        );
 
         // Test 3: Memory Store Tool Call
         if (memoryStoreTool) {
@@ -156,20 +165,24 @@ async function testMCPServerWithMainDi() {
                   {
                     kind: 'entity',
                     content: 'Test entity for 100% verification',
-                    metadata: { test: true, timestamp: new Date().toISOString() }
-                  }
-                ]
-              }
-            }
+                    metadata: { test: true, timestamp: new Date().toISOString() },
+                  },
+                ],
+              },
+            },
           };
 
           console.log('Testing memory_store tool...');
           mcpProcess.stdin.write(JSON.stringify(storeRequest) + '\n');
           await sleep(2000);
 
-          const storeResponse = responses.find(r => r.id === storeRequest.id);
+          const storeResponse = responses.find((r) => r.id === storeRequest.id);
           if (storeResponse && storeResponse.result) {
-            addResult('Memory Store Functionality', true, 'memory_store tool executed successfully');
+            addResult(
+              'Memory Store Functionality',
+              true,
+              'memory_store tool executed successfully'
+            );
 
             if (storeResponse.result.stored && storeResponse.result.stored.length > 0) {
               addResult('Entity Storage Success', true, 'Entity successfully stored with ID');
@@ -184,21 +197,29 @@ async function testMCPServerWithMainDi() {
                     name: 'memory_find',
                     arguments: {
                       query: 'Test entity for 100% verification',
-                      scope: { project: 'mcp-cortex-test' }
-                    }
-                  }
+                      scope: { project: 'mcp-cortex-test' },
+                    },
+                  },
                 };
 
                 console.log('Testing memory_find tool...');
                 mcpProcess.stdin.write(JSON.stringify(findRequest) + '\n');
                 await sleep(2000);
 
-                const findResponse = responses.find(r => r.id === findRequest.id);
+                const findResponse = responses.find((r) => r.id === findRequest.id);
                 if (findResponse && findResponse.result) {
-                  addResult('Memory Find Functionality', true, 'memory_find tool executed successfully');
+                  addResult(
+                    'Memory Find Functionality',
+                    true,
+                    'memory_find tool executed successfully'
+                  );
 
                   if (findResponse.result.items && findResponse.result.items.length > 0) {
-                    addResult('Entity Retrieval Success', true, `Found ${findResponse.result.items.length} stored items`);
+                    addResult(
+                      'Entity Retrieval Success',
+                      true,
+                      `Found ${findResponse.result.items.length} stored items`
+                    );
                   } else {
                     addResult('Entity Retrieval Success', false, 'No items found after storage');
                   }
@@ -222,17 +243,21 @@ async function testMCPServerWithMainDi() {
             method: 'tools/call',
             params: {
               name: 'system_status',
-              arguments: {}
-            }
+              arguments: {},
+            },
           };
 
           console.log('Testing system_status tool...');
           mcpProcess.stdin.write(JSON.stringify(statusRequest) + '\n');
           await sleep(2000);
 
-          const statusResponse = responses.find(r => r.id === statusRequest.id);
+          const statusResponse = responses.find((r) => r.id === statusRequest.id);
           if (statusResponse && statusResponse.result) {
-            addResult('System Status Functionality', true, 'system_status tool executed successfully');
+            addResult(
+              'System Status Functionality',
+              true,
+              'system_status tool executed successfully'
+            );
           } else {
             addResult('System Status Functionality', false, 'system_status tool call failed');
           }
@@ -249,24 +274,26 @@ async function testMCPServerWithMainDi() {
               items: [
                 {
                   kind: 'invalid_kind',
-                  content: 'This should fail'
-                }
-              ]
-            }
-          }
+                  content: 'This should fail',
+                },
+              ],
+            },
+          },
         };
 
         console.log('Testing error handling...');
         mcpProcess.stdin.write(JSON.stringify(errorRequest) + '\n');
         await sleep(2000);
 
-        const errorResponse = responses.find(r => r.id === errorRequest.id);
-        if (errorResponse && (errorResponse.error || (errorResponse.result && errorResponse.result.errors))) {
+        const errorResponse = responses.find((r) => r.id === errorRequest.id);
+        if (
+          errorResponse &&
+          (errorResponse.error || (errorResponse.result && errorResponse.result.errors))
+        ) {
           addResult('Error Handling', true, 'Proper error handling for invalid input');
         } else {
           addResult('Error Handling', false, 'Error handling not working correctly');
         }
-
       } else {
         addResult('Tool Discovery', false, 'Failed to retrieve tools list');
       }
@@ -277,7 +304,6 @@ async function testMCPServerWithMainDi() {
     // Cleanup
     mcpProcess.kill('SIGTERM');
     await sleep(500);
-
   } catch (error) {
     addResult('MCP Server Testing', false, `Server testing failed: ${error.message}`);
   }
@@ -289,9 +315,22 @@ async function testKnowledgeTypes() {
   console.log('\nTesting Knowledge Type Coverage...\n');
 
   const allKnowledgeTypes = [
-    'entity', 'relation', 'observation', 'section', 'runbook',
-    'change', 'issue', 'decision', 'todo', 'release_note',
-    'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+    'entity',
+    'relation',
+    'observation',
+    'section',
+    'runbook',
+    'change',
+    'issue',
+    'decision',
+    'todo',
+    'release_note',
+    'ddl',
+    'pr_context',
+    'incident',
+    'release',
+    'risk',
+    'assumption',
   ];
 
   // Check if schemas include all knowledge types
@@ -307,8 +346,11 @@ async function testKnowledgeTypes() {
         }
       }
 
-      addResult('Knowledge Types in Schemas', coveredTypes === allKnowledgeTypes.length,
-        `${coveredTypes}/${allKnowledgeTypes.length} knowledge types in schemas`);
+      addResult(
+        'Knowledge Types in Schemas',
+        coveredTypes === allKnowledgeTypes.length,
+        `${coveredTypes}/${allKnowledgeTypes.length} knowledge types in schemas`
+      );
     } else {
       addResult('Schema File Access', false, 'Schema file not found');
     }
@@ -318,23 +360,24 @@ async function testKnowledgeTypes() {
 
   // Check test coverage for knowledge types
   try {
-    const testFiles = fs.readdirSync('./tests/unit')
-      .filter(file => {
-        const filePath = './tests/unit/' + file;
-        try {
-          return fs.statSync(filePath).isFile() && file.endsWith('.test.ts');
-        } catch {
-          return false;
-        }
-      });
+    const testFiles = fs.readdirSync('./tests/unit').filter((file) => {
+      const filePath = './tests/unit/' + file;
+      try {
+        return fs.statSync(filePath).isFile() && file.endsWith('.test.ts');
+      } catch {
+        return false;
+      }
+    });
 
-    const knowledgeTypeTestFiles = testFiles.filter(file =>
-      file.includes('knowledge') || file.includes('entity') || file.includes('decision')
+    const knowledgeTypeTestFiles = testFiles.filter(
+      (file) => file.includes('knowledge') || file.includes('entity') || file.includes('decision')
     );
 
-    addResult('Knowledge Type Test Coverage', knowledgeTypeTestFiles.length >= 5,
-      `Found ${knowledgeTypeTestFiles.length} knowledge type test files`);
-
+    addResult(
+      'Knowledge Type Test Coverage',
+      knowledgeTypeTestFiles.length >= 5,
+      `Found ${knowledgeTypeTestFiles.length} knowledge type test files`
+    );
   } catch (error) {
     addResult('Knowledge Type Test Coverage', false, `Error: ${error.message}`);
   }
@@ -346,27 +389,36 @@ async function testMCPProtocolCompliance() {
   try {
     // Check JSON-RPC 2.0 compliance
     const mainDiContent = fs.readFileSync('./src/main-di.ts', 'utf8');
-    const hasJsonRpcStructure = mainDiContent.includes('jsonrpc') &&
-                               mainDiContent.includes('id') &&
-                               mainDiContent.includes('method');
+    const hasJsonRpcStructure =
+      mainDiContent.includes('jsonrpc') &&
+      mainDiContent.includes('id') &&
+      mainDiContent.includes('method');
 
-    addResult('JSON-RPC 2.0 Compliance', hasJsonRpcStructure,
-      hasJsonRpcStructure ? 'JSON-RPC 2.0 structure found' : 'JSON-RPC 2.0 structure missing');
+    addResult(
+      'JSON-RPC 2.0 Compliance',
+      hasJsonRpcStructure,
+      hasJsonRpcStructure ? 'JSON-RPC 2.0 structure found' : 'JSON-RPC 2.0 structure missing'
+    );
 
     // Check proper error handling
-    const hasErrorHandling = mainDiContent.includes('McpError') &&
-                            mainDiContent.includes('ErrorCode');
+    const hasErrorHandling =
+      mainDiContent.includes('McpError') && mainDiContent.includes('ErrorCode');
 
-    addResult('Error Code Compliance', hasErrorHandling,
-      hasErrorHandling ? 'MCP error codes implemented' : 'MCP error codes missing');
+    addResult(
+      'Error Code Compliance',
+      hasErrorHandling,
+      hasErrorHandling ? 'MCP error codes implemented' : 'MCP error codes missing'
+    );
 
     // Check tool schema validation
-    const hasSchemaValidation = mainDiContent.includes('inputSchema') &&
-                               mainDiContent.includes('ALL_JSON_SCHEMAS');
+    const hasSchemaValidation =
+      mainDiContent.includes('inputSchema') && mainDiContent.includes('ALL_JSON_SCHEMAS');
 
-    addResult('Tool Schema Validation', hasSchemaValidation,
-      hasSchemaValidation ? 'Tool schema validation found' : 'Tool schema validation missing');
-
+    addResult(
+      'Tool Schema Validation',
+      hasSchemaValidation,
+      hasSchemaValidation ? 'Tool schema validation found' : 'Tool schema validation missing'
+    );
   } catch (error) {
     addResult('MCP Protocol Compliance', false, `Error: ${error.message}`);
   }
@@ -390,12 +442,13 @@ async function runAllTests() {
       total: results.total,
       passed: results.passed,
       failed: results.failed,
-      successRate: results.total > 0 ? (results.passed / results.total * 100).toFixed(2) + '%' : '0%'
+      successRate:
+        results.total > 0 ? ((results.passed / results.total) * 100).toFixed(2) + '%' : '0%',
     },
     scenarios: results.scenarios,
     is100PercentCompliant: results.failed === 0,
     recommendations: [],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Add recommendations
@@ -403,9 +456,9 @@ async function runAllTests() {
     report.recommendations.push('Address failing tests to achieve 100% compliance');
   }
 
-  const failedTests = results.scenarios.filter(s => !s.passed);
+  const failedTests = results.scenarios.filter((s) => !s.passed);
   if (failedTests.length > 0) {
-    report.recommendations.push(`Critical issues: ${failedTests.map(f => f.test).join(', ')}`);
+    report.recommendations.push(`Critical issues: ${failedTests.map((f) => f.test).join(', ')}`);
   }
 
   if (report.is100PercentCompliant) {
@@ -417,7 +470,10 @@ async function runAllTests() {
     fs.mkdirSync('./artifacts', { recursive: true });
   }
 
-  fs.writeFileSync('./artifacts/mcp-100-percent-compliance-report.json', JSON.stringify(report, null, 2));
+  fs.writeFileSync(
+    './artifacts/mcp-100-percent-compliance-report.json',
+    JSON.stringify(report, null, 2)
+  );
 
   // Display final summary
   console.log('\n=== 100% MCP Functionality Test Summary ===');
@@ -442,10 +498,10 @@ async function runAllTests() {
 
 // Run tests
 runAllTests()
-  .then(success => {
+  .then((success) => {
     process.exit(success ? 0 : 1);
   })
-  .catch(error => {
+  .catch((error) => {
     console.error('Test execution failed:', error);
     process.exit(1);
   });

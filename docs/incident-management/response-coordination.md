@@ -9,6 +9,7 @@ This document defines comprehensive procedures for coordinating incident respons
 ### Incident Commander (IC) Role
 
 #### **Primary Responsibilities**
+
 - **Overall Coordination**: Manage all incident response activities
 - **Decision Making Authority**: Final authority on operational decisions
 - **Resource Allocation**: Assign and manage incident response resources
@@ -16,6 +17,7 @@ This document defines comprehensive procedures for coordinating incident respons
 - **Timeline Management**: Ensure response activities meet established timelines
 
 #### **Specific Duties**
+
 1. **Initial Response (T+0-15 minutes)**
    - Declare incident severity level
    - Activate response team members
@@ -41,26 +43,29 @@ This document defines comprehensive procedures for coordinating incident respons
    - Conduct incident debrief
 
 #### **Authority and Decision Matrix**
-| Decision Type | IC Authority | Escalation Required |
-|---------------|--------------|---------------------|
-| Technical approach | Full authority | No |
-| Resource allocation up to $10K | Full authority | No |
-| Resource allocation $10K-$50K | Full authority | Yes - Department Head |
-| Resource allocation >$50K | Recommend | Yes - Executive |
-| Customer communications | Full authority | No |
-| Regulatory notifications | Recommend | Yes - Legal/Compliance |
-| Media communications | Recommend | Yes - PR/Executive |
-| Service shutdown | Full authority | Yes - Department Head |
+
+| Decision Type                  | IC Authority   | Escalation Required    |
+| ------------------------------ | -------------- | ---------------------- |
+| Technical approach             | Full authority | No                     |
+| Resource allocation up to $10K | Full authority | No                     |
+| Resource allocation $10K-$50K  | Full authority | Yes - Department Head  |
+| Resource allocation >$50K      | Recommend      | Yes - Executive        |
+| Customer communications        | Full authority | No                     |
+| Regulatory notifications       | Recommend      | Yes - Legal/Compliance |
+| Media communications           | Recommend      | Yes - PR/Executive     |
+| Service shutdown               | Full authority | Yes - Department Head  |
 
 ### Technical Lead (TL) Role
 
 #### **Primary Responsibilities**
+
 - **Technical Investigation**: Lead root cause analysis
 - **Solution Development**: Design and implement technical solutions
 - **System Assessment**: Evaluate technical impact and scope
 - **Technical Coordination**: Coordinate technical team activities
 
 #### **Specific Duties**
+
 1. **Technical Assessment**
    - Analyze system behavior and logs
    - Identify affected components and systems
@@ -82,12 +87,14 @@ This document defines comprehensive procedures for coordinating incident respons
 ### Communications Lead (CL) Role
 
 #### **Primary Responsibilities**
+
 - **Message Development**: Create and coordinate all communications
 - **Stakeholder Management**: Manage internal and external stakeholder communications
 - **Information Flow**: Ensure accurate and timely information distribution
 - **Media Relations**: Handle media inquiries and communications
 
 #### **Specific Duties**
+
 1. **Internal Communications**
    - Draft internal notifications and updates
    - Manage internal communication channels
@@ -111,6 +118,7 @@ This document defines comprehensive procedures for coordinating incident respons
 ### Core Response Team Structure
 
 #### **Technical Team Members**
+
 - **Platform Engineers**: Infrastructure and system administration
 - **Application Developers**: Application-level troubleshooting
 - **Database Administrators**: Database performance and recovery
@@ -119,12 +127,14 @@ This document defines comprehensive procedures for coordinating incident respons
 - **Quality Assurance**: Testing and verification
 
 #### **Business Team Members**
+
 - **Product Managers**: Product impact assessment
 - **Customer Support**: Customer impact and communication
 - **Business Analysts**: Business process impact
 - **Sales/Account Managers**: Customer relationship management
 
 #### **Support Team Members**
+
 - **Legal/Compliance**: Regulatory and legal guidance
 - **Public Relations**: Media and public communications
 - **Human Resources**: Employee-related issues
@@ -133,6 +143,7 @@ This document defines comprehensive procedures for coordinating incident respons
 ### Team Activation Protocol
 
 #### **SEV-1 Incident Activation**
+
 ```yaml
 immediate_activation:
   - Incident Commander (Director+)
@@ -156,6 +167,7 @@ as_needed:
 ```
 
 #### **SEV-2 Incident Activation**
+
 ```yaml
 immediate_activation:
   - Incident Commander (Manager+)
@@ -174,6 +186,7 @@ as_needed:
 ```
 
 #### **SEV-3/SEV-4 Incident Activation**
+
 ```yaml
 immediate_activation:
   - Incident Commander (Team Lead)
@@ -188,6 +201,7 @@ as_needed:
 ### Coordination Protocols
 
 #### **Communication Channels**
+
 ```
 Primary Channels:
 • War Room: [Physical location or video conference]
@@ -202,6 +216,7 @@ Backup Channels:
 ```
 
 #### **Meeting Cadence**
+
 ```
 SEV-1 Incidents:
 • Huddle: Every 15 minutes
@@ -224,6 +239,7 @@ SEV-4 Incidents:
 ```
 
 #### **Decision Making Process**
+
 ```
 Urgent Decisions (Minutes):
 • Incident Commander makes immediate decisions
@@ -250,6 +266,7 @@ Major Decisions (Executive Level):
 ### Physical War Room Setup
 
 #### **Location Requirements**
+
 - **Central Location**: Easily accessible for all team members
 - **Space Requirements**: Minimum 500 square feet
 - **Connectivity**: High-speed internet, multiple power outlets
@@ -257,6 +274,7 @@ Major Decisions (Executive Level):
 - **Amenities**: Whiteboards, projector, refreshments
 
 #### **Equipment Checklist**
+
 ```
 Technology Equipment:
 • Large displays or projectors (minimum 2)
@@ -283,6 +301,7 @@ Comfort Items:
 ```
 
 #### **Layout and Organization**
+
 ```
 War Room Zones:
 1. Command Center
@@ -317,6 +336,7 @@ Information Displays:
 ### Virtual War Room Setup
 
 #### **Technology Requirements**
+
 ```
 Video Conferencing Platform:
 • Primary platform: [Zoom/Teams/WebEx]
@@ -340,7 +360,8 @@ Monitoring Tools:
 • Communication monitoring
 ```
 
-#### **Virtual Coordination Protocol
+#### \*\*Virtual Coordination Protocol
+
 ```
 Session Management:
 • Main war room session: Always active
@@ -364,6 +385,7 @@ Engagement Guidelines:
 ```
 
 #### **Digital War Room Organization**
+
 ```
 Virtual Space Structure:
 Main Room:
@@ -389,6 +411,7 @@ Shared Workspace:
 ### War Room Operations
 
 #### **War Room Activation**
+
 ```
 Activation Triggers:
 • SEV-1 Incident: Immediate activation
@@ -405,6 +428,7 @@ Activation Process:
 ```
 
 #### **War Room Management**
+
 ```
 Role Assignments:
 • War Room Manager: Incident Commander
@@ -422,6 +446,7 @@ Operating Procedures:
 ```
 
 #### **War Room Deactivation**
+
 ```
 Deactivation Criteria:
 • Incident resolved and service restored
@@ -444,6 +469,7 @@ Deactivation Process:
 ### Customer Communication Protocol
 
 #### **Communication Triggers**
+
 ```
 Immediate Communication Required:
 • Complete service outage
@@ -467,6 +493,7 @@ Optional Communication:
 ```
 
 #### **Communication Approval Process**
+
 ```
 SEV-1 Incidents:
 • Draft: Communications Lead
@@ -494,6 +521,7 @@ SEV-4 Incidents:
 ```
 
 #### **Customer Support Coordination**
+
 ```
 Support Team Integration:
 • Dedicated incident support channel
@@ -514,6 +542,7 @@ Communication Flow:
 ### Regulatory and Legal Communication
 
 #### **Regulatory Notification Requirements**
+
 ```
 Notification Triggers:
 • Data breach involving personal information
@@ -539,6 +568,7 @@ Notification Process:
 ```
 
 #### **Legal Counsel Coordination**
+
 ```
 Legal Engagement Triggers:
 • Data security incidents
@@ -560,6 +590,7 @@ Legal Support Process:
 ### Media and Public Relations
 
 #### **Media Response Protocol**
+
 ```
 Media Monitoring:
 • Social media monitoring tools
@@ -585,6 +616,7 @@ Media Guidelines:
 ```
 
 #### **Public Communication Templates**
+
 ```
 Initial Statement Framework:
 1. Acknowledge the issue
@@ -616,6 +648,7 @@ Resolution Statement Framework:
 ### Incident Management Platform
 
 #### **Core System Features**
+
 ```
 Incident Tracking:
 • Incident creation and classification
@@ -647,6 +680,7 @@ Integration:
 ```
 
 #### **Dashboard and Monitoring**
+
 ```
 Incident Dashboard:
 • Active incidents overview
@@ -673,6 +707,7 @@ Executive Dashboard:
 ### Communication Systems
 
 #### **Internal Communication Tools**
+
 ```
 Primary Systems:
 • Slack/Teams for real-time coordination
@@ -690,6 +725,7 @@ Backup Systems:
 ```
 
 #### **External Communication Systems**
+
 ```
 Customer Communications:
 • Email notification systems
@@ -720,6 +756,7 @@ Regulatory Communications:
 ## Quick Reference
 
 ### Incident Commander Checklist
+
 - [ ] Declare incident and severity
 - [ ] Activate response team
 - [ ] Establish war room
@@ -730,6 +767,7 @@ Regulatory Communications:
 - [ ] Verify resolution
 
 ### War Room Setup Checklist
+
 - [ ] Secure location or virtual space
 - [ ] Set up technology and displays
 - [ ] Establish communication channels
@@ -740,6 +778,7 @@ Regulatory Communications:
 - [ ] Document setup
 
 ### Communication Checklist
+
 - [ ] Internal team notifications
 - [ ] Management updates
 - [ ] Customer communications
@@ -751,4 +790,4 @@ Regulatory Communications:
 
 ---
 
-*This document should be reviewed quarterly and updated based on incident response experience and organizational changes.*
+_This document should be reviewed quarterly and updated based on incident response experience and organizational changes._

@@ -1,71 +1,24 @@
 import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
-
-// Custom plugin to handle .js imports that should resolve to .ts files
-function jsToTsResolution() {
-  return {
-    name: 'js-to-ts-resolution',
-    enforce: 'pre',
-    configureServer(server) {
-      // Custom middleware to handle import resolution
-      server.middlewares.use((req, res, next) => {
-        next();
-      });
-    },
-    async resolveId(id, importer) {
-      // If the import ends with .js and it's not a node_module, try to resolve to .ts
-      if (id.endsWith('.js') && !id.includes('node_modules')) {
-        // Handle relative imports
-        if (id.startsWith('./') || id.startsWith('../')) {
-          if (importer) {
-            const importerDir = resolve(importer, '..');
-            const resolvedPath = resolve(importerDir, id);
-            const tsPath = resolvedPath.replace(/\.js$/, '.ts');
-
-            // Check if the .ts file exists
-            try {
-              readFileSync(tsPath, 'utf8');
-              return tsPath;
-            } catch (_e) {
-              // .ts file doesn't exist, return original
-              return id;
-            }
-          }
-        } else {
-          // Handle absolute imports from src/
-          if (id.includes('/src/')) {
-            const tsPath = id.replace(/\.js$/, '.ts');
-            try {
-              readFileSync(tsPath, 'utf8');
-              return tsPath;
-            } catch (_e) {
-              // .ts file doesn't exist, return original
-              return id;
-            }
-          }
-        }
-      }
-      return null;
-    },
-  };
-}
 
 export default defineConfig({
-  plugins: [jsToTsResolution()],
   resolve: {
     alias: {
-      // Handle .js imports to resolve to .ts source files
       '@': resolve(__dirname, './src'),
-      // Additional aliases for common import patterns
       '@src': resolve(__dirname, './src'),
       '@services': resolve(__dirname, './src/services'),
       '@utils': resolve(__dirname, './src/utils'),
       '@types': resolve(__dirname, './src/types'),
       '@config': resolve(__dirname, './src/config'),
+      '@/schemas': resolve(__dirname, './src/schemas'),
+      '@/middleware': resolve(__dirname, './src/middleware'),
+      '@/db': resolve(__dirname, './src/db'),
+      '@/monitoring': resolve(__dirname, './src/monitoring'),
+      '@docs': resolve(__dirname, './docs'),
+      '@scripts': resolve(__dirname, './scripts'),
+      '@tests': resolve(__dirname, './tests'),
     },
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
-    // Additional alias patterns to handle .js imports to .ts
   },
   esbuild: {
     target: 'node18',
@@ -95,13 +48,7 @@ export default defineConfig({
       'tests/validation/**/*.test.ts',
       'tests/**/*.spec.ts',
     ],
-    exclude: [
-      'tests/e2e/**',
-      'node_modules',
-      'dist/',
-      'coverage/',
-      '**/*.d.ts',
-    ],
+    exclude: ['tests/e2e/**', 'node_modules', 'dist/', 'coverage/', '**/*.d.ts'],
     transformMode: {
       web: [/\.[jt]sx?$/],
       ssr: [/\.[jt]sx?$/],

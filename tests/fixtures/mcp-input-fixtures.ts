@@ -207,10 +207,12 @@ export function createInvalidMemoryStoreInput() {
 
     // Too many items
     {
-      items: Array(101).fill(null).map((_, i) => ({
-        kind: 'entity' as MemoryKind,
-        content: `Entity ${i}`,
-      })),
+      items: Array(101)
+        .fill(null)
+        .map((_, i) => ({
+          kind: 'entity' as MemoryKind,
+          content: `Entity ${i}`,
+        })),
     },
   ];
 }
@@ -308,11 +310,13 @@ export function createEdgeCaseInputs() {
 
       // Maximum allowed items (100)
       {
-        items: Array(100).fill(null).map((_, i) => ({
-          kind: 'entity' as MemoryKind,
-          content: `Entity ${i}`,
-          data: { index: i },
-        })),
+        items: Array(100)
+          .fill(null)
+          .map((_, i) => ({
+            kind: 'entity' as MemoryKind,
+            content: `Entity ${i}`,
+            data: { index: i },
+          })),
       },
 
       // Maximum length content
@@ -338,9 +342,22 @@ export function createEdgeCaseInputs() {
       // All 16 knowledge types
       {
         items: [
-          'entity', 'relation', 'observation', 'section', 'runbook',
-          'change', 'issue', 'decision', 'todo', 'release_note',
-          'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+          'entity',
+          'relation',
+          'observation',
+          'section',
+          'runbook',
+          'change',
+          'issue',
+          'decision',
+          'todo',
+          'release_note',
+          'ddl',
+          'pr_context',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
         ].map((kind, index) => ({
           kind: kind as MemoryKind,
           content: `Content for ${kind} type`,
@@ -504,9 +521,22 @@ export function createEdgeCaseInputs() {
       {
         query: 'test',
         kinds: [
-          'entity', 'relation', 'observation', 'section', 'runbook',
-          'change', 'issue', 'decision', 'todo', 'release_note',
-          'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+          'entity',
+          'relation',
+          'observation',
+          'section',
+          'runbook',
+          'change',
+          'issue',
+          'decision',
+          'todo',
+          'release_note',
+          'ddl',
+          'pr_context',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
         ],
       },
 
@@ -566,14 +596,7 @@ export function createBoundaryConditionInputs() {
 export function createErrorScenarioInputs() {
   return {
     // Malformed inputs
-    malformed: [
-      null,
-      undefined,
-      'string instead of object',
-      123,
-      [],
-      { invalidField: 'value' },
-    ],
+    malformed: [null, undefined, 'string instead of object', 123, [], { invalidField: 'value' }],
 
     // Type mismatches
     typeMismatches: [
@@ -602,18 +625,20 @@ export function createPerformanceTestInputs() {
     // Large batch operations
     largeBatch: {
       memoryStore: {
-        items: Array(100).fill(null).map((_, i) => ({
-          kind: 'entity' as MemoryKind,
-          content: `Performance test entity ${i}`,
-          data: {
-            index: i,
-            timestamp: new Date().toISOString(),
-            metadata: {
-              tags: [`tag-${i % 10}`, `category-${i % 5}`],
-              size: Math.floor(Math.random() * 1000),
+        items: Array(100)
+          .fill(null)
+          .map((_, i) => ({
+            kind: 'entity' as MemoryKind,
+            content: `Performance test entity ${i}`,
+            data: {
+              index: i,
+              timestamp: new Date().toISOString(),
+              metadata: {
+                tags: [`tag-${i % 10}`, `category-${i % 5}`],
+                size: Math.floor(Math.random() * 1000),
+              },
             },
-          },
-        })),
+          })),
       },
     },
 

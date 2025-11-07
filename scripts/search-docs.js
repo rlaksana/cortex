@@ -56,7 +56,7 @@ function searchInDocs() {
                 results.push({
                   file: itemRelativePath,
                   lineNumber: i + 1,
-                  line: lines[i].trim()
+                  line: lines[i].trim(),
                 });
               }
             }
@@ -75,13 +75,12 @@ function searchInDocs() {
       console.log(`✅ Found ${results.length} result(s):`);
       console.log('');
 
-      results.forEach(result => {
+      results.forEach((result) => {
         console.log(`📄 ${result.file}:${result.lineNumber}`);
         console.log(`   ${result.line}`);
         console.log('');
       });
     }
-
   } catch (error) {
     console.error('❌ Error searching documentation:', error.message);
     process.exit(1);

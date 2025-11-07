@@ -14,10 +14,10 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '../../utils/logger.js';
-import { createHash } from 'node:crypto';
-import { writeFile, readFile, mkdir, rm } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { logger } from '@/utils/logger.js';
+import { createHash } from 'crypto';
+import { writeFile, readFile, mkdir, rm } from 'fs/promises';
+import { join, dirname } from 'path';
 import type {
   BackupMetadata,
   BackupConfiguration,
@@ -188,10 +188,12 @@ export interface ComprehensiveRestoreTestResult extends RestoreTestResult {
   scenarioName: string;
   environment: string;
   backupMetadata: BackupMetadata;
+  success: boolean; // Adding missing success property
+  recommendations: string[]; // Adding missing recommendations property
 
   // Detailed results
   dataIntegrity: DataIntegrityResult;
-  performance: PerformanceBenchmarkResult;
+  performanceDetails: PerformanceBenchmarkResult; // Additional detailed performance data
   functionalTests: FunctionalTestResult;
 
   // Compliance and SLA
@@ -363,27 +365,24 @@ export class AutomatedRestoreTestingService {
         scenarioId,
         scenarioName: scenario.name,
         environment: scenario.parameters.targetEnvironment || 'test',
-        timestamp: startTime.toISOString(),
+        timestamp: startTime,
+        status: 'failed' as const,
         success: false,
         duration: Date.now() - startTime.getTime(),
-        dataIntegrityValid: false,
-        consistencyChecks: {
-          passed: 0,
-          failed: 1,
-          details: [`Test execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
-        },
-        performanceMetrics: {
-          restoreTime: 0,
-          validationTime: 0,
-          throughput: 0,
-        },
+        recordsRestored: 0,
+        recordsExpected: 0,
+        successRate: 0,
         errors: [error instanceof Error ? error.message : 'Unknown error'],
-        rpoCompliance: false,
-        rtoCompliance: false,
+        warnings: [],
         recommendations: ['Investigate test execution environment and backup integrity'],
         backupMetadata: {} as BackupMetadata,
         dataIntegrity: this.createEmptyDataIntegrityResult(),
-        performance: this.createEmptyPerformanceBenchmarkResult(),
+        performance: {
+          restoreSpeed: 0,
+          totalDuration: 0,
+          averageLatency: 0,
+        },
+        performanceDetails: this.createEmptyPerformanceBenchmarkResult(),
         functionalTests: this.createEmptyFunctionalTestResult(),
         compliance: {
           rpoCompliance: { target: 0, actual: Infinity, compliant: false },
@@ -589,27 +588,24 @@ export class AutomatedRestoreTestingService {
       scenarioId: context.scenario.id,
       scenarioName: context.scenario.name,
       environment: context.environment,
-      timestamp: context.startTime.toISOString(),
+      timestamp: context.startTime,
       success,
+      status: success ? 'passed' as const : 'failed' as const,
       duration: totalDuration,
-      dataIntegrityValid: dataIntegrity.overall.passed,
-      consistencyChecks: {
-        passed: dataIntegrity.overall.issues.length === 0 ? 1 : 0,
-        failed: dataIntegrity.overall.issues.length,
-        details: dataIntegrity.overall.issues,
-      },
-      performanceMetrics: {
-        restoreTime: performance.restore.totalTime,
-        validationTime: performance.validation.totalTime,
-        throughput: performance.throughput.itemsPerSecond,
-      },
+      recordsRestored: dataIntegrity.vectorEmbeddings.count,
+      recordsExpected: (context.backup.metadata?.recordCount as number) || dataIntegrity.vectorEmbeddings.count,
+      successRate: dataIntegrity.vectorEmbeddings.count / ((context.backup.metadata?.recordCount as number) || dataIntegrity.vectorEmbeddings.count || 1) * 100,
       errors: success ? [] : ['Test did not meet all success criteria'],
-      rpoCompliance: compliance.rpoCompliance.compliant,
-      rtoCompliance: compliance.rtoCompliance.compliant,
+      warnings: [],
       recommendations: this.generateTestRecommendations(context, dataIntegrity, performance, functionalTests),
       backupMetadata: context.backup,
       dataIntegrity,
-      performance,
+      performance: {
+        restoreSpeed: performance.throughput?.itemsPerSecond || 0,
+        totalDuration: performance.restore?.totalTime || 0,
+        averageLatency: (performance.restore?.totalTime || 0) / (dataIntegrity.vectorEmbeddings.count || 1),
+      },
+      performanceDetails: performance,
       functionalTests,
       compliance,
       trendAnalysis: {

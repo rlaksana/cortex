@@ -29,16 +29,16 @@ export type {
   FeatureFlag,
   FlagEvaluationResult,
   UserCohort,
-  TargetingStrategy,
-  FlagStatus,
+  TargetingStrategy as FeatureTargetingStrategy,
+  FlagStatus as FeatureFlagStatus,
   FeatureFlagConfig
 } from '../feature-flag/feature-flag-service.js';
 
 export type {
   KillSwitchConfig,
   KillSwitchEvent,
-  KillSwitchStatus,
-  KillSwitchTrigger,
+  KillSwitchStatus as CanaryKillSwitchStatus,
+  KillSwitchTrigger as CanaryKillSwitchTrigger,
   KillSwitchScope,
   AutoRecoveryConfig,
   RecoveryAction,
@@ -116,13 +116,13 @@ export type {
   ValidationSeverity
 } from './config-validator.js';
 
-// Export enums
-export { TargetingStrategy, FlagStatus } from '../feature-flag/feature-flag-service.js';
-export { KillSwitchTrigger, KillSwitchScope, KillSwitchStatus } from './kill-switch-service.js';
+// Export enums with unique names to avoid conflicts
+export { TargetingStrategy as FeatureTargetingStrategy, FlagStatus as FeatureFlagStatus } from '../feature-flag/feature-flag-service.js';
+export { KillSwitchTrigger as CanaryKillSwitchTrigger, KillSwitchScope, KillSwitchStatus as CanaryKillSwitchStatus } from './kill-switch-service.js';
 export { CanaryStatus, TrafficShiftStrategy } from './canary-orchestrator.js';
 export { RoutingStrategy } from './traffic-splitter.js';
-export { HealthMetricType, AlertSeverity } from './canary-health-monitor.js';
-export { RollbackTrigger, RollbackStrategy, RollbackStatus, Action } from './rollback-service.js';
+export { HealthMetricType, AlertSeverity as CanaryAlertSeverity } from './canary-health-monitor.js';
+export { RollbackTrigger, RollbackStrategy, RollbackStatus, Action as RollbackAction } from './rollback-service.js';
 export { ValidationSeverity, ValidationCategory } from './config-validator.js';
 
 /**

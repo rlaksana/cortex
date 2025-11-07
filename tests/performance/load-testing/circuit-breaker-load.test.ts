@@ -39,7 +39,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -49,16 +49,16 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'critical', 'circuit_breaker'],
         parameters: {
           failureRate: 0.1,
           recoveryTime: 5000,
           threshold: 5,
-          timeout: 1000
-        }
+          timeout: 1000,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -94,7 +94,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -104,8 +104,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'high_frequency'],
         parameters: {
@@ -113,8 +113,8 @@ describe('Circuit Breaker Load Tests', () => {
           recoveryTime: 3000,
           threshold: 10,
           timeout: 500,
-          batchSize: 50
-        }
+          batchSize: 50,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -143,7 +143,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -153,8 +153,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'state_transitions'],
         parameters: {
@@ -163,8 +163,13 @@ describe('Circuit Breaker Load Tests', () => {
           threshold: 3,
           timeout: 1000,
           stateChangeOverhead: true,
-          transitionScenarios: ['closed_to_open', 'open_to_half_open', 'half_open_to_closed', 'half_open_to_open']
-        }
+          transitionScenarios: [
+            'closed_to_open',
+            'open_to_half_open',
+            'half_open_to_closed',
+            'half_open_to_open',
+          ],
+        },
       };
 
       const result = await harness.runTest(config);
@@ -191,8 +196,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'rapid_changes'],
         parameters: {
@@ -201,8 +206,8 @@ describe('Circuit Breaker Load Tests', () => {
           threshold: 2,
           timeout: 500,
           rapidTransitions: true,
-          maxTransitionsPerSecond: 10
-        }
+          maxTransitionsPerSecond: 10,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -230,7 +235,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -240,8 +245,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'sustained_load'],
         parameters: {
@@ -250,8 +255,8 @@ describe('Circuit Breaker Load Tests', () => {
           threshold: 8,
           timeout: 800,
           sustainedLoad: true,
-          loadDuration: 30000
-        }
+          loadDuration: 30000,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -259,7 +264,7 @@ describe('Circuit Breaker Load Tests', () => {
       expect(result.validation.passed).toBe(true);
       expect(result.results.metrics.latencies.p50).toBeLessThan(60);
       expect(result.results.metrics.throughput).toBeGreaterThan(4000);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
     }, 90000);
   });
 
@@ -281,7 +286,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -291,8 +296,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'failure_scenarios'],
         parameters: {
@@ -301,8 +306,8 @@ describe('Circuit Breaker Load Tests', () => {
           threshold: 4,
           timeout: 200,
           fastFailEnabled: true,
-          failurePropagationDelay: 10
-        }
+          failurePropagationDelay: 10,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -329,7 +334,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -339,8 +344,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'recovery'],
         parameters: {
@@ -350,8 +355,8 @@ describe('Circuit Breaker Load Tests', () => {
           timeout: 600,
           recoveryScenario: true,
           failureRateDecrease: 0.3, // Gradually decrease failure rate
-          recoveryTestDuration: 20000
-        }
+          recoveryTestDuration: 20000,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -380,7 +385,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'memory_usage_peak',
@@ -390,8 +395,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'bytes',
             type: 'memory',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'memory_efficiency'],
         parameters: {
@@ -401,16 +406,16 @@ describe('Circuit Breaker Load Tests', () => {
           timeout: 500,
           memoryOptimization: true,
           stateHistorySize: 100,
-          metricsBufferSize: 1000
-        }
+          metricsBufferSize: 1000,
+        },
       };
 
       const result = await harness.runTest(config);
 
       expect(result.validation.passed).toBe(true);
       expect(result.results.metrics.latencies.p50).toBeLessThan(50);
-      expect(result.metadata.systemMetrics.peakMemoryUsage).toBeLessThan(128 * 1024 * 1024);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].peakMemoryUsage).toBeLessThan(128 * 1024 * 1024);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
     }, 60000);
   });
 
@@ -432,7 +437,7 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'circuit_breaker_throughput',
@@ -442,8 +447,8 @@ describe('Circuit Breaker Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['resilience', 'circuit_breaker', 'concurrency'],
         parameters: {
@@ -453,8 +458,8 @@ describe('Circuit Breaker Load Tests', () => {
           timeout: 400,
           maxConcurrency: 200,
           threadSafety: true,
-          lockContention: false
-        }
+          lockContention: false,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -503,7 +508,7 @@ describe('Circuit Breaker Load Tests', () => {
     return {
       success: !shouldFail,
       latency: actualLatency,
-      state
+      state,
     };
   }
 });

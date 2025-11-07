@@ -12,12 +12,12 @@ module.exports = [
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: './tsconfig.json'
-      }
+        project: './tsconfig.json',
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
-      security: security
+      security: security,
     },
     rules: {
       // TypeScript rules
@@ -52,19 +52,13 @@ module.exports = [
       'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
       'no-debugger': 'error',
       'no-alert': 'error',
-      'no-promise-executor-return': 'error'
+      'no-promise-executor-return': 'error',
     },
     env: {
       node: true,
-      es2022: true
+      es2022: true,
     },
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'coverage/**',
-      'test-output/**',
-      'artifacts/**'
-    ]
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'test-output/**', 'artifacts/**'],
   },
   {
     files: ['tests/**/*.ts'],
@@ -73,18 +67,18 @@ module.exports = [
       'security/detect-object-injection': 'off',
       'security/detect-non-literal-regexp': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
-      'no-console': 'off'
-    }
+      'no-console': 'off',
+    },
   },
   {
     files: ['scripts/**/*.js', 'scripts/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'module'
+      sourceType: 'module',
     },
     rules: {
       'security/detect-child-process': 'off', // Scripts may need child processes
-      'no-console': 'off' // Scripts need console output
-    }
-  }
+      'no-console': 'off', // Scripts need console output
+    },
+  },
 ];

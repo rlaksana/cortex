@@ -15,7 +15,10 @@ import {
   resolveToolVersion,
   BUILTIN_TOOL_CONTRACTS,
 } from '../../src/types/versioning-schema.js';
-import { EnhancedMemoryStoreInputSchema, MemoryStoreInputSchema } from '../../src/schemas/mcp-inputs.js';
+import {
+  EnhancedMemoryStoreInputSchema,
+  MemoryStoreInputSchema,
+} from '../../src/schemas/mcp-inputs.js';
 import { z } from 'zod';
 
 describe('SemVer Versioning', () => {
@@ -104,9 +107,7 @@ describe('Tool Contract Validation', () => {
     it('should validate input against version-specific schemas', () => {
       // Test memory_store v1.0.0 (simple schema)
       const v1_0_0_input = {
-        items: [
-          { kind: 'entity', content: 'test content' },
-        ],
+        items: [{ kind: 'entity', content: 'test content' }],
       };
 
       const result1 = validateInputForVersion('memory_store', '1.0.0', v1_0_0_input);
@@ -162,9 +163,7 @@ describe('Tool Contract Validation', () => {
       // Mock output format
       const output = {
         success: true,
-        items: [
-          { id: 'test-id', kind: 'entity' },
-        ],
+        items: [{ id: 'test-id', kind: 'entity' }],
       };
 
       // Since we don't have detailed output schemas in the test environment,

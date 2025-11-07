@@ -14,9 +14,9 @@
  */
 
 import * as cron from 'node-cron';
-import { logger } from '../utils/logger.js';
-import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { logger } from '@/utils/logger.js';
+import { readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
 
 /**
  * Environment-specific backup configurations
@@ -162,6 +162,7 @@ export interface BackupConfiguration {
       regulatoryRequirements: string[];
       minRetentionDays: number;
       auditLogRetentionDays: number;
+      legalHoldEnabled: boolean;
     };
   };
 
@@ -583,6 +584,7 @@ export class BackupConfigurationManager {
           regulatoryRequirements: environment === 'production' ? ['SOC2', 'GDPR', 'HIPAA'] : [],
           minRetentionDays: preset.retention.maxAgeDays,
           auditLogRetentionDays: environment === 'production' ? 365 : 90,
+          legalHoldEnabled: environment === 'production',
         },
       },
 
@@ -819,4 +821,121 @@ export class BackupConfigurationManager {
   private async ensureConfigDirectory(): Promise<void> {
     // Implementation would ensure directory exists
   }
+}
+
+/**
+ * Backup metadata interface
+ */
+export interface BackupMetadata {
+  id: string;
+  timestamp: Date;
+  type: 'full' | 'incremental';
+  size: number;
+  checksum: string;
+  location: string;
+  status: 'created' | 'uploading' | 'completed' | 'failed';
+  collections: string[];
+  priority: BackupPriority;
+  encryptionEnabled: boolean;
+  compressionEnabled: boolean;
+  retentionDays: number;
+  tags?: string[];
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Consistency validation result interface
+ */
+export interface ConsistencyValidationResult {
+  backupId: string;
+  timestamp: Date;
+  status: 'passed' | 'failed' | 'warning';
+  checks: {
+    checksum: boolean;
+    integrity: boolean;
+    completeness: boolean;
+    consistency: boolean;
+  };
+  errors?: string[];
+  warnings?: string[];
+  metrics: {
+    totalRecords: number;
+    verifiedRecords: number;
+    corruptedRecords: number;
+    missingRecords: number;
+  };
+  duration: number;
+}
+
+/**
+ * Restore test result interface
+ */
+export interface RestoreTestResult {
+  id: string;
+  backupId: string;
+  timestamp: Date;
+  status: 'passed' | 'failed' | 'in_progress';
+  duration: number;
+  recordsRestored: number;
+  recordsExpected: number;
+  successRate: number;
+  errors?: string[];
+  warnings?: string[];
+  performance: {
+    restoreSpeed: number; // records per second
+    totalDuration: number;
+    averageLatency: number;
+  };
+}
+
+/**
+ * Disaster recovery status interface
+ */
+export interface DisasterRecoveryStatus {
+  id: string;
+  timestamp: Date;
+  status: 'active' | 'completed' | 'failed' | 'cancelled';
+  type: 'failover' | 'restore' | 'recovery';
+  initiatedBy: string;
+  affectedSystems: string[];
+  rpoMet: boolean;
+  rtoMet: boolean;
+  dataLoss: boolean;
+  estimatedRecoveryTime?: number;
+  actualRecoveryTime?: number;
+  steps: Array<{
+    name: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'failed';
+    startTime?: Date;
+    endTime?: Date;
+    duration?: number;
+    error?: string;
+  }>;
+  communication: {
+    stakeholderNotified: boolean;
+    incidentCreated: boolean;
+    escalationLevel: number;
+  };
+}
+
+/**
+ * Comprehensive restore test result interface
+ */
+export interface ComprehensiveRestoreTestResult {
+  id: string;
+  backupId: string;
+  timestamp: Date;
+  status: 'passed' | 'failed' | 'in_progress';
+  duration: number;
+  performanceMetrics: {
+    restoreSpeed: number;
+    totalDuration: number;
+    averageLatency: number;
+  };
+  success: boolean;
+  errors?: string[];
+  warnings?: string[];
+  recordsRestored: number;
+  recordsExpected: number;
+  successRate: number;
 }

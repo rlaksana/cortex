@@ -16,7 +16,7 @@
  * @module utils/retry-policy
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   BaseError,
   SystemError,
@@ -116,7 +116,17 @@ export class RetryPolicyManager {
   private circuitBreakerStates: Map<string, CircuitBreakerState> = new Map();
   private dlqMessages: DLQMessage[] = [];
   private idempotencyCache: Map<string, { result: any; timestamp: number }> = new Map();
-  private metrics: RetryMetrics;
+  private metrics: RetryMetrics = {
+    total_operations: 0,
+    successful_operations: 0,
+    failed_operations: 0,
+    retried_operations: 0,
+    circuit_breaker_trips: 0,
+    dlq_messages: 0,
+    avg_attempts_per_operation: 0,
+    avg_retry_delay_ms: 0,
+    error_distribution: {}
+  };
 
   private readonly defaultConfig: RetryPolicyConfig = {
     max_attempts: 3,
@@ -303,7 +313,6 @@ export class RetryPolicyManager {
       } catch (error) {
         const baseError = this.standardizeError(error);
         lastError = baseError;
-        const attemptDuration = Date.now() - attemptStartTime;
 
         attempts.push({
           attempt_number: attempt,
@@ -376,7 +385,7 @@ export class RetryPolicyManager {
 
     return {
       success: false,
-      error: lastError,
+      error: lastError || new SystemError('Operation failed after all retry attempts'),
       attempts,
       total_duration_ms: Date.now() - startTime,
       circuit_breaker_tripped: false,
@@ -685,7 +694,7 @@ export class RetryPolicyManager {
 
     const result = await this.executeWithRetry(operation, {
       operation_name: message.original_operation,
-      idempotency_key: message.idempotency_key,
+      idempotency_key: message.idempotency_key || undefined,
       metadata: message.metadata,
     });
 
@@ -725,9 +734,9 @@ export class RetryPolicyManager {
    */
   getCircuitBreakerStates(): Map<string, CircuitBreakerState> {
     const result = new Map<string, CircuitBreakerState>();
-    for (const [key, state] of this.circuitBreakerStates.entries()) {
+    this.circuitBreakerStates.forEach((state, key) => {
       result.set(key, { ...state });
-    }
+    });
     return result;
   }
 

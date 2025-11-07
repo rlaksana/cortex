@@ -402,7 +402,7 @@ describe('Transaction Manager - Batch Transaction Operations', () => {
 
     // Successful operations should have completed all steps
     successes.forEach((success) => {
-      expect(success.data.operations).toBe(4);
+      expect(success['data.operations']).toBe(4);
     });
   });
 
@@ -536,8 +536,8 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
     const result = await executeTransaction(storeOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.stored).toHaveLength(2);
-    expect(result.data.count).toBe(2);
+    expect(result['data.stored']).toHaveLength(2);
+    expect(result['data.count']).toBe(2);
   });
 
   it('should handle batch knowledge item operations', async () => {
@@ -712,9 +712,9 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
     const result = await executeTransaction(updateOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.title).toBe('Updated Title');
-    expect(result.data.version).toBe(2);
-    expect(result.data.updated_field).toBe('new value');
+    expect(result['data.title']).toBe('Updated Title');
+    expect(result['data.version']).toBe(2);
+    expect(result['data.updated_field']).toBe('new value');
   });
 
   it('should handle knowledge item deletion within transactions', async () => {
@@ -742,8 +742,8 @@ describe('Transaction Manager - Knowledge Item Transactions', () => {
     const result = await executeTransaction(deleteOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.deleted).toHaveLength(3);
-    expect(result.data.count).toBe(3);
+    expect(result['data.deleted']).toHaveLength(3);
+    expect(result['data.count']).toBe(3);
     expect(deletedItems).toEqual(itemsToDelete);
   });
 });
@@ -840,7 +840,7 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
 
       // In a real system, rollback would reverse the operations
       for (const operation of ctx.operations.slice().reverse()) {
-        rollbackLog.push(`rollback_${operation.type}_${operation.data.resourceId}`);
+        rollbackLog.push(`rollback_${operation.type}_${operation['data.resourceId']}`);
       }
 
       throw new Error('Operation failed - rollback required');
@@ -920,10 +920,10 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
 
   it('should categorize errors appropriately for retry logic', async () => {
     const nonRetryableErrors = [
-      { error: new Error('Constraint violation'), expectedType: DbErrorType._CONSTRAINT_VIOLATION },
-      { error: new Error('Permission denied'), expectedType: DbErrorType._PERMISSION_ERROR },
-      { error: new Error('Record not found'), expectedType: DbErrorType._RECORD_NOT_FOUND },
-      { error: new Error('Schema error'), expectedType: DbErrorType._SCHEMA_ERROR },
+      { error: new Error('Constraint violation'), expectedType: DbErrorType['_CONSTRAINT_VIOLATION'] },
+      { error: new Error('Permission denied'), expectedType: DbErrorType['_PERMISSION_ERROR'] },
+      { error: new Error('Record not found'), expectedType: DbErrorType['_RECORD_NOT_FOUND'] },
+      { error: new Error('Schema error'), expectedType: DbErrorType['_SCHEMA_ERROR'] },
     ];
 
     for (const { error, expectedType } of nonRetryableErrors) {
@@ -976,8 +976,8 @@ describe('Transaction Manager - Error Handling and Recovery', () => {
     const result = await optimisticUpdate(optimisticUpdateOperation, 5);
 
     expect(result.success).toBe(true);
-    expect(result.data.updated).toBe(true);
-    expect(result.data.version).toBe(3);
+    expect(result['data.updated']).toBe(true);
+    expect(result['data.version']).toBe(3);
     expect(result.retryAttempts).toBe(2);
   });
 });
@@ -1202,7 +1202,7 @@ describe('Transaction Manager - Performance and Concurrency', () => {
     const result = await executeTransaction(largeDataOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.processedCount).toBe(largeDataSize);
+    expect(result['data.processedCount']).toBe(largeDataSize);
     expect(memorySnapshots).toHaveLength(2);
 
     // Memory usage should be reasonable (this is a simplified check)
@@ -1306,7 +1306,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     const result = await executeTransaction(vectorTransactionOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.operationsCount).toBe(2);
+    expect(result['data.operationsCount']).toBe(2);
     expect(mockVectorOperations.upsert).toHaveBeenCalledTimes(1);
     expect(mockVectorOperations.search).toHaveBeenCalledTimes(1);
   });
@@ -1331,7 +1331,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
       // Perform vector updates
       const updatedVectors = vectors.map((vec) => ({
         ...vec,
-        data: vec.data.map((v) => v * 2), // Double each value
+        data: vec['data.map']((v) => v * 2), // Double each value
         metadata: { ...vec.metadata, version: 2 },
       }));
 
@@ -1344,7 +1344,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
 
       // Verify consistency
       const isConsistent = updatedVectors.every(
-        (vec) => vec.data.every((v) => v > 0.2) && vec.metadata.version === 2
+        (vec) => vec['data.every']((v) => v > 0.2) && vec.metadata['version'] === 2
       );
 
       if (!isConsistent) {
@@ -1357,7 +1357,7 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     const result = await executeTransaction(vectorConsistencyOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.consistent).toBe(true);
+    expect(result['data.consistent']).toBe(true);
     expect(vectorStates).toHaveLength(2);
     expect(vectorStates[0].state).toBe('initial');
     expect(vectorStates[1].state).toBe('updated');
@@ -1463,10 +1463,10 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     const result = await executeTransaction(vectorMetadataOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.transactionId).toBeDefined();
-    expect(result.data.vectorsStored).toBe(2);
-    expect(result.data.metadata.operationCount).toBe(2);
-    expect(result.data.metadata.duration).toBeGreaterThan(0);
+    expect(result['data.transactionId']).toBeDefined();
+    expect(result['data.vectorsStored']).toBe(2);
+    expect(result['data.metadata'].operationCount).toBe(2);
+    expect(result['data.metadata'].duration).toBeGreaterThan(0);
   });
 
   it('should handle vector operation timeouts within transactions', async () => {
@@ -1531,11 +1531,11 @@ describe('Transaction Manager - Integration with Vector Operations', () => {
     const result = await executeTransaction(batchVectorOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.results).toHaveLength(4);
-    expect(result.data.successCount).toBe(2);
+    expect(result['data.results']).toHaveLength(4);
+    expect(result['data.successCount']).toBe(2);
 
-    const successful = result.data.results.filter((r: any) => r.success);
-    const failed = result.data.results.filter((r: any) => !r.success);
+    const successful = result['data.results'].filter((r: any) => r.success);
+    const failed = result['data.results'].filter((r: any) => !r.success);
 
     expect(successful).toHaveLength(2);
     expect(failed).toHaveLength(2);
@@ -1628,7 +1628,7 @@ describe('Transaction Manager - Health Check and Utilities', () => {
     const result = await executeTransaction(contextValidationOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.contextValid).toBe(true);
+    expect(result['data.contextValid']).toBe(true);
     expect(capturedContext).toBeDefined();
     expect(capturedContext!.operations).toHaveLength(1);
   });
@@ -1710,8 +1710,8 @@ describe('Transaction Manager - Health Check and Utilities', () => {
     const result = await executeTransaction(timingTestOperation);
 
     expect(result.success).toBe(true);
-    expect(result.data.duration).toBeGreaterThan(90); // Allow some variance
-    expect(result.data.operationsCount).toBe(2);
+    expect(result['data.duration']).toBeGreaterThan(90); // Allow some variance
+    expect(result['data.operationsCount']).toBe(2);
     expect(timingData).toHaveLength(1);
     expect(timingData[0].totalTransactionTime).toBeGreaterThan(90);
   });

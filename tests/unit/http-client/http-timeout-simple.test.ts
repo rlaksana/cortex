@@ -5,7 +5,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { HttpClient, fetchWithTimeout, createTimeoutFetchRequest } from '../../../src/http-client/index.js';
+import {
+  HttpClient,
+  fetchWithTimeout,
+  createTimeoutFetchRequest,
+} from '../../../src/http-client/index.js';
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -120,7 +124,9 @@ describe('HTTP Client Timeout Handling - Simple Tests', () => {
 
       mockFetch.mockResolvedValue(mockResponse);
 
-      const result = await createTimeoutFetchRequest('https://example.com/api/test', { timeout: 5000 });
+      const result = await createTimeoutFetchRequest('https://example.com/api/test', {
+        timeout: 5000,
+      });
 
       expect(result).toBe(mockResponse);
       expect(mockFetch).toHaveBeenCalledWith(

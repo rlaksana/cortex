@@ -75,11 +75,11 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
       const result = ObservationSchema.safeParse(observation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('observation');
-        expect(result.data.data.entity_type).toBe('decision');
-        expect(result.data.data.observation).toBe('status: completed');
-        expect(result.data.data.observationType).toBe('status');
-        expect(result.data.data.metadata.confidence).toBe(0.95);
+        expect(result['data.kind']).toBe('observation');
+        expect(result['data.data'].entity_type).toBe('decision');
+        expect(result['data.data'].observation).toBe('status: completed');
+        expect(result['data.data'].observationType).toBe('status');
+        expect(result['data.data'].metadata.confidence).toBe(0.95);
       }
     });
 
@@ -100,10 +100,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
       const result = ObservationSchema.safeParse(observation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.entity_type).toBe('entity');
-        expect(result.data.data.observation).toBe('progress: 50%');
-        expect(result.data.data.observationType).toBeUndefined();
-        expect(result.data.data.metadata).toBeUndefined();
+        expect(result['data.data'].entity_type).toBe('entity');
+        expect(result['data.data'].observation).toBe('progress: 50%');
+        expect(result['data.data'].observationType).toBeUndefined();
+        expect(result['data.data'].metadata).toBeUndefined();
       }
     });
 
@@ -366,7 +366,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         const result = ObservationSchema.safeParse(observation);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.observationType).toBe(observationType);
+          expect(result['data.data'].observationType).toBe(observationType);
         }
       }
     });
@@ -387,7 +387,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
       const result = ObservationSchema.safeParse(observation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.observationType).toBeUndefined();
+        expect(result['data.data'].observationType).toBeUndefined();
       }
     });
   });
@@ -427,7 +427,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
         const result = ObservationSchema.safeParse(observation);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.entity_type).toBe(entityType);
+          expect(result['data.data'].entity_type).toBe(entityType);
         }
       }
     });
@@ -548,8 +548,8 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
       const result = await db.storeItems([complexObservation]);
 
       expect(result.stored).toHaveLength(1);
-      expect(result.stored[0].data.metadata.metrics.cpu_usage).toBe(45.2);
-      expect(result.stored[0].data.metadata.context.environment).toBe('production');
+      expect(result.stored[0].data.metadata['metrics'].cpu_usage).toBe(45.2);
+      expect(result.stored[0].data.metadata['context'].environment).toBe('production');
     });
 
     it('should handle observations with special characters', async () => {
@@ -600,7 +600,7 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
       const result = ObservationSchema.safeParse(observation);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.observation).toHaveLength(1000);
+        expect(result['data.data'].observation).toHaveLength(1000);
       }
     });
   });
@@ -631,10 +631,10 @@ describe('Observation Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(observation);
       expect(result.kind).toBe('observation');
-      expect(result.data.observationType).toBe('metric');
+      expect(result['data.observationType']).toBe('metric');
       expect(result.tags.metric).toBe(true);
       expect(result.source.actor).toBe('incident-resolver');
-      expect(result.ttl_policy).toBe('default');
+      expect(result['ttl_policy']).toBe('default');
     });
 
     it('should handle TTL policy for observations', async () => {

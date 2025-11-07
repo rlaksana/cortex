@@ -15,7 +15,7 @@
  * @module services/rate-limit
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface RateLimitConfig {
   /** Maximum requests allowed per window */

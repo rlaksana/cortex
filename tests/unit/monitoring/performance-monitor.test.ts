@@ -10,7 +10,7 @@ import {
   PerformanceMonitor,
   performanceMonitor,
   monitorPerformance,
-  PerformanceMetrics
+  PerformanceMetrics,
 } from '../../../src/monitoring/performance-monitor.js';
 
 describe('Performance Monitor', () => {
@@ -123,7 +123,7 @@ describe('Performance Monitor', () => {
 
     it('should create baselines for all operations', () => {
       // Generate metrics for multiple operations
-      ['op1', 'op2', 'op3'].forEach(op => {
+      ['op1', 'op2', 'op3'].forEach((op) => {
         for (let i = 0; i < 3; i++) {
           const finish = monitor.startOperation(op);
           finish();
@@ -157,7 +157,7 @@ describe('Performance Monitor', () => {
           timestamp: Date.now(),
           memoryBefore: process.memoryUsage(),
           memoryAfter: process.memoryUsage(),
-        }
+        },
       ];
 
       // Manually add regression metrics
@@ -174,7 +174,7 @@ describe('Performance Monitor', () => {
   describe('Report Generation', () => {
     it('should generate comprehensive report', () => {
       // Generate test data
-      ['operation1', 'operation2'].forEach(op => {
+      ['operation1', 'operation2'].forEach((op) => {
         for (let i = 0; i < 5; i++) {
           const finish = monitor.startOperation(op);
           finish();
@@ -283,7 +283,7 @@ describe('Performance Monitor Decorator', () => {
 
     @monitorPerformance()
     public async asyncDecoratedMethod(value: number): Promise<number> {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       return value * 3;
     }
 

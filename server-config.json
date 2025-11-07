@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "node",
+      "args": ["D:\\WORKSPACE\\tools-node\\mcp-cortex\\dist\\index.js"],
+      "env": {
+        "OPENAI_API_KEY": "sk-test-key-placeholder",
+        "QDRANT_URL": "http://localhost:6333",
+        "QDRANT_COLLECTION_NAME": "cortex-memory",
+        "LOG_LEVEL": "info",
+        "NODE_ENV": "test",
+        "Z_AI_URL": "https://api.z.ai/api/anthropic",
+        "Z_AI_KEY": "a80abd32ebb54cc38a4a18386dd97b56.5Fd4O39pThvHV6BU",
+        "Z_AI_MODEL": "glm-4.6"
+      }
+    }
+  }
+}

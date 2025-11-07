@@ -20,7 +20,7 @@
  * @since 2025
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 // import { auditService } from '../audit/audit-service.js'; // REMOVED: Service file deleted
 import type {
   SearchResult,

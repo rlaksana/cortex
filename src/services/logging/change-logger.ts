@@ -13,7 +13,7 @@
  * - Automatic metadata enrichment
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { memoryStore } from '../memory-store.js';
 
 export interface ChangeLogEntry {

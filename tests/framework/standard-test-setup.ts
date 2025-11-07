@@ -12,9 +12,9 @@ import { config } from 'dotenv';
 config({ path: '.env.test' });
 
 // Standard test environment configuration
-process.env.NODE_ENV = 'test';
-process.env.LOG_LEVEL = 'error';
-process.env.QDRANT_COLLECTION_NAME = 'test-cortex-memory';
+process.env['NODE_ENV'] = 'test';
+process.env['LOG_LEVEL'] = 'error';
+process.env['QDRANT_COLLECTION_NAME'] = 'test-cortex-memory';
 
 /**
  * Mock cleanup tracker
@@ -89,7 +89,7 @@ export class StandardTestUtils {
   /**
    * Create a standardized mock object
    */
-  static createMock<T = any>(implementation?: Partial<T>): vi.Mocked<T> {
+  static createMock<T = any>(implementation?: Partial<T>): vi['M']ocked<T> {
     const mock = vi.fn() as any;
     if (implementation) {
       Object.assign(mock, implementation);

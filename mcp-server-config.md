@@ -23,6 +23,7 @@ This document outlines the configuration requirements for optimal MCP server com
 ### Client Compatibility
 
 #### Claude Desktop
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -31,24 +32,26 @@ env = {}
 ```
 
 #### Codex CLI
+
 ```bash
 cortex-memory-mcp --stdio
 ```
 
 #### Direct Node.js Execution
+
 ```bash
 node dist/index.js
 ```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key for embeddings | Required |
-| `QDRANT_URL` | Qdrant vector database URL | `http://localhost:6333` |
-| `QDRANT_API_KEY` | Qdrant API key (if needed) | Optional |
-| `LOG_LEVEL` | Logging level (debug, info, warn, error) | `info` |
-| `NODE_ENV` | Environment (development, production) | `development` |
+| Variable         | Description                              | Default                 |
+| ---------------- | ---------------------------------------- | ----------------------- |
+| `OPENAI_API_KEY` | OpenAI API key for embeddings            | Required                |
+| `QDRANT_URL`     | Qdrant vector database URL               | `http://localhost:6333` |
+| `QDRANT_API_KEY` | Qdrant API key (if needed)               | Optional                |
+| `LOG_LEVEL`      | Logging level (debug, info, warn, error) | `info`                  |
+| `NODE_ENV`       | Environment (development, production)    | `development`           |
 
 ### Validation Commands
 

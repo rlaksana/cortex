@@ -7,36 +7,42 @@ The MCP Cortex SLO Framework provides a comprehensive system for defining, monit
 ## Key Features
 
 ### 1. **Comprehensive SLO/SLI Management**
+
 - Define Service Level Indicators (SLIs) with various measurement methods
 - Create Service Level Objectives (SLOs) with configurable periods and targets
 - Support for multiple aggregation methods (average, P95, P99, etc.)
 - Flexible time windows (rolling, calendar, fixed)
 
 ### 2. **Real-time Monitoring and Alerting**
+
 - Continuous SLO evaluation with configurable intervals
 - Multi-channel notifications (Slack, Email, PagerDuty, Webhooks)
 - Intelligent alerting with burn rate thresholds
 - Escalation policies and on-call management
 
 ### 3. **Error Budget Tracking**
+
 - Precise error budget calculation and tracking
 - Burn rate analysis with trend detection
 - Budget projection and exhaustion forecasting
 - Automated response based on budget consumption
 
 ### 4. **Breach Detection and Incident Management**
+
 - Automatic SLO breach detection
 - Impact assessment and incident prioritization
 - Automated remediation responses
 - Comprehensive incident lifecycle management
 
 ### 5. **Advanced Analytics and Reporting**
+
 - Trend analysis with pattern detection
 - Anomaly detection and prediction
 - Monthly/quarterly reports with insights
 - Executive summaries and recommendations
 
 ### 6. **Interactive Dashboards**
+
 - Real-time SLO status dashboards
 - Customizable widgets and visualizations
 - Live updates via WebSocket connections
@@ -191,22 +197,24 @@ const result = await sloService.createSLO(availabilitySLO);
 
 ```typescript
 // In your monitoring system, push measurements to the SLO service
-await sloService['services'].sloService.addMeasurements([{
-  id: 'measurement-1',
-  sliId: 'api-availability',
-  timestamp: new Date(),
-  value: 99.8,
-  quality: {
-    completeness: 100,
-    accuracy: 0.95,
-    timeliness: 100,
-    validity: true,
+await sloService['services'].sloService.addMeasurements([
+  {
+    id: 'measurement-1',
+    sliId: 'api-availability',
+    timestamp: new Date(),
+    value: 99.8,
+    quality: {
+      completeness: 100,
+      accuracy: 0.95,
+      timeliness: 100,
+      validity: true,
+    },
+    metadata: {
+      source: 'prometheus',
+      environment: 'production',
+    },
   },
-  metadata: {
-    source: 'prometheus',
-    environment: 'production',
-  },
-}]);
+]);
 ```
 
 ### 6. Monitor Results
@@ -326,13 +334,13 @@ await sloService['services'].dashboardService.addWidget(dashboard.id, {
 ```typescript
 // Generate monthly report
 const monthlyReport = await sloService['services'].reportingService.generateMonthlyReport(
-  2025, 1 // January 2025
+  2025,
+  1 // January 2025
 );
 
 // Generate trend analysis
-const trendAnalysis = await sloService['services'].reportingService.performTrendAnalysis(
-  'api-availability-slo'
-);
+const trendAnalysis =
+  await sloService['services'].reportingService.performTrendAnalysis('api-availability-slo');
 
 // Generate executive summary
 const executiveSummary = await sloService['services'].reportingService.generateExecutiveSummary();
@@ -409,30 +417,35 @@ const config = {
 ## Best Practices
 
 ### 1. SLO Design
+
 - Start with meaningful, user-centric objectives
 - Use appropriate time windows (30 days is common)
 - Set realistic targets based on historical data
 - Consider business impact when setting targets
 
 ### 2. Error Budget Management
+
 - Monitor burn rates closely
 - Set appropriate alert thresholds
 - Use automated responses for common issues
 - Regularly review and adjust policies
 
 ### 3. Alerting
+
 - Avoid alert fatigue with smart thresholds
 - Use escalation policies effectively
 - Include actionable information in alerts
 - Regularly tune alert parameters
 
 ### 4. Dashboards
+
 - Create role-specific dashboards
 - Use clear visualizations
 - Include both leading and lagging indicators
 - Make dashboards actionable
 
 ### 5. Documentation
+
 - Document SLO definitions and rationales
 - Maintain runbooks for common scenarios
 - Track post-mortem lessons learned
@@ -571,6 +584,7 @@ See the `examples/slo-framework-example.ts` file for a comprehensive example dem
 ## Support
 
 For support and questions:
+
 - Create an issue in the GitHub repository
 - Check the troubleshooting section above
 - Review the API documentation

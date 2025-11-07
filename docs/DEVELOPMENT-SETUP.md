@@ -3,11 +3,13 @@
 ## Quick Start
 
 ### Prerequisites
+
 - **Node.js**: `25.1.0` (minimum `18.0.0`)
 - **PNPM**: `10.20.0` (minimum `8.0.0`)
 - **Git**: Latest version
 
 ### One-Command Setup
+
 ```bash
 # Clone and setup
 git clone <repository-url>
@@ -25,6 +27,7 @@ npm run test:ci
 ## Detailed Setup
 
 ### 1. Install Node.js
+
 ```bash
 # Using nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
@@ -36,23 +39,27 @@ node --version  # Should show v25.1.0
 ```
 
 ### 2. Install PNPM
+
 ```bash
 npm install -g pnpm@10.20.0
 pnpm --version  # Should show 10.20.0
 ```
 
 ### 3. Clone Repository
+
 ```bash
 git clone <repository-url>
 cd mcp-cortex
 ```
 
 ### 4. Install Dependencies
+
 ```bash
 pnpm install
 ```
 
 ### 5. Verify Setup
+
 ```bash
 # Check toolchain versions
 npm run toolchain:verify
@@ -70,6 +77,7 @@ npm run test:ci
 ## Development Workflow
 
 ### Making Changes
+
 ```bash
 # Start development mode
 npm run dev:watch
@@ -79,6 +87,7 @@ npm run build && npm run dev
 ```
 
 ### Code Quality
+
 ```bash
 # Format code
 npm run format
@@ -91,6 +100,7 @@ npm run type-check
 ```
 
 ### Testing
+
 ```bash
 # Run all tests
 npm run test:all
@@ -107,14 +117,17 @@ npm run test:coverage
 ## Toolchain Management
 
 ### Verify Current Toolchain
+
 ```bash
 npm run toolchain:verify
 ```
 
 ### Update Toolchain
+
 See [TOOLCHAIN.md](./TOOLCHAIN.md) for detailed update procedures.
 
 ### Troubleshooting
+
 ```bash
 # Clean build
 rm -rf node_modules dist
@@ -130,7 +143,9 @@ npm run lint:fix
 ## IDE Configuration
 
 ### VS Code
+
 Install recommended extensions:
+
 - TypeScript and JavaScript Language Features
 - ESLint extension
 - Prettier extension
@@ -141,6 +156,7 @@ Configure settings (see `.vscode/settings.json`).
 ## Environment Variables
 
 Create `.env` file for development:
+
 ```env
 # Database
 QDRANT_URL=http://localhost:6333
@@ -171,6 +187,7 @@ LOG_LEVEL=debug
 ---
 
 **Related Documentation**:
+
 - [TOOLCHAIN.md](./TOOLCHAIN.md) - Detailed toolchain configuration
 - [SETUP-QUICK-START.md](./SETUP-QUICK-START.md) - Quick start guide
 - [NEW-ENGINEER-GUIDE.md](./NEW-ENGINEER-GUIDE.md) - Onboarding guide

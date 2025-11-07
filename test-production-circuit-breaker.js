@@ -93,7 +93,7 @@ class ProductionCircuitBreakerValidator {
       }
 
       // Small delay between operations
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     const circuitStats = this.qdrantAdapter.getQdrantCircuitBreakerStatus();
@@ -148,7 +148,8 @@ class ProductionCircuitBreakerValidator {
         recovered,
         recoveryTime,
         retryOperations: retryMetricsAfter.total_operations - retryMetricsBefore.total_operations,
-        retriedOperations: retryMetricsAfter.retried_operations - retryMetricsBefore.retried_operations,
+        retriedOperations:
+          retryMetricsAfter.retried_operations - retryMetricsBefore.retried_operations,
       },
     };
   }
@@ -170,14 +171,17 @@ class ProductionCircuitBreakerValidator {
     const results = await Promise.allSettled(promises);
     const totalDuration = Date.now() - startTime;
 
-    const successfulResults = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+    const successfulResults = results.filter(
+      (r) => r.status === 'fulfilled' && r.value.success
+    ).length;
     const responseTimes = results
-      .filter(r => r.status === 'fulfilled' && r.value.success)
-      .map(r => r.value.duration);
+      .filter((r) => r.status === 'fulfilled' && r.value.success)
+      .map((r) => r.value.duration);
 
-    const averageResponseTime = responseTimes.length > 0
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
-      : 0;
+    const averageResponseTime =
+      responseTimes.length > 0
+        ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
+        : 0;
 
     return {
       summary: `Success rate: ${((successfulResults / concurrentRequests) * 100).toFixed(2)}%, Avg response: ${averageResponseTime.toFixed(2)}ms`,
@@ -207,7 +211,7 @@ class ProductionCircuitBreakerValidator {
     }
 
     // Wait for recovery timeout
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Test recovery attempt
     let recoveryAttempt = 0;
@@ -253,7 +257,8 @@ class ProductionCircuitBreakerValidator {
       durationMs: 5000, // 5 seconds
     });
 
-    const successRate = loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests;
+    const successRate =
+      loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests;
 
     return {
       summary: `Load test: ${successRate >= 0.9 ? 'PASSED' : 'FAILED'}, Success rate: ${(successRate * 100).toFixed(2)}%`,
@@ -280,10 +285,10 @@ class ProductionCircuitBreakerValidator {
 
   printSummary() {
     console.log('📊 VALIDATION SUMMARY\n');
-    console.log('=' .repeat(60));
+    console.log('='.repeat(60));
 
     const totalTests = this.testResults.length;
-    const passedTests = this.testResults.filter(t => t.success).length;
+    const passedTests = this.testResults.filter((t) => t.success).length;
     const failedTests = totalTests - passedTests;
     const totalDuration = this.testResults.reduce((sum, t) => sum + t.duration, 0);
 
@@ -297,8 +302,8 @@ class ProductionCircuitBreakerValidator {
     if (failedTests > 0) {
       console.log('❌ FAILED TESTS:');
       this.testResults
-        .filter(t => !t.success)
-        .forEach(t => {
+        .filter((t) => !t.success)
+        .forEach((t) => {
           console.log(`   - ${t.name}: ${t.error}`);
         });
       console.log('');
@@ -311,8 +316,12 @@ class ProductionCircuitBreakerValidator {
     console.log(`   Qdrant Health: ${finalMonitoringData.qdrant.healthStatus}`);
     console.log(`   Overall System Health: ${finalMonitoringData.system.overallHealth}`);
     console.log(`   Total Qdrant Calls: ${finalMonitoringData.qdrant.circuitBreaker.totalCalls}`);
-    console.log(`   Qdrant Success Rate: ${(finalMonitoringData.qdrant.circuitBreaker.successRate * 100).toFixed(2)}%`);
-    console.log(`   Qdrant Failure Rate: ${(finalMonitoringData.qdrant.circuitBreaker.failureRate * 100).toFixed(2)}%`);
+    console.log(
+      `   Qdrant Success Rate: ${(finalMonitoringData.qdrant.circuitBreaker.successRate * 100).toFixed(2)}%`
+    );
+    console.log(
+      `   Qdrant Failure Rate: ${(finalMonitoringData.qdrant.circuitBreaker.failureRate * 100).toFixed(2)}%`
+    );
     console.log('');
 
     // Production readiness assessment
@@ -327,11 +336,11 @@ class ProductionCircuitBreakerValidator {
       console.log('⚠️  Additional improvements needed before production deployment.');
     }
 
-    console.log('=' .repeat(60));
+    console.log('='.repeat(60));
   }
 
   assessProductionReadiness() {
-    const successRate = this.testResults.filter(t => t.success).length / this.testResults.length;
+    const successRate = this.testResults.filter((t) => t.success).length / this.testResults.length;
     const finalMonitoringData = this.qdrantAdapter.getComprehensiveMonitoringData();
 
     // Criteria for production readiness
@@ -384,7 +393,7 @@ async function main() {
 
 // Run validation if this script is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(error => {
+  main().catch((error) => {
     console.error('💥 Unhandled error:', error);
     process.exit(1);
   });

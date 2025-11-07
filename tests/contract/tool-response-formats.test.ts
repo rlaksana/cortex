@@ -15,7 +15,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 
 // Response format schemas
-import { UnifiedToolResponse, createResponseMeta } from '../../src/types/unified-response.interface.js';
+import {
+  UnifiedToolResponse,
+  createResponseMeta,
+} from '../../src/types/unified-response.interface.js';
 import { SearchResult } from '../../src/types/core-interfaces.js';
 
 // Test response factories
@@ -53,11 +56,11 @@ describe('Tool Response Format Tests - T22', () => {
       });
 
       // Verify metadata
-      expect(validResponse._meta).toHaveProperty('requestId');
-      expect(validResponse._meta).toHaveProperty('timestamp');
-      expect(validResponse._meta).toHaveProperty('operation');
-      expect(validResponse._meta).toHaveProperty('duration');
-      expect(validResponse._meta).toHaveProperty('version');
+      expect(validResponse['_']meta).toHaveProperty('requestId');
+      expect(validResponse['_']meta).toHaveProperty('timestamp');
+      expect(validResponse['_']meta).toHaveProperty('operation');
+      expect(validResponse['_']meta).toHaveProperty('duration');
+      expect(validResponse['_']meta).toHaveProperty('version');
 
       // Verify error flag
       expect(typeof validResponse.isError).toBe('boolean');
@@ -67,7 +70,7 @@ describe('Tool Response Format Tests - T22', () => {
     it('should contain valid response metadata', () => {
       const response = createResponseWithMetadata();
 
-      const meta = response._meta;
+      const meta = response['_']meta;
 
       // Verify required metadata fields
       expect(meta).toHaveProperty('requestId');
@@ -97,21 +100,21 @@ describe('Tool Response Format Tests - T22', () => {
     it('should include operation-specific metadata', () => {
       // Test memory_store response metadata
       const storeResponse = createValidToolResponse('memory_store');
-      expect(storeResponse._meta.operation).toBe('memory_store');
+      expect(storeResponse['_']meta.operation).toBe('memory_store');
 
       // Test memory_find response metadata
       const findResponse = createValidToolResponse('memory_find');
-      expect(findResponse._meta.operation).toBe('memory_find');
+      expect(findResponse['_']meta.operation).toBe('memory_find');
 
       // Verify additional metadata for different operations
-      if (storeResponse._meta.itemsProcessed) {
-        expect(typeof storeResponse._meta.itemsProcessed).toBe('number');
-        expect(storeResponse._meta.itemsProcessed).toBeGreaterThan(0);
+      if (storeResponse['_']meta.itemsProcessed) {
+        expect(typeof storeResponse['_']meta.itemsProcessed).toBe('number');
+        expect(storeResponse['_']meta.itemsProcessed).toBeGreaterThan(0);
       }
 
-      if (findResponse._meta.resultCount) {
-        expect(typeof findResponse._meta.resultCount).toBe('number');
-        expect(findResponse._meta.resultCount).toBeGreaterThanOrEqual(0);
+      if (findResponse['_']meta.resultCount) {
+        expect(typeof findResponse['_']meta.resultCount).toBe('number');
+        expect(findResponse['_']meta.resultCount).toBeGreaterThanOrEqual(0);
       }
     });
 
@@ -164,17 +167,17 @@ describe('Tool Response Format Tests - T22', () => {
       });
 
       // Verify error metadata
-      expect(errorResponse._meta).toHaveProperty('error');
-      expect(errorResponse._meta.error).toHaveProperty('code');
-      expect(errorResponse._meta.error).toHaveProperty('message');
-      expect(errorResponse._meta.error).toHaveProperty('type');
-      expect(errorResponse._meta.error).toHaveProperty('details');
+      expect(errorResponse['_']meta).toHaveProperty('error');
+      expect(errorResponse['_']meta.error).toHaveProperty('code');
+      expect(errorResponse['_']meta.error).toHaveProperty('message');
+      expect(errorResponse['_']meta.error).toHaveProperty('type');
+      expect(errorResponse['_']meta.error).toHaveProperty('details');
     });
 
     it('should include comprehensive error information', () => {
       const errorResponse = createErrorResponse();
 
-      const error = errorResponse._meta.error;
+      const error = errorResponse['_']meta.error;
 
       // Verify error code
       expect(typeof error.code).toBe('string');
@@ -214,9 +217,9 @@ describe('Tool Response Format Tests - T22', () => {
           type: errorType.type as any,
         });
 
-        expect(errorResponse._meta.error.type).toBe(errorType.type);
-        expect(errorResponse._meta.error.code).toBe(errorType.code);
-        expect(errorResponse._meta.error.message).toContain(errorType.message);
+        expect(errorResponse['_']meta.error.type).toBe(errorType.type);
+        expect(errorResponse['_']meta.error.code).toBe(errorType.code);
+        expect(errorResponse['_']meta.error.message).toContain(errorType.message);
       });
     });
 
@@ -232,9 +235,9 @@ describe('Tool Response Format Tests - T22', () => {
         },
       });
 
-      expect(operationalError._meta.error.details.retryable).toBe(true);
-      expect(operationalError._meta.error.details.retryAfter).toBe(5);
-      expect(operationalError._meta.error.details.maxRetries).toBe(3);
+      expect(operationalError['_']meta.error.details.retryable).toBe(true);
+      expect(operationalError['_']meta.error.details.retryAfter).toBe(5);
+      expect(operationalError['_']meta.error.details.maxRetries).toBe(3);
     });
 
     it('should include field-specific information for validation errors', () => {
@@ -250,10 +253,10 @@ describe('Tool Response Format Tests - T22', () => {
         },
       });
 
-      expect(operationalError._meta.error.field).toBe('items.0.kind');
-      expect(validationError._meta.error.details.expectedValue).toBeDefined();
-      expect(validationError._meta.error.details.actualValue).toBeDefined();
-      expect(Array.isArray(validationError._meta.error.details.allowedValues)).toBe(true);
+      expect(operationalError['_']meta.error.field).toBe('items.0.kind');
+      expect(validationError['_']meta.error.details.expectedValue).toBeDefined();
+      expect(validationError['_']meta.error.details.actualValue).toBeDefined();
+      expect(Array.isArray(validationError['_']meta.error.details.allowedValues)).toBe(true);
     });
   });
 
@@ -266,28 +269,28 @@ describe('Tool Response Format Tests - T22', () => {
       const batchResponse = createBatchResponse('memory_store', 10);
 
       // Verify batch metadata
-      expect(batchResponse._meta).toHaveProperty('batchId');
-      expect(batchResponse._meta).toHaveProperty('itemCount');
-      expect(batchResponse._meta).toHaveProperty('processedItems');
-      expect(batchResponse._meta).toHaveProperty('failedItems');
+      expect(batchResponse['_']meta).toHaveProperty('batchId');
+      expect(batchResponse['_']meta).toHaveProperty('itemCount');
+      expect(batchResponse['_']meta).toHaveProperty('processedItems');
+      expect(batchResponse['_']meta).toHaveProperty('failedItems');
 
-      expect(typeof batchResponse._meta.batchId).toBe('string');
-      expect(batchResponse._meta.batchId).toMatch(/^[a-f0-9-]{36}$/);
+      expect(typeof batchResponse['_']meta.batchId).toBe('string');
+      expect(batchResponse['_']meta.batchId).toMatch(/^[a-f0-9-]{36}$/);
 
-      expect(batchResponse._meta.itemCount).toBe(10);
-      expect(batchResponse._meta.processedItems).toBeGreaterThanOrEqual(0);
-      expect(batchResponse._meta.processedItems).toBeLessThanOrEqual(10);
-      expect(batchResponse._meta.failedItems).toBeGreaterThanOrEqual(0);
-      expect(batchResponse._meta.failedItems).toBeLessThanOrEqual(10);
+      expect(batchResponse['_']meta.itemCount).toBe(10);
+      expect(batchResponse['_']meta.processedItems).toBeGreaterThanOrEqual(0);
+      expect(batchResponse['_']meta.processedItems).toBeLessThanOrEqual(10);
+      expect(batchResponse['_']meta.failedItems).toBeGreaterThanOrEqual(0);
+      expect(batchResponse['_']meta.failedItems).toBeLessThanOrEqual(10);
 
       // Verify batch statistics
-      const totalItems = batchResponse._meta.processedItems + batchResponse._meta.failedItems;
-      expect(totalItems).toBe(batchResponse._meta.itemCount);
+      const totalItems = batchResponse['_']meta.processedItems + batchResponse['_']meta.failedItems;
+      expect(totalItems).toBe(batchResponse['_']meta.itemCount);
 
       // Verify batch results content
       expect(batchResponse.content.length).toBeGreaterThan(0);
-      const hasResults = batchResponse.content.some((item) =>
-        item.text.includes('Processed') || item.text.includes('Failed')
+      const hasResults = batchResponse.content.some(
+        (item) => item.text.includes('Processed') || item.text.includes('Failed')
       );
       expect(hasResults).toBe(true);
     });
@@ -300,11 +303,11 @@ describe('Tool Response Format Tests - T22', () => {
       });
 
       // Should include detailed results if requested
-      if (batchResponse._meta.results) {
-        expect(Array.isArray(batchResponse._meta.results)).toBe(true);
-        expect(batchResponse._meta.results.length).toBe(5);
+      if (batchResponse['_']meta.results) {
+        expect(Array.isArray(batchResponse['_']meta.results)).toBe(true);
+        expect(batchResponse['_']meta.results.length).toBe(5);
 
-        batchResponse._meta.results.forEach((result, index) => {
+        batchResponse['_']meta.results.forEach((result, index) => {
           expect(result).toHaveProperty('index');
           expect(result).toHaveProperty('success');
           expect(result).toHaveProperty('itemId');
@@ -327,14 +330,16 @@ describe('Tool Response Format Tests - T22', () => {
         failures: 3,
       });
 
-      expect(partialFailureResponse._meta.processedItems).toBe(7);
-      expect(partialFailureResponse._meta.failedItems).toBe(3);
+      expect(partialFailureResponse['_']meta.processedItems).toBe(7);
+      expect(partialFailureResponse['_']meta.failedItems).toBe(3);
       expect(partialFailureResponse.isError).toBe(false); // Partial success is not an error
 
       // Should include information about failed items
-      expect(partialFailureResponse.content.some((item) =>
-        item.text.includes('7 succeeded') && item.text.includes('3 failed')
-      )).toBe(true);
+      expect(
+        partialFailureResponse.content.some(
+          (item) => item.text.includes('7 succeeded') && item.text.includes('3 failed')
+        )
+      ).toBe(true);
     });
 
     it('should handle complete batch failures', () => {
@@ -343,12 +348,12 @@ describe('Tool Response Format Tests - T22', () => {
         failures: 5,
       });
 
-      expect(completeFailureResponse._meta.processedItems).toBe(0);
-      expect(completeFailureResponse._meta.failedItems).toBe(5);
+      expect(completeFailureResponse['_']meta.processedItems).toBe(0);
+      expect(completeFailureResponse['_']meta.failedItems).toBe(5);
 
       // Complete batch failure should be marked as error
       expect(completeFailureResponse.isError).toBe(true);
-      expect(completeFailureResponse._meta.error).toBeDefined();
+      expect(completeFailureResponse['_']meta.error).toBeDefined();
     });
   });
 
@@ -361,25 +366,25 @@ describe('Tool Response Format Tests - T22', () => {
       const searchResponse = createValidToolResponse('memory_find');
 
       // Verify search-specific metadata
-      if (searchResponse._meta.resultCount) {
-        expect(typeof searchResponse._meta.resultCount).toBe('number');
-        expect(searchResponse._meta.resultCount).toBeGreaterThanOrEqual(0);
+      if (searchResponse['_']meta.resultCount) {
+        expect(typeof searchResponse['_']meta.resultCount).toBe('number');
+        expect(searchResponse['_']meta.resultCount).toBeGreaterThanOrEqual(0);
       }
 
-      if (searchResponse._meta.queryInfo) {
-        expect(searchResponse._meta.queryInfo).toHaveProperty('originalQuery');
-        expect(searchResponse._meta.queryInfo).toHaveProperty('searchStrategy');
-        expect(searchResponse._meta.queryInfo).toHaveProperty('processedQuery');
+      if (searchResponse['_']meta.queryInfo) {
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('originalQuery');
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('searchStrategy');
+        expect(searchResponse['_']meta.queryInfo).toHaveProperty('processedQuery');
 
-        expect(typeof searchResponse._meta.queryInfo.originalQuery).toBe('string');
-        expect(searchResponse._meta.queryInfo.originalQuery.length).toBeGreaterThan(0);
-        expect(['fast', 'auto', 'deep']).toContain(searchResponse._meta.queryInfo.searchStrategy);
+        expect(typeof searchResponse['_']meta.queryInfo.originalQuery).toBe('string');
+        expect(searchResponse['_']meta.queryInfo.originalQuery.length).toBeGreaterThan(0);
+        expect(['fast', 'auto', 'deep']).toContain(searchResponse['_']meta.queryInfo.searchStrategy);
       }
 
       // Verify search results content
       expect(searchResponse.content.length).toBeGreaterThan(0);
-      const hasSearchResults = searchResponse.content.some((item) =>
-        item.text.includes('results found') || item.text.includes('search completed')
+      const hasSearchResults = searchResponse.content.some(
+        (item) => item.text.includes('results found') || item.text.includes('search completed')
       );
       expect(hasSearchResults).toBe(true);
     });
@@ -389,17 +394,17 @@ describe('Tool Response Format Tests - T22', () => {
         includeAnalytics: true,
       });
 
-      if (searchResponse._meta.analytics) {
-        expect(searchResponse._meta.analytics).toHaveProperty('searchDuration');
-        expect(searchResponse._meta.analytics).toHaveProperty('totalScanned');
-        expect(searchResponse._meta.analytics).toHaveProperty('similarityThreshold');
-        expect(searchResponse._meta.analytics).toHaveProperty('expansionCount');
+      if (searchResponse['_']meta.analytics) {
+        expect(searchResponse['_']meta.analytics).toHaveProperty('searchDuration');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('totalScanned');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('similarityThreshold');
+        expect(searchResponse['_']meta.analytics).toHaveProperty('expansionCount');
 
-        expect(typeof searchResponse._meta.analytics.searchDuration).toBe('number');
-        expect(searchResponse._meta.analytics.searchDuration).toBeGreaterThan(0);
+        expect(typeof searchResponse['_']meta.analytics.searchDuration).toBe('number');
+        expect(searchResponse['_']meta.analytics.searchDuration).toBeGreaterThan(0);
 
-        expect(typeof searchResponse._meta.analytics.totalScanned).toBe('number');
-        expect(searchResponse._meta.analytics.totalScanned).toBeGreaterThanOrEqual(0);
+        expect(typeof searchResponse['_']meta.analytics.totalScanned).toBe('number');
+        expect(searchResponse['_']meta.analytics.totalScanned).toBeGreaterThanOrEqual(0);
       }
     });
 
@@ -408,13 +413,15 @@ describe('Tool Response Format Tests - T22', () => {
         resultCount: 0,
       });
 
-      expect(emptySearchResponse._meta.resultCount).toBe(0);
+      expect(emptySearchResponse['_']meta.resultCount).toBe(0);
       expect(emptySearchResponse.isError).toBe(false); // Empty results are not an error
 
       // Should indicate no results found
-      expect(emptySearchResponse.content.some((item) =>
-        item.text.includes('No results found') || item.text.includes('0 results')
-      )).toBe(true);
+      expect(
+        emptySearchResponse.content.some(
+          (item) => item.text.includes('No results found') || item.text.includes('0 results')
+        )
+      ).toBe(true);
     });
 
     it('should format search results based on requested format', () => {
@@ -425,21 +432,21 @@ describe('Tool Response Format Tests - T22', () => {
           resultFormat: format,
         });
 
-        expect(response._meta.resultFormat).toBe(format);
+        expect(response['_']meta.resultFormat).toBe(format);
 
         // Content should be formatted according to the requested format
         if (format === 'detailed') {
-          expect(response.content.some((item) =>
-            item.text.includes('Detailed results')
-          )).toBe(true);
+          expect(response.content.some((item) => item.text.includes('Detailed results'))).toBe(
+            true
+          );
         } else if (format === 'summary') {
-          expect(response.content.some((item) =>
-            item.text.includes('Summary')
-          )).toBe(true);
+          expect(response.content.some((item) => item.text.includes('Summary'))).toBe(true);
         } else if (format === 'compact') {
-          expect(response.content.some((item) =>
-            item.text.length < 1000 // Compact format should be shorter
-          )).toBe(true);
+          expect(
+            response.content.some(
+              (item) => item.text.length < 1000 // Compact format should be shorter
+            )
+          ).toBe(true);
         }
       });
     });
@@ -454,22 +461,22 @@ describe('Tool Response Format Tests - T22', () => {
       const performanceResponse = createPerformanceResponse();
 
       // Verify performance metadata
-      expect(performanceResponse._meta).toHaveProperty('performance');
-      expect(performanceResponse._meta.performance).toHaveProperty('duration');
-      expect(performanceResponse._meta.performance).toHaveProperty('memoryUsage');
-      expect(performanceResponse._meta.performance).toHaveProperty('cpuUsage');
+      expect(performanceResponse['_']meta).toHaveProperty('performance');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('duration');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('memoryUsage');
+      expect(performanceResponse['_']meta.performance).toHaveProperty('cpuUsage');
 
-      expect(typeof performanceResponse._meta.performance.duration).toBe('number');
-      expect(performanceResponse._meta.performance.duration).toBeGreaterThan(0);
+      expect(typeof performanceResponse['_']meta.performance.duration).toBe('number');
+      expect(performanceResponse['_']meta.performance.duration).toBeGreaterThan(0);
 
-      expect(typeof performanceResponse._meta.performance.memoryUsage).toBe('object');
-      expect(performanceResponse._meta.performance.memoryUsage).toHaveProperty('used');
-      expect(performanceResponse._meta.performance.memoryUsage).toHaveProperty('peak');
+      expect(typeof performanceResponse['_']meta.performance.memoryUsage).toBe('object');
+      expect(performanceResponse['_']meta.performance.memoryUsage).toHaveProperty('used');
+      expect(performanceResponse['_']meta.performance.memoryUsage).toHaveProperty('peak');
 
-      if (performanceResponse._meta.performance.cpuUsage !== undefined) {
-        expect(typeof performanceResponse._meta.performance.cpuUsage).toBe('number');
-        expect(performanceResponse._meta.performance.cpuUsage).toBeGreaterThanOrEqual(0);
-        expect(performanceResponse._meta.performance.cpuUsage).toBeLessThanOrEqual(100);
+      if (performanceResponse['_']meta.performance.cpuUsage !== undefined) {
+        expect(typeof performanceResponse['_']meta.performance.cpuUsage).toBe('number');
+        expect(performanceResponse['_']meta.performance.cpuUsage).toBeGreaterThanOrEqual(0);
+        expect(performanceResponse['_']meta.performance.cpuUsage).toBeLessThanOrEqual(100);
       }
     });
 
@@ -486,13 +493,13 @@ describe('Tool Response Format Tests - T22', () => {
         },
       });
 
-      expect(rateLimitResponse._meta.error.code).toBe('RATE_LIMITED');
-      expect(rateLimitResponse._meta.error.details.limit).toBe(100);
-      expect(rateLimitResponse._meta.error.details.current).toBe(101);
-      expect(rateLimitResponse._meta.error.details.retryAfter).toBe(60);
+      expect(rateLimitResponse['_']meta.error.code).toBe('RATE_LIMITED');
+      expect(rateLimitResponse['_']meta.error.details.limit).toBe(100);
+      expect(rateLimitResponse['_']meta.error.details.current).toBe(101);
+      expect(rateLimitResponse['_']meta.error.details.retryAfter).toBe(60);
 
       // Verify reset time format
-      const resetTime = new Date(rateLimitResponse._meta.error.details.resetTime);
+      const resetTime = new Date(rateLimitResponse['_']meta.error.details.resetTime);
       expect(resetTime.getTime()).toBeGreaterThan(Date.now());
     });
 
@@ -508,10 +515,10 @@ describe('Tool Response Format Tests - T22', () => {
         },
       });
 
-      expect(timeoutResponse._meta.error.code).toBe('TIMEOUT');
-      expect(timeoutResponse._meta.error.details.timeout).toBe(30000);
-      expect(timeoutResponse._meta.error.details.operation).toBe('memory_find');
-      expect(timeoutResponse._meta.error.details.partialResults).toBe(true);
+      expect(timeoutResponse['_']meta.error.code).toBe('TIMEOUT');
+      expect(timeoutResponse['_']meta.error.details.timeout).toBe(30000);
+      expect(timeoutResponse['_']meta.error.details.operation).toBe('memory_find');
+      expect(timeoutResponse['_']meta.error.details.partialResults).toBe(true);
     });
   });
 
@@ -531,15 +538,15 @@ describe('Tool Response Format Tests - T22', () => {
         expect(response).toHaveProperty('isError');
 
         expect(Array.isArray(response.content)).toBe(true);
-        expect(typeof response._meta).toBe('object');
+        expect(typeof response['_']meta).toBe('object');
         expect(typeof response.isError).toBe('boolean');
 
         // All metadata should have the same required fields
-        expect(response._meta).toHaveProperty('requestId');
-        expect(response._meta).toHaveProperty('timestamp');
-        expect(response._meta).toHaveProperty('operation');
-        expect(response._meta).toHaveProperty('duration');
-        expect(response._meta).toHaveProperty('version');
+        expect(response['_']meta).toHaveProperty('requestId');
+        expect(response['_']meta).toHaveProperty('timestamp');
+        expect(response['_']meta).toHaveProperty('operation');
+        expect(response['_']meta).toHaveProperty('duration');
+        expect(response['_']meta).toHaveProperty('version');
       });
     });
 
@@ -559,9 +566,9 @@ describe('Tool Response Format Tests - T22', () => {
       errorResponses.forEach((response) => {
         // All error responses should have the same structure
         expect(response.isError).toBe(true);
-        expect(response._meta).toHaveProperty('error');
+        expect(response['_']meta).toHaveProperty('error');
 
-        const error = response._meta.error;
+        const error = response['_']meta.error;
         expect(error).toHaveProperty('code');
         expect(error).toHaveProperty('message');
         expect(error).toHaveProperty('type');
@@ -578,11 +585,11 @@ describe('Tool Response Format Tests - T22', () => {
       const response = createValidToolResponse();
 
       // Verify version information
-      expect(response._meta.version).toMatch(/^\d+\.\d+\.\d+$/);
-      expect(response._meta.apiVersion).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(response['_']meta.version).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(response['_']meta.apiVersion).toMatch(/^\d+\.\d+\.\d+$/);
 
       // Should support backward compatibility
-      expect(response._meta.minCompatibleVersion).toMatch(/^\d+\.\d+\.\d+$/);
+      expect(response['_']meta.minCompatibleVersion).toMatch(/^\d+\.\d+\.\d+$/);
     });
   });
 
@@ -606,7 +613,7 @@ describe('Tool Response Format Tests - T22', () => {
       expect(deserialized).toHaveProperty('isError');
 
       expect(Array.isArray(deserialized.content)).toBe(true);
-      expect(typeof deserialized._meta).toBe('object');
+      expect(typeof deserialized['_']meta).toBe('object');
       expect(typeof deserialized.isError).toBe('boolean');
     });
 
@@ -623,7 +630,7 @@ describe('Tool Response Format Tests - T22', () => {
 
       // Should deserialize correctly
       const deserialized = JSON.parse(serialized);
-      expect(deserialized._meta.itemCount).toBe(100);
+      expect(deserialized['_']meta.itemCount).toBe(100);
     });
 
     it('should handle special characters in response content', () => {
@@ -637,8 +644,8 @@ describe('Tool Response Format Tests - T22', () => {
       const deserialized = JSON.parse(serialized);
 
       // Should preserve special characters
-      const hasSpecialChars = deserialized.content.some((item) =>
-        item.text.includes('🧠') || item.text.includes('中文')
+      const hasSpecialChars = deserialized.content.some(
+        (item) => item.text.includes('🧠') || item.text.includes('中文')
       );
       expect(hasSpecialChars).toBe(true);
     });

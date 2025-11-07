@@ -100,13 +100,13 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
       const result = IncidentSchema.safeParse(incident);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('incident');
-        expect(result.data.data.title).toBe('Database connectivity failure in production');
-        expect(result.data.data.severity).toBe('critical');
-        expect(result.data.data.resolution_status).toBe('resolved');
-        expect(result.data.data.timeline).toHaveLength(3);
-        expect(result.data.data.affected_services).toHaveLength(3);
-        expect(result.data.data.recovery_actions).toHaveLength(3);
+        expect(result['data.kind']).toBe('incident');
+        expect(result['data.data'].title).toBe('Database connectivity failure in production');
+        expect(result['data.data'].severity).toBe('critical');
+        expect(result['data.data'].resolution_status).toBe('resolved');
+        expect(result['data.data'].timeline).toHaveLength(3);
+        expect(result['data.data'].affected_services).toHaveLength(3);
+        expect(result['data.data'].recovery_actions).toHaveLength(3);
       }
     });
 
@@ -128,13 +128,13 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
       const result = IncidentSchema.safeParse(incident);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toBe('Minor performance degradation');
-        expect(result.data.data.severity).toBe('low');
-        expect(result.data.data.impact).toBe('Users experiencing slightly slower response times');
-        expect(result.data.data.resolution_status).toBe('open');
-        expect(result.data.data.timeline).toBeUndefined();
-        expect(result.data.data.root_cause_analysis).toBeUndefined();
-        expect(result.data.data.affected_services).toBeUndefined();
+        expect(result['data.data'].title).toBe('Minor performance degradation');
+        expect(result['data.data'].severity).toBe('low');
+        expect(result['data.data'].impact).toBe('Users experiencing slightly slower response times');
+        expect(result['data.data'].resolution_status).toBe('open');
+        expect(result['data.data'].timeline).toBeUndefined();
+        expect(result['data.data'].root_cause_analysis).toBeUndefined();
+        expect(result['data.data'].affected_services).toBeUndefined();
       }
     });
 
@@ -382,9 +382,9 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
       expect(mockQdrant.upsert).toHaveBeenCalledTimes(3);
 
       const storedCalls = mockQdrant.upsert.mock.calls;
-      expect(storedCalls[0][0][0].payload.data.severity).toBe('critical');
-      expect(storedCalls[1][0][0].payload.data.severity).toBe('low');
-      expect(storedCalls[2][0][0].payload.data.severity).toBe('medium');
+      expect(storedCalls[0][0][0].payload['data.severity']).toBe('critical');
+      expect(storedCalls[1][0][0].payload['data.severity']).toBe('low');
+      expect(storedCalls[2][0][0].payload['data.severity']).toBe('medium');
     });
 
     it('should handle mixed valid and invalid incidents in batch', async () => {
@@ -640,7 +640,7 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
       const result = IncidentSchema.safeParse(incidentWithoutTimeline);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.timeline).toBeUndefined();
+        expect(result['data.data'].timeline).toBeUndefined();
       }
     });
 
@@ -660,7 +660,7 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
       const result = IncidentSchema.safeParse(incidentWithEmptyRecovery);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.recovery_actions).toEqual([]);
+        expect(result['data.data'].recovery_actions).toEqual([]);
       }
     });
   });
@@ -867,11 +867,11 @@ describe('Incident Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(incident);
       expect(result.kind).toBe('incident');
-      expect(result.data.severity).toBe('high');
-      expect(result.data.incident_commander).toBe('security-team-lead@company.com');
+      expect(result['data.severity']).toBe('high');
+      expect(result['data.incident_commander']).toBe('security-team-lead@company.com');
       expect(result.tags.security).toBe(true);
       expect(result.source.actor).toBe('security-operations-center');
-      expect(result.ttl_policy).toBe('extended');
+      expect(result['ttl_policy']).toBe('extended');
     });
 
     it('should handle TTL policy for incidents', async () => {

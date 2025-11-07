@@ -5,8 +5,12 @@
  * Tests semantic features by calling the orchestrators directly
  */
 
-const { MemoryStoreOrchestrator } = require('./dist/services/orchestrators/memory-store-orchestrator.js');
-const { MemoryFindOrchestrator } = require('./dist/services/orchestrators/memory-find-orchestrator.js');
+const {
+  MemoryStoreOrchestrator,
+} = require('./dist/services/orchestrators/memory-store-orchestrator.js');
+const {
+  MemoryFindOrchestrator,
+} = require('./dist/services/orchestrators/memory-find-orchestrator.js');
 
 class SemanticFeaturesTest {
   constructor() {
@@ -26,7 +30,7 @@ class SemanticFeaturesTest {
         name: testName,
         status: 'PASSED',
         duration,
-        details: result
+        details: result,
       });
 
       console.log(`✅ ${testName} - PASSED (${duration}ms)`);
@@ -35,7 +39,7 @@ class SemanticFeaturesTest {
       this.testResults.push({
         name: testName,
         status: 'FAILED',
-        error: error.message
+        error: error.message,
       });
 
       console.log(`❌ ${testName} - FAILED: ${error.message}`);
@@ -51,27 +55,27 @@ class SemanticFeaturesTest {
           data: {
             name: 'Test Entity Skip',
             description: 'Test entity for skip deduplication mode',
-            type: 'test'
-          }
+            type: 'test',
+          },
         },
         {
           kind: 'entity',
           data: {
             name: 'Test Entity Skip',
             description: 'Test entity for skip deduplication mode',
-            type: 'test'
-          }
-        }
+            type: 'test',
+          },
+        },
       ];
 
       const result = await this.memoryStore.storeItems(items, {
-        deduplicationMode: 'skip'
+        deduplicationMode: 'skip',
       });
 
       return {
         itemsProcessed: result.summary?.stored || 0,
         duplicatesSkipped: result.summary?.skipped || 0,
-        totalItems: items.length
+        totalItems: items.length,
       };
     });
   }
@@ -85,8 +89,8 @@ class SemanticFeaturesTest {
             name: 'Test Entity Newer',
             description: 'Original entity description',
             type: 'test',
-            version: '1.0.0'
-          }
+            version: '1.0.0',
+          },
         },
         {
           kind: 'entity',
@@ -94,19 +98,19 @@ class SemanticFeaturesTest {
             name: 'Test Entity Newer',
             description: 'Updated entity description',
             type: 'test',
-            version: '2.0.0'
-          }
-        }
+            version: '2.0.0',
+          },
+        },
       ];
 
       const result = await this.memoryStore.storeItems(items, {
-        deduplicationMode: 'prefer_newer'
+        deduplicationMode: 'prefer_newer',
       });
 
       return {
         itemsStored: result.summary?.stored || 0,
         itemsUpdated: result.summary?.updated || 0,
-        itemsSkipped: result.summary?.skipped || 0
+        itemsSkipped: result.summary?.skipped || 0,
       };
     });
   }
@@ -120,8 +124,8 @@ class SemanticFeaturesTest {
             name: 'Test Entity Combine',
             description: 'Base entity',
             type: 'test',
-            tags: ['base', 'original']
-          }
+            tags: ['base', 'original'],
+          },
         },
         {
           kind: 'entity',
@@ -130,19 +134,19 @@ class SemanticFeaturesTest {
             description: 'Base entity',
             type: 'test',
             category: 'combined',
-            metadata: { source: 'test' }
-          }
-        }
+            metadata: { source: 'test' },
+          },
+        },
       ];
 
       const result = await this.memoryStore.storeItems(items, {
-        deduplicationMode: 'combine'
+        deduplicationMode: 'combine',
       });
 
       return {
         itemsStored: result.summary?.stored || 0,
         itemsCombined: result.summary?.combined || 0,
-        mergeResults: result.results?.length || 0
+        mergeResults: result.results?.length || 0,
       };
     });
   }
@@ -156,17 +160,17 @@ class SemanticFeaturesTest {
           data: {
             name: 'Web Server Component',
             description: 'A component for hosting web applications and services',
-            type: 'server'
-          }
+            type: 'server',
+          },
         },
         {
           kind: 'entity',
           data: {
             name: 'Database Manager',
             description: 'System for managing database connections and queries',
-            type: 'database'
-          }
-        }
+            type: 'database',
+          },
+        },
       ];
 
       await this.memoryStore.storeItems(testItems);
@@ -175,14 +179,14 @@ class SemanticFeaturesTest {
       const searchResult = await this.memoryFind.findItems({
         query: 'application hosting system',
         limit: 5,
-        mode: 'semantic'
+        mode: 'semantic',
       });
 
       return {
         query: 'application hosting system',
         resultsFound: searchResult.total_count || 0,
         searchStrategy: searchResult.meta?.strategy || 'unknown',
-        confidence: searchResult.observability?.confidence_average || 0
+        confidence: searchResult.observability?.confidence_average || 0,
       };
     });
   }
@@ -193,14 +197,14 @@ class SemanticFeaturesTest {
         query: 'database server component',
         limit: 10,
         mode: 'hybrid',
-        types: ['entity']
+        types: ['entity'],
       });
 
       return {
         query: 'database server component',
         resultsFound: searchResult.total_count || 0,
         searchStrategy: searchResult.meta?.strategy || 'unknown',
-        executionTime: searchResult.meta?.execution_time_ms || 0
+        executionTime: searchResult.meta?.execution_time_ms || 0,
       };
     });
   }
@@ -212,18 +216,18 @@ class SemanticFeaturesTest {
         data: {
           name: 'TTL Test Entity',
           description: 'Entity for testing TTL policies',
-          type: 'test'
-        }
+          type: 'test',
+        },
       };
 
       const result = await this.memoryStore.storeItems([testItem], {
-        ttlPolicy: 'short'
+        ttlPolicy: 'short',
       });
 
       return {
         itemStored: result.summary?.stored > 0,
         ttlPolicyApplied: 'short',
-        storageResult: result.success || false
+        storageResult: result.success || false,
       };
     });
   }
@@ -237,9 +241,9 @@ class SemanticFeaturesTest {
           data: {
             name: 'Main Component',
             description: 'Primary system component',
-            type: 'component'
-          }
-        }
+            type: 'component',
+          },
+        },
       ];
 
       const relations = [
@@ -249,9 +253,9 @@ class SemanticFeaturesTest {
             source: 'Main Component',
             target: 'Sub Component',
             type: 'depends_on',
-            strength: 0.8
-          }
-        }
+            strength: 0.8,
+          },
+        },
       ];
 
       const entityResult = await this.memoryStore.storeItems(entities);
@@ -260,7 +264,7 @@ class SemanticFeaturesTest {
       return {
         entitiesStored: entityResult.summary?.stored || 0,
         relationsStored: relationResult.summary?.stored || 0,
-        graphElements: (entityResult.summary?.stored || 0) + (relationResult.summary?.stored || 0)
+        graphElements: (entityResult.summary?.stored || 0) + (relationResult.summary?.stored || 0),
       };
     });
   }
@@ -277,20 +281,21 @@ class SemanticFeaturesTest {
             name: i % 3 === 0 ? 'Batch Test Entity' : `Batch Test Entity ${i}`,
             description: 'Batch test entity for deduplication',
             type: 'test',
-            batch: true
-          }
+            batch: true,
+          },
         });
       }
 
       const result = await this.memoryStore.storeItems(batchItems, {
-        deduplicationMode: 'intelligent'
+        deduplicationMode: 'intelligent',
       });
 
       return {
         batchItems: batchItems.length,
         uniqueStored: result.summary?.stored || 0,
         duplicatesProcessed: result.summary?.skipped || result.summary?.updated || 0,
-        deduplicationRate: ((result.summary?.skipped || 0) / batchItems.length * 100).toFixed(1) + '%'
+        deduplicationRate:
+          (((result.summary?.skipped || 0) / batchItems.length) * 100).toFixed(1) + '%',
       };
     });
   }
@@ -307,7 +312,7 @@ class SemanticFeaturesTest {
       () => this.testHybridSearch(),
       () => this.testTTLPolicy(),
       () => this.testKnowledgeGraph(),
-      () => this.testBatchDeduplication()
+      () => this.testBatchDeduplication(),
     ];
 
     let passed = 0;

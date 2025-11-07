@@ -5,7 +5,7 @@
  * This file acts as a facade for Qdrant operations.
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Environment } from '../config/environment.js';
 import { QdrantClient } from '@qdrant/js-client-rest';
 

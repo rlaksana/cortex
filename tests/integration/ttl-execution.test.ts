@@ -50,7 +50,7 @@ describe('TTL Policy Execution', () => {
     memoryStore = new MemoryStoreManager({
       vector: {
         provider: 'qdrant',
-        connectionString: process.env.QDRANT_CONNECTION_STRING || 'localhost:6333',
+        connectionString: process.env['QDRANT_CONNECTION_STRING'] || 'localhost:6333',
       },
       ttl: {
         enabled: true,
@@ -188,7 +188,7 @@ describe('TTL Policy Execution', () => {
     });
 
     it('should store TTL metadata with correct expiration times', async () => {
-      const shortTTLItem = testItems.find(item => item.id === 'item-short-ttl')!;
+      const shortTTLItem = testItems.find((item) => item.id === 'item-short-ttl')!;
       const result = await memoryStore.find({
         query: shortTTLItem.id,
         types: ['observation'],
@@ -209,7 +209,7 @@ describe('TTL Policy Execution', () => {
     });
 
     it('should handle items without explicit TTL configuration', async () => {
-      const noTTLItem = testItems.find(item => item.id === 'item-no-ttl')!;
+      const noTTLItem = testItems.find((item) => item.id === 'item-no-ttl')!;
       const result = await memoryStore.find({
         query: noTTLItem.id,
         types: ['observation'],
@@ -244,11 +244,11 @@ describe('TTL Policy Execution', () => {
 
       // Should not find the expired item
       expect(result.success).toBe(true);
-      const expiredItem = result.items.find(item => item.id === 'item-short-ttl');
+      const expiredItem = result.items.find((item) => item.id === 'item-short-ttl');
       expect(expiredItem).toBeUndefined();
 
       // Should still find non-expired items
-      const nonExpiredItem = result.items.find(item => item.id === 'item-no-ttl');
+      const nonExpiredItem = result.items.find((item) => item.id === 'item-no-ttl');
       expect(nonExpiredItem).toBeDefined();
     });
 
@@ -260,7 +260,7 @@ describe('TTL Policy Execution', () => {
       mockTime.advanceTime(31 * 60 * 1000); // 31 minutes
 
       // Wait for cleanup cycle (plus small buffer)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Verify expired item is cleaned up
       const result = await memoryStore.find({
@@ -286,7 +286,7 @@ describe('TTL Policy Execution', () => {
       mockTime.advanceTime(2 * 60 * 60 * 1000 + 1000); // Just over 2 hours
 
       // Wait for cleanup cycle
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Check which items should be cleaned up
       const remainingItems = await memoryStore.find({
@@ -297,16 +297,12 @@ describe('TTL Policy Execution', () => {
 
       // Should have cleaned up: item-short-ttl, item-session-ttl, item-custom-ttl
       // Should still have: item-default-ttl, item-long-ttl, item-no-ttl
-      const expectedRemainingIds = [
-        'item-default-ttl',
-        'item-long-ttl',
-        'item-no-ttl',
-      ];
+      const expectedRemainingIds = ['item-default-ttl', 'item-long-ttl', 'item-no-ttl'];
 
       expect(remainingItems.success).toBe(true);
       expect(remainingItems.items).toHaveLength(expectedRemainingIds.length);
 
-      remainingItems.items.forEach(item => {
+      remainingItems.items.forEach((item) => {
         expect(expectedRemainingIds).toContain(item.id);
       });
 
@@ -324,19 +320,28 @@ describe('TTL Policy Execution', () => {
           id: 'entity-short',
           content: 'Entity with short TTL',
           kind: 'entity' as const,
-          ttl_config: { policy: 'short' as const, expires_at: new Date(mockTime.currentTime + 60 * 60 * 1000) },
+          ttl_config: {
+            policy: 'short' as const,
+            expires_at: new Date(mockTime.currentTime + 60 * 60 * 1000),
+          },
         },
         {
           id: 'relation-session',
           content: 'Relation with session TTL',
           kind: 'relation' as const,
-          ttl_config: { policy: 'session' as const, expires_at: new Date(mockTime.currentTime + 30 * 60 * 1000) },
+          ttl_config: {
+            policy: 'session' as const,
+            expires_at: new Date(mockTime.currentTime + 30 * 60 * 1000),
+          },
         },
         {
           id: 'runbook-long',
           content: 'Runbook with long TTL',
           kind: 'runbook' as const,
-          ttl_config: { policy: 'long' as const, expires_at: new Date(mockTime.currentTime + 7 * 24 * 60 * 60 * 1000) },
+          ttl_config: {
+            policy: 'long' as const,
+            expires_at: new Date(mockTime.currentTime + 7 * 24 * 60 * 60 * 1000),
+          },
         },
       ];
 
@@ -367,7 +372,7 @@ describe('TTL Policy Execution', () => {
     });
 
     it('should handle TTL policy updates and extensions', async () => {
-      const item = testItems.find(i => i.id === 'item-default-ttl')!;
+      const item = testItems.find((i) => i.id === 'item-default-ttl')!;
 
       // Initially item should exist
       let result = await memoryStore.find({
@@ -449,7 +454,7 @@ describe('TTL Policy Execution', () => {
       await cleanupService.start();
 
       // Wait for multiple cleanup cycles
-      await new Promise(resolve => setTimeout(resolve, 3500)); // ~3.5 seconds for ~3 cycles
+      await new Promise((resolve) => setTimeout(resolve, 3500)); // ~3.5 seconds for ~3 cycles
 
       expect(cleanupSpy).toHaveBeenCalledTimes(3); // Should have run ~3 times
 
@@ -473,7 +478,7 @@ describe('TTL Policy Execution', () => {
       await cleanupService.start();
 
       // Wait for cleanup cycles
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
 
       const metrics = cleanupService.getMetrics();
       expect(metrics.errorCount).toBeGreaterThan(0);
@@ -490,7 +495,7 @@ describe('TTL Policy Execution', () => {
       mockTime.advanceTime(2 * 60 * 60 * 1000); // 2 hours
 
       // Wait for cleanup
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const metrics = cleanupService.getMetrics();
 
@@ -522,7 +527,7 @@ describe('TTL Policy Execution', () => {
       mockTime.advanceTime(31 * 60 * 1000); // 31 minutes
 
       // Wait for cleanup
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       const metrics = dryRunCleanupService.getMetrics();
 
@@ -572,7 +577,7 @@ describe('TTL Policy Execution', () => {
       mockTime.advanceTime(2 * 60 * 1000); // 2 minutes
 
       // Wait for cleanup
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Verify cleanup was efficient
       const afterCleanup = await memoryStore.find({
@@ -605,7 +610,7 @@ describe('TTL Policy Execution', () => {
       const searchResults = await Promise.all(searchPromises);
 
       // All searches should succeed despite cleanup running
-      searchResults.forEach(result => {
+      searchResults.forEach((result) => {
         expect(result.success).toBe(true);
       });
 

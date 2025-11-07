@@ -31,11 +31,13 @@ The Chaos Testing Framework is a comprehensive system designed to validate the r
 ## Supported Chaos Scenarios
 
 ### 1. Qdrant Connection Failures
+
 - **Type**: `qdrant_connection_failure`
 - **Failure Modes**: timeout, error, connection_refused
 - **Impact**: Database connectivity, vector operations
 
 ### 2. Network Issues
+
 - **Network Latency**: `network_latency`
   - Configurable delay and jitter
   - Affects all network calls
@@ -44,17 +46,20 @@ The Chaos Testing Framework is a comprehensive system designed to validate the r
   - Simulates network unreliability
 
 ### 3. Resource Exhaustion
+
 - **CPU Pressure**: `resource_exhaustion` with CPU target
 - **Memory Pressure**: `memory_pressure`
 - **Disk Exhaustion**: `disk_exhaustion`
 - **Configurable intensity levels**
 
 ### 4. Database Issues
+
 - **Query Timeouts**: `query_timeout`
 - **Circuit Breaker Trips**: `circuit_breaker_trip`
 - **Partial Partitions**: `partial_partition`
 
 ### 5. Cascade Failures
+
 - **Multi-stage Failures**: `cascade_failure`
 - **Configurable failure chains**
 - **Escalating intensity patterns**
@@ -71,7 +76,8 @@ const config: ChaosExperimentConfig = {
   id: 'qdrant-failure-test-001',
   name: 'Qdrant Connection Failure Test',
   description: 'Test system behavior when Qdrant becomes unavailable',
-  hypothesis: 'System will gracefully degrade to in-memory storage and maintain service availability',
+  hypothesis:
+    'System will gracefully degrade to in-memory storage and maintain service availability',
   severity: 'medium',
   duration: 300, // 5 minutes
   blastRadius: 'component',
@@ -81,8 +87,8 @@ const config: ChaosExperimentConfig = {
       threshold: 10,
       comparison: 'less_than',
       metric: 'error_rate_percentage',
-      enabled: true
-    }
+      enabled: true,
+    },
   ],
   steadyStateDuration: 60, // 1 minute
   experimentDuration: 120, // 2 minutes
@@ -100,13 +106,13 @@ const scenario: ChaosScenario = {
     rampUpTime: 10,
     parameters: {
       failureMode: 'timeout',
-      timeoutMs: 5000
-    }
+      timeoutMs: 5000,
+    },
   },
   injectionPoint: {
     component: 'qdrant-adapter',
     layer: 'database',
-    target: 'connection-pool'
+    target: 'connection-pool',
   },
   verification: {
     gracefulDegradation: {
@@ -119,9 +125,9 @@ const scenario: ChaosScenario = {
           errorType: 'service_unavailable',
           message: 'Vector search temporarily unavailable',
           expectedRate: 5,
-          retryable: true
-        }
-      ]
+          retryable: true,
+        },
+      ],
     },
     alerting: {
       expectedAlerts: [
@@ -129,18 +135,18 @@ const scenario: ChaosScenario = {
           name: 'QdrantConnectionFailure',
           severity: 'critical',
           source: 'qdrant-monitor',
-          conditions: ['connection_failed', 'qdrant_unreachable']
-        }
+          conditions: ['connection_failed', 'qdrant_unreachable'],
+        },
       ],
       maxAlertDelay: 30000,
       alertEscalation: true,
-      expectedSeverity: ['critical', 'warning']
+      expectedSeverity: ['critical', 'warning'],
     },
     recovery: {
       maxRecoveryTime: 60000,
       expectedFinalState: 'healthy',
       dataConsistency: true,
-      autoRecovery: true
+      autoRecovery: true,
     },
     performance: {
       maxResponseTimeIncrease: 200, // 200% increase allowed
@@ -150,10 +156,10 @@ const scenario: ChaosScenario = {
         maxCPUUsage: 80,
         maxMemoryUsage: 85,
         maxDiskIO: 70,
-        maxNetworkIO: 75
-      }
-    }
-  }
+        maxNetworkIO: 75,
+      },
+    },
+  },
 };
 
 // Define execution context
@@ -168,23 +174,23 @@ const context: ExperimentExecutionContext = {
       {
         trigger: 'error_rate > 10%',
         action: 'abort_experiment',
-        threshold: 10
-      }
-    ]
+        threshold: 10,
+      },
+    ],
   },
   monitoring: {
     metricsCollectionInterval: 2000,
     alertingEnabled: true,
     loggingLevel: 'info',
-    tracingEnabled: true
+    tracingEnabled: true,
   },
   safety: {
     emergencyShutdown: false,
     maxAllowedDowntime: 30000,
     maxAllowedErrorRate: 15,
     healthCheckEndpoints: ['/health', '/api/health'],
-    rollbackProcedures: ['rollback-chaos', 'restore-services']
-  }
+    rollbackProcedures: ['rollback-chaos', 'restore-services'],
+  },
 };
 
 // Execute experiment
@@ -196,7 +202,6 @@ try {
 
   // Generate detailed report
   await generateExperimentReport(report);
-
 } catch (error) {
   console.error('Experiment failed:', error);
 }
@@ -216,53 +221,59 @@ const networkLatencyScenario: ChaosScenario = {
     rampUpTime: 30,
     parameters: {
       latency: 2000, // 2 second delay
-      jitter: 500,  // ±500ms jitter
-      affectedHosts: ['qdrant-cluster']
-    }
+      jitter: 500, // ±500ms jitter
+      affectedHosts: ['qdrant-cluster'],
+    },
   },
   injectionPoint: {
     component: 'network-layer',
     layer: 'network',
-    target: 'outbound-connections'
+    target: 'outbound-connections',
   },
   verification: {
     // Verification criteria...
-  }
+  },
 };
 ```
 
 ## Experiment Phases
 
 ### 1. Setup Phase
+
 - Safety validation
 - Environment initialization
 - Baseline metrics collection
 - Monitoring system setup
 
 ### 2. Steady State Phase
+
 - System stability verification
 - Baseline establishment
 - Pre-chaos metrics collection
 
 ### 3. Chaos Injection Phase
+
 - Chaos scenario execution
 - Real-time monitoring
 - Alert verification
 - Degradation tracking
 
 ### 4. Verification Phase
+
 - Behavior validation
 - Metrics analysis
 - Alert verification
 - Performance impact assessment
 
 ### 5. Recovery Phase
+
 - Chaos rollback
 - Recovery monitoring
 - MTTR measurement
 - Data consistency verification
 
 ### 6. Cleanup Phase
+
 - Environment restoration
 - Resource cleanup
 - Report generation
@@ -270,18 +281,21 @@ const networkLatencyScenario: ChaosScenario = {
 ## Safety Mechanisms
 
 ### Blast Radius Control
+
 - Component isolation zones
 - Maximum affected components limits
 - User impact thresholds
 - Business impact assessments
 
 ### Automated Safeguards
+
 - Real-time health monitoring
 - Threshold-based aborts
 - Emergency shutdown procedures
 - Automatic rollback capabilities
 
 ### Manual Controls
+
 - Emergency stop functionality
 - Manual abort triggers
 - Override capabilities
@@ -290,6 +304,7 @@ const networkLatencyScenario: ChaosScenario = {
 ## Metrics and Measurements
 
 ### System Metrics
+
 - Response time (mean, p50, p95, p99, max)
 - Throughput (requests/sec, operations/sec)
 - Error rates (total, by type)
@@ -297,18 +312,21 @@ const networkLatencyScenario: ChaosScenario = {
 - Circuit breaker states
 
 ### Chaos Metrics
+
 - Injection effectiveness
 - System impact patterns
 - Degradation patterns
 - Alerting response times
 
 ### Recovery Metrics
+
 - Time to first recovery sign
 - Time to full recovery
 - Recovery pattern analysis
 - Data consistency verification
 
 ### MTTR Metrics
+
 - Mean Time To Detect (MTTD)
 - Mean Time To Respond (MTTR)
 - Mean Time To Resolve (MTTR)
@@ -317,24 +335,28 @@ const networkLatencyScenario: ChaosScenario = {
 ## Verification Criteria
 
 ### Graceful Degradation
+
 - Fallback activation verification
 - Service availability maintenance
 - Circuit breaker behavior validation
 - User-facing error handling
 
 ### Alert Verification
+
 - Alert triggering accuracy
 - Notification delivery verification
 - Escalation behavior validation
 - Alert timing verification
 
 ### Recovery Verification
+
 - Recovery time measurement
 - System state restoration
 - Data consistency validation
 - Automation effectiveness
 
 ### Performance Verification
+
 - Response time impact limits
 - Throughput degradation limits
 - Error rate thresholds
@@ -343,24 +365,28 @@ const networkLatencyScenario: ChaosScenario = {
 ## Best Practices
 
 ### Experiment Design
+
 1. **Start Small**: Begin with low-severity scenarios
 2. **Hypothesis-Driven**: Always have clear hypotheses
 3. **Gradual Escalation**: Increase complexity over time
 4. **Document Everything**: Maintain detailed experiment logs
 
 ### Safety First
+
 1. **Environment Separation**: Never test in production without approval
 2. **Blast Radius Control**: Limit impact scope
 3. **Monitoring Coverage**: Ensure comprehensive monitoring
 4. **Emergency Preparedness**: Have rollback procedures ready
 
 ### Measurement Focus
+
 1. **Baseline Establishment**: Always establish steady-state baseline
 2. **Comprehensive Metrics**: Collect multiple metric types
 3. **Automated Analysis**: Use automated verification where possible
 4. **Manual Review**: Always review results manually
 
 ### Continuous Improvement
+
 1. **Learn from Failures**: Analyze both successful and failed experiments
 2. **Update Scenarios**: Refine scenarios based on results
 3. **Expand Coverage**: Gradually increase test coverage
@@ -369,19 +395,23 @@ const networkLatencyScenario: ChaosScenario = {
 ## Integration with Existing Systems
 
 ### Monitoring Integration
+
 The framework integrates with existing monitoring systems:
+
 - **Health Check Service**: Real-time health monitoring
 - **Circuit Breaker Monitor**: Circuit breaker state tracking
 - **Alert System Integration**: Alert triggering and notification
 - **Performance Monitoring**: Real-time performance metrics
 
 ### Qdrant Integration
+
 - **Connection Monitoring**: Qdrant connection health
 - **Operation Interception**: Chaos injection at database layer
 - **Metrics Collection**: Database-specific metrics
 - **Recovery Verification**: Data consistency checks
 
 ### Service Integration
+
 - **API Gateway**: Request/response interception
 - **Load Balancer**: Traffic routing manipulation
 - **Monitoring Services**: Metrics collection and analysis
@@ -422,8 +452,8 @@ const context: ExperimentExecutionContext = {
     metricsCollectionInterval: 1000,
     alertingEnabled: true,
     loggingLevel: 'debug',
-    tracingEnabled: true
-  }
+    tracingEnabled: true,
+  },
 };
 ```
 
@@ -432,6 +462,7 @@ const context: ExperimentExecutionContext = {
 ### ChaosTestingFramework
 
 #### Methods
+
 - `executeExperiment(config, scenario, context)`: Execute chaos experiment
 - `getStatus()`: Get framework status
 - `emergencyStop(reason)`: Emergency stop all experiments
@@ -439,20 +470,25 @@ const context: ExperimentExecutionContext = {
 ### Key Interfaces
 
 #### ChaosExperimentConfig
+
 Experiment configuration including safety checks, duration, and blast radius.
 
 #### ChaosScenario
+
 Chaos scenario definition with type, configuration, and verification criteria.
 
 #### ExperimentExecutionContext
+
 Execution context including environment, safety settings, and monitoring configuration.
 
 #### ExperimentReport
+
 Comprehensive experiment results with phases, metrics, and recommendations.
 
 ## Example Experiment Reports
 
 ### Successful Experiment
+
 ```json
 {
   "experimentId": "qdrant-failure-test-001",
@@ -476,6 +512,7 @@ Comprehensive experiment results with phases, metrics, and recommendations.
 ```
 
 ### Failed Experiment
+
 ```json
 {
   "experimentId": "resource-exhaustion-test-002",
@@ -512,6 +549,7 @@ When adding new chaos scenarios or verification capabilities:
 ## Support
 
 For issues, questions, or contributions:
+
 - Review the existing documentation
 - Check experiment logs and metrics
 - Contact the chaos testing team

@@ -24,7 +24,7 @@ class SemanticFeaturesValidator extends EventEmitter {
       search: { passed: 0, failed: 0, details: [] },
       ttl: { passed: 0, failed: 0, details: [] },
       knowledgeGraph: { passed: 0, failed: 0, details: [] },
-      performance: { passed: 0, failed: 0, details: [] }
+      performance: { passed: 0, failed: 0, details: [] },
     };
   }
 
@@ -32,7 +32,7 @@ class SemanticFeaturesValidator extends EventEmitter {
     return new Promise((resolve, reject) => {
       console.log('🚀 Starting Cortex Memory MCP Server...');
       this.serverProcess = spawn('node', ['./dist/index.js'], {
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let serverReady = false;
@@ -69,7 +69,7 @@ class SemanticFeaturesValidator extends EventEmitter {
     if (this.serverProcess) {
       console.log('🛑 Stopping server...');
       this.serverProcess.kill('SIGTERM');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       this.serverProcess.kill('SIGKILL');
       this.serverProcess = null;
     }
@@ -86,7 +86,7 @@ class SemanticFeaturesValidator extends EventEmitter {
         this.testResults[result.category].details.push({
           test: testName,
           status: 'PASSED',
-          details: result.details
+          details: result.details,
         });
       } else {
         console.log(`❌ ${testName} - FAILED: ${result.error}`);
@@ -94,7 +94,7 @@ class SemanticFeaturesValidator extends EventEmitter {
         this.testResults[result.category].details.push({
           test: testName,
           status: 'FAILED',
-          error: result.error
+          error: result.error,
         });
       }
 
@@ -114,19 +114,19 @@ class SemanticFeaturesValidator extends EventEmitter {
           name: 'Semantic Test Entity',
           description: 'Test entity for semantic validation',
           type: 'test_component',
-          version: '1.0.0'
-        }
+          version: '1.0.0',
+        },
       };
 
       try {
         // For now, simulate the test since MCP connection is complex
         // In a real implementation, this would connect to the MCP server
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         return {
           success: true,
           category: 'deduplication',
-          details: 'Basic storage functionality working'
+          details: 'Basic storage functionality working',
         };
       } catch (error) {
         return { success: false, error: error.message, category: 'deduplication' };
@@ -141,21 +141,21 @@ class SemanticFeaturesValidator extends EventEmitter {
         { mode: 'prefer_existing', description: 'Prefer existing items' },
         { mode: 'prefer_newer', description: 'Prefer newer items' },
         { mode: 'combine', description: 'Combine duplicate data' },
-        { mode: 'intelligent', description: 'Intelligent merging' }
+        { mode: 'intelligent', description: 'Intelligent merging' },
       ];
 
       const results = [];
 
       for (const testCase of testCases) {
         // Simulate testing each deduplication mode
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         results.push(`${testCase.mode}: ✓`);
       }
 
       return {
         success: true,
         category: 'deduplication',
-        details: `All deduplication modes tested: ${results.join(', ')}`
+        details: `All deduplication modes tested: ${results.join(', ')}`,
       };
     });
   }
@@ -166,22 +166,22 @@ class SemanticFeaturesValidator extends EventEmitter {
         {
           item1: { description: 'A web server for hosting applications' },
           item2: { description: 'An application hosting server for web services' },
-          expectedSimilarity: 'high'
+          expectedSimilarity: 'high',
         },
         {
           item1: { description: 'Database connection pool manager' },
           item2: { description: 'UI component rendering system' },
-          expectedSimilarity: 'low'
-        }
+          expectedSimilarity: 'low',
+        },
       ];
 
       // Simulate semantic similarity testing
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       return {
         success: true,
         category: 'deduplication',
-        details: `Semantic similarity detection working with 85% threshold. Tested ${testPairs.length} pairs.`
+        details: `Semantic similarity detection working with 85% threshold. Tested ${testPairs.length} pairs.`,
       };
     });
   }
@@ -193,14 +193,14 @@ class SemanticFeaturesValidator extends EventEmitter {
 
       for (const strategy of strategies) {
         // Simulate testing each search strategy
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         results.push(`${strategy}: ✓`);
       }
 
       return {
         success: true,
         category: 'search',
-        details: `All search strategies tested: ${results.join(', ')}`
+        details: `All search strategies tested: ${results.join(', ')}`,
       };
     });
   }
@@ -213,14 +213,14 @@ class SemanticFeaturesValidator extends EventEmitter {
 
       for (const policy of [...policies, ...businessPolicies]) {
         // Simulate testing each TTL policy
-        await new Promise(resolve => setTimeout(resolve, 30));
+        await new Promise((resolve) => setTimeout(resolve, 30));
         results.push(`${policy}: ✓`);
       }
 
       return {
         success: true,
         category: 'ttl',
-        details: `All TTL policies tested: ${results.join(', ')}`
+        details: `All TTL policies tested: ${results.join(', ')}`,
       };
     });
   }
@@ -232,19 +232,19 @@ class SemanticFeaturesValidator extends EventEmitter {
         'Relationship linking',
         'Scope filtering',
         'Graph traversal',
-        'Metadata enrichment'
+        'Metadata enrichment',
       ];
 
       const results = [];
       for (const feature of features) {
-        await new Promise(resolve => setTimeout(resolve, 40));
+        await new Promise((resolve) => setTimeout(resolve, 40));
         results.push(`${feature}: ✓`);
       }
 
       return {
         success: true,
         category: 'knowledgeGraph',
-        details: `Knowledge graph features tested: ${results.join(', ')}`
+        details: `Knowledge graph features tested: ${results.join(', ')}`,
       };
     });
   }
@@ -254,14 +254,14 @@ class SemanticFeaturesValidator extends EventEmitter {
       const startTime = Date.now();
 
       // Simulate various performance tests
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const duration = Date.now() - startTime;
 
       return {
         success: true,
         category: 'performance',
-        details: `Performance test completed in ${duration}ms. Response times within acceptable limits.`
+        details: `Performance test completed in ${duration}ms. Response times within acceptable limits.`,
       };
     });
   }
@@ -279,7 +279,7 @@ class SemanticFeaturesValidator extends EventEmitter {
       { name: 'Search Strategies', key: 'search' },
       { name: 'TTL Policy System', key: 'ttl' },
       { name: 'Knowledge Graph', key: 'knowledgeGraph' },
-      { name: 'Performance Metrics', key: 'performance' }
+      { name: 'Performance Metrics', key: 'performance' },
     ];
 
     for (const category of categories) {
@@ -293,7 +293,7 @@ class SemanticFeaturesValidator extends EventEmitter {
 
       if (results.details.length > 0) {
         console.log('   📋 Details:');
-        results.details.forEach(detail => {
+        results.details.forEach((detail) => {
           const icon = detail.status === 'PASSED' ? '✅' : '❌';
           console.log(`      ${icon} ${detail.test}: ${detail.details || detail.error}`);
         });
@@ -305,7 +305,9 @@ class SemanticFeaturesValidator extends EventEmitter {
     console.log(`   Total Tests: ${totalPassed + totalFailed}`);
     console.log(`   ✅ Passed: ${totalPassed}`);
     console.log(`   ❌ Failed: ${totalFailed}`);
-    console.log(`   📊 Success Rate: ${((totalPassed / (totalPassed + totalFailed)) * 100).toFixed(1)}%`);
+    console.log(
+      `   📊 Success Rate: ${((totalPassed / (totalPassed + totalFailed)) * 100).toFixed(1)}%`
+    );
 
     if (totalFailed === 0) {
       console.log('\n🎉 ALL SEMANTIC FEATURES VALIDATED SUCCESSFULLY!');
@@ -325,7 +327,7 @@ class SemanticFeaturesValidator extends EventEmitter {
       totalPassed,
       totalFailed,
       successRate: (totalPassed / (totalPassed + totalFailed)) * 100,
-      categories: this.testResults
+      categories: this.testResults,
     };
   }
 
@@ -349,7 +351,6 @@ class SemanticFeaturesValidator extends EventEmitter {
       const report = await this.generateReport();
 
       return report;
-
     } catch (error) {
       console.error('❌ Validation failed:', error.message);
       throw error;
@@ -362,7 +363,8 @@ class SemanticFeaturesValidator extends EventEmitter {
 // Run validation if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const validator = new SemanticFeaturesValidator();
-  validator.runValidation()
+  validator
+    .runValidation()
     .then((report) => {
       console.log('\n🏁 Semantic Features Validation completed');
       process.exit(report.totalFailed === 0 ? 0 : 1);

@@ -26,7 +26,11 @@ export function createResponseMeta(overrides: any = {}) {
   };
 }
 
-export function createBaseResponse(operation: string, isError: boolean = false, overrides: any = {}) {
+export function createBaseResponse(
+  operation: string,
+  isError: boolean = false,
+  overrides: any = {}
+) {
   return {
     content: [],
     _meta: createResponseMeta({ operation, ...overrides }),
@@ -60,8 +64,8 @@ export function createValidToolResponse(
       },
     ];
 
-    baseResponse._meta = {
-      ...baseResponse._meta,
+    baseResponse['_']meta = {
+      ...baseResponse['_']meta,
       itemsProcessed: options.itemsProcessed || 2,
       duplicatesFound: options.duplicatesFound || 0,
       deduplicationEnabled: options.deduplicationEnabled !== false,
@@ -87,8 +91,8 @@ export function createValidToolResponse(
       },
     ];
 
-    baseResponse._meta = {
-      ...baseResponse._meta,
+    baseResponse['_']meta = {
+      ...baseResponse['_']meta,
       resultCount: options.resultCount || 5,
       queryInfo: {
         originalQuery: options.query || 'test query',
@@ -99,7 +103,7 @@ export function createValidToolResponse(
     };
 
     if (options.includeAnalytics) {
-      baseResponse._meta.analytics = {
+      baseResponse['_']meta.analytics = {
         searchDuration: Math.floor(Math.random() * 500) + 50,
         totalScanned: Math.floor(Math.random() * 1000) + 100,
         similarityThreshold: 0.7,
@@ -248,7 +252,7 @@ export function createBatchResponse(
 export function createPerformanceResponse(overrides: any = {}) {
   const baseResponse = createValidToolResponse('memory_store', overrides);
 
-  baseResponse._meta.performance = {
+  baseResponse['_']meta.performance = {
     duration: Math.floor(Math.random() * 2000) + 500,
     memoryUsage: {
       used: Math.floor(Math.random() * 100 * 1024 * 1024) + 10 * 1024 * 1024, // 10-110MB
@@ -414,7 +418,8 @@ export function createRateLimitResponse() {
 // ============================================================================
 
 export function createSpecialCharResponse() {
-  const specialText = 'Test with special characters: 🧠 Cortex Memory, 中文测试, ñáéíóú, العربية, हिन्दी';
+  const specialText =
+    'Test with special characters: 🧠 Cortex Memory, 中文测试, ñáéíóú, العربية, हिन्दी';
 
   return {
     content: [

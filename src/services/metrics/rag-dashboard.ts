@@ -15,7 +15,7 @@
  * @module services/metrics/rag-dashboard
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { sliSloMonitorService, type RAGStatus, type SLOAlert } from './sli-slo-monitor.js';
 import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
 import { performanceTrendingService, type TrendAnalysis } from './performance-trending.js';

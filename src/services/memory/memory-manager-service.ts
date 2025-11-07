@@ -10,7 +10,7 @@
  * - Automatic cache management and eviction
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { EventEmitter } from 'node:events';
 
 /**

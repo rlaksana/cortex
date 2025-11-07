@@ -54,24 +54,24 @@ describe('Real Measurement Validation', () => {
 
       expect(chunkedItems.length).toBeGreaterThan(1);
       expect(chunkedItems[0].id).toBeDefined();
-      expect(chunkedItems[0].data.is_chunk).toBe(false);
-      expect(chunkedItems[0].data.total_chunks).toBeGreaterThan(1);
+      expect(chunkedItems[0].data['is_chunk']).toBe(false);
+      expect(chunkedItems[0].data['total_chunks']).toBeGreaterThan(1);
 
       // Verify child chunks
       const childChunks = chunkedItems.slice(1);
       expect(childChunks.length).toBeGreaterThan(0);
       childChunks.forEach((chunk, index) => {
-        expect(chunk.data.is_chunk).toBe(true);
-        expect(chunk.data.parent_id).toBe(chunkedItems[0].id);
-        expect(chunk.data.chunk_index).toBe(index);
-        expect(chunk.data.total_chunks).toBe(chunkedItems[0].data.total_chunks);
+        expect(chunk['data.is_chunk']).toBe(true);
+        expect(chunk['data.parent_id']).toBe(chunkedItems[0].id);
+        expect(chunk['data.chunk_index']).toBe(index);
+        expect(chunk['data.total_chunks']).toBe(chunkedItems[0].data['total_chunks']);
       });
 
       // Log telemetry
       telemetry.logStoreAttempt(
         true,
         largeContent.length,
-        chunkedItems.reduce((sum, item) => sum + (item.data.content?.length || 0), 0),
+        chunkedItems.reduce((sum, item) => sum + (item['data.content']?.length || 0), 0),
         'observation',
         'test-project:main'
       );
@@ -92,7 +92,7 @@ describe('Real Measurement Validation', () => {
       });
 
       expect(chunkedItems.length).toBe(1);
-      expect(chunkedItems[0].data.is_chunk).toBe(false);
+      expect(chunkedItems[0].data['is_chunk']).toBe(false);
     });
   });
 
@@ -107,10 +107,10 @@ describe('Real Measurement Validation', () => {
 
       const enhanced = languageService.enhanceItemWithLanguage(englishItem);
 
-      expect(enhanced.data.detected_lang).toBe('en');
-      expect(enhanced.data.lang_confidence).toBeGreaterThan(0);
-      expect(enhanced.data.lang_english_ratio).toBeGreaterThan(0.8);
-      expect(enhanced.data.lang_indonesian_ratio).toBeLessThan(0.2);
+      expect(enhanced['data.detected_lang']).toBe('en');
+      expect(enhanced['data.lang_confidence']).toBeGreaterThan(0);
+      expect(enhanced['data.lang_english_ratio']).toBeGreaterThan(0.8);
+      expect(enhanced['data.lang_indonesian_ratio']).toBeLessThan(0.2);
     });
 
     it('should detect Indonesian content correctly', () => {
@@ -125,10 +125,10 @@ describe('Real Measurement Validation', () => {
 
       const enhanced = languageService.enhanceItemWithLanguage(indonesianItem);
 
-      expect(enhanced.data.detected_lang).toBe('id');
-      expect(enhanced.data.lang_confidence).toBeGreaterThan(0);
-      expect(enhanced.data.lang_indonesian_ratio).toBeGreaterThan(0.8);
-      expect(enhanced.data.lang_english_ratio).toBeLessThan(0.2);
+      expect(enhanced['data.detected_lang']).toBe('id');
+      expect(enhanced['data.lang_confidence']).toBeGreaterThan(0);
+      expect(enhanced['data.lang_indonesian_ratio']).toBeGreaterThan(0.8);
+      expect(enhanced['data.lang_english_ratio']).toBeLessThan(0.2);
     });
 
     it('should detect mixed language content', () => {
@@ -145,10 +145,10 @@ describe('Real Measurement Validation', () => {
 
       const enhanced = languageService.enhanceItemWithLanguage(mixedItem);
 
-      expect(['mixed', 'en', 'id']).toContain(enhanced.data.detected_lang);
-      expect(enhanced.data.lang_confidence).toBeGreaterThan(0);
-      expect(enhanced.data.lang_indonesian_ratio).toBeGreaterThan(0);
-      expect(enhanced.data.lang_english_ratio).toBeGreaterThan(0);
+      expect(['mixed', 'en', 'id']).toContain(enhanced['data.detected_lang']);
+      expect(enhanced['data.lang_confidence']).toBeGreaterThan(0);
+      expect(enhanced['data.lang_indonesian_ratio']).toBeGreaterThan(0);
+      expect(enhanced['data.lang_english_ratio']).toBeGreaterThan(0);
     });
 
     it('should preserve all original fields', () => {
@@ -166,11 +166,11 @@ describe('Real Measurement Validation', () => {
 
       expect(enhanced.id).toBe('test-id');
       expect(enhanced.kind).toBe('observation');
-      expect(enhanced.data.title).toBe('Test Title');
-      expect(enhanced.data.tags).toEqual(['tag1']);
+      expect(enhanced['data.title']).toBe('Test Title');
+      expect(enhanced['data.tags']).toEqual(['tag1']);
       expect(enhanced.metadata).toEqual({ source: 'test' });
       expect(enhanced.created_at).toBe('2025-01-31T04:30:00Z');
-      expect(enhanced.data.detected_lang).toBeDefined();
+      expect(enhanced['data.detected_lang']).toBeDefined();
     });
   });
 
@@ -233,8 +233,8 @@ describe('Real Measurement Validation', () => {
 
       const reconstructed = groupingService.reconstructGroupedContent(groupedResults[0]);
 
-      expect(reconstructed.parent_id).toBe('parent-1');
-      expect(reconstructed.total_chunks).toBe(3);
+      expect(reconstructed['parent_id']).toBe('parent-1');
+      expect(reconstructed['total_chunks']).toBe(3);
       expect(reconstructed.found_chunks).toBe(2);
       expect(reconstructed.completeness_ratio).toBe(2 / 3); // 2 out of 3 chunks found
       expect(reconstructed.content).toContain('First part of the document content');
@@ -363,8 +363,8 @@ describe('Real Measurement Validation', () => {
       const enhancedChunks = languageService.enhanceItemsWithLanguage(chunkedItems);
 
       enhancedChunks.forEach((chunk) => {
-        expect(chunk.data.detected_lang).toBeDefined();
-        expect(chunk.data.lang_confidence).toBeGreaterThan(0);
+        expect(chunk['data.detected_lang']).toBeDefined();
+        expect(chunk['data.lang_confidence']).toBeGreaterThan(0);
       });
 
       // Step 4: Simulate search results with chunked content
@@ -384,7 +384,7 @@ describe('Real Measurement Validation', () => {
         telemetry.logStoreAttempt(
           index === 0,
           largeContent.length,
-          chunk.data.content?.length || 0,
+          chunk['data.content']?.length || 0,
           chunk.kind,
           'integration-test:main'
         );

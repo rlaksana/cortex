@@ -113,18 +113,18 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
       expect(chunkedItems.length).toBeGreaterThan(1);
 
       // Find parent and chunks
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       expect(parentItem).toBeDefined();
       expect(childChunks.length).toBeGreaterThan(0);
-      expect(parentItem?.data.total_chunks).toBe(childChunks.length);
+      expect(parentItem?.data['total_chunks']).toBe(childChunks.length);
 
       // Step 4: Simulate search results (as would come from database)
       const searchResults = childChunks.map((chunk, _index) => ({
         id: chunk.id,
         kind: chunk.kind,
-        content: chunk.data.content,
+        content: chunk['data.content'],
         data: chunk.data,
         scope: chunk.scope,
         confidence_score: 0.8 + Math.random() * 0.2, // Random score between 0.8-1.0
@@ -136,7 +136,7 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
       const groupedResults = groupingService.groupResultsByParent(searchResults);
       expect(groupedResults.length).toBeGreaterThan(0);
 
-      const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
+      const groupedResult = groupedResults.find((g) => g['parent_id'] === parentItem!.id);
       expect(groupedResult).toBeDefined();
 
       // Step 6: Reconstruct content
@@ -151,7 +151,7 @@ ${'Additional technical content to ensure proper chunking: '.repeat(50)}
       expect(reconstructed.content).toContain('Performance Optimization');
 
       // Verify metadata
-      expect(reconstructed.total_chunks).toBe(childChunks.length);
+      expect(reconstructed['total_chunks']).toBe(childChunks.length);
       expect(reconstructed.found_chunks).toBe(childChunks.length);
       expect(reconstructed.completeness_ratio).toBe(1.0); // All chunks found
       expect(reconstructed.confidence_score).toBeGreaterThan(0);
@@ -211,8 +211,8 @@ ${'Additional project plan content to ensure proper chunking for testing partial
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
-      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Simulate finding only some chunks (not all)
       const partialChunks = childChunks.slice(0, Math.floor(childChunks.length * 0.7));
@@ -220,7 +220,7 @@ ${'Additional project plan content to ensure proper chunking for testing partial
       const searchResults = partialChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
-        content: chunk.data.content,
+        content: chunk['data.content'],
         data: chunk.data,
         scope: chunk.scope,
         confidence_score: 0.75 + Math.random() * 0.2,
@@ -230,7 +230,7 @@ ${'Additional project plan content to ensure proper chunking for testing partial
 
       // Group and reconstruct
       const groupedResults = groupingService.groupResultsByParent(searchResults);
-      const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
+      const groupedResult = groupedResults.find((g) => g['parent_id'] === parentItem!.id);
 
       if (!groupedResult) {
         // Skip reconstruction if no grouped result found
@@ -242,7 +242,7 @@ ${'Additional project plan content to ensure proper chunking for testing partial
 
       // Verify partial reconstruction
       expect(reconstructed.found_chunks).toBe(partialChunks.length);
-      expect(reconstructed.total_chunks).toBe(childChunks.length);
+      expect(reconstructed['total_chunks']).toBe(childChunks.length);
       expect(reconstructed.completeness_ratio).toBeLessThan(1.0);
       expect(reconstructed.completeness_ratio).toBeGreaterThan(0.5);
 
@@ -291,7 +291,7 @@ ${'Additional project plan content to ensure proper chunking for testing partial
       const searchResults = processedItems.map((item) => ({
         id: item.id,
         kind: item.kind,
-        content: item.data.content,
+        content: item['data.content'],
         data: item.data,
         scope: item.scope,
         confidence_score: 0.7 + Math.random() * 0.3,
@@ -310,11 +310,11 @@ ${'Additional project plan content to ensure proper chunking for testing partial
       expect(groupedItems.length).toBeGreaterThan(0);
 
       // Verify single items are preserved
-      const entityResult = singleItems.find((g) => g.parent_id === 'small-entity-001');
+      const entityResult = singleItems.find((g) => g['parent_id'] === 'small-entity-001');
       expect(entityResult).toBeDefined();
 
       // Verify grouped items are reconstructed
-      const sectionResult = groupedItems.find((g) => g.parent_id === 'large-section-001');
+      const sectionResult = groupedItems.find((g) => g['parent_id'] === 'large-section-001');
       expect(sectionResult).toBeDefined();
 
       const reconstructed = groupingService.reconstructGroupedContent(sectionResult!);
@@ -383,7 +383,7 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
 
       // Find parent and verify metadata preservation
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
       expect(parentItem).toBeDefined();
       expect(parentItem?.data.category).toBe('technical');
       expect(parentItem?.data.author).toBe('security-team');
@@ -391,22 +391,22 @@ ${'Additional technical specification content to ensure proper chunking: '.repea
       expect(parentItem?.metadata?.version).toBe('1.2.0');
 
       // Verify child chunks inherit important metadata
-      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
       expect(childChunks.length).toBeGreaterThan(0);
 
       childChunks.forEach((chunk) => {
-        expect(chunk.data.category).toBe('technical');
-        expect(chunk.data.author).toBe('security-team');
-        expect(chunk.data.parent_id).toBe(parentItem!.id);
-        expect(chunk.data.total_chunks).toBe(childChunks.length);
-        expect(chunk.data.is_chunk).toBe(true);
+        expect(chunk['data.category']).toBe('technical');
+        expect(chunk['data.author']).toBe('security-team');
+        expect(chunk['data.parent_id']).toBe(parentItem!.id);
+        expect(chunk['data.total_chunks']).toBe(childChunks.length);
+        expect(chunk['data.is_chunk']).toBe(true);
       });
 
       // Simulate search and reassembly
       const searchResults = childChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
-        content: chunk.data.content,
+        content: chunk['data.content'],
         data: chunk.data,
         scope: chunk.scope,
         confidence_score: 0.8,
@@ -479,13 +479,13 @@ ${'Additional quarterly report content and detailed analysis to ensure proper ch
 
       // Apply chunking
       const chunkedItems = await chunkingService.processItemsForStorage([knowledgeItem]);
-      const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
+      const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Simulate realistic search with varying confidence scores
       const searchResults = childChunks.map((chunk, _index) => ({
         id: chunk.id,
         kind: chunk.kind,
-        content: chunk.data.content,
+        content: chunk['data.content'],
         data: chunk.data,
         scope: chunk.scope,
         confidence_score: 0.9 - _index * 0.05, // Decreasing scores

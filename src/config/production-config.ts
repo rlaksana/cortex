@@ -13,7 +13,8 @@ import { ProductionEnvironmentValidator } from './production-validator.js';
 import { ProductionSecurityMiddleware } from '../middleware/production-security-middleware.js';
 import { HealthEndpointManager } from '../monitoring/health-endpoint.js';
 import { GracefulShutdownManager } from '../monitoring/graceful-shutdown.js';
-import { ProductionLogger } from '../monitoring/production-logger.js';
+import { SimpleLogger } from '../utils/logger-wrapper.js';
+import { ProductionLogger } from '@/utils/logger.js';
 
 export interface ProductionConfig {
   // Security configuration
@@ -76,14 +77,14 @@ export class ProductionConfigManager {
   private static instance: ProductionConfigManager;
   private config: ProductionConfig;
   private validator: ProductionEnvironmentValidator;
-  private logger: ProductionLogger;
+  private logger: SimpleLogger;
   private securityMiddleware: ProductionSecurityMiddleware | null = null;
   private healthEndpointManager: HealthEndpointManager | null = null;
   private gracefulShutdownManager: GracefulShutdownManager;
 
   constructor() {
     this.validator = new ProductionEnvironmentValidator();
-    this.logger = new ProductionLogger('production-config');
+    this.logger = ProductionLogger;
     this.gracefulShutdownManager = new GracefulShutdownManager();
 
     this.config = this.loadConfiguration();
@@ -282,7 +283,9 @@ export class ProductionConfigManager {
       timeout: 3000,
       critical: false,
       operation: async () => {
-        await this.logger.flush();
+        if (this.logger.flush) {
+          await this.logger.flush();
+        }
       },
     });
   }
@@ -345,7 +348,7 @@ export class ProductionConfigManager {
   /**
    * Get logger instance
    */
-  getLogger(): ProductionLogger {
+  getLogger(): SimpleLogger {
     return this.logger;
   }
 

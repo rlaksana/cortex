@@ -16,9 +16,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: [
-      'tests/contract/**/*.test.ts',
-    ],
+    include: ['tests/contract/**/*.test.ts'],
     exclude: [
       'tests/e2e/**',
       'tests/integration/**',
@@ -30,7 +28,7 @@ export default defineConfig({
       'dist/',
       'coverage/',
       '**/*.d.ts',
-      'scripts/**'
+      'scripts/**',
     ],
 
     // Contract test specific configuration
@@ -126,12 +124,6 @@ export default defineConfig({
 
   // Dependencies optimization
   optimizeDeps: {
-    include: [
-      'zod',
-      'ajv',
-      'ajv-formats',
-      '@modelcontextprotocol/sdk',
-      'uuid',
-    ],
+    include: ['zod', 'ajv', 'ajv-formats', '@modelcontextprotocol/sdk', 'uuid'],
   },
 });

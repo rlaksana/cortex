@@ -35,9 +35,9 @@ function convertTestConfigToScenario(testConfig: any): BenchmarkScenario {
       itemCount: testConfig.operationCount,
       averageItemSize: testConfig.parameters?.averageSize || 1024,
       sizeVariance: testConfig.parameters?.sizeVariance || 0.3,
-      useExisting: false
+      useExisting: false,
     },
-    parameters: testConfig.parameters
+    parameters: testConfig.parameters,
   };
 
   return {
@@ -47,14 +47,17 @@ function convertTestConfigToScenario(testConfig: any): BenchmarkScenario {
       return await executePerformanceScenario(testConfig, config);
     },
     config: loadTestConfig,
-    tags: testConfig.categories
+    tags: testConfig.categories,
   };
 }
 
 /**
  * Execute performance scenario based on test type
  */
-async function executePerformanceScenario(testConfig: any, loadConfig: LoadTestConfig): Promise<any> {
+async function executePerformanceScenario(
+  testConfig: any,
+  loadConfig: LoadTestConfig
+): Promise<any> {
   const startTime = performance.now();
   const results = {
     operations: [],
@@ -63,8 +66,8 @@ async function executePerformanceScenario(testConfig: any, loadConfig: LoadTestC
     metrics: {
       latencies: { p50: 0, p95: 0, p99: 0, min: 0, max: 0 },
       throughput: 0,
-      errorRate: 0
-    }
+      errorRate: 0,
+    },
   };
 
   // Determine scenario type and execute accordingly
@@ -151,7 +154,7 @@ async function executeKnowledgeStorageScenario(
       }
 
       // Simulate async operation
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
 
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -163,9 +166,8 @@ async function executeKnowledgeStorageScenario(
         duration,
         success: true,
         size,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
     } catch (error) {
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -176,7 +178,7 @@ async function executeKnowledgeStorageScenario(
         duration,
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       results.errors++;
@@ -184,7 +186,7 @@ async function executeKnowledgeStorageScenario(
 
     // Add operation delay if specified
     if (loadConfig.operationDelay && loadConfig.operationDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, loadConfig.operationDelay));
+      await new Promise((resolve) => setTimeout(resolve, loadConfig.operationDelay));
     }
   }
 }
@@ -209,11 +211,12 @@ async function executeSearchScenario(
 
       // Simulate search processing time based on query type and complexity
       let processingTime: number;
-      const complexityMultiplier = {
-        low: 0.5,
-        medium: 1.0,
-        high: 2.0
-      }[searchComplexity] || 1.0;
+      const complexityMultiplier =
+        {
+          low: 0.5,
+          medium: 1.0,
+          high: 2.0,
+        }[searchComplexity] || 1.0;
 
       switch (queryType) {
         case 'semantic':
@@ -230,7 +233,7 @@ async function executeSearchScenario(
       }
 
       // Simulate async search operation
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
 
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -243,9 +246,8 @@ async function executeSearchScenario(
         success: true,
         resultSize,
         complexity: searchComplexity,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
     } catch (error) {
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -256,7 +258,7 @@ async function executeSearchScenario(
         duration,
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       results.errors++;
@@ -264,7 +266,7 @@ async function executeSearchScenario(
 
     // Add operation delay if specified
     if (loadConfig.operationDelay && loadConfig.operationDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, loadConfig.operationDelay));
+      await new Promise((resolve) => setTimeout(resolve, loadConfig.operationDelay));
     }
   }
 }
@@ -312,7 +314,7 @@ async function executeCircuitBreakerScenario(
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
 
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -324,9 +326,8 @@ async function executeCircuitBreakerScenario(
         success: true,
         circuitState,
         failureCount,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
     } catch (error) {
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -339,7 +340,7 @@ async function executeCircuitBreakerScenario(
         error: error instanceof Error ? error.message : String(error),
         circuitState,
         failureCount,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       results.errors++;
@@ -347,7 +348,7 @@ async function executeCircuitBreakerScenario(
 
     // Add operation delay if specified
     if (loadConfig.operationDelay && loadConfig.operationDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, loadConfig.operationDelay));
+      await new Promise((resolve) => setTimeout(resolve, loadConfig.operationDelay));
     }
   }
 }
@@ -388,7 +389,7 @@ async function executeHealthCheckScenario(
           processingTime = 10 + Math.random() * 15;
       }
 
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
 
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -399,9 +400,8 @@ async function executeHealthCheckScenario(
         subType: checkType,
         duration,
         success: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
     } catch (error) {
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -412,7 +412,7 @@ async function executeHealthCheckScenario(
         duration,
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       results.errors++;
@@ -420,7 +420,7 @@ async function executeHealthCheckScenario(
 
     // Add check interval if specified
     if (checkInterval > 0) {
-      await new Promise(resolve => setTimeout(resolve, checkInterval));
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
     }
   }
 }
@@ -439,7 +439,7 @@ async function executeGenericScenario(
     try {
       // Generic operation simulation
       const processingTime = 10 + Math.random() * 30;
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
 
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -449,9 +449,8 @@ async function executeGenericScenario(
         type: 'generic',
         duration,
         success: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-
     } catch (error) {
       const operationEnd = performance.now();
       const duration = operationEnd - operationStart;
@@ -462,7 +461,7 @@ async function executeGenericScenario(
         duration,
         success: false,
         error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       results.errors++;
@@ -470,7 +469,7 @@ async function executeGenericScenario(
 
     // Add operation delay if specified
     if (loadConfig.operationDelay && loadConfig.operationDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, loadConfig.operationDelay));
+      await new Promise((resolve) => setTimeout(resolve, loadConfig.operationDelay));
     }
   }
 }
@@ -480,7 +479,9 @@ async function executeGenericScenario(
  */
 function calculateScenarioMetrics(results: any): void {
   const successfulOps = results.operations.filter((op: any) => op.success);
-  const durations = successfulOps.map((op: any) => op.duration).sort((a: number, b: number) => a - b);
+  const durations = successfulOps
+    .map((op: any) => op.duration)
+    .sort((a: number, b: number) => a - b);
 
   if (durations.length > 0) {
     // Calculate percentiles
@@ -517,9 +518,7 @@ function percentile(sortedArray: number[], p: number): number {
  */
 export function getPerformanceScenariosByCategory(category: string): BenchmarkScenario[] {
   const allScenarios = createPerformanceLoadScenarios();
-  return allScenarios.filter(scenario =>
-    scenario.tags?.includes(category)
-  );
+  return allScenarios.filter((scenario) => scenario.tags?.includes(category));
 }
 
 /**
@@ -527,9 +526,7 @@ export function getPerformanceScenariosByCategory(category: string): BenchmarkSc
  */
 export function getCriticalPerformanceScenarios(): BenchmarkScenario[] {
   const allScenarios = createPerformanceLoadScenarios();
-  return allScenarios.filter(scenario =>
-    scenario.tags?.includes('critical')
-  );
+  return allScenarios.filter((scenario) => scenario.tags?.includes('critical'));
 }
 
 /**
@@ -538,8 +535,8 @@ export function getCriticalPerformanceScenarios(): BenchmarkScenario[] {
 export function getPerformanceScenariosByName(pattern: string): BenchmarkScenario[] {
   const allScenarios = createPerformanceLoadScenarios();
   const regex = new RegExp(pattern, 'i');
-  return allScenarios.filter(scenario =>
-    regex.test(scenario.name) || regex.test(scenario.description)
+  return allScenarios.filter(
+    (scenario) => regex.test(scenario.name) || regex.test(scenario.description)
   );
 }
 

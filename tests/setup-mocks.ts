@@ -13,7 +13,7 @@ import {
 } from './utils/mock-templates';
 
 // Set additional test environment variables
-process.env.MOCK_EXTERNAL_SERVICES = 'true';
+process.env['MOCK_EXTERNAL_SERVICES'] = 'true';
 
 // Enhance global test utils with mock templates
 global.testUtils = {

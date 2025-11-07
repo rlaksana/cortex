@@ -60,7 +60,6 @@ Generated on: ${new Date().toISOString().split('T')[0]}
 
     console.log('✅ Documentation index generated successfully');
     console.log('📍 Location: docs/INDEX.md');
-
   } catch (error) {
     console.error('❌ Error generating documentation index:', error.message);
     process.exit(1);

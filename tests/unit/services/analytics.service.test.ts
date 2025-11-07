@@ -871,9 +871,9 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
       expect(report.metadata).toBeDefined();
 
       // Verify metadata structure
-      expect(report.metadata.totalDataPoints).toBeGreaterThan(0);
-      expect(report.metadata.processingTimeMs).toBeGreaterThan(0);
-      expect(typeof report.metadata.cacheHit).toBe('boolean');
+      expect(report.metadata['totalDataPoints']).toBeGreaterThan(0);
+      expect(report.metadata['processingTimeMs']).toBeGreaterThan(0);
+      expect(typeof report.metadata['cacheHit']).toBe('boolean');
     });
 
     it('should generate different types of analytics reports', async () => {
@@ -989,8 +989,8 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
       expect(report1.id).toBe(report2.id);
       expect(report1.data).toEqual(report2.data);
-      expect(report1.metadata.cacheHit).toBe(false); // First call
-      expect(report2.metadata.cacheHit).toBe(true); // Second call
+      expect(report1.metadata['cacheHit']).toBe(false); // First call
+      expect(report2.metadata['cacheHit']).toBe(true); // Second call
     });
 
     it('should handle complex report queries with aggregations', async () => {
@@ -1023,7 +1023,7 @@ describe('AnalyticsService - Comprehensive Analytics Functionality', () => {
 
       expect(report.data).toBeDefined();
       expect(report.visualizations.length).toBeGreaterThan(0);
-      expect(report.metadata.totalDataPoints).toBeLessThanOrEqual(1000);
+      expect(report.metadata['totalDataPoints']).toBeLessThanOrEqual(1000);
     });
   });
 

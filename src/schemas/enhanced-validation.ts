@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import * as crypto from 'node:crypto';
+import * as crypto from 'crypto';
 import {
   ReleaseNoteDataSchema,
   DDLDataSchema,

@@ -55,6 +55,7 @@ Cortex Memory MCP Server v2.0.0 is an AI-optimized knowledge management system t
 ### **🎯 Production-Ready Features (P0-P4 Complete)**
 
 **✅ Core Infrastructure:**
+
 - 🧠 **Advanced Memory Storage** - Intelligent storage with 5 merge strategies and TTL management
 - 🔍 **Multi-Strategy Search** - Fast/auto/deep modes with graph expansion and degradation handling
 - 📄 **Content Chunking** - Semantic chunking for >8k docs with 99.5% reassembly accuracy
@@ -86,6 +87,7 @@ Cortex Memory MCP Server v2.0.0 is an AI-optimized knowledge management system t
    - Export capabilities for external monitoring systems
 
 **📈 Performance & Quality Metrics:**
+
 - **Performance Target**: N=100 operations in <1 second ✅ ACHIEVED
 - **Quality Gates**: All 5 stages passing (typecheck → lint → unit → integration → perf-smoke)
 - **Test Coverage**: 90%+ average across all implemented services
@@ -95,15 +97,18 @@ Cortex Memory MCP Server v2.0.0 is an AI-optimized knowledge management system t
 ## 🚀 **Getting Started (v2.0)**
 
 ### **Prerequisites**
+
 - Node.js 20+
 - Qdrant server running (default: http://localhost:6333)
 
 ### **Installation**
+
 ```bash
 npm install cortex-memory-mcp
 ```
 
 ### **MCP Configuration**
+
 ```toml
 [mcp_servers.cortex]
 command = "cortex"
@@ -112,36 +117,42 @@ env = {}
 ```
 
 ### **AI Agent Quick Start**
+
 ```javascript
 // 1. Store knowledge
 await call_tool('memory_store', {
-  items: [{
-    kind: 'observation',
-    content: 'User prefers TypeScript over JavaScript',
-    scope: { project: 'my-app' }
-  }]
-})
+  items: [
+    {
+      kind: 'observation',
+      content: 'User prefers TypeScript over JavaScript',
+      scope: { project: 'my-app' },
+    },
+  ],
+});
 
 // 2. Search knowledge
 await call_tool('memory_find', {
   query: 'TypeScript preferences',
-  mode: 'auto',  // fast, auto, deep
-  limit: 5
-})
+  mode: 'auto', // fast, auto, deep
+  limit: 5,
+});
 
 // 3. System health check
-await call_tool('system_status', { operation: 'health' })
+await call_tool('system_status', { operation: 'health' });
 ```
 
 ## 🔍 **Verification & Quality Gates**
 
 ### **Production Readiness Check**
+
 Run the verification script to check system status:
+
 ```bash
 npm run verify
 ```
 
 **Current Status Checks (✅ Pass / ❌ Fail):**
+
 - ✅ TypeScript compilation
 - ✅ ESLint linting
 - ✅ Code formatting
@@ -150,6 +161,7 @@ npm run verify
 - ✅ Package scripts configured
 
 ### **Quick Development Commands**
+
 ```bash
 # Core verification (recommended before commit)
 npm run verify
@@ -168,6 +180,7 @@ npm run test:unit     # Unit tests only
 ## 🎯 **What's Next (P5-P6 Remaining Tasks)**
 
 ### **📝 P5: Documentation & Schema (2-3 days estimated)**
+
 **Status:** ⏸️ Pending (0% Complete)
 
 - **Schema Updates**: MCP tool schemas for merge modes/strategy/expand/TTL parameters
@@ -176,6 +189,7 @@ npm run test:unit     # Unit tests only
 - **CHANGELOG Entries**: Documentation of all new features and improvements
 
 ### **🤖 P6: Advanced AI Features (5-7 days estimated)**
+
 **Status:** ⏸️ Pending (0% Complete)
 
 - **AI Insights Generation**: Optional `insight=true` parameter with small insights[] generation
@@ -197,38 +211,40 @@ npm run test:unit     # Unit tests only
 ## 📊 **Production Implementation Status**
 
 ### **Knowledge Types (100% Complete)**
+
 All 16 knowledge types are fully implemented with comprehensive validation, business rules, and production-ready schemas.
 
-| Knowledge Type   | Status | Production Features |
-| ---------------- | ------ | ------------------- |
-| **entity**       | ✅ **Complete** | Full validation + schema + business rules |
-| **relation**     | ✅ **Complete** | Full validation + schema + business rules |
-| **observation**  | ✅ **Complete** | Full validation + schema + business rules |
-| **section**      | ✅ **Complete** | Full validation + schema + business rules |
-| **runbook**      | ✅ **Complete** | Full validation + schema + business rules |
-| **change**       | ✅ **Complete** | Full validation + schema + business rules |
-| **issue**        | ✅ **Complete** | Full validation + schema + business rules |
+| Knowledge Type   | Status          | Production Features                                       |
+| ---------------- | --------------- | --------------------------------------------------------- |
+| **entity**       | ✅ **Complete** | Full validation + schema + business rules                 |
+| **relation**     | ✅ **Complete** | Full validation + schema + business rules                 |
+| **observation**  | ✅ **Complete** | Full validation + schema + business rules                 |
+| **section**      | ✅ **Complete** | Full validation + schema + business rules                 |
+| **runbook**      | ✅ **Complete** | Full validation + schema + business rules                 |
+| **change**       | ✅ **Complete** | Full validation + schema + business rules                 |
+| **issue**        | ✅ **Complete** | Full validation + schema + business rules                 |
 | **decision**     | ✅ **Complete** | Full validation + ADR implementation + immutability rules |
-| **todo**         | ✅ **Complete** | Full validation + task management + status transitions |
-| **release_note** | ✅ **Complete** | Full validation + schema + business rules |
-| **ddl**          | ✅ **Complete** | Full validation + schema + business rules |
-| **pr_context**   | ✅ **Complete** | Full validation + schema + business rules |
-| **incident**     | ✅ **Complete** | Full validation + schema + business rules |
-| **release**      | ✅ **Complete** | Full validation + schema + business rules |
-| **risk**         | ✅ **Complete** | Full validation + schema + business rules |
-| **assumption**   | ✅ **Complete** | Full validation + schema + business rules |
+| **todo**         | ✅ **Complete** | Full validation + task management + status transitions    |
+| **release_note** | ✅ **Complete** | Full validation + schema + business rules                 |
+| **ddl**          | ✅ **Complete** | Full validation + schema + business rules                 |
+| **pr_context**   | ✅ **Complete** | Full validation + schema + business rules                 |
+| **incident**     | ✅ **Complete** | Full validation + schema + business rules                 |
+| **release**      | ✅ **Complete** | Full validation + schema + business rules                 |
+| **risk**         | ✅ **Complete** | Full validation + schema + business rules                 |
+| **assumption**   | ✅ **Complete** | Full validation + schema + business rules                 |
 
 ### **Priority Task Completion**
-| Priority | Tasks | Completion | Status |
-| -------- | ----- | ---------- | ------ |
-| **P0 (Critical)** | 3 tasks | 100% ✅ | Core infrastructure, deduplication, response metadata |
-| **P1 (High)** | 2 tasks | 100% ✅ | Semantic chunking, truncation, search strategies |
-| **P2 (High)** | 2 tasks | 100% ✅ | Graph expansion, search stabilization |
-| **P3 (Medium)** | 2 tasks | 100% ✅ | TTL policy, cleanup worker |
-| **P4 (Medium)** | 2 tasks | 100% ✅ | Metrics, system status, quality gates |
-| **P5 (Documentation)** | 2 tasks | 0% ⏸️ | Schema updates, capability documentation |
-| **P6 (Advanced)** | 2 tasks | 0% ⏸️ | AI insights, contradiction detection |
-| **TOTAL** | **16 tasks** | **75%** | **12/16 tasks production ready** |
+
+| Priority               | Tasks        | Completion | Status                                                |
+| ---------------------- | ------------ | ---------- | ----------------------------------------------------- |
+| **P0 (Critical)**      | 3 tasks      | 100% ✅    | Core infrastructure, deduplication, response metadata |
+| **P1 (High)**          | 2 tasks      | 100% ✅    | Semantic chunking, truncation, search strategies      |
+| **P2 (High)**          | 2 tasks      | 100% ✅    | Graph expansion, search stabilization                 |
+| **P3 (Medium)**        | 2 tasks      | 100% ✅    | TTL policy, cleanup worker                            |
+| **P4 (Medium)**        | 2 tasks      | 100% ✅    | Metrics, system status, quality gates                 |
+| **P5 (Documentation)** | 2 tasks      | 0% ⏸️      | Schema updates, capability documentation              |
+| **P6 (Advanced)**      | 2 tasks      | 0% ⏸️      | AI insights, contradiction detection                  |
+| **TOTAL**              | **16 tasks** | **75%**    | **12/16 tasks production ready**                      |
 
 **Legend:** ✅ Production Ready | ⏸️ Pending | 🚧 Planned
 
@@ -250,6 +266,7 @@ The perfect starting point for all new team members. Covers setup, basic concept
 ### 📖 **Documentation by Role**
 
 #### 👨‍💻 **Developers & Engineers**
+
 - **[New Engineer Guide](docs/NEW-ENGINEER-GUIDE.md)** - Complete onboarding and development workflow
 - **[API Reference](docs/API-REFERENCE.md)** - Complete API documentation with examples
 - **[Architecture Overview](docs/ARCH-SYSTEM.md)** - System design and component architecture
@@ -257,18 +274,21 @@ The perfect starting point for all new team members. Covers setup, basic concept
 - **[Development Setup](docs/SETUP-DEVELOPER.md)** - Development environment and workflow
 
 #### 🔧 **Operations & DevOps**
+
 - **[Operations Manual](docs/OPS-DISASTER-RECOVERY.md)** - Complete operations and disaster recovery
 - **[Backup & Migration Guide](docs/OPS-BACKUP-MIGRATION.md)** - Backup, restore, and migration procedures
 - **[Deployment Guide](docs/CONFIG-DEPLOYMENT.md)** - Production deployment instructions
 - **[Monitoring & Security](docs/CONFIG-MONITORING.md)** - Monitoring setup and security configuration
 
 #### 🆕 **New Team Members**
+
 - **[New Engineer Guide](docs/NEW-ENGINEER-GUIDE.md)** - Complete onboarding guide
 - **[Quick Start](SETUP-QUICK-START.md)** - Fastest way to get started
 - **[Setup Guide](docs/SETUP-CONFIGURATION.md)** - Environment configuration
 - **[Troubleshooting](docs/TROUBLESHOOT-ERRORS.md)** - Common issues and solutions
 
 #### 🔍 **Problem Solvers**
+
 - **[EMFILE Troubleshooting](docs/TROUBLESHOOT-EMFILE.md)** - File handle error resolution
 - **[Error Handling Guide](docs/TROUBLESHOOT-ERRORS.md)** - Comprehensive error patterns
 - **[Test Results](ANALYSIS-TEST-VERIFICATION.md)** - System test validation
@@ -277,50 +297,55 @@ The perfect starting point for all new team members. Covers setup, basic concept
 ### 📚 **Complete Documentation Library**
 
 #### **🚀 Getting Started (Essential Reading)**
-| Document | Priority | Time | Description |
-|----------|----------|------|-------------|
-| **[New Engineer Guide](docs/NEW-ENGINEER-GUIDE.md)** | 🔴 **MUST** | 15 min | Complete onboarding for all team members |
-| **[Quick Start](SETUP-QUICK-START.md)** | 🔴 **MUST** | 5 min | Get running in 5 minutes |
-| **[Configuration Guide](docs/SETUP-CONFIGURATION.md)** | 🔴 **MUST** | 10 min | Environment setup and configuration |
-| **[API Reference](docs/API-REFERENCE.md)** | 🟡 **HIGH** | 20 min | Complete API documentation |
-| **[Architecture Overview](docs/ARCH-SYSTEM.md)** | 🟡 **HIGH** | 15 min | System design and components |
+
+| Document                                               | Priority    | Time   | Description                              |
+| ------------------------------------------------------ | ----------- | ------ | ---------------------------------------- |
+| **[New Engineer Guide](docs/NEW-ENGINEER-GUIDE.md)**   | 🔴 **MUST** | 15 min | Complete onboarding for all team members |
+| **[Quick Start](SETUP-QUICK-START.md)**                | 🔴 **MUST** | 5 min  | Get running in 5 minutes                 |
+| **[Configuration Guide](docs/SETUP-CONFIGURATION.md)** | 🔴 **MUST** | 10 min | Environment setup and configuration      |
+| **[API Reference](docs/API-REFERENCE.md)**             | 🟡 **HIGH** | 20 min | Complete API documentation               |
+| **[Architecture Overview](docs/ARCH-SYSTEM.md)**       | 🟡 **HIGH** | 15 min | System design and components             |
 
 #### **🛠️ Development & Code (Developers)**
-| Document | Priority | Time | Description |
-|----------|----------|------|-------------|
-| **[Development Setup](docs/SETUP-DEVELOPER.md)** | 🟡 **HIGH** | 15 min | Development environment and workflow |
-| **[Database Architecture](docs/ARCH-DATABASE.md)** | 🟡 **HIGH** | 20 min | Qdrant database design and patterns |
-| **[Package Management](docs/DEV-PACKAGE-MANAGEMENT.md)** | 🟢 **MEDIUM** | 10 min | Dependencies and management |
-| **[File Handle Manager](docs/DEV-FILE-HANDLES.md)** | 🟢 **MEDIUM** | 10 min | EMFILE prevention guide |
+
+| Document                                                  | Priority      | Time   | Description                          |
+| --------------------------------------------------------- | ------------- | ------ | ------------------------------------ |
+| **[Development Setup](docs/SETUP-DEVELOPER.md)**          | 🟡 **HIGH**   | 15 min | Development environment and workflow |
+| **[Database Architecture](docs/ARCH-DATABASE.md)**        | 🟡 **HIGH**   | 20 min | Qdrant database design and patterns  |
+| **[Package Management](docs/DEV-PACKAGE-MANAGEMENT.md)**  | 🟢 **MEDIUM** | 10 min | Dependencies and management          |
+| **[File Handle Manager](docs/DEV-FILE-HANDLES.md)**       | 🟢 **MEDIUM** | 10 min | EMFILE prevention guide              |
 | **[Test Guidelines](tests/framework/TEST-GUIDELINES.md)** | 🟢 **MEDIUM** | 15 min | Testing framework and best practices |
-| **[Mock Patterns](tests/TEST-MOCK-PATTERNS.md)** | 🟢 **MEDIUM** | 10 min | Test data and mocking strategies |
+| **[Mock Patterns](tests/TEST-MOCK-PATTERNS.md)**          | 🟢 **MEDIUM** | 10 min | Test data and mocking strategies     |
 
 #### **🔧 Operations & Production (Ops Team)**
-| Document | Priority | Time | Description |
-|----------|----------|------|-------------|
-| **[Operations Manual](docs/OPS-DISASTER-RECOVERY.md)** | 🔴 **MUST** | 30 min | Complete operations and disaster recovery |
-| **[Backup & Migration Guide](docs/OPS-BACKUP-MIGRATION.md)** | 🔴 **MUST** | 25 min | Backup, restore, and migration procedures |
-| **[Deployment Guide](docs/CONFIG-DEPLOYMENT.md)** | 🟡 **HIGH** | 20 min | Production deployment instructions |
-| **[Monitoring & Security](docs/CONFIG-MONITORING.md)** | 🟡 **HIGH** | 20 min | Monitoring setup and security |
-| **[CI/CD Setup](docs/CI-CD-SETUP.md)** | 🟢 **MEDIUM** | 15 min | Continuous integration setup |
+
+| Document                                                     | Priority      | Time   | Description                               |
+| ------------------------------------------------------------ | ------------- | ------ | ----------------------------------------- |
+| **[Operations Manual](docs/OPS-DISASTER-RECOVERY.md)**       | 🔴 **MUST**   | 30 min | Complete operations and disaster recovery |
+| **[Backup & Migration Guide](docs/OPS-BACKUP-MIGRATION.md)** | 🔴 **MUST**   | 25 min | Backup, restore, and migration procedures |
+| **[Deployment Guide](docs/CONFIG-DEPLOYMENT.md)**            | 🟡 **HIGH**   | 20 min | Production deployment instructions        |
+| **[Monitoring & Security](docs/CONFIG-MONITORING.md)**       | 🟡 **HIGH**   | 20 min | Monitoring setup and security             |
+| **[CI/CD Setup](docs/CI-CD-SETUP.md)**                       | 🟢 **MEDIUM** | 15 min | Continuous integration setup              |
 
 #### **🔍 Troubleshooting (Problem Solvers)**
-| Document | Priority | Time | Description |
-|----------|----------|------|-------------|
-| **[EMFILE Troubleshooting](docs/TROUBLESHOOT-EMFILE.md)** | 🟡 **HIGH** | 15 min | File handle error resolution |
-| **[Error Handling Guide](docs/TROUBLESHOOT-ERRORS.md)** | 🟡 **HIGH** | 20 min | Comprehensive error patterns |
-| **[Test Results](ANALYSIS-TEST-VERIFICATION.md)** | 🟡 **HIGH** | 15 min | System test validation |
+
+| Document                                                    | Priority      | Time   | Description                        |
+| ----------------------------------------------------------- | ------------- | ------ | ---------------------------------- |
+| **[EMFILE Troubleshooting](docs/TROUBLESHOOT-EMFILE.md)**   | 🟡 **HIGH**   | 15 min | File handle error resolution       |
+| **[Error Handling Guide](docs/TROUBLESHOOT-ERRORS.md)**     | 🟡 **HIGH**   | 20 min | Comprehensive error patterns       |
+| **[Test Results](ANALYSIS-TEST-VERIFICATION.md)**           | 🟡 **HIGH**   | 15 min | System test validation             |
 | **[Configuration Conflicts](ANALYSIS-CONFIG-CONFLICTS.md)** | 🟢 **MEDIUM** | 10 min | Configuration issues and solutions |
-| **[Edge Case Analysis](ANALYSIS-EDGE-CASES.md)** | 🟢 **MEDIUM** | 10 min | Edge case handling strategies |
+| **[Edge Case Analysis](ANALYSIS-EDGE-CASES.md)**            | 🟢 **MEDIUM** | 10 min | Edge case handling strategies      |
 
 #### **📊 Analysis & Reports (Understanding)**
-| Document | Priority | Time | Description |
-|----------|----------|------|-------------|
-| **[delivered.md](delivered.md)** | 🔴 **MUST** | 10 min | Current capabilities and status |
-| **[Development Policy](DEV-POLICY.md)** | 🟡 **HIGH** | 10 min | Development guidelines and policies |
-| **[Security Configuration](CONFIG-SECURITY.md)** | 🟡 **HIGH** | 15 min | Security analysis and setup |
-| **[Cortex Memory Tests](ANALYSIS-CORTEX-TESTS.md)** | 🟢 **MEDIUM** | 10 min | Memory system test results |
-| **[Current State vs Target](CURRENT-STATE-VS-TARGET.md)** | 🟢 **MEDIUM** | 10 min | Gap analysis and roadmap |
+
+| Document                                                  | Priority      | Time   | Description                         |
+| --------------------------------------------------------- | ------------- | ------ | ----------------------------------- |
+| **[delivered.md](delivered.md)**                          | 🔴 **MUST**   | 10 min | Current capabilities and status     |
+| **[Development Policy](DEV-POLICY.md)**                   | 🟡 **HIGH**   | 10 min | Development guidelines and policies |
+| **[Security Configuration](CONFIG-SECURITY.md)**          | 🟡 **HIGH**   | 15 min | Security analysis and setup         |
+| **[Cortex Memory Tests](ANALYSIS-CORTEX-TESTS.md)**       | 🟢 **MEDIUM** | 10 min | Memory system test results          |
+| **[Current State vs Target](CURRENT-STATE-VS-TARGET.md)** | 🟢 **MEDIUM** | 10 min | Gap analysis and roadmap            |
 
 ### 🎯 **Quick Access Commands**
 
@@ -341,14 +366,14 @@ npm run help                 # List all available commands
 
 ### 📊 **System Status**
 
-| Component | Status | Performance | Last Updated |
-|-----------|--------|-------------|--------------|
-| **Qdrant Database** | ✅ Operational | 99.9% uptime | 2025-11-03 |
-| **MCP Server** | ✅ Running | <100ms response | 2025-11-03 |
-| **EMFILE Prevention** | ✅ Active | 99%+ cleanup efficiency | 2025-11-03 |
-| **API Endpoints** | ✅ All Functional | Full coverage | 2025-11-03 |
-| **Documentation** | ✅ Current | 42 documents | 2025-11-03 |
-| **Test Coverage** | ⚠️ In Progress | 90%+ average | 2025-11-03 |
+| Component             | Status            | Performance             | Last Updated |
+| --------------------- | ----------------- | ----------------------- | ------------ |
+| **Qdrant Database**   | ✅ Operational    | 99.9% uptime            | 2025-11-03   |
+| **MCP Server**        | ✅ Running        | <100ms response         | 2025-11-03   |
+| **EMFILE Prevention** | ✅ Active         | 99%+ cleanup efficiency | 2025-11-03   |
+| **API Endpoints**     | ✅ All Functional | Full coverage           | 2025-11-03   |
+| **Documentation**     | ✅ Current        | 42 documents            | 2025-11-03   |
+| **Test Coverage**     | ⚠️ In Progress    | 90%+ average            | 2025-11-03   |
 
 ## 📚 Comprehensive Documentation Index
 
@@ -913,6 +938,7 @@ Find knowledge items using semantic vector search.
 Basic system monitoring for Cortex memory.
 
 **Operations:**
+
 - `health` - Database health status
 - `stats` - Basic database statistics
 - `telemetry` - Performance report

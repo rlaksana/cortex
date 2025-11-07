@@ -41,9 +41,9 @@ describe('P4-T4.3: Entity-First Search Integration', () => {
       const types = await import('../../src/types/core-interfaces');
 
       expect(types).toBeDefined();
-      expect(typeof types.SearchQuery).toBeDefined();
-      expect(typeof types.SearchResult).toBeDefined();
-      expect(typeof types.SearchMethodResult).toBeDefined();
+      expect(typeof types['S']earchQuery).toBeDefined();
+      expect(typeof types['S']earchResult).toBeDefined();
+      expect(typeof types['S']earchMethodResult).toBeDefined();
     });
   });
 

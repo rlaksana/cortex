@@ -12,7 +12,7 @@
  * The actual implementation would include full workflow execution logic.
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type {
   WorkflowExecution,
   WorkflowExecutionRequest,

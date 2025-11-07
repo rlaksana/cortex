@@ -47,7 +47,7 @@ class WindowsEMFILEPreventionUtil {
    */
   static getFileHandleCount(): number {
     try {
-      // Windows-specific approach using process._getActiveHandles()
+      // Windows-specific approach using process['_']getActiveHandles()
       const activeHandles = (process as any)._getActiveHandles();
       return Array.isArray(activeHandles) ? activeHandles.length : 0;
     } catch (error) {
@@ -276,8 +276,8 @@ export async function setup() {
   }
 
   // Set test environment variables
-  process.env.NODE_ENV = 'test';
-  process.env.LOG_LEVEL = 'error';
+  process.env['NODE_ENV'] = 'test';
+  process.env['LOG_LEVEL'] = 'error';
 
   // Cleanup performance collector before tests to prevent memory leaks
   performanceCollector.cleanup();

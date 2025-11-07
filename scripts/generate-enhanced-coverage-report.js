@@ -21,13 +21,13 @@ class ArtifactsCoverageGenerator {
         statements: 85,
         branches: 85,
         functions: 85,
-        lines: 85
+        lines: 85,
       },
       critical: {
         'src/core/**': { statements: 90, branches: 90, functions: 90, lines: 90 },
         'src/db/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
-        'src/services/**': { statements: 85, branches: 85, functions: 85, lines: 85 }
-      }
+        'src/services/**': { statements: 85, branches: 85, functions: 85, lines: 85 },
+      },
     };
   }
 
@@ -54,7 +54,7 @@ class ArtifactsCoverageGenerator {
       path.join(this.artifactsDir, 'trends'),
       path.join(this.artifactsDir, 'badges'),
       path.join(this.artifactsDir, 'visualizations'),
-      path.join(this.artifactsDir, 'historical')
+      path.join(this.artifactsDir, 'historical'),
     ];
 
     for (const dir of dirs) {
@@ -68,7 +68,7 @@ class ArtifactsCoverageGenerator {
     const coverageConfigs = [
       { name: 'unit', script: 'test:coverage:unit', dir: 'coverage/unit' },
       { name: 'integration', script: 'test:coverage:integration', dir: 'coverage/integration' },
-      { name: 'comprehensive', script: 'test:coverage:ci', dir: 'coverage/comprehensive' }
+      { name: 'comprehensive', script: 'test:coverage:ci', dir: 'coverage/comprehensive' },
     ];
 
     for (const config of coverageConfigs) {
@@ -76,7 +76,7 @@ class ArtifactsCoverageGenerator {
         console.log(`🔍 Running ${config.name} coverage...`);
         execSync(`npm run ${config.script}`, {
           stdio: 'pipe',
-          cwd: this.projectRoot
+          cwd: this.projectRoot,
         });
         console.log(`✅ ${config.name} coverage completed`);
       } catch (error) {
@@ -95,7 +95,7 @@ class ArtifactsCoverageGenerator {
         project: 'mcp-cortex',
         nodeVersion: process.version,
         platform: process.platform,
-        thresholds: this.thresholds
+        thresholds: this.thresholds,
       },
       coverage: await this.aggregateCoverage(),
       thresholdAnalysis: await this.analyzeAllThresholds(),
@@ -105,8 +105,8 @@ class ArtifactsCoverageGenerator {
       recommendations: await this.generateRecommendations(),
       compliance: {
         meets85PercentThreshold: false,
-        detailedStatus: {}
-      }
+        detailedStatus: {},
+      },
     };
 
     // Check ≥85% compliance
@@ -116,17 +116,22 @@ class ArtifactsCoverageGenerator {
         report.compliance.detailedStatus[metric] = {
           value,
           threshold: this.thresholds.global[metric],
-          meetsThreshold
+          meetsThreshold,
         };
       }
 
-      const allMetricsMeetThreshold = Object.values(report.compliance.detailedStatus)
-        .every(status => status.meetsThreshold);
+      const allMetricsMeetThreshold = Object.values(report.compliance.detailedStatus).every(
+        (status) => status.meetsThreshold
+      );
       report.compliance.meets85PercentThreshold = allMetricsMeetThreshold;
     }
 
     // Write comprehensive report
-    const reportPath = path.join(this.artifactsDir, 'reports', `coverage-report-${this.timestamp}.json`);
+    const reportPath = path.join(
+      this.artifactsDir,
+      'reports',
+      `coverage-report-${this.timestamp}.json`
+    );
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
 
     // Write latest report
@@ -149,8 +154,8 @@ class ArtifactsCoverageGenerator {
         statements: { total: 0, covered: 0 },
         branches: { total: 0, covered: 0 },
         functions: { total: 0, covered: 0 },
-        lines: { total: 0, covered: 0 }
-      }
+        lines: { total: 0, covered: 0 },
+      },
     };
 
     for (const source of sources) {
@@ -192,10 +197,10 @@ class ArtifactsCoverageGenerator {
         passed: true,
         met: {},
         failed: {},
-        summary: {}
+        summary: {},
       },
       critical: {},
-      overall: { status: 'unknown', score: 0 }
+      overall: { status: 'unknown', score: 0 },
     };
 
     // Analyze global thresholds
@@ -213,13 +218,13 @@ class ArtifactsCoverageGenerator {
         actual,
         threshold,
         status: actual >= threshold ? 'PASS' : 'FAIL',
-        difference: actual - threshold
+        difference: actual - threshold,
       };
     }
 
     // Calculate overall score
     const metrics = Object.keys(this.thresholds.global);
-    const passedCount = metrics.filter(metric => analysis.global.met[metric]).length;
+    const passedCount = metrics.filter((metric) => analysis.global.met[metric]).length;
     analysis.overall.score = Math.round((passedCount / metrics.length) * 100);
     analysis.overall.status = analysis.global.passed ? 'PASS' : 'FAIL';
 
@@ -236,7 +241,7 @@ class ArtifactsCoverageGenerator {
       lowCoverage: [],
       goodCoverage: [],
       excellentCoverage: [],
-      byDirectory: {}
+      byDirectory: {},
     };
 
     try {
@@ -272,7 +277,10 @@ class ArtifactsCoverageGenerator {
           if (!fileAnalysis.byDirectory[dirPath]) {
             fileAnalysis.byDirectory[dirPath] = { files: [], totalCoverage: 0, count: 0 };
           }
-          fileAnalysis.byDirectory[dirPath].files.push({ file: path.basename(relativePath), coverage: avgCoverage });
+          fileAnalysis.byDirectory[dirPath].files.push({
+            file: path.basename(relativePath),
+            coverage: avgCoverage,
+          });
           fileAnalysis.byDirectory[dirPath].totalCoverage += avgCoverage;
           fileAnalysis.byDirectory[dirPath].count++;
         }
@@ -299,14 +307,18 @@ class ArtifactsCoverageGenerator {
       summary: {
         total: 0,
         aboveThreshold: 0,
-        belowThreshold: 0
-      }
+        belowThreshold: 0,
+      },
     };
 
     const criticalDirs = ['src/core', 'src/db', 'src/services', 'src/mcp', 'src/utils'];
 
     try {
-      const comprehensivePath = path.join(this.coverageDir, 'comprehensive', 'coverage-summary.json');
+      const comprehensivePath = path.join(
+        this.coverageDir,
+        'comprehensive',
+        'coverage-summary.json'
+      );
       if (await this.fileExists(comprehensivePath)) {
         const coverageData = JSON.parse(await fs.readFile(comprehensivePath, 'utf8'));
 
@@ -315,7 +327,7 @@ class ArtifactsCoverageGenerator {
           if (!dirPath.startsWith('src/')) continue;
 
           const avgCoverage = this.calculateAverageCoverage(dirData);
-          const isCritical = criticalDirs.some(critical => dirPath.startsWith(critical));
+          const isCritical = criticalDirs.some((critical) => dirPath.startsWith(critical));
 
           const analysis = {
             path: dirPath,
@@ -323,7 +335,7 @@ class ArtifactsCoverageGenerator {
             details: dirData,
             isCritical,
             threshold: isCritical ? 90 : 85,
-            meetsThreshold: avgCoverage >= (isCritical ? 90 : 85)
+            meetsThreshold: avgCoverage >= (isCritical ? 90 : 85),
           };
 
           directoryAnalysis.overall[dirPath] = analysis;
@@ -362,17 +374,17 @@ class ArtifactsCoverageGenerator {
       metadata: {
         generated: new Date().toISOString(),
         project: 'mcp-cortex',
-        version: '2.0.0'
+        version: '2.0.0',
       },
       summary: {
         overallStatus: thresholdAnalysis.overall.status,
         overallScore: thresholdAnalysis.overall.score,
         meets85PercentThreshold: report.compliance.meets85PercentThreshold,
-        thresholdLevel: '85% Global Coverage Requirement'
+        thresholdLevel: '85% Global Coverage Requirement',
       },
       globalThresholds: thresholdAnalysis.global,
       detailedMetrics: report.compliance.detailedStatus,
-      recommendations: []
+      recommendations: [],
     };
 
     // Add recommendations for failed thresholds
@@ -389,18 +401,26 @@ class ArtifactsCoverageGenerator {
           actions: [
             `Add unit tests for uncovered ${metric}`,
             `Review test gaps in ${metric} coverage`,
-            `Focus on ${metric} testing in critical paths`
-          ]
+            `Focus on ${metric} testing in critical paths`,
+          ],
         });
       }
     }
 
     // Write threshold report
-    const thresholdPath = path.join(this.artifactsDir, 'reports', `threshold-report-${this.timestamp}.json`);
+    const thresholdPath = path.join(
+      this.artifactsDir,
+      'reports',
+      `threshold-report-${this.timestamp}.json`
+    );
     await fs.writeFile(thresholdPath, JSON.stringify(thresholdReport, null, 2));
 
     // Write latest threshold report
-    const latestThresholdPath = path.join(this.artifactsDir, 'reports', 'latest-threshold-report.json');
+    const latestThresholdPath = path.join(
+      this.artifactsDir,
+      'reports',
+      'latest-threshold-report.json'
+    );
     await fs.writeFile(latestThresholdPath, JSON.stringify(thresholdReport, null, 2));
 
     // Generate markdown summary
@@ -437,29 +457,44 @@ ${Object.entries(thresholdReport.globalThresholds.summary)
 
 ## Recommendations
 
-${thresholdReport.recommendations.length === 0
-  ? '🎉 All thresholds are met!'
-  : thresholdReport.recommendations.map(rec => `
+${
+  thresholdReport.recommendations.length === 0
+    ? '🎉 All thresholds are met!'
+    : thresholdReport.recommendations
+        .map(
+          (rec) => `
 ### ${rec.type.replace('_', ' ').toUpperCase()}
 - **Priority:** ${rec.priority}
 - **Message:** ${rec.message}
 - **Current:** ${rec.current}%, **Required:** ${rec.required}%
 - **Actions:**
-${rec.actions.map(action => `  - ${action}`).join('\n')}
-`).join('\n')}
+${rec.actions.map((action) => `  - ${action}`).join('\n')}
+`
+        )
+        .join('\n')
+}
 
 ## Next Steps
 
-${thresholdReport.summary.meets85PercentThreshold
-  ? '✅ All coverage thresholds are satisfied. You can proceed with confidence!'
-  : '❌ Some coverage thresholds are not met. Please address the failed metrics above before merging.'
+${
+  thresholdReport.summary.meets85PercentThreshold
+    ? '✅ All coverage thresholds are satisfied. You can proceed with confidence!'
+    : '❌ Some coverage thresholds are not met. Please address the failed metrics above before merging.'
 }
     `.trim();
 
-    const markdownPath = path.join(this.artifactsDir, 'reports', `threshold-report-${this.timestamp}.md`);
+    const markdownPath = path.join(
+      this.artifactsDir,
+      'reports',
+      `threshold-report-${this.timestamp}.md`
+    );
     await fs.writeFile(markdownPath, markdown);
 
-    const latestMarkdownPath = path.join(this.artifactsDir, 'reports', 'latest-threshold-report.md');
+    const latestMarkdownPath = path.join(
+      this.artifactsDir,
+      'reports',
+      'latest-threshold-report.md'
+    );
     await fs.writeFile(latestMarkdownPath, markdown);
   }
 
@@ -478,7 +513,7 @@ ${thresholdReport.summary.meets85PercentThreshold
           reports.push({
             date: data.metadata?.generated || file,
             summary: data.coverage?.summary,
-            compliance: data.compliance
+            compliance: data.compliance,
           });
         }
       }
@@ -488,24 +523,31 @@ ${thresholdReport.summary.meets85PercentThreshold
       const trendReport = {
         metadata: {
           generated: new Date().toISOString(),
-          dataPoints: reports.length
+          dataPoints: reports.length,
         },
         trends: this.calculateCoverageTrends(reports),
         complianceTrends: this.calculateComplianceTrends(reports),
-        recommendations: this.generateTrendRecommendations(reports)
+        recommendations: this.generateTrendRecommendations(reports),
       };
 
-      const trendPath = path.join(this.artifactsDir, 'trends', `coverage-trends-${this.timestamp}.json`);
+      const trendPath = path.join(
+        this.artifactsDir,
+        'trends',
+        `coverage-trends-${this.timestamp}.json`
+      );
       await fs.writeFile(trendPath, JSON.stringify(trendReport, null, 2));
 
       // Store current report for historical tracking
       const currentReport = path.join(historicalDir, `coverage-report-${this.timestamp}.json`);
-      const latestReportPath = path.join(this.artifactsDir, 'reports', 'latest-coverage-report.json');
+      const latestReportPath = path.join(
+        this.artifactsDir,
+        'reports',
+        'latest-coverage-report.json'
+      );
 
       if (await this.fileExists(latestReportPath)) {
         await fs.copyFile(latestReportPath, currentReport);
       }
-
     } catch (error) {
       console.warn('⚠️  Could not generate trend report:', error.message);
     }
@@ -519,10 +561,18 @@ ${thresholdReport.summary.meets85PercentThreshold
 
     const html = this.generateCoverageHTML(report, thresholdAnalysis);
 
-    const htmlPath = path.join(this.artifactsDir, 'visualizations', `coverage-dashboard-${this.timestamp}.html`);
+    const htmlPath = path.join(
+      this.artifactsDir,
+      'visualizations',
+      `coverage-dashboard-${this.timestamp}.html`
+    );
     await fs.writeFile(htmlPath, html);
 
-    const latestHtmlPath = path.join(this.artifactsDir, 'visualizations', 'latest-coverage-dashboard.html');
+    const latestHtmlPath = path.join(
+      this.artifactsDir,
+      'visualizations',
+      'latest-coverage-dashboard.html'
+    );
     await fs.writeFile(latestHtmlPath, html);
   }
 
@@ -581,7 +631,9 @@ ${thresholdReport.summary.meets85PercentThreshold
         </div>
 
         <div class="metrics-grid">
-            ${Object.entries(compliance.detailedStatus).map(([metric, data]) => `
+            ${Object.entries(compliance.detailedStatus)
+              .map(
+                ([metric, data]) => `
                 <div class="metric-card">
                     <div class="metric-label">${metric.charAt(0).toUpperCase() + metric.slice(1)}</div>
                     <div class="metric-value" style="color: ${data.meetsThreshold ? '#4CAF50' : '#f44336'}">${data.value}%</div>
@@ -593,7 +645,9 @@ ${thresholdReport.summary.meets85PercentThreshold
                     </div>
                     <small>Target: ${data.threshold}%</small>
                 </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
 
         <div class="section">
@@ -617,17 +671,25 @@ ${thresholdReport.summary.meets85PercentThreshold
                 </div>
             </div>
 
-            ${fileAnalysis.lowCoverage.length > 0 ? `
+            ${
+              fileAnalysis.lowCoverage.length > 0
+                ? `
                 <h4>🚨 Files Below 85% Coverage</h4>
                 <div class="file-list">
-                    ${fileAnalysis.lowCoverage.map(file => `
+                    ${fileAnalysis.lowCoverage
+                      .map(
+                        (file) => `
                         <div class="file-item">
                             <span class="file-path">${file.file}</span>
                             <span class="coverage-badge coverage-low">${file.coverage}%</span>
                         </div>
-                    `).join('')}
+                    `
+                      )
+                      .join('')}
                 </div>
-            ` : '<p>✅ All files meet minimum coverage requirements!</p>'}
+            `
+                : '<p>✅ All files meet minimum coverage requirements!</p>'
+            }
         </div>
 
         <div class="timestamp">
@@ -646,15 +708,16 @@ ${thresholdReport.summary.meets85PercentThreshold
     const report = await this.generateArtifactsReport();
     const avgCoverage = Math.round(
       (report.coverage.summary.lines +
-       report.coverage.summary.functions +
-       report.coverage.summary.statements) / 3
+        report.coverage.summary.functions +
+        report.coverage.summary.statements) /
+        3
     );
 
     const badge = {
       schemaVersion: 1,
       label: 'coverage',
       message: `${avgCoverage}%`,
-      color: avgCoverage >= 85 ? 'green' : avgCoverage >= 70 ? 'yellow' : 'red'
+      color: avgCoverage >= 85 ? 'green' : avgCoverage >= 70 ? 'yellow' : 'red',
     };
 
     const badgeSvg = this.generateBadgeSvg(badge);
@@ -670,7 +733,7 @@ ${thresholdReport.summary.meets85PercentThreshold
     const colors = {
       green: '#4c1',
       yellow: '#dfb317',
-      red: '#e05d44'
+      red: '#e05d44',
     };
 
     const color = colors[badge.color] || '#999';
@@ -702,7 +765,7 @@ ${thresholdReport.summary.meets85PercentThreshold
       maintainabilityIndex: { score: 85, status: 'good' },
       codeComplexity: { cyclomatic: 5, cognitive: 8, status: 'acceptable' },
       testComplexity: { complexity: 3, status: 'simple' },
-      codeQuality: { grade: 'A', issues: 0, suggestions: 0 }
+      codeQuality: { grade: 'A', issues: 0, suggestions: 0 },
     };
   }
 
@@ -717,7 +780,7 @@ ${thresholdReport.summary.meets85PercentThreshold
           priority: 'high',
           metric,
           message: `Increase ${metric} coverage from ${data.actual}% to ${data.threshold}% (${data.deficit}% deficit)`,
-          action: `Add tests for uncovered ${metric}`
+          action: `Add tests for uncovered ${metric}`,
         });
       }
     }
@@ -727,13 +790,13 @@ ${thresholdReport.summary.meets85PercentThreshold
         type: 'maintenance',
         priority: 'medium',
         message: 'Continue monitoring coverage trends',
-        action: 'Review coverage reports regularly'
+        action: 'Review coverage reports regularly',
       },
       {
         type: 'quality',
         priority: 'low',
         message: 'Consider coverage badges for documentation',
-        action: 'Display coverage badges in README'
+        action: 'Display coverage badges in README',
       }
     );
 
@@ -745,7 +808,7 @@ ${thresholdReport.summary.meets85PercentThreshold
       lines: { total: fileData.l?.total || 0, covered: fileData.l?.covered || 0 },
       functions: { total: fileData.f?.total || 0, covered: fileData.f?.covered || 0 },
       branches: { total: fileData.b?.total || 0, covered: fileData.b?.covered || 0 },
-      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 }
+      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 },
     };
   }
 
@@ -774,7 +837,12 @@ ${thresholdReport.summary.meets85PercentThreshold
         current: latestValue,
         previous: previousValue,
         change: latestValue - previousValue,
-        trend: latestValue > previousValue ? 'improving' : latestValue < previousValue ? 'declining' : 'stable'
+        trend:
+          latestValue > previousValue
+            ? 'improving'
+            : latestValue < previousValue
+              ? 'declining'
+              : 'stable',
       };
     }
 
@@ -790,8 +858,12 @@ ${thresholdReport.summary.meets85PercentThreshold
     return {
       current: latest.compliance?.meets85PercentThreshold || false,
       previous: previous.compliance?.meets85PercentThreshold || false,
-      trend: latest.compliance?.meets85PercentThreshold === previous.compliance?.meets85PercentThreshold ? 'stable' :
-              latest.compliance?.meets85PercentThreshold ? 'improving' : 'declining'
+      trend:
+        latest.compliance?.meets85PercentThreshold === previous.compliance?.meets85PercentThreshold
+          ? 'stable'
+          : latest.compliance?.meets85PercentThreshold
+            ? 'improving'
+            : 'declining',
     };
   }
 
@@ -804,7 +876,7 @@ ${thresholdReport.summary.meets85PercentThreshold
         type: 'data',
         priority: 'low',
         message: 'Insufficient historical data for trend analysis',
-        action: 'Continue collecting coverage data'
+        action: 'Continue collecting coverage data',
       });
       return recommendations;
     }
@@ -816,7 +888,7 @@ ${thresholdReport.summary.meets85PercentThreshold
           priority: 'medium',
           metric,
           message: `${metric} coverage is declining (${trend.previous}% → ${trend.current}%)`,
-          action: `Investigate and address ${metric} coverage regression`
+          action: `Investigate and address ${metric} coverage regression`,
         });
       }
     }

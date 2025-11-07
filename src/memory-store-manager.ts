@@ -20,7 +20,7 @@
 
 import { MemoryStoreOrchestrator } from './services/orchestrators/memory-store-orchestrator.js';
 import { MemoryFindOrchestrator } from './services/orchestrators/memory-find-orchestrator.js';
-import { logger } from './utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface MemoryStoreManagerConfig {
   qdrant: {

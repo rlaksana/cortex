@@ -18,7 +18,7 @@ import {
   DependencyType
 } from '../types/unified-health-interfaces.js';
 import { circuitBreakerManager, type CircuitBreakerStats } from '../services/circuit-breaker.service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { performanceCollector } from './performance-collector.js';
 import { metricsService } from './metrics-service.js';
 

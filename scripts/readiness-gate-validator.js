@@ -27,34 +27,34 @@ const CONFIG = {
     statements: 90,
     branches: 90,
     functions: 90,
-    lines: 90
+    lines: 90,
   },
   // Performance thresholds
   PERFORMANCE_THRESHOLDS: {
-    p95_latency_ms: 1000,  // p95 < 1s as specified
-    throughput_min: 100,   // Minimum operations per second
-    error_rate_max: 1.0,   // Maximum error rate percentage
-    memory_max_mb: 2048    // Maximum memory usage
+    p95_latency_ms: 1000, // p95 < 1s as specified
+    throughput_min: 100, // Minimum operations per second
+    error_rate_max: 1.0, // Maximum error rate percentage
+    memory_max_mb: 2048, // Maximum memory usage
   },
   // Load testing configuration (N=100 as specified)
   LOAD_TEST_CONFIG: {
     concurrent_users: 100,
     duration_seconds: 60,
-    warmup_seconds: 10
+    warmup_seconds: 10,
   },
   // Quality gate thresholds
   QUALITY_GATES: {
-    max_security_vulnerabilities: 0,  // Zero tolerance for security issues
+    max_security_vulnerabilities: 0, // Zero tolerance for security issues
     max_critical_bugs: 0,
     max_high_severity_issues: 0,
     max_eslint_warnings: 10,
-    max_eslint_errors: 0
+    max_eslint_errors: 0,
   },
   // Directories and files
   OUTPUT_DIR: join(projectRoot, 'artifacts', 'readiness-gates'),
   COVERAGE_DIR: join(projectRoot, 'coverage'),
   TEST_RESULTS_DIR: join(projectRoot, 'test-results'),
-  BENCHMARK_DIR: join(projectRoot, 'artifacts', 'bench')
+  BENCHMARK_DIR: join(projectRoot, 'artifacts', 'bench'),
 };
 
 // Colors for console output
@@ -66,7 +66,7 @@ const COLORS = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -104,7 +104,7 @@ function executeCommand(command, options = {}) {
       cwd: projectRoot,
       stdio: 'pipe',
       timeout: options.timeout || 300000, // 5 minutes default
-      ...options
+      ...options,
     });
     return { success: true, output: result, exitCode: 0 };
   } catch (error) {
@@ -112,7 +112,7 @@ function executeCommand(command, options = {}) {
       success: false,
       output: error.stdout || error.stderr || '',
       exitCode: error.status || 1,
-      error
+      error,
     };
   }
 }
@@ -128,7 +128,7 @@ function executeAsyncCommand(command, options = {}) {
     const child = spawn(cmd, args, {
       cwd: projectRoot,
       stdio: 'pipe',
-      ...options
+      ...options,
     });
 
     let stdout = '';
@@ -155,7 +155,7 @@ function executeAsyncCommand(command, options = {}) {
         success: code === 0,
         exitCode: code,
         stdout,
-        stderr
+        stderr,
       });
     });
 
@@ -181,7 +181,7 @@ function validateBuildStatus() {
   const results = {
     typeCheck: { status: 'unknown', errors: [] },
     lint: { status: 'unknown', errors: [] },
-    build: { status: 'unknown', errors: [] }
+    build: { status: 'unknown', errors: [] },
   };
 
   // Type check
@@ -223,16 +223,16 @@ function validateBuildStatus() {
     logError('Build failed');
   }
 
-  const overallStatus = Object.values(results).every(r => r.status === 'passed');
+  const overallStatus = Object.values(results).every((r) => r.status === 'passed');
 
   return {
     status: overallStatus ? 'passed' : 'failed',
     details: results,
     summary: {
       totalChecks: Object.keys(results).length,
-      passedChecks: Object.values(results).filter(r => r.status === 'passed').length,
-      failedChecks: Object.values(results).filter(r => r.status === 'failed').length
-    }
+      passedChecks: Object.values(results).filter((r) => r.status === 'passed').length,
+      failedChecks: Object.values(results).filter((r) => r.status === 'failed').length,
+    },
   };
 }
 
@@ -252,7 +252,7 @@ function validateCoverage() {
       return {
         status: 'failed',
         error: 'Coverage analysis failed to run',
-        output: coverageResult.output
+        output: coverageResult.output,
       };
     }
   }
@@ -260,7 +260,7 @@ function validateCoverage() {
   if (!existsSync(coverageFile)) {
     return {
       status: 'failed',
-      error: 'Coverage file not found after running tests'
+      error: 'Coverage file not found after running tests',
     };
   }
 
@@ -271,21 +271,33 @@ function validateCoverage() {
     logInfo('Coverage metrics:');
 
     const metrics = [
-      { name: 'Statements', value: total.statements.pct, threshold: CONFIG.COVERAGE_THRESHOLDS.statements },
-      { name: 'Branches', value: total.branches.pct, threshold: CONFIG.COVERAGE_THRESHOLDS.branches },
-      { name: 'Functions', value: total.functions.pct, threshold: CONFIG.COVERAGE_THRESHOLDS.functions },
-      { name: 'Lines', value: total.lines.pct, threshold: CONFIG.COVERAGE_THRESHOLDS.lines }
+      {
+        name: 'Statements',
+        value: total.statements.pct,
+        threshold: CONFIG.COVERAGE_THRESHOLDS.statements,
+      },
+      {
+        name: 'Branches',
+        value: total.branches.pct,
+        threshold: CONFIG.COVERAGE_THRESHOLDS.branches,
+      },
+      {
+        name: 'Functions',
+        value: total.functions.pct,
+        threshold: CONFIG.COVERAGE_THRESHOLDS.functions,
+      },
+      { name: 'Lines', value: total.lines.pct, threshold: CONFIG.COVERAGE_THRESHOLDS.lines },
     ];
 
     const results = {};
     let allPassed = true;
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       const passed = metric.value >= metric.threshold;
       results[metric.name.toLowerCase()] = {
         value: metric.value,
         threshold: metric.threshold,
-        status: passed ? 'passed' : 'failed'
+        status: passed ? 'passed' : 'failed',
       };
 
       const status = passed ? '✅' : '❌';
@@ -303,14 +315,13 @@ function validateCoverage() {
       summary: {
         overallCoverage: total.statements.pct,
         thresholdMet: allPassed,
-        gaps: metrics.filter(m => m.value < m.threshold).map(m => m.name)
-      }
+        gaps: metrics.filter((m) => m.value < m.threshold).map((m) => m.name),
+      },
     };
-
   } catch (error) {
     return {
       status: 'failed',
-      error: `Failed to parse coverage data: ${error.message}`
+      error: `Failed to parse coverage data: ${error.message}`,
     };
   }
 }
@@ -332,7 +343,7 @@ function validatePerformance() {
       return {
         status: 'failed',
         error: 'Performance benchmarks failed to run',
-        output: benchmarkResult.output
+        output: benchmarkResult.output,
       };
     }
   }
@@ -340,7 +351,7 @@ function validatePerformance() {
   if (!existsSync(benchmarkFile)) {
     return {
       status: 'failed',
-      error: 'Benchmark results not found after running tests'
+      error: 'Benchmark results not found after running tests',
     };
   }
 
@@ -353,7 +364,7 @@ function validatePerformance() {
 
     // Validate each benchmark scenario
     if (benchmarkData.results && Array.isArray(benchmarkData.results)) {
-      benchmarkData.results.forEach(result => {
+      benchmarkData.results.forEach((result) => {
         const scenario = result.scenario || 'unknown';
         const metrics = result.metrics || {};
 
@@ -363,28 +374,35 @@ function validatePerformance() {
           results[`${scenario}_p95`] = {
             value: metrics.latencies.p95,
             threshold: CONFIG.PERFORMANCE_THRESHOLDS.p95_latency_ms,
-            status: p95Passed ? 'passed' : 'failed'
+            status: p95Passed ? 'passed' : 'failed',
           };
 
           const status = p95Passed ? '✅' : '❌';
           const color = p95Passed ? COLORS.green : COLORS.red;
-          log(`   ${status} ${scenario} P95: ${metrics.latencies.p95}ms (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.p95_latency_ms}ms)`, color);
+          log(
+            `   ${status} ${scenario} P95: ${metrics.latencies.p95}ms (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.p95_latency_ms}ms)`,
+            color
+          );
 
           if (!p95Passed) allPassed = false;
         }
 
         // Throughput check
         if (metrics.throughput) {
-          const throughputPassed = metrics.throughput >= CONFIG.PERFORMANCE_THRESHOLDS.throughput_min;
+          const throughputPassed =
+            metrics.throughput >= CONFIG.PERFORMANCE_THRESHOLDS.throughput_min;
           results[`${scenario}_throughput`] = {
             value: metrics.throughput,
             threshold: CONFIG.PERFORMANCE_THRESHOLDS.throughput_min,
-            status: throughputPassed ? 'passed' : 'failed'
+            status: throughputPassed ? 'passed' : 'failed',
           };
 
           const status = throughputPassed ? '✅' : '❌';
           const color = throughputPassed ? COLORS.green : COLORS.red;
-          log(`   ${status} ${scenario} Throughput: ${metrics.throughput} ops/s (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.throughput_min} ops/s)`, color);
+          log(
+            `   ${status} ${scenario} Throughput: ${metrics.throughput} ops/s (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.throughput_min} ops/s)`,
+            color
+          );
 
           if (!throughputPassed) allPassed = false;
         }
@@ -395,12 +413,15 @@ function validatePerformance() {
           results[`${scenario}_error_rate`] = {
             value: metrics.errorRate,
             threshold: CONFIG.PERFORMANCE_THRESHOLDS.error_rate_max,
-            status: errorRatePassed ? 'passed' : 'failed'
+            status: errorRatePassed ? 'passed' : 'failed',
           };
 
           const status = errorRatePassed ? '✅' : '❌';
           const color = errorRatePassed ? COLORS.green : COLORS.red;
-          log(`   ${status} ${scenario} Error Rate: ${metrics.errorRate}% (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.error_rate_max}%)`, color);
+          log(
+            `   ${status} ${scenario} Error Rate: ${metrics.errorRate}% (threshold: ${CONFIG.PERFORMANCE_THRESHOLDS.error_rate_max}%)`,
+            color
+          );
 
           if (!errorRatePassed) allPassed = false;
         }
@@ -409,10 +430,13 @@ function validatePerformance() {
 
     // Run load test with N=100 as specified
     logInfo('Running load test with 100 concurrent users...');
-    const loadTestResult = executeCommand(`npm run bench:load -c ${CONFIG.LOAD_TEST_CONFIG.concurrent_users} -n 1000`, {
-      timeout: 300000,
-      realTimeOutput: false
-    });
+    const loadTestResult = executeCommand(
+      `npm run bench:load -c ${CONFIG.LOAD_TEST_CONFIG.concurrent_users} -n 1000`,
+      {
+        timeout: 300000,
+        realTimeOutput: false,
+      }
+    );
 
     if (loadTestResult.success) {
       logSuccess('Load test completed successfully');
@@ -428,14 +452,13 @@ function validatePerformance() {
       summary: {
         scenariosChecked: benchmarkData.results?.length || 0,
         thresholdsMet: allPassed,
-        loadTestCompleted: loadTestResult.success
-      }
+        loadTestCompleted: loadTestResult.success,
+      },
     };
-
   } catch (error) {
     return {
       status: 'failed',
-      error: `Failed to parse benchmark data: ${error.message}`
+      error: `Failed to parse benchmark data: ${error.message}`,
     };
   }
 }
@@ -449,7 +472,7 @@ function validateSecurity() {
   const results = {
     audit: { status: 'unknown', vulnerabilities: [] },
     eslintSecurity: { status: 'unknown', issues: [] },
-    securityTests: { status: 'unknown', failures: [] }
+    securityTests: { status: 'unknown', failures: [] },
   };
 
   // Security audit
@@ -460,7 +483,9 @@ function validateSecurity() {
     try {
       const auditData = JSON.parse(auditResult.output);
       const vulnerabilities = auditData.vulnerabilities || {};
-      const highVulns = Object.values(vulnerabilities).filter(v => v.severity === 'high' || v.severity === 'critical');
+      const highVulns = Object.values(vulnerabilities).filter(
+        (v) => v.severity === 'high' || v.severity === 'critical'
+      );
 
       if (highVulns.length === 0) {
         results.audit.status = 'passed';
@@ -507,17 +532,17 @@ function validateSecurity() {
     logError(`Security tests failed: ${results.securityTests.failures.length} failures`);
   }
 
-  const overallStatus = Object.values(results).every(r => r.status === 'passed');
+  const overallStatus = Object.values(results).every((r) => r.status === 'passed');
 
   return {
     status: overallStatus ? 'passed' : 'failed',
     details: results,
     summary: {
       totalChecks: Object.keys(results).length,
-      passedChecks: Object.values(results).filter(r => r.status === 'passed').length,
-      failedChecks: Object.values(results).filter(r => r.status === 'failed').length,
-      vulnerabilitiesFound: results.audit.vulnerabilities.length
-    }
+      passedChecks: Object.values(results).filter((r) => r.status === 'passed').length,
+      failedChecks: Object.values(results).filter((r) => r.status === 'failed').length,
+      vulnerabilitiesFound: results.audit.vulnerabilities.length,
+    },
   };
 }
 
@@ -530,7 +555,7 @@ function validateAlerting() {
   const results = {
     healthChecks: { status: 'unknown', checks: [] },
     monitoringEndpoints: { status: 'unknown', endpoints: [] },
-    alertTriggers: { status: 'unknown', triggers: [] }
+    alertTriggers: { status: 'unknown', triggers: [] },
   };
 
   // Health checks
@@ -540,14 +565,17 @@ function validateAlerting() {
   const serverProcess = spawn('npm', ['run', 'start'], {
     cwd: projectRoot,
     stdio: 'pipe',
-    detached: true
+    detached: true,
   });
 
   // Give server time to start
   setTimeout(() => {
     try {
       // Test health endpoint
-      const healthResult = executeCommand('curl -f http://localhost:3000/health || curl -f http://localhost:3000/api/health', { timeout: 10000 });
+      const healthResult = executeCommand(
+        'curl -f http://localhost:3000/health || curl -f http://localhost:3000/api/health',
+        { timeout: 10000 }
+      );
 
       if (healthResult.success) {
         results.healthChecks.status = 'passed';
@@ -560,7 +588,11 @@ function validateAlerting() {
       }
     } catch (error) {
       results.healthChecks.status = 'failed';
-      results.healthChecks.checks.push({ endpoint: 'health', status: 'error', error: error.message });
+      results.healthChecks.checks.push({
+        endpoint: 'health',
+        status: 'error',
+        error: error.message,
+      });
       logWarning('Could not test health check endpoint');
     }
 
@@ -578,11 +610,11 @@ function validateAlerting() {
   const monitoringFiles = [
     'src/monitoring/health-check-service.ts',
     'src/monitoring/production-health-checker.ts',
-    'src/monitoring/monitoring-server.ts'
+    'src/monitoring/monitoring-server.ts',
   ];
 
   let monitoringConfigValid = true;
-  monitoringFiles.forEach(file => {
+  monitoringFiles.forEach((file) => {
     if (existsSync(join(projectRoot, file))) {
       results.monitoringEndpoints.endpoints.push({ file, status: 'exists' });
     } else {
@@ -603,13 +635,10 @@ function validateAlerting() {
   logInfo('Validating alert trigger configuration...');
 
   // Check for alert configuration
-  const alertConfigFiles = [
-    'docker/monitoring-stack.yml',
-    'scripts/setup-alerts.sh'
-  ];
+  const alertConfigFiles = ['docker/monitoring-stack.yml', 'scripts/setup-alerts.sh'];
 
   let alertConfigValid = true;
-  alertConfigFiles.forEach(file => {
+  alertConfigFiles.forEach((file) => {
     if (existsSync(join(projectRoot, file))) {
       results.alertTriggers.triggers.push({ file, status: 'exists' });
     } else {
@@ -626,16 +655,16 @@ function validateAlerting() {
     logWarning('Some alert configuration files missing');
   }
 
-  const overallStatus = Object.values(results).every(r => r.status === 'passed');
+  const overallStatus = Object.values(results).every((r) => r.status === 'passed');
 
   return {
     status: overallStatus ? 'passed' : 'failed',
     details: results,
     summary: {
       totalChecks: Object.keys(results).length,
-      passedChecks: Object.values(results).filter(r => r.status === 'passed').length,
-      failedChecks: Object.values(results).filter(r => r.status === 'failed').length
-    }
+      passedChecks: Object.values(results).filter((r) => r.status === 'passed').length,
+      failedChecks: Object.values(results).filter((r) => r.status === 'failed').length,
+    },
   };
 }
 
@@ -658,14 +687,14 @@ function generateReadinessReport(results) {
       version: '2.0.1',
       environment: process.env.NODE_ENV || 'development',
       nodeVersion: process.version,
-      platform: process.platform
+      platform: process.platform,
     },
     summary: {
       overallStatus: results.overallStatus,
       totalGates: Object.keys(results.gates).length,
-      passedGates: Object.values(results.gates).filter(g => g.status === 'passed').length,
-      failedGates: Object.values(results.gates).filter(g => g.status === 'failed').length,
-      readyForRelease: results.overallStatus === 'passed'
+      passedGates: Object.values(results.gates).filter((g) => g.status === 'passed').length,
+      failedGates: Object.values(results.gates).filter((g) => g.status === 'failed').length,
+      readyForRelease: results.overallStatus === 'passed',
     },
     gates: results.gates,
     recommendations: generateRecommendations(results.gates),
@@ -674,8 +703,8 @@ function generateReadinessReport(results) {
       htmlReportFile,
       coverageDir: CONFIG.COVERAGE_DIR,
       testResultsDir: CONFIG.TEST_RESULTS_DIR,
-      benchmarkDir: CONFIG.BENCHMARK_DIR
-    }
+      benchmarkDir: CONFIG.BENCHMARK_DIR,
+    },
   };
 
   // Write JSON report
@@ -704,7 +733,7 @@ function generateRecommendations(gates) {
             priority: 'high',
             category: 'Build',
             issue: 'Build validation failed',
-            action: 'Fix TypeScript compilation errors and ESLint issues before proceeding'
+            action: 'Fix TypeScript compilation errors and ESLint issues before proceeding',
           });
           break;
         case 'coverage':
@@ -712,7 +741,7 @@ function generateRecommendations(gates) {
             priority: 'high',
             category: 'Testing',
             issue: 'Test coverage below 90% threshold',
-            action: 'Add more unit tests and integration tests to meet coverage requirements'
+            action: 'Add more unit tests and integration tests to meet coverage requirements',
           });
           break;
         case 'performance':
@@ -720,7 +749,7 @@ function generateRecommendations(gates) {
             priority: 'high',
             category: 'Performance',
             issue: 'Performance targets not met',
-            action: 'Optimize code to meet p95 < 1s latency and throughput requirements'
+            action: 'Optimize code to meet p95 < 1s latency and throughput requirements',
           });
           break;
         case 'security':
@@ -728,7 +757,7 @@ function generateRecommendations(gates) {
             priority: 'critical',
             category: 'Security',
             issue: 'Security vulnerabilities detected',
-            action: 'Address all high/critical security vulnerabilities immediately'
+            action: 'Address all high/critical security vulnerabilities immediately',
           });
           break;
         case 'alerting':
@@ -736,7 +765,7 @@ function generateRecommendations(gates) {
             priority: 'medium',
             category: 'Monitoring',
             issue: 'Alerting configuration incomplete',
-            action: 'Set up proper monitoring and alerting for production readiness'
+            action: 'Set up proper monitoring and alerting for production readiness',
           });
           break;
       }
@@ -755,8 +784,8 @@ function generateRecommendations(gates) {
 function generateHTMLReport(report) {
   const { metadata, summary, gates, recommendations } = report;
 
-  const gateStatusColor = (status) => status === 'passed' ? '#4CAF50' : '#f44336';
-  const gateStatusIcon = (status) => status === 'passed' ? '✅' : '❌';
+  const gateStatusColor = (status) => (status === 'passed' ? '#4CAF50' : '#f44336');
+  const gateStatusIcon = (status) => (status === 'passed' ? '✅' : '❌');
 
   return `
 <!DOCTYPE html>
@@ -817,38 +846,58 @@ function generateHTMLReport(report) {
             </div>
         </div>
 
-        ${Object.entries(gates).map(([gateName, gateResult]) => `
+        ${Object.entries(gates)
+          .map(
+            ([gateName, gateResult]) => `
         <div class="gate-section ${gateResult.status}">
             <h3>${gateStatusIcon(gateResult.status)} ${gateName.charAt(0).toUpperCase() + gateName.slice(1)} Gate</h3>
             <p><strong>Status:</strong> <span style="color: ${gateStatusColor(gateResult.status)}">${gateResult.status.toUpperCase()}</span></p>
 
-            ${gateResult.summary ? `
+            ${
+              gateResult.summary
+                ? `
             <div class="metrics-grid">
-                ${Object.entries(gateResult.summary).map(([key, value]) => `
+                ${Object.entries(gateResult.summary)
+                  .map(
+                    ([key, value]) => `
                 <div class="metric-card">
                     <div class="metric-value">${value}</div>
                     <div>${key.replace(/([A-Z])/g, ' $1').trim()}</div>
                 </div>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             ${gateResult.error ? `<p><strong>Error:</strong> ${gateResult.error}</p>` : ''}
         </div>
-        `).join('')}
+        `
+          )
+          .join('')}
 
-        ${recommendations.length > 0 ? `
+        ${
+          recommendations.length > 0
+            ? `
         <div class="recommendations">
             <h3>📋 Recommendations</h3>
-            ${recommendations.map(rec => `
+            ${recommendations
+              .map(
+                (rec) => `
             <div class="recommendation priority-${rec.priority}">
                 <h4>${rec.category} - ${rec.priority.toUpperCase()}</h4>
                 <p><strong>Issue:</strong> ${rec.issue}</p>
                 <p><strong>Action:</strong> ${rec.action}</p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
             <p>Generated by Cortex Memory MCP Readiness Gate Validator</p>
@@ -866,7 +915,7 @@ function extractTypeScriptErrors(output) {
   const errors = [];
   const lines = output.split('\n');
 
-  lines.forEach(line => {
+  lines.forEach((line) => {
     if (line.includes('error TS') && !line.includes('node_modules')) {
       errors.push(line.trim());
     }
@@ -882,7 +931,7 @@ function extractESLintErrors(output) {
   const errors = [];
   const lines = output.split('\n');
 
-  lines.forEach(line => {
+  lines.forEach((line) => {
     if (line.includes('error') && !line.includes('node_modules')) {
       errors.push(line.trim());
     }
@@ -898,7 +947,7 @@ function extractTestFailures(output) {
   const failures = [];
   const lines = output.split('\n');
 
-  lines.forEach(line => {
+  lines.forEach((line) => {
     if (line.includes('FAIL') || line.includes('×')) {
       failures.push(line.trim());
     }
@@ -917,28 +966,28 @@ async function validateReadinessGates() {
   const startTime = Date.now();
   const results = {
     gates: {},
-    overallStatus: 'unknown'
+    overallStatus: 'unknown',
   };
 
   try {
     // Execute all gate validations
     results.gates.build = validateBuildStatus();
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Brief pause
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Brief pause
 
     results.gates.coverage = validateCoverage();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     results.gates.performance = validatePerformance();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     results.gates.security = validateSecurity();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     results.gates.alerting = validateAlerting();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Determine overall status
-    const failedGates = Object.values(results.gates).filter(gate => gate.status === 'failed');
+    const failedGates = Object.values(results.gates).filter((gate) => gate.status === 'failed');
     results.overallStatus = failedGates.length === 0 ? 'passed' : 'failed';
 
     // Generate report
@@ -949,7 +998,9 @@ async function validateReadinessGates() {
     logHeader('📊 Readiness Gate Validation Complete');
 
     logInfo(`Validation completed in ${duration} seconds`);
-    logInfo(`Gates passed: ${Object.values(results.gates).filter(g => g.status === 'passed').length}/${Object.keys(results.gates).length}`);
+    logInfo(
+      `Gates passed: ${Object.values(results.gates).filter((g) => g.status === 'passed').length}/${Object.keys(results.gates).length}`
+    );
 
     if (results.overallStatus === 'passed') {
       logSuccess('\n🎉 ALL READINESS GATES PASSED - READY FOR RELEASE');
@@ -966,7 +1017,9 @@ async function validateReadinessGates() {
 
       Object.entries(results.gates).forEach(([gateName, gateResult]) => {
         if (gateResult.status === 'failed') {
-          logError(`  ❌ ${gateName.charAt(0).toUpperCase() + gateName.slice(1)}: ${gateResult.error || 'Validation failed'}`);
+          logError(
+            `  ❌ ${gateName.charAt(0).toUpperCase() + gateName.slice(1)}: ${gateResult.error || 'Validation failed'}`
+          );
         }
       });
 
@@ -976,7 +1029,6 @@ async function validateReadinessGates() {
 
       process.exit(1);
     }
-
   } catch (error) {
     logError(`Readiness gate validation failed: ${error.message}`);
     process.exit(1);
@@ -985,7 +1037,7 @@ async function validateReadinessGates() {
 
 // Run the validation if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  validateReadinessGates().catch(error => {
+  validateReadinessGates().catch((error) => {
     logError(`Unexpected error: ${error.message}`);
     process.exit(1);
   });

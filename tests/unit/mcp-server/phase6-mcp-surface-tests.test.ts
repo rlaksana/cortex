@@ -500,7 +500,7 @@ describe('Business Rule Violations in MCP Context', () => {
       mockSecurityService.enforceBusinessRules.mockImplementation(async (items: any[]) => {
         const violations = [];
         for (const [index, item] of items.entries()) {
-          if (!item.data.title) {
+          if (!item['data.title']) {
             violations.push({
               index,
               rule: 'missing_title',
@@ -516,7 +516,7 @@ describe('Business Rule Violations in MCP Context', () => {
               severity: 'error',
             });
           }
-          if (item.data.content?.includes('<script>')) {
+          if (item['data.content']?.includes('<script>')) {
             violations.push({
               index,
               rule: 'forbidden_content',

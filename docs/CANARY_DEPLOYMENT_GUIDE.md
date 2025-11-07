@@ -51,11 +51,7 @@ await canarySystemManager.initialize();
 ### Basic Usage
 
 ```typescript
-import {
-  CanaryUtils,
-  canaryOrchestrator,
-  CanaryStatus
-} from './src/services/canary/index.js';
+import { CanaryUtils, canaryOrchestrator, CanaryStatus } from './src/services/canary/index.js';
 
 // Create a simple canary deployment configuration
 const canaryConfig = CanaryUtils.createSimpleCanaryConfig({
@@ -75,17 +71,17 @@ const canaryConfig = CanaryUtils.createSimpleCanaryConfig({
           metric: 'availability',
           operator: 'greater_than',
           threshold: 99,
-          durationMs: 180000
-        }
+          durationMs: 180000,
+        },
       ],
       rollbackThresholds: {
         errorRate: 5,
         latencyP95: 1000,
-        availability: 95
+        availability: 95,
       },
-      status: 'pending'
-    }
-  ]
+      status: 'pending',
+    },
+  ],
 });
 
 // Start the deployment
@@ -120,14 +116,14 @@ const flag = featureFlagService.createFlag({
   status: FlagStatus.ENABLED,
   strategy: TargetingStrategy.PERCENTAGE,
   rolloutPercentage: 10,
-  killSwitchEnabled: true
+  killSwitchEnabled: true,
 });
 
 // Evaluate flag for a user
 const userContext = {
   userId: 'user-123',
   timestamp: new Date(),
-  attributes: { tier: 'premium' }
+  attributes: { tier: 'premium' },
 };
 
 const result = await featureFlagService.evaluateFlag(flag.id, userContext);
@@ -157,31 +153,27 @@ const killSwitch = killSwitchService.createConfig({
     {
       type: KillSwitchTrigger.ERROR_RATE_THRESHOLD,
       threshold: 20,
-      component: 'my-service'
-    }
+      component: 'my-service',
+    },
   ],
   autoRecovery: {
     enabled: true,
     delayMs: 300000,
     maxAttempts: 3,
-    recoveryActions: []
+    recoveryActions: [],
   },
   notifications: {
     enabled: true,
     channels: ['email'],
-    recipients: ['admin@company.com']
+    recipients: ['admin@company.com'],
   },
   gracePeriodMs: 30000,
   priority: 'critical',
-  enabled: true
+  enabled: true,
 });
 
 // Manually trigger kill switch
-await killSwitchService.triggerKillSwitch(
-  killSwitch.id,
-  'Manual emergency activation',
-  'admin'
-);
+await killSwitchService.triggerKillSwitch(killSwitch.id, 'Manual emergency activation', 'admin');
 
 // Emergency kill all
 killSwitchService.emergencyKillAll('Critical system failure detected');
@@ -217,7 +209,7 @@ const rule = trafficSplitterService.createRule({
       healthy: true,
       connections: 0,
       lastHealthCheck: new Date(),
-      metadata: {}
+      metadata: {},
     },
     {
       id: 'canary-target',
@@ -228,8 +220,8 @@ const rule = trafficSplitterService.createRule({
       healthy: true,
       connections: 0,
       lastHealthCheck: new Date(),
-      metadata: {}
-    }
+      metadata: {},
+    },
   ],
   sessionAffinity: {
     enabled: true,
@@ -238,7 +230,7 @@ const rule = trafficSplitterService.createRule({
     ttl: 3600000,
     path: '/',
     secure: true,
-    httpOnly: true
+    httpOnly: true,
   },
   failover: {
     enabled: true,
@@ -249,14 +241,14 @@ const rule = trafficSplitterService.createRule({
     circuitBreaker: {
       enabled: true,
       failureThreshold: 5,
-      recoveryTimeout: 60000
-    }
+      recoveryTimeout: 60000,
+    },
   },
   rateLimit: {
     enabled: true,
     requestsPerSecond: 1000,
     burst: 100,
-    windowSize: 60000
+    windowSize: 60000,
   },
   healthCheck: {
     enabled: true,
@@ -265,8 +257,8 @@ const rule = trafficSplitterService.createRule({
     timeoutMs: 5000,
     healthyThreshold: 2,
     unhealthyThreshold: 3,
-    expectedStatuses: [200]
-  }
+    expectedStatuses: [200],
+  },
 });
 
 // Route a request
@@ -279,7 +271,7 @@ const requestContext = {
   cookies: {},
   clientIP: '192.168.1.1',
   userAgent: 'Mozilla/5.0',
-  timestamp: new Date()
+  timestamp: new Date(),
 };
 
 const decision = await trafficSplitterService.routeRequest(requestContext);
@@ -315,7 +307,7 @@ const healthConfig = canaryHealthMonitor.createConfig({
       critical: 90,
       operator: 'less_than',
       windowSize: 5,
-      consecutiveFailures: 2
+      consecutiveFailures: 2,
     },
     {
       metric: HealthMetricType.ERROR_RATE,
@@ -323,8 +315,8 @@ const healthConfig = canaryHealthMonitor.createConfig({
       critical: 10,
       operator: 'greater_than',
       windowSize: 5,
-      consecutiveFailures: 3
-    }
+      consecutiveFailures: 3,
+    },
   ],
   comparisonEnabled: true,
   comparisonTolerance: 10,
@@ -338,14 +330,14 @@ const healthConfig = canaryHealthMonitor.createConfig({
       {
         severity: 'warning',
         delayMs: 300000,
-        recipients: ['team@company.com']
+        recipients: ['team@company.com'],
       },
       {
         severity: 'critical',
         delayMs: 60000,
-        recipients: ['oncall@company.com']
-      }
-    ]
+        recipients: ['oncall@company.com'],
+      },
+    ],
   },
   autoRollback: {
     enabled: true,
@@ -355,12 +347,12 @@ const healthConfig = canaryHealthMonitor.createConfig({
         threshold: 15,
         operator: 'greater_than',
         duration: 5,
-        consecutiveViolations: 2
-      }
+        consecutiveViolations: 2,
+      },
     ],
     delayMs: 30000,
-    maxRollbacks: 3
-  }
+    maxRollbacks: 3,
+  },
 });
 
 // Start monitoring
@@ -398,8 +390,8 @@ const rollbackConfig = rollbackService.createConfig({
       operator: 'greater_than',
       threshold: 10,
       duration: 5,
-      consecutiveFailures: 2
-    }
+      consecutiveFailures: 2,
+    },
   ],
   validation: {
     enabled: true,
@@ -409,11 +401,11 @@ const rollbackConfig = rollbackService.createConfig({
       {
         type: 'health_check',
         weight: 1,
-        required: true
-      }
+        required: true,
+      },
     ],
     retryAttempts: 3,
-    retryDelayMs: 10000
+    retryDelayMs: 10000,
   },
   actions: [
     {
@@ -422,7 +414,7 @@ const rollbackConfig = rollbackService.createConfig({
       type: 'stop_new_traffic',
       order: 1,
       timeoutMs: 30000,
-      config: {}
+      config: {},
     },
     {
       id: 'drain-connections',
@@ -430,7 +422,7 @@ const rollbackConfig = rollbackService.createConfig({
       type: 'drain_connections',
       order: 2,
       timeoutMs: 60000,
-      config: {}
+      config: {},
     },
     {
       id: 'update-flags',
@@ -438,8 +430,8 @@ const rollbackConfig = rollbackService.createConfig({
       type: 'update_feature_flags',
       order: 3,
       timeoutMs: 15000,
-      config: { disable: true }
-    }
+      config: { disable: true },
+    },
   ],
   notifications: {
     enabled: true,
@@ -448,15 +440,15 @@ const rollbackConfig = rollbackService.createConfig({
     onComplete: true,
     onFailure: true,
     channels: ['email', 'slack'],
-    recipients: ['team@company.com']
+    recipients: ['team@company.com'],
   },
   safety: {
     requireApproval: false,
     approvers: [],
     maxRollbackTimeMs: 300000,
     allowConsecutiveRollbacks: false,
-    cooldownPeriodMs: 300000
-  }
+    cooldownPeriodMs: 300000,
+  },
 });
 
 // Execute rollback
@@ -491,7 +483,7 @@ const validationResult = canaryConfigValidator.validate({
     environment: 'production',
     resourceConstraints: {
       maxTrafficPercentage: 50,
-      maxRollbackTime: 600000
+      maxRollbackTime: 600000,
     },
     securityPolicies: [
       {
@@ -499,26 +491,26 @@ const validationResult = canaryConfigValidator.validate({
         rules: [
           {
             type: 'encryption',
-            required: true
-          }
-        ]
-      }
-    ]
+            required: true,
+          },
+        ],
+      },
+    ],
   },
-  strictMode: false
+  strictMode: false,
 });
 
 if (validationResult.valid) {
   console.log('Configuration is valid');
 } else {
   console.log('Configuration validation failed:');
-  validationResult.errors.forEach(error => {
+  validationResult.errors.forEach((error) => {
     console.log(`- ${error.message} (${error.field})`);
   });
 }
 
 console.log('Recommendations:');
-validationResult.recommendations.forEach(rec => {
+validationResult.recommendations.forEach((rec) => {
   console.log(`- ${rec}`);
 });
 ```
@@ -540,8 +532,8 @@ const customRule = trafficSplitterService.createRule({
       field: 'x-beta-user',
       operator: 'equals',
       value: 'true',
-      caseSensitive: false
-    }
+      caseSensitive: false,
+    },
   ],
   targets: [
     {
@@ -553,8 +545,8 @@ const customRule = trafficSplitterService.createRule({
       healthy: true,
       connections: 0,
       lastHealthCheck: new Date(),
-      metadata: { beta: true }
-    }
+      metadata: { beta: true },
+    },
   ],
   sessionAffinity: {
     enabled: true,
@@ -563,7 +555,7 @@ const customRule = trafficSplitterService.createRule({
     ttl: 1800000,
     path: '/',
     secure: false,
-    httpOnly: false
+    httpOnly: false,
   },
   failover: {
     enabled: true,
@@ -574,14 +566,14 @@ const customRule = trafficSplitterService.createRule({
     circuitBreaker: {
       enabled: true,
       failureThreshold: 3,
-      recoveryTimeout: 30000
-    }
+      recoveryTimeout: 30000,
+    },
   },
   rateLimit: {
     enabled: true,
     requestsPerSecond: 500,
     burst: 50,
-    windowSize: 60000
+    windowSize: 60000,
   },
   healthCheck: {
     enabled: true,
@@ -590,8 +582,8 @@ const customRule = trafficSplitterService.createRule({
     timeoutMs: 3000,
     healthyThreshold: 2,
     unhealthyThreshold: 2,
-    expectedStatuses: [200]
-  }
+    expectedStatuses: [200],
+  },
 });
 ```
 
@@ -616,21 +608,21 @@ const multiPhaseConfig = CanaryUtils.createSimpleCanaryConfig({
           metric: 'availability',
           operator: 'greater_than',
           threshold: 100,
-          durationMs: 300000
+          durationMs: 300000,
         },
         {
           metric: 'error_rate',
           operator: 'less_than',
           threshold: 0,
-          durationMs: 600000
-        }
+          durationMs: 600000,
+        },
       ],
       rollbackThresholds: {
         errorRate: 1,
         latencyP95: 500,
-        availability: 99.5
+        availability: 99.5,
       },
-      status: 'pending'
+      status: 'pending',
     },
     {
       id: 'phase-2-beta',
@@ -642,27 +634,27 @@ const multiPhaseConfig = CanaryUtils.createSimpleCanaryConfig({
           metric: 'availability',
           operator: 'greater_than',
           threshold: 99.9,
-          durationMs: 900000
+          durationMs: 900000,
         },
         {
           metric: 'error_rate',
           operator: 'less_than',
           threshold: 0.5,
-          durationMs: 1800000
+          durationMs: 1800000,
         },
         {
           metric: 'response_time',
           operator: 'less_than',
           threshold: 200,
-          durationMs: 600000
-        }
+          durationMs: 600000,
+        },
       ],
       rollbackThresholds: {
         errorRate: 2,
         latencyP95: 800,
-        availability: 99
+        availability: 99,
       },
-      status: 'pending'
+      status: 'pending',
     },
     {
       id: 'phase-3-partial',
@@ -674,27 +666,27 @@ const multiPhaseConfig = CanaryUtils.createSimpleCanaryConfig({
           metric: 'availability',
           operator: 'greater_than',
           threshold: 99.5,
-          durationMs: 1800000
+          durationMs: 1800000,
         },
         {
           metric: 'error_rate',
           operator: 'less_than',
           threshold: 1,
-          durationMs: 3600000
+          durationMs: 3600000,
         },
         {
           metric: 'throughput',
           operator: 'greater_than',
           threshold: 1000,
-          durationMs: 1800000
-        }
+          durationMs: 1800000,
+        },
       ],
       rollbackThresholds: {
         errorRate: 3,
         latencyP95: 1000,
-        availability: 98
+        availability: 98,
       },
-      status: 'pending'
+      status: 'pending',
     },
     {
       id: 'phase-4-full',
@@ -706,22 +698,22 @@ const multiPhaseConfig = CanaryUtils.createSimpleCanaryConfig({
           metric: 'availability',
           operator: 'greater_than',
           threshold: 99,
-          durationMs: 3600000
+          durationMs: 3600000,
         },
         {
           metric: 'error_rate',
           operator: 'less_than',
           threshold: 2,
-          durationMs: 7200000
-        }
+          durationMs: 7200000,
+        },
       ],
       rollbackThresholds: {
         errorRate: 5,
         latencyP95: 1500,
-        availability: 95
+        availability: 95,
       },
-      status: 'pending'
-    }
+      status: 'pending',
+    },
   ],
   autoPromote: true,
   autoRollback: true,
@@ -731,8 +723,8 @@ const multiPhaseConfig = CanaryUtils.createSimpleCanaryConfig({
     onPhaseComplete: true,
     onFailure: true,
     onComplete: true,
-    onRollback: true
-  }
+    onRollback: true,
+  },
 });
 ```
 

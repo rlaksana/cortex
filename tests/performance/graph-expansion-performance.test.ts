@@ -36,7 +36,7 @@ describe('Graph Expansion Performance Tests', () => {
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
       const memoryIncrease = memoryUsage - memoryBaseline;
 
-      expect(memoryIncrease).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_USAGE_MB);
+      expect(memoryIncrease).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_USAGE_MB']);
     }
   });
 
@@ -55,7 +55,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS']);
     });
 
     test('should handle moderate depth traversal efficiently', async () => {
@@ -72,7 +72,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS']);
     });
 
     test('should handle maximum depth within acceptable time', async () => {
@@ -90,7 +90,7 @@ describe('Graph Expansion Performance Tests', () => {
       const executionTime = Date.now() - startTime;
 
       // Allow more time for complex traversals but still within reasonable bounds
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS * 2);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS'] * 2);
     });
   });
 
@@ -109,7 +109,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_FIND_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_FIND_TIME_MS']);
     });
 
     test('should complete parents expansion within time limit', async () => {
@@ -126,7 +126,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_FIND_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_FIND_TIME_MS']);
     });
 
     test('should complete relations expansion within time limit', async () => {
@@ -143,7 +143,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_FIND_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_FIND_TIME_MS']);
     });
 
     test('should handle complex queries with expansion efficiently', async () => {
@@ -166,10 +166,10 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_FIND_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_FIND_TIME_MS']);
       expect(result.graph_expansion).toBeDefined();
       expect(result.graph_expansion!.traversal_metadata.execution_time_ms).toBeLessThan(
-        PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS
+        PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS']
       );
     });
   });
@@ -195,7 +195,7 @@ describe('Graph Expansion Performance Tests', () => {
       const executionTime = Date.now() - startTime;
       const throughput = (concurrency / executionTime) * 1000; // traversals per second
 
-      expect(throughput).toBeGreaterThan(PERFORMANCE_THRESHOLDS.MIN_THROUGHPUT_PER_SECOND);
+      expect(throughput).toBeGreaterThan(PERFORMANCE_THRESHOLDS['MIN_THROUGHPUT_PER_SECOND']);
     });
 
     test('should handle batch memory find operations', async () => {
@@ -218,7 +218,7 @@ describe('Graph Expansion Performance Tests', () => {
       const executionTime = Date.now() - startTime;
       const throughput = (batchSize / executionTime) * 1000; // operations per second
 
-      expect(throughput).toBeGreaterThan(PERFORMANCE_THRESHOLDS.MIN_THROUGHPUT_PER_SECOND);
+      expect(throughput).toBeGreaterThan(PERFORMANCE_THRESHOLDS['MIN_THROUGHPUT_PER_SECOND']);
       expect(results).toHaveLength(batchSize);
 
       // Verify all operations succeeded
@@ -236,9 +236,10 @@ describe('Graph Expansion Performance Tests', () => {
 
       for (let i = 0; i < iterations; i++) {
         // Get memory usage before operation
-        const beforeMemory = typeof process !== 'undefined' && process.memoryUsage
-          ? process.memoryUsage().heapUsed
-          : 0;
+        const beforeMemory =
+          typeof process !== 'undefined' && process.memoryUsage
+            ? process.memoryUsage().heapUsed
+            : 0;
 
         // Perform traversal
         const options: TraversalOptions = {
@@ -250,9 +251,10 @@ describe('Graph Expansion Performance Tests', () => {
         await traverseGraphWithExpansion('entity', `memory-test-entity-${i}`, options);
 
         // Get memory usage after operation
-        const afterMemory = typeof process !== 'undefined' && process.memoryUsage
-          ? process.memoryUsage().heapUsed
-          : 0;
+        const afterMemory =
+          typeof process !== 'undefined' && process.memoryUsage
+            ? process.memoryUsage().heapUsed
+            : 0;
 
         memoryUsages.push(afterMemory - beforeMemory);
 
@@ -263,7 +265,8 @@ describe('Graph Expansion Performance Tests', () => {
       }
 
       // Calculate average memory increase
-      const avgMemoryIncrease = memoryUsages.reduce((sum, usage) => sum + usage, 0) / memoryUsages.length;
+      const avgMemoryIncrease =
+        memoryUsages.reduce((sum, usage) => sum + usage, 0) / memoryUsages.length;
       const avgMemoryIncreaseMB = avgMemoryIncrease / 1024 / 1024;
 
       // Memory increase should be minimal per operation
@@ -284,7 +287,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS * 2);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS'] * 2);
       expect(result.nodes.length).toBeLessThanOrEqual(201); // max_results + root node
       expect(result.total_entities_found).toBeLessThanOrEqual(201);
     });
@@ -339,7 +342,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       // All sorting algorithms should complete within reasonable time
       for (const executionTime of executionTimes) {
-        expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS);
+        expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS']);
       }
 
       // Variance between sorting algorithms should be minimal
@@ -366,7 +369,7 @@ describe('Graph Expansion Performance Tests', () => {
       const executionTime = Date.now() - startTime;
 
       // Even empty queries should complete quickly
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_MEMORY_FIND_TIME_MS / 2);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_MEMORY_FIND_TIME_MS'] / 2);
     });
 
     test('should handle circular references without performance degradation', async () => {
@@ -383,7 +386,7 @@ describe('Graph Expansion Performance Tests', () => {
 
       const executionTime = Date.now() - startTime;
 
-      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS.MAX_TRAVERSAL_TIME_MS);
+      expect(executionTime).toBeLessThan(PERFORMANCE_THRESHOLDS['MAX_TRAVERSAL_TIME_MS']);
       expect(result.circular_refs_detected).toBeDefined();
     });
   });

@@ -18,7 +18,7 @@ import {
   concurrentStoreBenchmark,
   deduplicationBenchmark,
   largeItemStoreBenchmark,
-  ttlProcessingBenchmark
+  ttlProcessingBenchmark,
 } from './scenarios/memory-store-benchmark.js';
 
 import {
@@ -27,16 +27,13 @@ import {
   concurrentSearchBenchmark,
   graphExpansionBenchmark,
   fuzzySearchBenchmark,
-  largeResultSetBenchmark
+  largeResultSetBenchmark,
 } from './scenarios/memory-find-benchmark.js';
 
 const program = require('commander');
 
 // CLI configuration
-program
-  .name('cortex-bench')
-  .description('Cortex Memory MCP Benchmark Tool')
-  .version('2.0.0');
+program.name('cortex-bench').description('Cortex Memory MCP Benchmark Tool').version('2.0.0');
 
 // Run all benchmarks
 program
@@ -55,7 +52,7 @@ program
       warmupIterations: parseInt(options.warmup),
       benchmarkIterations: parseInt(options.iterations),
       scenarioDelay: parseInt(options.delay),
-      enableMemoryProfiling: options.memoryProfiling
+      enableMemoryProfiling: options.memoryProfiling,
     };
 
     const runner = new BenchmarkRunner(config);
@@ -69,7 +66,7 @@ program
       // Memory Find Benchmarks
       simpleSearchBenchmark,
       complexSearchBenchmark,
-      fuzzySearchBenchmark
+      fuzzySearchBenchmark,
     ];
 
     try {
@@ -97,17 +94,24 @@ program
       version: '2.0.0',
       outputDir: options.output,
       warmupIterations: parseInt(options.warmup),
-      benchmarkIterations: parseInt(options.iterations)
+      benchmarkIterations: parseInt(options.iterations),
     };
 
     // Update scenario configs with CLI options
     const storeScenarios = [
       { ...singleItemStoreBenchmark },
       { ...batchStoreBenchmark },
-      { ...concurrentStoreBenchmark, config: { ...concurrentStoreBenchmark.config, concurrency: parseInt(options.concurrency), operations: parseInt(options.operations) } },
+      {
+        ...concurrentStoreBenchmark,
+        config: {
+          ...concurrentStoreBenchmark.config,
+          concurrency: parseInt(options.concurrency),
+          operations: parseInt(options.operations),
+        },
+      },
       { ...deduplicationBenchmark },
       { ...largeItemStoreBenchmark },
-      { ...ttlProcessingBenchmark }
+      { ...ttlProcessingBenchmark },
     ];
 
     const runner = new BenchmarkRunner(config);
@@ -137,17 +141,24 @@ program
       version: '2.0.0',
       outputDir: options.output,
       warmupIterations: parseInt(options.warmup),
-      benchmarkIterations: parseInt(options.iterations)
+      benchmarkIterations: parseInt(options.iterations),
     };
 
     // Update scenario configs with CLI options
     const searchScenarios = [
       { ...simpleSearchBenchmark },
       { ...complexSearchBenchmark },
-      { ...concurrentSearchBenchmark, config: { ...concurrentSearchBenchmark.config, concurrency: parseInt(options.concurrency), operations: parseInt(options.operations) } },
+      {
+        ...concurrentSearchBenchmark,
+        config: {
+          ...concurrentSearchBenchmark.config,
+          concurrency: parseInt(options.concurrency),
+          operations: parseInt(options.operations),
+        },
+      },
       { ...graphExpansionBenchmark },
       { ...fuzzySearchBenchmark },
-      { ...largeResultSetBenchmark }
+      { ...largeResultSetBenchmark },
     ];
 
     const runner = new BenchmarkRunner(config);
@@ -176,7 +187,7 @@ program
       version: '2.0.0',
       outputDir: options.output,
       warmupIterations: 1,
-      benchmarkIterations: 1
+      benchmarkIterations: 1,
     };
 
     // Configure for load testing
@@ -188,8 +199,8 @@ program
           ...concurrentStoreBenchmark.config,
           concurrency: parseInt(options.concurrency),
           operations: parseInt(options.operations),
-          rampUpTime: parseInt(options.rampup)
-        }
+          rampUpTime: parseInt(options.rampup),
+        },
       },
       {
         ...concurrentSearchBenchmark,
@@ -198,9 +209,9 @@ program
           ...concurrentSearchBenchmark.config,
           concurrency: parseInt(options.concurrency),
           operations: parseInt(options.operations),
-          rampUpTime: parseInt(options.rampup)
-        }
-      }
+          rampUpTime: parseInt(options.rampup),
+        },
+      },
     ];
 
     const runner = new BenchmarkRunner(config);
@@ -229,7 +240,7 @@ program
       version: '2.0.0',
       outputDir: options.output,
       warmupIterations: 0,
-      benchmarkIterations: 1
+      benchmarkIterations: 1,
     };
 
     // Configure for stress testing
@@ -241,8 +252,8 @@ program
           ...concurrentStoreBenchmark.config,
           concurrency: parseInt(options.concurrency),
           operations: parseInt(options.operations),
-          rampUpTime: parseInt(options.rampup)
-        }
+          rampUpTime: parseInt(options.rampup),
+        },
       },
       {
         ...concurrentSearchBenchmark,
@@ -251,17 +262,17 @@ program
           ...concurrentSearchBenchmark.config,
           concurrency: parseInt(options.concurrency),
           operations: parseInt(options.operations),
-          rampUpTime: parseInt(options.rampup)
-        }
+          rampUpTime: parseInt(options.rampup),
+        },
       },
       {
         ...largeItemStoreBenchmark,
         name: 'Stress Test - Large Items',
         config: {
           ...largeItemStoreBenchmark.config,
-          operations: 100 // Reduce for stress test
-        }
-      }
+          operations: 100, // Reduce for stress test
+        },
+      },
     ];
 
     const runner = new BenchmarkRunner(config);
@@ -297,7 +308,7 @@ program
           itemTypes: ['entity', 'observation', 'decision', 'issue', 'todo', 'incident', 'release'],
           sizeDistribution: { min: 500, max: 5000, average: 2000 },
           relationshipDensity: 0.15,
-          embeddingDimensions: 1536
+          embeddingDimensions: 1536,
         });
       } else {
         // Predefined dataset type
@@ -305,12 +316,12 @@ program
       }
 
       console.log(`✅ Dataset generated:`);
-      console.log(`   Items: ${dataset.metadata.itemCount}`);
-      console.log(`   Size: ${(dataset.metadata.totalSize / 1024 / 1024).toFixed(2)}MB`);
+      console.log(`   Items: ${dataset.metadata['itemCount']}`);
+      console.log(`   Size: ${(dataset.metadata['totalSize'] / 1024 / 1024).toFixed(2)}MB`);
       console.log(`   Relationships: ${dataset.relationships.length}`);
 
       if (options.save) {
-        await generator.saveDataset(dataset, `${options.output}/${dataset.metadata.name}.json`);
+        await generator.saveDataset(dataset, `${options.output}/${dataset.metadata['name']}.json`);
       }
 
       process.exit(0);

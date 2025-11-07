@@ -34,15 +34,15 @@ async function getServices() {
     // Initialize services
     const authConfig = getAuthConfig();
     const authService = new AuthService({
-      jwt_secret: authConfig.JWT_SECRET,
-      jwt_refresh_secret: authConfig.JWT_REFRESH_SECRET,
-      jwt_expires_in: authConfig.JWT_EXPIRES_IN,
-      jwt_refresh_expires_in: authConfig.JWT_REFRESH_EXPIRES_IN,
-      bcrypt_rounds: authConfig.BCRYPT_ROUNDS,
-      api_key_length: authConfig.API_KEY_LENGTH,
-      session_timeout_hours: authConfig.SESSION_TIMEOUT_HOURS,
-      max_sessions_per_user: authConfig.MAX_SESSIONS_PER_USER,
-      rate_limit_enabled: authConfig.RATE_LIMIT_ENABLED,
+      jwt_secret: authConfig['JWT_SECRET'],
+      jwt_refresh_secret: authConfig['JWT_REFRESH_SECRET'],
+      jwt_expires_in: authConfig['JWT_EXPIRES_IN'],
+      jwt_refresh_expires_in: authConfig['JWT_REFRESH_EXPIRES_IN'],
+      bcrypt_rounds: authConfig['BCRYPT_ROUNDS'],
+      api_key_length: authConfig['API_KEY_LENGTH'],
+      session_timeout_hours: authConfig['SESSION_TIMEOUT_HOURS'],
+      max_sessions_per_user: authConfig['MAX_SESSIONS_PER_USER'],
+      rate_limit_enabled: authConfig['RATE_LIMIT_ENABLED'],
     });
 
     const authorizationService = new AuthorizationService();
@@ -253,7 +253,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
             username: 'admin',
             email: 'admin@cortex.local',
             password_hash: '',
-            role: UserRole.ADMIN,
+            role: UserRole['ADMIN'],
             is_active: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

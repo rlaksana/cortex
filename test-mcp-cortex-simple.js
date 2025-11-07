@@ -15,7 +15,7 @@ const TEST_CONFIG = {
     {
       kind: 'entity',
       content: 'Test User Entity',
-      metadata: { type: 'user', role: 'developer', active: true }
+      metadata: { type: 'user', role: 'developer', active: true },
     },
     {
       kind: 'decision',
@@ -23,16 +23,16 @@ const TEST_CONFIG = {
       metadata: {
         alternatives: ['Vue', 'Angular'],
         rationale: 'Team experience',
-        impact: 'medium'
-      }
+        impact: 'medium',
+      },
     },
     {
       kind: 'observation',
       content: 'System performance observation',
       metadata: {
         metrics: { cpu: 80, memory: 60, disk: 45 },
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     },
     {
       kind: 'issue',
@@ -40,8 +40,8 @@ const TEST_CONFIG = {
       metadata: {
         severity: 'high',
         status: 'open',
-        reporter: 'test-user'
-      }
+        reporter: 'test-user',
+      },
     },
     {
       kind: 'todo',
@@ -49,9 +49,9 @@ const TEST_CONFIG = {
       metadata: {
         priority: 'high',
         assignee: 'developer',
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    }
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    },
   ],
 
   // Test relationships
@@ -62,10 +62,10 @@ const TEST_CONFIG = {
       metadata: {
         relation_type: 'reports',
         source: 'test-user-entity',
-        target: 'authentication-bug'
-      }
-    }
-  ]
+        target: 'authentication-bug',
+      },
+    },
+  ],
 };
 
 // Simple logger
@@ -73,7 +73,7 @@ const logger = {
   info: (msg, ...args) => console.log(`[INFO] ${msg}`, ...args),
   error: (msg, ...args) => console.error(`[ERROR] ${msg}`, ...args),
   success: (msg, ...args) => console.log(`[SUCCESS] ${msg}`, ...args),
-  warn: (msg, ...args) => console.warn(`[WARN] ${msg}`, ...args)
+  warn: (msg, ...args) => console.warn(`[WARN] ${msg}`, ...args),
 };
 
 // Test results tracker
@@ -81,7 +81,7 @@ const testResults = {
   passed: 0,
   failed: 0,
   total: 0,
-  scenarios: []
+  scenarios: [],
 };
 
 /**
@@ -102,7 +102,7 @@ function addTestResult(scenario, passed, message, details = null) {
     passed,
     message,
     details,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -144,8 +144,8 @@ async function testSchemaDefinitions() {
       addTestResult('Schema Files', true, 'Schema files exist');
 
       const schemaContent = fs.readFileSync(schemasPath, 'utf8');
-      const hasMemorySchemas = schemaContent.includes('MemoryStoreInput') &&
-                              schemaContent.includes('MemoryFindInput');
+      const hasMemorySchemas =
+        schemaContent.includes('MemoryStoreInput') && schemaContent.includes('MemoryFindInput');
 
       if (hasMemorySchemas) {
         addTestResult('Memory Schemas', true, 'Memory store/find schemas defined');
@@ -174,7 +174,7 @@ async function testCoverage() {
       './tests/unit/memory-store.test.ts',
       './tests/unit/memory-find.test.ts',
       './tests/unit/memory-store-batch-response.test.ts',
-      './tests/unit/memory-find-expand-integration.test.ts'
+      './tests/unit/memory-find-expand-integration.test.ts',
     ];
 
     let existingTests = 0;
@@ -187,8 +187,11 @@ async function testCoverage() {
       }
     }
 
-    addTestResult('Test Coverage', existingTests >= 3,
-      `${existingTests}/${testFiles.length} test files exist`);
+    addTestResult(
+      'Test Coverage',
+      existingTests >= 3,
+      `${existingTests}/${testFiles.length} test files exist`
+    );
 
     return existingTests >= 3;
   } catch (error) {
@@ -207,8 +210,8 @@ async function testPackageConfiguration() {
     const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
 
     const hasMcpConfig = packageJson.name && packageJson.version;
-    const hasDependencies = packageJson.dependencies &&
-                          packageJson.dependencies['@modelcontextprotocol/sdk'];
+    const hasDependencies =
+      packageJson.dependencies && packageJson.dependencies['@modelcontextprotocol/sdk'];
 
     addTestResult('Package Config', hasMcpConfig, 'Package has basic configuration');
     addTestResult('MCP Dependencies', hasDependencies, 'MCP SDK dependency found');
@@ -235,36 +238,55 @@ async function testDataStructures() {
       }
     }
 
-    addTestResult('Entity Structure', validEntities === TEST_CONFIG.testEntities.length,
-      `${validEntities}/${TEST_CONFIG.testEntities.length} entities have valid structure`);
+    addTestResult(
+      'Entity Structure',
+      validEntities === TEST_CONFIG.testEntities.length,
+      `${validEntities}/${TEST_CONFIG.testEntities.length} entities have valid structure`
+    );
 
     // Check all 16 knowledge types are represented in tests
     const allKnowledgeTypes = [
-      'entity', 'relation', 'observation', 'section', 'runbook',
-      'change', 'issue', 'decision', 'todo', 'release_note',
-      'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
 
     // Check if test files cover different knowledge types
-    const testFiles = fs.readdirSync('./tests/unit')
-      .filter(file => {
-        const filePath = './tests/unit/' + file;
-        try {
-          return fs.statSync(filePath).isFile() && file.endsWith('.test.ts');
-        } catch {
-          return false;
-        }
-      });
+    const testFiles = fs.readdirSync('./tests/unit').filter((file) => {
+      const filePath = './tests/unit/' + file;
+      try {
+        return fs.statSync(filePath).isFile() && file.endsWith('.test.ts');
+      } catch {
+        return false;
+      }
+    });
 
-    const knowledgeTypeTests = testFiles.filter(file =>
-      file.includes('knowledge-types') ||
-      file.includes('memory-') ||
-      file.includes('entity') ||
-      file.includes('decision')
+    const knowledgeTypeTests = testFiles.filter(
+      (file) =>
+        file.includes('knowledge-types') ||
+        file.includes('memory-') ||
+        file.includes('entity') ||
+        file.includes('decision')
     );
 
-    addTestResult('Knowledge Type Coverage', knowledgeTypeTests.length > 0,
-      `Found ${knowledgeTypeTests.length} knowledge type test files`);
+    addTestResult(
+      'Knowledge Type Coverage',
+      knowledgeTypeTests.length > 0,
+      `Found ${knowledgeTypeTests.length} knowledge type test files`
+    );
 
     return validEntities === TEST_CONFIG.testEntities.length;
   } catch (error) {
@@ -284,12 +306,15 @@ function generateTestReport() {
       total: testResults.total,
       passed: testResults.passed,
       failed: testResults.failed,
-      successRate: testResults.total > 0 ? (testResults.passed / testResults.total * 100).toFixed(2) + '%' : '0%'
+      successRate:
+        testResults.total > 0
+          ? ((testResults.passed / testResults.total) * 100).toFixed(2) + '%'
+          : '0%',
     },
     scenarios: testResults.scenarios,
     testConfiguration: TEST_CONFIG,
     recommendations: [],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Add recommendations based on test results
@@ -301,9 +326,11 @@ function generateTestReport() {
     report.recommendations.push('Review MCP Cortex implementation - less than 80% tests passing');
   }
 
-  const failedScenarios = testResults.scenarios.filter(s => !s.passed);
+  const failedScenarios = testResults.scenarios.filter((s) => !s.passed);
   if (failedScenarios.length > 0) {
-    report.recommendations.push(`Priority issues to address: ${failedScenarios.map(s => s.scenario).join(', ')}`);
+    report.recommendations.push(
+      `Priority issues to address: ${failedScenarios.map((s) => s.scenario).join(', ')}`
+    );
   }
 
   // Save report
@@ -331,7 +358,7 @@ async function runTests() {
     testSchemaDefinitions,
     testCoverage,
     testPackageConfiguration,
-    testDataStructures
+    testDataStructures,
   ];
 
   // Run all tests
@@ -367,17 +394,13 @@ async function runTests() {
 // Run tests if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runTests()
-    .then(success => {
+    .then((success) => {
       process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
       logger.error(`Test suite failed: ${error.message}`);
       process.exit(1);
     });
 }
 
-export {
-  runTests,
-  testResults,
-  TEST_CONFIG
-};
+export { runTests, testResults, TEST_CONFIG };

@@ -20,7 +20,7 @@ const colors = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 function log(level, message) {
@@ -29,10 +29,18 @@ function log(level, message) {
   console.log(`${color}[${timestamp}] ${level.toUpperCase()}: ${message}${colors.reset}`);
 }
 
-function success(message) { log('green', message); }
-function error(message) { log('red', message); }
-function warning(message) { log('yellow', message); }
-function info(message) { log('blue', message); }
+function success(message) {
+  log('green', message);
+}
+function error(message) {
+  log('red', message);
+}
+function warning(message) {
+  log('yellow', message);
+}
+function info(message) {
+  log('blue', message);
+}
 
 function removeDirectory(dirPath, options = {}) {
   const { force = false, recursive = true } = options;
@@ -107,14 +115,7 @@ function cleanBuildArtifacts() {
   let totalRemoved = 0;
 
   // Clean main build directories
-  const buildDirs = [
-    'dist',
-    'build',
-    'dist-test',
-    'temp-dist',
-    '.nyc_output',
-    'coverage'
-  ];
+  const buildDirs = ['dist', 'build', 'dist-test', 'temp-dist', '.nyc_output', 'coverage'];
 
   for (const dir of buildDirs) {
     if (removeDirectory(join(projectRoot, dir))) {
@@ -124,10 +125,7 @@ function cleanBuildArtifacts() {
 
   // Clean TypeScript build info files
   info('📝 Cleaning TypeScript build info files...');
-  const tsBuildInfoFiles = [
-    '*.tsbuildinfo',
-    'src/**/*.tsbuildinfo'
-  ];
+  const tsBuildInfoFiles = ['*.tsbuildinfo', 'src/**/*.tsbuildinfo'];
 
   for (const pattern of tsBuildInfoFiles) {
     try {
@@ -154,12 +152,7 @@ function cleanBuildArtifacts() {
   }
 
   // Clean temporary files and logs
-  const tempFiles = [
-    'tmp_last_run.log',
-    'cortex-local.log',
-    'mcp-debug.log',
-    'mcp-start.log'
-  ];
+  const tempFiles = ['tmp_last_run.log', 'cortex-local.log', 'mcp-debug.log', 'mcp-start.log'];
 
   for (const file of tempFiles) {
     if (removeFile(join(projectRoot, file))) {
@@ -168,10 +161,7 @@ function cleanBuildArtifacts() {
   }
 
   // Clean test result files
-  const testResultDirs = [
-    'test-results',
-    'tests/temp'
-  ];
+  const testResultDirs = ['test-results', 'tests/temp'];
 
   for (const dir of testResultDirs) {
     if (removeDirectory(join(projectRoot, dir))) {
@@ -180,13 +170,7 @@ function cleanBuildArtifacts() {
   }
 
   // Clean temporary directories
-  const tempDirs = [
-    'temp',
-    'tmp',
-    'debug',
-    'dev',
-    'development'
-  ];
+  const tempDirs = ['temp', 'tmp', 'debug', 'dev', 'development'];
 
   for (const dir of tempDirs) {
     if (removeDirectory(join(projectRoot, dir))) {
@@ -205,7 +189,7 @@ function cleanBuildArtifacts() {
     'stress-test-suite',
     'workflow-test-suite',
     'comprehensive-memory-test',
-    'test-autonomous.cjs'
+    'test-autonomous.cjs',
   ];
 
   for (const artifact of devArtifacts) {

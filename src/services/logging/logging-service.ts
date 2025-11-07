@@ -9,7 +9,7 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { createGzip } from 'zlib';
 import { performance } from 'perf_hooks';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type {
   LogEntry,
   LogLevel,

@@ -12,7 +12,7 @@
 import { EventEmitter } from 'events';
 import { QdrantHealthMonitor, QdrantConnectionStatus } from './qdrant-health-monitor.js';
 import { CircuitBreakerMonitor } from './circuit-breaker-monitor.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 
 /**

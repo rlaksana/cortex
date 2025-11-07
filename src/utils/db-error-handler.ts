@@ -7,7 +7,7 @@
  * @module utils/db-error-handler
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 // Note: Removed QdrantClient import as we're using a generic database interface now
 
 export enum DbErrorType {

@@ -100,12 +100,13 @@ const importService = {
   importData: vi.fn().mockImplementation(async ({ data, format, options }) => {
     // Return a mock response that matches the expected structure
     return {
-      stored: data?.map((item, index) => ({
-        id: `${item.kind}-id-${index + 1}`,
-        status: 'inserted',
-        kind: item.kind,
-        created_at: new Date().toISOString(),
-      })) || [],
+      stored:
+        data?.map((item, index) => ({
+          id: `${item.kind}-id-${index + 1}`,
+          status: 'inserted',
+          kind: item.kind,
+          created_at: new Date().toISOString(),
+        })) || [],
       errors: [],
       autonomous_context: {
         action_performed: 'batch',
@@ -1599,7 +1600,7 @@ describe('Import Service - Field Mapping and Transformation', () => {
         {
           'Source Field 1': 'Value 1',
           'Source Field 2': 'Value 2',
-          'Nested.Object': 'Nested value',
+          'Nested['O']bject': 'Nested value',
           'Array Field': 'item1,item2,item3',
           'Date Field': '01/15/2025',
           'Number Field': '1,234.56',
@@ -1609,7 +1610,7 @@ describe('Import Service - Field Mapping and Transformation', () => {
       const fieldMapping = {
         'Source Field 1': 'content',
         'Source Field 2': 'data.field2',
-        'Nested.Object': 'data.nested.object',
+        'Nested['O']bject': 'data.nested.object',
         'Array Field': 'data.tags', // Convert to array
         'Date Field': 'created_at', // Convert to ISO date
         'Number Field': 'data.number', // Convert to number
@@ -1949,7 +1950,7 @@ describe('Import Service - Field Mapping and Transformation', () => {
       const chainedData = [
         {
           phone: '(555) 123-4567',
-          email: '  USER@EXAMPLE.COM  ',
+          email: '  USER@EXAMPLE['COM']  ',
           url: 'example.com',
           date: '2025-01-15',
         },
@@ -2032,13 +2033,13 @@ describe('Import Service - Field Mapping and Transformation', () => {
       ];
 
       const enrichmentRules = {
-        'data.tag_count': (item: any) => item.data.tags.length,
+        'data.tag_count': (item: any) => item['data.tags'].length,
         'data.category': (item: any) => 'service',
         'data.age_days': (item: any) =>
           Math.floor(
-            (Date.now() - new Date(item.data.created_date).getTime()) / (1000 * 60 * 60 * 24)
+            (Date.now() - new Date(item['data.created_date']).getTime()) / (1000 * 60 * 60 * 24)
           ),
-        'data.complexity': (item: any) => (item.data.tags.length > 2 ? 'high' : 'medium'),
+        'data.complexity': (item: any) => (item['data.tags'].length > 2 ? 'high' : 'medium'),
         'metadata.processed_at': () => new Date().toISOString(),
         'metadata.enrichment_version': '1.0',
       };
@@ -3780,8 +3781,8 @@ describe('Import Service - Integration with Knowledge System', () => {
 
       // Assert
       expect(result.stored).toHaveLength(1);
-      expect(result.autonomous_context.metadata.totalMetadataFields).toBe(15);
-      expect(result.autonomous_context.metadata.preservedStructure).toBe(true);
+      expect(result.autonomous_context.metadata['totalMetadataFields']).toBe(15);
+      expect(result.autonomous_context.metadata['preservedStructure']).toBe(true);
     });
 
     it('should handle metadata transformation and enrichment', async () => {
@@ -3857,8 +3858,8 @@ describe('Import Service - Integration with Knowledge System', () => {
 
       // Assert
       expect(result.stored).toHaveLength(1);
-      expect(result.autonomous_context.metadata.transformations).toHaveLength(5);
-      expect(result.autonomous_context.metadata.enrichment.computedFields).toHaveLength(2);
+      expect(result.autonomous_context.metadata['transformations']).toHaveLength(5);
+      expect(result.autonomous_context.metadata['enrichment'].computedFields).toHaveLength(2);
     });
   });
 

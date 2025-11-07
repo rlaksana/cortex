@@ -65,7 +65,11 @@ class SchemaDriftDetector {
 
     // Exit with error code if breaking changes found
     if (this.hasBreakingChanges) {
-      console.error(chalk.red('\n❌ Breaking changes detected! Please review the report and update version numbers.'));
+      console.error(
+        chalk.red(
+          '\n❌ Breaking changes detected! Please review the report and update version numbers.'
+        )
+      );
       process.exit(1);
     } else {
       console.log(chalk.green('\n✅ No breaking changes detected.'));
@@ -74,7 +78,9 @@ class SchemaDriftDetector {
       this.saveBaseline(currentSchemas, currentContracts);
 
       if (this.warnings.length > 0) {
-        console.log(chalk.yellow(`\n⚠️  ${this.warnings.length} warnings found. Review recommended.`));
+        console.log(
+          chalk.yellow(`\n⚠️  ${this.warnings.length} warnings found. Review recommended.`)
+        );
       }
 
       process.exit(0);
@@ -182,13 +188,15 @@ class SchemaDriftDetector {
     const contracts = {};
 
     // Extract BUILTIN_TOOL_CONTRACTS
-    const contractsMatch = content.match(/export const BUILTIN_TOOL_CONTRACTS: ToolVersionRegistry = ({[\s\S]*?});/);
+    const contractsMatch = content.match(
+      /export const BUILTIN_TOOL_CONTRACTS: ToolVersionRegistry = ({[\s\S]*?});/
+    );
     if (contractsMatch) {
       try {
         // This is a simplified extraction - in practice, you'd want to parse the TypeScript
-        contracts.memory_store = { current_version: '1.2.0', /* ... */ };
-        contracts.memory_find = { current_version: '1.3.0', /* ... */ };
-        contracts.system_status = { current_version: '1.0.0', /* ... */ };
+        contracts.memory_store = { current_version: '1.2.0' /* ... */ };
+        contracts.memory_find = { current_version: '1.3.0' /* ... */ };
+        contracts.system_status = { current_version: '1.0.0' /* ... */ };
       } catch (error) {
         this.addIssue('Failed to parse contracts', error);
       }
@@ -231,8 +239,13 @@ class SchemaDriftDetector {
       }
 
       // Check version consistency
-      if (contract.current_version && !contract.available_versions?.includes(contract.current_version)) {
-        this.addIssue(`Current version ${contract.current_version} not in available versions for ${toolName}`);
+      if (
+        contract.current_version &&
+        !contract.available_versions?.includes(contract.current_version)
+      ) {
+        this.addIssue(
+          `Current version ${contract.current_version} not in available versions for ${toolName}`
+        );
       }
     }
 
@@ -306,7 +319,10 @@ class SchemaDriftDetector {
           continue;
         }
 
-        if (!this.isValidSemVer(compatibility.min_version) || !this.isValidSemVer(compatibility.max_version)) {
+        if (
+          !this.isValidSemVer(compatibility.min_version) ||
+          !this.isValidSemVer(compatibility.max_version)
+        ) {
           this.addIssue(`Invalid version in compatibility matrix for ${toolName}@${version}`);
         }
 
@@ -338,7 +354,11 @@ class SchemaDriftDetector {
         }
 
         // Check validation rules
-        const requiredRules = ['max_content_length', 'max_items_per_request', 'allowed_content_types'];
+        const requiredRules = [
+          'max_content_length',
+          'max_items_per_request',
+          'allowed_content_types',
+        ];
         for (const rule of requiredRules) {
           if (input_validation[rule] === undefined) {
             this.addWarning(`Missing input validation rule '${rule}' for ${toolName}@${version}`);
@@ -354,7 +374,10 @@ class SchemaDriftDetector {
           this.addIssue(`Invalid max_items_per_request for ${toolName}@${version}: must be > 0`);
         }
 
-        if (input_validation.allowed_content_types && !Array.isArray(input_validation.allowed_content_types)) {
+        if (
+          input_validation.allowed_content_types &&
+          !Array.isArray(input_validation.allowed_content_types)
+        ) {
           this.addIssue(`Invalid allowed_content_types for ${toolName}@${version}: must be array`);
         }
       }
@@ -420,17 +443,23 @@ class SchemaDriftDetector {
 
         // System tools should typically not have tenant isolation
         if (systemTools.includes(toolName) && tenant_isolation) {
-          this.addWarning(`System tool ${toolName} has tenant isolation enabled - is this intentional?`);
+          this.addWarning(
+            `System tool ${toolName} has tenant isolation enabled - is this intentional?`
+          );
         }
 
         // Data tools should typically have tenant isolation
         if (dataTools.includes(toolName) && !tenant_isolation) {
-          this.addWarning(`Data tool ${toolName} has tenant isolation disabled - is this intentional?`);
+          this.addWarning(
+            `Data tool ${toolName} has tenant isolation disabled - is this intentional?`
+          );
         }
 
         // Ensure tenant_isolation is a boolean
         if (typeof tenant_isolation !== 'boolean') {
-          this.addIssue(`Invalid tenant_isolation type for ${toolName}@${version}: must be boolean`);
+          this.addIssue(
+            `Invalid tenant_isolation type for ${toolName}@${version}: must be boolean`
+          );
         }
       }
     }
@@ -661,7 +690,7 @@ class SchemaDriftDetector {
 
 // Run the detector
 const detector = new SchemaDriftDetector();
-detector.detectDrift().catch(error => {
+detector.detectDrift().catch((error) => {
   console.error(chalk.red('Fatal error during schema drift detection:'), error);
   process.exit(1);
 });

@@ -139,24 +139,28 @@ if (result.allowed) {
 The system supports four service tiers with different resource allocations:
 
 #### Basic Tier
+
 - **Rate Limits**: 50 RPS, 75 burst capacity
 - **Resources**: 5% CPU, 256MB RAM, 3 DB connections
 - **Storage**: 1,000 vectors, 5 Mbps bandwidth
 - **Monitoring**: 60-second intervals, 7-day retention
 
 #### Standard Tier
+
 - **Rate Limits**: 100 RPS, 150 burst capacity
 - **Resources**: 10% CPU, 512MB RAM, 5 DB connections
 - **Storage**: 10,000 vectors, 10 Mbps bandwidth
 - **Monitoring**: 30-second intervals, 30-day retention
 
 #### Premium Tier
+
 - **Rate Limits**: 500 RPS, 750 burst capacity
 - **Resources**: 25% CPU, 2GB RAM, 15 DB connections
 - **Storage**: 100,000 vectors, 50 Mbps bandwidth
 - **Monitoring**: 15-second intervals, 90-day retention
 
 #### Enterprise Tier
+
 - **Rate Limits**: 2,000 RPS, 3,000 burst capacity
 - **Resources**: 50% CPU, 8GB RAM, 50 DB connections
 - **Storage**: 1,000,000 vectors, 200 Mbps bandwidth
@@ -166,9 +170,9 @@ The system supports four service tiers with different resource allocations:
 
 ```typescript
 const rateLimits = {
-  requests_per_second: 100,    // Base rate limit
-  burst_capacity: 150,         // Maximum burst capacity
-  window_ms: 1000,             // Time window in milliseconds
+  requests_per_second: 100, // Base rate limit
+  burst_capacity: 150, // Maximum burst capacity
+  window_ms: 1000, // Time window in milliseconds
   tool_limits: {
     memory_store: {
       requests_per_second: 50,
@@ -186,10 +190,10 @@ const rateLimits = {
 
 ```typescript
 const circuitBreaker = {
-  failure_threshold: 5,        // Failures before opening circuit
-  recovery_timeout_ms: 60000,  // Time to wait before trying again
-  half_open_max_requests: 3,   // Max requests in half-open state
-  success_threshold: 3,        // Successes to close circuit
+  failure_threshold: 5, // Failures before opening circuit
+  recovery_timeout_ms: 60000, // Time to wait before trying again
+  half_open_max_requests: 3, // Max requests in half-open state
+  success_threshold: 3, // Successes to close circuit
   monitoring_period_ms: 300000, // Period for failure counting
 };
 ```
@@ -198,12 +202,12 @@ const circuitBreaker = {
 
 ```typescript
 const resourceQuotas = {
-  cpu_limit_percent: 10,           // Maximum CPU usage percentage
-  memory_limit_mb: 512,            // Maximum memory in MB
-  db_connection_pool_size: 5,      // Database connection pool size
-  vector_storage_quota: 10000,     // Maximum vector storage count
-  network_bandwidth_mbps: 10,      // Network bandwidth limit
-  concurrent_requests_limit: 50,   // Maximum concurrent requests
+  cpu_limit_percent: 10, // Maximum CPU usage percentage
+  memory_limit_mb: 512, // Maximum memory in MB
+  db_connection_pool_size: 5, // Database connection pool size
+  vector_storage_quota: 10000, // Maximum vector storage count
+  network_bandwidth_mbps: 10, // Network bandwidth limit
+  concurrent_requests_limit: 50, // Maximum concurrent requests
 };
 ```
 
@@ -247,7 +251,7 @@ console.log({
 ```typescript
 // Get active alerts for a tenant
 const alerts = isolationService.getActiveAlerts('tenant-001');
-alerts.forEach(alert => {
+alerts.forEach((alert) => {
   console.log(`Alert: ${alert.title} - ${alert.description}`);
   console.log(`Severity: ${alert.severity}`);
   console.log(`Current value: ${alert.threshold_info.current_value}`);
@@ -306,6 +310,7 @@ await governanceService.reviewOnboardingRequest(requestId, {
 3. **Provisioning**
 
 The system automatically provisions the tenant with:
+
 - Generated tenant ID and credentials
 - Configuration based on service tier
 - Resource allocations
@@ -400,8 +405,8 @@ const loadTestScenario = {
   name: 'Tenant Isolation Validation',
   description: 'Test isolation between multiple tenants under load',
   config: {
-    duration_seconds: 300,          // 5 minutes
-    concurrent_tenants: 10,        // 10 tenants
+    duration_seconds: 300, // 5 minutes
+    concurrent_tenants: 10, // 10 tenants
     requests_per_second_per_tenant: 50,
     payload_size_bytes: 1024,
     test_patterns: [
@@ -425,7 +430,7 @@ const loadTestScenario = {
 const results = await isolationService.executeLoadTest(loadTestScenario);
 
 // Analyze results
-results.forEach(result => {
+results.forEach((result) => {
   console.log(`Tenant ${result.tenant_id}:`);
   console.log(`  Status: ${result.status}`);
   console.log(`  Throughput: ${result.performance.throughput_requests_per_second} RPS`);
@@ -465,7 +470,7 @@ console.log(`Estimated duration: ${purgePlan.scope_analysis.estimated_duration_m
 
 // Execute purge (with dry-run for safety)
 const execution = await purgeService.executeTenantPurge(purgePlan.plan_id, {
-  dry_run: true,                    // Set to false for actual purge
+  dry_run: true, // Set to false for actual purge
   create_backup: true,
   enable_verification: true,
   confirmation_token: 'user-confirmed-token',
@@ -549,6 +554,7 @@ if (execution.compliance_certificate) {
 **Symptoms**: Requests being blocked with "Rate limit exceeded" message
 
 **Solutions**:
+
 - Check current rate limit metrics
 - Increase rate limits if appropriate
 - Optimize request patterns
@@ -559,6 +565,7 @@ if (execution.compliance_certificate) {
 **Symptoms**: Requests being blocked with "Circuit breaker is open" message
 
 **Solutions**:
+
 - Check circuit breaker metrics
 - Identify root cause of failures
 - Wait for recovery timeout
@@ -569,6 +576,7 @@ if (execution.compliance_certificate) {
 **Symptoms**: Requests being blocked with "Resource quota exceeded" message
 
 **Solutions**:
+
 - Check current resource usage
 - Optimize resource consumption
 - Increase quotas if justified
@@ -579,6 +587,7 @@ if (execution.compliance_certificate) {
 **Symptoms**: Performance degradation affecting multiple tenants
 
 **Solutions**:
+
 - Run load testing to identify isolation issues
 - Check for noisy neighbor problems
 - Review resource allocation configuration

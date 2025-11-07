@@ -68,13 +68,13 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseSchema.safeParse(release);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('release');
-        expect(result.data.data.version).toBe('2.1.0');
-        expect(result.data.data.release_type).toBe('major');
-        expect(result.data.data.status).toBe('completed');
-        expect(result.data.data.ticket_references).toHaveLength(3);
-        expect(result.data.data.included_changes).toHaveLength(3);
-        expect(result.data.data.approvers).toHaveLength(3);
+        expect(result['data.kind']).toBe('release');
+        expect(result['data.data'].version).toBe('2.1.0');
+        expect(result['data.data'].release_type).toBe('major');
+        expect(result['data.data'].status).toBe('completed');
+        expect(result['data.data'].ticket_references).toHaveLength(3);
+        expect(result['data.data'].included_changes).toHaveLength(3);
+        expect(result['data.data'].approvers).toHaveLength(3);
       }
     });
 
@@ -96,11 +96,11 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
       const result = ReleaseSchema.safeParse(release);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.version).toBe('1.0.1');
-        expect(result.data.data.release_type).toBe('patch');
-        expect(result.data.data.scope).toContain('security fix');
-        expect(result.data.data.status).toBe('completed');
-        expect(result.data.data.release_date).toBeUndefined();
+        expect(result['data.data'].version).toBe('1.0.1');
+        expect(result['data.data'].release_type).toBe('patch');
+        expect(result['data.data'].scope).toContain('security fix');
+        expect(result['data.data'].status).toBe('completed');
+        expect(result['data.data'].release_date).toBeUndefined();
       }
     });
 
@@ -277,7 +277,7 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         const result = ReleaseSchema.safeParse(release);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.version).toBe(version);
+          expect(result['data.data'].version).toBe(version);
         }
       });
     });
@@ -303,7 +303,7 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         const result = ReleaseSchema.safeParse(release);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.release_type).toBe(type);
+          expect(result['data.data'].release_type).toBe(type);
         }
       });
     });
@@ -329,7 +329,7 @@ describe('Release Knowledge Type - Comprehensive Testing', () => {
         const result = ReleaseSchema.safeParse(release);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.status).toBe(statusValue);
+          expect(result['data.data'].status).toBe(statusValue);
         }
       });
     });
@@ -441,11 +441,11 @@ Security Improvements:
       const result = ReleaseSchema.safeParse(complexRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.ticket_references).toHaveLength(14);
-        expect(result.data.data.included_changes).toHaveLength(10);
-        expect(result.data.data.approvers).toHaveLength(7);
-        expect(result.data.data.post_release_actions).toHaveLength(7);
-        expect(Object.keys(result.data.tags!)).toHaveLength(8);
+        expect(result['data.data'].ticket_references).toHaveLength(14);
+        expect(result['data.data'].included_changes).toHaveLength(10);
+        expect(result['data.data'].approvers).toHaveLength(7);
+        expect(result['data.data'].post_release_actions).toHaveLength(7);
+        expect(Object.keys(result['data.tags']!)).toHaveLength(8);
       }
     });
 
@@ -526,10 +526,10 @@ Support:
       const result = ReleaseSchema.safeParse(breakingRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.release_type).toBe('major');
-        expect(result.data.data.version).toBe('2.0.0');
-        expect(result.data.data.scope).toContain('Breaking API changes');
-        expect(result.data.data.release_notes).toContain('IMPORTANT BREAKING CHANGES');
+        expect(result['data.data'].release_type).toBe('major');
+        expect(result['data.data'].version).toBe('2.0.0');
+        expect(result['data.data'].scope).toContain('Breaking API changes');
+        expect(result['data.data'].release_notes).toContain('IMPORTANT BREAKING CHANGES');
       }
     });
 
@@ -621,10 +621,10 @@ Support:
       const result = ReleaseSchema.safeParse(hotfixRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.release_type).toBe('hotfix');
-        expect(result.data.data.version).toBe('1.2.1');
-        expect(result.data.data.scope).toContain('Critical security vulnerability');
-        expect(result.data.data.release_notes).toContain('CRITICAL SECURITY HOTFIX');
+        expect(result['data.data'].release_type).toBe('hotfix');
+        expect(result['data.data'].version).toBe('1.2.1');
+        expect(result['data.data'].scope).toContain('Critical security vulnerability');
+        expect(result['data.data'].release_notes).toContain('CRITICAL SECURITY HOTFIX');
       }
     });
 
@@ -659,7 +659,7 @@ Support:
         const result = ReleaseSchema.safeParse(release);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.version).toBe(version);
+          expect(result['data.data'].version).toBe(version);
         }
       });
     });
@@ -715,10 +715,10 @@ Manual rollback triggers:
       const result = ReleaseSchema.safeParse(minimalRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.deployment_strategy).toContain('Canary deployment');
-        expect(result.data.data.rollback_plan).toContain('Automated rollback procedure');
-        expect(result.data.data.testing_status).toContain('245/245 passing');
-        expect(result.data.data.approvers).toHaveLength(2);
+        expect(result['data.data'].deployment_strategy).toContain('Canary deployment');
+        expect(result['data.data'].rollback_plan).toContain('Automated rollback procedure');
+        expect(result['data.data'].testing_status).toContain('245/245 passing');
+        expect(result['data.data'].approvers).toHaveLength(2);
       }
     });
   });
@@ -744,7 +744,7 @@ Manual rollback triggers:
       const result = validateKnowledgeItem(release);
       expect(result).toBeDefined();
       expect(result.kind).toBe('release');
-      expect(result.data.version).toBe('1.5.0');
+      expect(result['data.version']).toBe('1.5.0');
     });
 
     it('should handle invalid release using validateKnowledgeItem function', () => {
@@ -784,8 +784,8 @@ Manual rollback triggers:
       const result = safeValidateKnowledgeItem(release, 'release');
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('release');
-        expect(result.data.data.version).toBe('1.0.0');
+        expect(result['data.kind']).toBe('release');
+        expect(result['data.data'].version).toBe('1.0.0');
       }
     });
 
@@ -827,8 +827,8 @@ Manual rollback triggers:
       const result = ReleaseSchema.safeParse(releaseWithTTL);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.ttl_policy).toBeDefined();
-        expect(result.data.ttl_policy).toBe('default');
+        expect(result['data.ttl_policy']).toBeDefined();
+        expect(result['data.ttl_policy']).toBe('default');
       }
     });
 
@@ -877,12 +877,12 @@ Manual rollback triggers:
       const result = ReleaseSchema.safeParse(releaseWithMetadata);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(Object.keys(result.data.tags!)).toHaveLength(18);
-        expect(result.data.tags!['feature-flags']).toBe(true);
-        expect(result.data.tags!['team-alpha']).toBe('backend');
-        expect(result.data.source!.actor).toBe('release-coordinator');
-        expect(result.data.source!.tool).toBe('enterprise-release-platform');
-        expect(result.data.idempotency_key).toBeDefined();
+        expect(Object.keys(result['data.tags']!)).toHaveLength(18);
+        expect(result['data.tags']!['feature-flags']).toBe(true);
+        expect(result['data.tags']!['team-alpha']).toBe('backend');
+        expect(result['data.source']!.actor).toBe('release-coordinator');
+        expect(result['data.source']!.tool).toBe('enterprise-release-platform');
+        expect(result['data.idempotency_key']).toBeDefined();
       }
     });
   });
@@ -1035,11 +1035,11 @@ Database Rollback:
       const result = ReleaseSchema.safeParse(featureRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.version).toBe('3.2.0');
-        expect(result.data.data.release_type).toBe('minor');
-        expect(result.data.data.status).toBe('in_progress');
-        expect(result.data.data.deployment_strategy).toContain('Gradual Feature Rollout Strategy');
-        expect(result.data.data.testing_status).toContain('1,234/1,234 passing');
+        expect(result['data.data'].version).toBe('3.2.0');
+        expect(result['data.data'].release_type).toBe('minor');
+        expect(result['data.data'].status).toBe('in_progress');
+        expect(result['data.data'].deployment_strategy).toContain('Gradual Feature Rollout Strategy');
+        expect(result['data.data'].testing_status).toContain('1,234/1,234 passing');
       }
     });
 
@@ -1205,12 +1205,12 @@ Communication Plan:
       const result = ReleaseSchema.safeParse(dbMigrationRelease);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.version).toBe('2.0.0');
-        expect(result.data.data.release_type).toBe('major');
-        expect(result.data.data.status).toBe('completed');
-        expect(result.data.data.scope).toContain('Database schema migration');
-        expect(result.data.data.deployment_strategy).toContain('Pre-Migration');
-        expect(result.data.data.rollback_plan).toContain('Immediate Rollback Triggers');
+        expect(result['data.data'].version).toBe('2.0.0');
+        expect(result['data.data'].release_type).toBe('major');
+        expect(result['data.data'].status).toBe('completed');
+        expect(result['data.data'].scope).toContain('Database schema migration');
+        expect(result['data.data'].deployment_strategy).toContain('Pre-Migration');
+        expect(result['data.data'].rollback_plan).toContain('Immediate Rollback Triggers');
       }
     });
   });

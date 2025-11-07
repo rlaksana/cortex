@@ -7,7 +7,10 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PerformanceHarness } from '../../../src/performance/performance-harness.js';
-import { PerformanceTestConfig, PERFORMANCE_TEST_CONFIGS } from '../../../src/performance/performance-targets.js';
+import {
+  PerformanceTestConfig,
+  PERFORMANCE_TEST_CONFIGS,
+} from '../../../src/performance/performance-targets.js';
 import { randomUUID } from 'crypto';
 
 describe('Knowledge Storage Load Tests', () => {
@@ -44,7 +47,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_latency_p99',
@@ -54,7 +57,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -64,7 +67,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_error_rate',
@@ -74,16 +77,16 @@ describe('Knowledge Storage Load Tests', () => {
             unit: '%',
             type: 'error_rate',
             priority: 'critical',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'critical', 'entity'],
         parameters: {
           entityType: 'entity',
           averageSize: 2048,
           sizeVariance: 0.3,
-          relationshipCount: 3
-        }
+          relationshipCount: 3,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -122,7 +125,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -132,23 +135,23 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'concurrency', 'entity'],
         parameters: {
           entityType: 'entity',
           averageSize: 1024,
           sizeVariance: 0.5,
-          concurrencyLevel: 'high'
-        }
+          concurrencyLevel: 'high',
+        },
       };
 
       const result = await harness.runTest(config);
 
       expect(result.validation.passed).toBe(true);
       expect(result.results.summary.successRate).toBeGreaterThan(95);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
     }, 90000);
   });
 
@@ -170,7 +173,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -180,16 +183,16 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'observation'],
         parameters: {
           entityType: 'observation',
           averageSize: 512,
           sizeVariance: 0.4,
-          linkedEntities: 2
-        }
+          linkedEntities: 2,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -218,7 +221,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -228,16 +231,16 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'decision'],
         parameters: {
           entityType: 'decision',
           averageSize: 3072,
           sizeVariance: 0.2,
-          complexityLevel: 'medium'
-        }
+          complexityLevel: 'medium',
+        },
       };
 
       const result = await harness.runTest(config);
@@ -266,7 +269,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -276,16 +279,16 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'task'],
         parameters: {
           entityType: 'task',
           averageSize: 1536,
           sizeVariance: 0.3,
-          dependencies: 3
-        }
+          dependencies: 3,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -314,7 +317,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -324,8 +327,8 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'mixed', 'critical'],
         parameters: {
@@ -334,11 +337,11 @@ describe('Knowledge Storage Load Tests', () => {
             entity: 0.4,
             observation: 0.3,
             decision: 0.15,
-            task: 0.15
+            task: 0.15,
           },
           averageSize: 1536,
-          sizeVariance: 0.5
-        }
+          sizeVariance: 0.5,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -368,7 +371,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ms',
             type: 'latency',
             priority: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'store_throughput',
@@ -378,7 +381,7 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'ops/s',
             type: 'throughput',
             priority: 'high',
-            enabled: true
+            enabled: true,
           },
           {
             name: 'memory_usage_peak',
@@ -388,8 +391,8 @@ describe('Knowledge Storage Load Tests', () => {
             unit: 'bytes',
             type: 'memory',
             priority: 'high',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         categories: ['storage', 'stress', 'sustained'],
         parameters: {
@@ -397,8 +400,8 @@ describe('Knowledge Storage Load Tests', () => {
           loadDuration: 60000,
           rampUpTime: 10000,
           entityTypes: ['entity', 'observation', 'decision', 'task'],
-          averageSize: 2048
-        }
+          averageSize: 2048,
+        },
       };
 
       const result = await harness.runTest(config);
@@ -406,8 +409,8 @@ describe('Knowledge Storage Load Tests', () => {
       expect(result.validation.passed).toBe(true);
       expect(result.results.metrics.latencies.p95).toBeLessThan(3000);
       expect(result.results.metrics.throughput).toBeGreaterThan(50);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
-      expect(result.metadata.systemMetrics.peakMemoryUsage).toBeLessThan(1024 * 1024 * 1024);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].peakMemoryUsage).toBeLessThan(1024 * 1024 * 1024);
     }, 180000);
   });
 
@@ -429,7 +432,7 @@ describe('Knowledge Storage Load Tests', () => {
         type,
         content: generateTestContent(type, i),
         timestamp: new Date().toISOString(),
-        size: calculateContentSize(type)
+        size: calculateContentSize(type),
       });
     }
 
@@ -445,7 +448,7 @@ describe('Knowledge Storage Load Tests', () => {
       entity: 1.0,
       observation: 0.5,
       decision: 1.5,
-      task: 0.75
+      task: 0.75,
     };
 
     const multiplier = sizeMultipliers[type] || 1.0;
@@ -467,7 +470,7 @@ describe('Knowledge Storage Load Tests', () => {
       entity: 1024,
       observation: 512,
       decision: 1536,
-      task: 768
+      task: 768,
     };
 
     return sizes[type] || 1024;

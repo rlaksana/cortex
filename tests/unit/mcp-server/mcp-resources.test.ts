@@ -437,14 +437,14 @@ describe('Resource Definition and Registration', () => {
 
       expect(resourceTags.knowledge).toContain('knowledge');
       expect(resourceTags.document).toContain('pdf');
-      expect(validKnowledgeResource.metadata.tags).toEqual(resourceTags.knowledge);
+      expect(validKnowledgeResource.metadata['tags']).toEqual(resourceTags.knowledge);
     });
 
     it('should track resource size and checksum information', () => {
-      expect(validKnowledgeResource.metadata.size).toBe(15360);
-      expect(validDocumentResource.metadata.size).toBe(2097152);
-      expect(validKnowledgeResource.metadata.checksum).toContain('sha256:');
-      expect(validDocumentResource.metadata.checksum).toContain('sha256:');
+      expect(validKnowledgeResource.metadata['size']).toBe(15360);
+      expect(validDocumentResource.metadata['size']).toBe(2097152);
+      expect(validKnowledgeResource.metadata['checksum']).toContain('sha256:');
+      expect(validDocumentResource.metadata['checksum']).toContain('sha256:');
     });
   });
 
@@ -612,9 +612,9 @@ describe('Knowledge Base Resources', () => {
       const result = await mockResourceService.readResource(entityRequest.uri);
 
       expect(result.success).toBe(true);
-      expect(result.data.entities).toHaveLength(1);
-      expect(result.data.entities[0].data.title).toBe('User Service');
-      expect(result.metadata.statusCode).toBe(200);
+      expect(result['data.entities']).toHaveLength(1);
+      expect(result['data.entities'][0].data.title).toBe('User Service');
+      expect(result.metadata['statusCode']).toBe(200);
     });
 
     it('should filter entity resources by scope', async () => {
@@ -715,11 +715,11 @@ describe('Knowledge Base Resources', () => {
       const result = await mockResourceService.readResource(decisionRequest.uri);
 
       expect(result.success).toBe(true);
-      expect(result.data.decisions[0].data.title).toBe('Use Microservices Architecture');
-      expect(result.data.decisions[0].data.consequences.positive).toContain(
+      expect(result['data.decisions'][0].data.title).toBe('Use Microservices Architecture');
+      expect(result['data.decisions'][0].data.consequences.positive).toContain(
         'Independent deployment'
       );
-      expect(result.metadata.cacheHit).toBe(true);
+      expect(result.metadata['cacheHit']).toBe(true);
     });
 
     it('should categorize decisions by impact and status', async () => {
@@ -833,9 +833,9 @@ describe('Knowledge Base Resources', () => {
       const result = await mockResourceService.readResource(relationshipRequest.uri);
 
       expect(result.success).toBe(true);
-      expect(result.data.relationships[0].data.type).toBe('depends_on');
-      expect(result.data.analytics.totalRelations).toBe(45);
-      expect(result.data.analytics.relationTypes.depends_on).toBe(18);
+      expect(result['data.relationships'][0].data.type).toBe('depends_on');
+      expect(result['data.analytics'].totalRelations).toBe(45);
+      expect(result['data.analytics'].relationTypes.depends_on).toBe(18);
     });
 
     it('should support relationship graph traversal', async () => {
@@ -943,11 +943,11 @@ describe('Knowledge Base Resources', () => {
       const result = await mockResourceService.readResource(observationRequest.uri);
 
       expect(result.success).toBe(true);
-      expect(result.data.observations[0].data.category).toBe('performance');
-      expect(result.data.observations[0].data.recommendations).toContain(
+      expect(result['data.observations'][0].data.category).toBe('performance');
+      expect(result['data.observations'][0].data.recommendations).toContain(
         'Implement response caching'
       );
-      expect(result.data.insights.patterns).toContain('peak-hour-slowdown');
+      expect(result['data.insights'].patterns).toContain('peak-hour-slowdown');
     });
 
     it('should categorize observations by type and severity', async () => {
@@ -1112,8 +1112,8 @@ describe('File and Document Resources', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeInstanceOf(Buffer);
-      expect(result.metadata.headers['Content-Type']).toBe('application/pdf');
-      expect(result.metadata.downloadInfo.accessType).toBe('signed-url');
+      expect(result.metadata['headers']['Content-Type']).toBe('application/pdf');
+      expect(result.metadata['downloadInfo'].accessType).toBe('signed-url');
     });
 
     it('should support partial content and range requests', async () => {
@@ -1150,9 +1150,9 @@ describe('File and Document Resources', () => {
         },
       };
 
-      expect(rangeResponse.metadata.statusCode).toBe(206);
-      expect(rangeResponse.metadata.headers['Content-Range']).toContain('1024-2047');
-      expect(rangeResponse.metadata.rangeInfo.start).toBe(1024);
+      expect(rangeResponse.metadata['statusCode']).toBe(206);
+      expect(rangeResponse.metadata['headers']['Content-Range']).toContain('1024-2047');
+      expect(rangeResponse.metadata['rangeInfo'].start).toBe(1024);
     });
 
     it('should implement file access logging and audit', async () => {
@@ -1235,9 +1235,9 @@ describe('File and Document Resources', () => {
       const result = await mockResourceService.readResource(imageRequest.uri);
 
       expect(result.success).toBe(true);
-      expect(result.data.original.format).toBe('PNG');
-      expect(result.data.transformations.thumbnail.width).toBe(150);
-      expect(result.data.transformations.optimized.format).toBe('JPEG');
+      expect(result['data.original'].format).toBe('PNG');
+      expect(result['data.transformations'].thumbnail.width).toBe(150);
+      expect(result['data.transformations'].optimized.format).toBe('JPEG');
     });
 
     it('should support video resource streaming', async () => {
@@ -1283,9 +1283,9 @@ describe('File and Document Resources', () => {
       const result = streamingResponse;
 
       expect(result.success).toBe(true);
-      expect(result.data.manifest.duration).toBe(300);
-      expect(result.data.qualityLevels).toHaveLength(4);
-      expect(result.data.captions).toHaveLength(2);
+      expect(result['data.manifest'].duration).toBe(300);
+      expect(result['data.qualityLevels']).toHaveLength(4);
+      expect(result['data.captions']).toHaveLength(2);
     });
 
     it('should process audio resource metadata', async () => {
@@ -1358,7 +1358,7 @@ describe('File and Document Resources', () => {
       const result = archiveCreation;
 
       expect(result.success).toBe(true);
-      expect(result.metadata.compressionRatio).toBe(0.3);
+      expect(result.metadata['compressionRatio']).toBe(0.3);
       expect(result.contents.fileTypes['.ts']).toBe(120);
       expect(result.contents.directories).toContain('src/');
     });
@@ -1934,7 +1934,7 @@ describe('Resource Delivery', () => {
       expect(result.success).toBe(true);
       expect(result.totalChunks).toBe(1600);
       expect(result.chunkSize).toBe(65536);
-      expect(result.metadata.supportsSeeking).toBe(true);
+      expect(result.metadata['supportsSeeking']).toBe(true);
     });
 
     it('should handle adaptive bitrate streaming for media', async () => {
@@ -2066,9 +2066,9 @@ describe('Resource Delivery', () => {
       );
 
       expect(pdfToDocx.success).toBe(true);
-      expect(pdfToDocx.metadata.quality).toBe('high');
+      expect(pdfToDocx.metadata['quality']).toBe('high');
       expect(jsonToYaml.success).toBe(true);
-      expect(jsonToYaml.metadata.processingTime).toBe(1);
+      expect(jsonToYaml.metadata['processingTime']).toBe(1);
     });
 
     it('should handle image format conversions', async () => {
@@ -2329,7 +2329,7 @@ describe('Resource Delivery', () => {
 
       expect(browserCache.ttl).toBe(3600);
       expect(cdnCache.ttl).toBe(86400);
-      expect(browserCache.metadata.strategy).toBe('LRU');
+      expect(browserCache.metadata['strategy']).toBe('LRU');
     });
 
     it('should handle cache invalidation properly', async () => {
@@ -2378,7 +2378,7 @@ describe('Resource Delivery', () => {
       );
 
       expect(timeBasedInvalidation.affectedKeys).toHaveLength(3);
-      expect(tagBasedInvalidation.metadata.tags).toContain('v1.2.0');
+      expect(tagBasedInvalidation.metadata['tags']).toContain('v1.2.0');
     });
 
     it('should provide cache analytics and insights', async () => {

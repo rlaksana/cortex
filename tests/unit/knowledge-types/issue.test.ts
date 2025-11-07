@@ -78,13 +78,13 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
       const result = IssueSchema.safeParse(issue);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('issue');
-        expect(result.data.data.title).toBe('User authentication fails with OAuth 2.0');
-        expect(result.data.data.tracker).toBe('github');
-        expect(result.data.data.external_id).toBe('GH-123');
-        expect(result.data.data.status).toBe('open');
-        expect(result.data.data.assignee).toBe('developer@example.com');
-        expect(result.data.data.labels).toEqual(['security', 'authentication']);
+        expect(result['data.kind']).toBe('issue');
+        expect(result['data.data'].title).toBe('User authentication fails with OAuth 2.0');
+        expect(result['data.data'].tracker).toBe('github');
+        expect(result['data.data'].external_id).toBe('GH-123');
+        expect(result['data.data'].status).toBe('open');
+        expect(result['data.data'].assignee).toBe('developer@example.com');
+        expect(result['data.data'].labels).toEqual(['security', 'authentication']);
       }
     });
 
@@ -106,11 +106,11 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
       const result = IssueSchema.safeParse(issue);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toBe('Simple issue');
-        expect(result.data.data.tracker).toBe('jira');
-        expect(result.data.data.external_id).toBe('PROJ-456');
-        expect(result.data.data.description).toBeUndefined();
-        expect(result.data.data.assignee).toBeUndefined();
+        expect(result['data.data'].title).toBe('Simple issue');
+        expect(result['data.data'].tracker).toBe('jira');
+        expect(result['data.data'].external_id).toBe('PROJ-456');
+        expect(result['data.data'].description).toBeUndefined();
+        expect(result['data.data'].assignee).toBeUndefined();
       }
     });
 
@@ -181,7 +181,7 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         const result = IssueSchema.safeParse(issue);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.severity).toBe(severity);
+          expect(result['data.data'].severity).toBe(severity);
         }
       });
     });
@@ -229,7 +229,7 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         const result = IssueSchema.safeParse(issue);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.status).toBe(status);
+          expect(result['data.data'].status).toBe(status);
         }
       });
     });
@@ -261,7 +261,7 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
         const result = IssueSchema.safeParse(issue);
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.data.issue_type).toBe(issue_type);
+          expect(result['data.data'].issue_type).toBe(issue_type);
         }
       });
     });
@@ -841,7 +841,7 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
       const result = IssueSchema.safeParse(issueWithEmptyComponents);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.affected_components).toEqual([]);
+        expect(result['data.data'].affected_components).toEqual([]);
       }
     });
 
@@ -901,11 +901,11 @@ describe('Issue Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(issue);
       expect(result.kind).toBe('issue');
-      expect(result.data.title).toContain('Memory leak');
-      expect(result.data.severity).toBe('high');
+      expect(result['data.title']).toContain('Memory leak');
+      expect(result['data.severity']).toBe('high');
       expect(result.tags.performance).toBe(true);
       expect(result.source.actor).toBe('monitoring-system');
-      expect(result.ttl_policy).toBe('long');
+      expect(result['ttl_policy']).toBe('long');
     });
 
     it('should handle TTL policy for issues', async () => {

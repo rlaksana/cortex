@@ -13,7 +13,7 @@ describe('Health Aggregation Interface Contracts', () => {
       const expectedStatuses = ['healthy', 'warning', 'critical', 'unknown', 'disabled'];
 
       // Verify status values are consistent
-      expectedStatuses.forEach(status => {
+      expectedStatuses.forEach((status) => {
         expect(typeof status).toBe('string');
         expect(status.length).toBeGreaterThan(0);
       });
@@ -29,10 +29,10 @@ describe('Health Aggregation Interface Contracts', () => {
         'message_queue',
         'storage',
         'external_api',
-        'monitoring'
+        'monitoring',
       ];
 
-      expectedTypes.forEach(type => {
+      expectedTypes.forEach((type) => {
         expect(typeof type).toBe('string');
         expect(type.length).toBeGreaterThan(0);
       });
@@ -46,7 +46,7 @@ describe('Health Aggregation Interface Contracts', () => {
         responseTime: 150,
         timestamp: new Date(),
         error: undefined,
-        details: { version: '1.0.0' }
+        details: { version: '1.0.0' },
       };
 
       // Verify required fields exist and have correct types
@@ -66,17 +66,17 @@ describe('Health Aggregation Interface Contracts', () => {
         connection: {
           url: 'https://api.example.com',
           timeout: 5000,
-          headers: { 'Authorization': 'Bearer token' }
+          headers: { Authorization: 'Bearer token' },
         },
         healthCheck: {
           interval: 60000,
           timeout: 5000,
           retries: 3,
-          path: '/health'
+          path: '/health',
         },
         criticality: 'medium',
         tags: ['external', 'api'],
-        enabled: true
+        enabled: true,
       };
 
       // Verify required fields exist and have correct types
@@ -101,8 +101,8 @@ describe('Health Aggregation Interface Contracts', () => {
             status: 'healthy',
             lastCheck: new Date(),
             metrics: { uptime: 3600000, responseTime: 150 },
-            enabled: true
-          }
+            enabled: true,
+          },
         },
         summary: {
           total: 1,
@@ -110,10 +110,10 @@ describe('Health Aggregation Interface Contracts', () => {
           warning: 0,
           critical: 0,
           unknown: 0,
-          disabled: 0
+          disabled: 0,
         },
         score: 95,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       // Verify structure compliance
@@ -148,7 +148,7 @@ describe('Health Aggregation Interface Contracts', () => {
         dependency: dependencyName,
         status: status,
         responseTime: responseTime,
-        timestamp: timestamp
+        timestamp: timestamp,
       };
 
       // Dependency State
@@ -158,12 +158,12 @@ describe('Health Aggregation Interface Contracts', () => {
           type: 'database',
           connection: { url: 'http://localhost:5432', timeout: 5000 },
           healthCheck: { interval: 30000, timeout: 5000, retries: 3 },
-          criticality: 'high'
+          criticality: 'high',
         },
         status: status,
         lastCheck: timestamp,
         metrics: { uptime: 3600000, responseTime: responseTime },
-        enabled: true
+        enabled: true,
       };
 
       // Aggregated Status
@@ -176,10 +176,10 @@ describe('Health Aggregation Interface Contracts', () => {
           warning: 0,
           critical: 0,
           unknown: 0,
-          disabled: 0
+          disabled: 0,
         },
         score: 95,
-        timestamp: timestamp
+        timestamp: timestamp,
       };
 
       // Verify consistency
@@ -213,34 +213,58 @@ describe('Health Aggregation Interface Contracts', () => {
 
       const serviceInterfaces = {
         DependencyStatus: ['healthy', 'warning', 'critical', 'unknown', 'disabled'],
-        DependencyType: ['database', 'vector_db', 'embedding_service', 'cache', 'message_queue', 'storage', 'external_api', 'monitoring'],
+        DependencyType: [
+          'database',
+          'vector_db',
+          'embedding_service',
+          'cache',
+          'message_queue',
+          'storage',
+          'external_api',
+          'monitoring',
+        ],
         CriticalityLevel: ['low', 'medium', 'high', 'critical'],
         InterfaceFields: {
-          HealthCheckResult: ['dependency', 'status', 'responseTime', 'timestamp', 'error?', 'details?'],
-          DependencyConfig: ['name', 'type', 'connection', 'healthCheck', 'criticality', 'tags?', 'enabled?'],
+          HealthCheckResult: [
+            'dependency',
+            'status',
+            'responseTime',
+            'timestamp',
+            'error?',
+            'details?',
+          ],
+          DependencyConfig: [
+            'name',
+            'type',
+            'connection',
+            'healthCheck',
+            'criticality',
+            'tags?',
+            'enabled?',
+          ],
           DependencyState: ['config', 'status', 'lastCheck', 'metrics', 'enabled'],
-          AggregatedHealthStatus: ['overall', 'dependencies', 'summary', 'score', 'timestamp']
-        }
+          AggregatedHealthStatus: ['overall', 'dependencies', 'summary', 'score', 'timestamp'],
+        },
       };
 
       // Verify interface completeness
-      expect(serviceInterfaces.DependencyStatus).toHaveLength(5);
-      expect(serviceInterfaces.DependencyType).toHaveLength(8);
-      expect(serviceInterfaces.CriticalityLevel).toHaveLength(4);
+      expect(serviceInterfaces['D']ependencyStatus).toHaveLength(5);
+      expect(serviceInterfaces['D']ependencyType).toHaveLength(8);
+      expect(serviceInterfaces['C']riticalityLevel).toHaveLength(4);
 
       // Verify field requirements
-      expect(serviceInterfaces.InterfaceFields.HealthCheckResult).toContain('dependency');
-      expect(serviceInterfaces.InterfaceFields.HealthCheckResult).toContain('status');
-      expect(serviceInterfaces.InterfaceFields.HealthCheckResult).toContain('responseTime');
-      expect(serviceInterfaces.InterfaceFields.HealthCheckResult).toContain('timestamp');
+      expect(serviceInterfaces['I']nterfaceFields['H']ealthCheckResult).toContain('dependency');
+      expect(serviceInterfaces['I']nterfaceFields['H']ealthCheckResult).toContain('status');
+      expect(serviceInterfaces['I']nterfaceFields['H']ealthCheckResult).toContain('responseTime');
+      expect(serviceInterfaces['I']nterfaceFields['H']ealthCheckResult).toContain('timestamp');
 
-      expect(serviceInterfaces.InterfaceFields.DependencyConfig).toContain('name');
-      expect(serviceInterfaces.InterfaceFields.DependencyConfig).toContain('type');
-      expect(serviceInterfaces.InterfaceFields.DependencyConfig).toContain('connection');
+      expect(serviceInterfaces['I']nterfaceFields['D']ependencyConfig).toContain('name');
+      expect(serviceInterfaces['I']nterfaceFields['D']ependencyConfig).toContain('type');
+      expect(serviceInterfaces['I']nterfaceFields['D']ependencyConfig).toContain('connection');
 
-      expect(serviceInterfaces.InterfaceFields.AggregatedHealthStatus).toContain('overall');
-      expect(serviceInterfaces.InterfaceFields.AggregatedHealthStatus).toContain('score');
-      expect(serviceInterfaces.InterfaceFields.AggregatedHealthStatus).toContain('summary');
+      expect(serviceInterfaces['I']nterfaceFields['A']ggregatedHealthStatus).toContain('overall');
+      expect(serviceInterfaces['I']nterfaceFields['A']ggregatedHealthStatus).toContain('score');
+      expect(serviceInterfaces['I']nterfaceFields['A']ggregatedHealthStatus).toContain('summary');
     });
   });
 });

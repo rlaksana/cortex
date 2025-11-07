@@ -22,7 +22,13 @@ function checkMcpConfig() {
     const possibleConfigPaths = [
       join(process.env.HOME || '', '.claude_desktop_config.json'),
       join(process.env.HOME || '', '.config', 'claude', 'claude_desktop_config.json'),
-      join(process.env.USERPROFILE || '', 'AppData', 'Roaming', 'Claude', 'claude_desktop_config.json')
+      join(
+        process.env.USERPROFILE || '',
+        'AppData',
+        'Roaming',
+        'Claude',
+        'claude_desktop_config.json'
+      ),
     ];
 
     let configPath = null;
@@ -43,15 +49,16 @@ function checkMcpConfig() {
 
     if (!config) {
       console.log('ℹ️  No MCP configuration file found');
-      console.log('   This is normal if you haven\'t configured Claude Desktop yet');
+      console.log("   This is normal if you haven't configured Claude Desktop yet");
       return true;
     }
 
     console.log(`📁 Found MCP configuration at: ${configPath}`);
 
     // Check for Cortex configuration issues
-    const cortexServers = Object.keys(config.mcpServers || {})
-      .filter(key => key.toLowerCase().includes('cortex'));
+    const cortexServers = Object.keys(config.mcpServers || {}).filter((key) =>
+      key.toLowerCase().includes('cortex')
+    );
 
     if (cortexServers.length === 0) {
       console.log('ℹ️  No Cortex MCP server configuration found');
@@ -61,7 +68,7 @@ function checkMcpConfig() {
     if (cortexServers.length > 1) {
       console.log('❌ CRITICAL: Multiple Cortex MCP configurations found!');
       console.log('   This violates the single Cortex configuration rule');
-      cortexServers.forEach(server => {
+      cortexServers.forEach((server) => {
         console.log(`   - ${server}`);
       });
       return false;
@@ -76,7 +83,6 @@ function checkMcpConfig() {
     console.log('✅ MCP configuration is valid');
     console.log(`   Cortex server: ${cortexServer}`);
     return true;
-
   } catch (error) {
     console.error('❌ Error checking MCP configuration:', error.message);
     return false;

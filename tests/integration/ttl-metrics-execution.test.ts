@@ -13,7 +13,10 @@ import { TTLManagementService } from '../../src/services/ttl/ttl-management-serv
 import { CleanupWorkerService } from '../../src/services/cleanup-worker.service.js';
 import { systemMetricsService } from '../../src/services/metrics/system-metrics.js';
 import { runExpiryWorker } from '../../src/services/expiry-worker.js';
-import type { TTLBulkOperationOptions, TTLOperationResult } from '../../src/services/ttl/ttl-management-service.js';
+import type {
+  TTLBulkOperationOptions,
+  TTLOperationResult,
+} from '../../src/services/ttl/ttl-management-service.js';
 
 // Mock database layer for testing
 const mockDatabase = {
@@ -97,7 +100,7 @@ describe('TTL Metrics and Execution', () => {
       ];
 
       mockDatabase.search.mockResolvedValue({
-        results: expiredItems.map(item => ({
+        results: expiredItems.map((item) => ({
           id: item.id,
           kind: item.kind,
           data: {
@@ -129,10 +132,26 @@ describe('TTL Metrics and Execution', () => {
     it('should track TTL policy statistics', async () => {
       // Mock items with different TTL policies
       const itemsWithPolicies = [
-        { id: 'item1', kind: 'observation', data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' } },
-        { id: 'item2', kind: 'entity', data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' } },
-        { id: 'item3', kind: 'decision', data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'default' } },
-        { id: 'item4', kind: 'todo', data: { expiry_at: '9999-12-31T23:59:59.999Z', ttl_policy: 'permanent' } },
+        {
+          id: 'item1',
+          kind: 'observation',
+          data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' },
+        },
+        {
+          id: 'item2',
+          kind: 'entity',
+          data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' },
+        },
+        {
+          id: 'item3',
+          kind: 'decision',
+          data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'default' },
+        },
+        {
+          id: 'item4',
+          kind: 'todo',
+          data: { expiry_at: '9999-12-31T23:59:59.999Z', ttl_policy: 'permanent' },
+        },
       ];
 
       mockDatabase.search.mockResolvedValue({
@@ -173,7 +192,7 @@ describe('TTL Metrics and Execution', () => {
       ];
 
       mockDatabase.search.mockResolvedValue({
-        results: expiredItems.map(item => ({
+        results: expiredItems.map((item) => ({
           id: item.id,
           kind: item.kind,
           data: {
@@ -204,12 +223,17 @@ describe('TTL Metrics and Execution', () => {
     it('should preserve permanent items during cleanup', async () => {
       const itemsIncludingPermanent = [
         { id: 'item1', kind: 'observation', expiryTime: '2025-01-01T00:00:00Z', policy: 'short' },
-        { id: 'item2', kind: 'entity', expiryTime: '9999-12-31T23:59:59.999Z', policy: 'permanent' },
+        {
+          id: 'item2',
+          kind: 'entity',
+          expiryTime: '9999-12-31T23:59:59.999Z',
+          policy: 'permanent',
+        },
         { id: 'item3', kind: 'decision', expiryTime: '2025-01-01T00:00:00Z', policy: 'default' },
       ];
 
       mockDatabase.search.mockResolvedValue({
-        results: itemsIncludingPermanent.map(item => ({
+        results: itemsIncludingPermanent.map((item) => ({
           id: item.id,
           kind: item.kind,
           data: {
@@ -236,7 +260,7 @@ describe('TTL Metrics and Execution', () => {
       ];
 
       mockDatabase.search.mockResolvedValue({
-        results: expiredItems.map(item => ({
+        results: expiredItems.map((item) => ({
           id: item.id,
           kind: item.kind,
           data: {
@@ -250,7 +274,9 @@ describe('TTL Metrics and Execution', () => {
 
       expect(result.success).toBe(true);
       expect(result.updated).toBe(0); // No actual deletions in dry run
-      expect(result.warnings).toContain('Dry run: Would delete 2 expired items (0 permanent items preserved)');
+      expect(result.warnings).toContain(
+        'Dry run: Would delete 2 expired items (0 permanent items preserved)'
+      );
 
       // Verify delete was NOT called
       expect(mockDatabase.delete).not.toHaveBeenCalled();
@@ -338,7 +364,7 @@ describe('TTL Metrics and Execution', () => {
             expiry_at: pastDate,
             ttl_policy: 'short',
             auto_extend: false,
-          }
+          },
         },
         {
           id: 'default-item',
@@ -347,7 +373,7 @@ describe('TTL Metrics and Execution', () => {
             expiry_at: pastDate,
             ttl_policy: 'default',
             auto_extend: false,
-          }
+          },
         },
         {
           id: 'permanent-item',
@@ -356,7 +382,7 @@ describe('TTL Metrics and Execution', () => {
             expiry_at: '9999-12-31T23:59:59.999Z',
             ttl_policy: 'permanent',
             auto_extend: false,
-          }
+          },
         },
       ];
 
@@ -447,8 +473,16 @@ describe('TTL Metrics and Execution', () => {
 
     it('should maintain metrics accuracy during concurrent operations', async () => {
       const expiredItems = [
-        { id: 'item1', kind: 'observation', data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' } },
-        { id: 'item2', kind: 'entity', data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'default' } },
+        {
+          id: 'item1',
+          kind: 'observation',
+          data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'short' },
+        },
+        {
+          id: 'item2',
+          kind: 'entity',
+          data: { expiry_at: '2025-01-01T00:00:00Z', ttl_policy: 'default' },
+        },
       ];
 
       mockDatabase.search.mockResolvedValue({
@@ -467,7 +501,7 @@ describe('TTL Metrics and Execution', () => {
       const results = await Promise.all(promises);
 
       // All operations should succeed
-      results.forEach(result => {
+      results.forEach((result) => {
         expect(result.success).toBe(true);
         expect(result.updated).toBe(2);
       });

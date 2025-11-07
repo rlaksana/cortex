@@ -126,9 +126,9 @@ export class ValidationTestHelper {
         data: {
           id: result.stored[0].id,
           status: 'deprecated', // This should be blocked
-          title: decision.data.title,
-          component: decision.data.component,
-          rationale: decision.data.rationale,
+          title: decision['data.title'],
+          component: decision['data.component'],
+          rationale: decision['data.rationale'],
         },
       };
 

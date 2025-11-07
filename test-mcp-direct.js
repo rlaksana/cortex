@@ -23,8 +23,8 @@ const TEST_DATA = {
         type: 'user',
         department: 'engineering',
         role: 'senior-developer',
-        join_date: '2023-01-15'
-      }
+        join_date: '2023-01-15',
+      },
     },
     {
       kind: 'decision',
@@ -34,8 +34,8 @@ const TEST_DATA = {
         rationale: 'Type safety and better IDE support',
         impact: 'high',
         decision_date: '2024-03-01',
-        decision_maker: 'tech-lead'
-      }
+        decision_maker: 'tech-lead',
+      },
     },
     {
       kind: 'observation',
@@ -45,10 +45,10 @@ const TEST_DATA = {
         metrics: {
           active_connections: 95,
           max_connections: 100,
-          response_time_ms: 2500
+          response_time_ms: 2500,
         },
-        severity: 'warning'
-      }
+        severity: 'warning',
+      },
     },
     {
       kind: 'issue',
@@ -58,8 +58,8 @@ const TEST_DATA = {
         status: 'open',
         reporter: 'qa-team',
         affected_platforms: ['iOS', 'Android'],
-        first_seen: '2025-11-01T10:30:00Z'
-      }
+        first_seen: '2025-11-01T10:30:00Z',
+      },
     },
     {
       kind: 'todo',
@@ -69,9 +69,9 @@ const TEST_DATA = {
         assignee: 'backend-team',
         due_date: '2025-12-01T00:00:00Z',
         estimated_hours: 40,
-        dependencies: ['security-review', 'api-key-setup']
-      }
-    }
+        dependencies: ['security-review', 'api-key-setup'],
+      },
+    },
   ],
 
   relations: [
@@ -83,10 +83,10 @@ const TEST_DATA = {
         source: 'user-john-doe',
         target: 'login-page-bug',
         strength: 0.9,
-        timestamp: '2025-11-02T14:20:00Z'
-      }
-    }
-  ]
+        timestamp: '2025-11-02T14:20:00Z',
+      },
+    },
+  ],
 };
 
 class DirectMcpTester {
@@ -105,7 +105,7 @@ class DirectMcpTester {
       passed,
       message,
       details,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     this.testResults.push(result);
@@ -133,7 +133,7 @@ class DirectMcpTester {
       }
 
       this.mcpProcess = spawn('node', [MCP_SERVER_PATH], {
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let initReceived = false;
@@ -177,13 +177,13 @@ class DirectMcpTester {
         params: {
           protocolVersion: '2024-11-05',
           capabilities: {
-            tools: {}
+            tools: {},
           },
           clientInfo: {
             name: 'test-client',
-            version: '1.0.0'
-          }
-        }
+            version: '1.0.0',
+          },
+        },
       });
     });
   }
@@ -211,8 +211,8 @@ class DirectMcpTester {
         method: 'tools/call',
         params: {
           name: toolName,
-          arguments: params
-        }
+          arguments: params,
+        },
       };
 
       let responseReceived = false;
@@ -263,46 +263,59 @@ class DirectMcpTester {
       // Test storing a single entity
       const entity = TEST_DATA.entities[0];
       const storeResult = await this.callTool('memory_store', {
-        items: [entity]
+        items: [entity],
       });
 
       if (storeResult && storeResult.stored && storeResult.stored.length > 0) {
-        this.addResult('Memory Store Single Entity', true,
-          `Successfully stored entity with ID: ${storeResult.stored[0].id}`);
+        this.addResult(
+          'Memory Store Single Entity',
+          true,
+          `Successfully stored entity with ID: ${storeResult.stored[0].id}`
+        );
       } else {
-        this.addResult('Memory Store Single Entity', false,
-          'Failed to store entity', storeResult);
+        this.addResult('Memory Store Single Entity', false, 'Failed to store entity', storeResult);
       }
 
       // Test storing multiple entities
       const batchResult = await this.callTool('memory_store', {
-        items: TEST_DATA.entities.slice(1)
+        items: TEST_DATA.entities.slice(1),
       });
 
       if (batchResult && batchResult.stored && batchResult.stored.length > 0) {
-        this.addResult('Memory Store Batch', true,
-          `Successfully stored ${batchResult.stored.length} entities`);
+        this.addResult(
+          'Memory Store Batch',
+          true,
+          `Successfully stored ${batchResult.stored.length} entities`
+        );
       } else {
-        this.addResult('Memory Store Batch', false,
-          'Failed to store batch entities', batchResult);
+        this.addResult('Memory Store Batch', false, 'Failed to store batch entities', batchResult);
       }
 
       // Test storing relations
       const relationResult = await this.callTool('memory_store', {
-        items: TEST_DATA.relations
+        items: TEST_DATA.relations,
       });
 
       if (relationResult && relationResult.stored && relationResult.stored.length > 0) {
-        this.addResult('Memory Store Relations', true,
-          `Successfully stored ${relationResult.stored.length} relations`);
+        this.addResult(
+          'Memory Store Relations',
+          true,
+          `Successfully stored ${relationResult.stored.length} relations`
+        );
       } else {
-        this.addResult('Memory Store Relations', false,
-          'Failed to store relations', relationResult);
+        this.addResult(
+          'Memory Store Relations',
+          false,
+          'Failed to store relations',
+          relationResult
+        );
       }
-
     } catch (error) {
-      this.addResult('Memory Store Operations', false,
-        `Memory store operation failed: ${error.message}`);
+      this.addResult(
+        'Memory Store Operations',
+        false,
+        `Memory store operation failed: ${error.message}`
+      );
     }
   }
 
@@ -316,30 +329,35 @@ class DirectMcpTester {
       // Test basic search
       const searchResult = await this.callTool('memory_find', {
         query: 'TypeScript frontend',
-        scope: { project: 'mcp-cortex' }
+        scope: { project: 'mcp-cortex' },
       });
 
       if (searchResult && searchResult.items && searchResult.items.length > 0) {
-        this.addResult('Memory Find Basic Search', true,
-          `Found ${searchResult.items.length} items for 'TypeScript frontend'`);
+        this.addResult(
+          'Memory Find Basic Search',
+          true,
+          `Found ${searchResult.items.length} items for 'TypeScript frontend'`
+        );
       } else {
-        this.addResult('Memory Find Basic Search', false,
-          'No items found for basic search', searchResult);
+        this.addResult(
+          'Memory Find Basic Search',
+          false,
+          'No items found for basic search',
+          searchResult
+        );
       }
 
       // Test find by knowledge type
       const typeResult = await this.callTool('memory_find', {
         query: 'test',
         types: ['decision'],
-        scope: { project: 'mcp-cortex' }
+        scope: { project: 'mcp-cortex' },
       });
 
       if (typeResult && typeResult.items && typeResult.items.length > 0) {
-        this.addResult('Memory Find By Type', true,
-          `Found ${typeResult.items.length} decisions`);
+        this.addResult('Memory Find By Type', true, `Found ${typeResult.items.length} decisions`);
       } else {
-        this.addResult('Memory Find By Type', false,
-          'No decisions found', typeResult);
+        this.addResult('Memory Find By Type', false, 'No decisions found', typeResult);
       }
 
       // Test scope filtering
@@ -347,26 +365,30 @@ class DirectMcpTester {
         query: 'user',
         scope: {
           project: 'mcp-cortex',
-          branch: 'test-branch'
-        }
+          branch: 'test-branch',
+        },
       });
 
-      this.addResult('Memory Find Scope Filtering', true,
-        `Scope filtering executed, found ${scopeResult ? scopeResult.items?.length || 0 : 0} items`);
+      this.addResult(
+        'Memory Find Scope Filtering',
+        true,
+        `Scope filtering executed, found ${scopeResult ? scopeResult.items?.length || 0 : 0} items`
+      );
 
       // Test find with analytics
       const analyticsResult = await this.callTool('memory_find', {
         query: 'database',
         analytics: true,
-        scope: { project: 'mcp-cortex' }
+        scope: { project: 'mcp-cortex' },
       });
 
-      this.addResult('Memory Find Analytics', true,
-        `Analytics search executed for 'database'`);
-
+      this.addResult('Memory Find Analytics', true, `Analytics search executed for 'database'`);
     } catch (error) {
-      this.addResult('Memory Find Operations', false,
-        `Memory find operation failed: ${error.message}`);
+      this.addResult(
+        'Memory Find Operations',
+        false,
+        `Memory find operation failed: ${error.message}`
+      );
     }
   }
 
@@ -381,28 +403,40 @@ class DirectMcpTester {
       const duplicateEntity = {
         ...TEST_DATA.entities[0],
         content: 'Test User John Doe', // Same content
-        metadata: { ...TEST_DATA.entities[0].metadata, role: 'modified-role' } // Different metadata
+        metadata: { ...TEST_DATA.entities[0].metadata, role: 'modified-role' }, // Different metadata
       };
 
       const duplicateResult = await this.callTool('memory_store', {
-        items: [duplicateEntity]
+        items: [duplicateEntity],
       });
 
       // Check if duplicates were detected
       if (duplicateResult && duplicateResult.duplicates && duplicateResult.duplicates.length > 0) {
-        this.addResult('Autonomous Deduplication', true,
-          `Detected ${duplicateResult.duplicates.length} duplicates`);
+        this.addResult(
+          'Autonomous Deduplication',
+          true,
+          `Detected ${duplicateResult.duplicates.length} duplicates`
+        );
       } else if (duplicateResult && duplicateResult.stored && duplicateResult.stored.length > 0) {
-        this.addResult('Autonomous Deduplication', false,
-          'No duplicates detected - potential deduplication issue');
+        this.addResult(
+          'Autonomous Deduplication',
+          false,
+          'No duplicates detected - potential deduplication issue'
+        );
       } else {
-        this.addResult('Autonomous Deduplication', false,
-          'Deduplication test inconclusive', duplicateResult);
+        this.addResult(
+          'Autonomous Deduplication',
+          false,
+          'Deduplication test inconclusive',
+          duplicateResult
+        );
       }
-
     } catch (error) {
-      this.addResult('Autonomous Deduplication', false,
-        `Deduplication test failed: ${error.message}`);
+      this.addResult(
+        'Autonomous Deduplication',
+        false,
+        `Deduplication test failed: ${error.message}`
+      );
     }
   }
 
@@ -419,35 +453,34 @@ class DirectMcpTester {
         content: 'Temporary test entity with TTL',
         metadata: {
           ttl_seconds: 60, // 1 minute TTL
-          test_type: 'ttl-test'
-        }
+          test_type: 'ttl-test',
+        },
       };
 
       const ttlResult = await this.callTool('memory_store', {
-        items: [ttlItem]
+        items: [ttlItem],
       });
 
       if (ttlResult && ttlResult.stored && ttlResult.stored.length > 0) {
-        this.addResult('TTL Item Storage', true,
-          'Successfully stored item with TTL');
+        this.addResult('TTL Item Storage', true, 'Successfully stored item with TTL');
       } else {
-        this.addResult('TTL Item Storage', false,
-          'Failed to store TTL item', ttlResult);
+        this.addResult('TTL Item Storage', false, 'Failed to store TTL item', ttlResult);
       }
 
       // Test cache behavior by searching for recently stored item
       const cacheResult = await this.callTool('memory_find', {
         query: 'TypeScript frontend',
         scope: { project: 'mcp-cortex' },
-        use_cache: true
+        use_cache: true,
       });
 
-      this.addResult('Cache Behavior', true,
-        `Cache search executed, found ${cacheResult ? cacheResult.items?.length || 0 : 0} items`);
-
+      this.addResult(
+        'Cache Behavior',
+        true,
+        `Cache search executed, found ${cacheResult ? cacheResult.items?.length || 0 : 0} items`
+      );
     } catch (error) {
-      this.addResult('TTL and Cache Behavior', false,
-        `TTL/Cache test failed: ${error.message}`);
+      this.addResult('TTL and Cache Behavior', false, `TTL/Cache test failed: ${error.message}`);
     }
   }
 
@@ -466,20 +499,20 @@ class DirectMcpTester {
    * Generate comprehensive report
    */
   generateReport() {
-    const passed = this.testResults.filter(r => r.passed).length;
+    const passed = this.testResults.filter((r) => r.passed).length;
     const total = this.testResults.length;
-    const successRate = total > 0 ? (passed / total * 100).toFixed(2) : '0';
+    const successRate = total > 0 ? ((passed / total) * 100).toFixed(2) : '0';
 
     const report = {
       summary: {
         total,
         passed,
         failed: total - passed,
-        successRate: `${successRate}%`
+        successRate: `${successRate}%`,
       },
       tests: this.testResults,
       testData: TEST_DATA,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Save report
@@ -517,11 +550,9 @@ class DirectMcpTester {
       await this.testMemoryFind();
       await this.testDeduplication();
       await this.testTtlAndCache();
-
     } catch (error) {
       console.error('Test suite failed:', error);
-      this.addResult('Test Suite Execution', false,
-        `Test suite failed: ${error.message}`);
+      this.addResult('Test Suite Execution', false, `Test suite failed: ${error.message}`);
     } finally {
       // Cleanup
       this.stopMcpServer();
@@ -536,12 +567,13 @@ class DirectMcpTester {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const tester = new DirectMcpTester();
 
-  tester.runAllTests()
-    .then(report => {
+  tester
+    .runAllTests()
+    .then((report) => {
       const success = parseFloat(report.summary.successRate) >= 80;
       process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Test execution failed:', error);
       process.exit(1);
     });

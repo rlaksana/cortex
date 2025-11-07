@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { CleanupWorkerService } from '../cleanup-worker.service.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 // Mock dependencies
 jest.mock('../../utils/logger.js');

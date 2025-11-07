@@ -76,12 +76,12 @@ This document provides a comprehensive overview of our technical architecture.
     expect(chunkedItems.length).toBeGreaterThan(1);
 
     // Find parent and chunks
-    const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
-    const childChunks = chunkedItems.filter((item) => item.data.is_chunk);
+    const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
+    const childChunks = chunkedItems.filter((item) => item['data.is_chunk']);
 
     expect(parentItem).toBeDefined();
     expect(childChunks.length).toBeGreaterThan(0);
-    expect(parentItem?.data.total_chunks).toBe(childChunks.length);
+    expect(parentItem?.data['total_chunks']).toBe(childChunks.length);
 
     // Simulate search results from both parent and chunks
     const searchResults = [
@@ -100,7 +100,7 @@ This document provides a comprehensive overview of our technical architecture.
       ...childChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
-        content: chunk.data.content,
+        content: chunk['data.content'],
         data: chunk.data,
         scope: chunk.scope,
         confidence_score: 0.8,
@@ -114,7 +114,7 @@ This document provides a comprehensive overview of our technical architecture.
     expect(groupedResults.length).toBeGreaterThan(0);
 
     // Find the group for our parent
-    const groupedResult = groupedResults.find((g) => g.parent_id === parentItem!.id);
+    const groupedResult = groupedResults.find((g) => g['parent_id'] === parentItem!.id);
     expect(groupedResult).toBeDefined();
 
     // Reconstruct content
@@ -128,7 +128,7 @@ This document provides a comprehensive overview of our technical architecture.
     expect(reconstructed.content).toContain('Conclusion');
 
     // Verify metadata
-    expect(reconstructed.total_chunks).toBe(childChunks.length);
+    expect(reconstructed['total_chunks']).toBe(childChunks.length);
     expect(reconstructed.found_chunks).toBe(childChunks.length);
     expect(reconstructed.completeness_ratio).toBe(1.0);
     expect(reconstructed.confidence_score).toBeGreaterThan(0);
@@ -166,7 +166,7 @@ This document provides a comprehensive overview of our technical architecture.
     const searchResults = processedItems.map((item) => ({
       id: item.id,
       kind: item.kind,
-      content: item.data.content,
+      content: item['data.content'],
       data: item.data,
       scope: item.scope,
       confidence_score: 0.7 + Math.random() * 0.3,
@@ -185,11 +185,11 @@ This document provides a comprehensive overview of our technical architecture.
     expect(groupedItems.length).toBeGreaterThan(0);
 
     // Verify the entity is single item
-    const entityGroup = singleItems.find((g) => g.parent_id === 'non-chunkable-001');
+    const entityGroup = singleItems.find((g) => g['parent_id'] === 'non-chunkable-001');
     expect(entityGroup).toBeDefined();
 
     // Verify the section is grouped
-    const sectionGroup = groupedItems.find((g) => g.parent_id === 'chunkable-001');
+    const sectionGroup = groupedItems.find((g) => g['parent_id'] === 'chunkable-001');
     expect(sectionGroup).toBeDefined();
   });
 });

@@ -442,7 +442,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
         expect(config.payloadSchema.properties).toHaveProperty('tags');
 
         // These should be optional in actual payload validation
-        expect(config.payloadSchema.properties.metadata.type).toBe('object');
+        expect(config.payloadSchema.properties.metadata['type']).toBe('object');
         expect(config.payloadSchema.properties.tags.type).toBe('array');
       });
     });
@@ -454,7 +454,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       )?.payloadSchema;
       expect(entitySchema?.properties.entity_type.type).toBe('keyword');
       expect(entitySchema?.properties.name.type).toBe('text');
-      expect(entitySchema?.properties.data.type).toBe('object');
+      expect(entitySchema?.properties['data.type']).toBe('object');
 
       // Test datetime fields
       COLLECTION_CONFIGS.forEach((config) => {
@@ -961,7 +961,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
 
         // Must have metadata support
         expect(properties).toHaveProperty('metadata');
-        expect(properties.metadata.type).toBe('object');
+        expect(properties.metadata['type']).toBe('object');
 
         // Must have tagging support
         expect(properties).toHaveProperty('tags');
@@ -989,7 +989,7 @@ describe('Database Schema Manager - Comprehensive Testing', () => {
       // All schemas should support additional properties
       COLLECTION_CONFIGS.forEach((config) => {
         // Metadata field allows for extensibility
-        expect(config.payloadSchema.properties.metadata.type).toBe('object');
+        expect(config.payloadSchema.properties.metadata['type']).toBe('object');
 
         // Tags field allows for categorization
         expect(config.payloadSchema.properties.tags.items.type).toBe('keyword');

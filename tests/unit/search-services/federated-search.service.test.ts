@@ -346,14 +346,14 @@ class MockFederatedSearchService implements FederatedSearchService {
       }
 
       if (
-        healthStatus.status === HealthStatus.UNHEALTHY ||
-        healthStatus.status === HealthStatus.DEGRADED
+        healthStatus.status === HealthStatus['UNHEALTHY'] ||
+        healthStatus.status === HealthStatus['DEGRADED']
       ) {
         recommendations.push({
           sourceId,
-          type: healthStatus.status === HealthStatus.UNHEALTHY ? 'failover' : 'optimize',
+          type: healthStatus.status === HealthStatus['UNHEALTHY'] ? 'failover' : 'optimize',
           message: healthStatus.message || 'Source health check failed',
-          priority: healthStatus.status === HealthStatus.UNHEALTHY ? 'high' : 'medium',
+          priority: healthStatus.status === HealthStatus['UNHEALTHY'] ? 'high' : 'medium',
         });
       }
     }
@@ -475,7 +475,7 @@ class MockFederatedSearchService implements FederatedSearchService {
 
       return {
         transactionId,
-        status: TransactionStatus.COMMITTED,
+        status: TransactionStatus['COMMITTED'],
         results,
         rollbackLog,
         consistencyCheck,
@@ -486,7 +486,7 @@ class MockFederatedSearchService implements FederatedSearchService {
 
       return {
         transactionId,
-        status: TransactionStatus.ABORTED,
+        status: TransactionStatus['ABORTED'],
         results,
         rollbackLog,
         consistencyCheck: { status: 'failed', errors: [error.message] },
@@ -647,7 +647,7 @@ class MockFederatedSearchService implements FederatedSearchService {
         sourceName: sr.sourceName,
         contributionCount: contribution,
         contributionPercentage: (contribution / results.length) * 100,
-        averageQuality: sr.metadata.resultQuality,
+        averageQuality: sr.metadata['resultQuality'],
         processingTime: sr.processingTime,
       };
     });
@@ -659,7 +659,7 @@ class MockFederatedSearchService implements FederatedSearchService {
   ): QualityMetrics {
     const avgConfidence = results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length;
     const avgSourceQuality =
-      sourceResults.reduce((sum, sr) => sum + sr.metadata.resultQuality, 0) / sourceResults.length;
+      sourceResults.reduce((sum, sr) => sum + sr.metadata['resultQuality'], 0) / sourceResults.length;
 
     return {
       overallQuality: (avgConfidence + avgSourceQuality) / 2,
@@ -748,7 +748,7 @@ class MockFederatedSearchService implements FederatedSearchService {
   ): AggregationMetadata {
     return {
       aggregationTime: Math.random() * 50,
-      strategy: AggregationStrategy.MERGE_AND_RANK,
+      strategy: AggregationStrategy['MERGE_AND_RANK'],
       sourceCount: sourceResults.length,
       totalResultsBeforeAggregation: sourceResults.reduce((sum, sr) => sum + sr.results.length, 0),
       totalResultsAfterAggregation: aggregatedResult.mergedResults.length,
@@ -783,7 +783,7 @@ class MockFederatedSearchService implements FederatedSearchService {
 
     return {
       sourceId,
-      status: isHealthy ? HealthStatus.HEALTHY : HealthStatus.DEGRADED,
+      status: isHealthy ? HealthStatus['HEALTHY'] : HealthStatus['DEGRADED'],
       lastCheck: new Date().toISOString(),
       message: isHealthy ? 'All systems operational' : 'Performance degradation detected',
       metrics: {
@@ -796,14 +796,14 @@ class MockFederatedSearchService implements FederatedSearchService {
   }
 
   private calculateOverallHealth(sourceStatuses: SourceStatus[]): HealthStatus {
-    const healthyCount = sourceStatuses.filter((s) => s.status === HealthStatus.HEALTHY).length;
-    const degradedCount = sourceStatuses.filter((s) => s.status === HealthStatus.DEGRADED).length;
-    const unhealthyCount = sourceStatuses.filter((s) => s.status === HealthStatus.UNHEALTHY).length;
+    const healthyCount = sourceStatuses.filter((s) => s.status === HealthStatus['HEALTHY']).length;
+    const degradedCount = sourceStatuses.filter((s) => s.status === HealthStatus['DEGRADED']).length;
+    const unhealthyCount = sourceStatuses.filter((s) => s.status === HealthStatus['UNHEALTHY']).length;
 
-    if (unhealthyCount > 0) return HealthStatus.UNHEALTHY;
-    if (degradedCount > healthyCount) return HealthStatus.DEGRADED;
-    if (degradedCount > 0) return HealthStatus.DEGRADED;
-    return HealthStatus.HEALTHY;
+    if (unhealthyCount > 0) return HealthStatus['UNHEALTHY'];
+    if (degradedCount > healthyCount) return HealthStatus['DEGRADED'];
+    if (degradedCount > 0) return HealthStatus['DEGRADED'];
+    return HealthStatus['HEALTHY'];
   }
 
   private findAlternativeSources(failedSourceId: string): DataSource[] {
@@ -1313,7 +1313,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       {
         id: 'knowledge-base-1',
         name: 'Primary Knowledge Base',
-        type: SourceType.KNOWLEDGE_BASE,
+        type: SourceType['KNOWLEDGE_BASE'],
         endpoint: 'https://kb1.example.com',
         capabilities: {
           supportedTypes: ['entity', 'decision', 'observation'],
@@ -1324,7 +1324,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
             maxThroughput: 1000,
           },
         },
-        healthStatus: HealthStatus.HEALTHY,
+        healthStatus: HealthStatus['HEALTHY'],
         performanceProfile: {
           averageResponseTime: 200,
           maxThroughput: 1000,
@@ -1337,7 +1337,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       {
         id: 'document-store-1',
         name: 'Document Repository',
-        type: SourceType.DOCUMENT_STORE,
+        type: SourceType['DOCUMENT_STORE'],
         endpoint: 'https://docs.example.com',
         capabilities: {
           supportedTypes: ['section', 'release_note'],
@@ -1348,7 +1348,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
             maxThroughput: 500,
           },
         },
-        healthStatus: HealthStatus.HEALTHY,
+        healthStatus: HealthStatus['HEALTHY'],
         performanceProfile: {
           averageResponseTime: 500,
           maxThroughput: 500,
@@ -1361,7 +1361,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       {
         id: 'search-engine-1',
         name: 'External Search Engine',
-        type: SourceType.SEARCH_ENGINE,
+        type: SourceType['SEARCH_ENGINE'],
         endpoint: 'https://search.example.com',
         capabilities: {
           supportedTypes: ['entity', 'observation'],
@@ -1372,7 +1372,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
             maxThroughput: 2000,
           },
         },
-        healthStatus: HealthStatus.DEGRADED,
+        healthStatus: HealthStatus['DEGRADED'],
         performanceProfile: {
           averageResponseTime: 300,
           maxThroughput: 2000,
@@ -1401,10 +1401,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'user authentication security',
         types: ['entity', 'decision'],
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1421,10 +1421,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'system architecture patterns',
         types: ['entity', 'decision', 'section'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['IMMEDIATE'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1449,10 +1449,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'database performance optimization techniques',
         types: ['observation', 'runbook'],
         sources: ['knowledge-base-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
-        distributionMode: DistributionMode.PRIORITY_BASED,
-        failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.FAST,
+        aggregationStrategy: AggregationStrategy['SOURCE_SPECIFIC'],
+        distributionMode: DistributionMode['PRIORITY_BASED'],
+        failoverStrategy: FailoverStrategy['CIRCUIT_BREAKER'],
+        performanceProfile: PerformanceProfile['FAST'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1478,10 +1478,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'K8s deployment strategies and microservices architecture',
         types: ['entity', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.LOAD_BALANCED,
-        failoverStrategy: FailoverStrategy.CUSTOM,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['LOAD_BALANCED'],
+        failoverStrategy: FailoverStrategy['CUSTOM'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(technicalQuery);
@@ -1506,10 +1506,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         types: ['entity', 'section', 'decision'],
         limit: 150, // Higher than some sources can handle
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['CONSENSUS_BASED'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1535,10 +1535,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'authentication and authorization patterns',
         types: ['decision', 'entity'],
         sources: ['knowledge-base-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1556,7 +1556,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
 
       // Should include aggregation metadata
       expect(result.aggregationMetadata.aggregationStrategy).toBe(
-        AggregationStrategy.MERGE_AND_RANK
+        AggregationStrategy['MERGE_AND_RANK']
       );
       expect(result.aggregationMetadata.deduplicationEnabled).toBe(true);
       expect(result.aggregationMetadata.rankingEnabled).toBe(true);
@@ -1567,10 +1567,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'security best practices',
         types: ['entity', 'decision', 'section'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['IMMEDIATE'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1594,10 +1594,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'performance optimization strategies',
         types: ['observation', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.PRIORITY_BASED,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['PRIORITY_BASED'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1626,10 +1626,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'microservices architecture decisions',
         types: ['decision', 'entity'],
         sources: ['knowledge-base-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1657,10 +1657,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'database design patterns',
         types: ['decision', 'entity', 'ddl'],
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['CONSENSUS_BASED'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1689,10 +1689,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'API security implementation',
         types: ['entity', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1714,10 +1714,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'distributed system architecture',
         types: ['entity', 'decision', 'observation'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.FAST,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['IMMEDIATE'],
+        performanceProfile: PerformanceProfile['FAST'],
       };
 
       const startTime = Date.now();
@@ -1742,10 +1742,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'machine learning model deployment pipeline',
         types: ['entity', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
-        distributionMode: DistributionMode.PRIORITY_BASED,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['SOURCE_SPECIFIC'],
+        distributionMode: DistributionMode['PRIORITY_BASED'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1770,10 +1770,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'cloud infrastructure management',
         types: ['entity', 'decision', 'observation'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        distributionMode: DistributionMode.LOAD_BALANCED,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        distributionMode: DistributionMode['LOAD_BALANCED'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1806,10 +1806,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         types: ['entity', 'decision', 'runbook', 'section'],
         limit: 100,
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(complexQuery);
@@ -1819,8 +1819,8 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
 
       result.sourceAttribution.forEach((attribution) => {
         // Each source should receive appropriate query modifications
-        expect(attribution.metadata.queryComplexity).toBeGreaterThan(0);
-        expect(attribution.metadata.queryComplexity).toBeLessThanOrEqual(1);
+        expect(attribution.metadata['queryComplexity']).toBeGreaterThan(0);
+        expect(attribution.metadata['queryComplexity']).toBeLessThanOrEqual(1);
       });
 
       // Results should respect source-specific limits
@@ -1835,10 +1835,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'enterprise security architecture framework',
         types: ['entity', 'decision', 'observation', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.IMMEDIATE,
-        performanceProfile: PerformanceProfile.REAL_TIME,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['IMMEDIATE'],
+        performanceProfile: PerformanceProfile['REAL_TIME'],
       };
 
       const startTime = Date.now();
@@ -1862,10 +1862,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'database connection pool optimization',
         types: ['entity', 'observation', 'decision'],
         sources: ['knowledge-base-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       // First search
@@ -1889,10 +1889,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: `parallel optimization test query ${i}`,
         types: ['entity', 'decision'] as const,
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'] as const,
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK as const,
-        distributionMode: DistributionMode.PARALLEL as const,
-        failoverStrategy: FailoverStrategy.IMMEDIATE as const,
-        performanceProfile: PerformanceProfile.FAST as const,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'] as const,
+        distributionMode: DistributionMode['PARALLEL'] as const,
+        failoverStrategy: FailoverStrategy['IMMEDIATE'] as const,
+        performanceProfile: PerformanceProfile['FAST'] as const,
       }));
 
       const startTime = Date.now();
@@ -1922,10 +1922,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'distributed caching strategies',
         types: ['entity', 'decision', 'observation'],
         sources: ['knowledge-base-1', 'search-engine-1'], // Include potentially slower source
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1952,10 +1952,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'system performance monitoring and alerting',
         types: ['entity', 'observation', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
-        distributionMode: DistributionMode.LOAD_BALANCED,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['CONSENSUS_BASED'],
+        distributionMode: DistributionMode['LOAD_BALANCED'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -1984,7 +1984,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       const newSource: DataSource = {
         id: 'dynamic-source-1',
         name: 'Dynamic Knowledge Source',
-        type: SourceType.API_ENDPOINT,
+        type: SourceType['API_ENDPOINT'],
         endpoint: 'https://dynamic.example.com',
         capabilities: {
           supportedTypes: ['entity', 'decision'],
@@ -1995,7 +1995,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
             maxThroughput: 1500,
           },
         },
-        healthStatus: HealthStatus.HEALTHY,
+        healthStatus: HealthStatus['HEALTHY'],
         performanceProfile: {
           averageResponseTime: 150,
           maxThroughput: 1500,
@@ -2034,7 +2034,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
 
       // Should provide recommendations for unhealthy sources
       const degradedSources = Object.entries(healthReport.sourceStatuses).filter(
-        ([_, status]) => status.status === HealthStatus.DEGRADED
+        ([_, status]) => status.status === HealthStatus['DEGRADED']
       );
 
       if (degradedSources.length > 0) {
@@ -2087,10 +2087,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'high priority security information',
         types: ['entity', 'decision'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
-        distributionMode: DistributionMode.PRIORITY_BASED,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.FAST,
+        aggregationStrategy: AggregationStrategy['SOURCE_SPECIFIC'],
+        distributionMode: DistributionMode['PRIORITY_BASED'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['FAST'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2118,10 +2118,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         types: ['entity', 'decision', 'section', 'runbook'],
         limit: 300, // Exceeds individual source limits
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2153,10 +2153,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'cross-service integration patterns',
         types: ['entity', 'decision', 'observation'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-        distributionMode: DistributionMode.PARALLEL,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+        distributionMode: DistributionMode['PARALLEL'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2198,7 +2198,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         await federatedSearchService.coordinateDistributedTransaction(operations);
 
       expect(transactionResult.transactionId).toBeTruthy();
-      expect(transactionResult.status).toBe(TransactionStatus.COMMITTED);
+      expect(transactionResult.status).toBe(TransactionStatus['COMMITTED']);
       expect(transactionResult.results).toHaveLength(2);
       expect(transactionResult.rollbackLog.operations).toHaveLength(2);
       expect(transactionResult.consistencyCheck.status).toBe('passed');
@@ -2209,10 +2209,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'data consistency patterns',
         types: ['entity', 'decision', 'observation'],
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.COMPREHENSIVE,
+        aggregationStrategy: AggregationStrategy['CONSENSUS_BASED'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['COMPREHENSIVE'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2251,10 +2251,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         queries.map((q) =>
           federatedSearchService.performFederatedSearch({
             ...q,
-            aggregationStrategy: AggregationStrategy.MERGE_AND_RANK,
-            distributionMode: DistributionMode.PARALLEL,
-            failoverStrategy: FailoverStrategy.GRACEFUL,
-            performanceProfile: PerformanceProfile.BALANCED,
+            aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'],
+            distributionMode: DistributionMode['PARALLEL'],
+            failoverStrategy: FailoverStrategy['GRACEFUL'],
+            performanceProfile: PerformanceProfile['BALANCED'],
           })
         )
       );
@@ -2283,10 +2283,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'error recovery and resilience patterns',
         types: ['entity', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'search-engine-1'], // Include degraded source
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.BALANCED,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['CIRCUIT_BREAKER'],
+        performanceProfile: PerformanceProfile['BALANCED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2297,7 +2297,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
 
       // Should provide error recovery mechanisms
       const unhealthySources = Object.entries(result.sourceHealth.sources).filter(
-        ([_, health]) => health === HealthStatus.UNHEALTHY || health === HealthStatus.DEGRADED
+        ([_, health]) => health === HealthStatus['UNHEALTHY'] || health === HealthStatus['DEGRADED']
       );
 
       if (unhealthySources.length > 0) {
@@ -2314,10 +2314,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: `scalability test query ${i}`,
         types: ['entity', 'decision'] as const,
         sources: ['knowledge-base-1', 'document-store-1'] as const,
-        aggregationStrategy: AggregationStrategy.MERGE_AND_RANK as const,
-        distributionMode: DistributionMode.PARALLEL as const,
-        failoverStrategy: FailoverStrategy.GRACEFUL as const,
-        performanceProfile: PerformanceProfile.BALANCED as const,
+        aggregationStrategy: AggregationStrategy['MERGE_AND_RANK'] as const,
+        distributionMode: DistributionMode['PARALLEL'] as const,
+        failoverStrategy: FailoverStrategy['GRACEFUL'] as const,
+        performanceProfile: PerformanceProfile['BALANCED'] as const,
       }));
 
       const startTime = Date.now();
@@ -2348,10 +2348,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
   describe('Advanced Federated Search Capabilities', () => {
     it('should handle complex aggregation strategies', async () => {
       const strategies = [
-        AggregationStrategy.MERGE_AND_RANK,
-        AggregationStrategy.DEDUPLICATE_AND_BOOST,
-        AggregationStrategy.WEIGHTED_AVERAGE,
-        AggregationStrategy.CONSENSUS_BASED,
+        AggregationStrategy['MERGE_AND_RANK'],
+        AggregationStrategy['DEDUPLICATE_AND_BOOST'],
+        AggregationStrategy['WEIGHTED_AVERAGE'],
+        AggregationStrategy['CONSENSUS_BASED'],
       ];
 
       for (const strategy of strategies) {
@@ -2360,9 +2360,9 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
           types: ['entity', 'decision'],
           sources: ['knowledge-base-1', 'document-store-1'],
           aggregationStrategy: strategy,
-          distributionMode: DistributionMode.PARALLEL,
-          failoverStrategy: FailoverStrategy.GRACEFUL,
-          performanceProfile: PerformanceProfile.BALANCED,
+          distributionMode: DistributionMode['PARALLEL'],
+          failoverStrategy: FailoverStrategy['GRACEFUL'],
+          performanceProfile: PerformanceProfile['BALANCED'],
         };
 
         const result = await federatedSearchService.performFederatedSearch(query);
@@ -2378,10 +2378,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'intelligent failover mechanisms',
         types: ['entity', 'decision', 'runbook'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.SOURCE_SPECIFIC,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.CIRCUIT_BREAKER,
-        performanceProfile: PerformanceProfile.RESILIENT,
+        aggregationStrategy: AggregationStrategy['SOURCE_SPECIFIC'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['CIRCUIT_BREAKER'],
+        performanceProfile: PerformanceProfile['RESILIENT'],
       };
 
       // First, monitor health to identify issues
@@ -2395,7 +2395,7 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
       expect(result.sourceHealth.overall).toBeTruthy();
 
       // Should provide failover metadata
-      if (healthReport.overallHealth !== HealthStatus.HEALTHY) {
+      if (healthReport.overallHealth !== HealthStatus['HEALTHY']) {
         expect(result.sourceHealth).toBeTruthy();
       }
     });
@@ -2405,10 +2405,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         query: 'performance profiling and optimization techniques',
         types: ['entity', 'observation', 'decision'],
         sources: ['knowledge-base-1', 'document-store-1', 'search-engine-1'],
-        aggregationStrategy: AggregationStrategy.WEIGHTED_AVERAGE,
-        distributionMode: DistributionMode.LOAD_BALANCED,
-        failoverStrategy: FailoverStrategy.DEGRADED,
-        performanceProfile: PerformanceProfile.OPTIMIZED,
+        aggregationStrategy: AggregationStrategy['WEIGHTED_AVERAGE'],
+        distributionMode: DistributionMode['LOAD_BALANCED'],
+        failoverStrategy: FailoverStrategy['DEGRADED'],
+        performanceProfile: PerformanceProfile['OPTIMIZED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);
@@ -2435,10 +2435,10 @@ describe('FederatedSearchService - Comprehensive Multi-Source Search Functionali
         types: ['entity', 'decision', 'observation'],
         scope: { project: 'federated-search-demo', org: 'test-org' },
         sources: ['knowledge-base-1', 'document-store-1'],
-        aggregationStrategy: AggregationStrategy.CONSENSUS_BASED,
-        distributionMode: DistributionMode.ADAPTIVE,
-        failoverStrategy: FailoverStrategy.GRACEFUL,
-        performanceProfile: PerformanceProfile.PERSONALIZED,
+        aggregationStrategy: AggregationStrategy['CONSENSUS_BASED'],
+        distributionMode: DistributionMode['ADAPTIVE'],
+        failoverStrategy: FailoverStrategy['GRACEFUL'],
+        performanceProfile: PerformanceProfile['PERSONALIZED'],
       };
 
       const result = await federatedSearchService.performFederatedSearch(query);

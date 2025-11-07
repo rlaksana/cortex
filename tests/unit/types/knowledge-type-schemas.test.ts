@@ -119,7 +119,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       expect(schemas).toHaveLength(16);
       schemas.forEach((schema, index) => {
         expect(schema).toBeDefined();
-        expect(schema._def.typeName).toBe('ZodObject');
+        expect(schema['_']def.typeName).toBe('ZodObject');
       });
     });
 
@@ -127,7 +127,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const unionOptions = KnowledgeItemSchema.options;
       expect(unionOptions).toHaveLength(16);
 
-      const kinds = unionOptions.map((option) => option._def.shape().kind._def.value);
+      const kinds = unionOptions.map((option) => option['_']def.shape().kind['_']def.value);
       const expectedKinds = [
         'section',
         'runbook',
@@ -219,9 +219,9 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const result = SectionSchema.safeParse(section);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.title).toBe('Architecture Overview');
-        expect(result.data.data.heading).toBe('System Architecture');
-        expect(result.data.data.body_md).toContain('# Architecture');
+        expect(result['data.data'].title).toBe('Architecture Overview');
+        expect(result['data.data'].heading).toBe('System Architecture');
+        expect(result['data.data'].body_md).toContain('# Architecture');
       }
     });
 
@@ -330,7 +330,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const result = EntitySchema.safeParse(entity);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.data).toEqual({
+        expect(result['data.data'].data).toEqual({
           email: 'john@example.com',
           preferences: { theme: 'dark', language: 'en' },
           metadata: { lastLogin: '2025-01-01', roles: ['developer', 'admin'] },
@@ -464,8 +464,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.steps).toHaveLength(3);
-        expect(result.data.data.steps[0].step_number).toBe(1);
+        expect(result['data.data'].steps).toHaveLength(3);
+        expect(result['data.data'].steps[0].step_number).toBe(1);
       }
     });
 
@@ -1089,8 +1089,8 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const decisionResult = DecisionSchema.safeParse(decision);
       expect(decisionResult.success).toBe(true);
       if (decisionResult.success) {
-        expect(decisionResult.data.kind).toBe('decision');
-        expect(decisionResult.data.data.component).toBe('auth');
+        expect(decisionResult['data.kind']).toBe('decision');
+        expect(decisionResult['data.data'].component).toBe('auth');
       }
     });
   });
@@ -1234,7 +1234,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       };
 
       // Create circular reference
-      circularEntity.data.data.self = circularEntity;
+      circularEntity['data.data'].self = circularEntity;
 
       const result = EntitySchema.safeParse(circularEntity);
       // Should either handle gracefully or reject with appropriate error
@@ -1402,9 +1402,9 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
       const result = EntitySchema.safeParse(oldFormatData);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.entity_type).toBe('user');
-        expect(result.data.data.name).toBe('old_user');
-        expect(result.data.data.data.username).toBe('olduser');
+        expect(result['data.data'].entity_type).toBe('user');
+        expect(result['data.data'].name).toBe('old_user');
+        expect(result['data.data'].data.username).toBe('olduser');
       }
     });
 
@@ -1463,7 +1463,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
         // Validate that the validated item can be used in the system
         const systemValidation = validateKnowledgeItem(apiRequest);
         expect(systemValidation.kind).toBe('todo');
-        expect(systemValidation.data.status).toBe('in_progress');
+        expect(systemValidation['data.status']).toBe('in_progress');
       }
     });
   });
@@ -1483,7 +1483,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
       const result = validateKnowledgeItem(validItem);
       expect(result.kind).toBe('decision');
-      expect(result.data.component).toBe('test');
+      expect(result['data.component']).toBe('test');
     });
 
     it('should handle safe validation with error details', () => {
@@ -1664,7 +1664,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
       testItems.forEach(({ kind, schema }) => {
         // Verify schema is properly typed
-        expect(schema._def.typeName).toBe('ZodObject');
+        expect(schema['_']def.typeName).toBe('ZodObject');
 
         // Verify kind is properly discriminated
         const sampleItem = {
@@ -1675,7 +1675,7 @@ describe('Knowledge Type Schemas - Comprehensive Validation Testing', () => {
 
         const result = KnowledgeItemSchema.safeParse(sampleItem);
         if (result.success) {
-          expect(result.data.kind).toBe(kind);
+          expect(result['data.kind']).toBe(kind);
         }
       });
     });

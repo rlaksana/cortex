@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { execSync } from 'node:child_process';
-import * as crypto from 'node:crypto';
-import { logger } from '../utils/logger.js';
+import { execSync } from 'child_process';
+import * as crypto from 'crypto';
+import { logger } from '@/utils/logger.js';
 import { DEFAULT_TRUNCATION_CONFIG, type TruncationConfig } from './truncation-config.js';
 
 /**

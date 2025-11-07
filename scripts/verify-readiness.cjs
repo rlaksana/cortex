@@ -19,26 +19,26 @@ const checks = [
     name: 'TypeScript Compilation',
     command: 'npm run type-check',
     expected: 0,
-    critical: true
+    critical: true,
   },
   {
     name: 'ESLint Linting',
     command: 'npm run lint',
     expected: 0,
-    critical: true
+    critical: true,
   },
   {
     name: 'Code Formatting',
     command: 'npm run format:check',
     expected: 0,
-    critical: false
+    critical: false,
   },
   {
     name: 'Build Process',
     command: 'npm run build',
     expected: 0,
-    critical: true
-  }
+    critical: true,
+  },
 ];
 
 let passedChecks = 0;
@@ -52,7 +52,7 @@ checks.forEach((check, index) => {
     const result = execSync(check.command, {
       encoding: 'utf8',
       stdio: 'pipe',
-      timeout: 30000 // 30 second timeout
+      timeout: 30000, // 30 second timeout
     });
 
     if (result.includes('error') || result.includes('Error')) {
@@ -77,21 +77,12 @@ console.log(`Critical Failures: ${criticalFailures}`);
 console.log('\n📁 File System Checks');
 console.log('====================');
 
-const requiredFiles = [
-  'src/index.ts',
-  'package.json',
-  'tsconfig.json',
-  'README.md'
-];
+const requiredFiles = ['src/index.ts', 'package.json', 'tsconfig.json', 'README.md'];
 
-const optionalFiles = [
-  '.env.example',
-  'docs/README.md',
-  'LICENSE'
-];
+const optionalFiles = ['.env.example', 'docs/README.md', 'LICENSE'];
 
 let requiredFilesFound = 0;
-requiredFiles.forEach(file => {
+requiredFiles.forEach((file) => {
   if (fs.existsSync(file)) {
     console.log(`✅ ${file}`);
     requiredFilesFound++;
@@ -112,7 +103,7 @@ try {
   const requiredScripts = ['start', 'build', 'test', 'lint', 'type-check'];
   let scriptsFound = 0;
 
-  requiredScripts.forEach(script => {
+  requiredScripts.forEach((script) => {
     if (packageJson.scripts && packageJson.scripts[script]) {
       console.log(`✅ ${script}`);
       scriptsFound++;
@@ -122,7 +113,6 @@ try {
   });
 
   console.log(`Scripts: ${scriptsFound}/${requiredScripts.length}`);
-
 } catch (error) {
   console.log('❌ Could not read package.json');
 }

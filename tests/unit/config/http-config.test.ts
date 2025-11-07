@@ -15,7 +15,7 @@ import {
   isRetryableHttpError,
   calculateHttpRetryDelay,
   DEFAULT_HTTP_CONFIG,
-  ENVIRONMENT_HTTP_CONFIGS
+  ENVIRONMENT_HTTP_CONFIGS,
 } from '../../../src/config/http-config.js';
 
 describe('HTTP Configuration Manager', () => {
@@ -46,7 +46,7 @@ describe('HTTP Configuration Manager', () => {
       const config = testManager.getConfig();
 
       expect(config.timeouts.default).toBe(5000); // Test environment timeout
-      expect(config.retries.maxAttempts).toBe(1);   // Test environment retries
+      expect(config.retries.maxAttempts).toBe(1); // Test environment retries
     });
 
     it('should load production configuration', () => {
@@ -124,9 +124,9 @@ describe('HTTP Configuration Manager', () => {
     });
 
     it('should calculate retry delay with exponential backoff', () => {
-      expect(manager.calculateRetryDelay(1)).toBe(1000);  // 1st attempt
-      expect(manager.calculateRetryDelay(2)).toBe(2000);  // 2nd attempt
-      expect(manager.calculateRetryDelay(3)).toBe(4000);  // 3rd attempt
+      expect(manager.calculateRetryDelay(1)).toBe(1000); // 1st attempt
+      expect(manager.calculateRetryDelay(2)).toBe(2000); // 2nd attempt
+      expect(manager.calculateRetryDelay(3)).toBe(4000); // 3rd attempt
     });
 
     it('should cap retry delay at maximum', () => {
@@ -211,7 +211,7 @@ describe('HTTP Configuration Manager', () => {
       const updates = {
         headers: {
           'X-API-Key': 'secret-key',
-          'Authorization': 'Bearer token',
+          Authorization: 'Bearer token',
         },
       };
 
@@ -237,7 +237,7 @@ describe('HTTP Configuration Manager', () => {
       const validation = manager.validateConfig();
 
       expect(validation.isValid).toBe(false);
-      expect(validation.errors.some(e => e.includes('Invalid timeout for short'))).toBe(true);
+      expect(validation.errors.some((e) => e.includes('Invalid timeout for short'))).toBe(true);
     });
 
     it('should detect invalid retry configuration', () => {
@@ -252,9 +252,15 @@ describe('HTTP Configuration Manager', () => {
 
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(3);
-      expect(validation.errors.some(e => e.includes('Max retry attempts must be non-negative'))).toBe(true);
-      expect(validation.errors.some(e => e.includes('Base retry delay must be positive'))).toBe(true);
-      expect(validation.errors.some(e => e.includes('Backoff multiplier must be greater than 1'))).toBe(true);
+      expect(
+        validation.errors.some((e) => e.includes('Max retry attempts must be non-negative'))
+      ).toBe(true);
+      expect(validation.errors.some((e) => e.includes('Base retry delay must be positive'))).toBe(
+        true
+      );
+      expect(
+        validation.errors.some((e) => e.includes('Backoff multiplier must be greater than 1'))
+      ).toBe(true);
     });
 
     it('should detect invalid numeric values', () => {
@@ -267,9 +273,15 @@ describe('HTTP Configuration Manager', () => {
       const validation = manager.validateConfig();
 
       expect(validation.isValid).toBe(false);
-      expect(validation.errors.some(e => e.includes('Max redirects must be non-negative'))).toBe(true);
-      expect(validation.errors.some(e => e.includes('Max request size must be positive'))).toBe(true);
-      expect(validation.errors.some(e => e.includes('Max response size must be positive'))).toBe(true);
+      expect(validation.errors.some((e) => e.includes('Max redirects must be non-negative'))).toBe(
+        true
+      );
+      expect(validation.errors.some((e) => e.includes('Max request size must be positive'))).toBe(
+        true
+      );
+      expect(validation.errors.some((e) => e.includes('Max response size must be positive'))).toBe(
+        true
+      );
     });
   });
 

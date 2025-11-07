@@ -5,7 +5,7 @@
  * for consistent, structured logging across the entire codebase.
  */
 
-import { createRequestLogger, logger as baseLogger } from './logger.js';
+import { createRequestLogger, logger as baseLogger } from '@/utils/logger.js';
 
 /**
  * Log Level Guidelines

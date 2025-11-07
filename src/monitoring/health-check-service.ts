@@ -9,7 +9,7 @@
  * - API response times and error rates
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { EmbeddingService } from '../services/embeddings/embedding-service.js';
 import { performanceCollector } from './performance-collector.js';
 import { metricsService } from './metrics-service.js';

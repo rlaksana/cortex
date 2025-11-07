@@ -1,9 +1,9 @@
-import { randomUUID, createHash } from 'node:crypto';
+import { randomUUID, createHash } from 'crypto';
 import { KnowledgeItem } from '../../types/core-interfaces.js';
 import { inheritTTLFromParent } from '../../utils/tl-utils.js';
 import { SemanticAnalyzer, type SemanticAnalysisResult } from './semantic-analyzer.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { environment } from '../../config/environment.js';
 
 export interface ChunkingStats {

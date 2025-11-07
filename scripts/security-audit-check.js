@@ -17,14 +17,14 @@ async function processAuditResults() {
     moderate: 0,
     low: 0,
     info: 0,
-    total: 0
+    total: 0,
   };
 
   const details = [];
 
   const rl = createInterface({
     input: process.stdin,
-    crlfDelay: Infinity
+    crlfDelay: Infinity,
   });
 
   let auditData = '';
@@ -65,7 +65,7 @@ async function processAuditResults() {
           severity: vulnerability.severity,
           title: vulnerability.title,
           url: vulnerability.url,
-          fixAvailable: vulnerability.fixAvailable
+          fixAvailable: vulnerability.fixAvailable,
         });
       }
     }
@@ -81,15 +81,15 @@ async function processAuditResults() {
     console.log(`Total:     ${vulnerabilities.total}`);
 
     // Print details for high/critical vulnerabilities
-    const highCriticalVulns = details.filter(d =>
-      d.severity === 'critical' || d.severity === 'high'
+    const highCriticalVulns = details.filter(
+      (d) => d.severity === 'critical' || d.severity === 'high'
     );
 
     if (highCriticalVulns.length > 0) {
       console.log('\n🚨 High/Critical Vulnerabilities:');
       console.log('=================================');
 
-      highCriticalVulns.forEach(vuln => {
+      highCriticalVulns.forEach((vuln) => {
         console.log(`\n📦 Package: ${vuln.package}`);
         console.log(`   Severity: ${vuln.severity.toUpperCase()}`);
         console.log(`   Title: ${vuln.title}`);
@@ -105,7 +105,9 @@ async function processAuditResults() {
 
     if (shouldFail) {
       console.log('\n❌ SECURITY CHECK FAILED');
-      console.log(`Found ${vulnerabilities.critical} critical and ${vulnerabilities.high} high severity vulnerabilities.`);
+      console.log(
+        `Found ${vulnerabilities.critical} critical and ${vulnerabilities.high} high severity vulnerabilities.`
+      );
       console.log('Please fix these vulnerabilities before proceeding with deployment.');
 
       // Suggest remediation steps
@@ -125,7 +127,6 @@ async function processAuditResults() {
         console.log('Consider addressing these in a future update.');
       }
     }
-
   } catch (error) {
     console.error('❌ Error processing audit results:', error.message);
     process.exit(1);
@@ -138,7 +139,7 @@ if (process.env.CI || process.env.GITHUB_ACTIONS) {
 }
 
 // Process audit results from stdin
-processAuditResults().catch(error => {
+processAuditResults().catch((error) => {
   console.error('❌ Security audit check failed:', error);
   process.exit(1);
 });

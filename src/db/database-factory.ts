@@ -17,9 +17,9 @@
  * @since 2025
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { getKeyVaultService } from '../services/security/key-vault-service.js';
-import * as crypto from 'node:crypto';
+import * as crypto from 'crypto';
 import type { IDatabase, IDatabaseFactory, DatabaseConfig } from './database-interface.js';
 import type { IVectorAdapter } from './interfaces/vector-adapter.interface.js';
 import { ValidationError } from '../utils/error-handler.js';

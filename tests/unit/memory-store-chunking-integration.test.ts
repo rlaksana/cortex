@@ -65,12 +65,12 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         // Verify parent-child relationships and chunk metadata linking
         childItems.forEach((child, index) => {
           expect(child.kind).toBe('section');
-          expect(child.data.is_chunk).toBe(true);
-          expect(child.data.parent_id).toBe(parentItem?.id);
-          expect(child.data.chunk_index).toBe(index);
-          expect(child.data.total_chunks).toBe(childItems.length);
-          expect(child.data.original_length).toBe(LARGE_CONTENT_SIZE);
-          expect(child.data.chunk_overlap).toBe(CHUNKING_OVERLAP);
+          expect(child['data.is_chunk']).toBe(true);
+          expect(child['data.parent_id']).toBe(parentItem?.id);
+          expect(child['data.chunk_index']).toBe(index);
+          expect(child['data.total_chunks']).toBe(childItems.length);
+          expect(child['data.original_length']).toBe(LARGE_CONTENT_SIZE);
+          expect(child['data.chunk_overlap']).toBe(CHUNKING_OVERLAP);
         });
 
         // Verify content preservation
@@ -155,10 +155,10 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
           expect(child.content).toContain('step_number');
 
           // Verify chunk metadata linking
-          expect(child.data.is_chunk).toBe(true);
-          expect(child.data.parent_id).toBe(parentItem?.id);
-          expect(child.data.chunk_index).toBe(index);
-          expect(child.data.total_chunks).toBe(childItems.length);
+          expect(child['data.is_chunk']).toBe(true);
+          expect(child['data.parent_id']).toBe(parentItem?.id);
+          expect(child['data.chunk_index']).toBe(index);
+          expect(child['data.total_chunks']).toBe(childItems.length);
         });
       });
 
@@ -197,15 +197,15 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         childItems.forEach((child, index) => {
           expect(child.kind).toBe('runbook');
           expect(child.scope).toEqual({ project: 'test-project', branch: 'main', org: 'test-org' });
-          expect(child.data.author).toBe('test-author');
-          expect(child.data.version).toBe('1.0');
-          expect(child.data.last_reviewed).toBe('2025-01-01');
+          expect(child['data.author']).toBe('test-author');
+          expect(child['data.version']).toBe('1.0');
+          expect(child['data.last_reviewed']).toBe('2025-01-01');
 
           // Verify chunk metadata linking
-          expect(child.data.is_chunk).toBe(true);
-          expect(child.data.parent_id).toBe(parentItem?.id);
-          expect(child.data.chunk_index).toBe(index);
-          expect(child.data.total_chunks).toBe(childItems.length);
+          expect(child['data.is_chunk']).toBe(true);
+          expect(child['data.parent_id']).toBe(parentItem?.id);
+          expect(child['data.chunk_index']).toBe(index);
+          expect(child['data.total_chunks']).toBe(childItems.length);
         });
       });
     });
@@ -260,13 +260,13 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         // Verify incident-specific structure is preserved and chunk metadata linking
         childItems.forEach((child, index) => {
           expect(child.kind).toBe('incident');
-          expect(child.data.incident_id).toBe('INC-2025-001'); // Incident ID should be preserved
+          expect(child['data.incident_id']).toBe('INC-2025-001'); // Incident ID should be preserved
 
           // Verify chunk metadata linking
-          expect(child.data.is_chunk).toBe(true);
-          expect(child.data.parent_id).toBe(parentItem?.id);
-          expect(child.data.chunk_index).toBe(index);
-          expect(child.data.total_chunks).toBe(childItems.length);
+          expect(child['data.is_chunk']).toBe(true);
+          expect(child['data.parent_id']).toBe(parentItem?.id);
+          expect(child['data.chunk_index']).toBe(index);
+          expect(child['data.total_chunks']).toBe(childItems.length);
         });
       });
 
@@ -301,15 +301,15 @@ describe('Memory Store Chunking Integration (TDD - Failing Test)', () => {
         expect(parentItem?.kind).toBe('incident');
         childItems.forEach((child, index) => {
           expect(child.kind).toBe('incident');
-          expect(child.data.incident_id).toBe('INC-2025-002');
-          expect(child.data.severity).toBe('critical');
-          expect(child.data.resolution_status).toBe('investigating');
+          expect(child['data.incident_id']).toBe('INC-2025-002');
+          expect(child['data.severity']).toBe('critical');
+          expect(child['data.resolution_status']).toBe('investigating');
 
           // Verify chunk metadata linking
-          expect(child.data.is_chunk).toBe(true);
-          expect(child.data.parent_id).toBe(parentItem?.id);
-          expect(child.data.chunk_index).toBe(index);
-          expect(child.data.total_chunks).toBe(childItems.length);
+          expect(child['data.is_chunk']).toBe(true);
+          expect(child['data.parent_id']).toBe(parentItem?.id);
+          expect(child['data.chunk_index']).toBe(index);
+          expect(child['data.total_chunks']).toBe(childItems.length);
         });
       });
     });

@@ -2739,7 +2739,7 @@ describe('Caching Service - Comprehensive Cache Functionality', () => {
           const cached = this.cache.get(key);
           if (!cached) return undefined;
 
-          return cached._compressed ? simulateDecompress(cached.data) : cached.data;
+          return cached['_']compressed ? simulateDecompress(cached.data) : cached.data;
         },
 
         getCompressionStats() {

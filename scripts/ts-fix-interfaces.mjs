@@ -1,0 +1,205 @@
+#!/usr/bin/env node
+import fs from 'node:fs'
+import path from 'node:path'
+import ts from 'typescript'
+import {
+  CWD, SRC_DIR, TYPES_DIR, GEN_TYPES_FILE,
+  ensureDirs, loadProgram, pathIsLocal, moduleNameFromNodeModules,
+  stashGeneratedFile, writeLogs, stableSortStrings
+} from './ts-fix-utils.mjs'
+
+const argv = process.argv.slice(2)
+const args = new Set(argv)
+const APPLY = args.has('--apply')
+const LIMIT = (() => { const i = argv.indexOf('--limit'); return i>0? Number(argv[i+1]) : undefined })()
+const ALLOWLIST_RAW = (() => { const i = argv.indexOf('--allowlist'); return i>0? argv[i+1] : '' })()
+const ALLOWLIST = (ALLOWLIST_RAW ? ALLOWLIST_RAW.split(',') : ['@our/*']).filter(Boolean)
+  .map(p => new RegExp('^' + p.trim().replace(/[.+?^${}()|[\]\\]/g,'\\$&').replace(/\*/g, '.*') ))
+
+function allowModule(name) {
+  return ALLOWLIST.some(r => r.test(name))
+}
+
+function getNodeAt(sf, pos) {
+  function walk(node){
+    if (pos >= node.getStart() && pos < node.getEnd()) {
+      return ts.forEachChild(node, walk) || node
+    }
+    return undefined
+  }
+  return walk(sf)
+}
+
+function maybeMissingPropSite(program, diag) {
+  if (!diag.file || diag.start == null) return null
+  const sf = diag.file
+  const node = getNodeAt(sf, diag.start)
+  if (!node) return null
+  // Try to find the PropertyAccessExpression chain causing 2339
+  let access = node
+  while (access && !ts.isPropertyAccessExpression(access)) access = access.parent
+  if (!access) return null
+  const checker = program.getTypeChecker()
+  const leftType = checker.getTypeAtLocation(access.expression)
+  const symbol = leftType.getSymbol()
+  if (!symbol) return null
+  // Resolve declarations
+  const decls = symbol.getDeclarations() || []
+  if (decls.length === 0) return null
+  // Prefer interface declarations
+  let ifaceDecl = decls.find(d => d.kind === ts.SyntaxKind.InterfaceDeclaration)
+  let classDecl = decls.find(d => d.kind === ts.SyntaxKind.ClassDeclaration)
+  const targetDecl = ifaceDecl || classDecl
+  if (!targetDecl) return null
+  const typeName = targetDecl.name ? targetDecl.name.text : null
+  const sourceFile = targetDecl.getSourceFile()
+  const isLocal = pathIsLocal(sourceFile.fileName)
+  return {
+    propName: access.name.text,
+    typeName,
+    declKind: ts.SyntaxKind[targetDecl.kind],
+    sourceFile,
+    isLocal,
+    symbol
+  }
+}
+
+function addLocalInterfaceProps(program, targets) {
+  const byFile = new Map()
+  for (const t of targets) {
+    if (!t.isLocal) continue
+    if (t.declKind !== 'InterfaceDeclaration' && t.declKind !== 'ClassDeclaration') continue
+    const filePath = t.sourceFile.fileName
+    const sourceText = t.sourceFile.getFullText()
+    let insertAt = null
+    // Find the interface/class body
+    let chosen = null
+    t.sourceFile.forEachChild(function walk(n){
+      if ((ts.isInterfaceDeclaration(n) || ts.isClassDeclaration(n)) && n.name && n.name.text === t.typeName) {
+        chosen = n
+      }
+      ts.forEachChild(n, walk)
+    })
+    if (!chosen) continue
+    // Only augment classes if they are local (class merging via interface)
+    const body = chosen.members
+    insertAt = body && body.end ? body.end - 1 : null
+    if (insertAt == null) continue
+    if (!byFile.has(filePath)) byFile.set(filePath, new Map())
+    const want = byFile.get(filePath)
+    if (!want.has(t.typeName)) want.set(t.typeName, new Set())
+    want.get(t.typeName).add(t.propName)
+  }
+  let filesTouched = 0
+  for (const [filePath, mapByType] of byFile) {
+    const text = fs.readFileSync(filePath, 'utf8')
+    let updated = text
+    for (const [typeName, props] of mapByType) {
+      // naive: inject before closing brace of the declaration occurrence
+      const re = new RegExp(`(interface\\s+${typeName}\\s*\\{)|(class\\s+${typeName}\\s*\\{)`, 'm')
+      const m = re.exec(updated)
+      if (!m) continue
+      const startIdx = m.index
+      const openIdx = updated.indexOf('{', startIdx)
+      const closeIdx = (() => {
+        // simple brace matching
+        let depth = 0
+        for (let i = openIdx; i < updated.length; i++) {
+          const ch = updated[i]
+          if (ch === '{') depth++
+          else if (ch === '}') { depth--; if (depth === 0) return i }
+        }
+        return -1
+      })()
+      if (closeIdx < 0) continue
+      const indent = '\n  '
+      const lines = [...props].map(p => `${indent}${p}?: unknown`)
+      // dedupe existing props
+      const bodyText = updated.slice(openIdx, closeIdx)
+      const finalLines = lines.filter(l => !new RegExp("\\b" + l.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(bodyText))
+      if (finalLines.length === 0) continue
+      updated = updated.slice(0, closeIdx) + finalLines.join('\n') + '\n' + updated.slice(closeIdx)
+    }
+    if (updated !== text) {
+      filesTouched++
+      if (APPLY) fs.writeFileSync(filePath, updated)
+    }
+  }
+  return { filesTouched }
+}
+
+function buildAugmentationBlocks(augmentMap) {
+  const header = `// @generated by ts-fix-interfaces (module augmentation)\n// DO NOT EDIT MANUALLY\n\n`
+  const modules = [...augmentMap.keys()].sort((a,b)=>a.localeCompare(b))
+  let out = header
+  for (const mod of modules) {
+    const types = augmentMap.get(mod)
+    const typeNames = stableSortStrings([...types.keys()])
+    out += `declare module "${mod}" {\n`
+    for (const tn of typeNames) {
+      const props = stableSortStrings([...types.get(tn)])
+      out += `  interface ${tn} {\n`
+      for (const p of props) out += `    ${p}?: unknown\n`
+      out += `  }\n`
+    }
+    out += `}\n\n`
+  }
+  return out
+}
+
+function addModuleAugmentations(program, targets) {
+  /** Map: moduleName -> Map<typeName, Set<prop>> */
+  const augmentMap = new Map()
+  for (const t of targets) {
+    if (t.isLocal) continue
+    // Resolve module name from node_modules path
+    const mod = moduleNameFromNodeModules(t.sourceFile.fileName)
+    if (!mod || !allowModule(mod)) continue
+    // Only interfaces; or class merged via interface not safe for external modules
+    if (t.declKind !== 'InterfaceDeclaration') continue
+    if (!augmentMap.has(mod)) augmentMap.set(mod, new Map())
+    const byType = augmentMap.get(mod)
+    if (!byType.has(t.typeName)) byType.set(t.typeName, new Set())
+    byType.get(t.typeName).add(t.propName)
+  }
+  if (augmentMap.size === 0) return { wrote: false, modules: 0 }
+  const prev = fs.existsSync(GEN_TYPES_FILE) ? fs.readFileSync(GEN_TYPES_FILE, 'utf8') : ''
+  const next = buildAugmentationBlocks(augmentMap)
+  if (prev === next) return { wrote: false, modules: augmentMap.size }
+  if (APPLY) {
+    ensureDirs()
+    const stash = prev ? 'stashed' : null
+    if (prev) fs.writeFileSync(path.join(path.dirname(GEN_TYPES_FILE), '.last-auto-augmentations.d.ts'), prev)
+    fs.writeFileSync(GEN_TYPES_FILE, next)
+  }
+  return { wrote: true, modules: augmentMap.size }
+}
+
+function run() {
+  const program = loadProgram()
+  const diags = ts.getPreEmitDiagnostics(program).filter(d => d.code === 2339)
+  const targets = []
+  const hotspot = new Map() // key: typeName#prop -> count
+  for (const d of diags) {
+    const t = maybeMissingPropSite(program, d)
+    if (t && t.typeName && t.propName) {
+      targets.push(t)
+      const key = `${t.typeName}#${t.propName}`
+      hotspot.set(key, (hotspot.get(key) || 0) + 1)
+    }
+    if (LIMIT && targets.length >= LIMIT) break
+  }
+  const localRes = addLocalInterfaceProps(program, targets)
+  const augRes = addModuleAugmentations(program, targets)
+  // top 10 hotspots
+  const top = [...hotspot.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>({ pair: k.replace('#','.'), count: v }))
+  return { allowlist: ALLOWLIST_RAW || '@our/*', localFilesTouched: localRes.filesTouched, augmentedModules: augRes.modules, wroteAugment: augRes.wrote, proposed: targets.length, hotspots: top }
+}
+
+const res = run()
+writeLogs({ pass: 'interfaces', ...res }, !APPLY)
+console.log(`Interfaces pass ${APPLY? 'applied' : 'dry-run'}: local touched=${res.localFilesTouched}, modules=${res.augmentedModules}, proposed=${res.proposed}`)
+if (res.hotspots?.length) {
+  console.log('Top offenders:')
+  for (const h of res.hotspots) console.log(` - ${h.pair}: ${h.count}`)
+}

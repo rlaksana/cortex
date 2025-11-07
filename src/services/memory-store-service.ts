@@ -20,7 +20,7 @@
  */
 
 import { memoryStore } from './memory-store.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type { MemoryStoreResponse, KnowledgeItem } from '../types/core-interfaces.js';
 
 /**

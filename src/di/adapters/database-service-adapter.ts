@@ -15,7 +15,7 @@
 import { DatabaseManager } from '../../db/database-manager.js';
 import type { IDatabase } from '../../db/database-interface.js';
 import type { IDatabaseService } from '../service-interfaces.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Adapter that wraps DatabaseManager to implement IDatabaseService interface

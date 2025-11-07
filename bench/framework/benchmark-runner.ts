@@ -14,7 +14,7 @@ import type {
   BenchmarkConfig,
   BenchmarkResult,
   BenchmarkScenario,
-  PerformanceMetrics
+  PerformanceMetrics,
 } from './types.js';
 
 export class BenchmarkRunner {
@@ -30,7 +30,7 @@ export class BenchmarkRunner {
       outputDir: './artifacts/bench',
       warmupIterations: 3,
       benchmarkIterations: 10,
-      ...config
+      ...config,
     };
   }
 
@@ -60,7 +60,9 @@ export class BenchmarkRunner {
 
     this.endTime = performance.now();
 
-    console.log(`\n✅ Benchmark suite completed in ${((this.endTime - this.startTime) / 1000).toFixed(2)}s`);
+    console.log(
+      `\n✅ Benchmark suite completed in ${((this.endTime - this.startTime) / 1000).toFixed(2)}s`
+    );
 
     // Generate reports
     await this.generateReports();
@@ -80,16 +82,16 @@ export class BenchmarkRunner {
         totalOperations: 0,
         totalDuration: 0,
         errors: 0,
-        throughput: 0
+        throughput: 0,
       },
       metrics: {
         latencies: { p50: 0, p95: 0, p99: 0, min: 0, max: 0 },
         throughput: 0,
         errorRate: 0,
-        memoryUsage: { peak: 0, average: 0 }
+        memoryUsage: { peak: 0, average: 0 },
       },
       config: scenario.config,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     // Warmup phase
@@ -117,7 +119,9 @@ export class BenchmarkRunner {
     result.summary = this.calculateSummary(result.iterations);
     result.metrics = this.calculateMetrics(result.iterations);
 
-    console.log(`  ✅ Completed: p50=${result.metrics.latencies.p50.toFixed(1)}ms, p95=${result.metrics.latencies.p95.toFixed(1)}ms, throughput=${result.metrics.throughput.toFixed(1)}ops/s`);
+    console.log(
+      `  ✅ Completed: p50=${result.metrics.latencies.p50.toFixed(1)}ms, p95=${result.metrics.latencies.p95.toFixed(1)}ms, throughput=${result.metrics.throughput.toFixed(1)}ops/s`
+    );
 
     return result;
   }
@@ -146,10 +150,10 @@ export class BenchmarkRunner {
             rss: endMemory.rss - startMemory.rss,
             heapUsed: endMemory.heapUsed - startMemory.heapUsed,
             heapTotal: endMemory.heapTotal - startMemory.heapTotal,
-            external: endMemory.external - startMemory.external
-          }
+            external: endMemory.external - startMemory.external,
+          },
         },
-        result
+        result,
       };
     } catch (error) {
       const endTime = performance.now();
@@ -167,10 +171,10 @@ export class BenchmarkRunner {
             rss: endMemory.rss - startMemory.rss,
             heapUsed: endMemory.heapUsed - startMemory.heapUsed,
             heapTotal: endMemory.heapTotal - startMemory.heapTotal,
-            external: endMemory.external - startMemory.external
-          }
+            external: endMemory.external - startMemory.external,
+          },
         },
-        result: null
+        result: null,
       };
     }
   }
@@ -179,20 +183,22 @@ export class BenchmarkRunner {
    * Calculate summary statistics from iterations
    */
   private calculateSummary(iterations: any[]): any {
-    const successful = iterations.filter(i => i.success);
-    const failed = iterations.filter(i => !i.success);
+    const successful = iterations.filter((i) => i.success);
+    const failed = iterations.filter((i) => !i.success);
 
     return {
       totalOperations: iterations.length,
       totalDuration: iterations.reduce((sum, i) => sum + i.duration, 0),
       errors: failed.length,
-      averageDuration: successful.length > 0
-        ? successful.reduce((sum, i) => sum + i.duration, 0) / successful.length
-        : 0,
+      averageDuration:
+        successful.length > 0
+          ? successful.reduce((sum, i) => sum + i.duration, 0) / successful.length
+          : 0,
       successRate: (successful.length / iterations.length) * 100,
-      throughput: successful.length > 0
-        ? (successful.length * 1000) / iterations.reduce((sum, i) => sum + i.duration, 0)
-        : 0
+      throughput:
+        successful.length > 0
+          ? (successful.length * 1000) / iterations.reduce((sum, i) => sum + i.duration, 0)
+          : 0,
     };
   }
 
@@ -200,15 +206,15 @@ export class BenchmarkRunner {
    * Calculate performance metrics from iterations
    */
   private calculateMetrics(iterations: any[]): PerformanceMetrics {
-    const successful = iterations.filter(i => i.success);
-    const durations = successful.map(i => i.duration).sort((a, b) => a - b);
+    const successful = iterations.filter((i) => i.success);
+    const durations = successful.map((i) => i.duration).sort((a, b) => a - b);
 
     if (durations.length === 0) {
       return {
         latencies: { p50: 0, p95: 0, p99: 0, min: 0, max: 0 },
         throughput: 0,
         errorRate: 100,
-        memoryUsage: { peak: 0, average: 0 }
+        memoryUsage: { peak: 0, average: 0 },
       };
     }
 
@@ -218,7 +224,7 @@ export class BenchmarkRunner {
     const p99 = this.percentile(durations, 99);
 
     // Memory usage metrics
-    const memoryUsages = iterations.map(i => i.memoryUsage.end.rss);
+    const memoryUsages = iterations.map((i) => i.memoryUsage.end.rss);
     const peakMemory = Math.max(...memoryUsages);
     const averageMemory = memoryUsages.reduce((sum, val) => sum + val, 0) / memoryUsages.length;
 
@@ -231,14 +237,14 @@ export class BenchmarkRunner {
         p95,
         p99,
         min: durations[0],
-        max: durations[durations.length - 1]
+        max: durations[durations.length - 1],
       },
       throughput,
       errorRate: ((iterations.length - successful.length) / iterations.length) * 100,
       memoryUsage: {
         peak: peakMemory,
-        average: averageMemory
-      }
+        average: averageMemory,
+      },
     };
   }
 
@@ -275,10 +281,10 @@ export class BenchmarkRunner {
           nodeVersion: process.version,
           platform: process.platform,
           arch: process.arch,
-          memory: process.memoryUsage()
-        }
+          memory: process.memoryUsage(),
+        },
       },
-      results: this.results
+      results: this.results,
     };
 
     const jsonPath = join(this.config.outputDir, `benchmark-${timestamp}.json`);
@@ -316,29 +322,31 @@ export class BenchmarkRunner {
       'p50 Latency (ms)',
       'p95 Latency (ms)',
       'p99 Latency (ms)',
-      'Error Rate (%)'
+      'Error Rate (%)',
     ];
 
     const rows = [headers.join(',')];
 
     for (const result of this.results) {
       for (const iteration of result.iterations) {
-        rows.push([
-          result.scenario,
-          `"${result.description}"`,
-          iteration.iteration,
-          iteration.duration.toFixed(2),
-          iteration.success,
-          iteration.error ? `"${iteration.error}"` : '',
-          (iteration.memoryUsage.start.rss / 1024 / 1024).toFixed(2),
-          (iteration.memoryUsage.end.rss / 1024 / 1024).toFixed(2),
-          (iteration.memoryUsage.delta.rss / 1024 / 1024).toFixed(2),
-          result.metrics.throughput.toFixed(2),
-          result.metrics.latencies.p50.toFixed(2),
-          result.metrics.latencies.p95.toFixed(2),
-          result.metrics.latencies.p99.toFixed(2),
-          result.metrics.errorRate.toFixed(2)
-        ].join(','));
+        rows.push(
+          [
+            result.scenario,
+            `"${result.description}"`,
+            iteration.iteration,
+            iteration.duration.toFixed(2),
+            iteration.success,
+            iteration.error ? `"${iteration.error}"` : '',
+            (iteration.memoryUsage.start.rss / 1024 / 1024).toFixed(2),
+            (iteration.memoryUsage.end.rss / 1024 / 1024).toFixed(2),
+            (iteration.memoryUsage.delta.rss / 1024 / 1024).toFixed(2),
+            result.metrics.throughput.toFixed(2),
+            result.metrics.latencies.p50.toFixed(2),
+            result.metrics.latencies.p95.toFixed(2),
+            result.metrics.latencies.p99.toFixed(2),
+            result.metrics.errorRate.toFixed(2),
+          ].join(',')
+        );
       }
     }
 
@@ -387,7 +395,7 @@ export class BenchmarkRunner {
    * Utility delay function
    */
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -408,14 +416,18 @@ export class BenchmarkRunner {
 
     switch (format) {
       case 'json':
-        content = JSON.stringify({
-          metadata: {
-            name: this.config.name,
-            version: this.config.version,
-            timestamp: new Date().toISOString()
+        content = JSON.stringify(
+          {
+            metadata: {
+              name: this.config.name,
+              version: this.config.version,
+              timestamp: new Date().toISOString(),
+            },
+            results: this.results,
           },
-          results: this.results
-        }, null, 2);
+          null,
+          2
+        );
         break;
       case 'csv':
         content = this.generateCSV();

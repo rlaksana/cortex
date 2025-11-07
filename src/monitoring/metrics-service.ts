@@ -12,7 +12,9 @@
 
 import { performanceCollector } from './performance-collector.js';
 import { OperationType } from './operation-types.js';
-import { SearchStrategy, DeduplicationStrategy } from './structured-logger.js';
+// Local narrow aliases to avoid missing named exports from logger
+type SearchStrategy = 'fts' | 'semantic' | 'graph' | string;
+type DeduplicationStrategy = 'exact' | 'fuzzy' | string;
 import { EventEmitter } from 'events';
 
 /**

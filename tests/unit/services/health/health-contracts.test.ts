@@ -30,7 +30,7 @@ describe('Health Aggregation Interface Contracts', () => {
     // Register test dependencies
     dependencyRegistry.register({
       name: 'test-db',
-      type: DependencyType.DATABASE,
+      type: DependencyType['DATABASE'],
       connection: { url: 'http://localhost:5432', timeout: 5000 },
       healthCheck: {
         interval: 30000,
@@ -42,7 +42,7 @@ describe('Health Aggregation Interface Contracts', () => {
 
     dependencyRegistry.register({
       name: 'test-vector-db',
-      type: DependencyType.VECTOR_DB,
+      type: DependencyType['VECTOR_DB'],
       connection: { url: 'http://localhost:6333', timeout: 10000 },
       healthCheck: {
         interval: 30000,
@@ -63,17 +63,17 @@ describe('Health Aggregation Interface Contracts', () => {
   describe('Interface Compliance', () => {
     it('should properly implement DependencyStatus enum values', () => {
       // Verify all expected status values exist
-      expect(DependencyStatus.HEALTHY).toBe('healthy');
-      expect(DependencyStatus.WARNING).toBe('warning');
-      expect(DependencyStatus.CRITICAL).toBe('critical');
-      expect(DependencyStatus.UNKNOWN).toBe('unknown');
-      expect(DependencyStatus.DISABLED).toBe('disabled');
+      expect(DependencyStatus['HEALTHY']).toBe('healthy');
+      expect(DependencyStatus['WARNING']).toBe('warning');
+      expect(DependencyStatus['CRITICAL']).toBe('critical');
+      expect(DependencyStatus['UNKNOWN']).toBe('unknown');
+      expect(DependencyStatus['DISABLED']).toBe('disabled');
     });
 
     it('should create HealthCheckResult objects conforming to interface', async () => {
       const mockHealthCheck = vi.fn().mockResolvedValue({
         dependency: 'test-db',
-        status: DependencyStatus.HEALTHY,
+        status: DependencyStatus['HEALTHY'],
         responseTime: 150,
         timestamp: new Date(),
         details: { version: '1.0.0' },
@@ -84,7 +84,7 @@ describe('Health Aggregation Interface Contracts', () => {
 
       const result = await dependencyRegistry.checkHealth({
         name: 'test-db',
-        type: DependencyType.DATABASE,
+        type: DependencyType['DATABASE'],
         connection: { url: 'http://localhost:5432', timeout: 5000 },
         healthCheck: { interval: 30000, timeout: 5000, retries: 3 },
         criticality: 'high',
@@ -106,13 +106,13 @@ describe('Health Aggregation Interface Contracts', () => {
       const mockHealthResults: HealthCheckResult[] = [
         {
           dependency: 'test-db',
-          status: DependencyStatus.HEALTHY,
+          status: DependencyStatus['HEALTHY'],
           responseTime: 150,
           timestamp: new Date(),
         },
         {
           dependency: 'test-vector-db',
-          status: DependencyStatus.WARNING,
+          status: DependencyStatus['WARNING'],
           responseTime: 300,
           error: 'High latency',
           timestamp: new Date(),
@@ -164,11 +164,11 @@ describe('Health Aggregation Interface Contracts', () => {
     it('should properly handle DependencyConfig interface', () => {
       const testConfig: DependencyConfig = {
         name: 'test-service',
-        type: DependencyType.EXTERNAL_API,
+        type: DependencyType['EXTERNAL_API'],
         connection: {
           url: 'https://api.example.com',
           timeout: 5000,
-          headers: { 'Authorization': 'Bearer token' },
+          headers: { Authorization: 'Bearer token' },
         },
         healthCheck: {
           interval: 60000,
@@ -182,7 +182,7 @@ describe('Health Aggregation Interface Contracts', () => {
 
       // Verify the config conforms to the interface
       expect(testConfig.name).toBe('test-service');
-      expect(testConfig.type).toBe(DependencyType.EXTERNAL_API);
+      expect(testConfig.type).toBe(DependencyType['EXTERNAL_API']);
       expect(testConfig.connection.url).toBe('https://api.example.com');
       expect(testConfig.connection.timeout).toBe(5000);
       expect(testConfig.healthCheck.interval).toBe(60000);
@@ -196,13 +196,13 @@ describe('Health Aggregation Interface Contracts', () => {
       const mockHealthResults: HealthCheckResult[] = [
         {
           dependency: 'test-db',
-          status: DependencyStatus.HEALTHY,
+          status: DependencyStatus['HEALTHY'],
           responseTime: 150,
           timestamp: new Date(),
         },
         {
           dependency: 'test-vector-db',
-          status: DependencyStatus.HEALTHY,
+          status: DependencyStatus['HEALTHY'],
           responseTime: 200,
           timestamp: new Date(),
         },
@@ -224,13 +224,13 @@ describe('Health Aggregation Interface Contracts', () => {
       const mockHealthResults: HealthCheckResult[] = [
         {
           dependency: 'test-db',
-          status: DependencyStatus.HEALTHY,
+          status: DependencyStatus['HEALTHY'],
           responseTime: 150,
           timestamp: new Date(),
         },
         {
           dependency: 'test-vector-db',
-          status: DependencyStatus.CRITICAL,
+          status: DependencyStatus['CRITICAL'],
           responseTime: 5000,
           error: 'Connection timeout',
           timestamp: new Date(),
@@ -242,7 +242,7 @@ describe('Health Aggregation Interface Contracts', () => {
       const aggregatedStatus = await dependencyRegistry.checkAllHealth();
 
       // Verify critical status is properly reflected
-      expect(aggregatedStatus.overall).toBe(DependencyStatus.CRITICAL);
+      expect(aggregatedStatus.overall).toBe(DependencyStatus['CRITICAL']);
       expect(aggregatedStatus.summary.healthy).toBe(1);
       expect(aggregatedStatus.summary.critical).toBe(1);
       expect(aggregatedStatus.score).toBeLessThan(50); // Low score for critical issues
@@ -266,7 +266,7 @@ describe('Health Aggregation Interface Contracts', () => {
       // Create objects that use all related interfaces
       const config: DependencyConfig = {
         name: 'test',
-        type: DependencyType.DATABASE,
+        type: DependencyType['DATABASE'],
         connection: { url: 'http://localhost:5432', timeout: 5000 },
         healthCheck: { interval: 30000, timeout: 5000, retries: 3 },
         criticality: 'high',
@@ -274,7 +274,7 @@ describe('Health Aggregation Interface Contracts', () => {
 
       const state: DependencyState = {
         config,
-        status: DependencyStatus.HEALTHY,
+        status: DependencyStatus['HEALTHY'],
         lastCheck: new Date(),
         metrics: { uptime: 3600000, responseTime: 150 },
         enabled: true,

@@ -477,7 +477,7 @@ describe('MetricsService', () => {
       // Verify metrics are the most recent ones
       const firstMetric = recentMetrics[0];
       const lastMetric = recentMetrics[recentMetrics.length - 1];
-      expect(firstMetric.metadata.index).toBeGreaterThan(lastMetric.metadata.index);
+      expect(firstMetric.metadata['index']).toBeGreaterThan(lastMetric.metadata['index']);
     });
 
     it('should integrate with time series database patterns', async () => {
@@ -1100,8 +1100,8 @@ describe('MetricsService', () => {
 
       // Verify custom data is preserved
       metrics.forEach((metric, index) => {
-        expect(metric.metadata.customValue).toBe(index * 10);
-        expect(metric.metadata.category).toBe(index % 2 === 0 ? 'even' : 'odd');
+        expect(metric.metadata['customValue']).toBe(index * 10);
+        expect(metric.metadata['category']).toBe(index % 2 === 0 ? 'even' : 'odd');
       });
     });
 
@@ -1156,8 +1156,8 @@ describe('MetricsService', () => {
       searchableSummaries.forEach((summary) => {
         const metrics = metricsService.getRecentMetrics(summary.operation, 5);
         metrics.forEach((metric) => {
-          expect(metric.metadata.searchable).toBe(true);
-          expect(metric.metadata.tag).toBe(searchTag);
+          expect(metric.metadata['searchable']).toBe(true);
+          expect(metric.metadata['tag']).toBe(searchTag);
         });
       });
     });

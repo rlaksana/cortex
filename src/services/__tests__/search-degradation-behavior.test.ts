@@ -21,7 +21,7 @@ import {
   ErrorSeverity,
   RecoveryStrategy,
 } from '../search/search-error-handler.js';
-import { searchAuditLogger } from '../search/search-audit-logger.js';
+import { searchAuditLogger } from '@/utils/logger.js';
 import type { SearchQuery } from '../../types/core-interfaces.js';
 
 // Mock the logger to avoid noise in tests

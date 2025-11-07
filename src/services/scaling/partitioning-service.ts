@@ -14,8 +14,8 @@
  * - Multi-tenant isolation guarantees
  */
 
-import { createHash } from 'node:crypto';
-import { logger } from '../../utils/logger.js';
+import { createHash } from 'crypto';
+import { logger } from '@/utils/logger.js';
 import type { KnowledgeItem } from '../../types/core-interfaces.js';
 import { type IDatabase } from '../../db/database-interface.js';
 

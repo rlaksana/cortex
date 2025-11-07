@@ -8,31 +8,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Fix dynamic imports in dist files to include .js extensions
- * This script runs after TypeScript compilation to fix module resolution
+ * Post-build fixer for ESM: ensures relative import/export specifiers include .js
+ * Works on dist output so TS source may remain extensionless.
  */
 
 function fixDynamicImports(dir = 'dist') {
-  console.log('🔧 Fixing dynamic imports in dist files...');
+  console.log('🔧 Fixing imports/exports in dist files...');
 
   const distPath = join(__dirname, '..', dir);
 
-  // Find all JavaScript files recursively
   function findJsFiles(currentPath) {
     const results = [];
     const items = readdirSync(currentPath);
-
     for (const item of items) {
       const fullPath = join(currentPath, item);
       const stat = statSync(fullPath);
-
-      if (stat.isDirectory()) {
-        results.push(...findJsFiles(fullPath));
-      } else if (item.endsWith('.js') && !item.endsWith('.d.ts')) {
-        results.push(fullPath);
-      }
+      if (stat.isDirectory()) results.push(...findJsFiles(fullPath));
+      else if (item.endsWith('.js')) results.push(fullPath);
     }
-
     return results;
   }
 
@@ -40,68 +33,42 @@ function fixDynamicImports(dir = 'dist') {
   console.log(`Found ${jsFiles.length} JavaScript files`);
 
   let fixedCount = 0;
+  const isRelative = (p) => p.startsWith('./') || p.startsWith('../');
+  const hasKnownExtension = (p) => /\.(mjs|cjs|js|jsx|json)$/i.test(p);
 
   for (const filePath of jsFiles) {
     try {
       let content = readFileSync(filePath, 'utf-8');
       const originalContent = content;
 
-      // Fix dynamic imports for unified-database-layer-v2
+      // Special-case dynamic import for unified-database-layer-v2
       content = content.replace(
         /import\('([^']*)unified-database-layer-v2'\)/g,
         "import('$1unified-database-layer-v2.js')"
       );
 
-      // Fix other common dynamic imports
-      content = content.replace(
-        /import\('([^']+\.js)'\)/g,
-        "import('$1')"
+      // Normalize dynamic imports that already have .js (noop)
+      content = content.replace(/import\('([^']+\.js)'\)/g, "import('$1')");
+
+      // Static imports
+      content = content.replace(/(from\s+['"])([^'\"]+)(['"])/g, (m, pre, p, suf) =>
+        !isRelative(p) || hasKnownExtension(p) ? m : `${pre}${p}.js${suf}`
       );
 
-      // Fix static imports that don't have extensions
-      content = content.replace(
-        /from\s+['"]([^'"]+)['"]/g,
-        (match, path) => {
-          // Skip if already has extension or is node module
-          if (path.includes('.') && !path.startsWith('./') && !path.startsWith('../')) {
-            return match;
-          }
-
-          // Skip if already has .js extension
-          if (path.endsWith('.js')) {
-            return match;
-          }
-
-          // Add .js extension to relative imports
-          if (path.startsWith('./') || path.startsWith('../')) {
-            return `from '${path}.js'`;
-          }
-
-          return match;
-        }
+      // Re-exports: export * from '...'
+      content = content.replace(/(export\s+\*\s+from\s+['"])([^'\"]+)(['"])/g, (m, pre, p, suf) =>
+        !isRelative(p) || hasKnownExtension(p) ? m : `${pre}${p}.js${suf}`
       );
 
-      // Fix dynamic imports that don't have extensions
+      // Re-exports: export { X } from '...'
       content = content.replace(
-        /import\('([^']+)'\)/g,
-        (match, path) => {
-          // Skip if already has extension or is node module
-          if (path.includes('.') && !path.startsWith('./') && !path.startsWith('../')) {
-            return match;
-          }
+        /(export\s+\{[^}]*\}\s+from\s+['"])([^'\"]+)(['"])/g,
+        (m, pre, p, suf) => (!isRelative(p) || hasKnownExtension(p) ? m : `${pre}${p}.js${suf}`)
+      );
 
-          // Skip if already has .js extension
-          if (path.endsWith('.js')) {
-            return match;
-          }
-
-          // Add .js extension to relative imports
-          if (path.startsWith('./') || path.startsWith('../')) {
-            return `import('${path}.js')`;
-          }
-
-          return match;
-        }
+      // Dynamic imports generic
+      content = content.replace(/import\(\s*['"]([^'\"]+)['"]\s*\)/g, (m, p) =>
+        !isRelative(p) || hasKnownExtension(p) ? m : `import('${p}.js')`
       );
 
       if (content !== originalContent) {
@@ -114,22 +81,12 @@ function fixDynamicImports(dir = 'dist') {
     }
   }
 
-  console.log(`\n🎉 Fixed dynamic imports in ${fixedCount} files`);
+  console.log(`\n🎉 Fixed import/export specifiers in ${fixedCount} files`);
   return fixedCount;
 }
 
-// Run the fix
-console.log('Script executed, checking conditions:', {
-  importMeta: import.meta.url,
-  argv1: process.argv[1],
-  condition: import.meta.url === `file://${process.argv[1]}`
-});
-
+// Run the fix if executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  console.log('Running fixDynamicImports...');
-  fixDynamicImports();
-} else {
-  console.log('Condition not met, running directly...');
   fixDynamicImports();
 }
 

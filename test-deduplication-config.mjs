@@ -5,7 +5,12 @@
  * Tests deduplication configuration, merge strategies, and core logic without database operations
  */
 
-import { DEFAULT_DEDUPLICATION_CONFIG, DEDUPE_PRESETS, validateDeduplicationConfig, mergeDeduplicationConfig } from './dist/config/deduplication-config.js';
+import {
+  DEFAULT_DEDUPLICATION_CONFIG,
+  DEDUPE_PRESETS,
+  validateDeduplicationConfig,
+  mergeDeduplicationConfig,
+} from './dist/config/deduplication-config.js';
 
 // Test results tracking
 let testResults = {
@@ -49,9 +54,10 @@ async function testDefaultConfiguration() {
     });
 
     // Test required fields
-    const hasRequiredFields = DEFAULT_DEDUPLICATION_CONFIG.enabled !== undefined &&
-                             DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold !== undefined &&
-                             DEFAULT_DEDUPLICATION_CONFIG.mergeStrategy !== undefined;
+    const hasRequiredFields =
+      DEFAULT_DEDUPLICATION_CONFIG.enabled !== undefined &&
+      DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold !== undefined &&
+      DEFAULT_DEDUPLICATION_CONFIG.mergeStrategy !== undefined;
 
     logTest('Default Config Required Fields', hasRequiredFields, {
       hasEnabled: DEFAULT_DEDUPLICATION_CONFIG.enabled !== undefined,
@@ -60,8 +66,9 @@ async function testDefaultConfiguration() {
     });
 
     // Test valid ranges
-    const thresholdValid = DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold >= 0 &&
-                         DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold <= 1;
+    const thresholdValid =
+      DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold >= 0 &&
+      DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold <= 1;
     const windowValid = DEFAULT_DEDUPLICATION_CONFIG.dedupeWindowDays >= 0;
     const historyValid = DEFAULT_DEDUPLICATION_CONFIG.maxHistoryHours >= 0;
 
@@ -73,7 +80,6 @@ async function testDefaultConfiguration() {
       windowDays: DEFAULT_DEDUPLICATION_CONFIG.dedupeWindowDays,
       historyHours: DEFAULT_DEDUPLICATION_CONFIG.maxHistoryHours,
     });
-
   } catch (error) {
     logTest('Default Configuration', false, { error: error.message });
   }
@@ -244,13 +250,13 @@ async function testConfigurationPresets() {
       }
 
       if (preset.contentSimilarityThreshold !== undefined) {
-        const thresholdApplied = mergedConfig.contentSimilarityThreshold === preset.contentSimilarityThreshold;
+        const thresholdApplied =
+          mergedConfig.contentSimilarityThreshold === preset.contentSimilarityThreshold;
         logTest(`Preset ${presetName} - Threshold Override`, thresholdApplied, {
           preset: preset.contentSimilarityThreshold,
           merged: mergedConfig.contentSimilarityThreshold,
         });
       }
-
     } catch (error) {
       logTest(`Preset: ${presetName}`, false, { error: error.message });
     }
@@ -297,9 +303,11 @@ async function testConfigurationMerging() {
       }
 
       if (testCase.expectedFields) {
-        passed = passed && testCase.expectedFields.every((field, index) =>
-          merged[field] === testCase.expectedValues[index]
-        );
+        passed =
+          passed &&
+          testCase.expectedFields.every(
+            (field, index) => merged[field] === testCase.expectedValues[index]
+          );
       }
 
       if (testCase.preserveField) {
@@ -311,7 +319,6 @@ async function testConfigurationMerging() {
         merged: !!merged,
         hasExpectedValue: passed,
       });
-
     } catch (error) {
       logTest(`Config Merge: ${testCase.name}`, false, { error: error.message });
     }
@@ -331,23 +338,37 @@ async function testScopeConfiguration() {
     const hasProjectFilter = config.scopeFilters?.project?.enabled !== undefined;
     const hasBranchFilter = config.scopeFilters?.branch?.enabled !== undefined;
 
-    logTest('Scope Filters Structure', hasScopeFilters && hasOrgFilter && hasProjectFilter && hasBranchFilter, {
-      hasScopeFilters,
-      hasOrgFilter,
-      hasProjectFilter,
-      hasBranchFilter,
-    });
+    logTest(
+      'Scope Filters Structure',
+      hasScopeFilters && hasOrgFilter && hasProjectFilter && hasBranchFilter,
+      {
+        hasScopeFilters,
+        hasOrgFilter,
+        hasProjectFilter,
+        hasBranchFilter,
+      }
+    );
 
     // Test scope priority values
-    const orgPriorityValid = typeof config.scopeFilters?.org?.priority === 'number' && config.scopeFilters.org.priority > 0;
-    const projectPriorityValid = typeof config.scopeFilters?.project?.priority === 'number' && config.scopeFilters.project.priority > 0;
-    const branchPriorityValid = typeof config.scopeFilters?.branch?.priority === 'number' && config.scopeFilters.branch.priority > 0;
+    const orgPriorityValid =
+      typeof config.scopeFilters?.org?.priority === 'number' &&
+      config.scopeFilters.org.priority > 0;
+    const projectPriorityValid =
+      typeof config.scopeFilters?.project?.priority === 'number' &&
+      config.scopeFilters.project.priority > 0;
+    const branchPriorityValid =
+      typeof config.scopeFilters?.branch?.priority === 'number' &&
+      config.scopeFilters.branch.priority > 0;
 
-    logTest('Scope Priority Values', orgPriorityValid && projectPriorityValid && branchPriorityValid, {
-      orgPriority: config.scopeFilters?.org?.priority,
-      projectPriority: config.scopeFilters?.project?.priority,
-      branchPriority: config.scopeFilters?.branch?.priority,
-    });
+    logTest(
+      'Scope Priority Values',
+      orgPriorityValid && projectPriorityValid && branchPriorityValid,
+      {
+        orgPriority: config.scopeFilters?.org?.priority,
+        projectPriority: config.scopeFilters?.project?.priority,
+        branchPriority: config.scopeFilters?.branch?.priority,
+      }
+    );
 
     // Test cross-scope configuration
     const hasCrossScopeConfig = config.crossScopeDeduplication !== undefined;
@@ -357,7 +378,6 @@ async function testScopeConfiguration() {
       crossScopeDeduplication: config.crossScopeDeduplication,
       checkWithinScopeOnly: config.checkWithinScopeOnly,
     });
-
   } catch (error) {
     logTest('Scope Configuration', false, { error: error.message });
   }
@@ -386,11 +406,15 @@ async function testPerformanceConfiguration() {
     const hasMinLength = config.contentAnalysisSettings?.minLengthForAnalysis > 0;
     const hasWeightingFactors = !!config.contentAnalysisSettings?.weightingFactors;
 
-    logTest('Content Analysis Settings', hasContentAnalysis && hasMinLength && hasWeightingFactors, {
-      hasContentAnalysis,
-      minLengthForAnalysis: config.contentAnalysisSettings?.minLengthForAnalysis,
-      hasWeightingFactors,
-    });
+    logTest(
+      'Content Analysis Settings',
+      hasContentAnalysis && hasMinLength && hasWeightingFactors,
+      {
+        hasContentAnalysis,
+        minLengthForAnalysis: config.contentAnalysisSettings?.minLengthForAnalysis,
+        hasWeightingFactors,
+      }
+    );
 
     // Test audit configuration
     const hasAuditConfig = config.enableAuditLogging !== undefined;
@@ -402,7 +426,6 @@ async function testPerformanceConfiguration() {
       preserveMergeHistory: config.preserveMergeHistory,
       maxMergeHistoryEntries: config.maxMergeHistoryEntries,
     });
-
   } catch (error) {
     logTest('Performance Configuration', false, { error: error.message });
   }
@@ -469,7 +492,6 @@ async function testEdgeCasesAndValidation() {
         hasErrors: validation.errors.length > 0,
         hasWarnings: validation.warnings.length > 0,
       });
-
     } catch (error) {
       const expectedError = !testCase.expectValid;
       logTest(`Edge Case: ${testCase.name}`, expectedError, { error: error.message });
@@ -485,12 +507,16 @@ function generateTestReport() {
 
   console.log(`\n📈 Test Summary:`);
   console.log(`   Total Tests: ${testResults.totalTests}`);
-  console.log(`   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
-  console.log(`   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`);
+  console.log(
+    `   Passed: ${testResults.passedTests} (${((testResults.passedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `   Failed: ${testResults.failedTests} (${((testResults.failedTests / testResults.totalTests) * 100).toFixed(1)}%)`
+  );
 
   if (testResults.errors.length > 0) {
     console.log(`\n❌ Errors:`);
-    testResults.errors.forEach(error => {
+    testResults.errors.forEach((error) => {
       console.log(`   ${error.test}: ${error.error}`);
     });
   }
@@ -500,10 +526,16 @@ function generateTestReport() {
   // Analyze default configuration
   console.log(`   Default Configuration:`);
   console.log(`     Enabled: ${DEFAULT_DEDUPLICATION_CONFIG.enabled}`);
-  console.log(`     Similarity Threshold: ${DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold}`);
+  console.log(
+    `     Similarity Threshold: ${DEFAULT_DEDUPLICATION_CONFIG.contentSimilarityThreshold}`
+  );
   console.log(`     Merge Strategy: ${DEFAULT_DEDUPLICATION_CONFIG.mergeStrategy}`);
-  console.log(`     Cross-Scope Deduplication: ${DEFAULT_DEDUPLICATION_CONFIG.crossScopeDeduplication}`);
-  console.log(`     Time-Based Deduplication: ${DEFAULT_DEDUPLICATION_CONFIG.timeBasedDeduplication}`);
+  console.log(
+    `     Cross-Scope Deduplication: ${DEFAULT_DEDUPLICATION_CONFIG.crossScopeDeduplication}`
+  );
+  console.log(
+    `     Time-Based Deduplication: ${DEFAULT_DEDUPLICATION_CONFIG.timeBasedDeduplication}`
+  );
 
   // Analyze presets
   console.log(`\n   Available Presets: ${Object.keys(DEDUPE_PRESETS).join(', ')}`);
@@ -546,7 +578,6 @@ async function runDeduplicationConfigTests() {
     await testEdgeCasesAndValidation();
 
     return generateTestReport();
-
   } catch (error) {
     console.error('❌ Test suite failed:', error);
     throw error;
@@ -556,11 +587,11 @@ async function runDeduplicationConfigTests() {
 // Run tests if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   runDeduplicationConfigTests()
-    .then(report => {
+    .then((report) => {
       console.log('\n🎉 All configuration tests completed!');
       process.exit(report.failedTests > 0 ? 1 : 0);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('💥 Test suite crashed:', error);
       process.exit(1);
     });

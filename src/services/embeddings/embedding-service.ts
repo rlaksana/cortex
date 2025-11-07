@@ -19,9 +19,9 @@
  * @since 2025
  */
 
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import { OpenAI } from 'openai';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { DatabaseError, ValidationError } from '../../db/database-interface.js';
 import { getKeyVaultService } from '../security/key-vault-service.js';
 

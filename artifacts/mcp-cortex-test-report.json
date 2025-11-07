@@ -78,10 +78,7 @@
         "kind": "decision",
         "content": "Decision to use React for frontend",
         "metadata": {
-          "alternatives": [
-            "Vue",
-            "Angular"
-          ],
+          "alternatives": ["Vue", "Angular"],
           "rationale": "Team experience",
           "impact": "medium"
         }

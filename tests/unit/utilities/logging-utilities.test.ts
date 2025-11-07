@@ -190,7 +190,7 @@ describe('Logging Utilities', () => {
       expect(parsed.context.error).toBe('Connection timeout');
       expect(parsed.context.database).toBe('users');
       expect(parsed.context.retryCount).toBe(3);
-      expect(parsed.context.metadata.host).toBe('db.example.com');
+      expect(parsed.context.metadata['host']).toBe('db.example.com');
     });
 
     it('should render log templates with variable substitution', () => {
@@ -1934,7 +1934,7 @@ describe('Logging Utilities', () => {
       const topErrorsWidget = mockDashboardService.getWidget('top-errors');
 
       expect(errorRateWidget).toBeDefined();
-      expect(errorRateWidget.data.value).toBeGreaterThanOrEqual(0);
+      expect(errorRateWidget['data.value']).toBeGreaterThanOrEqual(0);
       expect(logVolumeWidget).toBeDefined();
       expect(topErrorsWidget).toBeDefined();
       expect(Array.isArray(topErrorsWidget.data)).toBe(true);

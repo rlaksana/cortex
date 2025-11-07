@@ -9,6 +9,7 @@ This system provides complete visibility into retry patterns and circuit breaker
 ## Features
 
 ### 🔍 **Real-Time Monitoring**
+
 - Live retry budget consumption tracking
 - Circuit breaker state monitoring
 - SLO compliance monitoring
@@ -16,6 +17,7 @@ This system provides complete visibility into retry patterns and circuit breaker
 - Service dependency health tracking
 
 ### 📊 **Advanced Dashboards**
+
 - Interactive service dependency maps
 - Real-time metrics visualization
 - SLO overlays and error budget tracking
@@ -23,12 +25,14 @@ This system provides complete visibility into retry patterns and circuit breaker
 - Historical trend analysis
 
 ### 🚨 **Intelligent Alerting**
+
 - Configurable alert rules and thresholds
 - Multi-channel notifications (Email, Slack, PagerDuty)
 - Alert correlation and escalation policies
 - Predictive alerting based on trends
 
 ### 📈 **Trend Analysis & Predictions**
+
 - Historical pattern detection
 - Anomaly detection and correlation
 - Predictive failure analysis
@@ -36,6 +40,7 @@ This system provides complete visibility into retry patterns and circuit breaker
 - SLO violation forecasting
 
 ### 🔌 **Integration & Export**
+
 - Prometheus metrics export
 - Grafana dashboard integration
 - JSON/CSV data export
@@ -76,7 +81,10 @@ The monitoring system is integrated into the MCP Cortex project. All components 
 ### Basic Setup
 
 ```typescript
-import { setupRetryBudgetMonitoring, registerServiceForMonitoring } from './src/monitoring/retry-budget-index.js';
+import {
+  setupRetryBudgetMonitoring,
+  registerServiceForMonitoring,
+} from './src/monitoring/retry-budget-index.js';
 
 // Initialize the monitoring system
 await setupRetryBudgetMonitoring();
@@ -90,11 +98,11 @@ registerServiceForMonitoring('user-service', 'user-service-circuit', {
   sloTargets: {
     availability: 99.9,
     latency: 300,
-    errorRate: 0.05
+    errorRate: 0.05,
   },
   dependencies: ['database-service', 'cache-service'],
   team: 'backend-team',
-  environment: 'production'
+  environment: 'production',
 });
 ```
 
@@ -125,12 +133,14 @@ app.listen(3000, () => {
 Core component that tracks retry budget consumption and provides real-time metrics.
 
 **Key Features:**
+
 - Real-time budget consumption tracking
 - Configurable thresholds and limits
 - SLO compliance monitoring
 - Predictive analysis for budget exhaustion
 
 **Usage:**
+
 ```typescript
 import { retryBudgetMonitor } from './src/monitoring/retry-budget-monitor.js';
 
@@ -148,7 +158,7 @@ retryBudgetMonitor.recordRetryConsumption({
   operationType: 'api_call',
   responseTime: 250,
   success: true,
-  circuitBreakerState: 'closed'
+  circuitBreakerState: 'closed',
 });
 ```
 
@@ -157,12 +167,14 @@ retryBudgetMonitor.recordRetryConsumption({
 Monitors circuit breaker states and correlates them with retry budget impacts.
 
 **Key Features:**
+
 - Real-time circuit breaker state tracking
 - Performance impact analysis
 - Health status calculation
 - Alert integration
 
 **Usage:**
+
 ```typescript
 import { circuitBreakerMonitor } from './src/monitoring/circuit-breaker-monitor.js';
 
@@ -181,12 +193,14 @@ const alerts = circuitBreakerMonitor.getActiveAlerts();
 Intelligent alerting system with configurable rules, escalation policies, and multi-channel notifications.
 
 **Key Features:**
+
 - Configurable alert rules
 - Multi-channel notifications (Email, Slack, PagerDuty)
 - Alert correlation and escalation
 - Predictive alerting
 
 **Usage:**
+
 ```typescript
 import { retryAlertSystem } from './src/monitoring/retry-alert-system.js';
 
@@ -198,16 +212,18 @@ retryAlertSystem.addAlertRule({
   type: AlertType.BUDGET_WARNING,
   severity: AlertSeverity.WARNING,
   enabled: true,
-  conditions: [{
-    metric: 'budget_utilization_percent',
-    operator: '>=',
-    threshold: 80,
-    duration: 300 // 5 minutes
-  }],
+  conditions: [
+    {
+      metric: 'budget_utilization_percent',
+      operator: '>=',
+      threshold: 80,
+      duration: 300, // 5 minutes
+    },
+  ],
   notifications: {
     channels: [AlertChannel.EMAIL, AlertChannel.SLACK],
-    cooldownMinutes: 15
-  }
+    cooldownMinutes: 15,
+  },
 });
 
 // Get active alerts
@@ -222,17 +238,23 @@ retryAlertSystem.acknowledgeAlert('alert-id', 'operator-name');
 Advanced trend analysis and pattern detection with predictive capabilities.
 
 **Key Features:**
+
 - Historical trend analysis
 - Anomaly detection
 - Pattern recognition
 - Predictive analytics
 
 **Usage:**
+
 ```typescript
 import { retryTrendAnalyzer } from './src/monitoring/retry-trend-analyzer.js';
 
 // Analyze trends for a service
-const trends = retryTrendAnalyzer.analyzeTrends('user-service', 'budget_utilization_percent', '24h');
+const trends = retryTrendAnalyzer.analyzeTrends(
+  'user-service',
+  'budget_utilization_percent',
+  '24h'
+);
 
 // Detect anomalies
 const anomalies = retryTrendAnalyzer.detectAnomalies('user-service', 24);
@@ -249,12 +271,14 @@ const report = retryTrendAnalyzer.getServiceReport('user-service', '7d');
 Full-featured dashboard system with multiple views and real-time updates.
 
 **Key Features:**
+
 - Multiple dashboard views (Overview, Service Detail, Dependency Map, Trends, Alerts, Predictions, SLO)
 - Real-time updates via Server-Sent Events
 - Service dependency visualization
 - Interactive charts and graphs
 
 **Usage:**
+
 ```typescript
 import { comprehensiveRetryDashboard } from './src/monitoring/comprehensive-retry-dashboard.js';
 
@@ -359,12 +383,14 @@ interface AlertRule {
   severity: AlertSeverity;
   enabled: boolean;
 
-  conditions: [{
-    metric: string;
-    operator: '>' | '<' | '=' | '>=' | '<=';
-    threshold: number;
-    duration?: number;
-  }];
+  conditions: [
+    {
+      metric: string;
+      operator: '>' | '<' | '=' | '>=' | '<=';
+      threshold: number;
+      duration?: number;
+    },
+  ];
 
   notifications: {
     channels: AlertChannel[];

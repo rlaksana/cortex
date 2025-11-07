@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   circuitBreakerMonitor,
   type CircuitBreakerHealthStatus,
@@ -54,6 +54,15 @@ export interface RetryBudgetConfig {
 export interface RetryBudgetMetrics {
   serviceName: string;
   timestamp: Date;
+
+  // Performance metrics
+  performance: {
+    averageResponseTime: number;
+    p95ResponseTime: number;
+    p99ResponseTime: number;
+    throughput: number;
+    errorRate: number;
+  };
 
   // Current budget state
   current: {
@@ -149,6 +158,8 @@ export interface RetryBudgetMonitorConfig {
     jsonExportEnabled: boolean;
     exportIntervalMinutes: number;
   };
+
+  exportIntervalIntervalMinutes?: unknown
 }
 
 /**

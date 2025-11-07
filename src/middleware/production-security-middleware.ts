@@ -13,7 +13,7 @@ import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createHash, randomBytes } from 'crypto';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface ProductionSecurityConfig {
   corsOrigin: string[];

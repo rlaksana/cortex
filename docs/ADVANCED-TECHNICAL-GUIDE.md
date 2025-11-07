@@ -12,6 +12,7 @@
 This advanced technical guide provides comprehensive coverage of MCP Cortex's sophisticated features including multi-strategy search modes, TTL (Time-To-Live) management, graph expansion algorithms, and performance optimization techniques. This document is intended for engineers who need to understand and optimize the system's advanced capabilities.
 
 **Advanced Features Covered**:
+
 - Multi-Strategy Search (fast/auto/deep modes)
 - Graph Relationship Expansion
 - TTL Policy Management
@@ -30,11 +31,11 @@ MCP Cortex implements a sophisticated multi-strategy search system that automati
 
 #### Search Modes Comparison
 
-| Mode | Algorithm | Use Case | Performance | Accuracy | When to Use |
-|------|-----------|----------|-------------|----------|-------------|
-| **Fast Mode** | Vector similarity + keyword boost | Simple queries, low latency critical | < 50ms | 85-90% | Real-time applications, autocomplete |
-| **Auto Mode** | Hybrid semantic + keyword (adaptive) | General purpose, balanced approach | 50-100ms | 92-95% | Default mode, most queries |
-| **Deep Mode** | Multi-layer semantic + graph expansion | Complex queries, research tasks | 100-500ms | 96-99% | Complex discovery, research tasks |
+| Mode          | Algorithm                              | Use Case                             | Performance | Accuracy | When to Use                          |
+| ------------- | -------------------------------------- | ------------------------------------ | ----------- | -------- | ------------------------------------ |
+| **Fast Mode** | Vector similarity + keyword boost      | Simple queries, low latency critical | < 50ms      | 85-90%   | Real-time applications, autocomplete |
+| **Auto Mode** | Hybrid semantic + keyword (adaptive)   | General purpose, balanced approach   | 50-100ms    | 92-95%   | Default mode, most queries           |
+| **Deep Mode** | Multi-layer semantic + graph expansion | Complex queries, research tasks      | 100-500ms   | 96-99%   | Complex discovery, research tasks    |
 
 #### Search Mode Selection Algorithm
 
@@ -51,7 +52,7 @@ class SearchModeSelector {
   private readonly QUERY_COMPLEXITY_THRESHOLDS = {
     simple: { word_count: 5, entities: 1, concepts: 2 },
     complex: { word_count: 15, entities: 5, concepts: 8 },
-    research: { word_count: 50, entities: 10, concepts: 15 }
+    research: { word_count: 50, entities: 10, concepts: 15 },
   };
 
   selectOptimalMode(query: SearchQuery, context: SearchContext): SearchStrategy {
@@ -96,7 +97,7 @@ class FastSearchEngine {
     // Parallel search execution
     const [vectorResults, keywordResults] = await Promise.all([
       this.vectorSearch(queryVector, { limit: 20, threshold: 0.7 }),
-      this.keywordSearch(keywords, { limit: 20, boost: 1.2 })
+      this.keywordSearch(keywords, { limit: 20, boost: 1.2 }),
     ]);
 
     // Merge and rank results
@@ -112,6 +113,7 @@ class FastSearchEngine {
 ```
 
 **Performance Characteristics**:
+
 - **Latency**: 20-50ms average
 - **Cache Hit Rate**: 85-90%
 - **Throughput**: 2000+ queries/second
@@ -136,14 +138,16 @@ class AutoSearchEngine {
 
       // Fallback to expanded search
       return await this.expandedSearch(query, strategy);
-
     } catch (error) {
       // Emergency fallback to keyword search
       return await this.emergencyKeywordSearch(query);
     }
   }
 
-  private async semanticSearch(query: SearchQuery, strategy: SearchStrategy): Promise<SearchResult[]> {
+  private async semanticSearch(
+    query: SearchQuery,
+    strategy: SearchStrategy
+  ): Promise<SearchResult[]> {
     // Multi-layer semantic search with contextual understanding
     const queryVector = await this.generateContextualEmbedding(query);
 
@@ -151,7 +155,7 @@ class AutoSearchEngine {
     const semanticResults = await this.vectorSearch(queryVector, {
       threshold: strategy.confidence_threshold,
       limit: Math.min(query.limit * 3, 100), // Get more candidates
-      rerank: true
+      rerank: true,
     });
 
     // Apply context-aware filtering
@@ -176,7 +180,7 @@ class DeepSearchEngine {
       this.vectorSearch,
       this.graphExpansion,
       this.reasoning,
-      this.synthesis
+      this.synthesis,
     ];
 
     let results: SearchResult[] = [];
@@ -188,38 +192,45 @@ class DeepSearchEngine {
     return results;
   }
 
-  private async expandQuery(query: SearchQuery, previousResults: SearchResult[]): Promise<ExpandedQuery> {
+  private async expandQuery(
+    query: SearchQuery,
+    previousResults: SearchResult[]
+  ): Promise<ExpandedQuery> {
     // AI-powered query expansion
     const expansions = await this.queryExpander.expand(query, {
       semantic_variants: true,
       concept_relations: true,
       temporal_context: true,
-      domain_knowledge: true
+      domain_knowledge: true,
     });
 
     return {
       original: query,
       expanded: expansions,
-      context: await this.buildQueryContext(query, previousResults)
+      context: await this.buildQueryContext(query, previousResults),
     };
   }
 
-  private async graphExpansion(query: ExpandedQuery, results: SearchResult[]): Promise<SearchResult[]> {
+  private async graphExpansion(
+    query: ExpandedQuery,
+    results: SearchResult[]
+  ): Promise<SearchResult[]> {
     // Multi-hop graph traversal
     const expandedResults = new Map<string, SearchResult>();
 
     // Add initial results
-    results.forEach(result => expandedResults.set(result.id, result));
+    results.forEach((result) => expandedResults.set(result.id, result));
 
     // Expand through relationships
-    for (const hop of [1, 2, 3]) { // 3-hop expansion
+    for (const hop of [1, 2, 3]) {
+      // 3-hop expansion
       const newResults = await this.graphTraverse.expand(expandedResults, hop, {
         max_expansions: 50,
         relevance_threshold: 0.6,
-        path_types: ['related_to', 'depends_on', 'similar_to', 'part_of']
+        path_types: ['related_to', 'depends_on', 'similar_to', 'part_of'],
       });
 
-      newResults.forEach(result => {
+      newResults.forEach((result) => {
         if (!expandedResults.has(result.id)) {
           expandedResults.set(result.id, result);
         }
@@ -232,6 +243,7 @@ class DeepSearchEngine {
 ```
 
 **Performance Characteristics**:
+
 - **Latency**: 200-500ms average
 - **Memory Usage**: ~2GB for processing
 - **Graph Traversal**: Up to 3-hop expansion
@@ -247,13 +259,13 @@ MCP Cortex implements a sophisticated TTL management system with multiple polici
 
 #### TTL Policy Types
 
-| Policy | Duration | Use Case | Auto-Extend | Manual Override |
-|--------|----------|----------|-------------|-----------------|
-| **Default** | 30 days | General knowledge | Yes | Yes |
-| **Short** | 1 day | Temporary data, sessions | No | Yes |
-| **Long** | 90 days | Important decisions, documentation | Yes | Yes |
-| **Permanent** | ∞ | Core system knowledge | No | Yes |
-| **Custom** | User-defined | Special requirements | Configurable | Yes |
+| Policy        | Duration     | Use Case                           | Auto-Extend  | Manual Override |
+| ------------- | ------------ | ---------------------------------- | ------------ | --------------- |
+| **Default**   | 30 days      | General knowledge                  | Yes          | Yes             |
+| **Short**     | 1 day        | Temporary data, sessions           | No           | Yes             |
+| **Long**      | 90 days      | Important decisions, documentation | Yes          | Yes             |
+| **Permanent** | ∞            | Core system knowledge              | No           | Yes             |
+| **Custom**    | User-defined | Special requirements               | Configurable | Yes             |
 
 ```typescript
 interface TTLPolicy {
@@ -281,7 +293,7 @@ class TTLManager {
       auto_extend: true,
       extend_conditions: ['accessed_recently', 'high_importance', 'linked'],
       retention_policies: [this.archivePolicy, this.auditPolicy],
-      cleanup_strategy: CleanupStrategy.GRACEFUL
+      cleanup_strategy: CleanupStrategy.GRACEFUL,
     });
 
     this.policies.set('session', {
@@ -290,7 +302,7 @@ class TTLManager {
       auto_extend: false,
       extend_conditions: ['active_session'],
       retention_policies: [this.sessionPolicy],
-      cleanup_strategy: CleanupStrategy.IMMEDIATE
+      cleanup_strategy: CleanupStrategy.IMMEDIATE,
     });
 
     this.policies.set('decision', {
@@ -299,7 +311,7 @@ class TTLManager {
       auto_extend: true,
       extend_conditions: ['referenced', 'implemented', 'linked'],
       retention_policies: [this.decisionPolicy, this.archivePolicy],
-      cleanup_strategy: CleanupStrategy.ARCHIVE_BEFORE_DELETE
+      cleanup_strategy: CleanupStrategy.ARCHIVE_BEFORE_DELETE,
     });
   }
 }
@@ -338,11 +350,11 @@ class TTLExtensionEngine {
 
     // Apply extension if any conditions met
     if (extensions.length > 0) {
-      const maxExtension = Math.max(...extensions.map(e => e.days));
+      const maxExtension = Math.max(...extensions.map((e) => e.days));
       return {
         should_extend: true,
         days: maxExtension,
-        reasons: extensions
+        reasons: extensions,
       };
     }
 
@@ -352,16 +364,19 @@ class TTLExtensionEngine {
   private async analyzeAccessPattern(item: KnowledgeItem): Promise<AccessPattern> {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const accessLogs = await this.db.query(`
+    const accessLogs = await this.db.query(
+      `
       SELECT COUNT(*) as count, AVG(response_time) as avg_time
       FROM access_logs
       WHERE item_id = $1 AND timestamp > $2
-    `, [item.id, thirtyDaysAgo]);
+    `,
+      [item.id, thirtyDaysAgo]
+    );
 
     return {
       recent_accesses: parseInt(accessLogs.rows[0].count),
       average_response_time: parseFloat(accessLogs.rows[0].avg_time),
-      access_frequency: this.calculateFrequency(accessLogs.rows)
+      access_frequency: this.calculateFrequency(accessLogs.rows),
     };
   }
 }
@@ -371,10 +386,10 @@ class TTLExtensionEngine {
 
 ```typescript
 enum CleanupStrategy {
-  IMMEDIATE = 'immediate',      // Delete immediately
-  GRACEFUL = 'graceful',        // Archive before deletion
-  ARCHIVE_BEFORE_DELETE = 'archive_before_delete',  // Full archival
-  SOFT_DELETE = 'soft_delete'   // Mark as deleted, keep metadata
+  IMMEDIATE = 'immediate', // Delete immediately
+  GRACEFUL = 'graceful', // Archive before deletion
+  ARCHIVE_BEFORE_DELETE = 'archive_before_delete', // Full archival
+  SOFT_DELETE = 'soft_delete', // Mark as deleted, keep metadata
 }
 
 class TTLCleanupEngine {
@@ -391,16 +406,16 @@ class TTLCleanupEngine {
         results.push({
           itemId: item.id,
           status: 'failed',
-          error: error.message
+          error: error.message,
         });
       }
     }
 
     return {
       total_processed: expiredItems.length,
-      successful: results.filter(r => r.status === 'success').length,
-      failed: results.filter(r => r.status === 'failed').length,
-      details: results
+      successful: results.filter((r) => r.status === 'success').length,
+      failed: results.filter((r) => r.status === 'failed').length,
+      details: results,
     };
   }
 
@@ -431,7 +446,7 @@ class TTLCleanupEngine {
       metadata: item.metadata,
       archived_at: new Date(),
       ttl_policy: item.ttl_policy,
-      original_expiry: item.expires_at
+      original_expiry: item.expires_at,
     };
 
     await this.archiveDb.insert('knowledge_archive', archiveRecord);
@@ -440,7 +455,7 @@ class TTLCleanupEngine {
     await this.auditLogger.log('knowledge_item_archived', {
       itemId: item.id,
       archiveId: archiveRecord.id,
-      policy: item.ttl_policy
+      policy: item.ttl_policy,
     });
 
     // Delete from main database
@@ -450,7 +465,7 @@ class TTLCleanupEngine {
       itemId: item.id,
       status: 'success',
       action: 'archived',
-      archiveId: archiveRecord.id
+      archiveId: archiveRecord.id,
     };
   }
 }
@@ -466,15 +481,15 @@ MCP Cortex implements a sophisticated knowledge graph with multi-dimensional rel
 
 #### Relationship Types
 
-| Relationship | Description | Weight | Direction | Traversal Cost |
-|--------------|-------------|--------|-----------|----------------|
-| **depends_on** | Dependency relationship | 0.9 | Directed | Low |
-| **similar_to** | Semantic similarity | 0.7 | Undirected | Medium |
-| **part_of** | Hierarchical inclusion | 0.8 | Directed | Low |
-| **related_to** | General relationship | 0.6 | Undirected | Medium |
-| **conflicts_with** | Contradiction | 0.9 | Undirected | High |
-| **implements** | Implementation relationship | 0.8 | Directed | Medium |
-| **references** | Reference/citation | 0.7 | Directed | Low |
+| Relationship       | Description                 | Weight | Direction  | Traversal Cost |
+| ------------------ | --------------------------- | ------ | ---------- | -------------- |
+| **depends_on**     | Dependency relationship     | 0.9    | Directed   | Low            |
+| **similar_to**     | Semantic similarity         | 0.7    | Undirected | Medium         |
+| **part_of**        | Hierarchical inclusion      | 0.8    | Directed   | Low            |
+| **related_to**     | General relationship        | 0.6    | Undirected | Medium         |
+| **conflicts_with** | Contradiction               | 0.9    | Undirected | High           |
+| **implements**     | Implementation relationship | 0.8    | Directed   | Medium         |
+| **references**     | Reference/citation          | 0.7    | Directed   | Low            |
 
 ```typescript
 interface GraphRelationship {
@@ -508,10 +523,7 @@ class KnowledgeGraph {
     await this.notifyRelationshipChange(relationship);
   }
 
-  async expandFromNode(
-    startNode: string,
-    options: ExpansionOptions
-  ): Promise<ExpandedGraph> {
+  async expandFromNode(startNode: string, options: ExpansionOptions): Promise<ExpandedGraph> {
     const result = new ExpandedGraph();
     const visited = new Set<string>();
     const queue = new TraversalQueue();
@@ -521,7 +533,7 @@ class KnowledgeGraph {
       node: startNode,
       path: [startNode],
       depth: 0,
-      accumulated_weight: 1.0
+      accumulated_weight: 1.0,
     });
 
     while (!queue.isEmpty() && visited.size < options.max_nodes) {
@@ -548,7 +560,7 @@ class KnowledgeGraph {
               node: targetNode,
               path: [...current.path, targetNode],
               depth: current.depth + 1,
-              accumulated_weight: newWeight
+              accumulated_weight: newWeight,
             });
           }
         }
@@ -609,7 +621,7 @@ class ConstrainedPathFinder {
       results.push({
         nodes: currentPath,
         weight: accumulatedWeight,
-        length: currentPath.length - 1
+        length: currentPath.length - 1,
       });
       visited.delete(current);
       return;
@@ -667,19 +679,19 @@ class ContextAwareExpansion {
         intent: await this.detectQueryIntent(query),
         entities: await this.extractEntities(query),
         concepts: await this.extractConcepts(query),
-        temporal_context: this.extractTemporalContext(query)
+        temporal_context: this.extractTemporalContext(query),
       },
       results: {
         themes: await this.analyzeThemes(results),
         relationships: await this.analyzeRelationships(results),
         clusters: await this.clusterResults(results),
-        importance: await this.calculateImportance(results)
+        importance: await this.calculateImportance(results),
       },
       constraints: {
         max_expansion: this.calculateMaxExpansion(query),
         relevance_threshold: this.calculateRelevanceThreshold(query),
-        diversity_requirement: this.calculateDiversityRequirement(query)
-      }
+        diversity_requirement: this.calculateDiversityRequirement(query),
+      },
     };
   }
 }
@@ -693,14 +705,14 @@ class ContextAwareExpansion {
 
 #### Target Performance Metrics
 
-| Metric | Target | Current | Optimization Levers |
-|--------|--------|---------|-------------------|
-| **API Response Time (p95)** | < 100ms | 87ms | Caching, query optimization |
-| **Search Latency (auto mode)** | 50-100ms | 72ms | Indexing, vector compression |
-| **Database Query Time** | < 50ms | 34ms | Connection pooling, query planning |
-| **Memory Usage** | < 4GB | 2.1GB | Garbage collection, memory pools |
-| **CPU Usage** | < 70% | 45% | Async processing, worker threads |
-| **Throughput** | > 1000 req/sec | 1450 req/sec | Horizontal scaling, load balancing |
+| Metric                         | Target         | Current      | Optimization Levers                |
+| ------------------------------ | -------------- | ------------ | ---------------------------------- |
+| **API Response Time (p95)**    | < 100ms        | 87ms         | Caching, query optimization        |
+| **Search Latency (auto mode)** | 50-100ms       | 72ms         | Indexing, vector compression       |
+| **Database Query Time**        | < 50ms         | 34ms         | Connection pooling, query planning |
+| **Memory Usage**               | < 4GB          | 2.1GB        | Garbage collection, memory pools   |
+| **CPU Usage**                  | < 70%          | 45%          | Async processing, worker threads   |
+| **Throughput**                 | > 1000 req/sec | 1450 req/sec | Horizontal scaling, load balancing |
 
 ### Search Performance Optimization
 
@@ -711,7 +723,7 @@ class OptimizedVectorSearch {
   private readonly vectorCache = new VectorCache({
     maxSize: 10000,
     compression: 'lz4',
-    ttl: 3600000 // 1 hour
+    ttl: 3600000, // 1 hour
   });
 
   private readonly queryOptimizer = new QueryOptimizer();
@@ -738,15 +750,9 @@ class OptimizedVectorSearch {
 
   private async executeOptimizedSearch(query: VectorSearchQuery): Promise<VectorSearchResult[]> {
     // Multi-strategy search execution
-    const strategies = [
-      this.exactMatchStrategy,
-      this.approximateStrategy,
-      this.hybridStrategy
-    ];
+    const strategies = [this.exactMatchStrategy, this.approximateStrategy, this.hybridStrategy];
 
-    const results = await Promise.allSettled(
-      strategies.map(strategy => strategy.execute(query))
-    );
+    const results = await Promise.allSettled(strategies.map((strategy) => strategy.execute(query)));
 
     // Merge and optimize results
     return this.mergeOptimizedResults(results);
@@ -763,7 +769,7 @@ class QueryOptimizationPipeline {
     new IntentClassifier(),
     new EntityExtractor(),
     new QueryRewriter(),
-    new ExecutionPlanner()
+    new ExecutionPlanner(),
   ];
 
   async optimize(query: SearchQuery): Promise<OptimizedQuery> {
@@ -784,7 +790,7 @@ class QueryRewriter implements OptimizationStage {
       this.normalizeTerms,
       this.addSynonyms,
       this.removeStopWords,
-      this.boostKeyTerms
+      this.boostKeyTerms,
     ];
 
     let rewrittenQuery = { ...query };
@@ -819,13 +825,13 @@ class MemoryManager {
     initialSize: 1024 * 1024 * 1024, // 1GB
     maxSize: 4 * 1024 * 1024 * 1024, // 4GB
     growthFactor: 1.5,
-    shrinkThreshold: 0.75
+    shrinkThreshold: 0.75,
   });
 
   private readonly gcScheduler = new GCScheduler({
     interval: 30000, // 30 seconds
     memoryThreshold: 0.8,
-    maxGCTime: 1000 // 1 second
+    maxGCTime: 1000, // 1 second
   });
 
   constructor() {
@@ -891,7 +897,7 @@ class AdvancedCacheManager {
     // Set in both caches with appropriate TTLs
     await Promise.all([
       this.l1Cache.set(key, value, { ttl }),
-      this.l2Cache.set(key, value, { ttl: ttl * 4 }) // Longer TTL in L2
+      this.l2Cache.set(key, value, { ttl: ttl * 4 }), // Longer TTL in L2
     ]);
   }
 
@@ -923,12 +929,12 @@ class OptimizedDatabasePool {
       user: config.user,
       password: config.password,
       max: 20, // Maximum pool size
-      min: 5,  // Minimum pool size
+      min: 5, // Minimum pool size
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
       maxUses: 7500, // Close connections after 7500 uses
       keepAlive: true,
-      keepAliveInitialDelayMillis: 10000
+      keepAliveInitialDelayMillis: 10000,
     });
 
     this.setupPoolMonitoring();
@@ -966,7 +972,7 @@ class OptimizedDatabasePool {
       this.logger.debug('Connection pool status', {
         total: totalCount,
         idle: idleCount,
-        waiting: waitingCount
+        waiting: waitingCount,
       });
 
       // Auto-tune pool size based on usage
@@ -1000,27 +1006,27 @@ class PerformanceMonitoringSystem {
     this.metricsCollector.collect('api_response_time', {
       interval: 1000, // Every second
       aggregation: ['avg', 'p50', 'p95', 'p99'],
-      tags: ['endpoint', 'method', 'status']
+      tags: ['endpoint', 'method', 'status'],
     });
 
     // Search performance
     this.metricsCollector.collect('search_performance', {
       interval: 1000,
       aggregation: ['avg', 'p95'],
-      tags: ['search_mode', 'query_complexity', 'result_count']
+      tags: ['search_mode', 'query_complexity', 'result_count'],
     });
 
     // Database performance
     this.metricsCollector.collect('database_performance', {
       interval: 5000, // Every 5 seconds
       aggregation: ['avg', 'max'],
-      tags: ['operation', 'table', 'query_type']
+      tags: ['operation', 'table', 'query_type'],
     });
 
     // System resources
     this.metricsCollector.collect('system_resources', {
       interval: 10000, // Every 10 seconds
-      metrics: ['cpu', 'memory', 'disk', 'network']
+      metrics: ['cpu', 'memory', 'disk', 'network'],
     });
   }
 
@@ -1031,7 +1037,7 @@ class PerformanceMonitoringSystem {
       condition: 'avg(api_response_time) > 1000',
       severity: 'warning',
       duration: 300000, // 5 minutes
-      action: 'notify_slack'
+      action: 'notify_slack',
     });
 
     // Error rate alerts
@@ -1040,7 +1046,7 @@ class PerformanceMonitoringSystem {
       condition: 'error_rate > 0.05', // 5%
       severity: 'critical',
       duration: 60000, // 1 minute
-      action: 'page_oncall'
+      action: 'page_oncall',
     });
 
     // Memory usage alerts
@@ -1049,7 +1055,7 @@ class PerformanceMonitoringSystem {
       condition: 'memory_usage > 0.85', // 85%
       severity: 'warning',
       duration: 300000,
-      action: 'notify_slack'
+      action: 'notify_slack',
     });
   }
 }
@@ -1164,22 +1170,22 @@ class PerformanceMonitoringSystem {
 
 #### Search Performance Benchmarks
 
-| Query Type | Fast Mode | Auto Mode | Deep Mode | Improvement |
-|------------|-----------|-----------|-----------|-------------|
-| **Simple Keyword** | 23ms | 45ms | 189ms | 23% faster |
-| **Semantic Search** | 31ms | 52ms | 167ms | 18% faster |
-| **Complex Multi-Concept** | N/A | 78ms | 234ms | 67% faster |
-| **Graph Expansion** | N/A | N/A | 412ms | 43% faster |
+| Query Type                | Fast Mode | Auto Mode | Deep Mode | Improvement |
+| ------------------------- | --------- | --------- | --------- | ----------- |
+| **Simple Keyword**        | 23ms      | 45ms      | 189ms     | 23% faster  |
+| **Semantic Search**       | 31ms      | 52ms      | 167ms     | 18% faster  |
+| **Complex Multi-Concept** | N/A       | 78ms      | 234ms     | 67% faster  |
+| **Graph Expansion**       | N/A       | N/A       | 412ms     | 43% faster  |
 
 #### Throughput Benchmarks
 
 | Concurrent Users | Requests/Second | Avg Response Time | Error Rate |
-|------------------|----------------|------------------|------------|
-| **10** | 450 | 89ms | 0.01% |
-| **50** | 1200 | 95ms | 0.02% |
-| **100** | 1450 | 102ms | 0.03% |
-| **500** | 2100 | 145ms | 0.08% |
-| **1000** | 2800 | 198ms | 0.15% |
+| ---------------- | --------------- | ----------------- | ---------- |
+| **10**           | 450             | 89ms              | 0.01%      |
+| **50**           | 1200            | 95ms              | 0.02%      |
+| **100**          | 1450            | 102ms             | 0.03%      |
+| **500**          | 2100            | 145ms             | 0.08%      |
+| **1000**         | 2800            | 198ms             | 0.15%      |
 
 ### Performance Monitoring
 
@@ -1188,11 +1194,11 @@ class PerformanceMonitoringSystem {
 ```typescript
 interface PerformanceMetrics {
   api_metrics: {
-    request_rate: number;           // Requests per second
-    avg_response_time: number;      // Milliseconds
-    p95_response_time: number;      // Milliseconds
-    error_rate: number;             // Percentage
-    active_connections: number;     // Current connections
+    request_rate: number; // Requests per second
+    avg_response_time: number; // Milliseconds
+    p95_response_time: number; // Milliseconds
+    error_rate: number; // Percentage
+    active_connections: number; // Current connections
   };
 
   search_metrics: {
@@ -1203,17 +1209,17 @@ interface PerformanceMetrics {
   };
 
   system_metrics: {
-    cpu_usage: number;              // Percentage
-    memory_usage: number;           // Percentage
-    disk_io: number;                // IOPS
-    network_throughput: number;     // MB/s
+    cpu_usage: number; // Percentage
+    memory_usage: number; // Percentage
+    disk_io: number; // IOPS
+    network_throughput: number; // MB/s
   };
 
   database_metrics: {
-    query_time_avg: number;         // Milliseconds
-    connection_pool_usage: number;  // Percentage
-    index_hit_rate: number;         // Percentage
-    lock_wait_time: number;         // Milliseconds
+    query_time_avg: number; // Milliseconds
+    connection_pool_usage: number; // Percentage
+    index_hit_rate: number; // Percentage
+    lock_wait_time: number; // Milliseconds
   };
 }
 ```

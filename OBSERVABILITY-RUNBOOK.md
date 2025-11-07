@@ -71,6 +71,7 @@ This runbook provides comprehensive procedures for monitoring, troubleshooting, 
 **Purpose:** Track service level indicators and objectives
 
 **Key Metrics:**
+
 - Availability percentage
 - P95 latency
 - Error rate
@@ -78,6 +79,7 @@ This runbook provides comprehensive procedures for monitoring, troubleshooting, 
 - Resource utilization
 
 **Configuration:**
+
 ```typescript
 const sloConfig = {
   availability_target_percentage: 99.9,
@@ -90,6 +92,7 @@ const sloConfig = {
 ```
 
 **Procedures:**
+
 - [Monitor SLI/SLO compliance](#monitor-slislo-compliance)
 - [Handle SLO breaches](#handle-slo-breaches)
 - [Manage error budgets](#manage-error-budgets)
@@ -99,12 +102,14 @@ const sloConfig = {
 **Purpose:** Real-time visualization with cardinality management
 
 **Key Features:**
+
 - Real-time status updates
 - Configurable widgets
 - Cardinality limits
 - Data export capabilities
 
 **Dashboard Layouts:**
+
 - **Overview:** Service health and key metrics
 - **Performance:** Latency and throughput trends
 - **Reliability:** Error rates and availability
@@ -115,11 +120,13 @@ const sloConfig = {
 **Purpose:** Validate performance under load
 
 **Benchmark Types:**
+
 - **1K Store:** 1,000 store operations
 - **1K Find:** 1,000 find operations
 - **10K Mixed:** 10,000 mixed operations
 
 **Resource Budgets:**
+
 - CPU: ≤70%
 - Memory: ≤512MB
 - Response Time P95: ≤500ms
@@ -130,6 +137,7 @@ const sloConfig = {
 **Purpose:** Validate system resilience
 
 **Test Types:**
+
 - Network latency injection
 - Database error simulation
 - Memory pressure testing
@@ -140,6 +148,7 @@ const sloConfig = {
 **Purpose:** Historical analysis and forecasting
 
 **Chart Types:**
+
 - Line charts for time series
 - Heatmaps for error patterns
 - Histograms for distributions
@@ -152,6 +161,7 @@ const sloConfig = {
 #### Morning Checklist (08:00 UTC)
 
 1. **System Health Check**
+
    ```bash
    # Check system status
    curl -X GET http://localhost:3000/api/system/status
@@ -161,6 +171,7 @@ const sloConfig = {
    ```
 
 2. **Review Overnight Metrics**
+
    ```typescript
    // Check SLO compliance
    const compliance = sliSloMonitorService.getSLOComplianceReport(24);
@@ -173,6 +184,7 @@ const sloConfig = {
    ```
 
 3. **Capacity Check**
+
    ```typescript
    // Monitor resource utilization
    const budgets = performanceBenchmarkService.getPerformanceBudgets();
@@ -182,6 +194,7 @@ const sloConfig = {
    ```
 
 4. **Backup Verification**
+
    ```bash
    # Verify backup completion
    ls -la /backup/cortex-mcp/
@@ -193,6 +206,7 @@ const sloConfig = {
 #### Evening Checklist (18:00 UTC)
 
 1. **Performance Summary**
+
    ```typescript
    // Generate daily performance report
    const report = performanceTrendingService.getTrendAnalysis(24);
@@ -218,6 +232,7 @@ const sloConfig = {
    - Track performance trends
 
 2. **Automated Alerts**
+
    ```typescript
    // Configure alert thresholds
    const alerts = [
@@ -225,18 +240,19 @@ const sloConfig = {
        type: 'availability',
        threshold: 99.5,
        operator: 'lt',
-       action: 'escalate'
+       action: 'escalate',
      },
      {
        type: 'latency',
        threshold: 1000,
        operator: 'gt',
-       action: 'notify'
-     }
+       action: 'notify',
+     },
    ];
    ```
 
 3. **Daily SLO Reports**
+
    ```typescript
    // Generate daily SLO compliance report
    const dailyReport = sliSloMonitorService.getSLOComplianceReport(24);
@@ -251,6 +267,7 @@ const sloConfig = {
 #### Investigation Procedures
 
 1. **SLO Breach Detection**
+
    ```bash
    # Check current SLI metrics
    curl -X GET http://localhost:3000/api/sli/current
@@ -260,6 +277,7 @@ const sloConfig = {
    ```
 
 2. **Root Cause Analysis**
+
    ```typescript
    // Analyze recent performance trends
    const trends = performanceTrendingService.getTrendAnalysis(1);
@@ -277,16 +295,17 @@ const sloConfig = {
 
 #### Severity Classification
 
-| Severity | Availability Impact | Response Time |
-|----------|-------------------|---------------|
-| Critical | <95% | Immediate |
-| High | 95-99% | Within 15 minutes |
-| Medium | 99-99.5% | Within 1 hour |
-| Low | 99.5-99.9% | Within 4 hours |
+| Severity | Availability Impact | Response Time     |
+| -------- | ------------------- | ----------------- |
+| Critical | <95%                | Immediate         |
+| High     | 95-99%              | Within 15 minutes |
+| Medium   | 99-99.5%            | Within 1 hour     |
+| Low      | 99.5-99.9%          | Within 4 hours    |
 
 #### Response Procedures
 
 1. **Immediate Response (First 5 minutes)**
+
    ```bash
    # Verify system status
    ./scripts/health-check.sh
@@ -299,20 +318,21 @@ const sloConfig = {
    ```
 
 2. **Investigation (First 30 minutes)**
+
    ```typescript
    // Collect diagnostic data
    const diagnostics = {
      systemMetrics: systemMetricsService.getMetrics(),
      recentErrors: getRecentErrors(60), // Last 60 minutes
      activeConnections: getActiveConnections(),
-     resourceUtilization: getResourceUtilization()
+     resourceUtilization: getResourceUtilization(),
    };
 
    // Store for incident analysis
    cortexMemoryStore({
      kind: 'incident',
      content: diagnostics,
-     scope: { project: 'cortex-mcp' }
+     scope: { project: 'cortex-mcp' },
    });
    ```
 
@@ -339,6 +359,7 @@ const sloConfig = {
    - Resource exhaustion
 
 2. **Diagnostic Commands**
+
    ```bash
    # Check system resources
    top -p $(pgrep cortex-mcp)
@@ -350,18 +371,19 @@ const sloConfig = {
    ```
 
 3. **Performance Analysis**
+
    ```typescript
    // Run performance benchmark
    const benchmark = await performanceBenchmarkService.executeBenchmark({
      name: 'Performance Diagnosis',
-     workload: { operation_count: 1000, operation_type: 'mixed' }
+     workload: { operation_count: 1000, operation_type: 'mixed' },
    });
 
    // Analyze results
    if (benchmark.performance_analysis.efficiency_score < 70) {
      // Identify bottlenecks
      const bottlenecks = benchmark.performance_analysis.bottlenecks;
-     bottlenecks.forEach(bottleneck => {
+     bottlenecks.forEach((bottleneck) => {
        logger.warn('Performance bottleneck detected', bottleneck);
      });
    }
@@ -376,6 +398,7 @@ const sloConfig = {
 #### Resource Exhaustion
 
 1. **Memory Issues**
+
    ```bash
    # Check memory usage
    free -h
@@ -386,6 +409,7 @@ const sloConfig = {
    ```
 
 2. **Disk Space Issues**
+
    ```bash
    # Check disk usage
    df -h
@@ -398,6 +422,7 @@ const sloConfig = {
    ```
 
 3. **Connection Issues**
+
    ```bash
    # Check connection limits
    ulimit -n
@@ -420,6 +445,7 @@ const sloConfig = {
    - [ ] Prepare monitoring
 
 2. **Running Tests**
+
    ```typescript
    // Enable chaos testing
    chaosTestingService.enableChaosTesting();
@@ -432,6 +458,7 @@ const sloConfig = {
    ```
 
 3. **Test Validation**
+
    ```typescript
    // Verify system recovery
    const postTestMetrics = systemMetricsService.getMetrics();
@@ -439,7 +466,7 @@ const sloConfig = {
    // Check for regressions
    const regression = await performanceBenchmarkService.executeBenchmark({
      name: 'Post-Chaos Validation',
-     workload: { operation_count: 1000, operation_type: 'mixed' }
+     workload: { operation_count: 1000, operation_type: 'mixed' },
    });
    ```
 
@@ -451,39 +478,41 @@ const sloConfig = {
 
 #### Test Types and Scenarios
 
-| Test Type | Duration | Intensity | Success Criteria |
-|-----------|----------|-----------|------------------|
-| Network Latency | 2 minutes | 50-100ms | <10% error rate |
-| Packet Loss | 1 minute | 5-10% | Automatic recovery |
-| Connection Failure | 30 seconds | 100% fail | Circuit breaker activates |
-| Database Errors | 1 minute | 25% errors | Retry success >80% |
-| Memory Pressure | 2 minutes | 512MB | No OOM errors |
-| CPU Exhaustion | 1 minute | 80% load | Response time <5x normal |
+| Test Type          | Duration   | Intensity  | Success Criteria          |
+| ------------------ | ---------- | ---------- | ------------------------- |
+| Network Latency    | 2 minutes  | 50-100ms   | <10% error rate           |
+| Packet Loss        | 1 minute   | 5-10%      | Automatic recovery        |
+| Connection Failure | 30 seconds | 100% fail  | Circuit breaker activates |
+| Database Errors    | 1 minute   | 25% errors | Retry success >80%        |
+| Memory Pressure    | 2 minutes  | 512MB      | No OOM errors             |
+| CPU Exhaustion     | 1 minute   | 80% load   | Response time <5x normal  |
 
 ### Capacity Planning
 
 #### Monitoring Growth Trends
 
 1. **Weekly Capacity Review**
+
    ```typescript
    // Get growth trends
    const trends = await trendChartsService.analyzeTrends('throughput_chart', 168); // 7 days
 
    // Forecast capacity needs
    const forecast = trends.forecast;
-   if (forecast.some(point => point.value > 0.8 * current_capacity)) {
+   if (forecast.some((point) => point.value > 0.8 * current_capacity)) {
      // Plan scaling activities
    }
    ```
 
 2. **Resource Planning**
+
    ```typescript
    // Calculate resource requirements
    const requirements = {
      cpu: current_cpu * (1 + growth_rate * planning_horizon),
      memory: current_memory * (1 + growth_rate * planning_horizon),
      storage: current_storage * (1 + growth_rate * planning_horizon),
-     network: current_bandwidth * (1 + growth_rate * planning_horizon)
+     network: current_bandwidth * (1 + growth_rate * planning_horizon),
    };
    ```
 
@@ -497,18 +526,19 @@ const sloConfig = {
 
 ### Alert Classification
 
-| Alert Type | Severity | Response Time | Escalation |
-|------------|----------|---------------|------------|
-| SLO Breach | Critical | 5 minutes | On-call → Manager |
-| System Down | Critical | 1 minute | On-call → Manager → Director |
-| Performance Degradation | High | 15 minutes | On-call → Team Lead |
-| Resource Exhaustion | High | 30 minutes | Team Lead → Manager |
-| Capacity Warning | Medium | 2 hours | Team Lead |
-| Configuration Change | Low | 24 hours | Team |
+| Alert Type              | Severity | Response Time | Escalation                   |
+| ----------------------- | -------- | ------------- | ---------------------------- |
+| SLO Breach              | Critical | 5 minutes     | On-call → Manager            |
+| System Down             | Critical | 1 minute      | On-call → Manager → Director |
+| Performance Degradation | High     | 15 minutes    | On-call → Team Lead          |
+| Resource Exhaustion     | High     | 30 minutes    | Team Lead → Manager          |
+| Capacity Warning        | Medium   | 2 hours       | Team Lead                    |
+| Configuration Change    | Low      | 24 hours      | Team                         |
 
 ### Alert Response Procedures
 
 1. **Alert Reception**
+
    ```bash
    # Check alert details
    curl -X GET http://localhost:3000/api/alerts/{alert_id}
@@ -570,6 +600,7 @@ const sloConfig = {
 ### Service Recovery
 
 1. **Immediate Recovery**
+
    ```bash
    # Restart services if needed
    systemctl restart cortex-mcp
@@ -582,6 +613,7 @@ const sloConfig = {
    ```
 
 2. **Data Recovery**
+
    ```bash
    # Verify data integrity
    ./scripts/verify-data-integrity.sh
@@ -591,6 +623,7 @@ const sloConfig = {
    ```
 
 3. **Service Validation**
+
    ```bash
    # Run health checks
    ./scripts/health-check.sh
@@ -605,6 +638,7 @@ const sloConfig = {
 ### Database Recovery
 
 1. **Qdrant Recovery**
+
    ```bash
    # Check Qdrant status
    curl -X GET http://localhost:6333/health
@@ -617,6 +651,7 @@ const sloConfig = {
    ```
 
 2. **Index Recovery**
+
    ```bash
    # Rebuild indexes if corrupted
    curl -X PUT http://localhost:6333/collections/{collection_name}/index
@@ -635,6 +670,7 @@ const sloConfig = {
    - Quarterly upgrades: Second Saturday 22:00-06:00 UTC
 
 2. **Maintenance Checklist**
+
    ```bash
    # Pre-maintenance
    ./scripts/pre-maintenance-check.sh
@@ -653,6 +689,7 @@ const sloConfig = {
    ```
 
 3. **Rollback Procedures**
+
    ```bash
    # Quick rollback (<5 minutes)
    ./scripts/quick-rollback.sh
@@ -667,6 +704,7 @@ const sloConfig = {
 ### Emergency Maintenance
 
 1. **Hotfix Procedures**
+
    ```bash
    # Create hotfix branch
    git checkout -b hotfix/{issue_id}
@@ -694,34 +732,34 @@ const sloConfig = {
 
 ### System KPIs
 
-| Metric | Target | Warning | Critical |
-|--------|--------|---------|----------|
-| Availability | ≥99.9% | <99.5% | <99.0% |
-| P95 Latency | ≤1000ms | >1500ms | >2000ms |
-| Error Rate | ≤0.1% | >0.5% | >1.0% |
-| Throughput | ≥10 rps | <5 rps | <2 rps |
-| CPU Usage | ≤70% | >80% | >90% |
-| Memory Usage | ≤70% | >80% | >90% |
+| Metric       | Target  | Warning | Critical |
+| ------------ | ------- | ------- | -------- |
+| Availability | ≥99.9%  | <99.5%  | <99.0%   |
+| P95 Latency  | ≤1000ms | >1500ms | >2000ms  |
+| Error Rate   | ≤0.1%   | >0.5%   | >1.0%    |
+| Throughput   | ≥10 rps | <5 rps  | <2 rps   |
+| CPU Usage    | ≤70%    | >80%    | >90%     |
+| Memory Usage | ≤70%    | >80%    | >90%     |
 
 ### Operational KPIs
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| MTTR (Mean Time to Repair) | <30 minutes | Incident duration |
-| MTBF (Mean Time Between Failures) | >720 hours | System uptime |
-| Alert Response Time | <5 minutes | Alert acknowledgment |
-| Change Success Rate | >95% | Deployment success |
-| Customer Satisfaction | >4.5/5 | User feedback |
+| Metric                            | Target      | Measurement          |
+| --------------------------------- | ----------- | -------------------- |
+| MTTR (Mean Time to Repair)        | <30 minutes | Incident duration    |
+| MTBF (Mean Time Between Failures) | >720 hours  | System uptime        |
+| Alert Response Time               | <5 minutes  | Alert acknowledgment |
+| Change Success Rate               | >95%        | Deployment success   |
+| Customer Satisfaction             | >4.5/5      | User feedback        |
 
 ### Monitoring KPIs
 
-| Metric | Target | Description |
-|--------|--------|-------------|
-| Dashboard Refresh Rate | <5 seconds | Real-time updates |
-| Alert Accuracy | >95% | False positive rate |
-| Data Retention | 30 days raw, 1 year aggregated | Historical analysis |
-| Cardinality Utilization | <80% | Dimension limits |
-| Query Response Time | <2 seconds | Dashboard performance |
+| Metric                  | Target                         | Description           |
+| ----------------------- | ------------------------------ | --------------------- |
+| Dashboard Refresh Rate  | <5 seconds                     | Real-time updates     |
+| Alert Accuracy          | >95%                           | False positive rate   |
+| Data Retention          | 30 days raw, 1 year aggregated | Historical analysis   |
+| Cardinality Utilization | <80%                           | Dimension limits      |
+| Query Response Time     | <2 seconds                     | Dashboard performance |
 
 ## Tools and Access
 
@@ -744,12 +782,12 @@ const sloConfig = {
 
 ### Access Requirements
 
-| Role | System Access | API Access | Database Access |
-|------|--------------|-----------|----------------|
-| On-call Engineer | Read/Write | Full | Read |
-| Team Lead | Read/Write | Full | Read/Write |
-| Manager | Read | Limited | Read |
-| Director | Read | Limited | None |
+| Role             | System Access | API Access | Database Access |
+| ---------------- | ------------- | ---------- | --------------- |
+| On-call Engineer | Read/Write    | Full       | Read            |
+| Team Lead        | Read/Write    | Full       | Read/Write      |
+| Manager          | Read          | Limited    | Read            |
+| Director         | Read          | Limited    | None            |
 
 ### API Endpoints
 
@@ -790,6 +828,7 @@ POST /api/admin/gc
 ## Documentation Updates
 
 This runbook should be reviewed and updated:
+
 - Monthly for accuracy
 - After major incidents
 - When procedures change

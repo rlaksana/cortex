@@ -8,8 +8,8 @@
  * - Reproducible outputs
  */
 
-import { logger } from '../../utils/logger.js';
-import * as crypto from 'node:crypto';
+import { logger } from '@/utils/logger.js';
+import * as crypto from 'crypto';
 import type { InsightTypeUnion } from '../../types/insight-interfaces.js';
 
 export interface InsightGuardrailConfig {

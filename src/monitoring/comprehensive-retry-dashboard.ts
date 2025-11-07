@@ -11,7 +11,7 @@
 
 import { EventEmitter } from 'events';
 import { Request, Response } from 'express';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   retryBudgetMonitor,
   type RetryBudgetMetrics,
@@ -630,7 +630,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
         serviceName,
         current: {
           availability: metrics.slo.successRateVariance || 100,
-          latency: metrics.performance.responseTimeP95,
+          latency: metrics.performance.p95ResponseTime,
           errorRate: metrics.current.retryRatePercent,
         },
         targets: sloTargets,
@@ -994,7 +994,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
     const circuitMetrics = circuitBreakerMonitor.getHealthStatus(serviceName);
 
     if (!retryMetrics) return 100;
-    return this.calculateServiceHealthScore(retryMetrics, circuitMetrics);
+    return this.calculateServiceHealthScore(retryMetrics, circuitMetrics ?? undefined);
   }
 
   private calculateRiskScore(
@@ -1025,8 +1025,8 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
   private calculatePerformanceScore(retryMetrics: RetryBudgetMetrics): number {
     let score = 100;
 
-    if (retryMetrics.performance.responseTimeP95 > 1000) score -= 20;
-    if (retryMetrics.performance.responseTimeP95 > 500) score -= 10;
+    if (retryMetrics.performance.p95ResponseTime > 1000) score -= 20;
+    if (retryMetrics.performance.p95ResponseTime > 500) score -= 10;
     if (retryMetrics.current.retryRatePercent > 10) score -= 15;
     if (retryMetrics.current.retryRatePercent > 5) score -= 5;
 
@@ -1227,7 +1227,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
   }
 
   private calculateRiskDistribution(predictions: any[]): any {
-    const distribution = {
+    const distribution: Record<string, number> = {
       low: 0,
       medium: 0,
       high: 0,
@@ -1254,7 +1254,7 @@ export class ComprehensiveRetryDashboard extends EventEmitter {
   }
 
   private calculatePredictionTimeline(predictions: any[]): any {
-    const timeline = {
+    const timeline: { nextHour: any[]; nextDay: any[]; nextWeek: any[] } = {
       nextHour: [],
       nextDay: [],
       nextWeek: [],

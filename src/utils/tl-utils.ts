@@ -61,14 +61,14 @@ export function calculateExpirationDate(policy: TTLPolicy): Date | null {
  */
 export function getOrInheritTTLPolicy(item: KnowledgeItem): TTLPolicy {
   // Check if item already has TTL policy
-  if (item.data.ttl_policy && isValidTTLPolicy(item.data.ttl_policy)) {
-    return item.data.ttl_policy;
+  if (item.data['ttl_policy'] && isValidTTLPolicy(item.data['ttl_policy'])) {
+    return item.data['ttl_policy'];
   }
 
   // Check if item has explicit expires_at
-  if (item.data.expires_at) {
+  if (item.data['expires_at']) {
     // Convert expires_at to TTL policy if possible
-    const expiresDate = new Date(item.data.expires_at);
+    const expiresDate = new Date(item.data['expires_at']);
     const now = new Date();
     const daysUntilExpiration = (expiresDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000);
 
@@ -116,13 +116,13 @@ export function inheritTTLFromParent(parentItem: KnowledgeItem): {
  */
 export function isItemExpired(item: KnowledgeItem): boolean {
   // Check explicit expires_at first
-  if (item.data.expires_at) {
-    return new Date() > new Date(item.data.expires_at);
+  if (item.data['expires_at']) {
+    return new Date() > new Date(item.data['expires_at']);
   }
 
   // Check TTL policy
-  if (item.data.ttl_policy && item.created_at) {
-    const policy = item.data.ttl_policy;
+  if (item.data['ttl_policy'] && item.created_at) {
+    const policy = item.data['ttl_policy'];
     if (policy === 'permanent') {
       return false;
     }

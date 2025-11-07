@@ -9,7 +9,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { memoryManager, type MemoryStats } from '../../src/services/memory/memory-manager-service.js';
+import {
+  memoryManager,
+  type MemoryStats,
+} from '../../src/services/memory/memory-manager-service.js';
 import { optimizedEmbeddingService } from '../../src/services/embeddings/optimized-embedding-service.js';
 import { enhancedMemoryMonitor } from '../../src/monitoring/enhanced-memory-monitor.js';
 import { OptimizedMemoryStoreOrchestrator } from '../../src/services/orchestrators/optimized-memory-store-orchestrator.js';
@@ -74,7 +77,7 @@ describe('Memory Optimization Tests', () => {
       memoryManager.createMemoryPool('test-pool', poolConfig);
 
       const stats = memoryManager.getStats();
-      const testPool = stats.memoryPools.find(p => p.name === 'test-pool');
+      const testPool = stats.memoryPools.find((p) => p.name === 'test-pool');
       expect(testPool).toBeDefined();
       expect(testPool?.size).toBe(0);
     });
@@ -115,7 +118,7 @@ describe('Memory Optimization Tests', () => {
       expect(stats.usagePercentage).toBe(95);
 
       // Wait for event emission
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Check if alert was emitted
       expect(alertListener).toHaveBeenCalled();
@@ -163,8 +166,9 @@ describe('Memory Optimization Tests', () => {
       const mockEmbedding = new Array(1536).fill(0.1); // OpenAI ada-002 dimension
 
       // Mock the embedding generation (simplified)
-      vi.spyOn(optimizedEmbeddingService as any, 'ensureOpenAIInitialized')
-        .mockResolvedValue(undefined);
+      vi.spyOn(optimizedEmbeddingService as any, 'ensureOpenAIInitialized').mockResolvedValue(
+        undefined
+      );
 
       // Simulate cache usage
       const testTexts = Array.from({ length: 100 }, (_, i) => `test text ${i}`);
@@ -272,7 +276,7 @@ describe('Memory Optimization Tests', () => {
       for (const usage of memorySequence) {
         mockMemoryUsage.mockReturnValue(usage);
         enhancedMemoryMonitor.triggerCheck();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       const stats = enhancedMemoryMonitor.getEnhancedStats();
@@ -295,7 +299,7 @@ describe('Memory Optimization Tests', () => {
       });
 
       enhancedMemoryMonitor.triggerCheck();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should trigger critical alert
       expect(alertListener).toHaveBeenCalled();
@@ -320,7 +324,7 @@ describe('Memory Optimization Tests', () => {
       enhancedMemoryMonitor.triggerCheck();
       enhancedMemoryMonitor.triggerCheck();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Should only trigger once due to cooldown
       expect(alertListener).toHaveBeenCalledTimes(1);
@@ -339,10 +343,10 @@ describe('Memory Optimization Tests', () => {
       for (let i = 0; i < 25; i++) {
         mockMemoryUsage.mockReturnValue({
           ...stableMemory,
-          heapUsed: stableMemory.heapUsed + (i * 1000000), // Gradual increase
+          heapUsed: stableMemory.heapUsed + i * 1000000, // Gradual increase
         });
         enhancedMemoryMonitor.triggerCheck();
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       const stats = enhancedMemoryMonitor.getEnhancedStats();
@@ -400,7 +404,10 @@ describe('Memory Optimization Tests', () => {
     });
 
     it('should create appropriate batch sizes', () => {
-      const batches = (orchestrator as any).createBatches(Array.from({ length: 100 }, (_, i) => i), 25);
+      const batches = (orchestrator as any).createBatches(
+        Array.from({ length: 100 }, (_, i) => i),
+        25
+      );
 
       expect(batches).toHaveLength(4); // 100 / 25 = 4
       expect(batches[0]).toHaveLength(25);
@@ -442,9 +449,8 @@ describe('Memory Optimization Tests', () => {
 
     it('should manage memory pools efficiently', () => {
       const poolStats = orchestrator.getMemoryPoolStats();
-      const initialTotal = poolStats.itemResultPool +
-                         poolStats.batchSummaryPool +
-                         poolStats.contextPool;
+      const initialTotal =
+        poolStats.itemResultPool + poolStats.batchSummaryPool + poolStats.contextPool;
 
       // Pools should be properly initialized
       expect(initialTotal).toBeGreaterThanOrEqual(0);
@@ -507,7 +513,7 @@ describe('Memory Optimization Tests', () => {
 
       // Monitor should detect the situation
       enhancedMemoryMonitor.triggerCheck();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Services should coordinate their responses
       expect(memoryManagerStats.currentMemory.usagePercentage).toBeGreaterThan(90);

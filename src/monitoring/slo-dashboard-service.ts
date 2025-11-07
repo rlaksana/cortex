@@ -10,7 +10,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { Server } from 'socket.io';
+// import { Server } from 'socket.io'; // Optional dependency - install if needed
 import { createServer } from 'http';
 import express from 'express';
 import path from 'path';
@@ -1228,7 +1228,8 @@ export class SLODashboardService extends EventEmitter {
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
   }
-}
+
+  broadcastToAll?: unknown|undefined}
 
 // Export singleton instance
 export const sloDashboardService = new SLODashboardService(

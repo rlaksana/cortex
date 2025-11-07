@@ -9,24 +9,28 @@ This document provides comprehensive templates and procedures for conducting pos
 ### Core Principles
 
 #### **Blameless Culture**
+
 - Focus on system and process improvements, not individual blame
 - Assume everyone acted with good intentions based on available information
 - Recognize that complex systems fail in complex ways
 - Encourage honest and open discussion of mistakes and near-misses
 
 #### **Learning Orientation**
+
 - Every incident is an opportunity to learn and improve
 - Focus on "why" and "how" rather than "who"
 - Identify systemic weaknesses and patterns
 - Create actionable improvement plans
 
 #### **Transparency**
+
 - Share findings broadly within the organization
 - Be open about failures and weaknesses
 - Document both successes and areas for improvement
 - Build trust through honest communication
 
 #### **Action-Oriented**
+
 - Create specific, measurable, and actionable improvement items
 - Assign ownership and timelines for all action items
 - Track implementation and effectiveness of improvements
@@ -35,18 +39,21 @@ This document provides comprehensive templates and procedures for conducting pos
 ### Types of Post-Mortems
 
 #### **Full Post-Mortem**
+
 - **When**: SEV-1 and SEV-2 incidents, major SEV-3 incidents
 - **Participants**: Full incident response team, stakeholders, leadership
 - **Timeline**: Within 5 business days of resolution
 - **Format**: Formal presentation + detailed written report
 
 #### **Lightweight Post-Mortem**
+
 - **When**: Standard SEV-3 incidents, significant SEV-4 incidents
 - **Participants**: Core technical team, immediate stakeholders
 - **Timeline**: Within 3 business days of resolution
 - **Format**: Structured document + team discussion
 
 #### **Quick Retrospective**
+
 - **When**: Routine SEV-4 incidents, near-misses
 - **Participants**: Immediate team members
 - **Timeline**: Within 2 business days of resolution
@@ -57,6 +64,7 @@ This document provides comprehensive templates and procedures for conducting pos
 ### 1. Executive Summary Template
 
 #### **Incident Executive Summary**
+
 ```
 INCIDENT POST-MORTEM EXECUTIVE SUMMARY
 ======================================
@@ -124,6 +132,7 @@ Prepared by:
 ### 2. Detailed Technical Post-Mortem Template
 
 #### **Comprehensive Incident Post-Mortem**
+
 ```
 COMPREHENSIVE INCIDENT POST-MORTEM
 ==================================
@@ -342,6 +351,7 @@ Report Author: [Name/Title]
 ### 3. Lightweight Post-Mortem Template
 
 #### **Streamlined Incident Review**
+
 ```
 LIGHTWEIGHT INCIDENT POST-MORTEM
 ================================
@@ -399,6 +409,7 @@ Date: [Date]
 ### 4. Quick Retrospective Template
 
 #### **Fast Incident Review**
+
 ```
 QUICK INCIDENT RETROSPECTIVE
 ============================
@@ -443,15 +454,18 @@ Next review date: [Date]
 ### 1. Scheduling and Preparation
 
 #### **Timing Guidelines**
-| Incident Severity | Post-Mortem Timing | Participants | Duration |
-|-------------------|-------------------|--------------|----------|
-| SEV-1 | Within 5 business days | Full response team + stakeholders | 2-3 hours |
-| SEV-2 | Within 5 business days | Core response team + key stakeholders | 1-2 hours |
-| SEV-3 | Within 3 business days | Technical team + immediate stakeholders | 1 hour |
-| SEV-4 | Within 2 business days | Immediate team | 30 minutes |
+
+| Incident Severity | Post-Mortem Timing     | Participants                            | Duration   |
+| ----------------- | ---------------------- | --------------------------------------- | ---------- |
+| SEV-1             | Within 5 business days | Full response team + stakeholders       | 2-3 hours  |
+| SEV-2             | Within 5 business days | Core response team + key stakeholders   | 1-2 hours  |
+| SEV-3             | Within 3 business days | Technical team + immediate stakeholders | 1 hour     |
+| SEV-4             | Within 2 business days | Immediate team                          | 30 minutes |
 
 #### **Preparation Checklist**
+
 **Incident Commander Responsibilities:**
+
 - [ ] Schedule post-mortem meeting within required timeframe
 - [ ] Invite all necessary participants
 - [ ] Send incident timeline and initial data to participants 24 hours in advance
@@ -460,6 +474,7 @@ Next review date: [Date]
 - [ ] Book appropriate meeting space/video conference
 
 **Technical Lead Responsibilities:**
+
 - [ ] Compile detailed technical timeline
 - [ ] Gather relevant logs, metrics, and screenshots
 - [ ] Prepare technical diagrams if helpful
@@ -467,6 +482,7 @@ Next review date: [Date]
 - [ ] Identify potential contributing factors
 
 **Participant Responsibilities:**
+
 - [ ] Review incident timeline and data prior to meeting
 - [ ] Prepare personal observations and learnings
 - [ ] Identify potential improvement areas
@@ -477,36 +493,42 @@ Next review date: [Date]
 #### **Full Post-Mortem Meeting Agenda (90-120 minutes)**
 
 **Part 1: Incident Overview (15 minutes)**
+
 - Incident Commander presents executive summary
 - Review of timeline and key events
 - Business impact assessment
 - Customer impact overview
 
 **Part 2: Technical Deep Dive (30 minutes)**
+
 - Technical Lead presents root cause analysis
 - Review of detection and response effectiveness
 - Discussion of technical challenges and solutions
 - Review of system behavior during incident
 
 **Part 3: Response Process Review (20 minutes)**
+
 - Review of incident response process
 - Communication effectiveness assessment
 - Team coordination evaluation
 - Tool and system effectiveness review
 
 **Part 4: Learning and Improvement (25 minutes)**
+
 - Brainstorming session on lessons learned
 - Identification of systemic issues
 - Discussion of potential improvements
 - Generation of action items
 
 **Part 5: Action Planning (15 minutes)**
+
 - Prioritization of action items
 - Assignment of owners and timelines
 - Resource requirement identification
 - Follow-up planning
 
 **Part 6: Next Steps (5 minutes)**
+
 - Summary of decisions made
 - Communication plan for post-mortem findings
 - Follow-up meeting schedule
@@ -515,21 +537,25 @@ Next review date: [Date]
 #### **Lightweight Post-Mortem Meeting Agenda (45-60 minutes)**
 
 **Introduction and Overview (10 minutes)**
+
 - Incident summary presentation
 - Timeline review
 - Impact assessment
 
 **Root Cause Discussion (15 minutes)**
+
 - Technical root cause analysis
 - Contributing factors identification
 - Systemic issues discussion
 
 **Lessons Learned (15 minutes)**
+
 - What went well discussion
 - Improvement opportunities identification
 - Action item brainstorming
 
 **Action Planning (5-10 minutes)**
+
 - Action item prioritization
 - Owner assignment
 - Timeline establishment
@@ -537,6 +563,7 @@ Next review date: [Date]
 ### 3. Documentation Procedures
 
 #### **Document Creation Process**
+
 1. **Initial Draft**: Incident Commander creates initial draft within 24 hours of meeting
 2. **Technical Review**: Technical Lead reviews and adds technical details
 3. **Management Review**: Manager reviews for business impact and organizational implications
@@ -544,6 +571,7 @@ Next review date: [Date]
 5. **Distribution**: Approved document distributed to all relevant parties
 
 #### **Document Storage and Access**
+
 - **Location**: Centralized document repository (e.g., Confluence, SharePoint)
 - **Naming Convention**: `Post-Mortem_INC-[ID]_[Service]_[Date]`
 - **Access Control**: Read-only for general organization, edit rights for incident team
@@ -551,6 +579,7 @@ Next review date: [Date]
 - **Indexing**: Tagged by service, severity, date, and root cause categories
 
 #### **Document Components Requirements**
+
 - Executive Summary (required for SEV-1/SEV-2)
 - Detailed Timeline (required for all incidents)
 - Root Cause Analysis (required for all incidents)
@@ -562,6 +591,7 @@ Next review date: [Date]
 ### 4. Action Item Management
 
 #### **Action Item Categories**
+
 1. **Immediate Actions** (0-30 days)
    - Critical fixes or improvements
    - High-impact monitoring enhancements
@@ -578,6 +608,7 @@ Next review date: [Date]
    - Organizational changes
 
 #### **Action Item Tracking**
+
 - **Tracking System**: Use project management tool (Jira, Asana, etc.)
 - **Naming Convention**: `PM-[IncidentID]-[ActionNumber]-[Description]`
 - **Required Fields**: Owner, due date, status, priority, description
@@ -585,6 +616,7 @@ Next review date: [Date]
 - **Closure Requirements**: Verification and sign-off from incident commander
 
 #### **Action Item Review Process**
+
 1. **Weekly Review**: Incident Commander reviews all open action items
 2. **Monthly Review**: Management review of high-priority items
 3. **Quarterly Review**: Leadership review of improvement trends
@@ -593,7 +625,9 @@ Next review date: [Date]
 ### 5. Quality Assurance
 
 #### **Post-Mortem Quality Checklist**
+
 **Content Quality:**
+
 - [ ] Root cause is clearly identified and explained
 - [ ] Timeline is accurate and complete
 - [ ] Impact assessment is comprehensive
@@ -601,6 +635,7 @@ Next review date: [Date]
 - [ ] Lessons learned are meaningful and actionable
 
 **Process Quality:**
+
 - [ ] Meeting included all necessary participants
 - [ ] Discussion was constructive and blameless
 - [ ] All voices were heard and considered
@@ -608,6 +643,7 @@ Next review date: [Date]
 - [ ] Follow-up process is clearly defined
 
 **Documentation Quality:**
+
 - [ ] Document follows approved template
 - [ ] Language is clear and professional
 - [ ] Technical details are accurate
@@ -615,6 +651,7 @@ Next review date: [Date]
 - [ ] Document is properly stored and indexed
 
 #### **Peer Review Process**
+
 1. **Technical Review**: Technical Lead or peer technical expert
 2. **Process Review**: Incident Commander or process expert
 3. **Business Review**: Manager or business stakeholder
@@ -625,18 +662,21 @@ Next review date: [Date]
 ### 1. Key Performance Indicators
 
 #### **Incident Metrics**
+
 - **Mean Time to Resolution (MTTR)**: Average time to resolve incidents by severity
 - **Incident Recurrence Rate**: Percentage of incidents that recur within 90 days
 - **Post-Mortem Completion Rate**: Percentage of incidents with completed post-mortems
 - **Action Item Completion Rate**: Percentage of action items completed on time
 
 #### **Process Metrics**
+
 - **Post-Mortem Timeliness**: Percentage completed within required timeframe
 - **Action Item Effectiveness**: Percentage of completed actions that prevent recurrence
 - **Learning Integration**: Number of systemic improvements implemented
 - **Knowledge Sharing**: Number of post-mortems shared across teams
 
 #### **Quality Metrics**
+
 - **Root Cause Identification**: Percentage with clear root cause identified
 - **Action Item Quality**: Average specificity and actionability of action items
 - **Document Quality**: Peer review scores and feedback
@@ -645,6 +685,7 @@ Next review date: [Date]
 ### 2. Trend Analysis
 
 #### **Quarterly Review Process**
+
 1. **Data Collection**: Gather all post-mortem data from the quarter
 2. **Pattern Identification**: Look for recurring root causes and systemic issues
 3. **Trend Analysis**: Identify improving or worsening trends
@@ -652,6 +693,7 @@ Next review date: [Date]
 5. **Planning**: Adjust incident response and prevention strategies
 
 #### **Annual Review Process**
+
 1. **Comprehensive Analysis**: Review all incidents and post-mortems from the year
 2. **Strategic Assessment**: Evaluate overall incident response effectiveness
 3. **Budget Planning**: Identify resource needs for improvements
@@ -672,22 +714,25 @@ Next review date: [Date]
 ## Quick Reference
 
 ### Post-Mortem Timing
+
 - SEV-1: Within 5 days, 2-3 hours
 - SEV-2: Within 5 days, 1-2 hours
 - SEV-3: Within 3 days, 1 hour
 - SEV-4: Within 2 days, 30 minutes
 
 ### Required Participants
+
 - SEV-1: Full response team + stakeholders
 - SEV-2: Core team + key stakeholders
 - SEV-3: Technical team + immediate stakeholders
 - SEV-4: Immediate team only
 
 ### Action Item Timeline
+
 - Immediate: 0-30 days
 - Short-term: 30-90 days
 - Long-term: 90+ days
 
 ---
 
-*This document should be reviewed quarterly and updated based on lessons learned from actual post-mortem processes.*
+_This document should be reviewed quarterly and updated based on lessons learned from actual post-mortem processes._

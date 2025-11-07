@@ -10,7 +10,7 @@
  */
 
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Environment } from '../config/environment.js';
 
 /**

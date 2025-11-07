@@ -1,0 +1,64 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // Incremental compilation settings
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "composite": true,
+
+    // Dependency tracking optimizations
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true,
+
+    // Build performance optimizations
+    "isolatedModules": true,
+    "preserveWatchOutput": true,
+    "pretty": true,
+
+    // Source generation
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    // Output settings
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": false,
+    "stripInternal": false,
+
+    // Module resolution for faster builds
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+
+    // Type checking optimizations
+    "strict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmitOnError": true,
+
+    // Advanced options
+    "importsNotUsedAsValues": "remove",
+    "useDefineForClassFields": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/test/**",
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.build.json"
+    }
+  ]
+}

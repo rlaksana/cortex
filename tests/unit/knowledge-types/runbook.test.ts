@@ -100,11 +100,11 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('runbook');
-        expect(result.data.data.service).toBe('authentication-service');
-        expect(result.data.data.title).toBe('Database Connection Pool Recovery');
-        expect(result.data.data.steps).toHaveLength(3);
-        expect(result.data.data.triggers).toHaveLength(3);
+        expect(result['data.kind']).toBe('runbook');
+        expect(result['data.data'].service).toBe('authentication-service');
+        expect(result['data.data'].title).toBe('Database Connection Pool Recovery');
+        expect(result['data.data'].steps).toHaveLength(3);
+        expect(result['data.data'].triggers).toHaveLength(3);
       }
     });
 
@@ -131,11 +131,11 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.service).toBe('api-gateway');
-        expect(result.data.data.title).toBe('Service Restart');
-        expect(result.data.data.steps).toHaveLength(1);
-        expect(result.data.data.description).toBeUndefined();
-        expect(result.data.data.triggers).toBeUndefined();
+        expect(result['data.data'].service).toBe('api-gateway');
+        expect(result['data.data'].title).toBe('Service Restart');
+        expect(result['data.data'].steps).toHaveLength(1);
+        expect(result['data.data'].description).toBeUndefined();
+        expect(result['data.data'].triggers).toBeUndefined();
       }
     });
 
@@ -288,8 +288,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.steps).toHaveLength(3);
-        result.data.data.steps.forEach((step, index) => {
+        expect(result['data.data'].steps).toHaveLength(3);
+        result['data.data'].steps.forEach((step, index) => {
           expect(step.step_number).toBe(index + 1);
           expect(step.description).toBeTruthy();
           expect(step.command).toBeTruthy();
@@ -320,8 +320,8 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.steps[0].command).toBeUndefined();
-        expect(result.data.data.steps[0].expected_outcome).toBeUndefined();
+        expect(result['data.data'].steps[0].command).toBeUndefined();
+        expect(result['data.data'].steps[0].expected_outcome).toBeUndefined();
       }
     });
 
@@ -850,11 +850,11 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(runbook);
       expect(result.kind).toBe('runbook');
-      expect(result.data.service).toBe('critical-business-service');
+      expect(result['data.service']).toBe('critical-business-service');
       expect(result.tags.critical).toBe(true);
       expect(result.tags.disaster_recovery).toBe(true);
       expect(result.source.actor).toBe('disaster-recovery-lead');
-      expect(result.ttl_policy).toBe('permanent');
+      expect(result['ttl_policy']).toBe('permanent');
     });
 
     it('should handle TTL policy for runbooks', async () => {
@@ -942,7 +942,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.last_verified_at).toBe('2025-01-01T00:00:00Z');
+        expect(result['data.data'].last_verified_at).toBe('2025-01-01T00:00:00Z');
       }
     });
 
@@ -977,7 +977,7 @@ describe('Runbook Knowledge Type - Comprehensive Testing', () => {
       const result = RunbookSchema.safeParse(runbook);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.last_verified_at).toBeUndefined();
+        expect(result['data.data'].last_verified_at).toBeUndefined();
       }
     });
   });

@@ -15,11 +15,11 @@ groups:
           service: cortex-mcp
           component: performance
         annotations:
-          summary: "High P95 latency detected in Cortex MCP"
-          description: "P95 latency for {{ $labels.operation }} is {{ $value }}ms (threshold: 1000ms) for 5 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/high-latency"
-          impact: "Users experiencing slow response times"
-          action: "Investigate performance bottlenecks and consider scaling"
+          summary: 'High P95 latency detected in Cortex MCP'
+          description: 'P95 latency for {{ $labels.operation }} is {{ $value }}ms (threshold: 1000ms) for 5 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/high-latency'
+          impact: 'Users experiencing slow response times'
+          action: 'Investigate performance bottlenecks and consider scaling'
 
       # P99 latency alerts
       - alert: CortexCriticalLatencyP99
@@ -30,11 +30,11 @@ groups:
           service: cortex-mcp
           component: performance
         annotations:
-          summary: "Critical P99 latency detected in Cortex MCP"
-          description: "P99 latency for {{ $labels.operation }} is {{ $value }}ms (threshold: 2000ms) for 3 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/critical-latency"
-          impact: "Significant performance degradation affecting user experience"
-          action: "Immediate investigation required, check for resource saturation"
+          summary: 'Critical P99 latency detected in Cortex MCP'
+          description: 'P99 latency for {{ $labels.operation }} is {{ $value }}ms (threshold: 2000ms) for 3 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/critical-latency'
+          impact: 'Significant performance degradation affecting user experience'
+          action: 'Immediate investigation required, check for resource saturation'
 
   - name: cortex-mcp-errors
     rules:
@@ -51,11 +51,11 @@ groups:
           service: cortex-mcp
           component: reliability
         annotations:
-          summary: "High error rate in Cortex MCP"
-          description: "Error rate is {{ $value }}% (threshold: 2%) for 5 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/high-error-rate"
-          impact: "Users experiencing failed operations"
-          action: "Review logs and investigate root cause"
+          summary: 'High error rate in Cortex MCP'
+          description: 'Error rate is {{ $value }}% (threshold: 2%) for 5 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/high-error-rate'
+          impact: 'Users experiencing failed operations'
+          action: 'Review logs and investigate root cause'
 
       # Critical error count
       - alert: CortexCriticalErrors
@@ -66,11 +66,11 @@ groups:
           service: cortex-mcp
           component: reliability
         annotations:
-          summary: "Critical errors detected in Cortex MCP"
-          description: "{{ $value }} critical errors detected in the last minute"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/critical-errors"
-          impact: "System may be in degraded state"
-          action: "Immediate investigation and incident response"
+          summary: 'Critical errors detected in Cortex MCP'
+          description: '{{ $value }} critical errors detected in the last minute'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/critical-errors'
+          impact: 'System may be in degraded state'
+          action: 'Immediate investigation and incident response'
 
   - name: cortex-mcp-resources
     rules:
@@ -83,11 +83,11 @@ groups:
           service: cortex-mcp
           component: resources
         annotations:
-          summary: "High memory usage in Cortex MCP"
-          description: "Memory usage is {{ $value }}GB (threshold: 4GB) for 5 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/high-memory"
-          impact: "Potential for performance degradation and OOM errors"
-          action: "Investigate memory leaks and consider increasing resources"
+          summary: 'High memory usage in Cortex MCP'
+          description: 'Memory usage is {{ $value }}GB (threshold: 4GB) for 5 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/high-memory'
+          impact: 'Potential for performance degradation and OOM errors'
+          action: 'Investigate memory leaks and consider increasing resources'
 
       - alert: CortexCriticalMemoryUsage
         expr: cortex_memory_bytes{type="process_resident_memory"} / 1024 / 1024 / 1024 > 6
@@ -97,11 +97,11 @@ groups:
           service: cortex-mcp
           component: resources
         annotations:
-          summary: "Critical memory usage in Cortex MCP"
-          description: "Memory usage is {{ $value }}GB (threshold: 6GB) for 2 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/critical-memory"
-          impact: "High risk of out-of-memory errors"
-          action: "Immediate action required, service restart may be necessary"
+          summary: 'Critical memory usage in Cortex MCP'
+          description: 'Memory usage is {{ $value }}GB (threshold: 6GB) for 2 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/critical-memory'
+          impact: 'High risk of out-of-memory errors'
+          action: 'Immediate action required, service restart may be necessary'
 
   - name: cortex-mcp-availability
     rules:
@@ -114,11 +114,11 @@ groups:
           service: cortex-mcp
           component: availability
         annotations:
-          summary: "Cortex MCP service is down"
-          description: "Cortex MCP service has been down for more than 1 minute"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/service-down"
-          impact: "Complete service outage"
-          action: "Immediate investigation and service restart"
+          summary: 'Cortex MCP service is down'
+          description: 'Cortex MCP service has been down for more than 1 minute'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/service-down'
+          impact: 'Complete service outage'
+          action: 'Immediate investigation and service restart'
 
       # High QPS alert (possible DDoS or legitimate load)
       - alert: CortexUnusualHighQPS
@@ -129,11 +129,11 @@ groups:
           service: cortex-mcp
           component: availability
         annotations:
-          summary: "Unusually high QPS in Cortex MCP"
-          description: "QPS is {{ $value }} ops/sec (threshold: 1000) for 2 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/high-qps"
-          impact: "Service may be overwhelmed or under attack"
-          action: "Investigate traffic source and consider rate limiting"
+          summary: 'Unusually high QPS in Cortex MCP'
+          description: 'QPS is {{ $value }} ops/sec (threshold: 1000) for 2 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/high-qps'
+          impact: 'Service may be overwhelmed or under attack'
+          action: 'Investigate traffic source and consider rate limiting'
 
   - name: cortex-mcp-quality
     rules:
@@ -146,11 +146,11 @@ groups:
           service: cortex-mcp
           component: performance
         annotations:
-          summary: "Low cache hit rate in Cortex MCP"
-          description: "Cache hit rate is {{ $value }}% (threshold: 50%) for 10 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/low-cache-hit"
-          impact: "Reduced performance due to cache inefficiency"
-          action: "Review cache configuration and usage patterns"
+          summary: 'Low cache hit rate in Cortex MCP'
+          description: 'Cache hit rate is {{ $value }}% (threshold: 50%) for 10 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/low-cache-hit'
+          impact: 'Reduced performance due to cache inefficiency'
+          action: 'Review cache configuration and usage patterns'
 
       # High deduplication rate (could indicate data quality issues)
       - alert: CortexHighDeduplicationRate
@@ -161,11 +161,11 @@ groups:
           service: cortex-mcp
           component: quality
         annotations:
-          summary: "High deduplication rate in Cortex MCP"
-          description: "Deduplication rate is {{ $value }}% (threshold: 80%) for 15 minutes"
-          runbook_url: "https://docs.cortex.ai/monitoring/deduplication"
-          impact: "High data duplication, potential storage optimization opportunity"
-          action: "Review data ingestion patterns and quality"
+          summary: 'High deduplication rate in Cortex MCP'
+          description: 'Deduplication rate is {{ $value }}% (threshold: 80%) for 15 minutes'
+          runbook_url: 'https://docs.cortex.ai/monitoring/deduplication'
+          impact: 'High data duplication, potential storage optimization opportunity'
+          action: 'Review data ingestion patterns and quality'
 
   - name: cortex-mcp-business
     rules:
@@ -178,11 +178,11 @@ groups:
           service: cortex-mcp
           component: business
         annotations:
-          summary: "Low operation rate in Cortex MCP"
-          description: "Operation rate is {{ $value }} ops/sec (threshold: 1) for 15 minutes"
-          runbook_url: "https://docs.cortex.ai/monitoring/low-usage"
-          impact: "May indicate system underutilization or issues"
-          action: "Verify system is functioning and check expected usage patterns"
+          summary: 'Low operation rate in Cortex MCP'
+          description: 'Operation rate is {{ $value }} ops/sec (threshold: 1) for 15 minutes'
+          runbook_url: 'https://docs.cortex.ai/monitoring/low-usage'
+          impact: 'May indicate system underutilization or issues'
+          action: 'Verify system is functioning and check expected usage patterns'
 
       # Service uptime
       - alert: CortexServiceUptime
@@ -193,11 +193,11 @@ groups:
           service: cortex-mcp
           component: availability
         annotations:
-          summary: "Cortex MCP service recently restarted"
-          description: "Service uptime is {{ $value | humanizeDuration }}"
-          runbook_url: "https://docs.cortex.ai/monitoring/uptime"
-          impact: "Service recently restarted, monitoring for stability"
-          action: "Monitor service stability and check restart logs"
+          summary: 'Cortex MCP service recently restarted'
+          description: 'Service uptime is {{ $value | humanizeDuration }}'
+          runbook_url: 'https://docs.cortex.ai/monitoring/uptime'
+          impact: 'Service recently restarted, monitoring for stability'
+          action: 'Monitor service stability and check restart logs'
 
   - name: cortex-mcp-circuit-breaker
     rules:
@@ -210,11 +210,11 @@ groups:
           service: cortex-mcp
           component: resilience
         annotations:
-          summary: "Circuit breaker is open in Cortex MCP"
-          description: "Circuit breaker for {{ $labels.service }} has been open for 2 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/circuit-breaker"
-          impact: "Service is failing fast to protect the system"
-          action: "Investigate root cause and service dependencies"
+          summary: 'Circuit breaker is open in Cortex MCP'
+          description: 'Circuit breaker for {{ $labels.service }} has been open for 2 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/circuit-breaker'
+          impact: 'Service is failing fast to protect the system'
+          action: 'Investigate root cause and service dependencies'
 
       - alert: CortexCircuitBreakerHalfOpen
         expr: cortex_circuit_breaker_state{state="half_open"} == 1
@@ -224,11 +224,11 @@ groups:
           service: cortex-mcp
           component: resilience
         annotations:
-          summary: "Circuit breaker is half-open in Cortex MCP"
-          description: "Circuit breaker for {{ $labels.service }} has been half-open for 5 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/circuit-breaker"
-          impact: "Service attempting recovery, may still be unstable"
-          action: "Monitor recovery progress and check service health"
+          summary: 'Circuit breaker is half-open in Cortex MCP'
+          description: 'Circuit breaker for {{ $labels.service }} has been half-open for 5 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/circuit-breaker'
+          impact: 'Service attempting recovery, may still be unstable'
+          action: 'Monitor recovery progress and check service health'
 
   - name: cortex-mcp-qdrant
     rules:
@@ -241,11 +241,11 @@ groups:
           service: cortex-mcp
           component: database
         annotations:
-          summary: "Qdrant database connection failure"
-          description: "Unable to connect to Qdrant database for 1 minute"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/qdrant-connection"
-          impact: "Core functionality impaired, database unavailable"
-          action: "Check Qdrant service status and network connectivity"
+          summary: 'Qdrant database connection failure'
+          description: 'Unable to connect to Qdrant database for 1 minute'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/qdrant-connection'
+          impact: 'Core functionality impaired, database unavailable'
+          action: 'Check Qdrant service status and network connectivity'
 
       # Qdrant high response time
       - alert: CortexQdrantHighResponseTime
@@ -256,8 +256,8 @@ groups:
           service: cortex-mcp
           component: database
         annotations:
-          summary: "High Qdrant database response time"
-          description: "Qdrant response time is {{ $value }}ms (threshold: 5000ms) for 3 minutes"
-          runbook_url: "https://docs.cortex.ai/troubleshooting/qdrant-performance"
-          impact: "Slow database operations affecting overall performance"
-          action: "Check Qdrant performance metrics and consider optimization"
+          summary: 'High Qdrant database response time'
+          description: 'Qdrant response time is {{ $value }}ms (threshold: 5000ms) for 3 minutes'
+          runbook_url: 'https://docs.cortex.ai/troubleshooting/qdrant-performance'
+          impact: 'Slow database operations affecting overall performance'
+          action: 'Check Qdrant performance metrics and consider optimization'

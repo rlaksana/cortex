@@ -3,7 +3,7 @@
  * Implements scope-based access control with fine-grained permissions
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   AuthScope,
   UserRole,

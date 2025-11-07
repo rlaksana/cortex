@@ -173,7 +173,7 @@ describe('MCP Protocol Compliance', () => {
     test('should create valid JSON-RPC 2.0 error response messages', () => {
       // Arrange
       const response = createMCPError(
-        MCPErrorCode._INVALID_PARAMS,
+        MCPErrorCode['_INVALID_PARAMS'],
         'Invalid parameters provided',
         { field: 'missing_query' },
         'test-error-1'
@@ -182,9 +182,9 @@ describe('MCP Protocol Compliance', () => {
       // Assert
       expect(response.jsonrpc).toBe('2.0');
       expect(response.id).toBe('test-error-1');
-      expect(response.error.code).toBe(MCPErrorCode._INVALID_PARAMS);
+      expect(response.error.code).toBe(MCPErrorCode['_INVALID_PARAMS']);
       expect(response.error.message).toBe('Invalid parameters provided');
-      expect(response.error.data.field).toBe('missing_query');
+      expect(response.error['data.field']).toBe('missing_query');
       expect(response.result).toBeUndefined();
     });
 
@@ -780,14 +780,14 @@ describe('MCP Protocol Compliance', () => {
   describe('Error Handling Compliance', () => {
     test('should use correct MCP error codes', () => {
       // Arrange & Act & Assert
-      expect(MCPErrorCode._PARSE_ERROR).toBe(-32700);
-      expect(MCPErrorCode._INVALID_REQUEST).toBe(-32600);
-      expect(MCPErrorCode._METHOD_NOT_FOUND).toBe(-32601);
-      expect(MCPErrorCode._INVALID_PARAMS).toBe(-32602);
-      expect(MCPErrorCode._INTERNAL_ERROR).toBe(-32603);
-      expect(MCPErrorCode._TOOL_EXECUTION_ERROR).toBe(32000);
-      expect(MCPErrorCode._VALIDATION_ERROR).toBe(32001);
-      expect(MCPErrorCode._DATABASE_ERROR).toBe(32002);
+      expect(MCPErrorCode['_PARSE_ERROR']).toBe(-32700);
+      expect(MCPErrorCode['_INVALID_REQUEST']).toBe(-32600);
+      expect(MCPErrorCode['_METHOD_NOT_FOUND']).toBe(-32601);
+      expect(MCPErrorCode['_INVALID_PARAMS']).toBe(-32602);
+      expect(MCPErrorCode['_INTERNAL_ERROR']).toBe(-32603);
+      expect(MCPErrorCode['_TOOL_EXECUTION_ERROR']).toBe(32000);
+      expect(MCPErrorCode['_VALIDATION_ERROR']).toBe(32001);
+      expect(MCPErrorCode['_DATABASE_ERROR']).toBe(32002);
     });
 
     test('should create compliant error responses', () => {
@@ -806,16 +806,16 @@ describe('MCP Protocol Compliance', () => {
     test('should classify errors by type', () => {
       // Arrange
       const testCases = [
-        { error: new Error('validation failed'), expectedCode: MCPErrorCode._VALIDATION_ERROR },
+        { error: new Error('validation failed'), expectedCode: MCPErrorCode['_VALIDATION_ERROR'] },
         {
           error: new Error('database connection failed'),
-          expectedCode: MCPErrorCode._DATABASE_ERROR,
+          expectedCode: MCPErrorCode['_DATABASE_ERROR'],
         },
-        { error: new Error('operation timeout'), expectedCode: MCPErrorCode._TIMEOUT_ERROR },
-        { error: new Error('resource not found'), expectedCode: MCPErrorCode._RESOURCE_NOT_FOUND },
+        { error: new Error('operation timeout'), expectedCode: MCPErrorCode['_TIMEOUT_ERROR'] },
+        { error: new Error('resource not found'), expectedCode: MCPErrorCode['_RESOURCE_NOT_FOUND'] },
         {
           error: new Error('unauthorized access'),
-          expectedCode: MCPErrorCode._AUTHORIZATION_ERROR,
+          expectedCode: MCPErrorCode['_AUTHORIZATION_ERROR'],
         },
       ];
 
@@ -837,7 +837,7 @@ describe('MCP Protocol Compliance', () => {
 
       // Act
       const response = createMCPError(
-        MCPErrorCode._INTERNAL_ERROR,
+        MCPErrorCode['_INTERNAL_ERROR'],
         error.message,
         context,
         'context-error-1'
@@ -845,8 +845,8 @@ describe('MCP Protocol Compliance', () => {
 
       // Assert
       expect(response.error.data).toEqual(context);
-      expect(response.error.data.requestId).toBe('req-123');
-      expect(response.error.data.userId).toBe('user-456');
+      expect(response.error['data.requestId']).toBe('req-123');
+      expect(response.error['data.userId']).toBe('user-456');
     });
   });
 

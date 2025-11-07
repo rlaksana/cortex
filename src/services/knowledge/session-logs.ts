@@ -10,7 +10,7 @@
  */
 
 // Import required modules
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 // ============================================================================
 // INCIDENT LOG OPERATIONS

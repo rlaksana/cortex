@@ -11,26 +11,31 @@ The enhanced deduplication system has been successfully implemented with compreh
 All five merge strategies have been implemented with comprehensive logic:
 
 #### **skip**
+
 - **Behavior**: Skips storing duplicate items entirely
 - **Use Case**: When you want to keep only the first occurrence of any content
 - **Configuration**: `mergeStrategy: 'skip'`
 
 #### **prefer_existing**
+
 - **Behavior**: Always keeps the existing item, ignores new duplicates
 - **Use Case**: Immutable content preservation
 - **Configuration**: `mergeStrategy: 'prefer_existing'`
 
 #### **prefer_newer**
+
 - **Behavior**: Replaces existing items with newer versions based on timestamps
 - **Use Case**: Progressive content updates
 - **Configuration**: `mergeStrategy: 'prefer_newer'`
 
 #### **combine**
+
 - **Behavior**: Intelligently merges content from both items
 - **Use Case**: Building comprehensive knowledge from multiple sources
 - **Configuration**: `mergeStrategy: 'combine'`
 
 #### **intelligent** ⭐
+
 - **Behavior**: Smart merging based on multiple factors (content completeness, quality, scope, time)
 - **Use Case**: Best overall deduplication with minimal data loss
 - **Configuration**: `mergeStrategy: 'intelligent'`
@@ -71,6 +76,7 @@ All five merge strategies have been implemented with comprehensive logic:
 Every deduplication decision is logged with detailed information:
 
 #### **Audit Log Entry Structure**
+
 ```typescript
 {
   timestamp: string,
@@ -107,12 +113,14 @@ The `EnhancedDeduplicationService` class provides:
 ### Merge Logic Implementation
 
 #### **Intelligent Merge Decision Matrix**
+
 1. **Time-based analysis** (30% weight): Newer items within time window are preferred
 2. **Scope match quality** (25% weight): Same scope gets priority
 3. **Content completeness** (25% weight): More complete content wins
 4. **Content quality indicators** (20% weight): Structure, metadata, and readability
 
 #### **Content Field Merging**
+
 - **Primary fields**: `content`, `body_text`, `body_md`, `description`, `rationale`
 - **Strategy**: Intelligent combination with duplicate detection
 - **Conflict resolution**: Prefer newer/better content based on multiple factors
@@ -128,15 +136,15 @@ const result = await memory_store({
     {
       kind: 'entity',
       content: 'Implement OAuth 2.0 authentication system',
-      scope: { project: 'auth-service', org: 'my-company' }
-    }
+      scope: { project: 'auth-service', org: 'my-company' },
+    },
   ],
   dedupe_global_config: {
     enabled: true,
     similarity_threshold: 0.85,
     merge_strategy: 'intelligent',
-    audit_logging: true
-  }
+    audit_logging: true,
+  },
 });
 ```
 
@@ -155,8 +163,8 @@ const result = await upsert_merge({
     time_window_days: 14,
     cross_scope_dedupe: false,
     scope_only: true,
-    audit_logging: true
-  }
+    audit_logging: true,
+  },
 });
 ```
 
@@ -223,6 +231,7 @@ const result = await upsert_merge({
 ### Merge Strategy Examples
 
 #### **Skip Strategy**
+
 ```
 Input: 2 similar items (95% similarity)
 Output: 1 item stored, 1 skipped
@@ -230,6 +239,7 @@ Reason: "Duplicate skipped due to merge strategy: skip"
 ```
 
 #### **Prefer Existing Strategy**
+
 ```
 Input: 2 similar items (87% similarity)
 Output: 1 item skipped
@@ -237,6 +247,7 @@ Reason: "Kept existing item due to merge strategy: prefer_existing"
 ```
 
 #### **Prefer Newer Strategy**
+
 ```
 Input: 2 similar items (89% similarity, newer item)
 Output: 1 item updated
@@ -244,6 +255,7 @@ Reason: "Replaced existing item with newer version"
 ```
 
 #### **Combine Strategy**
+
 ```
 Input: 2 similar items (83% similarity)
 Output: 1 item merged
@@ -252,6 +264,7 @@ Fields merged: ["tags", "implementation_notes"]
 ```
 
 #### **Intelligent Strategy**
+
 ```
 Input: 2 similar items (91% similarity)
 Output: 1 item intelligently merged
@@ -263,6 +276,7 @@ Conflicts resolved: ["priority", "status"]
 ## 🔧 Configuration Presets
 
 ### **Strict Preset**
+
 ```typescript
 {
   contentSimilarityThreshold: 0.95,
@@ -273,6 +287,7 @@ Conflicts resolved: ["priority", "status"]
 ```
 
 ### **Aggressive Preset**
+
 ```typescript
 {
   contentSimilarityThreshold: 0.7,
@@ -283,6 +298,7 @@ Conflicts resolved: ["priority", "status"]
 ```
 
 ### **Time-Sensitive Preset**
+
 ```typescript
 {
   timeBasedDeduplication: true,
@@ -293,6 +309,7 @@ Conflicts resolved: ["priority", "status"]
 ```
 
 ### **Content-Focused Preset**
+
 ```typescript
 {
   contentSimilarityThreshold: 0.9,
@@ -314,16 +331,19 @@ Conflicts resolved: ["priority", "status"]
 ## 📈 Performance Characteristics
 
 ### **Processing Speed**
+
 - **Average**: 45-120ms per item (depending on strategy and similarity checks)
 - **Batch processing**: Optimized for 10-50 item batches
 - **Memory usage**: Efficient with configurable batch sizes
 
 ### **Accuracy Metrics**
+
 - **False positive rate**: <5% (with 0.85 threshold)
 - **False negative rate**: <3% (with semantic analysis enabled)
 - **Merge quality**: High (intelligent strategy preserves >95% of important content)
 
 ### **Scalability**
+
 - **Concurrent processing**: Supported with `enableParallelProcessing: true`
 - **Database load**: Optimized queries with proper indexing
 - **Memory footprint**: Configurable with `maxItemsToCheck` parameter
@@ -341,16 +361,19 @@ Conflicts resolved: ["priority", "status"]
 ## 🔍 Advanced Features
 
 ### **Content Analysis**
+
 - **Semantic analysis**: Advanced text understanding and similarity detection
 - **Keyword extraction**: Automatic identification of key concepts
 - **Content quality scoring**: Automated assessment of content completeness
 
 ### **Scope Intelligence**
+
 - **Hierarchical matching**: Org > Project > Branch priority system
 - **Cross-scope rules**: Configurable policies for cross-project deduplication
 - **Scope inheritance**: Automatic scope resolution and matching
 
 ### **Temporal Intelligence**
+
 - **Version detection**: Automatic identification of content versions
 - **Update awareness**: Smart handling of content updates vs. new content
 - **Window-based filtering**: Flexible time windows for duplicate detection

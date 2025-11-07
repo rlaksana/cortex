@@ -1088,8 +1088,8 @@ describe('System Monitoring - Comprehensive Monitoring Functionality', () => {
         recentMetrics.forEach((metric) => {
           if (metric.success && metric.metadata) {
             expect(metric.metadata).toHaveProperty('queryType');
-            if (metric.metadata.table) {
-              expect(metric.metadata.table).toMatch(/users|orders|products|sessions/);
+            if (metric.metadata['table']) {
+              expect(metric.metadata['table']).toMatch(/users|orders|products|sessions/);
             }
           }
         });

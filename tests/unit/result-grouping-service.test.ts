@@ -178,7 +178,7 @@ describe('ResultGroupingService', () => {
       const reconstructed = service.reconstructGroupedContent(groupedResult);
 
       expect(reconstructed.content).toBe('First part\n\nSecond part');
-      expect(reconstructed.total_chunks).toBe(3);
+      expect(reconstructed['total_chunks']).toBe(3);
       expect(reconstructed.found_chunks).toBe(2);
       expect(reconstructed.confidence_score).toBeCloseTo(0.825, 2); // Average of chunks
     });
@@ -193,7 +193,7 @@ describe('ResultGroupingService', () => {
 
       const reconstructed = service.reconstructGroupedContent(singleItemResult);
 
-      expect(reconstructed.total_chunks).toBe(1);
+      expect(reconstructed['total_chunks']).toBe(1);
       expect(reconstructed.found_chunks).toBe(1);
       expect(reconstructed.confidence_score).toBe(0.7);
     });
@@ -259,7 +259,7 @@ describe('ResultGroupingService', () => {
       expect(stats.total_results).toBe(5);
       expect(stats.grouped_results).toBe(1); // One parent with chunks
       expect(stats.single_item_results).toBe(2); // Two regular items
-      expect(stats.total_chunks_found).toBe(2);
+      expect(stats['total_chunks']_found).toBe(2);
       expect(stats.chunk_coverage_ratio).toBeCloseTo(0.48, 0.01); // 2/3 chunks found but parent item missing
     });
   });

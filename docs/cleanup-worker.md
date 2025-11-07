@@ -7,6 +7,7 @@ The Cleanup Worker Service is a comprehensive data management system designed to
 ## Features
 
 ### 🔧 Core Functionality
+
 - **Multi-Operation Cleanup**: Expired items, orphaned relationships, duplicates, metrics, and logs
 - **Dry-Run Mode**: Count-only preview mode without actual deletions
 - **Safety Mechanisms**: Confirmation tokens, backups, rollback capabilities
@@ -14,6 +15,7 @@ The Cleanup Worker Service is a comprehensive data management system designed to
 - **Scope Filtering**: Project, organization, and branch-level filtering
 
 ### 📊 Metrics & Monitoring
+
 - **cleanup_deleted_total**: Total items deleted across all operations
 - **cleanup_dryrun_total**: Items identified for deletion in dry-run
 - **cleanup_by_type**: Breakdown by knowledge type (entity, relation, todo, etc.)
@@ -22,6 +24,7 @@ The Cleanup Worker Service is a comprehensive data management system designed to
 - **Performance Metrics**: Items per second, average batch duration, memory usage
 
 ### 🛡️ Safety Features
+
 - **Confirmation Tokens**: Required for destructive operations
 - **Automatic Backups**: Configurable backup creation before cleanup
 - **Safety Thresholds**: Automatic warnings for large operations
@@ -31,6 +34,7 @@ The Cleanup Worker Service is a comprehensive data management system designed to
 ## MCP Tool Interface
 
 ### 1. run_cleanup
+
 Main cleanup operation with comprehensive configuration options.
 
 ```json
@@ -52,6 +56,7 @@ Main cleanup operation with comprehensive configuration options.
 ```
 
 **Response Format:**
+
 ```json
 {
   "content": [
@@ -107,6 +112,7 @@ Main cleanup operation with comprehensive configuration options.
 ```
 
 ### 2. confirm_cleanup
+
 Confirm a cleanup operation that requires confirmation.
 
 ```json
@@ -117,6 +123,7 @@ Confirm a cleanup operation that requires confirmation.
 ```
 
 ### 3. get_cleanup_statistics
+
 Get statistics for cleanup operations over a time period.
 
 ```json
@@ -127,6 +134,7 @@ Get statistics for cleanup operations over a time period.
 ```
 
 **Response:**
+
 ```json
 {
   "content": [
@@ -157,6 +165,7 @@ Get statistics for cleanup operations over a time period.
 ```
 
 ### 4. get_cleanup_history
+
 Get historical cleanup operation records.
 
 ```json
@@ -169,6 +178,7 @@ Get historical cleanup operation records.
 ## Configuration
 
 ### Default Configuration
+
 ```typescript
 const DEFAULT_CONFIG = {
   enabled: true,
@@ -191,6 +201,7 @@ const DEFAULT_CONFIG = {
 ```
 
 ### Configuration Updates
+
 ```typescript
 const cleanupWorker = getCleanupWorker();
 cleanupWorker.updateConfig({
@@ -203,30 +214,35 @@ cleanupWorker.updateConfig({
 ## Operations
 
 ### 1. Expired Items Cleanup
+
 - **Purpose**: Remove items past their TTL expiry time
 - **Method**: Uses existing expiry worker functionality
 - **Safety**: Respects TTL settings and retention policies
 - **Metrics**: Tracks expired_items_deleted
 
 ### 2. Orphaned Relationships Cleanup
+
 - **Purpose**: Remove relationships without valid target entities
 - **Method**: Searches for dangling references and broken links
 - **Safety**: Validates orphan status before deletion
 - **Metrics**: Tracks orphaned_items_deleted
 
 ### 3. Duplicate Items Cleanup
+
 - **Purpose**: Remove or merge duplicate knowledge items
 - **Method**: Semantic similarity detection with configurable thresholds
 - **Safety**: Keeps newest/highest quality items
 - **Metrics**: Tracks duplicate_items_deleted
 
 ### 4. Metrics Cleanup
+
 - **Purpose**: Clean up old performance metrics and telemetry data
 - **Retention**: Configurable retention period (default: 30 days)
 - **Safety**: Preserves recent performance data
 - **Metrics**: Tracks metrics_items_deleted
 
 ### 5. Log Cleanup
+
 - **Purpose**: Rotate and archive old log entries
 - **Retention**: Configurable log retention (default: 7 days)
 - **Method**: Archive old logs, clean up temporary files
@@ -235,6 +251,7 @@ cleanupWorker.updateConfig({
 ## Safety Mechanisms
 
 ### Confirmation Workflow
+
 1. **Dry-Run**: First run with `dry_run: true` to preview impact
 2. **Safety Check**: System evaluates operation impact and generates warnings
 3. **Token Generation**: Confirmation token created for large operations
@@ -242,12 +259,14 @@ cleanupWorker.updateConfig({
 5. **Execution**: Proceed with actual cleanup operation
 
 ### Backup System
+
 - **Automatic**: Backup created when `enable_backup: true`
 - **Scope**: Only includes items affected by cleanup operation
 - **Retention**: Configurable backup retention period
 - **Rollback**: Backup items can be restored if needed
 
 ### Safety Thresholds
+
 - **Large Operations**: Warnings for >100 items
 - **Extremely Large**: Confirmation required for >1000 items
 - **Safety Limits**: Maximum 100,000 items per operation
@@ -256,18 +275,21 @@ cleanupWorker.updateConfig({
 ## Performance Considerations
 
 ### Batch Processing
+
 - Configurable batch sizes (1-1000 items)
 - Maximum batch limits (1-100 batches)
 - Automatic retry for failed batches
 - Progress reporting for long operations
 
 ### Resource Management
+
 - Memory usage monitoring
 - Items per second throttling
 - Database connection pooling
 - Background processing capabilities
 
 ### Optimization Strategies
+
 - Index-aware queries for efficient filtering
 - Parallel processing options (configurable)
 - Smart caching for repeated operations
@@ -276,18 +298,21 @@ cleanupWorker.updateConfig({
 ## Error Handling
 
 ### Error Categories
+
 1. **Configuration Errors**: Invalid parameters, missing required fields
 2. **Permission Errors**: Insufficient rights for destructive operations
 3. **Database Errors**: Connection issues, transaction failures
 4. **System Errors**: Memory limits, timeout errors
 
 ### Error Recovery
+
 - Automatic retry for transient errors
 - Partial operation rollback
 - Detailed error logging with context
 - Graceful degradation for non-critical failures
 
 ### Error Metrics
+
 - cleanup_errors array with detailed error information
 - Error categorization by operation type
 - Success rate tracking in statistics
@@ -296,11 +321,13 @@ cleanupWorker.updateConfig({
 ## Testing
 
 ### Test Suites
+
 1. **Unit Tests**: Core service functionality and business logic
 2. **Integration Tests**: MCP tool interface and end-to-end workflows
 3. **Performance Tests**: Metrics accuracy and load testing
 
 ### Running Tests
+
 ```bash
 # Run all cleanup tests
 npm run test:cleanup
@@ -318,6 +345,7 @@ npm run test:cleanup:watch
 ```
 
 ### Test Coverage
+
 - Configuration management
 - Safety mechanisms and confirmation flows
 - Metrics tracking accuracy
@@ -328,6 +356,7 @@ npm run test:cleanup:watch
 ## Monitoring and Observability
 
 ### Key Metrics
+
 - `cleanup_deleted_total`: Total items deleted (primary success metric)
 - `cleanup_dryrun_total`: Items identified in dry-run mode
 - `cleanup_duration_ms`: Operation duration metrics
@@ -335,12 +364,14 @@ npm run test:cleanup:watch
 - `cleanup_success_rate`: Operation success percentage
 
 ### Logging
+
 - Structured logging with operation IDs
 - Performance metrics in every operation
 - Detailed error contexts and stack traces
 - Audit trail for all destructive operations
 
 ### Health Checks
+
 - Database connectivity validation
 - Configuration sanity checks
 - Resource availability verification
@@ -349,18 +380,21 @@ npm run test:cleanup:watch
 ## Best Practices
 
 ### Before Running Cleanup
+
 1. **Always dry-run first**: Preview impact before actual deletion
 2. **Check scope filters**: Ensure you're targeting correct data
 3. **Verify backups**: Confirm backup system is working
 4. **Monitor resources**: Ensure sufficient system resources
 
 ### During Operations
+
 1. **Monitor progress**: Watch operation logs and metrics
 2. **Check errors**: Review any errors that occur
 3. **Validate results**: Confirm expected number of deletions
 4. **System health**: Monitor overall system performance
 
 ### After Operations
+
 1. **Review reports**: Analyze operation reports and metrics
 2. **Verify integrity**: Check that system is functioning correctly
 3. **Update statistics**: Review cleanup statistics for trends
@@ -369,12 +403,14 @@ npm run test:cleanup:watch
 ## Troubleshooting
 
 ### Common Issues
+
 1. **Confirmation Required**: Operation requires confirmation token
 2. **Scope Filters**: No items found with specified filters
 3. **Database Errors**: Connection or transaction issues
 4. **Performance Issues**: Operations taking too long
 
 ### Debugging Steps
+
 1. Check operation logs for detailed error information
 2. Verify configuration parameters are correct
 3. Test with smaller batch sizes
@@ -382,6 +418,7 @@ npm run test:cleanup:watch
 5. Review system metrics and health status
 
 ### Getting Help
+
 - Check operation history for similar successful operations
 - Review error logs for specific error messages
 - Use get_cleanup_statistics to understand system state
@@ -390,12 +427,14 @@ npm run test:cleanup:watch
 ## Future Enhancements
 
 ### Planned Features
+
 - **Machine Learning**: Intelligent duplicate detection
 - **Advanced Scheduling**: Cron-based cleanup scheduling
 - **Multi-Region Support**: Cross-region cleanup coordination
 - **Advanced Analytics**: Cleanup optimization recommendations
 
 ### Performance Improvements
+
 - **Distributed Processing**: Multi-node cleanup operations
 - **Smart Batching**: Adaptive batch size optimization
 - **Caching Layer**: Intelligent result caching
@@ -404,6 +443,7 @@ npm run test:cleanup:watch
 ## API Reference
 
 ### CleanupWorkerService Class
+
 ```typescript
 class CleanupWorkerService {
   constructor(config?: Partial<CleanupWorkerConfig>);
@@ -418,6 +458,7 @@ class CleanupWorkerService {
 ```
 
 ### Key Interfaces
+
 ```typescript
 interface CleanupReport {
   operation_id: string;
@@ -453,6 +494,7 @@ interface CleanupMetrics {
 ## Version History
 
 ### v1.0.0 (Current)
+
 - Initial implementation with comprehensive cleanup operations
 - MCP tool interface with safety mechanisms
 - Full metrics tracking and monitoring
@@ -460,6 +502,7 @@ interface CleanupMetrics {
 - Performance optimization and batch processing
 
 ### Roadmap
+
 - v1.1.0: Advanced scheduling and automation
 - v1.2.0: Machine learning enhanced duplicate detection
 - v2.0.0: Distributed cleanup processing

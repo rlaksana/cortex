@@ -31,7 +31,6 @@ async function testMCP() {
     console.log('[mcp_servers.cortex]');
     console.log('command = "cortex"');
     console.log('args = []');
-
   } catch (error) {
     console.error('❌ MCP Server test failed:', error.message);
     process.exit(1);

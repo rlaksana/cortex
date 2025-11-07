@@ -11,7 +11,7 @@
 
 import { rateLimitService, RateLimitResult } from './rate-limiter.js';
 import { OperationType } from '../monitoring/operation-types.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type { AuthContext } from '../types/auth-types.js';
 
 /**

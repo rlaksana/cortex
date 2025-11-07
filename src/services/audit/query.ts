@@ -1,5 +1,5 @@
 import { getQdrantClient } from '../../db/qdrant.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger';
 
 export interface AuditLogEntry {
   id: string;

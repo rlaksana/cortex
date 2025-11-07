@@ -1,0 +1,6 @@
+37b2a820667b52936bdeceebc98dae33b68d735069497332880da78d8589d5e7 *dist/entry-point-factory.js
+97f78144b78783df0461a0d3a8ef0ad684d03e82990d5aaca96af3d5d43acc33 *dist/index.js
+9a135ca4bfa0c06c4281316ad83f9fcee48e03fdf7090a9e44ffff243257d32d *dist/silent-mcp-entry.js
+e7b836ea82b9ce8bec67301caa5b27b1bed1471b9fead3043d6d09589451ed3b *dist/entry-point-factory.d.ts
+88fd35154c18d7c3c5648ec74e13fce141f9b098883c461f2f5288455a69fe32 *dist/index.d.ts
+d46d4f07ebaa7e20cc675961d5ca55804632226cac548b19f3c8874103838543 *dist/silent-mcp-entry.d.ts

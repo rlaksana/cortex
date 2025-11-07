@@ -84,11 +84,11 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       const result = DecisionSchema.safeParse(decision);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.kind).toBe('decision');
-        expect(result.data.data.component).toBe('authentication-system');
-        expect(result.data.data.status).toBe('accepted');
-        expect(result.data.data.title).toBe('Use OAuth 2.0 for authentication');
-        expect(result.data.data.alternatives_considered).toHaveLength(3);
+        expect(result['data.kind']).toBe('decision');
+        expect(result['data.data'].component).toBe('authentication-system');
+        expect(result['data.data'].status).toBe('accepted');
+        expect(result['data.data'].title).toBe('Use OAuth 2.0 for authentication');
+        expect(result['data.data'].alternatives_considered).toHaveLength(3);
       }
     });
 
@@ -110,10 +110,10 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       const result = DecisionSchema.safeParse(decision);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.component).toBe('database-layer');
-        expect(result.data.data.status).toBe('proposed');
-        expect(result.data.data.alternatives_considered).toBeUndefined();
-        expect(result.data.data.consequences).toBeUndefined();
+        expect(result['data.data'].component).toBe('database-layer');
+        expect(result['data.data'].status).toBe('proposed');
+        expect(result['data.data'].alternatives_considered).toBeUndefined();
+        expect(result['data.data'].consequences).toBeUndefined();
       }
     });
 
@@ -440,9 +440,9 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       expect(mockQdrant.upsert).toHaveBeenCalledTimes(3);
 
       const storedCalls = mockQdrant.upsert.mock.calls;
-      expect(storedCalls[0][0][0].payload.data.status).toBe('proposed');
-      expect(storedCalls[1][0][0].payload.data.status).toBe('accepted');
-      expect(storedCalls[2][0][0].payload.data.status).toBe('rejected');
+      expect(storedCalls[0][0][0].payload['data.status']).toBe('proposed');
+      expect(storedCalls[1][0][0].payload['data.status']).toBe('accepted');
+      expect(storedCalls[2][0][0].payload['data.status']).toBe('rejected');
     });
 
     it('should handle invalid decisions in batch', async () => {
@@ -610,7 +610,7 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       const result = DecisionSchema.safeParse(decisionWithValidSupersedes);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.supersedes).toBe('550e8400-e29b-41d4-a716-446655440000');
+        expect(result['data.data'].supersedes).toBe('550e8400-e29b-41d4-a716-446655440000');
       }
     });
   });
@@ -642,11 +642,11 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
 
       const result = validateKnowledgeItem(decision);
       expect(result.kind).toBe('decision');
-      expect(result.data.component).toBe('microservices-architecture');
-      expect(result.data.status).toBe('accepted');
+      expect(result['data.component']).toBe('microservices-architecture');
+      expect(result['data.status']).toBe('accepted');
       expect(result.tags.architecture).toBe(true);
       expect(result.source.actor).toBe('principal-architect');
-      expect(result.ttl_policy).toBe('permanent');
+      expect(result['ttl_policy']).toBe('permanent');
     });
 
     it('should handle decisions with comprehensive alternatives', () => {
@@ -671,8 +671,8 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       const result = DecisionSchema.safeParse(decision);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.alternatives_considered).toHaveLength(4);
-        expect(result.data.data.alternatives_considered[0]).toContain('Stripe');
+        expect(result['data.data'].alternatives_considered).toHaveLength(4);
+        expect(result['data.data'].alternatives_considered[0]).toContain('Stripe');
       }
     });
   });
@@ -740,7 +740,7 @@ describe('Decision (ADR) Knowledge Type - Comprehensive Testing', () => {
       const result = DecisionSchema.safeParse(decision);
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.data.alternatives_considered).toEqual([]);
+        expect(result['data.data'].alternatives_considered).toEqual([]);
       }
     });
   });

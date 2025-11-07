@@ -41,7 +41,10 @@ describe('MCP Tool Contract Definitions', () => {
           const validationResult = ToolContractSchema.safeParse(contract);
           expect(validationResult.success).toBe(true);
           if (!validationResult.success) {
-            console.error(`Contract validation failed for ${toolName}@${version}:`, validationResult.error);
+            console.error(
+              `Contract validation failed for ${toolName}@${version}:`,
+              validationResult.error
+            );
           }
         }
       }
@@ -76,11 +79,19 @@ describe('MCP Tool Contract Definitions', () => {
   describe('Required Scopes Validation', () => {
     it('should have valid scope definitions', () => {
       const validScopes = [
-        'memory:read', 'memory:write', 'memory:delete',
-        'knowledge:read', 'knowledge:write', 'knowledge:delete',
-        'system:read', 'system:manage',
-        'audit:read', 'audit:write',
-        'search:basic', 'search:advanced', 'search:deep',
+        'memory:read',
+        'memory:write',
+        'memory:delete',
+        'knowledge:read',
+        'knowledge:write',
+        'knowledge:delete',
+        'system:read',
+        'system:manage',
+        'audit:read',
+        'audit:write',
+        'search:basic',
+        'search:advanced',
+        'search:deep',
       ];
 
       for (const [toolName, toolInfo] of Object.entries(BUILTIN_TOOL_CONTRACTS)) {
@@ -112,7 +123,8 @@ describe('MCP Tool Contract Definitions', () => {
       for (const [toolName, toolInfo] of Object.entries(BUILTIN_TOOL_CONTRACTS)) {
         for (const [version, contract] of Object.entries(toolInfo.contracts)) {
           if (contract.rate_limits) {
-            const { requests_per_minute, tokens_per_minute, burst_allowance } = contract.rate_limits;
+            const { requests_per_minute, tokens_per_minute, burst_allowance } =
+              contract.rate_limits;
 
             expect(requests_per_minute).toBeGreaterThan(0);
             expect(requests_per_minute).toBeLessThanOrEqual(10000);
@@ -132,8 +144,9 @@ describe('MCP Tool Contract Definitions', () => {
       const memoryFindContract = BUILTIN_TOOL_CONTRACTS.memory_find.contracts['1.3.0'];
       const memoryStoreContract = BUILTIN_TOOL_CONTRACTS.memory_store.contracts['1.2.0'];
 
-      expect(memoryFindContract.rate_limits?.requests_per_minute)
-        .toBeGreaterThanOrEqual(memoryStoreContract.rate_limits?.requests_per_minute || 0);
+      expect(memoryFindContract.rate_limits?.requests_per_minute).toBeGreaterThanOrEqual(
+        memoryStoreContract.rate_limits?.requests_per_minute || 0
+      );
     });
   });
 
@@ -142,11 +155,8 @@ describe('MCP Tool Contract Definitions', () => {
       for (const [toolName, toolInfo] of Object.entries(BUILTIN_TOOL_CONTRACTS)) {
         for (const [version, contract] of Object.entries(toolInfo.contracts)) {
           if (contract.input_validation) {
-            const {
-              max_content_length,
-              max_items_per_request,
-              allowed_content_types,
-            } = contract.input_validation;
+            const { max_content_length, max_items_per_request, allowed_content_types } =
+              contract.input_validation;
 
             expect(max_content_length).toBeGreaterThan(0);
             expect(max_content_length).toBeLessThanOrEqual(100 * 1024 * 1024); // 100MB max
@@ -166,12 +176,14 @@ describe('MCP Tool Contract Definitions', () => {
       const memoryStoreContract = BUILTIN_TOOL_CONTRACTS.memory_store.contracts['1.2.0'];
       const memoryFindContract = BUILTIN_TOOL_CONTRACTS.memory_find.contracts['1.3.0'];
 
-      expect(memoryStoreContract.input_validation?.max_content_length)
-        .toBeGreaterThanOrEqual(memoryFindContract.input_validation?.max_content_length || 0);
+      expect(memoryStoreContract.input_validation?.max_content_length).toBeGreaterThanOrEqual(
+        memoryFindContract.input_validation?.max_content_length || 0
+      );
 
       // Store operations should allow more items than search
-      expect(memoryStoreContract.input_validation?.max_items_per_request)
-        .toBeGreaterThanOrEqual(memoryFindContract.input_validation?.max_items_per_request || 0);
+      expect(memoryStoreContract.input_validation?.max_items_per_request).toBeGreaterThanOrEqual(
+        memoryFindContract.input_validation?.max_items_per_request || 0
+      );
     });
   });
 
@@ -560,7 +572,9 @@ describe('Cross-Tool Contract Compatibility', () => {
       for (const [version, contract] of Object.entries(toolInfo.contracts)) {
         // Check that the tool accepts common scope fields
         const inputWithScope = {
-          ...(toolName === 'memory_store' ? { items: [{ kind: 'entity', content: 'test' }] } : { query: 'test' }),
+          ...(toolName === 'memory_store'
+            ? { items: [{ kind: 'entity', content: 'test' }] }
+            : { query: 'test' }),
           scope: {
             project: 'test',
             branch: 'main',

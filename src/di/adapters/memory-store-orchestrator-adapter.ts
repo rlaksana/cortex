@@ -18,7 +18,7 @@ import type {
   KnowledgeItem,
   MemoryStoreResponse,
 } from '../service-interfaces.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Adapter that wraps MemoryStoreOrchestrator to implement IMemoryStoreOrchestrator interface

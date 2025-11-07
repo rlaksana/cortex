@@ -10,7 +10,7 @@ import type {
   BenchmarkResult,
   PerformanceMetrics,
   BenchmarkComparison,
-  PerformanceChange
+  PerformanceChange,
 } from '../framework/types.js';
 
 export class CSVExporter {
@@ -69,7 +69,11 @@ export class CSVExporter {
   /**
    * Export SLA compliance report to CSV
    */
-  exportSLACompliance(results: BenchmarkResult[], slaTargets: Record<string, number>, filename?: string): string {
+  exportSLACompliance(
+    results: BenchmarkResult[],
+    slaTargets: Record<string, number>,
+    filename?: string
+  ): string {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const csvFilename = filename || `sla-compliance-${timestamp}.csv`;
     const filepath = join(this.outputDir, csvFilename);
@@ -119,7 +123,7 @@ export class CSVExporter {
       'Average Memory (MB)',
       'Concurrency',
       'Batch Size',
-      'Operation Count'
+      'Operation Count',
     ];
 
     const rows = [headers.join(',')];
@@ -128,27 +132,29 @@ export class CSVExporter {
       const memoryPeakMB = (result.metrics.memoryUsage.peak / 1024 / 1024).toFixed(2);
       const memoryAvgMB = (result.metrics.memoryUsage.average / 1024 / 1024).toFixed(2);
 
-      rows.push([
-        `"${result.scenario}"`,
-        `"${result.description}"`,
-        `"${result.timestamp}"`,
-        result.summary.totalOperations,
-        result.summary.totalOperations - result.summary.errors,
-        result.summary.errors,
-        result.summary.averageDuration.toFixed(2),
-        result.metrics.throughput.toFixed(2),
-        result.metrics.latencies.p50.toFixed(2),
-        result.metrics.latencies.p95.toFixed(2),
-        result.metrics.latencies.p99.toFixed(2),
-        result.metrics.latencies.min.toFixed(2),
-        result.metrics.latencies.max.toFixed(2),
-        result.metrics.errorRate.toFixed(2),
-        memoryPeakMB,
-        memoryAvgMB,
-        result.config.concurrency || 1,
-        result.config.dataConfig?.itemCount || 1,
-        result.config.operations || 1
-      ].join(','));
+      rows.push(
+        [
+          `"${result.scenario}"`,
+          `"${result.description}"`,
+          `"${result.timestamp}"`,
+          result.summary.totalOperations,
+          result.summary.totalOperations - result.summary.errors,
+          result.summary.errors,
+          result.summary.averageDuration.toFixed(2),
+          result.metrics.throughput.toFixed(2),
+          result.metrics.latencies.p50.toFixed(2),
+          result.metrics.latencies.p95.toFixed(2),
+          result.metrics.latencies.p99.toFixed(2),
+          result.metrics.latencies.min.toFixed(2),
+          result.metrics.latencies.max.toFixed(2),
+          result.metrics.errorRate.toFixed(2),
+          memoryPeakMB,
+          memoryAvgMB,
+          result.config.concurrency || 1,
+          result.config.dataConfig?.itemCount || 1,
+          result.config.operations || 1,
+        ].join(',')
+      );
     }
 
     return rows.join('\n');
@@ -166,7 +172,7 @@ export class CSVExporter {
       'Unit',
       'Target',
       'Compliance',
-      'Timestamp'
+      'Timestamp',
     ];
 
     const rows = [headers.join(',')];
@@ -176,14 +182,14 @@ export class CSVExporter {
       latency: {
         p50: { target: 200, unit: 'ms' },
         p95: { target: 800, unit: 'ms' },
-        p99: { target: 2000, unit: 'ms' }
+        p99: { target: 2000, unit: 'ms' },
       },
       throughput: {
-        operations: { target: 50, unit: 'ops/s' }
+        operations: { target: 50, unit: 'ops/s' },
       },
       errorRate: {
-        percentage: { target: 1, unit: '%' }
-      }
+        percentage: { target: 1, unit: '%' },
+      },
     };
 
     for (const result of results) {
@@ -193,7 +199,7 @@ export class CSVExporter {
         { name: 'p95', value: result.metrics.latencies.p95 },
         { name: 'p99', value: result.metrics.latencies.p99 },
         { name: 'min', value: result.metrics.latencies.min },
-        { name: 'max', value: result.metrics.latencies.max }
+        { name: 'max', value: result.metrics.latencies.max },
       ];
 
       for (const metric of latencyMetrics) {
@@ -208,7 +214,7 @@ export class CSVExporter {
           'ms',
           target?.toString() || 'N/A',
           compliance,
-          `"${result.timestamp}"`
+          `"${result.timestamp}"`,
         ]);
       }
 
@@ -221,7 +227,7 @@ export class CSVExporter {
         'ops/s',
         slaTargets.throughput.operations.target.toString(),
         result.metrics.throughput >= slaTargets.throughput.operations.target ? '✓' : '✗',
-        `"${result.timestamp}"`
+        `"${result.timestamp}"`,
       ]);
 
       // Error rate metrics
@@ -233,7 +239,7 @@ export class CSVExporter {
         '%',
         slaTargets.errorRate.percentage.target.toString(),
         result.metrics.errorRate <= slaTargets.errorRate.percentage.target ? '✓' : '✗',
-        `"${result.timestamp}"`
+        `"${result.timestamp}"`,
       ]);
 
       // Memory metrics
@@ -245,7 +251,7 @@ export class CSVExporter {
         'MB',
         'N/A',
         'N/A',
-        `"${result.timestamp}"`
+        `"${result.timestamp}"`,
       ]);
 
       rows.push([
@@ -256,7 +262,7 @@ export class CSVExporter {
         'MB',
         'N/A',
         'N/A',
-        `"${result.timestamp}"`
+        `"${result.timestamp}"`,
       ]);
     }
 
@@ -282,7 +288,7 @@ export class CSVExporter {
       'External Start (MB)',
       'External End (MB)',
       'External Delta (MB)',
-      'Timestamp'
+      'Timestamp',
     ];
 
     const rows = [headers.join(',')];
@@ -316,7 +322,7 @@ export class CSVExporter {
           externalStartMB,
           externalEndMB,
           externalDeltaMB,
-          `"${result.timestamp}"`
+          `"${result.timestamp}"`,
         ]);
       }
     }
@@ -338,7 +344,7 @@ export class CSVExporter {
       'Deviation',
       'Deviation (%)',
       'Impact Level',
-      'Timestamp'
+      'Timestamp',
     ];
 
     const rows = [headers.join(',')];
@@ -348,10 +354,30 @@ export class CSVExporter {
 
       // Check various SLA metrics
       const slaChecks = [
-        { metric: 'p95_latency', target: slaTargets.p95_latency || 800, actual: result.metrics.latencies.p95, unit: 'ms' },
-        { metric: 'p99_latency', target: slaTargets.p99_latency || 2000, actual: result.metrics.latencies.p99, unit: 'ms' },
-        { metric: 'throughput', target: slaTargets.throughput || 50, actual: result.metrics.throughput, unit: 'ops/s' },
-        { metric: 'error_rate', target: slaTargets.error_rate || 1, actual: result.metrics.errorRate, unit: '%' }
+        {
+          metric: 'p95_latency',
+          target: slaTargets.p95_latency || 800,
+          actual: result.metrics.latencies.p95,
+          unit: 'ms',
+        },
+        {
+          metric: 'p99_latency',
+          target: slaTargets.p99_latency || 2000,
+          actual: result.metrics.latencies.p99,
+          unit: 'ms',
+        },
+        {
+          metric: 'throughput',
+          target: slaTargets.throughput || 50,
+          actual: result.metrics.throughput,
+          unit: 'ops/s',
+        },
+        {
+          metric: 'error_rate',
+          target: slaTargets.error_rate || 1,
+          actual: result.metrics.errorRate,
+          unit: '%',
+        },
       ];
 
       for (const check of slaChecks) {
@@ -370,7 +396,7 @@ export class CSVExporter {
           deviation.toFixed(2),
           deviationPercentage.toFixed(1),
           impactLevel,
-          `"${result.timestamp}"`
+          `"${result.timestamp}"`,
         ]);
       }
     }
@@ -391,21 +417,21 @@ export class CSVExporter {
       'Change (%)',
       'Significance',
       'Trend',
-      'Impact Assessment'
+      'Impact Assessment',
     ];
 
     const rows = [headers.join(',')];
 
     rows.push([
-      `"${comparison.metadata.baseline}"`,
+      `"${comparison.metadata['baseline']}"`,
       'comparison_type',
-      `"${comparison.metadata.comparison}"`,
+      `"${comparison.metadata['comparison']}"`,
       '',
       '',
       '',
       '',
       '',
-      `"${comparison.summary.overallChange}"`
+      `"${comparison.summary.overallChange}"`,
     ]);
 
     for (const change of comparison.changes) {
@@ -418,7 +444,7 @@ export class CSVExporter {
         change.changePercentage.toFixed(1),
         change.significance,
         change.trend,
-        this.assessImpact(change.changePercentage, change.metric)
+        this.assessImpact(change.changePercentage, change.metric),
       ]);
     }
 
@@ -436,7 +462,7 @@ export class CSVExporter {
       p95_latency: { low: 10, medium: 25, high: 50 },
       p99_latency: { low: 15, medium: 35, high: 75 },
       throughput: { low: -5, medium: -15, high: -30 }, // Negative because lower is worse
-      error_rate: { low: 0.5, medium: 1, high: 2 }
+      error_rate: { low: 0.5, medium: 1, high: 2 },
     };
 
     const threshold = thresholds[metric] || thresholds.p95_latency;
@@ -453,7 +479,9 @@ export class CSVExporter {
   private assessImpact(changePercentage: number, metric: string): string {
     // For latency and error rate, positive change is bad
     // For throughput, negative change is bad
-    const isNegativeImpact = ['p50_latency', 'p95_latency', 'p99_latency', 'error_rate'].includes(metric)
+    const isNegativeImpact = ['p50_latency', 'p95_latency', 'p99_latency', 'error_rate'].includes(
+      metric
+    )
       ? changePercentage > 0
       : changePercentage < 0;
 
@@ -469,7 +497,10 @@ export class CSVExporter {
   /**
    * Export multiple CSV files for a comprehensive report
    */
-  exportComprehensiveReport(results: BenchmarkResult[], slaTargets?: Record<string, number>): {
+  exportComprehensiveReport(
+    results: BenchmarkResult[],
+    slaTargets?: Record<string, number>
+  ): {
     results: string;
     metrics: string;
     iterations: string;
@@ -480,7 +511,7 @@ export class CSVExporter {
     const exportedFiles = {
       results: this.exportResults(results, `results-${timestamp}.csv`),
       metrics: this.exportMetrics(results, `metrics-${timestamp}.csv`),
-      iterations: this.exportIterations(results, `iterations-${timestamp}.csv`)
+      iterations: this.exportIterations(results, `iterations-${timestamp}.csv`),
     };
 
     if (slaTargets) {

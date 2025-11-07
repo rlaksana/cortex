@@ -22,7 +22,7 @@
 
 import { EventEmitter } from 'node:events';
 import { performance } from 'node:perf_hooks';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import {
   DependencyType,
   DependencyConfig,

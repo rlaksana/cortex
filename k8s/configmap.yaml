@@ -1,0 +1,264 @@
+# ============================================================================
+# CORTEX MEMORY MCP - KUBERNETES CONFIGMAP CONFIGURATION
+# ============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cortex-mcp-config
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: cortex-mcp
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  NODE_ENV: 'production'
+  LOG_LEVEL: 'info'
+  QDRANT_HOST: 'qdrant-service'
+  QDRANT_PORT: '6333'
+  MCP_SERVER_NAME: 'cortex-mcp-k8s'
+  ENABLE_METRICS: 'true'
+  METRICS_PORT: '9090'
+  HEALTH_CHECK_PORT: '3000'
+  RATE_LIMIT_WINDOW_MS: '60000'
+  RATE_LIMIT_MAX_REQUESTS: '1000'
+  MEMORY_MAX_ITEMS: '100000'
+  BACKUP_SCHEDULE: '0 2 * * *'
+  BACKUP_RETENTION_DAYS: '30'
+  EMBEDDING_MODEL: 'text-embedding-3-large'
+  API_VERSION: 'v1'
+  CORS_ENABLED: 'true'
+  CORS_ORIGINS: '*'
+  CORS_METHODS: 'GET,POST,PUT,DELETE,OPTIONS'
+  CORS_HEADERS: 'Content-Type,Authorization'
+  TRUST_PROXY: 'true'
+  SESSION_SECRET: 'change-me-in-production'
+  COOKIE_SECURE: 'true'
+  COOKIE_SAMESITE: 'strict'
+
+---
+# Qdrant Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: qdrant-config
+  namespace: cortex-mcp
+  labels:
+    app.kubernetes.io/name: qdrant
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  QDRANT__SERVICE__HTTP_PORT: '6333'
+  QDRANT__SERVICE__GRPC_PORT: '6334'
+  QDRANT__LOG_LEVEL: 'INFO'
+  QDRANT__SERVICE__MAX_REQUEST_SIZE_MB: '32'
+  QDRANT__STORAGE__PERFORMANCE__SEARCH_RATE_LIMIT_DISABLED: 'false'
+  QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_THREADS: '4'
+  QDRANT__STORAGE__PERFORMANCE__MAX_SEARCHES_PER_REQUEST: '100'
+
+---
+# Prometheus Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'cortex-mcp-prod'
+        environment: 'production'
+        region: 'us-west-2'
+
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager:9093']
+
+    scrape_configs:
+      - job_name: 'cortex-mcp'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - cortex-mcp
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+        metrics_path: /metrics
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        honor_labels: true
+
+      - job_name: 'qdrant'
+        static_configs:
+          - targets: ['qdrant-service:6333']
+        metrics_path: /metrics
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+
+  cortex-rules.yml: |
+    groups:
+      - name: cortex-mcp.rules
+        rules:
+          - alert: CortexMCPDown
+            expr: up{job="cortex-mcp"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              service: cortex-mcp
+            annotations:
+              summary: "Cortex MCP instance is down"
+              description: "Cortex MCP instance {{ $labels.instance }} has been down for more than 2 minutes."
+
+          - alert: CortexMCPHighMemoryUsage
+            expr: (nodejs_heap_size_used_bytes / nodejs_heap_size_total_bytes) * 100 > 80
+            for: 5m
+            labels:
+              severity: warning
+              service: cortex-mcp
+            annotations:
+              summary: "Cortex MCP high memory usage"
+              description: "Cortex MCP instance {{ $labels.instance }} memory usage is above 80% for more than 5 minutes."
+
+          - alert: CortexMCPHighLatency
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+            for: 5m
+            labels:
+              severity: warning
+              service: cortex-mcp
+            annotations:
+              summary: "Cortex MCP high latency"
+              description: "Cortex MCP 95th percentile latency is above 1 second for more than 5 minutes."
+
+          - alert: QdrantDown
+            expr: up{job="qdrant"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              service: qdrant
+            annotations:
+              summary: "Qdrant is down"
+              description: "Qdrant instance {{ $labels.instance }} has been down for more than 2 minutes."
+
+          - alert: QdrantHighDiskUsage
+            expr: (qdrant_disk_space_used_bytes / qdrant_disk_space_available_bytes) * 100 > 85
+            for: 5m
+            labels:
+              severity: warning
+              service: qdrant
+            annotations:
+              summary: "Qdrant high disk usage"
+              description: "Qdrant disk usage is above 85% for more than 5 minutes."
+
+---
+# Grafana Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: cortex-monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: cortex-memory
+data:
+  grafana.ini: |
+    [server]
+    domain = cortex-grafana.example.com
+    root_url = https://cortex-grafana.example.com/
+    serve_from_sub_path = true
+
+    [security]
+    admin_user = admin
+    admin_password = change-me-in-production
+    secret_key = change-me-in-production-secret-key
+    cookie_secure = true
+    cookie_samesite = strict
+    allow_embedding = false
+
+    [auth]
+    disable_login_form = false
+    disable_signout_menu = false
+
+    [auth.anonymous]
+    enabled = false
+
+    [database]
+    type = sqlite3
+    path = /var/lib/grafana/grafana.db
+
+    [log]
+    mode = console
+    level = info
+
+  datasources.yml: |
+    apiVersion: 1
+
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: true
+        jsonData:
+          httpMethod: POST
+          manageAlerts: true
+          prometheusType: Prometheus
+          prometheusVersion: 2.47.0
+          cacheLevel: 'High'
+          disableRecordingRules: false
+
+  dashboards.yml: |
+    apiVersion: 1
+
+    providers:
+      - name: 'cortex-mcp-dashboards'
+        orgId: 1
+        folder: 'Cortex MCP'
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards

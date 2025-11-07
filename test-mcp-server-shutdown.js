@@ -40,7 +40,7 @@ class ShutdownValidator {
       test: testName,
       passed,
       details,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     this.testResults.push(result);
 
@@ -84,7 +84,11 @@ class ShutdownValidator {
           if (gracefulShutdown && code === 0) {
             resolve('SIGINT handled gracefully');
           } else {
-            reject(new Error(`SIGINT not handled gracefully. Exit code: ${code}, Graceful: ${gracefulShutdown}`));
+            reject(
+              new Error(
+                `SIGINT not handled gracefully. Exit code: ${code}, Graceful: ${gracefulShutdown}`
+              )
+            );
           }
         });
 
@@ -143,7 +147,11 @@ class ShutdownValidator {
           if (gracefulShutdown && signalCount >= 1 && code === 0) {
             resolve('Multiple signals handled correctly');
           } else {
-            reject(new Error(`Multiple signals not handled correctly. Signals: ${signalCount}, Graceful: ${gracefulShutdown}`));
+            reject(
+              new Error(
+                `Multiple signals not handled correctly. Signals: ${signalCount}, Graceful: ${gracefulShutdown}`
+              )
+            );
           }
         });
 
@@ -286,7 +294,8 @@ class ShutdownValidator {
           const memoryDiff = finalMemory.heapUsed - initialMemory.heapUsed;
           const memoryDiffMB = Math.round(memoryDiff / 1024 / 1024);
 
-          if (Math.abs(memoryDiffMB) < 100) { // Allow 100MB variance
+          if (Math.abs(memoryDiffMB) < 100) {
+            // Allow 100MB variance
             resolve(`Memory usage stable (${memoryDiffMB}MB difference)`);
           } else {
             reject(new Error(`Memory leak detected: ${memoryDiffMB}MB difference`));
@@ -307,7 +316,7 @@ class ShutdownValidator {
       const fileHandles = [];
 
       try {
-        testFiles.forEach(file => {
+        testFiles.forEach((file) => {
           fs.writeFileSync(file, 'test content');
           fileHandles.push(fs.openSync(file, 'r'));
         });
@@ -317,7 +326,7 @@ class ShutdownValidator {
         return new Promise((resolve, reject) => {
           server.on('exit', () => {
             // Close test file handles
-            fileHandles.forEach(handle => {
+            fileHandles.forEach((handle) => {
               try {
                 fs.closeSync(handle);
               } catch (error) {
@@ -326,7 +335,7 @@ class ShutdownValidator {
             });
 
             // Clean up test files
-            testFiles.forEach(file => {
+            testFiles.forEach((file) => {
               try {
                 fs.unlinkSync(file);
               } catch (error) {
@@ -337,7 +346,8 @@ class ShutdownValidator {
             const finalHandles = process._getActiveHandles().length;
             const handleDiff = finalHandles - initialHandles;
 
-            if (handleDiff <= 2) { // Allow some variance
+            if (handleDiff <= 2) {
+              // Allow some variance
               resolve(`File handles cleaned up (${handleDiff} handles remaining)`);
             } else {
               reject(new Error(`File handle leak detected: ${handleDiff} handles remaining`));
@@ -436,8 +446,8 @@ class ShutdownValidator {
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        LOG_LEVEL: this.verbose ? 'debug' : 'info'
-      }
+        LOG_LEVEL: this.verbose ? 'debug' : 'info',
+      },
     });
 
     // Wait for server to start
@@ -451,7 +461,7 @@ class ShutdownValidator {
       // Try to connect to a potential MCP server endpoint
       const response = await fetch('http://localhost:3000/health', {
         method: 'GET',
-        timeout: 1000
+        timeout: 1000,
       });
       return response;
     } catch (error) {
@@ -486,7 +496,6 @@ class ShutdownValidator {
         this.log('Running additional integration tests...', 'info');
         await this.runIntegrationTests();
       }
-
     } catch (error) {
       this.log(`Test suite error: ${error.message}`, 'error');
     }
@@ -510,7 +519,7 @@ class ShutdownValidator {
   generateReport() {
     const duration = Date.now() - this.startTime;
     const totalTests = this.testResults.length;
-    const passedTests = this.testResults.filter(r => r.passed).length;
+    const passedTests = this.testResults.filter((r) => r.passed).length;
     const failedTests = totalTests - passedTests;
 
     console.log('\n' + '='.repeat(80));
@@ -526,14 +535,14 @@ class ShutdownValidator {
     if (failedTests > 0) {
       console.log('\nFAILED TESTS:');
       this.testResults
-        .filter(r => !r.passed)
-        .forEach(r => {
+        .filter((r) => !r.passed)
+        .forEach((r) => {
           console.log(`  ❌ ${r.test}: ${r.details}`);
         });
     }
 
     console.log('\nALL TESTS:');
-    this.testResults.forEach(r => {
+    this.testResults.forEach((r) => {
       const status = r.passed ? '✅' : '❌';
       console.log(`  ${status} ${r.test}`);
       if (this.verbose || !r.passed) {
@@ -549,9 +558,9 @@ class ShutdownValidator {
         total: totalTests,
         passed: passedTests,
         failed: failedTests,
-        successRate: Math.round((passedTests / totalTests) * 100)
+        successRate: Math.round((passedTests / totalTests) * 100),
       },
-      tests: this.testResults
+      tests: this.testResults,
     };
 
     const reportPath = './shutdown-test-report.json';
@@ -574,12 +583,12 @@ class ShutdownValidator {
 const args = process.argv.slice(2);
 const options = {
   verbose: args.includes('--verbose'),
-  integration: args.includes('--integration')
+  integration: args.includes('--integration'),
 };
 
 // Run the validator
 const validator = new ShutdownValidator(options);
-validator.runAllTests().catch(error => {
+validator.runAllTests().catch((error) => {
   console.error('Validator failed:', error);
   process.exit(1);
 });

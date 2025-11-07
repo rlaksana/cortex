@@ -5,7 +5,7 @@
  * and enables better debugging and monitoring capabilities.
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from 'crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 /**

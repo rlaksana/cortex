@@ -16,7 +16,7 @@
  * @module services/metrics/performance-benchmark
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
 import { performanceTrendingService } from './performance-trending.js';
 import { sliSloMonitorService } from './sli-slo-monitor.js';

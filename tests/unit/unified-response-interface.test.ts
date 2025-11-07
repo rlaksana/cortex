@@ -10,7 +10,7 @@ import {
   UnifiedToolResponse,
   migrateLegacyResponse,
   SearchStrategy,
-  UnifiedResponseMeta
+  UnifiedResponseMeta,
 } from '../../src/types/unified-response.interface.js';
 
 describe('Unified Response Interface', () => {
@@ -20,7 +20,7 @@ describe('Unified Response Interface', () => {
         strategy: 'auto',
         vector_used: true,
         degraded: false,
-        source: 'test_source'
+        source: 'test_source',
       });
 
       expect(meta.strategy).toBe('auto');
@@ -40,7 +40,7 @@ describe('Unified Response Interface', () => {
         source: 'another_source',
         execution_time_ms: 250,
         confidence_score: 0.87,
-        ttl: '24h'
+        ttl: '24h',
       });
 
       expect(meta.strategy).toBe('deep');
@@ -57,7 +57,7 @@ describe('Unified Response Interface', () => {
         operation_id: 'op-123',
         user_id: 'user-456',
         request_size: 1024,
-        debug_mode: true
+        debug_mode: true,
       };
 
       const meta = createResponseMeta({
@@ -65,7 +65,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional
+        additional,
       });
 
       // Should have all additional properties
@@ -81,7 +81,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional: {}
+        additional: {},
       });
 
       expect(meta.strategy).toBe('semantic');
@@ -90,16 +90,24 @@ describe('Unified Response Interface', () => {
 
     it('should validate strategy types', () => {
       const validStrategies: SearchStrategy[] = [
-        'fast', 'auto', 'deep', 'semantic', 'keyword', 'hybrid',
-        'fallback', 'autonomous_deduplication', 'system_operation', 'error'
+        'fast',
+        'auto',
+        'deep',
+        'semantic',
+        'keyword',
+        'hybrid',
+        'fallback',
+        'autonomous_deduplication',
+        'system_operation',
+        'error',
       ];
 
-      validStrategies.forEach(strategy => {
+      validStrategies.forEach((strategy) => {
         const meta = createResponseMeta({
           strategy,
           vector_used: true,
           degraded: false,
-          source: 'test'
+          source: 'test',
         });
 
         expect(meta.strategy).toBe(strategy);
@@ -111,7 +119,7 @@ describe('Unified Response Interface', () => {
         { score: 0.0, expected: 0.0 },
         { score: 1.0, expected: 1.0 },
         { score: 0.5, expected: 0.5 },
-        { score: 0.999, expected: 0.999 }
+        { score: 0.999, expected: 0.999 },
       ];
 
       testCases.forEach(({ score, expected }) => {
@@ -120,7 +128,7 @@ describe('Unified Response Interface', () => {
           vector_used: true,
           degraded: false,
           source: 'test',
-          confidence_score: score
+          confidence_score: score,
         });
 
         expect(meta.confidence_score).toBe(expected);
@@ -141,9 +149,9 @@ describe('Unified Response Interface', () => {
           execution_time_ms: 100,
           confidence_average: 0.95,
           search_id: 'search-123',
-          extra_field: 'should_be_preserved'
+          extra_field: 'should_be_preserved',
         },
-        other_field: 'should_be_preserved'
+        other_field: 'should_be_preserved',
       };
 
       const migrated = migrateLegacyResponse(legacyResponse);
@@ -173,8 +181,8 @@ describe('Unified Response Interface', () => {
         observability: {
           source: 'test',
           vector_used: false,
-          degraded: true
-        }
+          degraded: true,
+        },
       };
 
       const migrated = migrateLegacyResponse(legacyResponse, 'fast');
@@ -186,7 +194,7 @@ describe('Unified Response Interface', () => {
       const legacyResponse = {
         results: [],
         total: 0,
-        some_field: 'value'
+        some_field: 'value',
       };
 
       const migrated = migrateLegacyResponse(legacyResponse, 'auto');
@@ -207,8 +215,8 @@ describe('Unified Response Interface', () => {
           vector_used: false,
           degraded: false,
           confidence_score: 0.75,
-          confidence_average: 0.85
-        }
+          confidence_average: 0.85,
+        },
       };
 
       const migrated = migrateLegacyResponse(legacyResponse);
@@ -225,8 +233,8 @@ describe('Unified Response Interface', () => {
           strategy: 'hybrid',
           vector_used: true,
           degraded: false,
-          confidence_average: 0.92
-        }
+          confidence_average: 0.92,
+        },
       };
 
       const migrated = migrateLegacyResponse(legacyResponse);
@@ -241,7 +249,7 @@ describe('Unified Response Interface', () => {
         strategy: 'auto',
         vector_used: true,
         degraded: false,
-        source: 'test'
+        source: 'test',
       };
 
       // Should compile without errors
@@ -258,8 +266,8 @@ describe('Unified Response Interface', () => {
           strategy: 'fast',
           vector_used: false,
           degraded: true,
-          source: 'error_source'
-        }
+          source: 'error_source',
+        },
       };
 
       // Should compile without errors
@@ -274,14 +282,14 @@ describe('Unified Response Interface', () => {
           strategy: 'auto',
           vector_used: true,
           degraded: false,
-          source: 'test'
+          source: 'test',
         },
         rate_limit: {
           allowed: true,
           remaining: 100,
           reset_time: '2025-01-01T00:00:00Z',
-          identifier: 'test-user'
-        }
+          identifier: 'test-user',
+        },
       };
 
       expect(response.rate_limit).toBeDefined();
@@ -296,7 +304,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional: undefined
+        additional: undefined,
       });
 
       expect(meta).not.toHaveProperty('additional');
@@ -310,7 +318,7 @@ describe('Unified Response Interface', () => {
         degraded: false,
         source: 'test',
         execution_time_ms: 0,
-        confidence_score: 0
+        confidence_score: 0,
       });
 
       expect(meta.execution_time_ms).toBe(0);
@@ -323,7 +331,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: '',
-        ttl: ''
+        ttl: '',
       });
 
       expect(meta.strategy).toBe('');
@@ -336,9 +344,9 @@ describe('Unified Response Interface', () => {
         nested: {
           level1: {
             level2: {
-              value: 'deep_value'
-            }
-          }
+              value: 'deep_value',
+            },
+          },
         },
         array: [1, 2, 3],
         mixed_types: {
@@ -346,8 +354,8 @@ describe('Unified Response Interface', () => {
           num: 42,
           bool: true,
           null: null,
-          undefined: undefined
-        }
+          undefined: undefined,
+        },
       };
 
       const meta = createResponseMeta({
@@ -355,7 +363,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional: complexAdditional
+        additional: complexAdditional,
       });
 
       expect(meta.nested.level1.level2.value).toBe('deep_value');
@@ -383,7 +391,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional: largeAdditional
+        additional: largeAdditional,
       });
       const endTime = Date.now();
 
@@ -399,8 +407,8 @@ describe('Unified Response Interface', () => {
       const originalAdditional = {
         test_prop: 'test_value',
         nested: {
-          inner: 'inner_value'
-        }
+          inner: 'inner_value',
+        },
       };
 
       const additionalCopy = JSON.parse(JSON.stringify(originalAdditional));
@@ -410,7 +418,7 @@ describe('Unified Response Interface', () => {
         vector_used: true,
         degraded: false,
         source: 'test',
-        additional: originalAdditional
+        additional: originalAdditional,
       });
 
       // Original should be unchanged

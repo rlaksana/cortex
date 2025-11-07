@@ -86,21 +86,21 @@ describe('ChunkingService', () => {
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Should have parent item
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
       expect(parentItem).toBeDefined();
-      expect(parentItem?.data.total_chunks).toBeGreaterThan(1);
+      expect(parentItem?.data['total_chunks']).toBeGreaterThan(1);
       expect(parentItem?.data.original_length).toBe(12000);
 
       // Should have child chunks
-      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
       expect(childItems.length).toBeGreaterThan(1);
 
       // Check chunk metadata
       childItems.forEach((chunk, index) => {
-        expect(chunk.data.parent_id).toBe(parentItem?.id);
-        expect(chunk.data.chunk_index).toBe(index);
-        expect(chunk.data.total_chunks).toBe(childItems.length);
-        expect(chunk.data.original_length).toBe(12000);
+        expect(chunk['data.parent_id']).toBe(parentItem?.id);
+        expect(chunk['data.chunk_index']).toBe(index);
+        expect(chunk['data.total_chunks']).toBe(childItems.length);
+        expect(chunk['data.original_length']).toBe(12000);
       });
     });
 
@@ -117,8 +117,8 @@ describe('ChunkingService', () => {
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       expect(chunkedItems).toHaveLength(1);
-      expect(chunkedItems[0].data.is_chunk).toBe(false);
-      expect(chunkedItems[0].data.total_chunks).toBe(1);
+      expect(chunkedItems[0].data['is_chunk']).toBe(false);
+      expect(chunkedItems[0].data['total_chunks']).toBe(1);
     });
 
     it('should preserve all original fields', async () => {
@@ -139,7 +139,7 @@ describe('ChunkingService', () => {
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item preserves all fields
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
       expect(parentItem?.id).toBe('test-id');
       expect(parentItem?.kind).toBe('decision');
       expect(parentItem?.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
@@ -148,15 +148,15 @@ describe('ChunkingService', () => {
       expect(parentItem?.created_at).toBe('2025-01-01T00:00:00Z');
 
       // Check child items preserve essential fields
-      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
       childItems.forEach((chunk) => {
         expect(chunk.kind).toBe('decision');
         expect(chunk.scope).toEqual({ project: 'test', branch: 'main', org: 'test-org' });
-        expect(chunk.metadata.source).toBe('test');
-        expect(chunk.metadata.chunking_info).toBeDefined();
-        expect(chunk.data.title).toBe('Test Decision');
-        expect(chunk.data.rationale).toBe('Test rationale');
-        expect(chunk.data.component).toBe('test-component');
+        expect(chunk.metadata['source']).toBe('test');
+        expect(chunk.metadata['chunking_info']).toBeDefined();
+        expect(chunk['data.title']).toBe('Test Decision');
+        expect(chunk['data.rationale']).toBe('Test rationale');
+        expect(chunk['data.component']).toBe('test-component');
       });
     });
 
@@ -174,37 +174,37 @@ describe('ChunkingService', () => {
       const chunkedItems = await service.createChunkedItems(baseItem);
 
       // Check parent item metadata
-      const parentItem = chunkedItems.find((item) => !item.data.is_chunk);
+      const parentItem = chunkedItems.find((item) => !item['data.is_chunk']);
       expect(parentItem).toBeDefined();
-      expect(parentItem?.data.parent_id).toBeUndefined(); // Parent has no parent_id
-      expect(parentItem?.data.chunk_index).toBe(0);
-      expect(parentItem?.data.total_chunks).toBeGreaterThan(1);
+      expect(parentItem?.data['parent_id']).toBeUndefined(); // Parent has no parent_id
+      expect(parentItem?.data['chunk_index']).toBe(0);
+      expect(parentItem?.data['total_chunks']).toBeGreaterThan(1);
       expect(parentItem?.data.original_length).toBe(12000);
       expect(parentItem?.data.chunk_overlap).toBe(200);
-      expect(parentItem?.data.is_chunk).toBe(false);
+      expect(parentItem?.data['is_chunk']).toBe(false);
 
       // Check child items metadata
-      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
-      expect(childItems.length).toBe(parentItem?.data.total_chunks);
+      const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
+      expect(childItems.length).toBe(parentItem?.data['total_chunks']);
 
       childItems.forEach((chunk, index) => {
-        expect(chunk.data.parent_id).toBe('test-parent-id'); // Should reference parent
-        expect(chunk.data.chunk_index).toBe(index); // Sequential indexing
-        expect(chunk.data.total_chunks).toBe(childItems.length); // Same total for all
-        expect(chunk.data.original_length).toBe(12000); // Same original length
-        expect(chunk.data.chunk_overlap).toBe(200); // Same overlap
-        expect(chunk.data.is_chunk).toBe(true);
+        expect(chunk['data.parent_id']).toBe('test-parent-id'); // Should reference parent
+        expect(chunk['data.chunk_index']).toBe(index); // Sequential indexing
+        expect(chunk['data.total_chunks']).toBe(childItems.length); // Same total for all
+        expect(chunk['data.original_length']).toBe(12000); // Same original length
+        expect(chunk['data.chunk_overlap']).toBe(200); // Same overlap
+        expect(chunk['data.is_chunk']).toBe(true);
 
         // Check metadata chunking_info matches data fields
-        expect(chunk.metadata.chunking_info.parent_id).toBe('test-parent-id');
-        expect(chunk.metadata.chunking_info.chunk_index).toBe(index);
-        expect(chunk.metadata.chunking_info.total_chunks).toBe(childItems.length);
-        expect(chunk.metadata.chunking_info.is_child).toBe(true);
+        expect(chunk.metadata['chunking_info']['parent_id']).toBe('test-parent-id');
+        expect(chunk.metadata['chunking_info']['chunk_index']).toBe(index);
+        expect(chunk.metadata['chunking_info']['total_chunks']).toBe(childItems.length);
+        expect(chunk.metadata['chunking_info'].is_child).toBe(true);
       });
 
       // Check metadata chunking_info for parent
       expect(parentItem?.metadata.chunking_info.is_parent).toBe(true);
-      expect(parentItem?.metadata.chunking_info.total_chunks).toBe(childItems.length);
+      expect(parentItem?.metadata.chunking_info['total_chunks']).toBe(childItems.length);
       expect(parentItem?.metadata.chunking_info.chunk_size).toBe(1200);
       expect(parentItem?.metadata.chunking_info.overlap_size).toBe(200);
     });
@@ -221,10 +221,10 @@ describe('ChunkingService', () => {
       };
 
       const chunkedItems = await service.createChunkedItems(baseItem);
-      const childItems = chunkedItems.filter((item) => item.data.is_chunk);
+      const childItems = chunkedItems.filter((item) => item['data.is_chunk']);
 
       // Extract chunk_index values and sort them
-      const chunkIndexes = childItems.map((chunk) => chunk.data.chunk_index).sort((a, b) => a - b);
+      const chunkIndexes = childItems.map((chunk) => chunk['data.chunk_index']).sort((a, b) => a - b);
 
       // Should start from 0
       expect(chunkIndexes[0]).toBe(0);
@@ -433,31 +433,31 @@ describe('ChunkingService', () => {
       expect(processedItems.length).toBeGreaterThan(items.length);
 
       // Count chunked vs non-chunked items
-      const chunkedItems = processedItems.filter((item) => item.data.is_chunk);
-      const nonChunkedItems = processedItems.filter((item) => !item.data.is_chunk);
+      const chunkedItems = processedItems.filter((item) => item['data.is_chunk']);
+      const nonChunkedItems = processedItems.filter((item) => !item['data.is_chunk']);
 
       // Should have chunk items for the large chunkable types
       expect(chunkedItems.length).toBeGreaterThan(0);
       chunkedItems.forEach((chunk) => {
         expect(['section', 'runbook', 'incident']).toContain(chunk.kind);
-        expect(chunk.data.is_chunk).toBe(true);
+        expect(chunk['data.is_chunk']).toBe(true);
       });
 
       // Should have parent items for chunked content
-      const parentItems = nonChunkedItems.filter((item) => item.data.total_chunks > 1);
+      const parentItems = nonChunkedItems.filter((item) => item['data.total_chunks'] > 1);
       expect(parentItems).toHaveLength(3);
       parentItems.forEach((parent) => {
         expect(['section', 'runbook', 'incident']).toContain(parent.kind);
-        expect(parent.data.total_chunks).toBeGreaterThan(1);
-        expect(parent.data.original_length).toBe(largeContent.length);
+        expect(parent['data.total_chunks']).toBeGreaterThan(1);
+        expect(parent['data.original_length']).toBe(largeContent.length);
       });
 
       // Should have single items for small chunkable types and all non-chunkable types
-      const singleItems = nonChunkedItems.filter((item) => item.data.total_chunks === 1);
+      const singleItems = nonChunkedItems.filter((item) => item['data.total_chunks'] === 1);
       expect(singleItems.length).toBe(4); // 1 small section + 3 large non-chunkable types
       singleItems.forEach((item) => {
-        expect(item.data.total_chunks).toBe(1);
-        expect(item.data.original_length).toBeDefined();
+        expect(item['data.total_chunks']).toBe(1);
+        expect(item['data.original_length']).toBeDefined();
       });
     });
   });
@@ -476,7 +476,7 @@ describe('ChunkingService', () => {
 
     it('should use traditional chunking when SEMANTIC_CHUNKING_OPTIONAL=true', async () => {
       // Set environment variable to disable semantic chunking
-      process.env.SEMANTIC_CHUNKING_OPTIONAL = 'true';
+      process.env['SEMANTIC_CHUNKING_OPTIONAL'] = 'true';
 
       // Create a new service instance to pick up the env variable
       const testService = new ChunkingService();
@@ -524,7 +524,7 @@ describe('ChunkingService', () => {
 
     it('should attempt semantic chunking when SEMANTIC_CHUNKING_OPTIONAL=false', async () => {
       // Ensure semantic chunking is enabled
-      process.env.SEMANTIC_CHUNKING_OPTIONAL = 'false';
+      process.env['SEMANTIC_CHUNKING_OPTIONAL'] = 'false';
 
       const testService = new ChunkingService();
 

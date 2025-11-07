@@ -40,13 +40,14 @@ async function testMcpTools() {
       {
         name: 'Server starts without errors',
         command: 'timeout 10s node dist/index.js || true',
-        expected: 'Server should start and not crash immediately'
+        expected: 'Server should start and not crash immediately',
       },
       {
         name: 'Dependencies are available',
-        command: 'node -e "try { require(\'@modelcontextprotocol/sdk\'); console.log(\'✅ MCP SDK available\'); } catch(e) { console.log(\'❌ MCP SDK missing\'); }"',
-        expected: 'Required dependencies should be available'
-      }
+        command:
+          "node -e \"try { require('@modelcontextprotocol/sdk'); console.log('✅ MCP SDK available'); } catch(e) { console.log('❌ MCP SDK missing'); }\"",
+        expected: 'Required dependencies should be available',
+      },
     ];
 
     let passedTests = 0;
@@ -58,7 +59,7 @@ async function testMcpTools() {
         const result = execSync(test.command, {
           cwd: join(__dirname, '..'),
           encoding: 'utf8',
-          timeout: 15000
+          timeout: 15000,
         });
 
         console.log(`✅ ${test.name} - Passed`);
@@ -79,16 +80,17 @@ async function testMcpTools() {
       console.log('⚠️  Some tests failed - check the implementation');
       return false;
     }
-
   } catch (error) {
     console.error('❌ Error testing MCP tools:', error.message);
     return false;
   }
 }
 
-testMcpTools().then(isValid => {
-  process.exit(isValid ? 0 : 1);
-}).catch(error => {
-  console.error('❌ Test execution failed:', error.message);
-  process.exit(1);
-});
+testMcpTools()
+  .then((isValid) => {
+    process.exit(isValid ? 0 : 1);
+  })
+  .catch((error) => {
+    console.error('❌ Test execution failed:', error.message);
+    process.exit(1);
+  });

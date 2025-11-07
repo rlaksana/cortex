@@ -28,7 +28,7 @@ const CONFIG = {
     { path: '/api/health', method: 'GET', expectedStatus: 200 },
     { path: '/health/live', method: 'GET', expectedStatus: 200 },
     { path: '/health/ready', method: 'GET', expectedStatus: 200 },
-    { path: '/api/metrics', method: 'GET', expectedStatus: 200 }
+    { path: '/api/metrics', method: 'GET', expectedStatus: 200 },
   ],
 
   // Monitoring components to validate
@@ -37,14 +37,14 @@ const CONFIG = {
     { name: 'Production Health Checker', file: 'src/monitoring/production-health-checker.ts' },
     { name: 'Monitoring Server', file: 'src/monitoring/monitoring-server.ts' },
     { name: 'Health Endpoint', file: 'src/monitoring/health-endpoint.ts' },
-    { name: 'Performance Monitor', file: 'src/monitoring/performance-monitor.ts' }
+    { name: 'Performance Monitor', file: 'src/monitoring/performance-monitor.ts' },
   ],
 
   // Alert configuration files to validate
   ALERT_CONFIGS: [
     { name: 'Docker Monitoring Stack', file: 'docker/monitoring-stack.yml' },
     { name: 'Alert Setup Script', file: 'scripts/setup-alerts.sh' },
-    { name: 'Health Monitoring Guide', file: 'docs/HEALTH-MONITORING-GUIDE.md' }
+    { name: 'Health Monitoring Guide', file: 'docs/HEALTH-MONITORING-GUIDE.md' },
   ],
 
   // Alert rules to validate
@@ -53,19 +53,19 @@ const CONFIG = {
     { name: 'High Latency', threshold: 1000, unit: 'ms' },
     { name: 'Memory Usage', threshold: 80, unit: '%' },
     { name: 'CPU Usage', threshold: 80, unit: '%' },
-    { name: 'Disk Usage', threshold: 90, unit: '%' }
+    { name: 'Disk Usage', threshold: 90, unit: '%' },
   ],
 
   // Test configuration
   TEST_CONFIG: {
-    SERVER_STARTUP_TIMEOUT: 10000,  // 10 seconds
-    HEALTH_CHECK_TIMEOUT: 5000,     // 5 seconds
-    ALERT_TEST_TIMEOUT: 30000,      // 30 seconds
-    SERVER_PORT: 3000
+    SERVER_STARTUP_TIMEOUT: 10000, // 10 seconds
+    HEALTH_CHECK_TIMEOUT: 5000, // 5 seconds
+    ALERT_TEST_TIMEOUT: 30000, // 30 seconds
+    SERVER_PORT: 3000,
   },
 
   // Output directories
-  OUTPUT_DIR: join(projectRoot, 'artifacts', 'alerting-monitoring')
+  OUTPUT_DIR: join(projectRoot, 'artifacts', 'alerting-monitoring'),
 };
 
 // Colors for console output
@@ -77,7 +77,7 @@ const COLORS = {
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 function log(message, color = COLORS.reset) {
@@ -112,9 +112,13 @@ function makeHttpRequest(url, options = {}) {
   return new Promise((resolve, reject) => {
     const curlCommand = `curl -f -s -w "%{http_code}|%{time_total}|%{size_download}" -o /dev/null "${url}"`;
 
-    const child = spawn('curl', ['-f', '-s', '-w', '%{http_code}|%{time_total}|%{size_download}', '-o', '/dev/null', url], {
-      timeout: options.timeout || CONFIG.TEST_CONFIG.HEALTH_CHECK_TIMEOUT
-    });
+    const child = spawn(
+      'curl',
+      ['-f', '-s', '-w', '%{http_code}|%{time_total}|%{size_download}', '-o', '/dev/null', url],
+      {
+        timeout: options.timeout || CONFIG.TEST_CONFIG.HEALTH_CHECK_TIMEOUT,
+      }
+    );
 
     let stdout = '';
     let stderr = '';
@@ -134,13 +138,13 @@ function makeHttpRequest(url, options = {}) {
           success: true,
           status: parseInt(status),
           time: parseFloat(time),
-          size: parseInt(size)
+          size: parseInt(size),
         });
       } else {
         resolve({
           success: false,
           status: null,
-          error: stderr || 'Request failed'
+          error: stderr || 'Request failed',
         });
       }
     });
@@ -165,8 +169,8 @@ async function validateHealthEndpoints() {
       total: CONFIG.HEALTH_ENDPOINTS.length,
       responsive: 0,
       unresponsive: 0,
-      avgResponseTime: 0
-    }
+      avgResponseTime: 0,
+    },
   };
 
   // Start server for testing
@@ -174,11 +178,11 @@ async function validateHealthEndpoints() {
   const serverProcess = spawn('npm', ['run', 'start'], {
     cwd: projectRoot,
     stdio: 'pipe',
-    detached: true
+    detached: true,
   });
 
   // Wait for server to start
-  await new Promise(resolve => setTimeout(resolve, CONFIG.TEST_CONFIG.SERVER_STARTUP_TIMEOUT));
+  await new Promise((resolve) => setTimeout(resolve, CONFIG.TEST_CONFIG.SERVER_STARTUP_TIMEOUT));
 
   try {
     let totalResponseTime = 0;
@@ -189,7 +193,7 @@ async function validateHealthEndpoints() {
 
       try {
         const response = await makeHttpRequest(url, {
-          timeout: CONFIG.TEST_CONFIG.HEALTH_CHECK_TIMEOUT
+          timeout: CONFIG.TEST_CONFIG.HEALTH_CHECK_TIMEOUT,
         });
 
         const endpointResult = {
@@ -199,20 +203,23 @@ async function validateHealthEndpoints() {
           expectedStatus: endpoint.expectedStatus,
           actualStatus: response.status,
           responseTime: response.time,
-          success: response.success && response.status === endpoint.expectedStatus
+          success: response.success && response.status === endpoint.expectedStatus,
         };
 
         if (endpointResult.success) {
           results.summary.responsive++;
           totalResponseTime += response.time;
-          logSuccess(`      ✅ ${endpoint.path} - ${response.status} (${response.time.toFixed(2)}s)`);
+          logSuccess(
+            `      ✅ ${endpoint.path} - ${response.status} (${response.time.toFixed(2)}s)`
+          );
         } else {
           results.summary.unresponsive++;
-          logError(`      ❌ ${endpoint.path} - ${response.status || 'Failed'} (expected ${endpoint.expectedStatus})`);
+          logError(
+            `      ❌ ${endpoint.path} - ${response.status || 'Failed'} (expected ${endpoint.expectedStatus})`
+          );
         }
 
         results.endpoints.push(endpointResult);
-
       } catch (error) {
         const endpointResult = {
           path: endpoint.path,
@@ -222,7 +229,7 @@ async function validateHealthEndpoints() {
           actualStatus: null,
           responseTime: null,
           success: false,
-          error: error.message
+          error: error.message,
         };
 
         results.summary.unresponsive++;
@@ -237,12 +244,17 @@ async function validateHealthEndpoints() {
     }
 
     // Determine overall status
-    results.status = results.summary.unresponsive === 0 ? 'passed' :
-                    (results.summary.responsive > 0 ? 'warning' : 'failed');
+    results.status =
+      results.summary.unresponsive === 0
+        ? 'passed'
+        : results.summary.responsive > 0
+          ? 'warning'
+          : 'failed';
 
-    logInfo(`  Health endpoints: ${results.summary.responsive}/${results.summary.total} responsive`);
+    logInfo(
+      `  Health endpoints: ${results.summary.responsive}/${results.summary.total} responsive`
+    );
     logInfo(`  Average response time: ${results.summary.avgResponseTime.toFixed(3)}s`);
-
   } finally {
     // Clean up server process
     try {
@@ -269,11 +281,11 @@ function validateMonitoringComponents() {
       total: CONFIG.MONITORING_COMPONENTS.length,
       present: 0,
       missing: 0,
-      valid: 0
-    }
+      valid: 0,
+    },
   };
 
-  CONFIG.MONITORING_COMPONENTS.forEach(component => {
+  CONFIG.MONITORING_COMPONENTS.forEach((component) => {
     const filePath = join(projectRoot, component.file);
     const exists = existsSync(filePath);
 
@@ -282,7 +294,7 @@ function validateMonitoringComponents() {
       file: component.file,
       exists,
       valid: false,
-      issues: []
+      issues: [],
     };
 
     if (exists) {
@@ -317,9 +329,8 @@ function validateMonitoringComponents() {
           logSuccess(`    ✅ ${component.name} - Valid`);
         } else {
           logWarning(`    ⚠️  ${component.name} - Issues found`);
-          componentResult.issues.forEach(issue => logWarning(`      - ${issue}`));
+          componentResult.issues.forEach((issue) => logWarning(`      - ${issue}`));
         }
-
       } catch (error) {
         componentResult.issues.push(`Failed to read file: ${error.message}`);
         logWarning(`    ⚠️  ${component.name} - Read error`);
@@ -333,10 +344,16 @@ function validateMonitoringComponents() {
   });
 
   // Determine overall status
-  results.status = results.summary.missing === 0 && results.summary.valid === results.summary.total ? 'passed' :
-                    (results.summary.present > 0 ? 'warning' : 'failed');
+  results.status =
+    results.summary.missing === 0 && results.summary.valid === results.summary.total
+      ? 'passed'
+      : results.summary.present > 0
+        ? 'warning'
+        : 'failed';
 
-  logInfo(`  Monitoring components: ${results.summary.valid}/${results.summary.total} valid, ${results.summary.missing} missing`);
+  logInfo(
+    `  Monitoring components: ${results.summary.valid}/${results.summary.total} valid, ${results.summary.missing} missing`
+  );
 
   return results;
 }
@@ -355,11 +372,11 @@ function validateAlertConfigurations() {
       total: CONFIG.ALERT_CONFIGS.length,
       present: 0,
       missing: 0,
-      valid: 0
-    }
+      valid: 0,
+    },
   };
 
-  CONFIG.ALERT_CONFIGS.forEach(config => {
+  CONFIG.ALERT_CONFIGS.forEach((config) => {
     const filePath = join(projectRoot, config.file);
     const exists = existsSync(filePath);
 
@@ -369,7 +386,7 @@ function validateAlertConfigurations() {
       exists,
       valid: false,
       issues: [],
-      alertRules: []
+      alertRules: [],
     };
 
     if (exists) {
@@ -400,13 +417,13 @@ function validateAlertConfigurations() {
           // Extract alert rules
           const ruleMatches = content.match(/alert:\s*(\w+)/g);
           if (ruleMatches) {
-            configResult.alertRules = ruleMatches.map(match => match.replace(/alert:\s*/, ''));
+            configResult.alertRules = ruleMatches.map((match) => match.replace(/alert:\s*/, ''));
           }
-
         } else if (config.file.endsWith('.sh')) {
           // Shell script validation
           const hasExecutable = content.includes('#!/bin/bash') || content.includes('#!/bin/sh');
-          const hasCommands = content.includes('curl') || content.includes('wget') || content.includes('echo');
+          const hasCommands =
+            content.includes('curl') || content.includes('wget') || content.includes('echo');
           const hasAlertSetup = content.includes('alert') || content.includes('monitor');
 
           configResult.valid = hasExecutable && hasCommands;
@@ -420,7 +437,6 @@ function validateAlertConfigurations() {
           if (!hasAlertSetup) {
             configResult.issues.push('No alert setup commands found');
           }
-
         } else if (config.file.endsWith('.md')) {
           // Documentation validation
           const hasContent = content.length > 1000;
@@ -442,12 +458,13 @@ function validateAlertConfigurations() {
 
         if (configResult.valid) {
           results.summary.valid++;
-          logSuccess(`    ✅ ${config.name} - Valid (${configResult.alertRules.length} alert rules)`);
+          logSuccess(
+            `    ✅ ${config.name} - Valid (${configResult.alertRules.length} alert rules)`
+          );
         } else {
           logWarning(`    ⚠️  ${config.name} - Issues found`);
-          configResult.issues.forEach(issue => logWarning(`      - ${issue}`));
+          configResult.issues.forEach((issue) => logWarning(`      - ${issue}`));
         }
-
       } catch (error) {
         configResult.issues.push(`Failed to read file: ${error.message}`);
         logWarning(`    ⚠️  ${config.name} - Read error`);
@@ -461,10 +478,16 @@ function validateAlertConfigurations() {
   });
 
   // Determine overall status
-  results.status = results.summary.missing === 0 && results.summary.valid === results.summary.total ? 'passed' :
-                    (results.summary.present > 0 ? 'warning' : 'failed');
+  results.status =
+    results.summary.missing === 0 && results.summary.valid === results.summary.total
+      ? 'passed'
+      : results.summary.present > 0
+        ? 'warning'
+        : 'failed';
 
-  logInfo(`  Alert configurations: ${results.summary.valid}/${results.summary.total} valid, ${results.summary.missing} missing`);
+  logInfo(
+    `  Alert configurations: ${results.summary.valid}/${results.summary.total} valid, ${results.summary.missing} missing`
+  );
 
   return results;
 }
@@ -483,21 +506,21 @@ function validateAlertRules() {
       total: CONFIG.ALERT_RULES.length,
       configured: 0,
       missing: 0,
-      thresholdIssues: 0
-    }
+      thresholdIssues: 0,
+    },
   };
 
   // For this implementation, we'll simulate alert rule validation
   // In a real implementation, this would connect to Prometheus/Grafana APIs
 
-  CONFIG.ALERT_RULES.forEach(rule => {
+  CONFIG.ALERT_RULES.forEach((rule) => {
     const ruleResult = {
       name: rule.name,
       threshold: rule.threshold,
       unit: rule.unit,
       configured: Math.random() > 0.2, // Simulate 80% configuration rate
       thresholdValid: true,
-      issues: []
+      issues: [],
     };
 
     if (ruleResult.configured) {
@@ -520,7 +543,7 @@ function validateAlertRules() {
         logSuccess(`    ✅ ${rule.name} - ${rule.threshold}${rule.unit}`);
       } else {
         logWarning(`    ⚠️  ${rule.name} - Threshold issue`);
-        ruleResult.issues.forEach(issue => logWarning(`      - ${issue}`));
+        ruleResult.issues.forEach((issue) => logWarning(`      - ${issue}`));
       }
     } else {
       results.summary.missing++;
@@ -531,10 +554,16 @@ function validateAlertRules() {
   });
 
   // Determine overall status
-  results.status = results.summary.missing === 0 && results.summary.thresholdIssues === 0 ? 'passed' :
-                    (results.summary.configured > 0 ? 'warning' : 'failed');
+  results.status =
+    results.summary.missing === 0 && results.summary.thresholdIssues === 0
+      ? 'passed'
+      : results.summary.configured > 0
+        ? 'warning'
+        : 'failed';
 
-  logInfo(`  Alert rules: ${results.summary.configured}/${results.summary.total} configured, ${results.summary.thresholdIssues} threshold issues`);
+  logInfo(
+    `  Alert rules: ${results.summary.configured}/${results.summary.total} configured, ${results.summary.thresholdIssues} threshold issues`
+  );
 
   return results;
 }
@@ -553,15 +582,19 @@ async function testAlertNotificationSystem() {
       total: 3, // email, slack, webhook
       working: 0,
       failed: 0,
-      untested: 0
-    }
+      untested: 0,
+    },
   };
 
   // Simulate testing different notification channels
   const notificationTypes = [
-    { name: 'Email Notifications', type: 'email', configRequired: ['smtp_server', 'smtp_port', 'from_address'] },
+    {
+      name: 'Email Notifications',
+      type: 'email',
+      configRequired: ['smtp_server', 'smtp_port', 'from_address'],
+    },
     { name: 'Slack Integration', type: 'slack', configRequired: ['webhook_url', 'channel'] },
-    { name: 'Webhook Notifications', type: 'webhook', configRequired: ['webhook_url'] }
+    { name: 'Webhook Notifications', type: 'webhook', configRequired: ['webhook_url'] },
   ];
 
   for (const notification of notificationTypes) {
@@ -570,7 +603,7 @@ async function testAlertNotificationSystem() {
       type: notification.type,
       configured: Math.random() > 0.3, // Simulate 70% configuration rate
       testResult: null,
-      issues: []
+      issues: [],
     };
 
     if (notificationResult.configured) {
@@ -580,12 +613,14 @@ async function testAlertNotificationSystem() {
       notificationResult.testResult = {
         success: testSuccess,
         responseTime: Math.random() * 2 + 0.5, // 0.5-2.5 seconds
-        delivered: testSuccess
+        delivered: testSuccess,
       };
 
       if (testSuccess) {
         results.summary.working++;
-        logSuccess(`    ✅ ${notification.name} - Working (${notificationResult.testResult.responseTime.toFixed(2)}s)`);
+        logSuccess(
+          `    ✅ ${notification.name} - Working (${notificationResult.testResult.responseTime.toFixed(2)}s)`
+        );
       } else {
         results.summary.failed++;
         logError(`    ❌ ${notification.name} - Test failed`);
@@ -594,17 +629,25 @@ async function testAlertNotificationSystem() {
     } else {
       results.summary.untested++;
       logWarning(`    ⚠️  ${notification.name} - Not configured`);
-      notificationResult.issues.push(`Missing required configuration: ${notification.configRequired.join(', ')}`);
+      notificationResult.issues.push(
+        `Missing required configuration: ${notification.configRequired.join(', ')}`
+      );
     }
 
     results.notifications.push(notificationResult);
   }
 
   // Determine overall status
-  results.status = results.summary.failed === 0 && results.summary.working > 0 ? 'passed' :
-                    (results.summary.working > 0 ? 'warning' : 'failed');
+  results.status =
+    results.summary.failed === 0 && results.summary.working > 0
+      ? 'passed'
+      : results.summary.working > 0
+        ? 'warning'
+        : 'failed';
 
-  logInfo(`  Notification system: ${results.summary.working}/${results.summary.total} working, ${results.summary.failed} failed`);
+  logInfo(
+    `  Notification system: ${results.summary.working}/${results.summary.total} working, ${results.summary.failed} failed`
+  );
 
   return results;
 }
@@ -624,15 +667,15 @@ async function validateMonitoringDashboard() {
       dataSources: 0,
       alerts: 0,
       responseTime: 0,
-      issues: []
+      issues: [],
     },
     summary: {
       accessible: false,
       functional: false,
       panelCount: 0,
       dataSourceCount: 0,
-      alertCount: 0
-    }
+      alertCount: 0,
+    },
   };
 
   // Check for Grafana dashboard configuration
@@ -674,12 +717,10 @@ async function validateMonitoringDashboard() {
         logInfo(`    📊 Data sources: ${results.dashboard.dataSources}`);
         logInfo(`    🚨 Alerts: ${results.dashboard.alerts}`);
         logInfo(`    ⏱️  Response time: ${results.dashboard.responseTime.toFixed(2)}s`);
-
       } else {
         results.dashboard.issues.push('Dashboard not accessible');
         logError(`    ❌ Dashboard not accessible`);
       }
-
     } catch (error) {
       results.dashboard.issues.push(`Failed to read dashboard config: ${error.message}`);
       logError(`    ❌ Dashboard configuration error`);
@@ -690,8 +731,11 @@ async function validateMonitoringDashboard() {
   }
 
   // Determine overall status
-  results.status = results.summary.functional ? 'passed' :
-                    (results.summary.accessible ? 'warning' : 'failed');
+  results.status = results.summary.functional
+    ? 'passed'
+    : results.summary.accessible
+      ? 'warning'
+      : 'failed';
 
   return results;
 }
@@ -713,30 +757,33 @@ function generateAlertingMonitoringReport(validations) {
     metadata: {
       timestamp: new Date().toISOString(),
       version: '2.0.1',
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'development',
     },
     summary: {
       overallStatus: 'unknown',
       totalValidations: Object.keys(validations).length,
-      passedValidations: Object.values(validations).filter(v => v.status === 'passed').length,
-      warningValidations: Object.values(validations).filter(v => v.status === 'warning').length,
-      failedValidations: Object.values(validations).filter(v => v.status === 'failed').length,
-      readyForProduction: false
+      passedValidations: Object.values(validations).filter((v) => v.status === 'passed').length,
+      warningValidations: Object.values(validations).filter((v) => v.status === 'warning').length,
+      failedValidations: Object.values(validations).filter((v) => v.status === 'failed').length,
+      readyForProduction: false,
     },
     validations,
     recommendations: generateAlertingRecommendations(validations),
     artifacts: {
       reportFile,
-      htmlReportFile
-    }
+      htmlReportFile,
+    },
   };
 
   // Calculate overall status
-  const hasCriticalFailures = Object.values(validations).some(v => v.status === 'failed');
-  const hasWarnings = Object.values(validations).some(v => v.status === 'warning');
+  const hasCriticalFailures = Object.values(validations).some((v) => v.status === 'failed');
+  const hasWarnings = Object.values(validations).some((v) => v.status === 'warning');
 
-  report.summary.overallStatus = hasCriticalFailures ? 'failed' :
-                                 (hasWarnings ? 'warning' : 'passed');
+  report.summary.overallStatus = hasCriticalFailures
+    ? 'failed'
+    : hasWarnings
+      ? 'warning'
+      : 'passed';
   report.summary.readyForProduction = !hasCriticalFailures;
 
   // Write JSON report
@@ -766,7 +813,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'high',
               category: 'Health Checks',
               issue: `${validation.summary.unresponsive} health endpoints not responding`,
-              action: 'Fix health endpoint implementations and ensure proper server startup'
+              action: 'Fix health endpoint implementations and ensure proper server startup',
             });
           }
           if (validation.summary.avgResponseTime > 1) {
@@ -774,7 +821,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'medium',
               category: 'Performance',
               issue: `Health endpoints slow (${validation.summary.avgResponseTime.toFixed(2)}s average)`,
-              action: 'Optimize health check performance and reduce response time'
+              action: 'Optimize health check performance and reduce response time',
             });
           }
           break;
@@ -785,7 +832,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'high',
               category: 'Monitoring Infrastructure',
               issue: `${validation.summary.missing} monitoring components missing`,
-              action: 'Implement missing monitoring components for comprehensive coverage'
+              action: 'Implement missing monitoring components for comprehensive coverage',
             });
           }
           if (validation.summary.valid < validation.summary.present) {
@@ -793,7 +840,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'medium',
               category: 'Code Quality',
               issue: 'Some monitoring components have issues',
-              action: 'Fix monitoring component implementations and add proper error handling'
+              action: 'Fix monitoring component implementations and add proper error handling',
             });
           }
           break;
@@ -804,7 +851,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'high',
               category: 'Alert Configuration',
               issue: `${validation.summary.missing} alert configurations missing`,
-              action: 'Set up proper alerting infrastructure with Prometheus/Grafana'
+              action: 'Set up proper alerting infrastructure with Prometheus/Grafana',
             });
           }
           break;
@@ -815,7 +862,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'medium',
               category: 'Alert Rules',
               issue: `${validation.summary.missing} alert rules not configured`,
-              action: 'Configure essential alert rules for error rate, latency, and resource usage'
+              action: 'Configure essential alert rules for error rate, latency, and resource usage',
             });
           }
           if (validation.summary.thresholdIssues > 0) {
@@ -823,7 +870,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'low',
               category: 'Alert Thresholds',
               issue: 'Some alert thresholds may be inappropriate',
-              action: 'Review and adjust alert thresholds for optimal detection'
+              action: 'Review and adjust alert thresholds for optimal detection',
             });
           }
           break;
@@ -834,7 +881,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'high',
               category: 'Notification System',
               issue: `${validation.summary.failed} notification channels not working`,
-              action: 'Fix notification channel configurations and test delivery'
+              action: 'Fix notification channel configurations and test delivery',
             });
           }
           if (validation.summary.untested > 0) {
@@ -842,7 +889,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'medium',
               category: 'Notification Setup',
               issue: `${validation.summary.untested} notification channels not configured`,
-              action: 'Configure email, Slack, or webhook notifications for alerts'
+              action: 'Configure email, Slack, or webhook notifications for alerts',
             });
           }
           break;
@@ -853,7 +900,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'high',
               category: 'Dashboard',
               issue: 'Monitoring dashboard not accessible',
-              action: 'Set up Grafana dashboard with proper configuration'
+              action: 'Set up Grafana dashboard with proper configuration',
             });
           }
           if (!validation.summary.functional && validation.summary.accessible) {
@@ -861,7 +908,7 @@ function generateAlertingRecommendations(validations) {
               priority: 'medium',
               category: 'Dashboard Quality',
               issue: 'Dashboard lacks sufficient panels or functionality',
-              action: 'Enhance dashboard with comprehensive monitoring panels'
+              action: 'Enhance dashboard with comprehensive monitoring panels',
             });
           }
           break;
@@ -883,19 +930,27 @@ function generateHTMLAlertingReport(report) {
 
   const getValidationColor = (status) => {
     switch (status) {
-      case 'passed': return '#4CAF50';
-      case 'warning': return '#ff9800';
-      case 'failed': return '#f44336';
-      default: return '#9e9e9e';
+      case 'passed':
+        return '#4CAF50';
+      case 'warning':
+        return '#ff9800';
+      case 'failed':
+        return '#f44336';
+      default:
+        return '#9e9e9e';
     }
   };
 
   const getValidationIcon = (status) => {
     switch (status) {
-      case 'passed': return '✅';
-      case 'warning': return '⚠️';
-      case 'failed': return '❌';
-      default: return '❓';
+      case 'passed':
+        return '✅';
+      case 'warning':
+        return '⚠️';
+      case 'failed':
+        return '❌';
+      default:
+        return '❓';
     }
   };
 
@@ -933,9 +988,13 @@ function generateHTMLAlertingReport(report) {
             <h1>🚨 Alerting & Monitoring Report</h1>
             <p>Version: ${metadata.version} | Generated: ${new Date(metadata.timestamp).toLocaleString()}</p>
             <div class="status-banner status-${summary.overallStatus}">
-                ${summary.overallStatus === 'passed' ? '🎉 ALERTING & MONITORING READY' :
-                  summary.overallStatus === 'warning' ? '⚠️ MONITORING WARNINGS' :
-                  '🚫 ALERTING & MONITORING ISSUES DETECTED'}
+                ${
+                  summary.overallStatus === 'passed'
+                    ? '🎉 ALERTING & MONITORING READY'
+                    : summary.overallStatus === 'warning'
+                      ? '⚠️ MONITORING WARNINGS'
+                      : '🚫 ALERTING & MONITORING ISSUES DETECTED'
+                }
             </div>
         </div>
 
@@ -961,37 +1020,55 @@ function generateHTMLAlertingReport(report) {
         </div>
 
         <div class="validation-grid">
-            ${Object.entries(validations).map(([validationName, validation]) => `
+            ${Object.entries(validations)
+              .map(
+                ([validationName, validation]) => `
             <div class="validation-card" style="border-left-color: ${getValidationColor(validation.status)};">
-                <h3>${getValidationIcon(validation.status)} ${validation.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
+                <h3>${getValidationIcon(validation.status)} ${validation.name.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</h3>
                 <p><strong>Status:</strong> <span style="color: ${getValidationColor(validation.status)}">${validation.status.toUpperCase()}</span></p>
 
-                ${validation.summary ? `
+                ${
+                  validation.summary
+                    ? `
                 <div style="margin: 10px 0;">
-                    ${Object.entries(validation.summary).map(([key, value]) => {
-                      if (typeof value === 'number') {
-                        return `<div><strong>${key.replace(/([A-Z])/g, ' $1').trim()}:</strong> ${value}</div>`;
-                      }
-                      return '';
-                    }).join('')}
+                    ${Object.entries(validation.summary)
+                      .map(([key, value]) => {
+                        if (typeof value === 'number') {
+                          return `<div><strong>${key.replace(/([A-Z])/g, ' $1').trim()}:</strong> ${value}</div>`;
+                        }
+                        return '';
+                      })
+                      .join('')}
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
 
-        ${recommendations.length > 0 ? `
+        ${
+          recommendations.length > 0
+            ? `
         <div class="recommendations">
             <h3>📋 Alerting & Monitoring Recommendations</h3>
-            ${recommendations.map(rec => `
+            ${recommendations
+              .map(
+                (rec) => `
             <div class="recommendation priority-${rec.priority}">
                 <h4>${rec.category} - ${rec.priority.toUpperCase()}</h4>
                 <p><strong>Issue:</strong> ${rec.issue}</p>
                 <p><strong>Action:</strong> ${rec.action}</p>
             </div>
-            `).join('')}
+            `
+              )
+              .join('')}
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <div class="footer">
             <p>Generated by Cortex Memory MCP Alerting & Monitoring Validator</p>
@@ -1014,19 +1091,19 @@ async function validateAlertingAndMonitoring() {
     const validations = {};
 
     validations.healthEndpoints = await validateHealthEndpoints();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     validations.monitoringComponents = validateMonitoringComponents();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     validations.alertConfigurations = validateAlertConfigurations();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     validations.alertRules = validateAlertRules();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     validations.alertNotifications = await testAlertNotificationSystem();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     validations.monitoringDashboard = await validateMonitoringDashboard();
 
@@ -1036,7 +1113,9 @@ async function validateAlertingAndMonitoring() {
     // Final summary
     logHeader('📊 Alerting & Monitoring Validation Summary');
     logInfo(`Overall status: ${report.summary.overallStatus.toUpperCase()}`);
-    logInfo(`Validations: ${report.summary.passedValidations} passed, ${report.summary.warningValidations} warnings, ${report.summary.failedValidations} failed`);
+    logInfo(
+      `Validations: ${report.summary.passedValidations} passed, ${report.summary.warningValidations} warnings, ${report.summary.failedValidations} failed`
+    );
 
     if (report.summary.readyForProduction) {
       logSuccess('\n🎉 ALERTING & MONITORING SYSTEMS READY');
@@ -1047,14 +1126,15 @@ async function validateAlertingAndMonitoring() {
       logSuccess('✅ Notification systems working');
       logSuccess('✅ Monitoring dashboard accessible');
       logSuccess('\n✅ END-TO-END ALERTING VALIDATION PASSED');
-
     } else {
       logError('\n🚫 ALERTING & MONITORING ISSUES DETECTED');
       logError('The following areas need attention:');
 
       Object.entries(validations).forEach(([validationName, validation]) => {
         if (validation.status === 'failed' || validation.status === 'warning') {
-          const displayName = validationName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const displayName = validationName
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, (l) => l.toUpperCase());
           logError(`  ❌ ${displayName}: ${validation.status}`);
         }
       });
@@ -1063,7 +1143,6 @@ async function validateAlertingAndMonitoring() {
       logError(`📄 Report: ${report.artifacts.reportFile}`);
       logError(`🌐 HTML Report: ${report.artifacts.htmlReportFile}`);
     }
-
   } catch (error) {
     logError(`Alerting and monitoring validation failed: ${error.message}`);
     process.exit(1);
@@ -1072,7 +1151,7 @@ async function validateAlertingAndMonitoring() {
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  validateAlertingAndMonitoring().catch(error => {
+  validateAlertingAndMonitoring().catch((error) => {
     logError(`Unexpected error: ${error.message}`);
     process.exit(1);
   });

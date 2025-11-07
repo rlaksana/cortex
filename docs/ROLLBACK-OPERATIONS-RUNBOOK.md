@@ -49,34 +49,38 @@ This runbook provides comprehensive procedures for rolling back Cortex Memory MC
 
 ### Blast Radius Analysis
 
-| Rollback Type | User Impact | Data Impact | Downtime | Dependencies |
-|---------------|-------------|-------------|----------|--------------|
-| **Full Application** | Complete outage | No data loss | 2-5 minutes | All services |
-| **Database Only** | Read-only mode | Potential data loss | 1-3 minutes | Qdrant only |
-| **Configuration** | Partial functionality | No data loss | < 1 minute | No dependencies |
-| **Partial Feature** | Limited features | No data loss | < 30 seconds | Targeted services |
+| Rollback Type        | User Impact           | Data Impact         | Downtime     | Dependencies      |
+| -------------------- | --------------------- | ------------------- | ------------ | ----------------- |
+| **Full Application** | Complete outage       | No data loss        | 2-5 minutes  | All services      |
+| **Database Only**    | Read-only mode        | Potential data loss | 1-3 minutes  | Qdrant only       |
+| **Configuration**    | Partial functionality | No data loss        | < 1 minute   | No dependencies   |
+| **Partial Feature**  | Limited features      | No data loss        | < 30 seconds | Targeted services |
 
 ### Impact Assessment Matrix
 
 #### Critical Impact (Immediate Rollback Required)
+
 - Service completely unavailable
 - Data corruption or loss
 - Security breach vulnerability
 - Error rate > 10%
 
 #### High Impact (Rollback within 5 minutes)
+
 - Response times > 10 seconds
 - Error rate 5-10%
 - Critical features non-functional
 - Database connection failures
 
 #### Medium Impact (Rollback within 15 minutes)
+
 - Response times 5-10 seconds
 - Error rate 2-5%
 - Non-critical features affected
 - Performance degradation
 
 #### Low Impact (Rollback within 30 minutes)
+
 - Minor performance issues
 - Non-essential features affected
 - Cosmetic issues
@@ -115,6 +119,7 @@ This runbook provides comprehensive procedures for rolling back Cortex Memory MC
 **Use Case:** Complete service failure, critical bugs, or widespread performance issues
 
 #### Prerequisites
+
 - Previous stable version available
 - Full system backup created within last 24 hours
 - Rollback window approved (2-5 minutes downtime)
@@ -122,6 +127,7 @@ This runbook provides comprehensive procedures for rolling back Cortex Memory MC
 #### Step-by-Step Procedure
 
 **Step 1: Assess Current State (30 seconds)**
+
 ```bash
 # Check current service status
 systemctl status cortex-mcp
@@ -134,6 +140,7 @@ docker images | grep cortex
 ```
 
 **Step 2: Stop Current Services (30 seconds)**
+
 ```bash
 # Stop MCP server
 sudo systemctl stop cortex-mcp
@@ -147,6 +154,7 @@ docker ps | grep qdrant
 ```
 
 **Step 3: Restore Previous Version (1-2 minutes)**
+
 ```bash
 # Switch to previous stable tag
 git checkout v2.0.0  # Replace with target version
@@ -161,6 +169,7 @@ cp /backups/config/production-config.json src/config/
 ```
 
 **Step 4: Restore Database (1-2 minutes)**
+
 ```bash
 # Restore Qdrant from backup
 cd docker
@@ -181,6 +190,7 @@ curl -s http://localhost:6333/health
 ```
 
 **Step 5: Restart Services (30 seconds)**
+
 ```bash
 # Start MCP server
 sudo systemctl start cortex-mcp
@@ -191,6 +201,7 @@ curl -s http://localhost:3000/health | jq .
 ```
 
 #### Rollback Verification Checklist
+
 - [ ] MCP server responding on port 3000
 - [ ] Health endpoint returns healthy status
 - [ ] Qdrant responding on port 6333
@@ -204,6 +215,7 @@ curl -s http://localhost:3000/health | jq .
 **Use Case:** Data corruption, indexing issues, or Qdrant-specific problems
 
 #### Prerequisites
+
 - Recent Qdrant snapshot available
 - Database backup verified
 - Application code is stable
@@ -211,6 +223,7 @@ curl -s http://localhost:3000/health | jq .
 #### Step-by-Step Procedure
 
 **Step 1: Isolate Database Issues (30 seconds)**
+
 ```bash
 # Test Qdrant connectivity
 curl -s http://localhost:6333/collections
@@ -221,6 +234,7 @@ tail -100 /app/logs/cortex-mcp.log | grep -i error
 ```
 
 **Step 2: Create Emergency Backup (30 seconds)**
+
 ```bash
 # Create snapshot of current state
 curl -X POST "http://localhost:6333/collections/cortex-memory/snapshots" \
@@ -231,6 +245,7 @@ docker cp cortex-qdrant:/qdrant/snapshots /backups/qdrant/emergency-$(date +%Y%m
 ```
 
 **Step 3: Stop Database Operations (30 seconds)**
+
 ```bash
 # Stop MCP server to prevent writes
 sudo systemctl stop cortex-mcp
@@ -240,6 +255,7 @@ docker-compose -f docker/docker-compose.yml down qdrant
 ```
 
 **Step 4: Restore Database (1-2 minutes)**
+
 ```bash
 # Identify target backup
 LATEST_BACKUP=$(ls -t /backups/qdrant/qdrant-backup-*.tar.gz | head -1)
@@ -258,6 +274,7 @@ sleep 30
 ```
 
 **Step 5: Verify Database Health (30 seconds)**
+
 ```bash
 # Test collection access
 curl -s http://localhost:6333/collections/cortex-memory
@@ -269,6 +286,7 @@ curl -X POST "http://localhost:6333/collections/cortex-memory/points/search" \
 ```
 
 **Step 6: Restart Application (30 seconds)**
+
 ```bash
 # Start MCP server
 sudo systemctl start cortex-mcp
@@ -278,6 +296,7 @@ curl -s http://localhost:3000/health | jq .
 ```
 
 #### Database Rollback Verification
+
 - [ ] Qdrant collection accessible
 - [ ] Vector search operations successful
 - [ ] Point count matches expected
@@ -290,6 +309,7 @@ curl -s http://localhost:3000/health | jq .
 **Use Case:** Invalid environment settings, authentication issues, configuration errors
 
 #### Prerequisites
+
 - Configuration backup available
 - Change history documented
 - Configuration validation tools ready
@@ -297,6 +317,7 @@ curl -s http://localhost:3000/health | jq .
 #### Step-by-Step Procedure
 
 **Step 1: Identify Configuration Issue (30 seconds)**
+
 ```bash
 # Check current configuration
 cat .env | grep -v '^#' | sort
@@ -308,6 +329,7 @@ npm run config:check
 ```
 
 **Step 2: Backup Current Configuration (15 seconds)**
+
 ```bash
 # Create timestamped backup
 cp .env /backups/config/.env.failed-$(date +%Y%m%d-%H%M%S)
@@ -315,6 +337,7 @@ cp src/config/production-config.json /backups/config/production-config.failed-$(
 ```
 
 **Step 3: Restore Previous Configuration (30 seconds)**
+
 ```bash
 # Identify last known good configuration
 LATEST_ENV_BACKUP=$(ls -t /backups/config/.env.production.* | head -1)
@@ -326,6 +349,7 @@ cp $LATEST_CONFIG_BACKUP src/config/production-config.json
 ```
 
 **Step 4: Validate Restored Configuration (30 seconds)**
+
 ```bash
 # Run configuration validation
 npm run prod:validate
@@ -336,6 +360,7 @@ node -c src/config/production-config.json
 ```
 
 **Step 5: Restart Service (30 seconds)**
+
 ```bash
 # Restart with new configuration
 sudo systemctl restart cortex-mcp
@@ -345,6 +370,7 @@ curl -s http://localhost:3000/health | jq .
 ```
 
 #### Configuration Rollback Verification
+
 - [ ] Configuration files syntactically correct
 - [ ] Environment variables properly set
 - [ ] Service starts without errors
@@ -357,6 +383,7 @@ curl -s http://localhost:3000/health | jq .
 **Use Case:** Specific feature failure, experimental feature issues, targeted component problems
 
 #### Prerequisites
+
 - Feature flags implemented
 - Component isolation possible
 - Granular rollback mechanism available
@@ -364,6 +391,7 @@ curl -s http://localhost:3000/health | jq .
 #### Step-by-Step Procedure
 
 **Step 1: Identify Affected Feature (30 seconds)**
+
 ```bash
 # Check feature flags
 grep -r "ENABLE_" .env
@@ -374,6 +402,7 @@ tail -100 /app/logs/cortex-mcp.log | grep -E "(embedding|search|auth)"
 ```
 
 **Step 2: Disable Problematic Feature (15 seconds)**
+
 ```bash
 # Disable feature via environment variable
 sed -i 's/INSIGHT_GENERATION_ENABLED=true/INSIGHT_GENERATION_ENABLED=false/' .env
@@ -385,6 +414,7 @@ npm run feature:disable --feature=semantic-chunking
 ```
 
 **Step 3: Restart Affected Components (30 seconds)**
+
 ```bash
 # Graceful restart to apply changes
 sudo systemctl reload cortex-mcp
@@ -394,6 +424,7 @@ sudo systemctl restart cortex-mcp
 ```
 
 **Step 4: Verify Feature Rollback (30 seconds)**
+
 ```bash
 # Test that feature is disabled
 curl -s http://localhost:3000/features | jq '.insight_generation.enabled'
@@ -403,6 +434,7 @@ curl -s http://localhost:3000/health | jq .
 ```
 
 #### Partial Rollback Verification
+
 - [ ] Targeted feature disabled
 - [ ] Core functionality intact
 - [ ] No error propagation to other components
@@ -416,12 +448,14 @@ curl -s http://localhost:3000/health | jq .
 ### Automated Health Checks
 
 #### Primary Health Check
+
 ```bash
 # Comprehensive health verification
 curl -s http://localhost:3000/health | jq .
 ```
 
 Expected response:
+
 ```json
 {
   "status": "healthy",
@@ -440,6 +474,7 @@ Expected response:
 #### Component-Specific Checks
 
 **Database Health:**
+
 ```bash
 # Qdrant health check
 curl -s http://localhost:6333/health
@@ -452,6 +487,7 @@ curl -s http://localhost:6333/collections/cortex-memory | jq '.result.points_cou
 ```
 
 **Search Functionality:**
+
 ```bash
 # Test vector search
 curl -X POST "http://localhost:3000/api/search" \
@@ -460,6 +496,7 @@ curl -X POST "http://localhost:3000/api/search" \
 ```
 
 **Memory Operations:**
+
 ```bash
 # Test memory storage
 curl -X POST "http://localhost:3000/api/memory/store" \
@@ -473,6 +510,7 @@ curl -X GET "http://localhost:3000/api/memory/recent?limit=5"
 ### Manual Verification Checklist
 
 #### Service Availability
+
 - [ ] HTTP server responding on port 3000
 - [ ] Health endpoint returns 200 OK
 - [ ] All API endpoints accessible
@@ -480,6 +518,7 @@ curl -X GET "http://localhost:3000/api/memory/recent?limit=5"
 - [ ] Response times < 2 seconds
 
 #### Data Integrity
+
 - [ ] Qdrant collection accessible
 - [ ] Vector search operations working
 - [ ] Memory storage/retrieval functional
@@ -487,6 +526,7 @@ curl -X GET "http://localhost:3000/api/memory/recent?limit=5"
 - [ ] Point counts stable
 
 #### Performance Metrics
+
 - [ ] CPU usage < 80%
 - [ ] Memory usage < 2GB
 - [ ] Disk space available > 1GB
@@ -494,6 +534,7 @@ curl -X GET "http://localhost:3000/api/memory/recent?limit=5"
 - [ ] Error rate < 1%
 
 #### Security Validation
+
 - [ ] Authentication working (if enabled)
 - [ ] Rate limiting functional
 - [ ] HTTPS/TLS working (if configured)
@@ -573,30 +614,30 @@ echo "🎉 All smoke tests passed! Rollback verification successful."
 
 ### Recovery Time Objectives (RTO)
 
-| Scenario | Target RTO | Typical Actual | Maximum Acceptable |
-|----------|------------|----------------|-------------------|
-| **Full Application Rollback** | 5 minutes | 2-5 minutes | 10 minutes |
-| **Database-Only Rollback** | 3 minutes | 1-3 minutes | 5 minutes |
-| **Configuration Rollback** | 1 minute | < 1 minute | 2 minutes |
-| **Partial Feature Rollback** | 30 seconds | < 30 seconds | 1 minute |
+| Scenario                      | Target RTO | Typical Actual | Maximum Acceptable |
+| ----------------------------- | ---------- | -------------- | ------------------ |
+| **Full Application Rollback** | 5 minutes  | 2-5 minutes    | 10 minutes         |
+| **Database-Only Rollback**    | 3 minutes  | 1-3 minutes    | 5 minutes          |
+| **Configuration Rollback**    | 1 minute   | < 1 minute     | 2 minutes          |
+| **Partial Feature Rollback**  | 30 seconds | < 30 seconds   | 1 minute           |
 
 ### Recovery Point Objectives (RPO)
 
-| Scenario | Target RPO | Backup Frequency | Maximum Data Loss |
-|----------|------------|------------------|-------------------|
-| **Vector Data** | 15 minutes | Every 10 minutes | 15 minutes |
-| **Configuration** | 1 hour | On change | Minimal |
-| **System State** | 1 hour | Every 30 minutes | 1 hour |
-| **User Data** | 5 minutes | Real-time | < 5 minutes |
+| Scenario          | Target RPO | Backup Frequency | Maximum Data Loss |
+| ----------------- | ---------- | ---------------- | ----------------- |
+| **Vector Data**   | 15 minutes | Every 10 minutes | 15 minutes        |
+| **Configuration** | 1 hour     | On change        | Minimal           |
+| **System State**  | 1 hour     | Every 30 minutes | 1 hour            |
+| **User Data**     | 5 minutes  | Real-time        | < 5 minutes       |
 
 ### Performance Targets During Rollback
 
-| Metric | Target | Critical Threshold |
-|--------|--------|-------------------|
-| **Response Time** | < 2 seconds | > 5 seconds |
-| **Error Rate** | < 1% | > 5% |
-| **Availability** | > 99.9% | < 99% |
-| **Throughput** | > 100 req/min | < 50 req/min |
+| Metric            | Target        | Critical Threshold |
+| ----------------- | ------------- | ------------------ |
+| **Response Time** | < 2 seconds   | > 5 seconds        |
+| **Error Rate**    | < 1%          | > 5%               |
+| **Availability**  | > 99.9%       | < 99%              |
+| **Throughput**    | > 100 req/min | < 50 req/min       |
 
 ---
 
@@ -605,6 +646,7 @@ echo "🎉 All smoke tests passed! Rollback verification successful."
 ### Automated Rollback Testing
 
 #### Test Environment Setup
+
 ```bash
 # Create rollback test environment
 npm run test:rollback:setup
@@ -617,6 +659,7 @@ npm run test:failure:simulate
 ```
 
 #### Rollback Test Execution
+
 ```bash
 #!/bin/bash
 # test-rollback-procedure.sh
@@ -645,6 +688,7 @@ echo "✅ All rollback tests completed"
 ### Manual Rollback Testing Checklist
 
 #### Pre-Deployment Validation
+
 - [ ] Rollback procedures documented and reviewed
 - [ ] Backup procedures tested and verified
 - [ ] Rollback test environment prepared
@@ -652,6 +696,7 @@ echo "✅ All rollback tests completed"
 - [ ] Communication channels tested
 
 #### Rollback Dry Run
+
 - [ ] Configuration backup restored successfully
 - [ ] Database backup restored successfully
 - [ ] Application version downgrade successful
@@ -660,6 +705,7 @@ echo "✅ All rollback tests completed"
 - [ ] No data loss detected
 
 #### Failure Scenario Testing
+
 - [ ] Service unavailable scenario tested
 - [ ] Database corruption scenario tested
 - [ ] Configuration error scenario tested
@@ -712,16 +758,17 @@ describe('Rollback Validation', () => {
 
 ### Rollback Communication Matrix
 
-| Audience | Communication Method | Timing | Content |
-|----------|---------------------|--------|---------|
-| **Internal Team** | Slack/Teams | Immediate | Technical details, rollback status |
-| **Management** | Email/Phone | Within 5 minutes | Impact assessment, ETA |
-| **Users** | Status Page | Within 10 minutes | Service status, expected resolution |
-| **Stakeholders** | Email/Meeting | Within 30 minutes | Root cause, prevention measures |
+| Audience          | Communication Method | Timing            | Content                             |
+| ----------------- | -------------------- | ----------------- | ----------------------------------- |
+| **Internal Team** | Slack/Teams          | Immediate         | Technical details, rollback status  |
+| **Management**    | Email/Phone          | Within 5 minutes  | Impact assessment, ETA              |
+| **Users**         | Status Page          | Within 10 minutes | Service status, expected resolution |
+| **Stakeholders**  | Email/Meeting        | Within 30 minutes | Root cause, prevention measures     |
 
 ### Communication Templates
 
 #### Internal Team Notification
+
 ```
 🚨 EMERGENCY ROLLBACK INITIATED
 
@@ -743,6 +790,7 @@ Next Update: [Time]
 ```
 
 #### User-Facing Status Update
+
 ```
 ⚠️ SERVICE INTERRUPTION - ROLLBACK IN PROGRESS
 
@@ -758,6 +806,7 @@ Real-time updates: [Status Page URL]
 ```
 
 #### Management Update
+
 ```
 EMERGENCY ROLLBACK - SITUATION REPORT
 
@@ -791,16 +840,19 @@ Contact: [On-call contact]
 ### Escalation Procedures
 
 #### Level 1 Escalation (5 minutes)
+
 - **Trigger:** Rollback not progressing as expected
 - **Action:** Notify senior engineer
 - **Contact:** [Senior Engineer Contact]
 
 #### Level 2 Escalation (10 minutes)
+
 - **Trigger:** Rollback failed or exceeding RTO
 - **Action:** Notify engineering manager
 - **Contact:** [Engineering Manager Contact]
 
 #### Level 3 Escalation (15 minutes)
+
 - **Trigger:** Critical service failure, data loss
 - **Action:** Notify director/VPOE
 - **Contact:** [Director Contact]
@@ -812,9 +864,11 @@ Contact: [On-call contact]
 ### Common Rollback Issues
 
 #### Issue 1: Service Won't Stop
+
 **Symptoms:** `systemctl stop` hangs, service still running
 **Causes:** Hanging connections, graceful shutdown timeout
 **Solutions:**
+
 ```bash
 # Force stop service
 sudo systemctl kill cortex-mcp
@@ -829,9 +883,11 @@ sudo systemctl reset-failed cortex-mcp
 ```
 
 #### Issue 2: Database Won't Start
+
 **Symptoms:** Qdrant container fails to start, connection refused
 **Causes:** Corrupted data, port conflicts, permission issues
 **Solutions:**
+
 ```bash
 # Check container status
 docker ps -a | grep qdrant
@@ -850,9 +906,11 @@ ls -la /var/lib/docker/volumes/
 ```
 
 #### Issue 3: Configuration Validation Fails
+
 **Symptoms:** Service starts but health checks fail
 **Causes:** Invalid environment variables, missing required config
 **Solutions:**
+
 ```bash
 # Validate configuration
 npm run prod:validate
@@ -867,9 +925,11 @@ cp /backups/config/production-config.json src/config/
 ```
 
 #### Issue 4: Performance Issues After Rollback
+
 **Symptoms:** Slow response times, high CPU/memory usage
 **Causes:** Incomplete rollback, cache issues, resource contention
 **Solutions:**
+
 ```bash
 # Check system resources
 top -p $(pgrep -f "node.*cortex")
@@ -887,6 +947,7 @@ sudo systemctl restart cortex-mcp
 ### Debugging Commands
 
 #### Service Status
+
 ```bash
 # Detailed service status
 systemctl status cortex-mcp --no-pager -l
@@ -899,6 +960,7 @@ tail -100 /app/logs/cortex-mcp.log | grep -E "(ERROR|WARN)"
 ```
 
 #### Database Diagnostics
+
 ```bash
 # Qdrant container status
 docker ps | grep qdrant
@@ -915,6 +977,7 @@ curl -s http://localhost:6333/collections/cortex-memory/points/count | jq .
 ```
 
 #### Network Diagnostics
+
 ```bash
 # Port availability
 netstat -tulpn | grep -E ":(3000|6333)"
@@ -931,6 +994,7 @@ curl -v http://localhost:6333/health
 ### Emergency Commands
 
 #### Force System Reset
+
 ```bash
 # Complete system reset (use with caution)
 sudo systemctl stop cortex-mcp
@@ -941,6 +1005,7 @@ sudo systemctl start cortex-mcp
 ```
 
 #### Emergency Data Recovery
+
 ```bash
 # Restore from latest backup
 LATEST_BACKUP=$(ls -t /backups/qdrant/qdrant-backup-*.tar.gz | head -1)
@@ -1054,6 +1119,7 @@ Next Review Date: [Date]
 ### Quick Reference Commands
 
 #### Health Checks
+
 ```bash
 # Application health
 curl -s http://localhost:3000/health | jq .
@@ -1067,6 +1133,7 @@ docker ps | grep qdrant
 ```
 
 #### Rollback Commands
+
 ```bash
 # Full rollback
 git checkout v2.0.0
@@ -1085,6 +1152,7 @@ sudo systemctl restart cortex-mcp
 ```
 
 #### Verification Commands
+
 ```bash
 # Smoke test
 ./scripts/rollback-smoke-test.sh
@@ -1099,22 +1167,22 @@ npm run test:performance:quick
 
 ### Contact Information
 
-| Role | Contact | Hours |
-|------|---------|-------|
-| **Primary On-Call** | [Phone/Email] | 24/7 |
-| **Secondary On-Call** | [Phone/Email] | 24/7 |
-| **Engineering Manager** | [Phone/Email] | Business Hours |
-| **Product Manager** | [Phone/Email] | Business Hours |
-| **DevOps Team** | [Slack Channel] | Business Hours |
-| **Security Team** | [Security Hotline] | 24/7 for security issues |
+| Role                    | Contact            | Hours                    |
+| ----------------------- | ------------------ | ------------------------ |
+| **Primary On-Call**     | [Phone/Email]      | 24/7                     |
+| **Secondary On-Call**   | [Phone/Email]      | 24/7                     |
+| **Engineering Manager** | [Phone/Email]      | Business Hours           |
+| **Product Manager**     | [Phone/Email]      | Business Hours           |
+| **DevOps Team**         | [Slack Channel]    | Business Hours           |
+| **Security Team**       | [Security Hotline] | 24/7 for security issues |
 
 ### Document History
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 2.0.1 | 2025-11-05 | Initial comprehensive rollback runbook | Cortex Operations Team |
-| | | | |
-| | | | |
+| Version | Date       | Changes                                | Author                 |
+| ------- | ---------- | -------------------------------------- | ---------------------- |
+| 2.0.1   | 2025-11-05 | Initial comprehensive rollback runbook | Cortex Operations Team |
+|         |            |                                        |                        |
+|         |            |                                        |                        |
 
 ---
 

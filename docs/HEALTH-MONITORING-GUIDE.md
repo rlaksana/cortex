@@ -132,12 +132,12 @@ const config = {
   healthCheckIntervalMs: 30000,
   metricsCollectionIntervalMs: 10000,
   thresholds: {
-    errorRateWarning: 5,      // percentage
-    errorRateCritical: 15,     // percentage
+    errorRateWarning: 5, // percentage
+    errorRateCritical: 15, // percentage
     responseTimeWarning: 1000, // milliseconds
-    responseTimeCritical: 5000,// milliseconds
-    memoryUsageWarning: 80,    // percentage
-    memoryUsageCritical: 95,   // percentage
+    responseTimeCritical: 5000, // milliseconds
+    memoryUsageWarning: 80, // percentage
+    memoryUsageCritical: 95, // percentage
   },
   circuitBreakerMonitoring: {
     enabled: true,
@@ -223,11 +223,13 @@ The health dashboard API provides comprehensive monitoring data through REST end
 #### Base Path: `/api/health-dashboard/v1`
 
 ##### Get Dashboard Summary
+
 ```http
 GET /api/health-dashboard/v1/summary
 ```
 
 Response:
+
 ```json
 {
   "success": true,
@@ -273,21 +275,25 @@ Response:
 ```
 
 ##### Get Real-time Health Data
+
 ```http
 GET /api/health-dashboard/v1/realtime
 ```
 
 ##### Get Historical Health Data
+
 ```http
 GET /api/health-dashboard/v1/historical?timeRange=1h&interval=5m
 ```
 
 ##### Get Active Alerts
+
 ```http
 GET /api/health-dashboard/v1/alerts?severity=warning&status=active&limit=50
 ```
 
 ##### Export Health Data
+
 ```http
 GET /api/health-dashboard/v1/export?format=json&timeRange=24h
 GET /api/health-dashboard/v1/export?format=csv&timeRange=24h
@@ -297,11 +303,13 @@ GET /api/health-dashboard/v1/export?format=prometheus
 ### Container Probes
 
 #### Readiness Probe
+
 ```http
 GET /ready
 ```
 
 Response:
+
 ```json
 {
   "status": "ready",
@@ -317,11 +325,13 @@ Response:
 ```
 
 #### Liveness Probe
+
 ```http
 GET /health/live
 ```
 
 Response:
+
 ```json
 {
   "status": "alive",
@@ -335,6 +345,7 @@ Response:
 ```
 
 #### Startup Probe
+
 ```http
 GET /startup
 ```
@@ -352,48 +363,48 @@ spec:
   template:
     spec:
       containers:
-      - name: cortex-mcp
-        image: cortex-mcp:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: QDRANT_URL
-          value: "http://qdrant:6333"
-        - name: ENABLE_CONTAINER_PROBES
-          value: "true"
-        - name: AUTO_START_HEALTH_MONITORING
-          value: "true"
-        livenessProbe:
-          httpGet:
-            path: /health/live
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
-        startupProbe:
-          httpGet:
-            path: /startup
-            port: 3000
-          initialDelaySeconds: 0
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 30
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
+        - name: cortex-mcp
+          image: cortex-mcp:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: QDRANT_URL
+              value: 'http://qdrant:6333'
+            - name: ENABLE_CONTAINER_PROBES
+              value: 'true'
+            - name: AUTO_START_HEALTH_MONITORING
+              value: 'true'
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 3000
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests:
+              memory: '256Mi'
+              cpu: '250m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
 ```
 
 ### Docker Compose
@@ -404,14 +415,14 @@ services:
   cortex-mcp:
     image: cortex-mcp:latest
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - QDRANT_URL=http://qdrant:6333
       - ENABLE_CONTAINER_PROBES=true
       - AUTO_START_HEALTH_MONITORING=true
       - LOG_LEVEL=info
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health/live']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -422,7 +433,7 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     ports:
-      - "6333:6333"
+      - '6333:6333'
 ```
 
 ## Monitoring and Alerting
@@ -472,8 +483,8 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "High error rate detected"
-          description: "Error rate is {{ $value | humanizePercentage }}"
+          summary: 'High error rate detected'
+          description: 'Error rate is {{ $value | humanizePercentage }}'
 
       - alert: HighMemoryUsage
         expr: cortex_memory_heap_usage_percent > 90
@@ -481,8 +492,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "High memory usage"
-          description: "Memory usage is {{ $value }}%"
+          summary: 'High memory usage'
+          description: 'Memory usage is {{ $value }}%'
 
       - alert: CircuitBreakerOpen
         expr: cortex_circuit_breaker_state == 1
@@ -490,8 +501,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Circuit breaker is open"
-          description: "Circuit breaker {{ $labels.service }} is open"
+          summary: 'Circuit breaker is open'
+          description: 'Circuit breaker {{ $labels.service }} is open'
 
       - alert: QdrantDown
         expr: cortex_qdrant_connection_status == 0
@@ -499,8 +510,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Qdrant is down"
-          description: "Qdrant connection is lost"
+          summary: 'Qdrant is down'
+          description: 'Qdrant connection is lost'
 ```
 
 ## Structured Logging
@@ -510,6 +521,7 @@ groups:
 The system supports multiple log formats:
 
 #### JSON Format (Default)
+
 ```json
 {
   "timestamp": "2025-01-01T12:00:00.000Z",
@@ -531,6 +543,7 @@ The system supports multiple log formats:
 ```
 
 #### Pretty Format
+
 ```
 2025-01-01T12:00:00.000Z INFO  system_health          [mcp-server] System health check: healthy | status: healthy | duration: 45ms
 ```
@@ -565,7 +578,7 @@ healthStructuredLogger.logCircuitBreakerEvent({
   eventType: 'recovery',
   timestamp: new Date(),
   currentState: 'closed',
-  previousState: 'open'
+  previousState: 'open',
 });
 
 // Log performance alert
@@ -573,8 +586,8 @@ healthStructuredLogger.logPerformanceAlert(
   'high_response_time',
   'warning',
   'mcp-server',
-  1000,  // threshold
-  1500,  // actual value
+  1000, // threshold
+  1500, // actual value
   'correlation-id-123'
 );
 ```
@@ -586,11 +599,13 @@ healthStructuredLogger.logPerformanceAlert(
 #### Health Check Failures
 
 1. **Qdrant Connection Issues**
+
    ```bash
    curl -f http://localhost:6333/health
    ```
 
 2. **Memory Pressure**
+
    ```bash
    # Check memory usage
    node --inspect index.js
@@ -607,6 +622,7 @@ healthStructuredLogger.logPerformanceAlert(
 #### Performance Issues
 
 1. **High Response Times**
+
    ```javascript
    // Check performance metrics
    const metrics = enhancedPerformanceCollector.getMCPMetrics();
@@ -636,11 +652,13 @@ healthStructuredLogger.logPerformanceAlert(
 ### Debug Mode
 
 Enable debug logging:
+
 ```bash
 LOG_LEVEL=debug npm start
 ```
 
 Enable detailed monitoring:
+
 ```bash
 ENABLE_DETAILED_HEALTH_CHECKS=true
 ENABLE_PERFORMANCE_COLLECTION=true

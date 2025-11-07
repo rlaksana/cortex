@@ -24,7 +24,7 @@ describe('Security Tests - Authentication and Authorization', () => {
         userId: testUserId,
         tenant: 'test-tenant',
         org: 'test-org',
-        role: 'user'
+        role: 'user',
       },
       'test-secret',
       { expiresIn: '1h' }
@@ -35,7 +35,7 @@ describe('Security Tests - Authentication and Authorization', () => {
         userId: uuidv4(),
         tenant: 'test-tenant',
         org: 'test-org',
-        role: 'admin'
+        role: 'admin',
       },
       'test-secret',
       { expiresIn: '1h' }
@@ -48,11 +48,14 @@ describe('Security Tests - Authentication and Authorization', () => {
 
   describe('JWT Token Validation', () => {
     it('should reject requests without authentication token', async () => {
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {} as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {} as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('authentication required');
@@ -68,18 +71,21 @@ describe('Security Tests - Authentication and Authorization', () => {
         undefined,
         123,
         {},
-        []
+        [],
       ];
 
       for (const invalidToken of invalidTokens) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: 'Test content',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, {
-          token: invalidToken as any,
-          userId: testUserId
-        } as any);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: 'Test content',
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          {
+            token: invalidToken as any,
+            userId: testUserId,
+          } as any
+        );
 
         expect(result.success).toBe(false);
         expect(result.error).toContain('invalid token');
@@ -93,14 +99,17 @@ describe('Security Tests - Authentication and Authorization', () => {
         { expiresIn: '-1h' } // Expired 1 hour ago
       );
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: expiredToken,
-        userId: testUserId
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: expiredToken,
+          userId: testUserId,
+        } as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('token expired');
@@ -113,28 +122,34 @@ describe('Security Tests - Authentication and Authorization', () => {
         { expiresIn: '1h' }
       );
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: tokenWithWrongSecret,
-        userId: testUserId
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: tokenWithWrongSecret,
+          userId: testUserId,
+        } as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('invalid signature');
     });
 
     it('should validate token claims match request context', async () => {
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: testToken,
-        userId: 'different-user-id' // Mismatch with token
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: testToken,
+          userId: 'different-user-id', // Mismatch with token
+        } as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('token context mismatch');
@@ -148,23 +163,29 @@ describe('Security Tests - Authentication and Authorization', () => {
         userId: testUserId,
         tenant: 'test-tenant',
         org: 'test-org',
-        role: 'user'
+        role: 'user',
       };
 
       // Regular user should be able to access their own data
-      const storeResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'User content',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const storeResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'User content',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(storeResult.success).toBe(true);
 
       // But should not be able to access admin operations
-      const adminResult = await memoryStore.performAdminAction({
-        action: 'delete-all-data',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, userContext);
+      const adminResult = await memoryStore.performAdminAction(
+        {
+          action: 'delete-all-data',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        userContext
+      );
 
       expect(adminResult.success).toBe(false);
       expect(adminResult.error).toContain('insufficient privileges');
@@ -176,14 +197,17 @@ describe('Security Tests - Authentication and Authorization', () => {
         userId: uuidv4(),
         tenant: 'test-tenant',
         org: 'test-org',
-        role: 'admin'
+        role: 'admin',
       };
 
       // Admin should be able to perform admin operations
-      const adminResult = await memoryStore.performAdminAction({
-        action: 'view-all-user-data',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, adminContext);
+      const adminResult = await memoryStore.performAdminAction(
+        {
+          action: 'view-all-user-data',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        adminContext
+      );
 
       expect(adminResult.success).toBe(true);
     });
@@ -194,20 +218,23 @@ describe('Security Tests - Authentication and Authorization', () => {
           userId: testUserId,
           tenant: 'test-tenant',
           org: 'test-org',
-          role: 'admin' // Tampered role
+          role: 'admin', // Tampered role
         },
         'test-secret',
         { expiresIn: '1h' }
       );
 
-      const result = await memoryStore.performAdminAction({
-        action: 'delete-all-data',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: tamperedToken,
-        userId: testUserId,
-        role: 'admin' // Tampered role in context
-      } as any);
+      const result = await memoryStore.performAdminAction(
+        {
+          action: 'delete-all-data',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: tamperedToken,
+          userId: testUserId,
+          role: 'admin', // Tampered role in context
+        } as any
+      );
 
       // Should be rejected if role verification is implemented properly
       expect(result.success).toBe(false);
@@ -221,7 +248,7 @@ describe('Security Tests - Authentication and Authorization', () => {
             userId: testUserId,
             tenant: 'test-tenant',
             org: 'test-org',
-            role: 'viewer' // Read-only role
+            role: 'viewer', // Read-only role
           },
           'test-secret',
           { expiresIn: '1h' }
@@ -229,23 +256,29 @@ describe('Security Tests - Authentication and Authorization', () => {
         userId: testUserId,
         tenant: 'test-tenant',
         org: 'test-org',
-        role: 'viewer'
+        role: 'viewer',
       };
 
       // Viewer should be able to read data
-      const readResult = await memoryStore.find({
-        query: 'test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, limitedUserContext);
+      const readResult = await memoryStore.find(
+        {
+          query: 'test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        limitedUserContext
+      );
 
       expect(readResult.items).toBeDefined();
 
       // But should not be able to write data
-      const writeResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Should not be allowed',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, limitedUserContext);
+      const writeResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Should not be allowed',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        limitedUserContext
+      );
 
       expect(writeResult.success).toBe(false);
       expect(writeResult.error).toContain('insufficient privileges');
@@ -255,39 +288,39 @@ describe('Security Tests - Authentication and Authorization', () => {
   describe('Multi-Tenant Isolation', () => {
     it('should enforce tenant boundaries', async () => {
       const tenantAContext = {
-        token: jwt.sign(
-          { userId: testUserId, tenant: 'tenant-a', org: 'org-a' },
-          'test-secret'
-        ),
+        token: jwt.sign({ userId: testUserId, tenant: 'tenant-a', org: 'org-a' }, 'test-secret'),
         userId: testUserId,
         tenant: 'tenant-a',
-        org: 'org-a'
+        org: 'org-a',
       };
 
       const tenantBContext = {
-        token: jwt.sign(
-          { userId: uuidv4(), tenant: 'tenant-b', org: 'org-b' },
-          'test-secret'
-        ),
+        token: jwt.sign({ userId: uuidv4(), tenant: 'tenant-b', org: 'org-b' }, 'test-secret'),
         userId: uuidv4(),
         tenant: 'tenant-b',
-        org: 'org-b'
+        org: 'org-b',
       };
 
       // Store data in tenant A
-      const storeResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Tenant A data',
-        scope: { tenant: 'tenant-a', org: 'org-a' }
-      }, tenantAContext);
+      const storeResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Tenant A data',
+          scope: { tenant: 'tenant-a', org: 'org-a' },
+        },
+        tenantAContext
+      );
 
       expect(storeResult.success).toBe(true);
 
       // Try to access from tenant B
-      const findResult = await memoryStore.find({
-        query: 'Tenant A data',
-        scope: { tenant: 'tenant-b', org: 'org-b' }
-      }, tenantBContext);
+      const findResult = await memoryStore.find(
+        {
+          query: 'Tenant A data',
+          scope: { tenant: 'tenant-b', org: 'org-b' },
+        },
+        tenantBContext
+      );
 
       expect(findResult.items).toHaveLength(0);
     });
@@ -299,15 +332,18 @@ describe('Security Tests - Authentication and Authorization', () => {
       );
 
       // Try to use tenant A token to access tenant B data
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Cross-tenant attempt',
-        scope: { tenant: 'tenant-b', org: 'org-b' } // Different tenant than token
-      }, {
-        token: tenantToken,
-        userId: testUserId,
-        tenant: 'tenant-b' // Mismatch with token
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Cross-tenant attempt',
+          scope: { tenant: 'tenant-b', org: 'org-b' }, // Different tenant than token
+        },
+        {
+          token: tenantToken,
+          userId: testUserId,
+          tenant: 'tenant-b', // Mismatch with token
+        } as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('tenant mismatch');
@@ -325,18 +361,21 @@ describe('Security Tests - Authentication and Authorization', () => {
         'sk_invalid_prefix',
         123,
         null,
-        undefined
+        undefined,
       ];
 
       // Test valid API key
-      const validResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'API key test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        apiKey: validApiKey,
-        userId: testUserId
-      } as any);
+      const validResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'API key test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          apiKey: validApiKey,
+          userId: testUserId,
+        } as any
+      );
 
       if (validResult.success) {
         expect(validResult.storedId).toBeDefined();
@@ -344,14 +383,17 @@ describe('Security Tests - Authentication and Authorization', () => {
 
       // Test invalid API keys
       for (const invalidKey of invalidApiKeys) {
-        const invalidResult = await memoryStore.store({
-          kind: 'entity' as const,
-          content: 'Invalid API key test',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, {
-          apiKey: invalidKey as any,
-          userId: testUserId
-        } as any);
+        const invalidResult = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: 'Invalid API key test',
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          {
+            apiKey: invalidKey as any,
+            userId: testUserId,
+          } as any
+        );
 
         expect(invalidResult.success).toBe(false);
         expect(invalidResult.error).toContain('invalid api key');
@@ -364,24 +406,28 @@ describe('Security Tests - Authentication and Authorization', () => {
       const requests = [];
       for (let i = 0; i < 10; i++) {
         requests.push(
-          memoryStore.store({
-            kind: 'entity' as const,
-            content: `API key request ${i}`,
-            scope: { tenant: 'test-tenant', org: 'test-org' }
-          }, {
-            apiKey: limitedApiKey,
-            userId: testUserId
-          } as any)
+          memoryStore.store(
+            {
+              kind: 'entity' as const,
+              content: `API key request ${i}`,
+              scope: { tenant: 'test-tenant', org: 'test-org' },
+            },
+            {
+              apiKey: limitedApiKey,
+              userId: testUserId,
+            } as any
+          )
         );
       }
 
       const results = await Promise.allSettled(requests);
 
       // Some requests should be rate limited
-      const rateLimitedRequests = results.filter(result =>
-        result.status === 'fulfilled' &&
-        !result.value.success &&
-        result.value.error?.includes('rate limit')
+      const rateLimitedRequests = results.filter(
+        (result) =>
+          result.status === 'fulfilled' &&
+          !result.value.success &&
+          result.value.error?.includes('rate limit')
       );
 
       expect(rateLimitedRequests.length).toBeGreaterThan(0);
@@ -392,16 +438,19 @@ describe('Security Tests - Authentication and Authorization', () => {
     it('should validate session integrity', async () => {
       const sessionId = uuidv4();
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Session test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        sessionId,
-        userId: testUserId,
-        tenant: 'test-tenant',
-        org: 'test-org'
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Session test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          sessionId,
+          userId: testUserId,
+          tenant: 'test-tenant',
+          org: 'test-org',
+        } as any
+      );
 
       if (result.success) {
         expect(result.sessionId).toBeDefined();
@@ -412,16 +461,19 @@ describe('Security Tests - Authentication and Authorization', () => {
     it('should detect and prevent session fixation', async () => {
       const fixedSessionId = 'attacker-controlled-session-id';
 
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Session fixation test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        sessionId: fixedSessionId,
-        userId: testUserId,
-        tenant: 'test-tenant',
-        org: 'test-org'
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Session fixation test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          sessionId: fixedSessionId,
+          userId: testUserId,
+          tenant: 'test-tenant',
+          org: 'test-org',
+        } as any
+      );
 
       if (!result.success) {
         expect(result.error).toContain('invalid session');
@@ -435,17 +487,20 @@ describe('Security Tests - Authentication and Authorization', () => {
       const expiredSessionId = uuidv4();
 
       // Simulate expired session
-      const result = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Expired session test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        sessionId: expiredSessionId,
-        userId: testUserId,
-        tenant: 'test-tenant',
-        org: 'test-org',
-        sessionExpired: true
-      } as any);
+      const result = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Expired session test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          sessionId: expiredSessionId,
+          userId: testUserId,
+          tenant: 'test-tenant',
+          org: 'test-org',
+          sessionExpired: true,
+        } as any
+      );
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('session expired');
@@ -458,33 +513,39 @@ describe('Security Tests - Authentication and Authorization', () => {
 
       // Simulate multiple failed authentication attempts
       for (let i = 0; i < 5; i++) {
-        const result = await memoryStore.store({
-          kind: 'entity' as const,
-          content: 'Failed auth test',
-          scope: { tenant: 'test-tenant', org: 'test-org' }
-        }, {
-          token: 'invalid.token.here',
-          userId: testUserId
-        } as any);
+        const result = await memoryStore.store(
+          {
+            kind: 'entity' as const,
+            content: 'Failed auth test',
+            scope: { tenant: 'test-tenant', org: 'test-org' },
+          },
+          {
+            token: 'invalid.token.here',
+            userId: testUserId,
+          } as any
+        );
 
         failedAttempts.push(result);
       }
 
       // All attempts should fail
-      failedAttempts.forEach(result => {
+      failedAttempts.forEach((result) => {
         expect(result.success).toBe(false);
         expect(result.error).toContain('authentication');
       });
 
       // After multiple failures, account should be locked
-      const lockedResult = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Account locked test',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: testToken, // Valid token now
-        userId: testUserId
-      } as any);
+      const lockedResult = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Account locked test',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: testToken, // Valid token now
+          userId: testUserId,
+        } as any
+      );
 
       // Should be rejected due to account lockout
       expect(lockedResult.success).toBe(false);
@@ -495,27 +556,33 @@ describe('Security Tests - Authentication and Authorization', () => {
       const startTime = Date.now();
 
       // First failed attempt
-      const result1 = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test 1',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: 'invalid.token',
-        userId: testUserId
-      } as any);
+      const result1 = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test 1',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: 'invalid.token',
+          userId: testUserId,
+        } as any
+      );
 
       const firstDelay = Date.now() - startTime;
 
       // Second failed attempt (should have longer delay)
       const secondStartTime = Date.now();
-      const result2 = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Test 2',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        token: 'invalid.token',
-        userId: testUserId
-      } as any);
+      const result2 = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Test 2',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          token: 'invalid.token',
+          userId: testUserId,
+        } as any
+      );
 
       const secondDelay = Date.now() - secondStartTime;
 
@@ -533,28 +600,34 @@ describe('Security Tests - Authentication and Authorization', () => {
       const session2 = uuidv4();
 
       // First session
-      const result1 = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Session 1',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        sessionId: session1,
-        userId: testUserId,
-        tenant: 'test-tenant',
-        org: 'test-org'
-      } as any);
+      const result1 = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Session 1',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          sessionId: session1,
+          userId: testUserId,
+          tenant: 'test-tenant',
+          org: 'test-org',
+        } as any
+      );
 
       // Second concurrent session
-      const result2 = await memoryStore.store({
-        kind: 'entity' as const,
-        content: 'Session 2',
-        scope: { tenant: 'test-tenant', org: 'test-org' }
-      }, {
-        sessionId: session2,
-        userId: testUserId,
-        tenant: 'test-tenant',
-        org: 'test-org'
-      } as any);
+      const result2 = await memoryStore.store(
+        {
+          kind: 'entity' as const,
+          content: 'Session 2',
+          scope: { tenant: 'test-tenant', org: 'test-org' },
+        },
+        {
+          sessionId: session2,
+          userId: testUserId,
+          tenant: 'test-tenant',
+          org: 'test-org',
+        } as any
+      );
 
       if (result1.success && result2.success) {
         // If both succeed, there should be session conflict handling

@@ -1,9 +1,14 @@
-import { logger } from './mcp-logger.js';
+// Temporarily use simple logger to break circular dependencies
+import { simpleLogger } from './logger-wrapper.js';
 import {
   generateCorrelationId,
   withCorrelationId,
   getOrCreateCorrelationId,
 } from './correlation-id.js';
+
+// Re-export simple logger as logger to maintain compatibility
+export const logger = simpleLogger;
+export const ProductionLogger = simpleLogger;
 
 /**
  * Structured JSON logger using Pino
@@ -20,9 +25,6 @@ import {
  * - result_count: Number of hits returned
  * - scope: {org, project, branch} for audit
  */
-
-// Re-export the logger and correlation ID utilities
-export { logger };
 export {
   generateCorrelationId,
   setCorrelationId,
@@ -30,6 +32,7 @@ export {
   getOrCreateCorrelationId,
   extractCorrelationIdFromRequest,
 } from './correlation-id.js';
+
 
 /**
  * Create a child logger with additional context
@@ -42,7 +45,14 @@ export {
  * requestLogger.info({ query: 'auth tokens' }, 'Search query received');
  */
 export function createChildLogger(context: Record<string, unknown>) {
-  return logger.child(context) as ReturnType<typeof logger.child>;
+  // Simple logger doesn't have child method, so return a wrapper that adds context
+  return {
+    info: (message: any, meta?: any) => logger.info(message, { ...context, ...meta }),
+    warn: (message: any, meta?: any) => logger.warn(message, { ...context, ...meta }),
+    error: (message: any, meta?: any) => logger.error(message, { ...context, ...meta }),
+    debug: (message: any, meta?: any) => logger.debug(message, { ...context, ...meta }),
+    flush: logger.flush?.bind(logger),
+  };
 }
 
 /**

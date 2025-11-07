@@ -159,10 +159,25 @@ async function setupServiceMocks(): Promise<void> {
       status: 'stored',
       created_at: new Date().toISOString(),
     }),
+    storeItems: vi.fn().mockResolvedValue({
+      stored: [{ id: 'test-id', status: 'stored' }],
+      failed: [],
+      duplicates: [],
+    }),
     find: vi.fn().mockResolvedValue([]),
     update: vi.fn().mockResolvedValue(true),
     delete: vi.fn().mockResolvedValue(true),
     healthCheck: vi.fn().mockResolvedValue(true),
+    memory_store: vi.fn().mockResolvedValue({
+      id: 'test-id',
+      kind: 'entity',
+      status: 'stored',
+    }),
+    memory_find: vi.fn().mockResolvedValue([]),
+    system_status: vi.fn().mockResolvedValue({
+      status: 'healthy',
+      metrics: { total_items: 0, memory_usage: 0 },
+    }),
   };
 
   // Mock embedding service

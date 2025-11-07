@@ -129,7 +129,7 @@ This architecture provides a solid foundation for our scalable system.
       {
         id: parentItem.id,
         kind: parentItem.kind,
-        content: parentItem.data.content,
+        content: parentItem['data.content'],
         data: parentItem.data,
         scope: parentItem.scope,
         confidence_score: 0.95,
@@ -139,7 +139,7 @@ This architecture provides a solid foundation for our scalable system.
       {
         id: chunk1.id,
         kind: chunk1.kind,
-        content: chunk1.data.content,
+        content: chunk1['data.content'],
         data: chunk1.data,
         scope: chunk1.scope,
         confidence_score: 0.9,
@@ -149,7 +149,7 @@ This architecture provides a solid foundation for our scalable system.
       {
         id: chunk2.id,
         kind: chunk2.kind,
-        content: chunk2.data.content,
+        content: chunk2['data.content'],
         data: chunk2.data,
         scope: chunk2.scope,
         confidence_score: 0.85,
@@ -159,7 +159,7 @@ This architecture provides a solid foundation for our scalable system.
       {
         id: chunk3.id,
         kind: chunk3.kind,
-        content: chunk3.data.content,
+        content: chunk3['data.content'],
         data: chunk3.data,
         scope: chunk3.scope,
         confidence_score: 0.8,
@@ -173,7 +173,7 @@ This architecture provides a solid foundation for our scalable system.
     expect(groupedResults.length).toBe(1);
 
     // Find the group for our parent
-    const groupedResult = groupedResults.find((g) => g.parent_id === 'parent-001');
+    const groupedResult = groupedResults.find((g) => g['parent_id'] === 'parent-001');
     expect(groupedResult).toBeDefined();
     expect(groupedResult!.is_single_item).toBe(false);
     expect(groupedResult!.chunks.length).toBe(3);
@@ -187,7 +187,7 @@ This architecture provides a solid foundation for our scalable system.
     expect(reconstructed.content).toContain('Third part of the document content');
 
     // Verify metadata
-    expect(reconstructed.total_chunks).toBe(3);
+    expect(reconstructed['total_chunks']).toBe(3);
     expect(reconstructed.found_chunks).toBe(3);
     expect(reconstructed.completeness_ratio).toBe(1.0);
     expect(reconstructed.confidence_score).toBeCloseTo(0.85, 2); // Average of 0.9, 0.85, 0.8
@@ -248,12 +248,12 @@ This architecture provides a solid foundation for our scalable system.
 
     // Group and reconstruct
     const groupedResults = groupingService.groupResultsByParent(searchResults);
-    const groupedResult = groupedResults.find((g) => g.parent_id === 'parent-001');
+    const groupedResult = groupedResults.find((g) => g['parent_id'] === 'parent-001');
     if (!groupedResult) return;
     const reconstructed = groupingService.reconstructGroupedContent(groupedResult);
 
     // Verify partial reconstruction
-    expect(reconstructed.total_chunks).toBe(3);
+    expect(reconstructed['total_chunks']).toBe(3);
     expect(reconstructed.found_chunks).toBe(2);
     expect(reconstructed.completeness_ratio).toBeCloseTo(2 / 3, 2);
   });
@@ -322,11 +322,11 @@ This architecture provides a solid foundation for our scalable system.
     expect(groupedItems.length).toBe(1);
 
     // Verify the entity is a single item
-    const entityGroup = singleItems.find((g) => g.parent_id === 'entity-001');
+    const entityGroup = singleItems.find((g) => g['parent_id'] === 'entity-001');
     expect(entityGroup).toBeDefined();
 
     // Verify the section is grouped
-    const sectionGroup = groupedItems.find((g) => g.parent_id === 'section-001');
+    const sectionGroup = groupedItems.find((g) => g['parent_id'] === 'section-001');
     expect(sectionGroup).toBeDefined();
     expect(sectionGroup!.chunks.length).toBe(2);
   });

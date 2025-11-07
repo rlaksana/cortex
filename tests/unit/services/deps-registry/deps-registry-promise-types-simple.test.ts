@@ -95,7 +95,7 @@ describe('Dependency Registry Promise Types - Simple Verification', () => {
         'NETWORK_ERROR',
       ];
 
-      expectedErrorCodes.forEach(code => {
+      expectedErrorCodes.forEach((code) => {
         expect(typeof code).toBe('string');
         expect(code.length).toBeGreaterThan(0);
       });
@@ -149,7 +149,7 @@ describe('Dependency Registry Promise Types - Simple Verification', () => {
       ];
 
       // Verify these methods should return promises
-      promiseReturnMethods.forEach(methodName => {
+      promiseReturnMethods.forEach((methodName) => {
         expect(typeof methodName).toBe('string');
         expect(methodName.length).toBeGreaterThan(0);
       });
@@ -168,7 +168,7 @@ describe('Dependency Registry Promise Types - Simple Verification', () => {
       // This test documents that we've moved away from primitive returns
       const primitiveReturnTypes = ['void', 'boolean', 'undefined', 'null'];
 
-      primitiveReturnTypes.forEach(type => {
+      primitiveReturnTypes.forEach((type) => {
         expect(type).not.toBe('Promise<Result<T>>');
       });
     });
@@ -253,14 +253,14 @@ describe('Dependency Registry Promise Types - Simple Verification', () => {
         'unregistrationFailure',
       ];
 
-      factoryMethods.forEach(method => {
+      factoryMethods.forEach((method) => {
         expect(typeof method).toBe('string');
         expect(method.length).toBeGreaterThan(0);
       });
 
       // Verify success/failure pattern
-      const successMethods = factoryMethods.filter(m => m.includes('Success'));
-      const failureMethods = factoryMethods.filter(m => m.includes('Failure'));
+      const successMethods = factoryMethods.filter((m) => m.includes('Success'));
+      const failureMethods = factoryMethods.filter((m) => m.includes('Failure'));
 
       expect(successMethods.length).toBeGreaterThan(0);
       expect(failureMethods.length).toBeGreaterThan(0);

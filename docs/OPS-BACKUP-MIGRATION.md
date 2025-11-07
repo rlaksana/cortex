@@ -32,12 +32,12 @@ Cortex MCP Data Architecture
 
 ### Backup Strategy
 
-| Component | Backup Method | Frequency | Retention | RPO | RTO |
-|-----------|---------------|-----------|-----------|-----|-----|
-| **Qdrant Vectors** | Snapshot + S3 | Daily | 30 days | 24h | 15m |
-| **Configuration** | File copy + Git | On change | 90 days | 1h | 5m |
-| **Logs** | Rotation + Archive | Hourly | 7 days | 1h | 5m |
-| **System State** | Docker/K8s manifests | On deploy | 90 days | 1h | 10m |
+| Component          | Backup Method        | Frequency | Retention | RPO | RTO |
+| ------------------ | -------------------- | --------- | --------- | --- | --- |
+| **Qdrant Vectors** | Snapshot + S3        | Daily     | 30 days   | 24h | 15m |
+| **Configuration**  | File copy + Git      | On change | 90 days   | 1h  | 5m  |
+| **Logs**           | Rotation + Archive   | Hourly    | 7 days    | 1h  | 5m  |
+| **System State**   | Docker/K8s manifests | On deploy | 90 days   | 1h  | 10m |
 
 ## 🔄 Backup Procedures
 

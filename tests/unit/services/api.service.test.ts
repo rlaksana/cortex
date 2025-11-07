@@ -293,8 +293,8 @@ describe('ApiService - Core API Management Functionality', () => {
 
       // This would integrate with a GraphQL service
       expect(schema.typeDefs).toContain('type User');
-      expect(schema.resolvers.Query).toBeDefined();
-      expect(schema.resolvers.Mutation).toBeDefined();
+      expect(schema.resolvers['Q']uery).toBeDefined();
+      expect(schema.resolvers['M']utation).toBeDefined();
     });
 
     it('should handle GraphQL query execution', async () => {
@@ -321,8 +321,8 @@ describe('ApiService - Core API Management Functionality', () => {
         },
       };
 
-      expect(mockResult.data.user.id).toBe('1');
-      expect(mockResult.data.user.name).toBe('John Doe');
+      expect(mockResult['data.user'].id).toBe('1');
+      expect(mockResult['data.user'].name).toBe('John Doe');
     });
 
     it('should handle GraphQL mutations', async () => {
@@ -349,8 +349,8 @@ describe('ApiService - Core API Management Functionality', () => {
         },
       };
 
-      expect(mockResult.data.createUser.name).toBe('Jane Doe');
-      expect(mockResult.data.createUser.email).toBe('jane@example.com');
+      expect(mockResult['data.createUser'].name).toBe('Jane Doe');
+      expect(mockResult['data.createUser'].email).toBe('jane@example.com');
     });
 
     it('should validate GraphQL queries against schema', async () => {

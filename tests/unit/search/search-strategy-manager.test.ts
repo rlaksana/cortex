@@ -65,8 +65,8 @@ describe('SearchStrategyManager', () => {
         expect(result.vectorUsed).toBe(false);
         expect(result.degraded).toBe(false);
         expect(result.executionTime).toBeGreaterThan(0);
-        expect(result.metadata.totalSearched).toBeGreaterThanOrEqual(0);
-        expect(result.metadata.backendHealthStatus).toBe('healthy');
+        expect(result.metadata['totalSearched']).toBeGreaterThanOrEqual(0);
+        expect(result.metadata['backendHealthStatus']).toBe('healthy');
       });
 
       it('should handle empty query in fast mode', async () => {
@@ -189,7 +189,7 @@ describe('SearchStrategyManager', () => {
         const result = await searchManager.executeSearch(query, 'deep');
 
         expect(result.strategy).toBe('deep');
-        expect(result.metadata.expansionApplied).toBe(true);
+        expect(result.metadata['expansionApplied']).toBe(true);
       });
 
       it('should handle different expansion types', async () => {
@@ -205,7 +205,7 @@ describe('SearchStrategyManager', () => {
           const result = await searchManager.executeSearch(query, 'deep');
 
           expect(result.strategy).toBe('deep');
-          expect(result.metadata.expansionApplied).toBe(true);
+          expect(result.metadata['expansionApplied']).toBe(true);
         }
       });
     });
@@ -285,7 +285,7 @@ describe('SearchStrategyManager', () => {
         // Verify error was handled by error handler
         const errorMetrics = searchManager.getErrorMetrics();
         expect(errorMetrics.totalErrors).toBeGreaterThan(0);
-        expect(errorMetrics.errorsByCategory[ErrorCategory.VALIDATION]).toBeGreaterThan(0);
+        expect(errorMetrics.errorsByCategory[ErrorCategory['VALIDATION']]).toBeGreaterThan(0);
       }
     });
   });
@@ -488,8 +488,8 @@ describe('SearchStrategyManager', () => {
       const { memoryFindWithStrategies } = require('../memory-find.js');
 
       // Set environment variables
-      process.env.CORTEX_ORG = 'test-org';
-      process.env.CORTEX_PROJECT = 'test-project';
+      process.env['CORTEX_ORG'] = 'test-org';
+      process.env['CORTEX_PROJECT'] = 'test-project';
 
       const query: SearchQuery = {
         query: 'scope test',
@@ -504,8 +504,8 @@ describe('SearchStrategyManager', () => {
       expect(result.results).toBeDefined();
 
       // Clean up
-      delete process.env.CORTEX_ORG;
-      delete process.env.CORTEX_PROJECT;
+      delete process.env['CORTEX_ORG'];
+      delete process.env['CORTEX_PROJECT'];
     });
   });
 

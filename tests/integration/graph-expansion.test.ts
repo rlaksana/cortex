@@ -18,12 +18,12 @@ describe('Graph Expansion Functionality', () => {
 
   beforeAll(() => {
     // Set up test environment variables if needed
-    process.env.NODE_ENV = 'test';
+    process.env['NODE_ENV'] = 'test';
   });
 
   afterAll(() => {
     // Clean up
-    delete process.env.NODE_ENV;
+    delete process.env['NODE_ENV'];
   });
 
   describe('Enhanced Graph Traversal', () => {
@@ -148,9 +148,10 @@ describe('Graph Expansion Functionality', () => {
       const result = await traverseGraphWithExpansion(mockEntityType, mockEntityId, options);
 
       // Check that non-root nodes have relationship metadata
-      const nonRootNodes = result.nodes.filter(node => node.depth > 0);
+      const nonRootNodes = result.nodes.filter((node) => node.depth > 0);
 
-      for (const node of nonRootNodes.slice(0, 3)) { // Check first 3 nodes
+      for (const node of nonRootNodes.slice(0, 3)) {
+        // Check first 3 nodes
         expect(node.relationship_metadata).toBeDefined();
 
         if (node.relationship_metadata) {
@@ -275,8 +276,8 @@ describe('Graph Expansion Functionality', () => {
       }
 
       // Check that relationship metadata is included in expanded results
-      const expandedResults = result.results.filter(r =>
-        r.data?.expansion_type && r.data?.expansion_type !== 'none'
+      const expandedResults = result.results.filter(
+        (r) => r.data?.expansion_type && r.data?.expansion_type !== 'none'
       );
 
       for (const expandedResult of expandedResults) {

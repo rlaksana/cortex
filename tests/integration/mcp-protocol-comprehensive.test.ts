@@ -9,9 +9,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock environment
-process.env.OPENAI_API_KEY = 'test-key';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.NODE_ENV = 'test';
+process.env['OPENAI_API_KEY'] = 'test-key';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['NODE_ENV'] = 'test';
 
 describe('MCP Protocol Comprehensive Validation', () => {
   describe('MCP Protocol Version 2024-11-05 Compliance', () => {
@@ -29,8 +29,8 @@ describe('MCP Protocol Comprehensive Validation', () => {
         method: 'tools/call',
         params: {
           name: 'memory_store',
-          arguments: { items: [] }
-        }
+          arguments: { items: [] },
+        },
       };
 
       expect(validJsonRpc.jsonrpc).toBe('2.0');
@@ -55,17 +55,29 @@ describe('MCP Protocol Comprehensive Validation', () => {
                   kind: {
                     type: 'string',
                     enum: [
-                      'entity', 'relation', 'observation', 'section',
-                      'runbook', 'change', 'issue', 'decision',
-                      'todo', 'release_note', 'ddl', 'pr_context',
-                      'incident', 'release', 'risk', 'assumption'
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
+                      'entity',
+                      'relation',
+                      'observation',
+                      'section',
+                      'runbook',
+                      'change',
+                      'issue',
+                      'decision',
+                      'todo',
+                      'release_note',
+                      'ddl',
+                      'pr_context',
+                      'incident',
+                      'release',
+                      'risk',
+                      'assumption',
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
       };
 
       expect(toolSchema.name).toBe('memory_store');
@@ -75,10 +87,22 @@ describe('MCP Protocol Comprehensive Validation', () => {
 
   describe('Knowledge Types Schema Validation', () => {
     const allKnowledgeTypes = [
-      'entity', 'relation', 'observation', 'section',
-      'runbook', 'change', 'issue', 'decision',
-      'todo', 'release_note', 'ddl', 'pr_context',
-      'incident', 'release', 'risk', 'assumption'
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
 
     it('should include all 16 knowledge types in schema', () => {
@@ -95,14 +119,14 @@ describe('MCP Protocol Comprehensive Validation', () => {
         data: {
           entity_type: 'user',
           name: 'john_doe',
-          data: { email: 'john@example.com' }
+          data: { email: 'john@example.com' },
         },
-        scope: { project: 'test', branch: 'main' }
+        scope: { project: 'test', branch: 'main' },
       };
 
       expect(entityItem.kind).toBe('entity');
-      expect(entityItem.data.entity_type).toBeDefined();
-      expect(entityItem.data.name).toBeDefined();
+      expect(entityItem['data.entity_type']).toBeDefined();
+      expect(entityItem['data.name']).toBeDefined();
       expect(entityItem.scope).toBeDefined();
     });
 
@@ -113,15 +137,15 @@ describe('MCP Protocol Comprehensive Validation', () => {
           title: 'Use PostgreSQL',
           rationale: 'Strong ACID compliance',
           alternatives: ['MongoDB', 'MySQL'],
-          status: 'accepted'
+          status: 'accepted',
         },
-        scope: { project: 'architecture', branch: 'main' }
+        scope: { project: 'architecture', branch: 'main' },
       };
 
       expect(decisionItem.kind).toBe('decision');
-      expect(decisionItem.data.title).toBeDefined();
-      expect(decisionItem.data.rationale).toBeDefined();
-      expect(decisionItem.data.alternatives).toBeDefined();
+      expect(decisionItem['data.title']).toBeDefined();
+      expect(decisionItem['data.rationale']).toBeDefined();
+      expect(decisionItem['data.alternatives']).toBeDefined();
     });
 
     it('should validate todo knowledge type structure', () => {
@@ -131,14 +155,14 @@ describe('MCP Protocol Comprehensive Validation', () => {
           title: 'Implement feature X',
           priority: 'high',
           status: 'in_progress',
-          assignee: 'developer'
+          assignee: 'developer',
         },
-        scope: { project: 'development', branch: 'main' }
+        scope: { project: 'development', branch: 'main' },
       };
 
       expect(todoItem.kind).toBe('todo');
-      expect(todoItem.data.title).toBeDefined();
-      expect(todoItem.data.status).toBeDefined();
+      expect(todoItem['data.title']).toBeDefined();
+      expect(todoItem['data.status']).toBeDefined();
     });
 
     it('should validate incident knowledge type structure', () => {
@@ -150,16 +174,16 @@ describe('MCP Protocol Comprehensive Validation', () => {
           status: 'resolved',
           impact: {
             affected_services: ['api', 'web'],
-            user_impact: 'high'
-          }
+            user_impact: 'high',
+          },
         },
-        scope: { project: 'operations', branch: 'main' }
+        scope: { project: 'operations', branch: 'main' },
       };
 
       expect(incidentItem.kind).toBe('incident');
-      expect(incidentItem.data.severity).toBeDefined();
-      expect(incidentItem.data.status).toBeDefined();
-      expect(incidentItem.data.impact).toBeDefined();
+      expect(incidentItem['data.severity']).toBeDefined();
+      expect(incidentItem['data.status']).toBeDefined();
+      expect(incidentItem['data.impact']).toBeDefined();
     });
 
     it('should validate risk knowledge type structure', () => {
@@ -173,17 +197,17 @@ describe('MCP Protocol Comprehensive Validation', () => {
           mitigations: [
             {
               strategy: 'Use abstraction layer',
-              status: 'in_progress'
-            }
-          ]
+              status: 'in_progress',
+            },
+          ],
         },
-        scope: { project: 'architecture', branch: 'main' }
+        scope: { project: 'architecture', branch: 'main' },
       };
 
       expect(riskItem.kind).toBe('risk');
-      expect(riskItem.data.probability).toBeDefined();
-      expect(riskItem.data.impact).toBeDefined();
-      expect(riskItem.data.mitigations).toBeDefined();
+      expect(riskItem['data.probability']).toBeDefined();
+      expect(riskItem['data.impact']).toBeDefined();
+      expect(riskItem['data.mitigations']).toBeDefined();
     });
   });
 
@@ -192,7 +216,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
       const ttlPolicies = ['default', 'short', 'long', 'permanent'];
       expect(ttlPolicies).toHaveLength(4);
 
-      ttlPolicies.forEach(policy => {
+      ttlPolicies.forEach((policy) => {
         expect(typeof policy).toBe('string');
         expect(policy.length).toBeGreaterThan(0);
       });
@@ -203,7 +227,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
         policy: 'default',
         auto_extend: true,
         extend_threshold_days: 7,
-        max_extensions: 3
+        max_extensions: 3,
       };
 
       expect(ttlConfig.policy).toBeDefined();
@@ -219,7 +243,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
       const ttlConfig = {
         policy: 'short',
         expires_at: futureDate.toISOString(),
-        auto_extend: false
+        auto_extend: false,
       };
 
       expect(ttlConfig.expires_at).toBeDefined();
@@ -233,7 +257,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
       const mergeStrategies = ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'];
       expect(mergeStrategies).toHaveLength(5);
 
-      mergeStrategies.forEach(strategy => {
+      mergeStrategies.forEach((strategy) => {
         expect(typeof strategy).toBe('string');
         expect(strategy.length).toBeGreaterThan(0);
       });
@@ -246,7 +270,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
         similarity_threshold: 0.85,
         check_within_scope_only: true,
         enable_audit_logging: true,
-        enable_intelligent_merging: true
+        enable_intelligent_merging: true,
       };
 
       expect(dedupConfig.enabled).toBe(true);
@@ -258,7 +282,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
     it('should validate similarity thresholds', () => {
       const validThresholds = [0.5, 0.7, 0.85, 0.9, 1.0];
 
-      validThresholds.forEach(threshold => {
+      validThresholds.forEach((threshold) => {
         expect(threshold).toBeGreaterThanOrEqual(0);
         expect(threshold).toBeLessThanOrEqual(1);
       });
@@ -270,7 +294,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
       const searchStrategies = ['fast', 'auto', 'deep'];
       expect(searchStrategies).toHaveLength(3);
 
-      searchStrategies.forEach(strategy => {
+      searchStrategies.forEach((strategy) => {
         expect(typeof strategy).toBe('string');
         expect(['fast', 'auto', 'deep']).toContain(strategy);
       });
@@ -285,11 +309,11 @@ describe('MCP Protocol Comprehensive Validation', () => {
         limit: 10,
         graph_expansion: {
           enabled: true,
-          max_depth: 2
+          max_depth: 2,
         },
         ttl_filters: {
-          include_expired: false
-        }
+          include_expired: false,
+        },
       };
 
       expect(searchRequest.query).toBeDefined();
@@ -305,7 +329,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
         expansion_type: 'relations',
         max_depth: 2,
         max_nodes: 100,
-        direction: 'both'
+        direction: 'both',
       };
 
       expect(graphExpansion.enabled).toBeDefined();
@@ -318,13 +342,18 @@ describe('MCP Protocol Comprehensive Validation', () => {
   describe('System Status Operations Validation', () => {
     it('should validate all system status operations', () => {
       const operations = [
-        'health', 'stats', 'telemetry', 'metrics',
-        'run_purge', 'run_cleanup', 'get_performance_trends',
-        'system_diagnostics'
+        'health',
+        'stats',
+        'telemetry',
+        'metrics',
+        'run_purge',
+        'run_cleanup',
+        'get_performance_trends',
+        'system_diagnostics',
       ];
 
       expect(operations.length).toBeGreaterThan(0);
-      operations.forEach(op => {
+      operations.forEach((op) => {
         expect(typeof op).toBe('string');
         expect(op.length).toBeGreaterThan(0);
       });
@@ -336,8 +365,8 @@ describe('MCP Protocol Comprehensive Validation', () => {
         include_detailed_metrics: true,
         response_formatting: {
           verbose: true,
-          include_timestamps: true
-        }
+          include_timestamps: true,
+        },
       };
 
       expect(healthCheck.operation).toBe('health');
@@ -351,7 +380,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
         dry_run: true,
         batch_size: 100,
         require_confirmation: true,
-        enable_backup: true
+        enable_backup: true,
       };
 
       expect(cleanupConfig.operations).toBeDefined();
@@ -367,9 +396,9 @@ describe('MCP Protocol Comprehensive Validation', () => {
         error_code: 'VALIDATION_ERROR',
         message: 'Invalid input data',
         details: {
-          field_errors: ['kind is required', 'data is missing']
+          field_errors: ['kind is required', 'data is missing'],
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       expect(errorResponse.error_code).toBeDefined();
@@ -387,8 +416,8 @@ describe('MCP Protocol Comprehensive Validation', () => {
           remaining: 0,
           reset_time: new Date(Date.now() + 60000).toISOString(),
           reset_in_seconds: 60,
-          identifier: 'test_user'
-        }
+          identifier: 'test_user',
+        },
       };
 
       expect(rateLimitResponse.error).toBe('RATE_LIMIT_EXCEEDED');
@@ -402,7 +431,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
         timestamp: new Date().toISOString(),
         requestId: 'req_1234567890_abc123',
         processing_time_ms: 150,
-        rate_limit_remaining: 95
+        rate_limit_remaining: 95,
       };
 
       expect(responseMeta.timestamp).toBeDefined();
@@ -435,7 +464,7 @@ describe('MCP Protocol Comprehensive Validation', () => {
       const timeoutConfig = {
         default_timeout_ms: 10000,
         search_timeout_ms: 15000,
-        storage_timeout_ms: 30000
+        storage_timeout_ms: 30000,
       };
 
       expect(timeoutConfig.default_timeout_ms).toBeGreaterThan(0);
@@ -450,14 +479,26 @@ describe('MCP Protocol Comprehensive Validation', () => {
         mcp_version: '2024-11-05',
         supported_operations: ['memory_store', 'memory_find', 'system_status'],
         knowledge_types: [
-          'entity', 'relation', 'observation', 'section',
-          'runbook', 'change', 'issue', 'decision',
-          'todo', 'release_note', 'ddl', 'pr_context',
-          'incident', 'release', 'risk', 'assumption'
+          'entity',
+          'relation',
+          'observation',
+          'section',
+          'runbook',
+          'change',
+          'issue',
+          'decision',
+          'todo',
+          'release_note',
+          'ddl',
+          'pr_context',
+          'incident',
+          'release',
+          'risk',
+          'assumption',
         ],
         ttl_policies: ['default', 'short', 'long', 'permanent'],
         merge_strategies: ['skip', 'prefer_existing', 'prefer_newer', 'combine', 'intelligent'],
-        search_strategies: ['fast', 'auto', 'deep']
+        search_strategies: ['fast', 'auto', 'deep'],
       };
 
       expect(capabilities.mcp_version).toBe('2024-11-05');
@@ -479,10 +520,10 @@ describe('MCP Protocol Comprehensive Validation', () => {
         quality_gate: true,
         documentation: true,
         monitoring: true,
-        security: true
+        security: true,
       };
 
-      Object.values(readinessChecklist).forEach(check => {
+      Object.values(readinessChecklist).forEach((check) => {
         expect(check).toBe(true);
       });
     });

@@ -6,15 +6,16 @@ This incident response runbook addresses Qdrant service failures, which are crit
 
 ## Incident Classification
 
-| Severity | Impact | Response Time | Recovery Time |
-|----------|--------|---------------|---------------|
-| **Critical** | Complete service outage, no data access | 5 minutes | 15 minutes |
-| **High** | Degraded performance, intermittent access | 15 minutes | 1 hour |
-| **Medium** | Slow queries, partial functionality | 30 minutes | 4 hours |
+| Severity     | Impact                                    | Response Time | Recovery Time |
+| ------------ | ----------------------------------------- | ------------- | ------------- |
+| **Critical** | Complete service outage, no data access   | 5 minutes     | 15 minutes    |
+| **High**     | Degraded performance, intermittent access | 15 minutes    | 1 hour        |
+| **Medium**   | Slow queries, partial functionality       | 30 minutes    | 4 hours       |
 
 ## Symptoms and Detection
 
 ### Primary Symptoms
+
 - API calls return database connection errors
 - Search and memory operations fail
 - Health checks fail for `/api/memory/*` endpoints
@@ -22,6 +23,7 @@ This incident response runbook addresses Qdrant service failures, which are crit
 - Timeouts when accessing Qdrant directly
 
 ### Detection Methods
+
 ```bash
 # Quick health check (1 minute)
 echo "🔍 QDRANT SERVICE HEALTH CHECK"
@@ -1376,6 +1378,7 @@ echo "  /usr/local/bin/qdrant-health-check.sh"
 ## Communication Templates
 
 ### Initial Incident Notification
+
 ```
 🚨 INCIDENT ALERT: QDRANT SERVICE FAILURE 🚨
 
@@ -1400,6 +1403,7 @@ Status Page: [URL]
 ```
 
 ### Recovery Notification
+
 ```
 ✅ INCIDENT RESOLVED: QDRANT SERVICE RESTORED
 

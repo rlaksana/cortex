@@ -666,7 +666,7 @@ describe('Error Handling Utilities - Comprehensive Error Management', () => {
       const htmlReport = errorReporter.generateErrorReport(reportData, 'html');
       const csvReport = errorReporter.generateErrorReport(reportData, 'csv');
 
-      expect(jsonReport.metadata.format).toBe('json');
+      expect(jsonReport.metadata['format']).toBe('json');
       expect(jsonReport.summary.total_errors).toBe(62);
 
       expect(htmlReport.content).toContain('<h1>Error Analysis Report</h1>');

@@ -7,6 +7,7 @@ Cortex Memory MCP Server provides **exactly 3 tools** for AI agents to perform a
 ## 📋 Tool Interface (3 Tools Total)
 
 ### 1. `memory_store`
+
 **Purpose**: Store knowledge items with semantic deduplication
 
 ```json
@@ -30,6 +31,7 @@ Cortex Memory MCP Server provides **exactly 3 tools** for AI agents to perform a
 ```
 
 ### 2. `memory_find`
+
 **Purpose**: Search knowledge items with intelligent semantic strategies
 
 ```json
@@ -47,13 +49,14 @@ Cortex Memory MCP Server provides **exactly 3 tools** for AI agents to perform a
 ```
 
 ### 3. `system_status`
+
 **Purpose**: Comprehensive system operations (11 operations in 1 tool)
 
 ```json
 {
   "name": "system_status",
   "arguments": {
-    "operation": "health|stats|telemetry|metrics|get_document|reassemble_document|get_document_with_chunks|run_purge|get_purge_reports|get_purge_statistics|upsert_merge",
+    "operation": "health|stats|telemetry|metrics|get_document|reassemble_document|get_document_with_chunks|run_purge|get_purge_reports|get_purge_statistics|upsert_merge"
     // Additional parameters depend on operation
   }
 }
@@ -61,19 +64,19 @@ Cortex Memory MCP Server provides **exactly 3 tools** for AI agents to perform a
 
 ## 📊 `system_status` Operations (11 in 1)
 
-| Operation | Description | Key Parameters |
-|-----------|-------------|----------------|
-| `health` | Database connection health | None |
-| `stats` | Database statistics | `scope` |
-| `telemetry` | Performance telemetry | None |
-| `metrics` | System metrics | `summary` (boolean) |
-| `get_document` | Retrieve document with chunks | `parent_id`, `include_metadata` |
-| `reassemble_document` | Reassemble from chunks | `parent_id`, `min_completeness` |
-| `get_document_with_chunks` | Get document + chunks | `doc_id`, `options` |
-| `run_purge` | Run TTL cleanup | `options` (dry_run, batch_size) |
-| `get_purge_reports` | Recent purge reports | `limit` |
-| `get_purge_statistics` | Purge statistics | `days` |
-| `upsert_merge` | Store with intelligent merge | `items`, `similarity_threshold`, `merge_strategy` |
+| Operation                  | Description                   | Key Parameters                                    |
+| -------------------------- | ----------------------------- | ------------------------------------------------- |
+| `health`                   | Database connection health    | None                                              |
+| `stats`                    | Database statistics           | `scope`                                           |
+| `telemetry`                | Performance telemetry         | None                                              |
+| `metrics`                  | System metrics                | `summary` (boolean)                               |
+| `get_document`             | Retrieve document with chunks | `parent_id`, `include_metadata`                   |
+| `reassemble_document`      | Reassemble from chunks        | `parent_id`, `min_completeness`                   |
+| `get_document_with_chunks` | Get document + chunks         | `doc_id`, `options`                               |
+| `run_purge`                | Run TTL cleanup               | `options` (dry_run, batch_size)                   |
+| `get_purge_reports`        | Recent purge reports          | `limit`                                           |
+| `get_purge_statistics`     | Purge statistics              | `days`                                            |
+| `upsert_merge`             | Store with intelligent merge  | `items`, `similarity_threshold`, `merge_strategy` |
 
 ## 🎯 Benefits for AI Agents
 
@@ -85,58 +88,62 @@ Cortex Memory MCP Server provides **exactly 3 tools** for AI agents to perform a
 
 ## 📚 Migration from Original 14 Tools
 
-| Original Tool | New Usage |
-|---------------|-----------|
-| `database_health` | `system_status` + `{"operation": "health"}` |
-| `database_stats` | `system_status` + `{"operation": "stats"}` |
-| `telemetry_report` | `system_status` + `{"operation": "telemetry"}` |
-| `system_metrics` | `system_status` + `{"operation": "metrics"}` |
-| `memory_get_document` | `system_status` + `{"operation": "get_document"}` |
-| `reassemble_document` | `system_status` + `{"operation": "reassemble_document"}` |
-| `get_document_with_chunks` | `system_status` + `{"operation": "get_document_with_chunks"}` |
-| `ttl_worker_run_with_report` | `system_status` + `{"operation": "run_purge"}` |
-| `get_purge_reports` | `system_status` + `{"operation": "get_purge_reports"}` |
-| `get_purge_statistics` | `system_status` + `{"operation": "get_purge_statistics"}` |
-| `memory_upsert_with_merge` | `system_status` + `{"operation": "upsert_merge"}` |
+| Original Tool                | New Usage                                                     |
+| ---------------------------- | ------------------------------------------------------------- |
+| `database_health`            | `system_status` + `{"operation": "health"}`                   |
+| `database_stats`             | `system_status` + `{"operation": "stats"}`                    |
+| `telemetry_report`           | `system_status` + `{"operation": "telemetry"}`                |
+| `system_metrics`             | `system_status` + `{"operation": "metrics"}`                  |
+| `memory_get_document`        | `system_status` + `{"operation": "get_document"}`             |
+| `reassemble_document`        | `system_status` + `{"operation": "reassemble_document"}`      |
+| `get_document_with_chunks`   | `system_status` + `{"operation": "get_document_with_chunks"}` |
+| `ttl_worker_run_with_report` | `system_status` + `{"operation": "run_purge"}`                |
+| `get_purge_reports`          | `system_status` + `{"operation": "get_purge_reports"}`        |
+| `get_purge_statistics`       | `system_status` + `{"operation": "get_purge_statistics"}`     |
+| `memory_upsert_with_merge`   | `system_status` + `{"operation": "upsert_merge"}`             |
 
 ## 🔧 Usage Examples
 
 ### Basic Memory Operations
+
 ```javascript
 // Store knowledge
 await callTool('memory_store', {
-  items: [{
-    kind: 'entity',
-    content: 'User prefers dark mode',
-    metadata: { source: 'user-settings' }
-  }]
+  items: [
+    {
+      kind: 'entity',
+      content: 'User prefers dark mode',
+      metadata: { source: 'user-settings' },
+    },
+  ],
 });
 
 // Search knowledge
 await callTool('memory_find', {
   query: 'user preferences',
-  limit: 5
+  limit: 5,
 });
 ```
 
 ### System Operations
+
 ```javascript
 // Check database health
 await callTool('system_status', {
-  operation: 'health'
+  operation: 'health',
 });
 
 // Get system metrics summary
 await callTool('system_status', {
   operation: 'metrics',
-  summary: true
+  summary: true,
 });
 
 // Retrieve document
 await callTool('system_status', {
   operation: 'get_document',
   parent_id: 'doc-123',
-  include_metadata: true
+  include_metadata: true,
 });
 ```
 
@@ -150,6 +157,7 @@ The Cortex Memory MCP Server is now optimized for AI agents with:
 - **Production-ready** with full error handling and monitoring
 
 **Server Configuration**:
+
 ```toml
 [mcp_servers.cortex]
 type = 'stdio'

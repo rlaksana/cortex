@@ -22,9 +22,19 @@
 
 import { describe, beforeAll, afterAll, beforeEach, afterEach, it, expect, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
-import { DependencyRegistry, DependencyType, DependencyStatus, DependencyConfig } from '../../src/services/deps-registry.js';
-import HealthAggregationService, { AlertSeverity, SLAStatus } from '../../src/services/health-aggregation.service.js';
-import HealthCheckService, { HealthCheckStrategy } from '../../src/services/health-check.service.js';
+import {
+  DependencyRegistry,
+  DependencyType,
+  DependencyStatus,
+  DependencyConfig,
+} from '../../src/services/deps-registry.js';
+import HealthAggregationService, {
+  AlertSeverity,
+  SLAStatus,
+} from '../../src/services/health-aggregation.service.js';
+import HealthCheckService, {
+  HealthCheckStrategy,
+} from '../../src/services/health-check.service.js';
 import { logger } from '../../src/utils/logger.js';
 
 // Mock logger to avoid noise in tests
@@ -33,8 +43,8 @@ vi.mock('../../src/utils/logger.js', () => ({
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-    debug: vi.fn()
-  }
+    debug: vi.fn(),
+  },
 }));
 
 // Mock fetch for API health checks
@@ -48,7 +58,7 @@ describe('Dependency Health System Integration Tests', () => {
   // Test dependency configurations
   const mockDatabaseConfig: DependencyConfig = {
     name: 'test-database',
-    type: DependencyType.DATABASE,
+    type: DependencyType['DATABASE'],
     priority: 'critical',
     healthCheck: {
       enabled: true,
@@ -57,11 +67,11 @@ describe('Dependency Health System Integration Tests', () => {
       failureThreshold: 3,
       successThreshold: 2,
       retryAttempts: 2,
-      retryDelayMs: 1000
+      retryDelayMs: 1000,
     },
     connection: {
       url: 'http://localhost:6333',
-      timeout: 10000
+      timeout: 10000,
     },
     thresholds: {
       responseTimeWarning: 1000,
@@ -69,13 +79,13 @@ describe('Dependency Health System Integration Tests', () => {
       errorRateWarning: 5,
       errorRateCritical: 15,
       availabilityWarning: 99,
-      availabilityCritical: 95
-    }
+      availabilityCritical: 95,
+    },
   };
 
   const mockEmbeddingConfig: DependencyConfig = {
     name: 'test-embedding',
-    type: DependencyType.EMBEDDING_SERVICE,
+    type: DependencyType['EMBEDDING_SERVICE'],
     priority: 'high',
     healthCheck: {
       enabled: true,
@@ -84,12 +94,12 @@ describe('Dependency Health System Integration Tests', () => {
       failureThreshold: 3,
       successThreshold: 2,
       retryAttempts: 3,
-      retryDelayMs: 2000
+      retryDelayMs: 2000,
     },
     connection: {
       url: 'https://api.openai.com',
       apiKey: 'test-api-key',
-      timeout: 30000
+      timeout: 30000,
     },
     thresholds: {
       responseTimeWarning: 2000,
@@ -97,13 +107,13 @@ describe('Dependency Health System Integration Tests', () => {
       errorRateWarning: 3,
       errorRateCritical: 10,
       availabilityWarning: 99.5,
-      availabilityCritical: 98
-    }
+      availabilityCritical: 98,
+    },
   };
 
   const mockAPIConfig: DependencyConfig = {
     name: 'test-api',
-    type: DependencyType.EXTERNAL_API,
+    type: DependencyType['EXTERNAL_API'],
     priority: 'medium',
     healthCheck: {
       enabled: true,
@@ -112,14 +122,14 @@ describe('Dependency Health System Integration Tests', () => {
       failureThreshold: 2,
       successThreshold: 2,
       retryAttempts: 1,
-      retryDelayMs: 500
+      retryDelayMs: 500,
     },
     connection: {
       url: 'https://api.example.com/health',
       timeout: 5000,
       headers: {
-        'Authorization': 'Bearer test-token'
-      }
+        Authorization: 'Bearer test-token',
+      },
     },
     thresholds: {
       responseTimeWarning: 500,
@@ -127,8 +137,8 @@ describe('Dependency Health System Integration Tests', () => {
       errorRateWarning: 2,
       errorRateCritical: 8,
       availabilityWarning: 99,
-      availabilityCritical: 95
-    }
+      availabilityCritical: 95,
+    },
   };
 
   beforeAll(async () => {
@@ -174,7 +184,7 @@ describe('Dependency Health System Integration Tests', () => {
         const state = dependencyRegistry.getDependencyState('test-database');
         expect(state).toBeDefined();
         expect(state!.config.name).toBe('test-database');
-        expect(state!.config.type).toBe(DependencyType.DATABASE);
+        expect(state!.config.type).toBe(DependencyType['DATABASE']);
         expect(state!.enabled).toBe(true);
         expect(registeredSpy).toHaveBeenCalledWith('test-database', expect.any(Object));
       });
@@ -195,11 +205,12 @@ describe('Dependency Health System Integration Tests', () => {
         const invalidConfig = {
           ...mockDatabaseConfig,
           name: '', // Invalid: empty name
-          type: 'invalid' as any // Invalid: unknown type
+          type: 'invalid' as any, // Invalid: unknown type
         };
 
-        await expect(dependencyRegistry.registerDependency(invalidConfig))
-          .rejects.toThrow('Dependency name is required');
+        await expect(dependencyRegistry.registerDependency(invalidConfig)).rejects.toThrow(
+          'Dependency name is required'
+        );
       });
 
       it('should emit events on dependency registration', async () => {
@@ -209,11 +220,14 @@ describe('Dependency Health System Integration Tests', () => {
         await dependencyRegistry.registerDependency(mockDatabaseConfig);
 
         expect(registeredSpy).toHaveBeenCalledTimes(1);
-        expect(registeredSpy).toHaveBeenCalledWith('test-database', expect.objectContaining({
-          config: mockDatabaseConfig,
-          status: expect.any(String),
-          enabled: true
-        }));
+        expect(registeredSpy).toHaveBeenCalledWith(
+          'test-database',
+          expect.objectContaining({
+            config: mockDatabaseConfig,
+            status: expect.any(String),
+            enabled: true,
+          })
+        );
       });
     });
 
@@ -231,8 +245,9 @@ describe('Dependency Health System Integration Tests', () => {
       });
 
       it('should handle unregistering non-existent dependency gracefully', async () => {
-        await expect(dependencyRegistry.unregisterDependency('non-existent'))
-          .resolves.not.toThrow();
+        await expect(
+          dependencyRegistry.unregisterDependency('non-existent')
+        ).resolves.not.toThrow();
       });
 
       it('should enable and disable health checking', async () => {
@@ -258,11 +273,11 @@ describe('Dependency Health System Integration Tests', () => {
       });
 
       it('should get dependencies by type', () => {
-        const databases = dependencyRegistry.getDependenciesByType(DependencyType.DATABASE);
+        const databases = dependencyRegistry.getDependenciesByType(DependencyType['DATABASE']);
         expect(Object.keys(databases)).toHaveLength(1);
         expect(databases['test-database']).toBeDefined();
 
-        const apis = dependencyRegistry.getDependenciesByType(DependencyType.EXTERNAL_API);
+        const apis = dependencyRegistry.getDependenciesByType(DependencyType['EXTERNAL_API']);
         expect(Object.keys(apis)).toHaveLength(1);
         expect(apis['test-api']).toBeDefined();
       });
@@ -273,7 +288,7 @@ describe('Dependency Health System Integration Tests', () => {
         await dependencyRegistry.performHealthCheck('test-api');
 
         // Note: Status will depend on actual health check results
-        const healthyDeps = dependencyRegistry.getDependenciesByStatus(DependencyStatus.HEALTHY);
+        const healthyDeps = dependencyRegistry.getDependenciesByStatus(DependencyStatus['HEALTHY']);
         expect(Array.isArray(Object.keys(healthyDeps))).toBe(true);
       });
     });
@@ -282,15 +297,13 @@ describe('Dependency Health System Integration Tests', () => {
   describe('Health Check Service', () => {
     describe('Basic Health Checks', () => {
       it('should perform basic health check strategy', async () => {
-        const result = await healthCheckService.performHealthCheck(
-          'test-api',
-          mockAPIConfig,
-          { strategy: HealthCheckStrategy.BASIC }
-        );
+        const result = await healthCheckService.performHealthCheck('test-api', mockAPIConfig, {
+          strategy: HealthCheckStrategy['BASIC'],
+        });
 
         expect(result).toBeDefined();
         expect(result.dependency).toBe('test-api');
-        expect(result.strategy).toBe(HealthCheckStrategy.BASIC);
+        expect(result.strategy).toBe(HealthCheckStrategy['BASIC']);
         expect(result.timestamp).toBeInstanceOf(Date);
         expect(result.diagnostics).toBeDefined();
         expect(result.retryAttempts).toBeGreaterThanOrEqual(0);
@@ -302,17 +315,17 @@ describe('Dependency Health System Integration Tests', () => {
           ...mockAPIConfig,
           healthCheck: {
             ...mockAPIConfig.healthCheck,
-            timeoutMs: 1 // Very short timeout
-          }
+            timeoutMs: 1, // Very short timeout
+          },
         };
 
         const result = await healthCheckService.performHealthCheck(
           'test-api-timeout',
           timeoutConfig,
-          { strategy: HealthCheckStrategy.BASIC }
+          { strategy: HealthCheckStrategy['BASIC'] }
         );
 
-        expect(result.status).toBe(DependencyStatus.CRITICAL);
+        expect(result.status).toBe(DependencyStatus['CRITICAL']);
         expect(result.error).toContain('timeout');
       });
 
@@ -321,17 +334,17 @@ describe('Dependency Health System Integration Tests', () => {
           ...mockAPIConfig,
           connection: {
             ...mockAPIConfig.connection,
-            url: 'http://invalid-url-that-will-fail.com'
-          }
+            url: 'http://invalid-url-that-will-fail.com',
+          },
         };
 
         const result = await healthCheckService.performHealthCheck(
           'test-failing-api',
           failingConfig,
-          { strategy: HealthCheckStrategy.BASIC, retries: 2, retryDelay: 100 }
+          { strategy: HealthCheckStrategy['BASIC'], retries: 2, retryDelay: 100 }
         );
 
-        expect(result.status).toBe(DependencyStatus.CRITICAL);
+        expect(result.status).toBe(DependencyStatus['CRITICAL']);
         expect(result.retryAttempts).toBeGreaterThan(0);
       });
     });
@@ -341,10 +354,10 @@ describe('Dependency Health System Integration Tests', () => {
         const result = await healthCheckService.performHealthCheck(
           'test-embedding-advanced',
           mockEmbeddingConfig,
-          { strategy: HealthCheckStrategy.ADVANCED }
+          { strategy: HealthCheckStrategy['ADVANCED'] }
         );
 
-        expect(result.strategy).toBe(HealthCheckStrategy.ADVANCED);
+        expect(result.strategy).toBe(HealthCheckStrategy['ADVANCED']);
         expect(result.details?.advanced).toBe(true);
       });
 
@@ -352,10 +365,10 @@ describe('Dependency Health System Integration Tests', () => {
         const result = await healthCheckService.performHealthCheck(
           'test-database-comprehensive',
           mockDatabaseConfig,
-          { strategy: HealthCheckStrategy.COMPREHENSIVE }
+          { strategy: HealthCheckStrategy['COMPREHENSIVE'] }
         );
 
-        expect(result.strategy).toBe(HealthCheckStrategy.COMPREHENSIVE);
+        expect(result.strategy).toBe(HealthCheckStrategy['COMPREHENSIVE']);
         expect(result.details?.comprehensive).toBe(true);
       });
     });
@@ -365,14 +378,13 @@ describe('Dependency Health System Integration Tests', () => {
         const dependencies = [
           { name: 'test-api-1', config: mockAPIConfig },
           { name: 'test-api-2', config: mockAPIConfig },
-          { name: 'test-api-3', config: mockAPIConfig }
+          { name: 'test-api-3', config: mockAPIConfig },
         ];
 
         const startTime = Date.now();
-        const results = await healthCheckService.performParallelHealthChecks(
-          dependencies,
-          { strategy: HealthCheckStrategy.BASIC }
-        );
+        const results = await healthCheckService.performParallelHealthChecks(dependencies, {
+          strategy: HealthCheckStrategy['BASIC'],
+        });
         const endTime = Date.now();
 
         expect(Object.keys(results)).toHaveLength(3);
@@ -388,19 +400,29 @@ describe('Dependency Health System Integration Tests', () => {
       it('should handle mixed success and failure in parallel checks', async () => {
         const dependencies = [
           { name: 'test-success', config: mockAPIConfig },
-          { name: 'test-failure', config: { ...mockAPIConfig, connection: { url: 'http://invalid-url' } } },
-          { name: 'test-timeout', config: { ...mockAPIConfig, connection: { url: 'http://slow-server.com' } } }
+          {
+            name: 'test-failure',
+            config: { ...mockAPIConfig, connection: { url: 'http://invalid-url' } },
+          },
+          {
+            name: 'test-timeout',
+            config: { ...mockAPIConfig, connection: { url: 'http://slow-server.com' } },
+          },
         ];
 
-        const results = await healthCheckService.performParallelHealthChecks(
-          dependencies,
-          { strategy: HealthCheckStrategy.BASIC, timeout: 1000 }
-        );
+        const results = await healthCheckService.performParallelHealthChecks(dependencies, {
+          strategy: HealthCheckStrategy['BASIC'],
+          timeout: 1000,
+        });
 
         expect(Object.keys(results)).toHaveLength(3);
         // Results should contain both successful and failed checks
-        expect(Object.values(results).some(r => r.status === DependencyStatus.HEALTHY)).toBe(true);
-        expect(Object.values(results).some(r => r.status === DependencyStatus.CRITICAL)).toBe(true);
+        expect(Object.values(results).some((r) => r.status === DependencyStatus['HEALTHY'])).toBe(
+          true
+        );
+        expect(Object.values(results).some((r) => r.status === DependencyStatus['CRITICAL'])).toBe(
+          true
+        );
       });
     });
 
@@ -409,19 +431,18 @@ describe('Dependency Health System Integration Tests', () => {
         const config = { ...mockAPIConfig };
 
         // First check
-        const result1 = await healthCheckService.performHealthCheck(
-          'test-cached',
-          config,
-          { strategy: HealthCheckStrategy.BASIC, cacheEnabled: true, cacheTTL: 5000 }
-        );
+        const result1 = await healthCheckService.performHealthCheck('test-cached', config, {
+          strategy: HealthCheckStrategy['BASIC'],
+          cacheEnabled: true,
+          cacheTTL: 5000,
+        });
         expect(result1.cached).toBe(false);
 
         // Second check should use cache
-        const result2 = await healthCheckService.performHealthCheck(
-          'test-cached',
-          config,
-          { strategy: HealthCheckStrategy.BASIC, cacheEnabled: true }
-        );
+        const result2 = await healthCheckService.performHealthCheck('test-cached', config, {
+          strategy: HealthCheckStrategy['BASIC'],
+          cacheEnabled: true,
+        });
         expect(result2.cached).toBe(true);
         expect(result2.responseTime).toBe(result1.responseTime);
         expect(result2.timestamp).toEqual(result1.timestamp);
@@ -430,22 +451,22 @@ describe('Dependency Health System Integration Tests', () => {
       it('should not cache failed health check results', async () => {
         const failingConfig = {
           ...mockAPIConfig,
-          connection: { url: 'http://invalid-url' }
+          connection: { url: 'http://invalid-url' },
         };
 
         const result1 = await healthCheckService.performHealthCheck(
           'test-failed-cache',
           failingConfig,
-          { strategy: HealthCheckStrategy.BASIC, cacheEnabled: true }
+          { strategy: HealthCheckStrategy['BASIC'], cacheEnabled: true }
         );
         expect(result1.cached).toBe(false);
-        expect(result1.status).toBe(DependencyStatus.CRITICAL);
+        expect(result1.status).toBe(DependencyStatus['CRITICAL']);
 
         // Second check should not use cache and should retry
         const result2 = await healthCheckService.performHealthCheck(
           'test-failed-cache',
           failingConfig,
-          { strategy: HealthCheckStrategy.BASIC, cacheEnabled: true }
+          { strategy: HealthCheckStrategy['BASIC'], cacheEnabled: true }
         );
         expect(result2.cached).toBe(false);
         expect(result2.retryAttempts).toBeGreaterThan(0);
@@ -474,8 +495,8 @@ describe('Dependency Health System Integration Tests', () => {
           'test-diagnostics',
           mockAPIConfig,
           {
-            strategy: HealthCheckStrategy.BASIC,
-            diagnosticsEnabled: true
+            strategy: HealthCheckStrategy['BASIC'],
+            diagnosticsEnabled: true,
           }
         );
 
@@ -489,16 +510,16 @@ describe('Dependency Health System Integration Tests', () => {
         (global.fetch as any).mockResolvedValue({
           ok: true,
           status: 200,
-          statusText: 'OK'
+          statusText: 'OK',
         });
 
         const result = await healthCheckService.performHealthCheck(
           'test-benchmark',
           mockAPIConfig,
           {
-            strategy: HealthCheckStrategy.BASIC,
+            strategy: HealthCheckStrategy['BASIC'],
             benchmarkEnabled: true,
-            benchmarkRequests: 3
+            benchmarkRequests: 3,
           }
         );
 
@@ -559,23 +580,25 @@ describe('Dependency Health System Integration Tests', () => {
         // Perform multiple health checks to generate trend data
         for (let i = 0; i < 5; i++) {
           await healthAggregation.getHealthStatus();
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
         const analysis = await healthAggregation.getHealthStatus();
         expect(analysis.overall.trend).toBeDefined();
-        expect(['improving', 'stable', 'degrading', 'fluctuating']).toContain(analysis.overall.trend);
+        expect(['improving', 'stable', 'degrading', 'fluctuating']).toContain(
+          analysis.overall.trend
+        );
       });
 
       it('should generate risk assessments', async () => {
         const analysis = await healthAggregation.getHealthStatus();
 
         // Should have risk entries for critical dependencies
-        const risks = analysis.risks.filter(r => r.dependency === 'test-database');
+        const risks = analysis.risks.filter((r) => r.dependency === 'test-database');
         expect(risks.length).toBeGreaterThanOrEqual(0);
 
         // Risk properties should be properly formatted
-        risks.forEach(risk => {
+        risks.forEach((risk) => {
           expect(risk.dependency).toBeDefined();
           expect(risk.type).toBeDefined();
           expect(['low', 'medium', 'high', 'critical']).toContain(risk.level);
@@ -593,7 +616,7 @@ describe('Dependency Health System Integration Tests', () => {
 
         expect(analysis.recommendations.length).toBeGreaterThanOrEqual(0);
 
-        analysis.recommendations.forEach(rec => {
+        analysis.recommendations.forEach((rec) => {
           expect(rec.priority).toBeDefined();
           expect(['low', 'medium', 'high', 'critical']).toContain(rec.priority);
           expect(rec.category).toBeDefined();
@@ -622,14 +645,14 @@ describe('Dependency Health System Integration Tests', () => {
           targets: {
             availability: 99.9,
             responseTime: 1000,
-            errorRate: 1
+            errorRate: 1,
           },
           period: {
             type: 'daily' as const,
-            duration: 1
+            duration: 1,
           },
           dependencies: ['test-database', 'test-embedding'],
-          priority: 'high' as const
+          priority: 'high' as const,
         };
 
         healthAggregation.registerSLA(slaDefinition);
@@ -647,14 +670,14 @@ describe('Dependency Health System Integration Tests', () => {
           targets: {
             availability: 99.99,
             responseTime: 100,
-            errorRate: 0.1
+            errorRate: 0.1,
           },
           period: {
             type: 'daily' as const,
-            duration: 1
+            duration: 1,
           },
           dependencies: ['test-api'],
-          priority: 'high' as const
+          priority: 'high' as const,
         };
 
         healthAggregation.registerSLA(strictSLA);
@@ -668,8 +691,12 @@ describe('Dependency Health System Integration Tests', () => {
         if (slaData) {
           expect(slaData.sla).toBe('strict-sla');
           expect(slaData.status).toBeDefined();
-          expect([SLAStatus.COMPLIANT, SLAStatus.WARNING, SLAStatus.VIOLATION, SLAStatus.UNKNOWN])
-            .toContain(slaData.status);
+          expect([
+            SLAStatus['COMPLIANT'],
+            SLAStatus['WARNING'],
+            SLAStatus['VIOLATION'],
+            SLAStatus['UNKNOWN'],
+          ]).toContain(slaData.status);
         }
       });
     });
@@ -686,8 +713,8 @@ describe('Dependency Health System Integration Tests', () => {
           healthCheck: {
             ...mockAPIConfig.healthCheck,
             intervalMs: 100,
-            timeoutMs: 100
-          }
+            timeoutMs: 100,
+          },
         };
 
         await dependencyRegistry.registerDependency(failingConfig);
@@ -696,7 +723,7 @@ describe('Dependency Health System Integration Tests', () => {
         await healthAggregation.start();
 
         // Wait for alert generation
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         const activeAlerts = healthAggregation.getActiveAlerts();
         expect(activeAlerts.length).toBeGreaterThanOrEqual(0);
@@ -738,8 +765,8 @@ describe('Dependency Health System Integration Tests', () => {
       });
 
       it('should filter alerts by severity', async () => {
-        const criticalAlerts = healthAggregation.getActiveAlerts(AlertSeverity.CRITICAL);
-        const warningAlerts = healthAggregation.getActiveAlerts(AlertSeverity.WARNING);
+        const criticalAlerts = healthAggregation.getActiveAlerts(AlertSeverity['CRITICAL']);
+        const warningAlerts = healthAggregation.getActiveAlerts(AlertSeverity['WARNING']);
         const allAlerts = healthAggregation.getActiveAlerts();
 
         expect(Array.isArray(criticalAlerts)).toBe(true);
@@ -756,7 +783,7 @@ describe('Dependency Health System Integration Tests', () => {
         // Generate multiple health snapshots
         for (let i = 0; i < 3; i++) {
           await healthAggregation.getHealthStatus();
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
 
         const history = healthAggregation.getHealthHistory();
@@ -793,7 +820,7 @@ describe('Dependency Health System Integration Tests', () => {
       const healthResults = await healthCheckService.performParallelHealthChecks([
         { name: 'test-database', config: mockDatabaseConfig },
         { name: 'test-embedding', config: mockEmbeddingConfig },
-        { name: 'test-api', config: mockAPIConfig }
+        { name: 'test-api', config: mockAPIConfig },
       ]);
 
       // Get aggregated health status
@@ -815,7 +842,7 @@ describe('Dependency Health System Integration Tests', () => {
       // Register a failing dependency
       const failingConfig = {
         ...mockAPIConfig,
-        connection: { url: 'http://invalid-url' }
+        connection: { url: 'http://invalid-url' },
       };
 
       await dependencyRegistry.registerDependency(failingConfig);
@@ -826,7 +853,7 @@ describe('Dependency Health System Integration Tests', () => {
       expect(analysis.dependencies['test-api']).toBeDefined();
 
       // Should detect the failure
-      expect(analysis.dependencies['test-api'].status).toBe(DependencyStatus.CRITICAL);
+      expect(analysis.dependencies['test-api'].status).toBe(DependencyStatus['CRITICAL']);
 
       // Overall system should still provide status
       expect(analysis.overall.status).toBeDefined();
@@ -841,12 +868,12 @@ describe('Dependency Health System Integration Tests', () => {
       // Add a new dependency
       const newConfig = {
         ...mockAPIConfig,
-        name: 'test-new-api'
+        name: 'test-new-api',
       };
       await dependencyRegistry.registerDependency(newConfig);
 
       // Wait for health check to run
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       analysis = await healthAggregation.getHealthStatus();
       expect(Object.keys(analysis.dependencies)).toHaveLength(initialCount + 1);
@@ -869,8 +896,8 @@ describe('Dependency Health System Integration Tests', () => {
         config: {
           ...mockAPIConfig,
           name: `test-load-${i}`,
-          connection: { ...mockAPIConfig.connection }
-        }
+          connection: { ...mockAPIConfig.connection },
+        },
       }));
 
       // Register all dependencies
@@ -900,11 +927,9 @@ describe('Dependency Health System Integration Tests', () => {
       for (let i = 0; i < iterations; i++) {
         const startTime = Date.now();
 
-        await healthCheckService.performHealthCheck(
-          'test-performance',
-          mockAPIConfig,
-          { strategy: HealthCheckStrategy.BASIC }
-        );
+        await healthCheckService.performHealthCheck('test-performance', mockAPIConfig, {
+          strategy: HealthCheckStrategy['BASIC'],
+        });
 
         const endTime = Date.now();
         times.push(endTime - startTime);
@@ -912,7 +937,8 @@ describe('Dependency Health System Integration Tests', () => {
 
       // Calculate average and variance
       const average = times.reduce((sum, time) => sum + time, 0) / times.length;
-      const variance = times.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / times.length;
+      const variance =
+        times.reduce((sum, time) => sum + Math.pow(time - average, 2), 0) / times.length;
       const standardDeviation = Math.sqrt(variance);
 
       // Performance should be consistent
@@ -924,11 +950,10 @@ describe('Dependency Health System Integration Tests', () => {
 
       // Perform many operations
       for (let i = 0; i < 50; i++) {
-        await healthCheckService.performHealthCheck(
-          `test-memory-${i}`,
-          mockAPIConfig,
-          { strategy: HealthCheckStrategy.BASIC, cacheEnabled: true }
-        );
+        await healthCheckService.performHealthCheck(`test-memory-${i}`, mockAPIConfig, {
+          strategy: HealthCheckStrategy['BASIC'],
+          cacheEnabled: true,
+        });
       }
 
       const finalMemory = process.memoryUsage().heapUsed;
@@ -945,17 +970,17 @@ describe('Dependency Health System Integration Tests', () => {
         ...mockAPIConfig,
         connection: {
           url: 'http://network-error.test',
-          timeout: 1000
-        }
+          timeout: 1000,
+        },
       };
 
       const result = await healthCheckService.performHealthCheck(
         'test-network-error',
         networkErrorConfig,
-        { strategy: HealthCheckStrategy.BASIC }
+        { strategy: HealthCheckStrategy['BASIC'] }
       );
 
-      expect(result.status).toBe(DependencyStatus.CRITICAL);
+      expect(result.status).toBe(DependencyStatus['CRITICAL']);
       expect(result.error).toBeDefined();
       expect(result.diagnostics.errorDetails).toBeDefined();
     });
@@ -966,16 +991,14 @@ describe('Dependency Health System Integration Tests', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-        json: () => Promise.reject(new Error('Invalid JSON'))
+        json: () => Promise.reject(new Error('Invalid JSON')),
       });
 
-      const result = await healthCheckService.performHealthCheck(
-        'test-malformed',
-        mockAPIConfig,
-        { strategy: HealthCheckStrategy.BASIC }
-      );
+      const result = await healthCheckService.performHealthCheck('test-malformed', mockAPIConfig, {
+        strategy: HealthCheckStrategy['BASIC'],
+      });
 
-      expect(result.status).toBe(DependencyStatus.CRITICAL);
+      expect(result.status).toBe(DependencyStatus['CRITICAL']);
     });
 
     it('should handle service unavailability', async () => {
@@ -984,31 +1007,29 @@ describe('Dependency Health System Integration Tests', () => {
         ...mockDatabaseConfig,
         connection: {
           url: 'http://unavailable-service.test',
-          timeout: 1000
-        }
+          timeout: 1000,
+        },
       };
 
       const result = await healthCheckService.performHealthCheck(
         'test-unavailable',
         unavailableConfig,
-        { strategy: HealthCheckStrategy.BASIC }
+        { strategy: HealthCheckStrategy['BASIC'] }
       );
 
-      expect(result.status).toBe(DependencyStatus.CRITICAL);
+      expect(result.status).toBe(DependencyStatus['CRITICAL']);
       expect(result.error).toBeDefined();
     });
 
     it('should handle configuration validation errors', async () => {
       const invalidConfigs = [
-        { name: '', type: DependencyType.DATABASE }, // Empty name
+        { name: '', type: DependencyType['DATABASE'] }, // Empty name
         { name: 'test', type: 'invalid' as any }, // Invalid type
-        { name: 'test', type: DependencyType.DATABASE, connection: {} } // Missing connection
+        { name: 'test', type: DependencyType['DATABASE'], connection: {} }, // Missing connection
       ];
 
       for (const config of invalidConfigs) {
-        await expect(
-          dependencyRegistry.registerDependency(config as any)
-        ).rejects.toThrow();
+        await expect(dependencyRegistry.registerDependency(config as any)).rejects.toThrow();
       }
     });
   });

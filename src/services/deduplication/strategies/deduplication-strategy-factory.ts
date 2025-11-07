@@ -15,7 +15,7 @@ import {
 import { PreferNewerStrategy, type PreferNewerStrategyConfig } from './prefer-newer-strategy.js';
 import { CombineStrategy, type CombineStrategyConfig } from './combine-strategy.js';
 import { IntelligentStrategy, type IntelligentStrategyConfig } from './intelligent-strategy.js';
-import { logger } from '../../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 // Re-export strategy types for convenience
 export type {

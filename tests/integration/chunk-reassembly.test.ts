@@ -15,7 +15,11 @@ import { ResultGroupingService } from '../../src/services/search/result-grouping
 import { MockEmbeddingService } from '../utils/mock-embedding-service.js';
 import { createMockSemanticAnalyzer } from '../utils/mock-semantic-analyzer.js';
 import { mockQdrantClient } from '../mocks/database.js';
-import { KnowledgeItem, MemoryStoreInput, MemoryFindInput } from '../../src/types/core-interfaces.js';
+import {
+  KnowledgeItem,
+  MemoryStoreInput,
+  MemoryFindInput,
+} from '../../src/types/core-interfaces.js';
 
 describe('Integration Tests - Document Chunk Reassembly', () => {
   let databaseManager: any;
@@ -34,8 +38,8 @@ describe('Integration Tests - Document Chunk Reassembly', () => {
 
     databaseManager = new DatabaseManager({
       qdrant: {
-        url: process.env.QDRANT_URL || 'http://localhost:6333',
-        apiKey: process.env.QDRANT_API_KEY,
+        url: process.env['QDRANT_URL'] || 'http://localhost:6333',
+        apiKey: process.env['QDRANT_API_KEY'],
         timeout: 30000,
       },
       enableVectorOperations: true,
@@ -45,11 +49,7 @@ describe('Integration Tests - Document Chunk Reassembly', () => {
     // Initialize the database manager
     await databaseManager.initialize();
 
-    chunkingService = new ChunkingService(
-      databaseManager,
-      embeddingService,
-      undefined,
-    );
+    chunkingService = new ChunkingService(databaseManager, embeddingService, undefined);
 
     const mockSemanticAnalyzer = createMockSemanticAnalyzer(embeddingService as any, {
       shouldFail: false,
@@ -125,8 +125,8 @@ All sections should maintain their proper order and formatting when the document
       expect(storeResult.errors.length).toBe(0);
 
       // Check if chunking actually occurred
-      const hasChunks = storeResult.items.some(item => item.metadata?.is_chunk === true);
-      const parentItem = storeResult.items.find(item => !item.metadata?.is_chunk);
+      const hasChunks = storeResult.items.some((item) => item.metadata?.is_chunk === true);
+      const parentItem = storeResult.items.find((item) => !item.metadata?.is_chunk);
 
       if (hasChunks) {
         expect(storeResult.items.length).toBeGreaterThan(1); // Should be chunked
@@ -146,10 +146,11 @@ All sections should maintain their proper order and formatting when the document
       expect(searchResult.results.length).toBeGreaterThan(0);
 
       // Look for reconstructed document OR any relevant document if not chunked
-      const reconstructed = searchResult.results.find(r => r.data?.reconstructed);
-      const relevantDoc = searchResult.results.find(r =>
-        r.metadata?.title === 'Simple Test Document' ||
-        r.content?.includes('Simple Test Document')
+      const reconstructed = searchResult.results.find((r) => r.data?.reconstructed);
+      const relevantDoc = searchResult.results.find(
+        (r) =>
+          r.metadata?.title === 'Simple Test Document' ||
+          r.content?.includes('Simple Test Document')
       );
 
       expect(reconstructed || relevantDoc).toBeDefined();
@@ -165,10 +166,10 @@ All sections should maintain their proper order and formatting when the document
 
         if (reconstructed) {
           // Verify reassembly metadata only for chunked documents
-          expect(reconstructed.data.total_chunks).toBeGreaterThan(1);
-          expect(reconstructed.data.found_chunks).toBeGreaterThan(1);
-          expect(reconstructed.data.completeness_ratio).toBe(1.0);
-          expect(reconstructed.data.parent_id).toBeDefined();
+          expect(reconstructed['data.total_chunks']).toBeGreaterThan(1);
+          expect(reconstructed['data.found_chunks']).toBeGreaterThan(1);
+          expect(reconstructed['data.completeness_ratio']).toBe(1.0);
+          expect(reconstructed['data.parent_id']).toBeDefined();
         }
 
         // Verify metadata preservation
@@ -217,8 +218,8 @@ This comprehensive test document ensures that partial reassembly scenarios are p
       expect(storeResult.errors.length).toBe(0);
 
       // Check if we have chunks or just the parent document
-      const allChunks = storeResult.items.filter(item => item.metadata?.is_chunk);
-      const parentDoc = storeResult.items.find(item => !item.metadata?.is_chunk);
+      const allChunks = storeResult.items.filter((item) => item.metadata?.is_chunk);
+      const parentDoc = storeResult.items.find((item) => !item.metadata?.is_chunk);
 
       if (allChunks.length === 0) {
         // No chunking occurred - skip this test scenario
@@ -230,7 +231,7 @@ This comprehensive test document ensures that partial reassembly scenarios are p
       const partialChunks = allChunks.slice(0, Math.floor(allChunks.length * 0.7));
 
       // Convert to search results format
-      const searchResults = partialChunks.map(chunk => ({
+      const searchResults = partialChunks.map((chunk) => ({
         id: chunk.id,
         kind: chunk.kind,
         content: chunk.content,
@@ -249,7 +250,7 @@ This comprehensive test document ensures that partial reassembly scenarios are p
 
       // Verify partial reconstruction quality
       expect(partialReconstruction.found_chunks).toBe(partialChunks.length);
-      expect(partialReconstruction.total_chunks).toBe(allChunks.length);
+      expect(partialReconstruction['total_chunks']).toBe(allChunks.length);
       expect(partialReconstruction.completeness_ratio).toBeLessThan(1.0);
       expect(partialReconstruction.completeness_ratio).toBeGreaterThan(0.5);
 
@@ -258,8 +259,8 @@ This comprehensive test document ensures that partial reassembly scenarios are p
       expect(partialReconstruction.content).toContain('Section 1: Foundation Concepts');
 
       // Should be marked as incomplete
-      expect(partialReconstruction.data.incomplete).toBe(true);
-      expect(partialReconstruction.data.missing_chunks).toBeGreaterThan(0);
+      expect(partialReconstruction['data.incomplete']).toBe(true);
+      expect(partialReconstruction['data.missing_chunks']).toBeGreaterThan(0);
     });
   });
 
@@ -554,27 +555,43 @@ This comprehensive architecture documentation serves as the foundation for our e
       };
 
       // Store and chunk the complex document
-      const storeResult = await memoryStoreService([
-        complexDocumentItem]);
+      const storeResult = await memoryStoreService([complexDocumentItem]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
 
       // Check if chunking occurred
-      const hasChunks = storeResult.items.some(item => item.metadata?.is_chunk === true);
+      const hasChunks = storeResult.items.some((item) => item.metadata?.is_chunk === true);
       if (hasChunks) {
         expect(storeResult.items.length).toBeGreaterThan(5); // Should be heavily chunked
       } else {
-        console.log('Large document was not chunked - chunking may be disabled or threshold not met');
+        console.log(
+          'Large document was not chunked - chunking may be disabled or threshold not met'
+        );
       }
 
       // Test various search queries across different sections
       const searchTests = [
-        { query: 'microservices architecture kubernetes containers', expectedSections: ['System Components', 'Application Layer'] },
-        { query: 'PostgreSQL MongoDB Redis database', expectedSections: ['Data Layer', 'Primary Data Stores'] },
-        { query: 'security authentication encryption TLS', expectedSections: ['Security Architecture'] },
-        { query: 'monitoring observability Prometheus Grafana', expectedSections: ['Monitoring and Observability'] },
-        { query: 'CI/CD pipeline deployment automation', expectedSections: ['Deployment and Operations'] },
+        {
+          query: 'microservices architecture kubernetes containers',
+          expectedSections: ['System Components', 'Application Layer'],
+        },
+        {
+          query: 'PostgreSQL MongoDB Redis database',
+          expectedSections: ['Data Layer', 'Primary Data Stores'],
+        },
+        {
+          query: 'security authentication encryption TLS',
+          expectedSections: ['Security Architecture'],
+        },
+        {
+          query: 'monitoring observability Prometheus Grafana',
+          expectedSections: ['Monitoring and Observability'],
+        },
+        {
+          query: 'CI/CD pipeline deployment automation',
+          expectedSections: ['Deployment and Operations'],
+        },
       ];
 
       // Test each search query sequentially using Promise.all for proper async handling
@@ -588,14 +605,14 @@ This comprehensive architecture documentation serves as the foundation for our e
         expect(searchResult.results.length).toBeGreaterThan(0);
 
         // Look for reconstructed documents
-        const reconstructedDocs = searchResult.results.filter(r => r.data?.reconstructed);
+        const reconstructedDocs = searchResult.results.filter((r) => r.data?.reconstructed);
 
         if (reconstructedDocs.length > 0) {
           const reconstructed = reconstructedDocs[0];
 
           // Verify comprehensive reconstruction
-          expect(reconstructed.data.total_chunks).toBeGreaterThan(5);
-          expect(reconstructed.data.completeness_ratio).toBeGreaterThan(0.8);
+          expect(reconstructed['data.total_chunks']).toBeGreaterThan(5);
+          expect(reconstructed['data.completeness_ratio']).toBeGreaterThan(0.8);
 
           // Verify metadata preservation
           expect(reconstructed.metadata?.title).toBe('Advanced System Architecture Documentation');
@@ -603,15 +620,13 @@ This comprehensive architecture documentation serves as the foundation for our e
           expect(reconstructed.metadata?.version).toBe('3.0');
 
           // Verify content includes expected sections
-          expectedSections.forEach(section => {
+          expectedSections.forEach((section) => {
             expect(reconstructed.content).toContain(section);
           });
         } else {
           // If no reconstructed document found, verify relevant chunks exist
-          const relevantChunks = searchResult.results.filter(result =>
-            expectedSections.some(section =>
-              result.content.includes(section)
-            )
+          const relevantChunks = searchResult.results.filter((result) =>
+            expectedSections.some((section) => result.content.includes(section))
           );
           expect(relevantChunks.length).toBeGreaterThan(0);
         }
@@ -680,21 +695,25 @@ Compliance requirements, governance procedures, and regulatory considerations ar
           business_impact: 'high',
           technical_complexity: 'high',
           rollback_strategy: 'documented_and_tested',
-          testing_requirements: ['unit_tests', 'integration_tests', 'security_tests', 'performance_tests'],
+          testing_requirements: [
+            'unit_tests',
+            'integration_tests',
+            'security_tests',
+            'performance_tests',
+          ],
           deployment_strategy: 'blue_green',
           monitoring_requirements: ['application_metrics', 'business_metrics', 'security_events'],
         },
       };
 
       // Store the metadata-rich document
-      const storeResult = await memoryStoreService([
-        richMetadataItem]);
+      const storeResult = await memoryStoreService([richMetadataItem]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
 
       // Check if chunking occurred
-      const hasChunks = storeResult.items.some(item => item.metadata?.is_chunk === true);
+      const hasChunks = storeResult.items.some((item) => item.metadata?.is_chunk === true);
       if (hasChunks) {
         expect(storeResult.items.length).toBeGreaterThan(1); // Should be chunked
       } else {
@@ -711,18 +730,22 @@ Compliance requirements, governance procedures, and regulatory considerations ar
       expect(searchResult.results.length).toBeGreaterThan(0);
 
       // Verify metadata preservation in chunks
-      const chunks = storeResult.items.filter(item => item.metadata?.is_chunk);
-      const parent = storeResult.items.find(item => !item.metadata?.is_chunk);
+      const chunks = storeResult.items.filter((item) => item.metadata?.is_chunk);
+      const parent = storeResult.items.find((item) => !item.metadata?.is_chunk);
 
       // Parent should preserve all metadata
       expect(parent?.metadata?.title).toBe('Metadata-Intensive Technical Specification');
       expect(parent?.metadata?.author).toBe('chief_architect');
       expect(parent?.metadata?.version).toBe('2.3.1');
       expect(parent?.metadata?.classification).toBe('internal_confidential');
-      expect(parent?.metadata?.reviewers).toEqual(['tech_lead', 'security_engineer', 'product_manager']);
+      expect(parent?.metadata?.reviewers).toEqual([
+        'tech_lead',
+        'security_engineer',
+        'product_manager',
+      ]);
 
       // Chunks should inherit critical metadata
-      chunks.forEach(chunk => {
+      chunks.forEach((chunk) => {
         expect(chunk.metadata?.title).toBe('Metadata-Intensive Technical Specification');
         expect(chunk.metadata?.author).toBe('chief_architect');
         expect(chunk.metadata?.category).toBe('technical_specification');
@@ -734,14 +757,24 @@ Compliance requirements, governance procedures, and regulatory considerations ar
       });
 
       // Test reassembly preservation
-      const reconstructed = searchResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = searchResult.results.find((r) => r.data?.reconstructed);
       if (reconstructed) {
         // Verify comprehensive metadata preservation
         expect(reconstructed.metadata?.title).toBe('Metadata-Intensive Technical Specification');
         expect(reconstructed.metadata?.author).toBe('chief_architect');
         expect(reconstructed.metadata?.version).toBe('2.3.1');
-        expect(reconstructed.metadata?.reviewers).toEqual(['tech_lead', 'security_engineer', 'product_manager']);
-        expect(reconstructed.metadata?.tags).toEqual(['architecture', 'specification', 'metadata', 'technical', 'comprehensive']);
+        expect(reconstructed.metadata?.reviewers).toEqual([
+          'tech_lead',
+          'security_engineer',
+          'product_manager',
+        ]);
+        expect(reconstructed.metadata?.tags).toEqual([
+          'architecture',
+          'specification',
+          'metadata',
+          'technical',
+          'comprehensive',
+        ]);
         expect(reconstructed.metadata?.classification).toBe('internal_confidential');
         expect(reconstructed.metadata?.compliance_requirements).toContain('SOC2');
         expect(reconstructed.metadata?.compliance_requirements).toContain('GDPR');
@@ -815,8 +848,7 @@ Mixed content with various character sets: English, 中文, 日本語, 한국어
       };
 
       // Store and test special characters handling
-      const storeResult = await memoryStoreService([
-        specialCharsItem]);
+      const storeResult = await memoryStoreService([specialCharsItem]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -831,7 +863,7 @@ Mixed content with various character sets: English, 中文, 日本語, 한국어
       expect(searchResult.results.length).toBeGreaterThan(0);
 
       // Verify special characters are preserved
-      const reconstructed = searchResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = searchResult.results.find((r) => r.data?.reconstructed);
       if (reconstructed) {
         expect(reconstructed.content).toContain('你好');
         expect(reconstructed.content).toContain('🚀');
@@ -865,14 +897,13 @@ Final section with important information.
         scope: { project: 'malformed-test' },
       };
 
-      const storeResult = await memoryStoreService([
-        documentItem]);
+      const storeResult = await memoryStoreService([documentItem]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
 
       // Simulate malformed chunks by manually creating problematic chunk data
-      const chunks = storeResult.items.filter(item => item.metadata?.is_chunk);
+      const chunks = storeResult.items.filter((item) => item.metadata?.is_chunk);
 
       if (chunks.length > 0) {
         // Create search results with some potentially malformed data
@@ -902,7 +933,7 @@ Final section with important information.
         // Should handle malformed data gracefully
         expect(reconstructed.content).toBeDefined();
         expect(reconstructed.content.length).toBeGreaterThan(0);
-        expect(reconstructed.data.total_chunks).toBeGreaterThanOrEqual(chunks.length);
+        expect(reconstructed['data.total_chunks']).toBeGreaterThanOrEqual(chunks.length);
       }
     });
 
@@ -938,8 +969,7 @@ ${'Additional content to ensure the document is large enough for performance tes
 
       // Measure storage performance
       const storageStartTime = Date.now();
-      const storeResult = await memoryStoreService([
-        largeDocumentItem]);
+      const storeResult = await memoryStoreService([largeDocumentItem]);
       const storageTime = Date.now() - storageStartTime;
 
       expect(storeResult.items.length).toBeGreaterThan(0);
@@ -959,10 +989,10 @@ ${'Additional content to ensure the document is large enough for performance tes
       expect(searchTime).toBeLessThan(5000); // Should complete in <5s
 
       // Verify reassembly quality
-      const reconstructed = searchResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = searchResult.results.find((r) => r.data?.reconstructed);
       if (reconstructed) {
-        expect(reconstructed.data.total_chunks).toBeGreaterThan(5);
-        expect(reconstructed.data.completeness_ratio).toBeGreaterThan(0.9);
+        expect(reconstructed['data.total_chunks']).toBeGreaterThan(5);
+        expect(reconstructed['data.completeness_ratio']).toBeGreaterThan(0.9);
         expect(reconstructed.content).toContain('Performance Test Document');
       }
     });
@@ -996,12 +1026,10 @@ ${'Additional content for document ' + (index + 1) + '. '.repeat(100)}
       }));
 
       // Store all documents concurrently
-      const storePromises = concurrentDocuments.map(doc =>
-        memoryStoreService([doc])
-      );
+      const storePromises = concurrentDocuments.map((doc) => memoryStoreService([doc]));
 
       const storeResults = await Promise.all(storePromises);
-      storeResults.forEach(result => {
+      storeResults.forEach((result) => {
         expect(result.items.length).toBeGreaterThan(0);
         expect(result.errors.length).toBe(0);
       });
@@ -1026,7 +1054,7 @@ ${'Additional content for document ' + (index + 1) + '. '.repeat(100)}
         expect(result.results.length).toBeGreaterThan(0);
 
         // Look for reconstructed documents
-        const reconstructed = result.results.find(r => r.data?.reconstructed);
+        const reconstructed = result.results.find((r) => r.data?.reconstructed);
         if (reconstructed) {
           expect(reconstructed.metadata?.title).toBe(`Concurrent Test Document ${index + 1}`);
           expect(reconstructed.metadata?.document_index).toBe(index + 1);

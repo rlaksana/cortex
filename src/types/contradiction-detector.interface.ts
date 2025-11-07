@@ -307,3 +307,56 @@ export interface ContradictionTestSuite {
     metrics: ['precision', 'recall', 'f1'];
   }>;
 }
+
+// Contradiction strategy type for string literals
+export type ContradictionStrategyType = 'semantic' | 'temporal' | 'logical' | 'factual' | 'procedural';
+
+// Additional exports for compatibility
+export interface ContradictionStrategy {
+  id: string;
+  name: string;
+  description: string;
+  algorithm: 'syntactic' | 'semantic' | 'logical' | 'temporal' | 'hybrid';
+  enabled: boolean;
+  weight: number;
+  sensitivity_modifier: number;
+  config: Record<string, any>;
+}
+
+export interface ContradictionScore {
+  total_score: number;
+  component_scores: {
+    syntactic: number;
+    semantic: number;
+    logical: number;
+    temporal: number;
+  };
+  confidence: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  reasoning: string;
+  evidence: Array<{
+    type: string;
+    content: string;
+    weight: number;
+  }>;
+}
+
+export interface ResolutionSuggestion {
+  id: string;
+  type: 'merge' | 'split' | 'flag' | 'ignore' | 'escalate';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  reasoning: string;
+  steps: Array<{
+    action: string;
+    description: string;
+    automated: boolean;
+  }>;
+  impact_assessment: {
+    affected_items: string[];
+    data_loss_risk: 'low' | 'medium' | 'high';
+    user_impact: 'low' | 'medium' | 'high';
+  };
+  auto_applicable: boolean;
+  requires_approval: boolean;
+}

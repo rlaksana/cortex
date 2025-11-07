@@ -19,17 +19,20 @@ class PreCommitCoverageValidator {
         statements: 85,
         branches: 85,
         functions: 85,
-        lines: 85
-      }
+        lines: 85,
+      },
     };
-    this.allowSkip = process.argv.includes('--skip-coverage') || process.env.SKIP_COVERAGE_CHECK === 'true';
+    this.allowSkip =
+      process.argv.includes('--skip-coverage') || process.env.SKIP_COVERAGE_CHECK === 'true';
   }
 
   async init() {
     console.log('🔍 Running Pre-commit Coverage Validation...');
 
     if (this.allowSkip) {
-      console.log('⚠️  Coverage check skipped via --skip-coverage flag or SKIP_COVERAGE_CHECK env var');
+      console.log(
+        '⚠️  Coverage check skipped via --skip-coverage flag or SKIP_COVERAGE_CHECK env var'
+      );
       return true;
     }
 
@@ -65,11 +68,11 @@ class PreCommitCoverageValidator {
 
     try {
       const stagedFiles = execSync('git diff --cached --name-only --diff-filter=ACM', {
-        encoding: 'utf8'
+        encoding: 'utf8',
       })
         .trim()
         .split('\n')
-        .filter(file => file.endsWith('.ts') && file.startsWith('src/'));
+        .filter((file) => file.endsWith('.ts') && file.startsWith('src/'));
 
       if (stagedFiles.length === 0) {
         console.log('ℹ️  No TypeScript files staged, skipping coverage check');
@@ -77,7 +80,7 @@ class PreCommitCoverageValidator {
       }
 
       console.log(`📝 Found ${stagedFiles.length} staged TypeScript files:`);
-      stagedFiles.forEach(file => console.log(`   - ${file}`));
+      stagedFiles.forEach((file) => console.log(`   - ${file}`));
 
       this.stagedFiles = stagedFiles;
     } catch (error) {
@@ -92,7 +95,7 @@ class PreCommitCoverageValidator {
       // Run comprehensive coverage tests
       execSync('npm run test:coverage:ci', {
         stdio: 'pipe',
-        cwd: this.projectRoot
+        cwd: this.projectRoot,
       });
       console.log('✅ Coverage tests completed');
     } catch (error) {
@@ -104,9 +107,13 @@ class PreCommitCoverageValidator {
   async validateCoverage() {
     console.log('📊 Validating coverage against ≥85% thresholds...');
 
-    const coverageSummaryPath = path.join(this.coverageDir, 'comprehensive', 'coverage-summary.json');
+    const coverageSummaryPath = path.join(
+      this.coverageDir,
+      'comprehensive',
+      'coverage-summary.json'
+    );
 
-    if (!await this.fileExists(coverageSummaryPath)) {
+    if (!(await this.fileExists(coverageSummaryPath))) {
       throw new Error('Coverage summary file not found. Run coverage tests first.');
     }
 
@@ -142,7 +149,9 @@ class PreCommitCoverageValidator {
       for (const [metric, result] of Object.entries(results)) {
         if (!result.meetsThreshold) {
           const deficit = result.threshold - result.actual;
-          console.log(`   ${metric}: Need ${deficit}% more coverage (${result.actual}% → ${result.threshold}%)`);
+          console.log(
+            `   ${metric}: Need ${deficit}% more coverage (${result.actual}% → ${result.threshold}%)`
+          );
         }
       }
 
@@ -166,9 +175,9 @@ class PreCommitCoverageValidator {
       status: 'PASSED',
       summary: {
         overallScore: 100,
-        metricsMet: Object.values(this.coverageResults).filter(r => r.meetsThreshold).length,
-        totalMetrics: Object.keys(this.coverageResults).length
-      }
+        metricsMet: Object.values(this.coverageResults).filter((r) => r.meetsThreshold).length,
+        totalMetrics: Object.keys(this.coverageResults).length,
+      },
     };
 
     // Save pre-commit report
@@ -185,7 +194,13 @@ class PreCommitCoverageValidator {
     console.log('📉 Checking for coverage regression...');
 
     try {
-      const previousReportPath = path.join(this.projectRoot, 'artifacts', 'coverage', 'pre-commit', 'latest.json');
+      const previousReportPath = path.join(
+        this.projectRoot,
+        'artifacts',
+        'coverage',
+        'pre-commit',
+        'latest.json'
+      );
 
       if (await this.fileExists(previousReportPath)) {
         const previousReport = JSON.parse(await fs.readFile(previousReportPath, 'utf8'));
@@ -198,8 +213,11 @@ class PreCommitCoverageValidator {
           if (previousResult) {
             const regression = currentResult.actual - previousResult.actual;
 
-            if (regression < -5) { // 5% regression threshold
-              console.log(`⚠️  ${metric} coverage regression detected: ${previousResult.actual}% → ${currentResult.actual}% (${regression}%)`);
+            if (regression < -5) {
+              // 5% regression threshold
+              console.log(
+                `⚠️  ${metric} coverage regression detected: ${previousResult.actual}% → ${currentResult.actual}% (${regression}%)`
+              );
               hasRegression = true;
             }
           }
@@ -231,12 +249,12 @@ class PreCommitCoverageValidator {
       'src/services/memory-store.ts',
       'src/db/adapters/qdrant-adapter.ts',
       'src/services/orchestrators/memory-find-orchestrator.ts',
-      'src/services/orchestrators/memory-store-orchestrator.ts'
+      'src/services/orchestrators/memory-store-orchestrator.ts',
     ];
 
     const coverageFilePath = path.join(this.coverageDir, 'comprehensive', 'coverage.json');
 
-    if (!await this.fileExists(coverageFilePath)) {
+    if (!(await this.fileExists(coverageFilePath))) {
       console.log('⚠️  Detailed coverage file not found, skipping critical file validation');
       return;
     }
@@ -281,7 +299,7 @@ class PreCommitCoverageValidator {
       lines: { total: fileData.l?.total || 0, covered: fileData.l?.covered || 0 },
       functions: { total: fileData.f?.total || 0, covered: fileData.f?.covered || 0 },
       branches: { total: fileData.b?.total || 0, covered: fileData.b?.covered || 0 },
-      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 }
+      statements: { total: fileData.s?.total || 0, covered: fileData.s?.covered || 0 },
     };
   }
 
@@ -308,11 +326,12 @@ class PreCommitCoverageValidator {
 // Run the pre-commit validation
 if (import.meta.url === `file://${process.argv[1]}`) {
   const validator = new PreCommitCoverageValidator();
-  validator.init()
-    .then(success => {
+  validator
+    .init()
+    .then((success) => {
       process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Validation error:', error.message);
       process.exit(1);
     });

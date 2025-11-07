@@ -9,16 +9,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { performance } from 'perf_hooks';
 
 // Mock environment for testing
-process.env.OPENAI_API_KEY = 'test-key';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.NODE_ENV = 'test';
+process.env['OPENAI_API_KEY'] = 'test-key';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['NODE_ENV'] = 'test';
 
 describe('MCP Server Performance and Load Tests', () => {
   let performanceMetrics: {
     startTime: number;
     endTime: number;
-    memoryBefore: NodeJS.MemoryUsage;
-    memoryAfter: NodeJS.MemoryUsage;
+    memoryBefore: NodeJS['M']emoryUsage;
+    memoryAfter: NodeJS['M']emoryUsage;
     responseTimes: number[];
     throughput: number;
   };
@@ -30,7 +30,7 @@ describe('MCP Server Performance and Load Tests', () => {
       memoryBefore: process.memoryUsage(),
       memoryAfter: process.memoryUsage(),
       responseTimes: [],
-      throughput: 0
+      throughput: 0,
     };
   });
 
@@ -57,10 +57,10 @@ describe('MCP Server Performance and Load Tests', () => {
             data: {
               large_content: 'x'.repeat(1024), // 1KB per item
               index: i,
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+            },
           },
-          scope: { project: 'performance-test', branch: 'main' }
+          scope: { project: 'performance-test', branch: 'main' },
         });
       }
 
@@ -73,21 +73,24 @@ describe('MCP Server Performance and Load Tests', () => {
           arguments: {
             items: largeItems,
             deduplication_config: {
-              enabled: false // Disable deduplication for pure performance test
-            }
-          }
-        }
+              enabled: false, // Disable deduplication for pure performance test
+            },
+          },
+        },
       };
 
       // Validate request structure
       expect(memoryStoreRequest.params.arguments.items).toHaveLength(1000);
-      expect(memoryStoreRequest.params.arguments.items[0].data.data.large_content.length).toBe(1024);
+      expect(memoryStoreRequest.params.arguments.items[0].data['data.large_content'].length).toBe(
+        1024
+      );
 
       performanceMetrics.endTime = performance.now();
       performanceMetrics.memoryAfter = process.memoryUsage();
 
       const processingTime = performanceMetrics.endTime - performanceMetrics.startTime;
-      const memoryIncrease = performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
+      const memoryIncrease =
+        performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
 
       expect(processingTime).toBeLessThan(5000); // Should complete within 5 seconds
       expect(memoryIncrease).toBeLessThan(100 * 1024 * 1024); // Less than 100MB increase
@@ -114,10 +117,10 @@ describe('MCP Server Performance and Load Tests', () => {
               enabled: true,
               expansion_type: 'relations',
               max_depth: 3,
-              max_nodes: 500
-            }
-          }
-        }
+              max_nodes: 500,
+            },
+          },
+        },
       };
 
       expect(memoryFindRequest.params.arguments.limit).toBe(1000);
@@ -127,7 +130,8 @@ describe('MCP Server Performance and Load Tests', () => {
       performanceMetrics.memoryAfter = process.memoryUsage();
 
       const processingTime = performanceMetrics.endTime - performanceMetrics.startTime;
-      const memoryIncrease = performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
+      const memoryIncrease =
+        performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
 
       expect(processingTime).toBeLessThan(10000); // Should complete within 10 seconds
       expect(memoryIncrease).toBeLessThan(50 * 1024 * 1024); // Less than 50MB increase
@@ -156,10 +160,10 @@ describe('MCP Server Performance and Load Tests', () => {
               data: {
                 request_id: reqId,
                 item_index: i,
-                content: `test content for throughput testing ${reqId}-${i}`
-              }
+                content: `test content for throughput testing ${reqId}-${i}`,
+              },
             },
-            scope: { project: 'throughput-test', branch: 'main' }
+            scope: { project: 'throughput-test', branch: 'main' },
           });
         }
 
@@ -170,9 +174,9 @@ describe('MCP Server Performance and Load Tests', () => {
           params: {
             name: 'memory_store',
             arguments: {
-              items: items
-            }
-          }
+              items: items,
+            },
+          },
         };
 
         expect(memoryStoreRequest.params.arguments.items).toHaveLength(itemsPerRequest);
@@ -218,9 +222,9 @@ describe('MCP Server Performance and Load Tests', () => {
               scope: { project: 'search-test', branch: 'main' },
               types: ['entity'],
               search_strategy: 'auto',
-              limit: 50
-            }
-          }
+              limit: 50,
+            },
+          },
         };
 
         expect(memoryFindRequest.params.arguments.query).toBe(`search query ${searchId}`);
@@ -266,10 +270,10 @@ describe('MCP Server Performance and Load Tests', () => {
               operation: 'health',
               include_detailed_metrics: true,
               filters: {
-                components: ['deduplication_engine', 'ttl_manager', 'health_checker']
-              }
-            }
-          }
+                components: ['deduplication_engine', 'ttl_manager', 'health_checker'],
+              },
+            },
+          },
         };
 
         expect(systemStatusRequest.params.arguments.operation).toBe('health');
@@ -284,7 +288,8 @@ describe('MCP Server Performance and Load Tests', () => {
 
       const totalTime = performanceMetrics.endTime - performanceMetrics.startTime;
       const averageResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
-      const memoryIncrease = performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
+      const memoryIncrease =
+        performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
 
       expect(totalTime).toBeLessThan(5000); // Should complete within 5 seconds
       expect(averageResponseTime).toBeLessThan(100); // Average response time less than 100ms
@@ -308,21 +313,24 @@ describe('MCP Server Performance and Load Tests', () => {
           params: {
             name: 'memory_store',
             arguments: {
-              items: [{
-                kind: 'decision',
-                data: {
-                  title: `Complex Decision ${opId}`,
-                  rationale: 'Complex rationale for performance testing with multiple considerations',
-                  alternatives: ['Alternative A', 'Alternative B', 'Alternative C'],
-                  status: 'in_progress',
-                  impact_assessment: {
-                    technical_impact: 'high',
-                    business_impact: 'medium',
-                    timeline_impact: 'low'
-                  }
+              items: [
+                {
+                  kind: 'decision',
+                  data: {
+                    title: `Complex Decision ${opId}`,
+                    rationale:
+                      'Complex rationale for performance testing with multiple considerations',
+                    alternatives: ['Alternative A', 'Alternative B', 'Alternative C'],
+                    status: 'in_progress',
+                    impact_assessment: {
+                      technical_impact: 'high',
+                      business_impact: 'medium',
+                      timeline_impact: 'low',
+                    },
+                  },
+                  scope: { project: 'complex-test', branch: 'main' },
                 },
-                scope: { project: 'complex-test', branch: 'main' }
-              }],
+              ],
               deduplication_config: {
                 enabled: true,
                 merge_strategy: 'intelligent',
@@ -332,19 +340,21 @@ describe('MCP Server Performance and Load Tests', () => {
                   field_merging_strategies: {
                     arrays: 'append_unique',
                     objects: 'merge_deep',
-                    strings: 'prefer_newer'
+                    strings: 'prefer_newer',
                   },
                   conflict_resolution: {
                     manual_review_threshold: 0.7,
-                    auto_merge_confidence_threshold: 0.9
-                  }
-                }
-              }
-            }
-          }
+                    auto_merge_confidence_threshold: 0.9,
+                  },
+                },
+              },
+            },
+          },
         };
 
-        expect(memoryStoreRequest.params.arguments.deduplication_config.enable_intelligent_merging).toBe(true);
+        expect(
+          memoryStoreRequest.params.arguments.deduplication_config.enable_intelligent_merging
+        ).toBe(true);
 
         const operationEndTime = performance.now();
         responseTimes.push(operationEndTime - operationStartTime);
@@ -379,29 +389,31 @@ describe('MCP Server Performance and Load Tests', () => {
 
           const memoryStoreRequest = {
             jsonrpc: '2.0' as const,
-            id: 113 + (batch * operationsPerBatch) + op,
+            id: 113 + batch * operationsPerBatch + op,
             method: 'tools/call' as const,
             params: {
               name: 'memory_store',
               arguments: {
-                items: [{
-                  kind: 'entity',
-                  data: {
-                    entity_type: 'stress_test',
-                    name: `stress_entity_${batch}_${op}`,
+                items: [
+                  {
+                    kind: 'entity',
                     data: {
-                      batch: batch,
-                      operation: op,
-                      content: `stress test content for batch ${batch} operation ${op}`
-                    }
+                      entity_type: 'stress_test',
+                      name: `stress_entity_${batch}_${op}`,
+                      data: {
+                        batch: batch,
+                        operation: op,
+                        content: `stress test content for batch ${batch} operation ${op}`,
+                      },
+                    },
+                    scope: { project: 'stress-test', branch: 'main' },
                   },
-                  scope: { project: 'stress-test', branch: 'main' }
-                }]
-              }
-            }
+                ],
+              },
+            },
           };
 
-          expect(memoryStoreRequest.params.arguments.items[0].data.data.batch).toBe(batch);
+          expect(memoryStoreRequest.params.arguments.items[0].data['data.batch']).toBe(batch);
 
           const operationEndTime = performance.now();
           const responseTime = operationEndTime - operationStartTime;
@@ -410,10 +422,11 @@ describe('MCP Server Performance and Load Tests', () => {
         }
 
         // Small delay between batches to simulate real usage
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Check that performance doesn't degrade significantly within batch
-        const batchAverage = batchResponseTimes.reduce((a, b) => a + b, 0) / batchResponseTimes.length;
+        const batchAverage =
+          batchResponseTimes.reduce((a, b) => a + b, 0) / batchResponseTimes.length;
         expect(batchAverage).toBeLessThan(500); // Each batch should average less than 500ms
       }
 
@@ -422,7 +435,8 @@ describe('MCP Server Performance and Load Tests', () => {
 
       const totalTime = performanceMetrics.endTime - performanceMetrics.startTime;
       const overallAverage = allResponseTimes.reduce((a, b) => a + b, 0) / allResponseTimes.length;
-      const memoryIncrease = performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
+      const memoryIncrease =
+        performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
 
       expect(totalTime).toBeLessThan(30000); // Should complete within 30 seconds
       expect(overallAverage).toBeLessThan(200); // Overall average less than 200ms
@@ -448,24 +462,28 @@ describe('MCP Server Performance and Load Tests', () => {
           params: {
             name: 'memory_store',
             arguments: {
-              items: [{
-                kind: 'section',
-                data: {
-                  title: `Large Content Section ${op}`,
-                  content: largeContent,
-                  section_type: 'documentation',
-                  metadata: {
-                    content_size: largeContent.length,
-                    operation_index: op
-                  }
+              items: [
+                {
+                  kind: 'section',
+                  data: {
+                    title: `Large Content Section ${op}`,
+                    content: largeContent,
+                    section_type: 'documentation',
+                    metadata: {
+                      content_size: largeContent.length,
+                      operation_index: op,
+                    },
+                  },
+                  scope: { project: 'memory-test', branch: 'main' },
                 },
-                scope: { project: 'memory-test', branch: 'main' }
-              }]
-            }
-          }
+              ],
+            },
+          },
         };
 
-        expect(memoryStoreRequest.params.arguments.items[0].data.content.length).toBe(largeDataSize);
+        expect(memoryStoreRequest.params.arguments.items[0].data.content.length).toBe(
+          largeDataSize
+        );
 
         const operationEndTime = performance.now();
         const responseTime = operationEndTime - operationStartTime;
@@ -482,7 +500,8 @@ describe('MCP Server Performance and Load Tests', () => {
       performanceMetrics.memoryAfter = process.memoryUsage();
 
       const totalTime = performanceMetrics.endTime - performanceMetrics.startTime;
-      const memoryIncrease = performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
+      const memoryIncrease =
+        performanceMetrics.memoryAfter.heapUsed - performanceMetrics.memoryBefore.heapUsed;
 
       expect(totalTime).toBeLessThan(15000); // Should complete within 15 seconds
       expect(memoryIncrease).toBeLessThan(30 * 1024 * 1024); // Less than 30MB increase
@@ -499,10 +518,10 @@ describe('MCP Server Performance and Load Tests', () => {
       // Define performance benchmarks
       const performanceBenchmarks = {
         maxMemoryStoreTime: 1000, // 1 second
-        maxMemoryFindTime: 500,   // 500ms
+        maxMemoryFindTime: 500, // 500ms
         maxSystemStatusTime: 100, // 100ms
         maxMemoryIncrease: 50 * 1024 * 1024, // 50MB
-        minThroughput: 5 // items per second
+        minThroughput: 5, // items per second
       };
 
       // Test basic memory_store performance
@@ -514,17 +533,19 @@ describe('MCP Server Performance and Load Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'performance_benchmark',
-                name: 'benchmark_entity',
-                data: { timestamp: new Date().toISOString() }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'performance_benchmark',
+                  name: 'benchmark_entity',
+                  data: { timestamp: new Date().toISOString() },
+                },
+                scope: { project: 'benchmark', branch: 'main' },
               },
-              scope: { project: 'benchmark', branch: 'main' }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
       const memoryStoreEndTime = performance.now();
       const memoryStoreTime = memoryStoreEndTime - memoryStoreStartTime;
@@ -542,9 +563,9 @@ describe('MCP Server Performance and Load Tests', () => {
           arguments: {
             query: 'benchmark query',
             scope: { project: 'benchmark', branch: 'main' },
-            limit: 10
-          }
-        }
+            limit: 10,
+          },
+        },
       };
       const memoryFindEndTime = performance.now();
       const memoryFindTime = memoryFindEndTime - memoryFindStartTime;
@@ -560,9 +581,9 @@ describe('MCP Server Performance and Load Tests', () => {
         params: {
           name: 'system_status',
           arguments: {
-            operation: 'health'
-          }
-        }
+            operation: 'health',
+          },
+        },
       };
       const systemStatusEndTime = performance.now();
       const systemStatusTime = systemStatusEndTime - systemStatusStartTime;
@@ -585,19 +606,23 @@ describe('MCP Server Performance and Load Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'section',
-              data: {
-                title: 'Reasonable Size Content',
-                content: reasonableContent
+            items: [
+              {
+                kind: 'section',
+                data: {
+                  title: 'Reasonable Size Content',
+                  content: reasonableContent,
+                },
+                scope: { project: 'size-test', branch: 'main' },
               },
-              scope: { project: 'size-test', branch: 'main' }
-            }]
-          }
-        }
+            ],
+          },
+        },
       };
 
-      expect(reasonableRequest.params.arguments.items[0].data.content.length).toBe(reasonableRequestSize);
+      expect(reasonableRequest.params.arguments.items[0].data.content.length).toBe(
+        reasonableRequestSize
+      );
       expect(reasonableRequestSize).toBeLessThan(maxRequestSize);
 
       // Test boundary conditions
@@ -622,20 +647,22 @@ describe('MCP Server Performance and Load Tests', () => {
             params: {
               name: 'memory_store',
               arguments: {
-                items: [{
-                  kind: 'entity',
-                  data: {
-                    entity_type: 'concurrent_test',
-                    name: `concurrent_entity_${i}`,
-                    data: { request_id: i }
+                items: [
+                  {
+                    kind: 'entity',
+                    data: {
+                      entity_type: 'concurrent_test',
+                      name: `concurrent_entity_${i}`,
+                      data: { request_id: i },
+                    },
+                    scope: { project: 'concurrent-test', branch: 'main' },
                   },
-                  scope: { project: 'concurrent-test', branch: 'main' }
-                }]
-              }
-            }
+                ],
+              },
+            },
           };
 
-          expect(request.params.arguments.items[0].data.data.request_id).toBe(i);
+          expect(request.params.arguments.items[0].data['data.request_id']).toBe(i);
 
           const endTime = performance.now();
           resolve(endTime - startTime);

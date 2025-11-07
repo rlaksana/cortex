@@ -5,8 +5,8 @@
  * document reassembly accuracy with multiple metrics and algorithms.
  */
 
-import { logger } from './logger.js';
-import { createHash } from 'node:crypto';
+import { logger } from '@/utils/logger.js';
+import { createHash } from 'crypto';
 
 export interface SimilarityMetrics {
   overall_similarity: number; // 0-1 scale

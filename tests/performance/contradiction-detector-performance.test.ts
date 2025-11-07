@@ -109,7 +109,9 @@ describe('Contradiction Detector Performance Tests', () => {
         expect(response.summary.total_items_checked).toBe(size);
         expect(response.performance.items_per_second).toBeGreaterThan(5); // At least 5 items/second
 
-        console.log(`Batch size ${size}: ${processingTime}ms, ${response.performance.items_perSecond.toFixed(2)} items/sec`);
+        console.log(
+          `Batch size ${size}: ${processingTime}ms, ${response.performance.items_perSecond.toFixed(2)} items/sec`
+        );
       }
     }, 120000);
 
@@ -145,7 +147,7 @@ describe('Contradiction Detector Performance Tests', () => {
       expect(totalProcessingTime).toBeLessThan(maxTotalTime);
 
       // Performance should be consistent across batches
-      const throughputs = results.map(r => r.itemsPerSecond);
+      const throughputs = results.map((r) => r.itemsPerSecond);
       const avgThroughput = throughputs.reduce((a, b) => a + b, 0) / throughputs.length;
       const maxThroughput = Math.max(...throughputs);
       const minThroughput = Math.min(...throughputs);
@@ -261,7 +263,9 @@ describe('Contradiction Detector Performance Tests', () => {
       expect(responses).toHaveLength(concurrentRequests);
       responses.forEach((response, i) => {
         expect(response.summary.total_items_checked).toBe(itemsPerRequest);
-        console.log(`Request ${i + 1}: ${response.performance.items_perSecond.toFixed(2)} items/sec`);
+        console.log(
+          `Request ${i + 1}: ${response.performance.items_perSecond.toFixed(2)} items/sec`
+        );
       });
 
       // Total time should be reasonable
@@ -294,7 +298,10 @@ describe('Contradiction Detector Performance Tests', () => {
 
       // Flatten responses and verify all items were processed
       const flatResponses = responses.flat();
-      const totalProcessed = flatResponses.reduce((sum, r) => sum + r.summary.total_items_checked, 0);
+      const totalProcessed = flatResponses.reduce(
+        (sum, r) => sum + r.summary.total_items_checked,
+        0
+      );
       const expectedTotal = mixedRequests.reduce((sum, r) => sum + r.size, 0);
 
       expect(totalProcessed).toBe(expectedTotal);
@@ -383,7 +390,9 @@ describe('Contradiction Detector Performance Tests', () => {
       expect(response.performance.memory_usage_mb).toBeLessThan(memoryLimitMb);
       expect(response.summary.total_items_checked).toBe(stressTestSize);
 
-      console.log(`Stress test memory usage: ${response.performance.memory_usage_mb.toFixed(2)} MB`);
+      console.log(
+        `Stress test memory usage: ${response.performance.memory_usage_mb.toFixed(2)} MB`
+      );
     }, 90000);
 
     test('should maintain performance with high contradiction density', async () => {
@@ -412,7 +421,9 @@ describe('Contradiction Detector Performance Tests', () => {
       expect(response.summary.contradictions_found).toBeGreaterThan(0);
       expect(processingTime).toBeLessThan(45000); // Should complete within 45 seconds
 
-      console.log(`High density test: ${response.summary.contradictions_found} contradictions in ${processingTime}ms`);
+      console.log(
+        `High density test: ${response.summary.contradictions_found} contradictions in ${processingTime}ms`
+      );
     }, 90000);
   });
 
@@ -464,10 +475,10 @@ class ContradictionDetectorImpl implements ContradictionDetector {
     // Simulate processing time based on item count
     const baseProcessingTime = 10; // 10ms base time
     const perItemTime = 5; // 5ms per item
-    const expectedProcessingTime = baseProcessingTime + (request.items.length * perItemTime);
+    const expectedProcessingTime = baseProcessingTime + request.items.length * perItemTime;
 
     // Simulate realistic processing delays
-    await new Promise(resolve => setTimeout(resolve, Math.min(expectedProcessingTime, 1000)));
+    await new Promise((resolve) => setTimeout(resolve, Math.min(expectedProcessingTime, 1000)));
 
     // Simulate contradiction detection with varying density
     const contradictionProbability = 0.3; // 30% chance of contradiction between pairs
@@ -479,7 +490,9 @@ class ContradictionDetectorImpl implements ContradictionDetector {
           contradictions.push({
             id: generateId(),
             detected_at: new Date(),
-            contradiction_type: ['factual', 'temporal', 'logical', 'attribute'][Math.floor(Math.random() * 4)],
+            contradiction_type: ['factual', 'temporal', 'logical', 'attribute'][
+              Math.floor(Math.random() * 4)
+            ],
             confidence_score: Math.random() * 0.4 + 0.6,
             severity: ['low', 'medium', 'high', 'critical'][Math.floor(Math.random() * 4)],
             primary_item_id: request.items[i].id || generateId(),
@@ -507,14 +520,20 @@ class ContradictionDetectorImpl implements ContradictionDetector {
       summary: {
         total_items_checked: request.items.length,
         contradictions_found: contradictions.length,
-        by_type: contradictions.reduce((acc, c) => {
-          acc[c.contradiction_type] = (acc[c.contradiction_type] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        by_severity: contradictions.reduce((acc, c) => {
-          acc[c.severity] = (acc[c.severity] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
+        by_type: contradictions.reduce(
+          (acc, c) => {
+            acc[c.contradiction_type] = (acc[c.contradiction_type] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
+        by_severity: contradictions.reduce(
+          (acc, c) => {
+            acc[c.severity] = (acc[c.severity] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>
+        ),
         processing_time_ms: processingTime,
         cache_hits: Math.floor(Math.random() * 20),
         cache_misses: Math.floor(Math.random() * 10),
@@ -535,7 +554,7 @@ class ContradictionDetectorImpl implements ContradictionDetector {
     const cacheMemory = this.cache.size * 0.1; // Cache overhead
     const processingMemory = Math.min(itemCount * 0.2, 100); // Processing overhead, capped at 100MB
 
-    return baseMemory + (itemCount * perItemMemory) + cacheMemory + processingMemory;
+    return baseMemory + itemCount * perItemMemory + cacheMemory + processingMemory;
   }
 
   getConfiguration(): any {
@@ -547,7 +566,9 @@ class ContradictionDetectorImpl implements ContradictionDetector {
   }
 
   // Mock implementations for other interface methods
-  async flagContradictions() { return []; }
+  async flagContradictions() {
+    return [];
+  }
   async analyzeItem() {
     return {
       item_id: '',
@@ -565,10 +586,14 @@ class ContradictionDetectorImpl implements ContradictionDetector {
       },
     };
   }
-  async getContradictionPointers() { return []; }
+  async getContradictionPointers() {
+    return [];
+  }
   async batchCheck(items: KnowledgeItem[]) {
     return this.detectContradictions({ items });
   }
-  async validateContradiction() { return true; }
-  async resolveContradiction() { }
+  async validateContradiction() {
+    return true;
+  }
+  async resolveContradiction() {}
 }

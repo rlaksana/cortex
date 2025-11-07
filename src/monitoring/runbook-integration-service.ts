@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Alert } from './alert-management-service.js';
 import { AlertSeverity } from '../types/unified-health-interfaces.js';
 import { Bash } from '../utils/bash-wrapper.js';

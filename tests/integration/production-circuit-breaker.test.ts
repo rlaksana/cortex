@@ -15,9 +15,9 @@ describe('Production-Ready Circuit Breaker Tests', () => {
 
   beforeEach(async () => {
     // Set test environment
-    process.env.NODE_ENV = 'test';
-    process.env.QDRANT_URL = 'http://localhost:6333';
-    process.env.QDRANT_COLLECTION_NAME = 'test-production-circuit-breaker';
+    process.env['NODE_ENV'] = 'test';
+    process.env['QDRANT_URL'] = 'http://localhost:6333';
+    process.env['QDRANT_COLLECTION_NAME'] = 'test-production-circuit-breaker';
 
     // Create Qdrant adapter with production configuration
     qdrantAdapter = new QdrantAdapter({
@@ -133,8 +133,8 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       const retryMetricsBefore = retryPolicyManager.getMetrics();
 
       // Test with temporarily failing service
-      const originalUrl = process.env.QDRANT_URL;
-      process.env.QDRANT_URL = 'http://localhost:9999'; // Invalid URL
+      const originalUrl = process.env['QDRANT_URL'];
+      process.env['QDRANT_URL'] = 'http://localhost:9999'; // Invalid URL
 
       try {
         await qdrantAdapter.healthCheck();
@@ -143,7 +143,7 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       }
 
       // Restore correct URL
-      process.env.QDRANT_URL = originalUrl;
+      process.env['QDRANT_URL'] = originalUrl;
 
       // Subsequent operation should succeed with retries
       const startTime = Date.now();
@@ -153,7 +153,9 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       const retryMetricsAfter = retryPolicyManager.getMetrics();
 
       // Should have attempted retries
-      expect(retryMetricsAfter.total_operations).toBeGreaterThan(retryMetricsBefore.total_operations);
+      expect(retryMetricsAfter.total_operations).toBeGreaterThan(
+        retryMetricsBefore.total_operations
+      );
       expect(responseTime).toBeGreaterThan(0);
 
       console.log('Retry mechanism test results:', {
@@ -180,11 +182,10 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       // Capture retry delays by measuring timing
       const startTime = Date.now();
       try {
-        await qdrantAdapter['executeWithRetryAndCircuitBreaker'](
-          mockOperation,
-          'jitter_test',
-          { max_attempts: 3, base_delay_ms: 100 }
-        );
+        await qdrantAdapter['executeWithRetryAndCircuitBreaker'](mockOperation, 'jitter_test', {
+          max_attempts: 3,
+          base_delay_ms: 100,
+        });
       } catch (error) {
         // Ignore for this test
       }
@@ -214,8 +215,8 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       const results = await Promise.allSettled(promises);
       const duration = Date.now() - startTime;
 
-      const successfulResults = results.filter(r => r.status === 'fulfilled').length;
-      const failedResults = results.filter(r => r.status === 'rejected').length;
+      const successfulResults = results.filter((r) => r.status === 'fulfilled').length;
+      const failedResults = results.filter((r) => r.status === 'rejected').length;
 
       // Most requests should succeed with connection pooling
       expect(successfulResults).toBeGreaterThan(concurrentRequests * 0.8);
@@ -259,7 +260,7 @@ describe('Production-Ready Circuit Breaker Tests', () => {
         maxConnections: 3,
         concurrentRequests,
         duration,
-        successfulResults: results.filter(r => r.status === 'fulfilled').length,
+        successfulResults: results.filter((r) => r.status === 'fulfilled').length,
       });
     });
   });
@@ -274,7 +275,7 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       expect(qdrantCircuitBreaker.isOpen()).toBe(true);
 
       // Wait for recovery timeout (shorter for testing)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Circuit should transition to half-open on next attempt
       try {
@@ -377,7 +378,8 @@ describe('Production-Ready Circuit Breaker Tests', () => {
 
       console.log('Load test results:', {
         ...loadTestResult.metrics,
-        successRate: loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests,
+        successRate:
+          loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests,
         errorCount: loadTestResult.errors.length,
       });
     });
@@ -395,7 +397,8 @@ describe('Production-Ready Circuit Breaker Tests', () => {
 
       console.log('High failure rate test results:', {
         ...loadTestResult.metrics,
-        successRate: loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests,
+        successRate:
+          loadTestResult.metrics.successfulRequests / loadTestResult.metrics.totalRequests,
         circuitBehavior: loadTestResult.metrics.finalCircuitState,
       });
     });
@@ -417,9 +420,10 @@ describe('Production-Ready Circuit Breaker Tests', () => {
         try {
           // Simulate different error types by using different invalid configurations
           const testAdapter = new QdrantAdapter({
-            url: errorTest.type === 'authentication'
-              ? 'http://localhost:6333'
-              : 'http://invalid-host-for-test.local:6333',
+            url:
+              errorTest.type === 'authentication'
+                ? 'http://localhost:6333'
+                : 'http://invalid-host-for-test.local:6333',
             timeout: 1000,
           });
 
@@ -432,11 +436,14 @@ describe('Production-Ready Circuit Breaker Tests', () => {
       const retryMetricsAfter = retryPolicyManager.getMetrics();
 
       // Should have attempted retries for retryable errors
-      expect(retryMetricsAfter.total_operations).toBeGreaterThan(retryMetricsBefore.total_operations);
+      expect(retryMetricsAfter.total_operations).toBeGreaterThan(
+        retryMetricsBefore.total_operations
+      );
 
       console.log('Error classification test results:', {
         totalOperations: retryMetricsAfter.total_operations - retryMetricsBefore.total_operations,
-        retriedOperations: retryMetricsAfter.retried_operations - retryMetricsBefore.retried_operations,
+        retriedOperations:
+          retryMetricsAfter.retried_operations - retryMetricsBefore.retried_operations,
         errorDistribution: retryMetricsAfter.error_distribution,
       });
     });

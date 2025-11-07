@@ -28,7 +28,7 @@ import { EnhancedCircuitDashboard } from './enhanced-circuit-dashboard.js';
 import { SLODashboardService } from './slo-dashboard-service.js';
 import { RetryBudgetMonitor } from './retry-budget-monitor.js';
 import { QdrantGracefulDegradationManager } from './graceful-degradation-manager.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '../../utils';
 import type {
   SLO,
   SLOEvaluation,

@@ -17,7 +17,7 @@
  * @since 2025
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 import { Environment } from '../config/environment.js';
 import { databaseConfig } from '../config/database-config.js';
 import { configValidator } from '../config/validation.js';

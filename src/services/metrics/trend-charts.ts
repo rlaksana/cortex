@@ -16,7 +16,7 @@
  * @module services/metrics/trend-charts
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
 import {
   performanceTrendingService,

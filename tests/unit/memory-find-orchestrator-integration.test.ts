@@ -90,7 +90,7 @@ describe('MemoryFindOrchestratorQdrant Integration', () => {
       expect(reconstructed.content).toContain('First part');
       expect(reconstructed.content).toContain('Second part');
       expect(reconstructed.found_chunks).toBe(2);
-      expect(reconstructed.total_chunks).toBe(3);
+      expect(reconstructed['total_chunks']).toBe(3);
     });
 
     it('should handle mixed chunked and non-chunked results', () => {

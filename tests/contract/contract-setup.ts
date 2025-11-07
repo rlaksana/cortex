@@ -42,14 +42,14 @@ export const TestUtils = {
     expect(response).toHaveProperty('isError');
 
     expect(Array.isArray(response.content)).toBe(true);
-    expect(typeof response._meta).toBe('object');
+    expect(typeof response['_meta']).toBe('object');
     expect(typeof response.isError).toBe('boolean');
 
     if (expectedType === 'success') {
       expect(response.isError).toBe(false);
     } else if (expectedType === 'error') {
       expect(response.isError).toBe(true);
-      expect(response._meta).toHaveProperty('error');
+      expect(response['_']meta).toHaveProperty('error');
     }
 
     // Verify content items
@@ -61,11 +61,11 @@ export const TestUtils = {
     });
 
     // Verify metadata
-    expect(response._meta).toHaveProperty('requestId');
-    expect(response._meta).toHaveProperty('timestamp');
-    expect(response._meta).toHaveProperty('operation');
-    expect(response._meta).toHaveProperty('duration');
-    expect(response._meta).toHaveProperty('version');
+    expect(response['_']meta).toHaveProperty('requestId');
+    expect(response['_']meta).toHaveProperty('timestamp');
+    expect(response['_']meta).toHaveProperty('operation');
+    expect(response['_']meta).toHaveProperty('duration');
+    expect(response['_']meta).toHaveProperty('version');
 
     return true;
   },
@@ -118,8 +118,8 @@ export const TestDataGenerator = {
   // Generate valid UUID
   generateUUID: () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   },
@@ -181,10 +181,7 @@ export const TestDataGenerator = {
 export const MockConfigs = {
   // Mock memory store input
   memoryStoreInput: {
-    items: [
-      TestDataGenerator.generateEntity(),
-      TestDataGenerator.generateDecision(),
-    ],
+    items: [TestDataGenerator.generateEntity(), TestDataGenerator.generateDecision()],
     deduplication: {
       enabled: true,
       merge_strategy: 'intelligent',
@@ -262,7 +259,11 @@ export const CustomAssertions = {
   assertSemanticVersion: (version: string) => {
     expect(version).toMatch(/^\d+\.\d+\.\d+$/);
     const [major, minor, patch] = version.split('.').map(Number);
-    expect([major, minor, patch]).toEqual([expect.any(Number), expect.any(Number), expect.any(Number)]);
+    expect([major, minor, patch]).toEqual([
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+    ]);
   },
 
   // Assert error code format
@@ -278,9 +279,22 @@ export const CustomAssertions = {
   // Assert knowledge kind
   assertKnowledgeKind: (kind: string) => {
     const validKinds = [
-      'entity', 'relation', 'observation', 'section', 'runbook',
-      'change', 'issue', 'decision', 'todo', 'release_note',
-      'ddl', 'pr_context', 'incident', 'release', 'risk', 'assumption'
+      'entity',
+      'relation',
+      'observation',
+      'section',
+      'runbook',
+      'change',
+      'issue',
+      'decision',
+      'todo',
+      'release_note',
+      'ddl',
+      'pr_context',
+      'incident',
+      'release',
+      'risk',
+      'assumption',
     ];
     expect(validKinds).toContain(kind);
   },
@@ -313,14 +327,14 @@ export const CustomAssertions = {
 // Global setup and teardown hooks
 beforeEach(() => {
   // Setup test environment
-  process.env.NODE_ENV = 'test';
-  process.env.CONTRACT_TESTING = 'true';
-  process.env.API_VERSION = '2.0.1';
+  process.env['NODE_ENV'] = 'test';
+  process.env['CONTRACT_TESTING'] = 'true';
+  process.env['API_VERSION'] = '2.0.1';
 });
 
 afterEach(() => {
   // Cleanup test environment
-  delete process.env.CONTRACT_TESTING;
+  delete process.env['CONTRACT_TESTING'];
 });
 
 // Export global utilities for use in test files
@@ -342,13 +356,13 @@ declare global {
 // Attach utilities to test context
 beforeEach(() => {
   // @ts-ignore - Adding utilities to test context
-  globalThis.TestUtils = TestUtils;
+  globalThis['T']estUtils = TestUtils;
   // @ts-ignore
-  globalThis.TestDataGenerator = TestDataGenerator;
+  globalThis['T']estDataGenerator = TestDataGenerator;
   // @ts-ignore
-  globalThis.MockConfigs = MockConfigs;
+  globalThis['M']ockConfigs = MockConfigs;
   // @ts-ignore
-  globalThis.CustomAssertions = CustomAssertions;
+  globalThis['C']ustomAssertions = CustomAssertions;
   // @ts-ignore
   globalThis.ajv = ajv;
 });

@@ -46,11 +46,13 @@ The integration contracts system provides:
 **Current Version:** 1.2.0
 
 **Available Versions:**
+
 - 1.0.0 - Basic storage functionality
 - 1.1.0 - Added deduplication options
 - 1.2.0 - Added processing options and breaking changes
 
 **Rate Limits:**
+
 - 60 requests/minute
 - 10,000 tokens/minute
 - 10 burst requests
@@ -58,9 +60,11 @@ The integration contracts system provides:
 - 100 items per request
 
 **Required Scopes:**
+
 - `memory:write`
 
 **Breaking Changes in 1.2.0:**
+
 - Added required idempotency_key field
 - Enhanced processing options
 
@@ -69,10 +73,12 @@ The integration contracts system provides:
 **Current Version:** 1.3.0
 
 **Available Versions:**
+
 - 1.0.0 - Basic search functionality
 - 1.3.0 - Advanced search with graph expansion
 
 **Rate Limits:**
+
 - 120 requests/minute
 - 20,000 tokens/minute
 - 20 burst requests
@@ -80,6 +86,7 @@ The integration contracts system provides:
 - 1 item per request
 
 **Required Scopes:**
+
 - `memory:read`
 
 ### System Status Tool
@@ -87,14 +94,17 @@ The integration contracts system provides:
 **Current Version:** 1.0.0
 
 **Rate Limits:**
+
 - 30 requests/minute
 - 5,000 tokens/minute
 - 5 burst requests
 
 **Required Scopes:**
+
 - `system:read`
 
 **Special Notes:**
+
 - No tenant isolation (cross-tenant tool)
 - Lower rate limits for system operations
 
@@ -111,6 +121,7 @@ x-client-version: 1.2.0   # Client version
 ```
 
 **Priority Order:**
+
 1. `x-version`
 2. `x-api-version`
 3. Default current version
@@ -147,11 +158,11 @@ The system enforces comprehensive input validation:
 
 ```typescript
 interface InputValidationConfig {
-  max_content_length: number;      // Max request size
-  max_items_per_request: number;   // Max items in batch
+  max_content_length: number; // Max request size
+  max_items_per_request: number; // Max items in batch
   allowed_content_types: string[]; // Permitted content types
-  sanitize_html: boolean;          // XSS protection
-  sanitize_sql: boolean;           // SQL injection protection
+  sanitize_html: boolean; // XSS protection
+  sanitize_sql: boolean; // SQL injection protection
   prevent_code_injection: boolean; // Code injection protection
 }
 ```
@@ -181,14 +192,15 @@ Comprehensive tenant isolation with multiple enforcement levels:
 ```typescript
 interface TenantIsolationConfig {
   enabled: boolean;
-  strict_mode: boolean;           // Fail closed if tenant ID missing
-  cross_tenant_access: string[];  // Tools that can access cross-tenant data
+  strict_mode: boolean; // Fail closed if tenant ID missing
+  cross_tenant_access: string[]; // Tools that can access cross-tenant data
   tenant_id_sources: ('auth' | 'header' | 'query')[];
   default_tenant: string | null;
 }
 ```
 
 **Tenant ID Sources:**
+
 1. **Auth Context:** User's organization ID
 2. **Headers:** `x-tenant-id` header
 3. **Query:** `tenant_id` parameter
@@ -234,7 +246,10 @@ export const BUILTIN_TOOL_CONTRACTS: ToolVersionRegistry = {
 2. **Add security middleware:**
 
 ```typescript
-import { createEnhancedSecurityMiddleware, DEFAULT_SECURITY_CONFIG } from './middleware/enhanced-security-middleware.js';
+import {
+  createEnhancedSecurityMiddleware,
+  DEFAULT_SECURITY_CONFIG,
+} from './middleware/enhanced-security-middleware.js';
 
 const securityMiddleware = createEnhancedSecurityMiddleware({
   ...DEFAULT_SECURITY_CONFIG,
@@ -352,6 +367,7 @@ npm run schema:check
 ```
 
 The script generates:
+
 - **Console output** with immediate feedback
 - **Markdown report** (`schema-drift-report.md`)
 - **Baseline schema** (`.schema-baseline.json`) for next comparison
@@ -363,16 +379,19 @@ The system includes comprehensive GitHub Actions workflows:
 ### Workflow: `.github/workflows/schema-validation.yml`
 
 **Triggers:**
+
 - Push to main/develop branches
 - Pull requests
 
 **Jobs:**
+
 1. **schema-validation** - Type checking, drift detection, contract tests
 2. **integration-tests** - Full integration test suite
 3. **security-scan** - Security audit and code analysis
 4. **quality-gate** - Final quality check and reporting
 
 **Artifacts:**
+
 - Schema drift report
 - Quality gate report
 - Test results
@@ -406,7 +425,7 @@ if (isVersionCompatible('1.0.0', '1.1.0')) {
 ```typescript
 const { version, warnings } = resolveToolVersion('memory_store', headers);
 
-if (warnings.some(w => w.includes('deprecated'))) {
+if (warnings.some((w) => w.includes('deprecated'))) {
   // Plan migration to newer version
 }
 ```
@@ -437,24 +456,28 @@ If schema drift is detected:
 ## Best Practices
 
 ### Version Management
+
 - Use semantic versioning consistently
 - Document all breaking changes
 - Provide migration guides for major versions
 - Maintain backward compatibility when possible
 
 ### Security
+
 - Enable tenant isolation for data tools
 - Use strict validation for all inputs
 - Monitor quota usage and adjust as needed
 - Log security events for audit trails
 
 ### Testing
+
 - Test all version combinations
 - Include edge cases in contract tests
 - Run schema drift detection in CI
 - Monitor test coverage
 
 ### Performance
+
 - Validate input size limits
 - Monitor quota enforcement overhead
 - Optimize tenant isolation lookups
@@ -495,6 +518,7 @@ logger.level = 'debug';
 ```
 
 This will provide detailed information about:
+
 - Version resolution process
 - Input validation results
 - Tenant isolation decisions

@@ -22,7 +22,7 @@ describe('Simple Integration Test - Memory Service', () => {
       kind: 'entity',
       content: 'Test content for simple integration test',
       scope: { project: 'test-project' },
-      metadata: { test: true }
+      metadata: { test: true },
     };
 
     // Store the item
@@ -39,7 +39,7 @@ describe('Simple Integration Test - Memory Service', () => {
     const searchResult = await memoryFind({
       query: 'Test content for simple integration test',
       scope: { project: 'test-project' },
-      limit: 10
+      limit: 10,
     });
 
     expect(searchResult).toBeDefined();

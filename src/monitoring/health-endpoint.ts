@@ -10,7 +10,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { ProductionHealthChecker, HealthCheckResult } from './production-health-checker.js';
-import { ProductionLogger } from './production-logger.js';
+import { ProductionLogger } from '@/utils/logger.js';
 
 export interface HealthEndpointConfig {
   enableDetailedEndpoints: boolean;
@@ -23,7 +23,7 @@ export interface HealthEndpointConfig {
 
 export class HealthEndpointManager {
   private healthChecker: ProductionHealthChecker;
-  private logger: ProductionLogger;
+  private logger: { info: (...a:any[])=>void; warn:(...a:any[])=>void; error:(...a:any[])=>void };
   private config: HealthEndpointConfig;
   private lastHealthCheck: HealthCheckResult | null = null;
   private healthCheckCache: Map<string, { result: HealthCheckResult; timestamp: number }> =
@@ -32,7 +32,7 @@ export class HealthEndpointManager {
 
   constructor(config?: Partial<HealthEndpointConfig>) {
     this.healthChecker = new ProductionHealthChecker();
-    this.logger = new ProductionLogger('health-endpoint');
+    this.logger = ProductionLogger;
 
     this.config = {
       enableDetailedEndpoints: process.env.ENABLE_DETAILED_HEALTH_ENDPOINTS === 'true',

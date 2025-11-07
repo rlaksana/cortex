@@ -12,7 +12,7 @@ import express, { Request, Response, Application } from 'express';
 import { metricsService } from './metrics-service.js';
 import { performanceDashboard } from './performance-dashboard.js';
 import { monitoringHealthCheckService } from './health-check-service.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface MonitoringServerConfig {
   port?: number;

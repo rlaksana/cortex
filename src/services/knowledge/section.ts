@@ -1,6 +1,6 @@
 import type { SectionData, ScopeFilter } from '../../types/knowledge-data.js';
 import { validateSpecWriteLock } from '../../utils/immutability.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 // Removed qdrant.js import - using UnifiedDatabaseLayer instead
 
 /**

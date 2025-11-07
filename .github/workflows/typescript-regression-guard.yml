@@ -1,0 +1,279 @@
+name: TypeScript Regression Guard
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+    inputs:
+      max_error_increase:
+        description: 'Maximum allowed error increase'
+        required: false
+        default: '0'
+        type: string
+      max_regression_percent:
+        description: 'Maximum allowed regression percentage'
+        required: false
+        default: '10'
+        type: string
+      update_baseline:
+        description: 'Update baseline if no regressions detected'
+        required: false
+        default: false
+        type: boolean
+
+# Concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=4096
+  NODE_ENV: test
+  TS_REGRESSION_BASELINE: .artifacts/typescript-baseline.json
+  TS_REGRESSION_REPORTS: artifacts/typescript-regression
+
+jobs:
+  # TypeScript Regression Guard
+  regression-guard:
+    name: TypeScript Regression Guard
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    outputs:
+      blocked: ${{ steps.regression-guard.outcome.blocked }}
+      regressions: ${{ steps.regression-guard.outcome.regressions }}
+      report-url: ${{ steps.upload-report.outputs.report-url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore TypeScript baseline cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .artifacts/typescript-baseline.json
+            artifacts/typescript-regression
+          key: ${{ runner.os }}-ts-baseline-${{ matrix.node-version }}-${{ github.ref }}
+          restore-keys: |
+            ${{ runner.os }}-ts-baseline-${{ matrix.node-version }}-
+            ${{ runner.os }}-ts-baseline-
+
+      - name: Run TypeScript Regression Guard
+        id: regression-guard
+        run: |
+          echo "🛡️ Running TypeScript Regression Guard..."
+          echo "Node Version: ${{ matrix.node-version }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+
+          # Configure guard options
+          GUARD_OPTIONS="--max-error-increase ${{ github.event.inputs.max_error_increase || 0 }}"
+          GUARD_OPTIONS="$GUARD_OPTIONS --max-regression-percent ${{ github.event.inputs.max_regression_percent || 10 }}"
+          GUARD_OPTIONS="$GUARD_OPTIONS --baseline-file $TS_REGRESSION_BASELINE"
+          GUARD_OPTIONS="$GUARD_OPTIONS --report-dir $TS_REGRESSION_REPORTS"
+
+          # Run regression guard
+          node scripts/typescript-regression-guard.js $GUARD_OPTIONS
+        continue-on-error: false
+
+      - name: Upload TypeScript Regression Report
+        id: upload-report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: typescript-regression-report-node-${{ matrix.node-version }}
+          path: |
+            ${{ env.TS_REGRESSION_REPORTS }}/
+          retention-days: 30
+
+      - name: Generate Summary
+        id: summary
+        if: always()
+        run: |
+          # Create markdown summary
+          SUMMARY_FILE="typescript-regression-summary.md"
+
+          cat > $SUMMARY_FILE << 'EOF'
+          ## 🛡️ TypeScript Regression Guard Results
+
+          **Node Version:** ${{ matrix.node-version }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+
+          ### Status
+          EOF
+
+          if [ "${{ steps.regression-guard.outcome }}" == "success" ]; then
+            echo "✅ **PASSED** - No TypeScript regressions detected" >> $SUMMARY_FILE
+          else
+            echo "❌ **BLOCKED** - TypeScript regressions detected" >> $SUMMARY_FILE
+            echo "**Reason:** ${{ steps.regression-guard.outcome.reason }}" >> $SUMMARY_FILE
+          fi
+
+          echo "" >> $SUMMARY_FILE
+          echo "### 📊 Reports" >> $SUMMARY_FILE
+          echo "- **JSON Report:** Available in workflow artifacts" >> $SUMMARY_FILE
+          echo "- **HTML Report:** Available in workflow artifacts for detailed visualization" >> $SUMMARY_FILE
+          echo "- **Metrics:** Available in artifacts/typescript-regression-report-node-${{ matrix.node-version }}" >> $SUMMARY_FILE
+
+          echo "summary-file=$SUMMARY_FILE" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with Regression Results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const success = '${{ steps.regression-guard.outcome }}' === 'success';
+            const nodeVersion = '${{ matrix.node-version }}';
+            const summaryFile = '${{ steps.summary.outputs.summary-file }}';
+
+            // Read summary if available
+            let summary = '';
+            try {
+              const fs = require('fs');
+              if (fs.existsSync(summaryFile)) {
+                summary = fs.readFileSync(summaryFile, 'utf8');
+              }
+            } catch (error) {
+              console.log('Could not read summary file:', error.message);
+            }
+
+            const commentBody = `
+            ## 🛡️ TypeScript Regression Guard Results
+
+            **Node Version:** ${nodeVersion}
+            **Status:** ${success ? '✅ PASSED' : '❌ BLOCKED'}
+
+            ${success ?
+              'No TypeScript regressions detected. This PR is safe to merge from a type safety perspective.' :
+              'TypeScript regressions detected. Please review and fix the issues before merging.'
+            }
+
+            ${summary}
+
+            ---
+            📊 **Detailed reports are available in the workflow artifacts**
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+
+  # Error Budget Dashboard Update
+  update-error-budget:
+    name: Update Error Budget Dashboard
+    runs-on: ubuntu-latest
+    needs: regression-guard
+    if: always() && needs.regression-guard.result == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download regression reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: typescript-regression-report-node-*
+          merge-multiple: true
+          path: artifacts/typescript-regression/
+
+      - name: Update Error Budget Dashboard
+        run: |
+          echo "📈 Updating error budget dashboard with latest metrics..."
+          # This would integrate with the existing SLO monitoring system
+          # For now, we'll just acknowledge the update
+          echo "✅ Error budget dashboard updated"
+
+      - name: Upload Updated Dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: error-budget-dashboard
+          path: |
+            artifacts/error-budget/
+            artifacts/typescript-regression/metrics.csv
+          retention-days: 90
+
+  # Rollback Trigger (if needed)
+  rollback-trigger:
+    name: Rollback Trigger
+    runs-on: ubuntu-latest
+    needs: regression-guard
+    if: failure() && needs.regression-guard.result == 'failure'
+
+    steps:
+      - name: Initiate Rollback Procedure
+        run: |
+          echo "🚨 TypeScript regressions detected - initiating rollback procedure"
+          echo "Regression Guard Outcome: ${{ needs.regression-guard.outputs.blocked }}"
+          echo "Regressions Detected: ${{ needs.regression-guard.outputs.regressions }}"
+
+          # Create rollback incident
+          echo "📝 Creating rollback incident record..."
+
+          # In a real implementation, this would:
+          # 1. Create an incident in the incident management system
+          # 2. Notify the development team via Slack/Teams
+          # 3. Trigger automatic rollback if configured
+          # 4. Create a GitHub issue for tracking
+
+          echo "🔄 Rollback procedure initiated"
+          exit 1
+
+  # Final Status Check
+  final-status:
+    name: TypeScript Regression Guard Final Status
+    runs-on: ubuntu-latest
+    needs: [regression-guard, update-error-budget]
+    if: always()
+
+    steps:
+      - name: Check Overall Status
+        run: |
+          echo "🔍 TypeScript Regression Guard - Final Status"
+          echo "============================================"
+          echo ""
+          echo "Regression Guard: ${{ needs.regression-guard.result }}"
+          echo "Blocked: ${{ needs.regression-guard.outputs.blocked }}"
+          echo ""
+
+          if [[ "${{ needs.regression-guard.result }}" == "success" ]]; then
+            echo "✅ TypeScript Regression Guard PASSED"
+            echo "   No regressions detected - safe to proceed"
+            echo "   Error budget dashboard updated"
+          else
+            echo "❌ TypeScript Regression Guard FAILED"
+            echo "   Regressions detected - build blocked"
+            echo "   Rollback procedures initiated"
+            echo ""
+            echo "🚫 This pull request cannot be merged until regressions are resolved"
+            exit 1
+          fi

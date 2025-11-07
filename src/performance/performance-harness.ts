@@ -13,12 +13,12 @@ import type {
   BenchmarkConfig,
   BenchmarkResult,
   PerformanceMetrics
-} from '../bench/framework/types.js';
+} from '../bench/framework/types';
 import {
   PerformanceTarget,
   PerformanceTestConfig,
   PerformanceTargetValidator
-} from './performance-targets.js';
+} from './performance-targets';
 
 export interface PerformanceTestResult {
   /** Test configuration */

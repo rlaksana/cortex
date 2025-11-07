@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { performanceCollector } from './performance-collector.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface PerformanceMiddlewareOptions {
   trackRequestBody?: boolean;

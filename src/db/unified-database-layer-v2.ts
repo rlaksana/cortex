@@ -19,7 +19,7 @@
  * @since 2025
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { createFindObservability } from '../utils/observability-helper.js';
 import { QdrantAdapter } from './adapters/qdrant-adapter.js';
 import type {

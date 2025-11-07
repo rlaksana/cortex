@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { EmbeddingService } from '../embeddings/embedding-service.js';
 import { MemoryStoreOrchestratorQdrant } from '../orchestrators/memory-store-orchestrator-qdrant.js';
 // import type { KnowledgeItem } from '../../types/core-interfaces.js';

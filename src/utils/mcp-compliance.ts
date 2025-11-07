@@ -5,7 +5,7 @@
  * Gemini, and Codex compatibility according to MCP 2025 standards.
  */
 
-import { logger } from './logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Standard MCP Error Codes (2025 specification)

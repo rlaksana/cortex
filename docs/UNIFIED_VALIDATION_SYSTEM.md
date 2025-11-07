@@ -7,67 +7,75 @@ The Unified Knowledge Type Validator System provides comprehensive validation fo
 ## Features
 
 ### 🔍 Comprehensive Validation
+
 - **Schema Validation**: Runtime type checking with Zod schemas for all knowledge types
 - **Business Rule Validation**: Context-aware validation with detailed error messages
 - **Performance Constraint Validation**: Checks for large items and deep nesting
 - **Cross-Tool Consistency**: Uniform validation across all MCP tools
 
 ### 📊 Enhanced Error Handling
+
 - **Structured Error Messages**: Categorized errors with detailed context and suggestions
 - **Error Severity Levels**: Error, Warning, and Info classifications
 - **Recovery Suggestions**: Actionable advice for fixing validation issues
 - **Internationalization Support**: Prepared for multi-language error messages
 
 ### ⚡ Performance Optimizations
+
 - **Schema Compilation Caching**: Pre-compiled validation schemas for faster execution
 - **Lazy Validation**: Optional validation for expensive operations
 - **Batch Processing**: Efficient validation for multiple items
 - **Memory Efficiency**: Optimized for large datasets
 
 ### 📈 Monitoring & Analytics
+
 - **Performance Metrics**: Validation time tracking and bottleneck identification
 - **Error Analytics**: Pattern analysis for common validation issues
 - **Health Monitoring**: Real-time validation system health checks
 
 ## Supported Knowledge Types
 
-| Type | Description | Key Validation Rules |
-|------|-------------|---------------------|
-| `section` | Document containers | Requires title or content, checks content length |
-| `decision` | Architecture Decision Records | Rationale validation for accepted decisions |
-| `issue` | Bug tracking | Critical issue requirements, tracker consistency |
-| `todo` | Task tracking | Critical task assignment requirements |
-| `runbook` | Operational procedures | Step validation, verification status |
-| `change` | Code change tracking | Author attribution for feature changes |
-| `release_note` | Release documentation | Breaking change notification requirements |
-| `ddl` | Database migrations | DDL operation validation, migration ID format |
-| `pr_context` | Pull request context | Branch validation, merge status consistency |
-| `entity` | Graph nodes | Entity type validation, data complexity checks |
-| `relation` | Graph edges | Self-reference detection, UUID validation |
-| `observation` | Fine-grained data | Content length validation |
-| `incident` | Incident management | RCA requirements for critical incidents |
-| `release` | Release tracking | Rollback plan requirements |
-| `risk` | Risk assessment | Risk level vs probability consistency |
-| `assumption` | Assumption management | Expiration date validation |
+| Type           | Description                   | Key Validation Rules                             |
+| -------------- | ----------------------------- | ------------------------------------------------ |
+| `section`      | Document containers           | Requires title or content, checks content length |
+| `decision`     | Architecture Decision Records | Rationale validation for accepted decisions      |
+| `issue`        | Bug tracking                  | Critical issue requirements, tracker consistency |
+| `todo`         | Task tracking                 | Critical task assignment requirements            |
+| `runbook`      | Operational procedures        | Step validation, verification status             |
+| `change`       | Code change tracking          | Author attribution for feature changes           |
+| `release_note` | Release documentation         | Breaking change notification requirements        |
+| `ddl`          | Database migrations           | DDL operation validation, migration ID format    |
+| `pr_context`   | Pull request context          | Branch validation, merge status consistency      |
+| `entity`       | Graph nodes                   | Entity type validation, data complexity checks   |
+| `relation`     | Graph edges                   | Self-reference detection, UUID validation        |
+| `observation`  | Fine-grained data             | Content length validation                        |
+| `incident`     | Incident management           | RCA requirements for critical incidents          |
+| `release`      | Release tracking              | Rollback plan requirements                       |
+| `risk`         | Risk assessment               | Risk level vs probability consistency            |
+| `assumption`   | Assumption management         | Expiration date validation                       |
 
 ## Validation Modes
 
 ### Strict Mode (Default)
+
 - Full schema validation + business rules
 - All errors and warnings reported
 - Recommended for production environments
 
 ### Lenient Mode
+
 - Schema validation only
 - Business rules generate warnings, not errors
 - Useful for development and testing
 
 ### Business Rules Only Mode
+
 - Skip schema validation
 - Only apply business rule validation
 - Useful for data migration scenarios
 
 ### Schema Only Mode
+
 - Skip business rules
 - Only validate schema compliance
 - Fastest validation mode
@@ -77,7 +85,10 @@ The Unified Knowledge Type Validator System provides comprehensive validation fo
 ### Basic Knowledge Item Validation
 
 ```typescript
-import { validateKnowledgeItem, ValidationMode } from './src/schemas/unified-knowledge-validator.js';
+import {
+  validateKnowledgeItem,
+  ValidationMode,
+} from './src/schemas/unified-knowledge-validator.js';
 
 // Validate a decision item
 const decision = {
@@ -175,12 +186,12 @@ const formattedResponse = validateAndFormatMCPResponse('memory_store', response)
 
 ```typescript
 interface ValidationErrorDetail {
-  code: string;           // Unique error identifier
-  message: string;        // Human-readable error message
-  field?: string;         // Field path where error occurred
+  code: string; // Unique error identifier
+  message: string; // Human-readable error message
+  field?: string; // Field path where error occurred
   category: ErrorCategory; // Error category
   severity: ErrorSeverity; // Error severity
-  suggestion?: string;    // Actionable advice
+  suggestion?: string; // Actionable advice
   context?: Record<string, any>; // Additional context
 }
 ```
@@ -205,12 +216,12 @@ console.log('Validation metrics:', {
 
 ```typescript
 interface ValidationMetrics {
-  totalValidations: number;        // Total validation count
-  successfulValidations: number;    // Successful validations
-  failedValidations: number;        // Failed validations
-  averageValidationTime: number;    // Average time in ms
-  slowestValidation: number;        // Slowest validation time
-  fastestValidation: number;        // Fastest validation time
+  totalValidations: number; // Total validation count
+  successfulValidations: number; // Successful validations
+  failedValidations: number; // Failed validations
+  averageValidationTime: number; // Average time in ms
+  slowestValidation: number; // Slowest validation time
+  fastestValidation: number; // Fastest validation time
   errorsByType: Record<string, number>; // Error counts by type
   warningsByType: Record<string, number>; // Warning counts by type
 }
@@ -221,6 +232,7 @@ interface ValidationMetrics {
 ### From Legacy Validation
 
 1. **Replace import statements**:
+
    ```typescript
    // Old
    import { validationService } from './src/services/validation/validation-service.js';
@@ -230,6 +242,7 @@ interface ValidationMetrics {
    ```
 
 2. **Update validation calls**:
+
    ```typescript
    // Old
    const result = await validationService.validateStoreInput(items);
@@ -245,7 +258,7 @@ interface ValidationMetrics {
    ```typescript
    // New error format provides more context
    if (!result.valid) {
-     result.errors.forEach(error => {
+     result.errors.forEach((error) => {
        console.log(`${error.category}: ${error.message}`);
        if (error.suggestion) {
          console.log(`Suggestion: ${error.suggestion}`);
@@ -263,7 +276,7 @@ import {
   validateMemoryStoreInput,
   validateMemoryFindInput,
   validateSystemStatusInput,
-  validateAndFormatMCPResponse
+  validateAndFormatMCPResponse,
 } from './src/schemas/mcp-validation-integration.js';
 
 // In your MCP tool handler
@@ -288,10 +301,10 @@ async function handleMemoryStore(args: any) {
 
 ```typescript
 interface ValidationOptions {
-  mode?: ValidationMode;           // Validation mode (STRICT, LENIENT, etc.)
-  includeWarnings?: boolean;        // Include warnings in results
-  maxErrors?: number;              // Maximum errors to collect
-  timeout?: number;                // Validation timeout in ms
+  mode?: ValidationMode; // Validation mode (STRICT, LENIENT, etc.)
+  includeWarnings?: boolean; // Include warnings in results
+  maxErrors?: number; // Maximum errors to collect
+  timeout?: number; // Validation timeout in ms
   enablePerformanceChecks?: boolean; // Enable performance constraint validation
   customRules?: CustomValidationRule[]; // Custom validation rules
 }

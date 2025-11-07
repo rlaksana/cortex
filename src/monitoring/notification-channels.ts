@@ -14,7 +14,7 @@
  * @since 2025
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Alert, AlertAction, NotificationAttempt } from './alert-management-service.js';
 
 // ============================================================================

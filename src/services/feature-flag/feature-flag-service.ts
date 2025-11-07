@@ -14,7 +14,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { metricsService } from '../monitoring/metrics-service.js';
 import { HealthStatus } from '../types/unified-health-interfaces.js';
 

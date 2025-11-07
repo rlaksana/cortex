@@ -154,7 +154,7 @@ describe('Schema Validation', () => {
             field: 'age',
             message: 'Required field',
             code: 'REQUIRED',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data,
@@ -205,7 +205,7 @@ describe('Schema Validation', () => {
             field: 'user.profile.email',
             message: 'Invalid email format',
             code: 'FORMAT',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data,
@@ -245,7 +245,7 @@ describe('Schema Validation', () => {
             field: '[2].name',
             message: 'Required field',
             code: 'REQUIRED',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data,
@@ -345,7 +345,7 @@ describe('Schema Validation', () => {
             field: 'name',
             message: customRule.message,
             code: 'CUSTOM_VALIDATION',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data,
@@ -418,13 +418,13 @@ describe('Schema Validation', () => {
           field: 'name',
           message: 'Name is required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'email',
           message: 'Invalid email format',
           code: 'FORMAT',
-          severity: ValidationSeverity.WARNING,
+          severity: ValidationSeverity['WARNING'],
         },
       ];
 
@@ -452,7 +452,7 @@ describe('Schema Validation', () => {
         field: 'user.address.zip',
         message: 'Invalid ZIP code',
         code: 'FORMAT',
-        severity: ValidationSeverity.ERROR,
+        severity: ValidationSeverity['ERROR'],
         context: {
           schemaPath: 'properties.user.properties.address.properties.zip',
           value: 'invalid',
@@ -990,7 +990,7 @@ describe('Business Rule Validation', () => {
             field: 'taxId',
             message: 'Tax ID is required for business accounts',
             code: 'BUSINESS_RULE',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data: invalidBusiness,
@@ -1353,7 +1353,7 @@ describe('Performance Validation', () => {
             field: 'test',
             message: 'Cheap validation',
             code: 'CHEAP_RULE',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
           },
         ],
         data,
@@ -1379,33 +1379,33 @@ describe('Error Reporting', () => {
           field: 'name',
           message: 'Name is required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'email',
           message: 'Invalid email format',
           code: 'FORMAT',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'age',
           message: 'Age must be positive',
           code: 'MINIMUM',
-          severity: ValidationSeverity.WARNING,
+          severity: ValidationSeverity['WARNING'],
         },
         {
           field: 'password',
           message: 'Password too weak',
           code: 'STRENGTH',
-          severity: ValidationSeverity.WARNING,
+          severity: ValidationSeverity['WARNING'],
         },
       ];
 
       mockValidationReporter.aggregateErrors.mockReturnValue({
         totalErrors: 4,
         errorsBySeverity: {
-          [ValidationSeverity.ERROR]: 2,
-          [ValidationSeverity.WARNING]: 2,
+          [ValidationSeverity['ERROR']]: 2,
+          [ValidationSeverity['WARNING']]: 2,
         },
         errorsByField: {
           name: ['Name is required'],
@@ -1424,7 +1424,7 @@ describe('Error Reporting', () => {
       const aggregation = mockValidationReporter.aggregateErrors(errors);
 
       expect(aggregation.totalErrors).toBe(4);
-      expect(aggregation.errorsBySeverity[ValidationSeverity.ERROR]).toBe(2);
+      expect(aggregation.errorsBySeverity[ValidationSeverity['ERROR']]).toBe(2);
       expect(aggregation.errorsByField.name).toContain('Name is required');
     });
 
@@ -1434,25 +1434,25 @@ describe('Error Reporting', () => {
           field: 'name',
           message: 'Name is required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'name',
           message: 'Name is required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'email',
           message: 'Invalid email format',
           code: 'FORMAT',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'email',
           message: 'Invalid email format',
           code: 'FORMAT',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
       ];
 
@@ -1465,14 +1465,14 @@ describe('Error Reporting', () => {
             field: 'name',
             message: 'Name is required',
             code: 'REQUIRED',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
             count: 2,
           },
           {
             field: 'email',
             message: 'Invalid email format',
             code: 'FORMAT',
-            severity: ValidationSeverity.ERROR,
+            severity: ValidationSeverity['ERROR'],
             count: 2,
           },
         ],
@@ -1572,7 +1572,7 @@ describe('Error Reporting', () => {
         timestamp: context.timestamp,
         context,
         errors,
-        severity: ValidationSeverity.ERROR,
+        severity: ValidationSeverity['ERROR'],
         actionTaken: 'registration_blocked',
         metadata: {
           validationDuration: 45,
@@ -1584,7 +1584,7 @@ describe('Error Reporting', () => {
 
       expect(report.context).toEqual(context);
       expect(report.actionTaken).toBe('registration_blocked');
-      expect(report.metadata.validationDuration).toBe(45);
+      expect(report.metadata['validationDuration']).toBe(45);
     });
 
     it('should include stack traces in development mode', () => {
@@ -1627,13 +1627,13 @@ describe('Error Reporting', () => {
           field: 'name',
           message: 'Required',
           code: 'REQUIRED',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
         {
           field: 'email',
           message: 'Invalid format',
           code: 'FORMAT',
-          severity: ValidationSeverity.WARNING,
+          severity: ValidationSeverity['WARNING'],
         },
       ];
 
@@ -1676,7 +1676,7 @@ describe('Error Reporting', () => {
           field: 'payment',
           message: 'Payment processing failed',
           code: 'PAYMENT_ERROR',
-          severity: ValidationSeverity.ERROR,
+          severity: ValidationSeverity['ERROR'],
         },
       ];
 

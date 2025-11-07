@@ -61,7 +61,9 @@ async function testEmbeddingService() {
   console.log('🔤 Testing Optimized Embedding Service...');
 
   try {
-    const { optimizedEmbeddingService } = await import('./src/services/embeddings/optimized-embedding-service.js');
+    const { optimizedEmbeddingService } = await import(
+      './src/services/embeddings/optimized-embedding-service.js'
+    );
 
     // Test basic functionality
     const stats = optimizedEmbeddingService.getMemoryStats();
@@ -115,7 +117,9 @@ async function testOptimizedOrchestrator() {
   console.log('🎯 Testing Optimized Memory Store Orchestrator...');
 
   try {
-    const { OptimizedMemoryStoreOrchestrator } = await import('./src/services/orchestrators/optimized-memory-store-orchestrator.js');
+    const { OptimizedMemoryStoreOrchestrator } = await import(
+      './src/services/orchestrators/optimized-memory-store-orchestrator.js'
+    );
 
     const orchestrator = new OptimizedMemoryStoreOrchestrator();
 
@@ -145,7 +149,9 @@ async function testMemoryConfig() {
   console.log('⚙️ Testing Memory Configuration...');
 
   try {
-    const { getMemoryOptimizationConfig, validateMemoryConfig } = await import('./src/config/memory-optimization-config.js');
+    const { getMemoryOptimizationConfig, validateMemoryConfig } = await import(
+      './src/config/memory-optimization-config.js'
+    );
 
     // Test configuration loading
     const config = getMemoryOptimizationConfig();
@@ -203,7 +209,7 @@ async function testMemoryPressureScenario() {
     enhancedMemoryMonitor.triggerCheck();
 
     // Wait for event processing
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Restore original memoryUsage
     process.memoryUsage = originalMemoryUsage;
@@ -314,7 +320,7 @@ async function runMemoryOptimizationTests() {
 }
 
 // Run tests
-runMemoryOptimizationTests().catch(error => {
+runMemoryOptimizationTests().catch((error) => {
   console.error('💥 Test suite failed to run:', error);
   process.exit(1);
 });

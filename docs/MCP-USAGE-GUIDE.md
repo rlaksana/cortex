@@ -47,22 +47,24 @@ This comprehensive guide covers the effective use of the Cortex Memory MCP Serve
 ```javascript
 // Store knowledge
 const storeResult = await call_tool('memory_store', {
-  items: [{
-    kind: 'entity',
-    data: { title: 'User Preferences', theme: 'dark' },
-    scope: { project: 'user-profile' }
-  }]
+  items: [
+    {
+      kind: 'entity',
+      data: { title: 'User Preferences', theme: 'dark' },
+      scope: { project: 'user-profile' },
+    },
+  ],
 });
 
 // Search knowledge
 const searchResult = await call_tool('memory_find', {
   query: 'user preferences',
-  limit: 10
+  limit: 10,
 });
 
 // System status
 const healthResult = await call_tool('system_status', {
-  operation: 'health'
+  operation: 'health',
 });
 ```
 
@@ -77,18 +79,20 @@ const healthResult = await call_tool('system_status', {
 ```javascript
 // Simple entity storage
 await call_tool('memory_store', {
-  items: [{
-    kind: 'entity',
-    data: {
-      title: 'User Service API',
-      description: 'RESTful API for user management',
-      version: '2.1.0'
+  items: [
+    {
+      kind: 'entity',
+      data: {
+        title: 'User Service API',
+        description: 'RESTful API for user management',
+        version: '2.1.0',
+      },
+      scope: {
+        project: 'user-service',
+        branch: 'main',
+      },
     },
-    scope: {
-      project: 'user-service',
-      branch: 'main'
-    }
-  }]
+  ],
 });
 ```
 
@@ -97,50 +101,52 @@ await call_tool('memory_store', {
 ```javascript
 // Comprehensive knowledge storage with advanced features
 await call_tool('memory_store', {
-  items: [{
-    kind: 'decision',
-    content: 'Implement OAuth 2.0 with JWT tokens for authentication',
-    data: {
-      title: 'OAuth 2.0 Authentication Implementation',
-      rationale: 'Industry standard with robust security features',
-      alternatives: ['Basic Auth', 'API Keys', 'Session-based'],
-      impact: 'High - affects all API endpoints',
-      status: 'accepted',
-      decision_date: '2025-01-15',
-      decision_maker: 'architecture-team'
+  items: [
+    {
+      kind: 'decision',
+      content: 'Implement OAuth 2.0 with JWT tokens for authentication',
+      data: {
+        title: 'OAuth 2.0 Authentication Implementation',
+        rationale: 'Industry standard with robust security features',
+        alternatives: ['Basic Auth', 'API Keys', 'Session-based'],
+        impact: 'High - affects all API endpoints',
+        status: 'accepted',
+        decision_date: '2025-01-15',
+        decision_maker: 'architecture-team',
+      },
+      scope: {
+        project: 'user-service',
+        branch: 'feature/auth-upgrade',
+        org: 'my-company',
+        environment: 'development',
+      },
+      source: {
+        actor: 'backend-team',
+        tool: 'claude-code',
+        timestamp: '2025-01-15T10:30:00Z',
+      },
+      ttl_config: {
+        policy: 'long',
+        auto_extend: true,
+        extend_threshold_days: 30,
+        max_extensions: 5,
+      },
+      truncation_config: {
+        enabled: true,
+        max_chars: 15000,
+        mode: 'intelligent',
+        preserve_structure: true,
+        add_indicators: true,
+      },
+      insights_config: {
+        enabled: true,
+        generate_insights: true,
+        insight_types: ['summary', 'recommendations'],
+        confidence_threshold: 0.8,
+        analysis_depth: 'medium',
+      },
     },
-    scope: {
-      project: 'user-service',
-      branch: 'feature/auth-upgrade',
-      org: 'my-company',
-      environment: 'development'
-    },
-    source: {
-      actor: 'backend-team',
-      tool: 'claude-code',
-      timestamp: '2025-01-15T10:30:00Z'
-    },
-    ttl_config: {
-      policy: 'long',
-      auto_extend: true,
-      extend_threshold_days: 30,
-      max_extensions: 5
-    },
-    truncation_config: {
-      enabled: true,
-      max_chars: 15000,
-      mode: 'intelligent',
-      preserve_structure: true,
-      add_indicators: true
-    },
-    insights_config: {
-      enabled: true,
-      generate_insights: true,
-      insight_types: ['summary', 'recommendations'],
-      confidence_threshold: 0.8,
-      analysis_depth: 'medium'
-    }
-  }],
+  ],
   deduplication: {
     enabled: true,
     merge_strategy: 'intelligent',
@@ -148,17 +154,17 @@ await call_tool('memory_store', {
     enable_intelligent_merging: true,
     enable_audit_logging: true,
     cross_scope_deduplication: false,
-    prioritize_same_scope: true
+    prioritize_same_scope: true,
   },
   global_ttl: {
     policy: 'long',
-    auto_extend: true
+    auto_extend: true,
   },
   processing: {
     enable_validation: true,
     batch_processing: true,
-    include_metrics: true
-  }
+    include_metrics: true,
+  },
 });
 ```
 
@@ -170,18 +176,18 @@ const knowledgeItems = [
   {
     kind: 'entity',
     data: { title: 'Database Service', status: 'production' },
-    scope: { project: 'infrastructure' }
+    scope: { project: 'infrastructure' },
   },
   {
     kind: 'decision',
     data: { title: 'Use PostgreSQL', rationale: 'ACID compliance' },
-    scope: { project: 'infrastructure' }
+    scope: { project: 'infrastructure' },
   },
   {
     kind: 'todo',
     data: { title: 'Setup monitoring', priority: 'high' },
-    scope: { project: 'infrastructure' }
-  }
+    scope: { project: 'infrastructure' },
+  },
 ];
 
 const result = await call_tool('memory_store', {
@@ -189,8 +195,8 @@ const result = await call_tool('memory_store', {
   deduplication: {
     enabled: true,
     merge_strategy: 'intelligent',
-    similarity_threshold: 0.85
-  }
+    similarity_threshold: 0.85,
+  },
 });
 
 console.log(`Stored: ${result.stored.length}, Duplicates: ${result.duplicates_found}`);
@@ -204,7 +210,7 @@ console.log(`Stored: ${result.stored.length}, Duplicates: ${result.duplicates_fo
 // Simple semantic search
 await call_tool('memory_find', {
   query: 'database configuration',
-  limit: 10
+  limit: 10,
 });
 ```
 
@@ -216,7 +222,7 @@ await call_tool('memory_find', {
   query: 'authentication security best practices',
   scope: {
     project: 'security-audit',
-    org: 'my-company'
+    org: 'my-company',
   },
   types: ['decision', 'runbook', 'incident', 'risk'],
   search_strategy: 'deep',
@@ -227,16 +233,16 @@ await call_tool('memory_find', {
     max_depth: 3,
     max_nodes: 50,
     include_metadata: true,
-    direction: 'both'
+    direction: 'both',
   },
   ttl_filters: {
     include_expired: false,
-    ttl_policies: ['default', 'long', 'permanent']
+    ttl_policies: ['default', 'long', 'permanent'],
   },
   filters: {
     created_after: '2025-01-01T00:00:00Z',
     confidence_min: 0.7,
-    tags: ['security', 'authentication']
+    tags: ['security', 'authentication'],
   },
   formatting: {
     include_content: true,
@@ -245,18 +251,18 @@ await call_tool('memory_find', {
     include_confidence_scores: true,
     include_similarity_explanation: true,
     highlight_matches: true,
-    max_content_length: 2000
+    max_content_length: 2000,
   },
   optimization: {
     enable_caching: true,
     cache_ttl_seconds: 600,
     parallel_search: true,
-    timeout_ms: 15000
+    timeout_ms: 15000,
   },
   analytics: {
     track_search_metrics: true,
-    include_performance_metrics: true
-  }
+    include_performance_metrics: true,
+  },
 });
 ```
 
@@ -267,14 +273,14 @@ await call_tool('memory_find', {
 await call_tool('memory_find', {
   query: 'recent changes',
   search_strategy: 'fast',
-  limit: 5
+  limit: 5,
 });
 
 // Auto search (default) - balanced approach
 await call_tool('memory_find', {
   query: 'api documentation',
   search_strategy: 'auto',
-  limit: 15
+  limit: 15,
 });
 
 // Deep search for comprehensive analysis
@@ -284,8 +290,8 @@ await call_tool('memory_find', {
   limit: 50,
   graph_expansion: {
     enabled: true,
-    max_depth: 4
-  }
+    max_depth: 4,
+  },
 });
 ```
 
@@ -300,8 +306,8 @@ const health = await call_tool('system_status', {
   include_detailed_metrics: true,
   response_formatting: {
     verbose: true,
-    include_timestamps: true
-  }
+    include_timestamps: true,
+  },
 });
 
 if (health.status === 'success') {
@@ -319,7 +325,7 @@ const stats = await call_tool('system_status', {
   operation: 'stats',
   scope: { project: 'user-service' },
   stats_period_days: 30,
-  include_detailed_metrics: true
+  include_detailed_metrics: true,
 });
 
 console.log(`Total items: ${stats.data.total_items}`);
@@ -338,9 +344,9 @@ const cleanupDryRun = await call_tool('system_status', {
     dry_run: true,
     batch_size: 100,
     require_confirmation: true,
-    enable_backup: true
+    enable_backup: true,
   },
-  scope: { project: 'user-service' }
+  scope: { project: 'user-service' },
 });
 
 console.log(`Items to cleanup: ${cleanupDryRun.data.items_count}`);
@@ -349,7 +355,7 @@ console.log(`Items to cleanup: ${cleanupDryRun.data.items_count}`);
 if (cleanupDryRun.data.confirmation_token) {
   const cleanupResult = await call_tool('system_status', {
     operation: 'confirm_cleanup',
-    cleanup_token: cleanupDryRun.data.confirmation_token
+    cleanup_token: cleanupDryRun.data.confirmation_token,
   });
 
   console.log(`Cleanup completed: ${cleanupResult.data.cleaned_items} items`);
@@ -367,25 +373,28 @@ if (cleanupDryRun.data.confirmation_token) {
 ```javascript
 // Good entity example
 await call_tool('memory_store', {
-  items: [{
-    kind: 'entity',
-    data: {
-      entity_type: 'user',
-      name: 'john_doe',
+  items: [
+    {
+      kind: 'entity',
       data: {
-        email: 'john@example.com',
-        role: 'senior_developer',
-        department: 'engineering',
-        skills: ['TypeScript', 'Node.js', 'PostgreSQL'],
-        join_date: '2023-01-15'
-      }
+        entity_type: 'user',
+        name: 'john_doe',
+        data: {
+          email: 'john@example.com',
+          role: 'senior_developer',
+          department: 'engineering',
+          skills: ['TypeScript', 'Node.js', 'PostgreSQL'],
+          join_date: '2023-01-15',
+        },
+      },
+      scope: { project: 'hr-system', branch: 'main' },
     },
-    scope: { project: 'hr-system', branch: 'main' }
-  }]
+  ],
 });
 ```
 
 **Best Practices**:
+
 - Use descriptive `entity_type` values
 - Include essential metadata in the `data` field
 - Use consistent naming conventions
@@ -398,40 +407,43 @@ await call_tool('memory_store', {
 ```javascript
 // Good decision example
 await call_tool('memory_store', {
-  items: [{
-    kind: 'decision',
-    data: {
-      title: 'Adopt TypeScript for Frontend Development',
-      rationale: 'Type safety improves developer experience and reduces runtime errors',
-      alternatives: [
-        {
-          option: 'JavaScript',
-          pros: ['Faster development', 'No compilation step'],
-          cons: ['No type safety', 'Runtime errors']
+  items: [
+    {
+      kind: 'decision',
+      data: {
+        title: 'Adopt TypeScript for Frontend Development',
+        rationale: 'Type safety improves developer experience and reduces runtime errors',
+        alternatives: [
+          {
+            option: 'JavaScript',
+            pros: ['Faster development', 'No compilation step'],
+            cons: ['No type safety', 'Runtime errors'],
+          },
+          {
+            option: 'Flow',
+            pros: ['Gradual typing', 'Facebook support'],
+            cons: ['Smaller ecosystem', 'Learning curve'],
+          },
+        ],
+        decision: 'TypeScript',
+        impact: {
+          level: 'high',
+          affected_components: ['frontend-build', 'developer-training'],
+          migration_effort: 'medium',
         },
-        {
-          option: 'Flow',
-          pros: ['Gradual typing', 'Facebook support'],
-          cons: ['Smaller ecosystem', 'Learning curve']
-        }
-      ],
-      decision: 'TypeScript',
-      impact: {
-        level: 'high',
-        affected_components: ['frontend-build', 'developer-training'],
-        migration_effort: 'medium'
+        status: 'accepted',
+        decision_date: '2025-01-15',
+        decision_maker: 'tech-leads',
+        next_review_date: '2025-07-15',
       },
-      status: 'accepted',
-      decision_date: '2025-01-15',
-      decision_maker: 'tech-leads',
-      next_review_date: '2025-07-15'
+      scope: { project: 'frontend-platform', branch: 'main' },
     },
-    scope: { project: 'frontend-platform', branch: 'main' }
-  }]
+  ],
 });
 ```
 
 **Best Practices**:
+
 - Always include alternatives with pros/cons
 - Document the impact level clearly
 - Include decision makers and dates
@@ -445,39 +457,42 @@ await call_tool('memory_store', {
 ```javascript
 // Good todo example
 await call_tool('memory_store', {
-  items: [{
-    kind: 'todo',
-    data: {
-      title: 'Implement API rate limiting',
-      description: 'Add rate limiting to prevent API abuse and ensure fair usage',
-      priority: 'high',
-      status: 'in_progress',
-      assignee: 'backend-team',
-      due_date: '2025-02-01',
-      estimated_hours: 16,
-      tags: ['security', 'api', 'infrastructure'],
-      subtasks: [
-        'Research rate limiting libraries',
-        'Design rate limiting strategy',
-        'Implement middleware',
-        'Add monitoring and alerts',
-        'Write documentation',
-        'Update API tests'
-      ],
-      dependencies: ['api-authentication-completed'],
-      definition_of_done: [
-        'Rate limiting implemented for all endpoints',
-        'Monitoring dashboards updated',
-        'Documentation completed',
-        'Tests pass with >95% coverage'
-      ]
+  items: [
+    {
+      kind: 'todo',
+      data: {
+        title: 'Implement API rate limiting',
+        description: 'Add rate limiting to prevent API abuse and ensure fair usage',
+        priority: 'high',
+        status: 'in_progress',
+        assignee: 'backend-team',
+        due_date: '2025-02-01',
+        estimated_hours: 16,
+        tags: ['security', 'api', 'infrastructure'],
+        subtasks: [
+          'Research rate limiting libraries',
+          'Design rate limiting strategy',
+          'Implement middleware',
+          'Add monitoring and alerts',
+          'Write documentation',
+          'Update API tests',
+        ],
+        dependencies: ['api-authentication-completed'],
+        definition_of_done: [
+          'Rate limiting implemented for all endpoints',
+          'Monitoring dashboards updated',
+          'Documentation completed',
+          'Tests pass with >95% coverage',
+        ],
+      },
+      scope: { project: 'api-platform', branch: 'feature/rate-limiting' },
     },
-    scope: { project: 'api-platform', branch: 'feature/rate-limiting' }
-  }]
+  ],
 });
 ```
 
 **Best Practices**:
+
 - Use clear, actionable titles
 - Include realistic time estimates
 - Break down large tasks into subtasks
@@ -492,51 +507,54 @@ await call_tool('memory_store', {
 ```javascript
 // Good incident example
 await call_tool('memory_store', {
-  items: [{
-    kind: 'incident',
-    data: {
-      incident_id: 'INC-2025-042',
-      title: 'Database Connection Pool Exhaustion',
-      severity: 'high',
-      priority: 'P0',
-      status: 'resolved',
-      category: 'infrastructure',
-      impact: {
-        affected_services: ['user-api', 'order-service', 'notification-service'],
-        user_impact: 'high',
-        business_impact: 'revenue_loss',
-        estimated_affected_users: 50000,
-        downtime_duration_minutes: 45
+  items: [
+    {
+      kind: 'incident',
+      data: {
+        incident_id: 'INC-2025-042',
+        title: 'Database Connection Pool Exhaustion',
+        severity: 'high',
+        priority: 'P0',
+        status: 'resolved',
+        category: 'infrastructure',
+        impact: {
+          affected_services: ['user-api', 'order-service', 'notification-service'],
+          user_impact: 'high',
+          business_impact: 'revenue_loss',
+          estimated_affected_users: 50000,
+          downtime_duration_minutes: 45,
+        },
+        timeline: {
+          detected_at: '2025-01-15T09:15:00Z',
+          acknowledged_at: '2025-01-15T09:20:00Z',
+          mitigated_at: '2025-01-15T09:45:00Z',
+          resolved_at: '2025-01-15T10:00:00Z',
+        },
+        root_cause: {
+          primary: 'Database connection pool not properly configured for high traffic',
+          contributing: ['Insufficient monitoring', 'Missing alert thresholds'],
+        },
+        resolution: {
+          description: 'Increased connection pool size and added proper monitoring',
+          permanent_fix: 'Updated configuration and added alerting',
+          preventive_measures: ['Add load testing', 'Implement circuit breakers'],
+        },
+        lessons_learned: [
+          'Need better capacity planning',
+          'Monitoring gaps identified',
+          'Response time can be improved',
+        ],
+        postmortem_required: true,
+        postmortem_completed: true,
       },
-      timeline: {
-        detected_at: '2025-01-15T09:15:00Z',
-        acknowledged_at: '2025-01-15T09:20:00Z',
-        mitigated_at: '2025-01-15T09:45:00Z',
-        resolved_at: '2025-01-15T10:00:00Z'
-      },
-      root_cause: {
-        primary: 'Database connection pool not properly configured for high traffic',
-        contributing: ['Insufficient monitoring', 'Missing alert thresholds']
-      },
-      resolution: {
-        description: 'Increased connection pool size and added proper monitoring',
-        permanent_fix: 'Updated configuration and added alerting',
-        preventive_measures: ['Add load testing', 'Implement circuit breakers']
-      },
-      lessons_learned: [
-        'Need better capacity planning',
-        'Monitoring gaps identified',
-        'Response time can be improved'
-      ],
-      postmortem_required: true,
-      postmortem_completed: true
+      scope: { project: 'incident-management', branch: 'main' },
     },
-    scope: { project: 'incident-management', branch: 'main' }
-  }]
+  ],
 });
 ```
 
 **Best Practices**:
+
 - Use consistent incident ID format
 - Document full timeline with timestamps
 - Clearly identify root causes and contributing factors
@@ -557,19 +575,20 @@ await call_tool('memory_store', {
   deduplication: {
     enabled: true,
     merge_strategy: 'intelligent', // Best for most use cases
-    similarity_threshold: 0.85,    // Adjust based on needs
+    similarity_threshold: 0.85, // Adjust based on needs
     enable_intelligent_merging: true,
     enable_audit_logging: true,
     preserve_merge_history: false,
     cross_scope_deduplication: false, // Keep scope isolation
     prioritize_same_scope: true,
     time_based_deduplication: true,
-    max_age_for_dedupe_days: 90
-  }
+    max_age_for_dedupe_days: 90,
+  },
 });
 ```
 
 **Merge Strategies**:
+
 - `skip`: Don't store duplicates
 - `prefer_existing`: Keep existing item
 - `prefer_newer`: Keep newer item
@@ -584,33 +603,33 @@ const shortLivedItem = {
   kind: 'observation',
   data: { content: 'Temporary user session data' },
   ttl_config: {
-    policy: 'short',     // 1 day default
+    policy: 'short', // 1 day default
     auto_extend: false,
-    expires_at: '2025-01-16T00:00:00Z'
-  }
+    expires_at: '2025-01-16T00:00:00Z',
+  },
 };
 
 const longLivedItem = {
   kind: 'decision',
   data: { title: 'Architecture decision' },
   ttl_config: {
-    policy: 'long',      // 90 days default
+    policy: 'long', // 90 days default
     auto_extend: true,
     extend_threshold_days: 30,
-    max_extensions: 5
-  }
+    max_extensions: 5,
+  },
 };
 
 const permanentItem = {
   kind: 'entity',
   data: { title: 'Core system component' },
   ttl_config: {
-    policy: 'permanent'  // Never expires
-  }
+    policy: 'permanent', // Never expires
+  },
 };
 
 await call_tool('memory_store', {
-  items: [shortLivedItem, longLivedItem, permanentItem]
+  items: [shortLivedItem, longLivedItem, permanentItem],
 });
 ```
 
@@ -622,13 +641,13 @@ await call_tool('memory_find', {
   query: 'authentication system',
   graph_expansion: {
     enabled: true,
-    expansion_type: 'relations',    // Explore related items
-    max_depth: 3,                  // How deep to explore
-    max_nodes: 50,                 // Maximum items to return
+    expansion_type: 'relations', // Explore related items
+    max_depth: 3, // How deep to explore
+    max_nodes: 50, // Maximum items to return
     include_metadata: true,
-    direction: 'both',             // Both incoming and outgoing
-    relation_types: ['depends_on', 'relates_to', 'implements']
-  }
+    direction: 'both', // Both incoming and outgoing
+    relation_types: ['depends_on', 'relates_to', 'implements'],
+  },
 });
 ```
 
@@ -637,22 +656,24 @@ await call_tool('memory_find', {
 ```javascript
 // Store large content with intelligent chunking
 await call_tool('memory_store', {
-  items: [{
-    kind: 'section',
-    content: longDocumentContent, // > 10,000 characters
-    data: {
-      title: 'Comprehensive API Documentation',
-      section_type: 'documentation'
+  items: [
+    {
+      kind: 'section',
+      content: longDocumentContent, // > 10,000 characters
+      data: {
+        title: 'Comprehensive API Documentation',
+        section_type: 'documentation',
+      },
+      truncation_config: {
+        enabled: true,
+        max_chars: 8000, // Chunk size
+        mode: 'intelligent', // Smart chunking
+        preserve_structure: true, // Keep sections intact
+        add_indicators: true, // Add continuation markers
+        safety_margin: 0.1, // 10% safety margin
+      },
     },
-    truncation_config: {
-      enabled: true,
-      max_chars: 8000,             // Chunk size
-      mode: 'intelligent',         // Smart chunking
-      preserve_structure: true,     // Keep sections intact
-      add_indicators: true,        // Add continuation markers
-      safety_margin: 0.1           // 10% safety margin
-    }
-  }]
+  ],
 });
 ```
 
@@ -666,15 +687,15 @@ await call_tool('memory_store', {
 // Optimized search for better performance
 await call_tool('memory_find', {
   query: 'specific search terms',
-  search_strategy: 'fast',          // Use fast for quick results
-  limit: 10,                        // Limit result set size
-  scope: { project: 'specific' },  // Narrow search scope
+  search_strategy: 'fast', // Use fast for quick results
+  limit: 10, // Limit result set size
+  scope: { project: 'specific' }, // Narrow search scope
   optimization: {
     enable_caching: true,
-    cache_ttl_seconds: 300,         // 5 minute cache
-    parallel_search: false,         // Disable for small searches
-    timeout_ms: 5000                // Reasonable timeout
-  }
+    cache_ttl_seconds: 300, // 5 minute cache
+    parallel_search: false, // Disable for small searches
+    timeout_ms: 5000, // Reasonable timeout
+  },
 });
 ```
 
@@ -685,7 +706,7 @@ await call_tool('memory_find', {
 const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
   kind: 'entity',
   data: { title: `Item ${i}` },
-  scope: { project: 'batch-test' }
+  scope: { project: 'batch-test' },
 }));
 
 // Process in batches
@@ -697,12 +718,12 @@ for (let i = 0; i < largeDataset.length; i += batchSize) {
     items: batch,
     processing: {
       batch_processing: true,
-      enable_async_processing: false
-    }
+      enable_async_processing: false,
+    },
   });
 
   // Small delay between batches
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 ```
 
@@ -714,13 +735,13 @@ await call_tool('memory_find', {
   query: 'frequently searched term',
   optimization: {
     enable_caching: true,
-    cache_ttl_seconds: 3600,       // 1 hour cache
-    parallel_search: true
+    cache_ttl_seconds: 3600, // 1 hour cache
+    parallel_search: true,
   },
   analytics: {
     track_search_metrics: true,
-    record_user_feedback: true      // Improve future searches
-  }
+    record_user_feedback: true, // Improve future searches
+  },
 });
 ```
 
@@ -737,15 +758,15 @@ async function safeMemoryStore(items, retries = 3) {
       const result = await call_tool('memory_store', {
         items,
         processing: {
-          enable_validation: true
-        }
+          enable_validation: true,
+        },
       });
 
       if (result.errors.length > 0) {
         console.warn(`Attempt ${attempt}: ${result.errors.length} items failed`);
         // Retry only the failed items
         const failedItems = items.filter((_, index) =>
-          result.errors.some(error => error.index === index)
+          result.errors.some((error) => error.index === index)
         );
         items = failedItems;
       } else {
@@ -757,9 +778,7 @@ async function safeMemoryStore(items, retries = 3) {
         throw error;
       }
       // Exponential backoff
-      await new Promise(resolve =>
-        setTimeout(resolve, Math.pow(2, attempt) * 1000)
-      );
+      await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
   }
 }
@@ -777,7 +796,7 @@ async function handleRateLimiting(operation, args) {
       console.log(`Rate limited. Retrying in ${resetIn} seconds...`);
 
       // Wait for rate limit reset
-      await new Promise(resolve => setTimeout(resolve, resetIn * 1000));
+      await new Promise((resolve) => setTimeout(resolve, resetIn * 1000));
 
       // Retry the operation
       return await call_tool(operation, args);
@@ -795,7 +814,7 @@ function validateKnowledgeItem(item) {
     entity: ['entity_type', 'name'],
     decision: ['title', 'rationale'],
     todo: ['title', 'status'],
-    incident: ['title', 'severity', 'status']
+    incident: ['title', 'severity', 'status'],
   };
 
   const kind = item.kind;
@@ -819,7 +838,7 @@ function validateKnowledgeItem(item) {
 try {
   validateKnowledgeItem(knowledgeItem);
   const result = await call_tool('memory_store', {
-    items: [knowledgeItem]
+    items: [knowledgeItem],
   });
 } catch (error) {
   console.error('Validation failed:', error.message);
@@ -837,24 +856,26 @@ try {
 // Session context management
 async function storeConversationContext(sessionId, context) {
   await call_tool('memory_store', {
-    items: [{
-      kind: 'entity',
-      data: {
-        title: `Claude Code Session ${sessionId}`,
-        conversation_context: context,
-        session_id: sessionId,
-        timestamp: new Date().toISOString()
+    items: [
+      {
+        kind: 'entity',
+        data: {
+          title: `Claude Code Session ${sessionId}`,
+          conversation_context: context,
+          session_id: sessionId,
+          timestamp: new Date().toISOString(),
+        },
+        scope: {
+          project: 'claude-sessions',
+          branch: 'main',
+        },
+        ttl_config: {
+          policy: 'short', // Sessions are temporary
+          auto_extend: true,
+          extend_threshold_days: 1,
+        },
       },
-      scope: {
-        project: 'claude-sessions',
-        branch: 'main'
-      },
-      ttl_config: {
-        policy: 'short',  // Sessions are temporary
-        auto_extend: true,
-        extend_threshold_days: 1
-      }
-    }]
+    ],
   });
 }
 
@@ -867,14 +888,14 @@ async function getRelevantContext(query) {
     search_strategy: 'auto',
     formatting: {
       include_content: true,
-      include_metadata: true
-    }
+      include_metadata: true,
+    },
   });
 
-  return result.results.map(item => ({
+  return result.results.map((item) => ({
     content: item.content,
     metadata: item.metadata,
-    confidence: item.confidence_score
+    confidence: item.confidence_score,
   }));
 }
 ```
@@ -885,26 +906,28 @@ async function getRelevantContext(query) {
 // Track development decisions
 async function recordDecision(title, rationale, alternatives) {
   await call_tool('memory_store', {
-    items: [{
-      kind: 'decision',
-      data: {
-        title,
-        rationale,
-        alternatives,
-        status: 'proposed',
-        decision_date: new Date().toISOString(),
-        decision_maker: 'development-team'
+    items: [
+      {
+        kind: 'decision',
+        data: {
+          title,
+          rationale,
+          alternatives,
+          status: 'proposed',
+          decision_date: new Date().toISOString(),
+          decision_maker: 'development-team',
+        },
+        scope: {
+          project: getCurrentProject(),
+          branch: getCurrentBranch(),
+        },
+        source: {
+          actor: 'developer',
+          tool: 'ide-plugin',
+          timestamp: new Date().toISOString(),
+        },
       },
-      scope: {
-        project: getCurrentProject(),
-        branch: getCurrentBranch()
-      },
-      source: {
-        actor: 'developer',
-        tool: 'ide-plugin',
-        timestamp: new Date().toISOString()
-      }
-    }]
+    ],
   });
 }
 
@@ -914,13 +937,13 @@ async function findRelatedDecisions(currentContext) {
     query: currentContext,
     types: ['decision'],
     scope: {
-      project: getCurrentProject()
+      project: getCurrentProject(),
     },
     graph_expansion: {
       enabled: true,
       expansion_type: 'relations',
-      max_depth: 2
-    }
+      max_depth: 2,
+    },
   });
 }
 ```
@@ -931,26 +954,28 @@ async function findRelatedDecisions(currentContext) {
 // Record deployment information
 async function recordDeployment(deploymentInfo) {
   await call_tool('memory_store', {
-    items: [{
-      kind: 'release',
-      data: {
-        version: deploymentInfo.version,
-        release_type: deploymentInfo.type,
-        environment: deploymentInfo.environment,
-        deployed_at: new Date().toISOString(),
-        features: deploymentInfo.features,
-        fixes: deploymentInfo.fixes,
-        deployment_info: {
-          strategy: deploymentInfo.strategy,
-          duration_minutes: deploymentInfo.duration,
-          health_checks_passed: true
-        }
+    items: [
+      {
+        kind: 'release',
+        data: {
+          version: deploymentInfo.version,
+          release_type: deploymentInfo.type,
+          environment: deploymentInfo.environment,
+          deployed_at: new Date().toISOString(),
+          features: deploymentInfo.features,
+          fixes: deploymentInfo.fixes,
+          deployment_info: {
+            strategy: deploymentInfo.strategy,
+            duration_minutes: deploymentInfo.duration,
+            health_checks_passed: true,
+          },
+        },
+        scope: {
+          project: deploymentInfo.project,
+          branch: deploymentInfo.branch,
+        },
       },
-      scope: {
-        project: deploymentInfo.project,
-        branch: deploymentInfo.branch
-      }
-    }]
+    ],
   });
 }
 
@@ -961,13 +986,13 @@ async function getDeploymentHistory(project, limit = 10) {
     types: ['release'],
     scope: { project },
     filters: {
-      created_after: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // Last 30 days
+      created_after: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
     },
     limit,
     formatting: {
       include_metadata: true,
-      include_content: false
-    }
+      include_content: false,
+    },
   });
 }
 ```
@@ -983,7 +1008,7 @@ async function getDeploymentHistory(project, limit = 10) {
 async function performHealthCheck() {
   const health = await call_tool('system_status', {
     operation: 'health',
-    include_detailed_metrics: true
+    include_detailed_metrics: true,
   });
 
   if (health.status !== 'success') {
@@ -1004,7 +1029,7 @@ async function monitorPerformance() {
   const trends = await call_tool('system_status', {
     operation: 'get_performance_trends',
     performance_window_hours: 24,
-    include_detailed_metrics: true
+    include_detailed_metrics: true,
   });
 
   console.log('Performance Metrics (24h):');
@@ -1031,11 +1056,11 @@ async function scheduleCleanup() {
     operation: 'run_cleanup',
     cleanup_config: {
       operations: ['expired'],
-      dry_run: false,  // Actually perform cleanup
+      dry_run: false, // Actually perform cleanup
       batch_size: 100,
       require_confirmation: false,
-      enable_backup: true
-    }
+      enable_backup: true,
+    },
   });
 
   console.log(`Cleaned ${expiredCleanup.data.cleaned_items} expired items`);
@@ -1046,8 +1071,8 @@ async function scheduleCleanup() {
     cleanup_config: {
       operations: ['orphaned'],
       dry_run: false,
-      batch_size: 50
-    }
+      batch_size: 50,
+    },
   });
 
   console.log(`Cleaned ${orphanCleanup.data.cleaned_items} orphaned items`);
@@ -1057,14 +1082,15 @@ async function scheduleCleanup() {
 async function monitorMemoryUsage() {
   const stats = await call_tool('system_status', {
     operation: 'stats',
-    include_detailed_metrics: true
+    include_detailed_metrics: true,
   });
 
   const storageUsage = stats.data.storage_usage_mb;
   console.log(`Current storage usage: ${storageUsage}MB`);
 
   // Alert if usage is high
-  if (storageUsage > 1000) {  // 1GB threshold
+  if (storageUsage > 1000) {
+    // 1GB threshold
     console.warn('⚠️ High storage usage detected');
 
     // Suggest cleanup
@@ -1084,22 +1110,24 @@ async function monitorMemoryUsage() {
 ```javascript
 // ❌ Wrong - scope inconsistency
 await call_tool('memory_store', {
-  items: [{
-    kind: 'entity',
-    data: { title: 'User Service' },
-    scope: { project: 'user-service', branch: 'main' }  // Stored in main branch
-  }]
+  items: [
+    {
+      kind: 'entity',
+      data: { title: 'User Service' },
+      scope: { project: 'user-service', branch: 'main' }, // Stored in main branch
+    },
+  ],
 });
 
 await call_tool('memory_find', {
   query: 'user service',
-  scope: { project: 'user-service', branch: 'develop' }  // Searching in develop branch
+  scope: { project: 'user-service', branch: 'develop' }, // Searching in develop branch
 });
 
 // ✅ Correct - consistent scope
 await call_tool('memory_find', {
   query: 'user service',
-  scope: { project: 'user-service', branch: 'main' }  // Same scope as storage
+  scope: { project: 'user-service', branch: 'main' }, // Same scope as storage
 });
 ```
 
@@ -1115,8 +1143,8 @@ const result = await call_tool('memory_store', {
   items: [item],
   deduplication: {
     enabled: true,
-    enable_audit_logging: true  // Enable logging to see why
-  }
+    enable_audit_logging: true, // Enable logging to see why
+  },
 });
 
 if (result.errors.length > 0) {
@@ -1138,23 +1166,27 @@ if (result.duplicates_found > 0) {
 ```javascript
 // ❌ Wrong - no TTL configuration for important data
 await call_tool('memory_store', {
-  items: [{
-    kind: 'decision',
-    data: { title: 'Critical architecture decision' }
-    // No TTL config - will use default policy (30 days)
-  }]
+  items: [
+    {
+      kind: 'decision',
+      data: { title: 'Critical architecture decision' },
+      // No TTL config - will use default policy (30 days)
+    },
+  ],
 });
 
 // ✅ Correct - explicit TTL for important data
 await call_tool('memory_store', {
-  items: [{
-    kind: 'decision',
-    data: { title: 'Critical architecture decision' },
-    ttl_config: {
-      policy: 'permanent',  // Never expires
-      auto_extend: false
-    }
-  }]
+  items: [
+    {
+      kind: 'decision',
+      data: { title: 'Critical architecture decision' },
+      ttl_config: {
+        policy: 'permanent', // Never expires
+        auto_extend: false,
+      },
+    },
+  ],
 });
 ```
 
@@ -1167,7 +1199,7 @@ await call_tool('memory_store', {
 ```javascript
 // ❌ Wrong - broad search without limits
 await call_tool('memory_find', {
-  query: 'system',  // Too generic
+  query: 'system', // Too generic
   // No limit, no scope, no optimization
 });
 
@@ -1179,8 +1211,8 @@ await call_tool('memory_find', {
   limit: 10,
   optimization: {
     enable_caching: true,
-    timeout_ms: 5000
-  }
+    timeout_ms: 5000,
+  },
 });
 ```
 
@@ -1193,7 +1225,7 @@ await call_tool('memory_find', {
 ```javascript
 // ❌ Wrong - no error handling
 const result = await call_tool('memory_store', {
-  items: items
+  items: items,
 });
 // Assumes result is always valid
 
@@ -1202,7 +1234,7 @@ async function safeStoreItems(items) {
   try {
     const result = await call_tool('memory_store', {
       items,
-      processing: { enable_validation: true }
+      processing: { enable_validation: true },
     });
 
     if (result.errors.length > 0) {
@@ -1255,24 +1287,28 @@ async function safeStoreItems(items) {
 Based on production testing with Cortex Memory MCP Server v2.0:
 
 ### Storage Performance
+
 - **Single item storage**: ~50ms average
 - **Batch storage (10 items)**: ~200ms average
 - **Batch storage (100 items)**: ~800ms average
 - **Large content with chunking**: ~1-2s depending on size
 
 ### Search Performance
+
 - **Fast search (10 results)**: ~100ms average
 - **Auto search (10 results)**: ~200ms average
 - **Deep search with graph expansion**: ~500ms average
 - **Cached search results**: ~10ms average
 
 ### System Limits
+
 - **Maximum batch size**: 100 items per request
 - **Maximum content size**: 1MB per item (configurable)
 - **Maximum search results**: 100 per request
 - **Rate limits**: 100 requests per minute per actor
 
 ### Recommended Configurations
+
 - **Production batch size**: 20-50 items
 - **Search result limit**: 10-25 items
 - **Cache TTL**: 5-30 minutes for frequent searches

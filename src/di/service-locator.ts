@@ -31,7 +31,7 @@ import type {
   ServiceType,
 } from './service-interfaces.js';
 import { ServiceTokens } from './service-interfaces.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 /**
  * Service Locator implementation with container management

@@ -15,7 +15,7 @@
  * @module services/metrics/sli-slo-monitor
  */
 
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { systemMetricsService, type SystemMetrics } from './system-metrics.js';
 import { performanceTrendingService, type PerformanceAlert } from './performance-trending.js';
 

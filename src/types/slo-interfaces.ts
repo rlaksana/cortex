@@ -9,7 +9,7 @@
  * @since 2025
  */
 
-import { HealthStatus } from '../types/unified-health-interfaces.js';
+import { HealthStatus } from '../types/unified-health-interfaces';
 
 // ============================================================================
 // Core SLO/SLI Interfaces
@@ -68,6 +68,7 @@ export interface SLO {
     contact: ContactInfo;
   };
   status: SLOStatus;
+  active?: boolean; // Whether the SLO is currently active for evaluation
   metadata: {
     createdAt: Date;
     updatedAt: Date;
@@ -356,6 +357,7 @@ export interface SLOEvaluation {
   };
   status: SLOEvaluationStatus;
   alerts: SLOAlert[];
+  value?: number; // Current evaluation value
   metadata: {
     evaluationDuration: number;
     dataPoints: number;
@@ -856,6 +858,15 @@ export interface ErrorBudget {
   remaining: number;
   burnRate: number;
   lastUpdated: Date;
+  consumption?: {
+    current: number;
+    rate: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+  };
+
+  metadata?: unknown
+
+  utilization?: unknown
 }
 
 /**
@@ -873,6 +884,10 @@ export interface BudgetProjection {
     realistic: Date | null;
     pessimistic: Date | null;
   };
+
+  exhaustionProbability?: unknown
+
+  metadata?: unknown
 }
 
 /**
@@ -892,6 +907,14 @@ export interface BurnRateAnalysis {
     degradedOperations: number;
     seasonalFactors: number;
   };
+
+  period?: unknown
+
+  sloName?: unknown
+
+  health?: unknown
+
+  metadata?: unknown
 }
 
 /**
@@ -911,6 +934,16 @@ export interface BudgetAlert {
   acknowledgedBy?: string;
   acknowledgedAt?: Date;
   resolutionNotes?: string;
+  alertType?: string;
+  burnRate?: number;
+
+  resolved?: unknown
+
+  resolvedBy?: unknown
+
+  resolvedAt?: unknown
+
+  resolution?: unknown
 }
 
 /**
@@ -933,6 +966,8 @@ export interface BudgetConsumption {
     contribution: number;
     details: Record<string, any>;
   }>;
+
+  currentRate?: unknown
 }
 
 /**
@@ -1110,4 +1145,368 @@ export interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
+}
+
+// ============================================================================
+// Additional SLO Monitoring Interfaces
+// ============================================================================
+
+/**
+ * Circuit Breaker Statistics
+ */
+export interface CircuitBreakerStats {
+  name: string;
+  state: 'closed' | 'open' | 'half_open';
+  failureCount: number;
+  successCount: number;
+  lastFailureTime?: Date;
+  lastSuccessTime?: Date;
+  threshold: number;
+  timeout: number;
+}
+
+/**
+ * Monitoring Dashboard Configuration
+ */
+export interface MonitoringDashboardConfig {
+  id: string;
+  name: string;
+  description: string;
+  refreshInterval: number;
+  widgets: Array<{
+    id: string;
+    type: 'metric' | 'chart' | 'table' | 'alert';
+    title: string;
+    query: string;
+    position: { x: number; y: number; width: number; height: number };
+  }>;
+  timeRange: {
+    start: Date;
+    end: Date;
+  };
+  filters: Record<string, any>;
+
+  layout?: unknown
+
+  variables?: unknown
+
+  tags?: unknown
+}
+
+/**
+ * Dashboard Template
+ */
+export interface DashboardTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  widgets: Array<{
+    type: string;
+    title: string;
+    query: string;
+    defaultPosition: { x: number; y: number; width: number; height: number };
+  }>;
+  variables: Array<{
+    name: string;
+    type: 'query' | 'constant' | 'list';
+    values: string[];
+  }>;
+
+  tags?: unknown
+}
+
+/**
+ * Metric Definition
+ */
+export interface MetricDefinition {
+  name: string;
+  type: 'counter' | 'gauge' | 'histogram' | 'summary';
+  description: string;
+  unit: string;
+  labels: Record<string, string>;
+  aggregation?: 'sum' | 'avg' | 'min' | 'max' | 'count';
+}
+
+/**
+ * Alert Rule (extended)
+ */
+export interface AlertRule {
+  id: string;
+  name: string;
+  description: string;
+  query: string;
+  condition: string;
+  threshold: number;
+  severity: AlertSeverity;
+  enabled: boolean;
+  duration: number;
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  notificationChannels: string[];
+}
+
+/**
+ * SLO Breach Incident
+ */
+export interface SLOBreachIncident {
+  id: string;
+  sloId: string;
+  timestamp: Date;
+  severity: BreachSeverity;
+  description: string;
+  impact: string;
+  affectedServices: string[];
+  metrics: {
+    actualValue: number;
+    targetValue: number;
+    deviation: number;
+  };
+  status: IncidentStatus;
+  response: IncidentResponse;
+  escalation: EscalationLevel;
+  communication: {
+    stakeholders: string[];
+    channels: string[];
+    frequency: string;
+  };
+  resolution?: {
+    timestamp: Date;
+    actions: string[];
+    rootCause: string;
+    preventiveMeasures: string[];
+  };
+
+  metadata?: unknown
+
+  detectedAt?: unknown
+
+  notifications?: unknown
+
+  sloName?: unknown
+
+  impactAssessment?: unknown
+}
+
+/**
+ * Breach Severity
+ */
+export type BreachSeverity = 'minor' | 'major' | 'critical' | 'catastrophic';
+
+/**
+ * Notification Channel
+ */
+export interface NotificationChannel {
+  id: string;
+  name: string;
+  type: 'email' | 'slack' | 'pagerduty' | 'webhook' | 'sms';
+  config: Record<string, any>;
+  enabled: boolean;
+  rateLimit?: {
+    maxPerMinute: number;
+    maxPerHour: number;
+  };
+}
+
+/**
+ * Incident Status
+ */
+export type IncidentStatus = 'open' | 'investigating' | 'identified' | 'monitoring' | 'resolved' | 'closed';
+
+/**
+ * Incident Response
+ */
+export interface IncidentResponse {
+  commander: string;
+  team: string[];
+  communications: {
+    internal: string[];
+    external: string[];
+  };
+  actions: Array<{
+    timestamp: Date;
+    action: string;
+    owner: string;
+    status: 'pending' | 'in_progress' | 'completed';
+  }>;
+  timeline: Array<{
+    timestamp: Date;
+    event: string;
+    details: string;
+  }>;
+
+  status?: unknown
+
+  completedAt?: unknown
+
+  error?: unknown
+}
+
+/**
+ * Escalation Level
+ */
+export type EscalationLevel = 'l1' | 'l2' | 'l3' | 'l4' | 'executive';
+
+/**
+ * Impact Assessment
+ */
+export interface ImpactAssessment {
+  businessImpact: 'low' | 'medium' | 'high' | 'critical';
+  customerImpact: 'none' | 'partial' | 'significant' | 'total';
+  financialImpact: {
+    estimatedLoss: number;
+    currency: string;
+    confidence: number;
+  };
+  operationalImpact: {
+    affectedSystems: string[];
+    degradedServices: string[];
+    capacityReduction: number;
+  };
+  reputationalImpact: 'low' | 'medium' | 'high' | 'severe';
+
+  score?: unknown
+
+  revenueImpact?: unknown
+
+  usersAffected?: unknown
+}
+
+/**
+ * SLO Monitoring Configuration
+ */
+export interface SLOMonitoringConfig {
+  evaluationInterval?: number;
+  breachCheckInterval?: number;
+  errorBudgetCalculationInterval?: number;
+  circuitBreakerCheckInterval?: number;
+  dashboardRefreshInterval?: number;
+  automatedResponseEnabled?: boolean;
+  incidentCreationEnabled?: boolean;
+  alertCorrelationEnabled?: boolean;
+  escalationEnabled?: boolean;
+  alerting?: {
+    enabled: boolean;
+    channels: string[];
+    thresholds: Array<{
+      type: 'burn_rate' | 'consumption' | 'exhaustion';
+      threshold: number;
+      severity: AlertSeverity;
+    }>;
+  };
+  dashboarding?: {
+    enabled: boolean;
+    refreshInterval: number;
+    templates: string[];
+  };
+  reporting?: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    recipients: string[];
+  };
+}
+
+/**
+ * Integrated Monitoring Snapshot
+ */
+export interface IntegratedMonitoringSnapshot {
+  timestamp: Date;
+  slos: Array<{
+    sloId: string;
+    status: 'healthy' | 'warning' | 'critical';
+    budgetRemaining: number;
+    burnRate: number;
+    achievement: number;
+  }>;
+  services: Array<{
+    name: string;
+    status: 'operational' | 'degraded' | 'down';
+    sli: Record<string, number>;
+    dependencies: string[];
+  }>;
+  incidents: Array<{
+    id: string;
+    severity: AlertSeverity;
+    status: IncidentStatus;
+    impact: string;
+    duration: number;
+  }>;
+  alerts: Array<{
+    id: string;
+    rule: string;
+    severity: AlertSeverity;
+    state: 'firing' | 'resolved';
+    value: number;
+  }>;
+}
+
+/**
+ * SLO Health Status
+ */
+export interface SLOHealthStatus {
+  overall: 'healthy' | 'warning' | 'critical';
+  score: number; // 0-100
+  slos: Array<{
+    id: string;
+    name: string;
+    status: 'healthy' | 'warning' | 'critical';
+    achievement: number;
+    budgetRemaining: number;
+    trend: 'improving' | 'stable' | 'degrading';
+  }>;
+  services: Array<{
+    name: string;
+    status: 'operational' | 'degraded' | 'down';
+    healthScore: number;
+    issues: string[];
+  }>;
+  lastUpdated: Date;
+}
+
+/**
+ * Alert Correlation
+ */
+export interface AlertCorrelation {
+  id: string;
+  timestamp: Date;
+  alerts: Array<{
+    id: string;
+    rule: string;
+    severity: AlertSeverity;
+    service: string;
+    value: number;
+  }>;
+  correlationType: 'service' | 'dependency' | 'infrastructure' | 'unknown';
+  confidence: number; // 0-1
+  rootCauseHypothesis: string;
+  relatedSLOs: string[];
+  impactedServices: string[];
+  recommendations: string[];
+}
+
+/**
+ * Automated Response
+ */
+export interface AutomatedResponse {
+  id: string;
+  trigger: {
+    type: 'alert' | 'slo_breach' | 'incident';
+    id: string;
+  };
+  actions: Array<{
+    type: 'custom' | 'rollback' | 'notification' | 'scaling' | 'restart';
+    target: string;
+    parameters: Record<string, any>;
+    status: 'pending' | 'executing' | 'completed' | 'failed';
+    result?: any;
+    error?: string;
+  }>;
+  status: 'pending' | 'executing' | 'completed' | 'failed' | 'cancelled';
+  startedAt: Date;
+  completedAt?: Date;
+  effectiveness: {
+    resolvedIssue: boolean;
+    timeToResolution: number;
+    sideEffects: string[];
+  };
 }

@@ -1,6 +1,6 @@
-import { createHash } from 'node:crypto';
+import { createHash } from 'crypto';
 import type { DDLData } from '../../types/knowledge-data.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export async function storeDDL(data: DDLData): Promise<string> {
   const { UnifiedDatabaseLayer } = await import('../../db/unified-database-layer-v2.js');

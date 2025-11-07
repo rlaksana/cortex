@@ -35,24 +35,28 @@ The Contradiction Detector MVP has been successfully implemented as a comprehens
 ## Contradiction Types
 
 ### 1. Factual Contradictions
+
 - **Direct Negation Detection**: Identifies statements with negation markers
 - **Semantic Contradiction**: Detects opposing concepts (hot/cold, true/false)
 - **Confidence Scoring**: 0.6-1.0 based on detection certainty
 - **Example**: "The system is enabled" vs "The system is not enabled"
 
 ### 2. Temporal Contradictions
+
 - **Timeline Conflicts**: Detects chronological impossibilities
 - **Sequence Analysis**: Identifies conflicting temporal relationships
 - **Time Window Tolerance**: 10% tolerance for approximate times
 - **Example**: "Event A happened before Event B" vs "Event B happened before Event A"
 
 ### 3. Logical Contradictions
+
 - **Mutual Exclusion**: Detects mutually exclusive conditions
 - **Logical Inconsistencies**: Identifies contradictory logical statements
 - **Pattern Recognition**: Uses formal and informal logic patterns
 - **Example**: "Options are exclusive" vs "Both options are true"
 
 ### 4. Attribute Contradictions
+
 - **Type Conflicts**: Different data types for same attribute
 - **Value Conflicts**: Conflicting values with same type
 - **Constraint Violations**: Violates defined attribute constraints
@@ -61,6 +65,7 @@ The Contradiction Detector MVP has been successfully implemented as a comprehens
 ## Configuration
 
 ### Environment Variables
+
 ```bash
 CONTRADICTION_DETECTOR_ENABLED=true
 CONTRADICTION_DETECTOR_SENSITIVITY=balanced
@@ -75,26 +80,29 @@ CONTRADICTION_TIMEOUT_MS=30000
 
 ### Sensitivity Levels
 
-| Level | Factual | Temporal | Logical | Attribute | Min Confidence |
-|-------|---------|----------|---------|-----------|----------------|
-| Conservative | 0.90 | 0.85 | 0.80 | 0.75 | 0.80 |
-| Balanced | 0.75 | 0.70 | 0.65 | 0.60 | 0.60 |
-| Aggressive | 0.60 | 0.55 | 0.50 | 0.45 | 0.40 |
+| Level        | Factual | Temporal | Logical | Attribute | Min Confidence |
+| ------------ | ------- | -------- | ------- | --------- | -------------- |
+| Conservative | 0.90    | 0.85     | 0.80    | 0.75      | 0.80           |
+| Balanced     | 0.75    | 0.70     | 0.65    | 0.60      | 0.60           |
+| Aggressive   | 0.60    | 0.55     | 0.50    | 0.45      | 0.40           |
 
 ## Performance Characteristics
 
 ### Throughput
+
 - **Small batches (10-100 items)**: 50-200 items/second
 - **Medium batches (100-500 items)**: 20-100 items/second
 - **Large batches (500-1000 items)**: 10-50 items/second
 
 ### Memory Usage
+
 - **Base overhead**: 50MB
 - **Per item**: 0.5MB average
 - **Cache overhead**: 0.1MB per cached result
 - **Processing overhead**: Up to 100MB for large batches
 
 ### Scalability
+
 - **Linear scaling** up to 1000 items per batch
 - **Chunking support** for larger datasets
 - **Concurrent processing** up to 8 workers
@@ -103,6 +111,7 @@ CONTRADICTION_TIMEOUT_MS=30000
 ## Metadata Flagging System
 
 ### Flag Structure
+
 ```typescript
 {
   item_id: string,
@@ -116,6 +125,7 @@ CONTRADICTION_TIMEOUT_MS=30000
 ```
 
 ### Pointer Structure
+
 ```typescript
 {
   source_id: string,
@@ -129,7 +139,9 @@ CONTRADICTION_TIMEOUT_MS=30000
 ```
 
 ### Item Metadata Update
+
 When contradictions are detected, item metadata is automatically updated:
+
 ```typescript
 {
   flags: ['possible_contradiction'],
@@ -143,7 +155,9 @@ When contradictions are detected, item metadata is automatically updated:
 ## Resolution Workflows
 
 ### Workflow Creation
+
 High-severity contradictions automatically trigger resolution workflows:
+
 ```typescript
 {
   id: string,
@@ -161,6 +175,7 @@ High-severity contradictions automatically trigger resolution workflows:
 ```
 
 ### Resolution Actions
+
 1. **Merge**: Combine contradictory items with conflict resolution
 2. **Delete**: Remove less reliable items (high confidence only)
 3. **Update**: Add context, qualifiers, or correct data
@@ -168,7 +183,9 @@ High-severity contradictions automatically trigger resolution workflows:
 5. **Flag as Resolved**: Manual resolution without changes
 
 ### Contradiction Clusters
+
 System identifies groups of related contradictions:
+
 - **Star**: One central item with multiple conflicts
 - **Chain**: Sequential contradictions
 - **Cycle**: Circular dependencies
@@ -177,6 +194,7 @@ System identifies groups of related contradictions:
 ## Testing Coverage
 
 ### Unit Tests (`tests/unit/contradiction-detector.test.ts`)
+
 - ✅ All contradiction types
 - ✅ Sensitivity configurations
 - ✅ Edge cases and error handling
@@ -185,6 +203,7 @@ System identifies groups of related contradictions:
 - ✅ Resolution suggestions
 
 ### Integration Tests (`tests/integration/contradiction-detector-integration.test.ts`)
+
 - ✅ End-to-end workflows
 - ✅ Storage pipeline integration
 - ✅ Complex scenarios
@@ -193,6 +212,7 @@ System identifies groups of related contradictions:
 - ✅ Configuration management
 
 ### Performance Tests (`tests/performance/contradiction-detector-performance.test.ts`)
+
 - ✅ Throughput testing (10-1000 items)
 - ✅ Memory usage analysis
 - ✅ Concurrency testing
@@ -203,13 +223,14 @@ System identifies groups of related contradictions:
 ## Usage Examples
 
 ### Basic Contradiction Detection
+
 ```typescript
 import { ContradictionDetector } from './services/contradiction/contradiction-detector.service';
 
 const detector = new ContradictionDetector({
   sensitivity: 'balanced',
   auto_flag: true,
-  max_items_per_check: 100
+  max_items_per_check: 100,
 });
 
 const items = [
@@ -218,39 +239,35 @@ const items = [
     kind: 'entity',
     content: 'The system is enabled',
     scope: { project: 'my-project' },
-    data: { status: 'active' }
+    data: { status: 'active' },
   },
   {
     id: 'item2',
     kind: 'entity',
     content: 'The system is not enabled',
     scope: { project: 'my-project' },
-    data: { status: 'inactive' }
-  }
+    data: { status: 'inactive' },
+  },
 ];
 
 const result = await detector.detectContradictions({
   items,
-  scope: { project: 'my-project' }
+  scope: { project: 'my-project' },
 });
 
 console.log(`Found ${result.contradictions.length} contradictions`);
 ```
 
 ### Storage Pipeline Integration
+
 ```typescript
 import { StoragePipelineIntegration } from './services/contradiction/storage-pipeline-integration';
 
-const pipeline = new StoragePipelineIntegration(
-  detector,
-  flaggingService,
-  resolutionService,
-  {
-    enabled: true,
-    check_on_store: true,
-    batch_check_threshold: 20
-  }
-);
+const pipeline = new StoragePipelineIntegration(detector, flaggingService, resolutionService, {
+  enabled: true,
+  check_on_store: true,
+  batch_check_threshold: 20,
+});
 
 // Hook into storage operations
 const preCheck = await pipeline.before_store(newItems);
@@ -258,11 +275,12 @@ const postCheck = await pipeline.after_store(storedItems, results);
 ```
 
 ### Batch Checking Existing Data
+
 ```typescript
 const allItems = await storageService.getAllItems();
 const results = await pipeline.batchCheckExistingItems(allItems, {
   priority: 'medium',
-  chunk_size: 100
+  chunk_size: 100,
 });
 
 console.log(`Processed ${results.length} batches`);
@@ -271,6 +289,7 @@ console.log(`Processed ${results.length} batches`);
 ## Configuration Examples
 
 ### Development Environment
+
 ```typescript
 const devConfig = {
   enabled: true,
@@ -278,11 +297,12 @@ const devConfig = {
   auto_flag: true,
   performance_monitoring: true,
   cache_results: true,
-  timeout_ms: 60000
+  timeout_ms: 60000,
 };
 ```
 
 ### Production Environment
+
 ```typescript
 const prodConfig = {
   enabled: true,
@@ -291,11 +311,12 @@ const prodConfig = {
   performance_monitoring: true,
   cache_results: true,
   timeout_ms: 10000,
-  max_items_per_check: 500
+  max_items_per_check: 500,
 };
 ```
 
 ### High-Performance Scenario
+
 ```typescript
 const perfConfig = {
   enabled: true,
@@ -303,24 +324,27 @@ const perfConfig = {
   async_checking: true,
   queue_checking: true,
   max_concurrent_checks: 8,
-  batch_check_threshold: 50
+  batch_check_threshold: 50,
 };
 ```
 
 ## Monitoring and Metrics
 
 ### Key Performance Indicators
+
 - **Detection Accuracy**: Precision, recall, F1 score
 - **Processing Speed**: Items per second, latency
 - **Resource Usage**: Memory, CPU utilization
 - **False Positive Rate**: By contradiction type and severity
 
 ### Resolution Metrics
+
 - **Average Resolution Time**: Hours to resolve contradictions
 - **Resolution Rate**: Percentage of contradictions resolved
 - **Workflow Completion**: Success rate of resolution workflows
 
 ### System Health
+
 - **Cache Hit Rate**: Effectiveness of caching strategy
 - **Bottleneck Detection**: System performance issues
 - **Error Rate**: Failed detections and resolutions
@@ -328,16 +352,19 @@ const perfConfig = {
 ## Safety and Reliability
 
 ### Rate Limiting
+
 - Maximum 60 checks per minute
 - Configurable timeouts per operation
 - Memory usage limits and monitoring
 
 ### Error Handling
+
 - Graceful degradation on system overload
 - Retry mechanisms for failed operations
 - Comprehensive logging and error reporting
 
 ### Data Safety
+
 - Non-destructive by default
 - Configurable auto-deletion (high confidence only)
 - Manual review required for critical changes
@@ -345,18 +372,21 @@ const perfConfig = {
 ## Future Enhancements
 
 ### Advanced Detection
+
 - Machine learning-based semantic analysis
 - Embedding similarity for complex contradictions
 - Context-aware contradiction detection
 - Multi-language support
 
 ### Performance Optimization
+
 - Distributed processing for large datasets
 - Real-time streaming contradiction detection
 - Advanced caching strategies
 - GPU acceleration for ML models
 
 ### User Experience
+
 - Interactive contradiction resolution UI
 - Automated resolution suggestions
 - Integration with collaboration tools
@@ -367,6 +397,7 @@ const perfConfig = {
 The Contradiction Detector MVP provides a robust, scalable, and configurable solution for identifying potential contradictions in stored knowledge. With comprehensive testing coverage, performance optimization, and flexible configuration options, it serves as a solid foundation for maintaining data integrity and consistency in knowledge management systems.
 
 The system successfully addresses the core requirements:
+
 - ✅ Configurable sensitivity levels
 - ✅ Multiple contradiction type detection
 - ✅ Metadata flagging with pointers

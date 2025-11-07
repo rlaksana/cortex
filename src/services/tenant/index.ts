@@ -110,13 +110,5 @@ export const TENANT_SERVICES_INFO = {
   ],
 };
 
-import TenantIsolationServiceClass from './tenant-isolation-service.js';
-import TenantGovernanceServiceClass from './tenant-governance-service.js';
-import TenantPurgeServiceClass from './tenant-purge.service.js';
-
-export default {
-  TenantIsolationService: TenantIsolationServiceClass,
-  TenantGovernanceService: TenantGovernanceServiceClass,
-  TenantPurgeService: TenantPurgeServiceClass,
-  TENANT_SERVICES_INFO,
-};
+// Note: Default export removed as individual services don't have default exports
+// Use named exports instead

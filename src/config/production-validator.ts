@@ -9,7 +9,7 @@
  * @version 2.0.1
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 
 export interface EnvironmentValidationResult {
   isValid: boolean;

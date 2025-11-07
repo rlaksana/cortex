@@ -1,0 +1,527 @@
+src/services/ai/ai-orchestrator-simplified.ts(113,26): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/services/ai/ai-orchestrator.service.ts(100,5): error TS2740: Type '{ totalRequests: number; successfulRequests: number; failedRequests: number; averageResponseTime: number; p95ResponseTime: number; p99ResponseTime: number; totalTokensUsed: number; totalCost: number; cacheHitRate: number; errorRate: number; uptime: number; lastReset: number; }' is missing the following properties from type 'ZAIMetrics': timestamp, requestCount, successCount, errorCount, and 4 more.
+src/services/ai/background-processor-simplified.ts(65,42): error TS2339: Property 'maxConcurrentJobs' does not exist on type 'BackgroundProcessorConfig'.
+src/services/ai/background-processor-simplified.ts(136,7): error TS2322: Type '"queued"' is not assignable to type '"failed" | "pending" | "completed" | "cancelled" | "processing"'.
+src/services/ai/background-processor-simplified.ts(188,24): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/services/ai/background-processor-simplified.ts(312,12): error TS2678: Type '"ai_completion"' is not comparable to type 'ZAIJobType'.
+src/services/ai/background-processor-simplified.ts(318,12): error TS2678: Type '"data_processing"' is not comparable to type 'ZAIJobType'.
+src/services/ai/background-processor-simplified.ts(366,32): error TS2339: Property 'attemptNumber' does not exist on type 'ZAIJob'.
+src/services/ai/background-processor-simplified.ts(367,30): error TS2339: Property 'maxRetries' does not exist on type 'ZAIJob'.
+src/services/ai/background-processor-simplified.ts(368,11): error TS2339: Property 'attemptNumber' does not exist on type 'ZAIJob'.
+src/services/ai/background-processor-simplified.ts(369,7): error TS2322: Type '"queued"' is not assignable to type '"failed" | "pending" | "completed" | "cancelled" | "processing"'.
+src/services/ai/background-processor-simplified.ts(378,32): error TS2339: Property 'attemptNumber' does not exist on type 'ZAIJob'.
+src/services/ai/background-processor-simplified.ts(385,62): error TS2339: Property 'attemptNumber' does not exist on type 'ZAIJob'.
+src/services/ai/background-processor-simplified.ts(417,7): error TS2741: Property 'error' is missing in type 'Error' but required in type 'ZAIErrorResponse'.
+src/services/ai/background-processor.ts(289,39): error TS2349: This expression is not callable.
+src/services/ai/background-processor.ts(354,21): error TS2339: Property 'abortController' does not exist on type 'JobExecutionContext'.
+src/services/ai/background-processor.ts(478,26): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/background-processor.ts(480,17): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/index-simplified.ts(128,13): error TS2820: Type '"inactive"' is not assignable to type '"degraded" | "active" | "failed_over"'. Did you mean '"active"'?
+src/services/ai/index.ts(33,14): error TS2323: Cannot redeclare exported variable 'ZAIServicesManager'.
+src/services/ai/index.ts(181,13): error TS2820: Type '"inactive"' is not assignable to type '"degraded" | "active" | "failed_over"'. Did you mean '"active"'?
+src/services/ai/index.ts(226,9): error TS2322: Type '{ status: "degraded" | "active" | "failed_over"; activeProvider: string; primaryProvider: { name: string; status: ZAIServiceStatus; available: boolean; }; fallbackProvider: { ...; }; failoverCount: number; lastFailoverTime: number; autoFailoverEnabled: boolean; uptime: number; }' is not assignable to type '{ status: "degraded" | "active" | "failed_over"; activeProvider: string; fallbackProvider: string; failoverCount: number; }'.
+src/services/ai/index.ts(262,11): error TS2322: Type '"failed"' is not assignable to type '"degraded" | "active" | "failed_over"'.
+src/services/ai/index.ts(405,79): error TS2323: Cannot redeclare exported variable 'ZAIServicesManager'.
+src/services/ai/index.ts(405,79): error TS2484: Export declaration conflicts with exported declaration of 'ZAIServicesManager'.
+src/services/ai/provider-manager.ts(97,5): error TS2740: Type '{ totalRequests: number; successfulRequests: number; failedRequests: number; averageResponseTime: number; p95ResponseTime: number; p99ResponseTime: number; totalTokensUsed: number; totalCost: number; cacheHitRate: number; errorRate: number; uptime: number; lastReset: number; }' is missing the following properties from type 'ZAIMetrics': timestamp, requestCount, successCount, errorCount, and 4 more.
+src/services/ai/utils/in-memory-cache.ts(77,30): error TS2339: Property 'hits' does not exist on type '() => Promise<{ hits: number; misses: number; hitRate: number; }>'.
+src/services/ai/utils/in-memory-cache.ts(77,48): error TS2339: Property 'misses' does not exist on type '() => Promise<{ hits: number; misses: number; hitRate: number; }>'.
+src/services/ai/utils/in-memory-cache.ts(80,39): error TS2339: Property 'hits' does not exist on type '() => Promise<{ hits: number; misses: number; hitRate: number; }>'.
+src/services/ai/utils/performance-monitor.ts(90,59): error TS2339: Property 'startTime' does not exist on type 'SimplePerformanceMonitor'.
+src/services/ai/utils/performance-monitor.ts(215,11): error TS2322: Type '"TIMEOUT"' is not assignable to type 'ZAIErrorType'.
+src/services/ai/zai-client.service.ts(57,5): error TS2740: Type '{ totalRequests: number; successfulRequests: number; failedRequests: number; averageResponseTime: number; p95ResponseTime: number; p99ResponseTime: number; totalTokensUsed: number; totalCost: number; cacheHitRate: number; errorRate: number; uptime: number; lastReset: number; }' is missing the following properties from type 'ZAIMetrics': timestamp, requestCount, successCount, errorCount, and 4 more.
+src/services/ai/zai-client.service.ts(109,19): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(111,11): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(118,19): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(120,11): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(164,41): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(178,28): error TS2741: Property 'error' is missing in type 'ZAIError' but required in type 'ZAIErrorResponse'.
+src/services/ai/zai-client.service.ts(196,19): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(198,11): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(204,19): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(206,11): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(226,41): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(289,5): error TS2740: Type '{ totalRequests: number; successfulRequests: number; failedRequests: number; averageResponseTime: number; p95ResponseTime: number; p99ResponseTime: number; totalTokensUsed: number; totalCost: number; cacheHitRate: number; errorRate: number; uptime: number; lastReset: number; }' is missing the following properties from type 'ZAIMetrics': timestamp, requestCount, successCount, errorCount, and 4 more.
+src/services/ai/zai-client.service.ts(357,15): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(391,17): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(393,9): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(399,17): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(401,9): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(407,17): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(409,9): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(535,26): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(540,18): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(542,9): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(550,18): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(552,9): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(559,16): error TS1361: 'ZAIError' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-client.service.ts(561,7): error TS1361: 'ZAIErrorType' cannot be used as a value because it was imported using 'import type'.
+src/services/ai/zai-optimized-client.ts(179,5): error TS2353: Object literal may only specify known properties, and 'averageLatency' does not exist in type 'ZAIMetrics'.
+src/services/ai/zai-optimized-client.ts(391,11): error TS2322: Type 'ZAIChatResponse | undefined' is not assignable to type 'ZAIChatResponse | null'.
+src/services/ai/zai-optimized-client.ts(463,20): error TS2339: Property 'rateLimitHits' does not exist on type 'ZAIMetrics'.
+src/services/ai/zai-optimized-client.ts(503,11): error TS2783: 'messages' is specified more than once, so this usage will be overwritten.
+src/services/ai/zai-optimized-client.ts(505,31): error TS2551: Property 'max_tokens' does not exist on type 'ZAIChatRequest'. Did you mean 'maxTokens'?
+src/services/ai/zai-optimized-client.ts(549,11): error TS2783: 'messages' is specified more than once, so this usage will be overwritten.
+src/services/ai/zai-optimized-client.ts(551,31): error TS2551: Property 'max_tokens' does not exist on type 'ZAIChatRequest'. Did you mean 'maxTokens'?
+src/services/ai/zai-optimized-client.ts(649,33): error TS1064: The return type of an async function or method must be the global Promise<T> type. Did you mean to write 'Promise<void>'?
+src/services/ai/zai-optimized-client.ts(713,27): error TS2551: Property 'max_tokens' does not exist on type 'ZAIChatRequest'. Did you mean 'maxTokens'?
+src/services/ai/zai-optimized-client.ts(780,20): error TS2339: Property 'averageLatency' does not exist on type 'ZAIMetrics'.
+src/services/ai/zai-optimized-client.ts(781,23): error TS2339: Property 'averageLatency' does not exist on type 'ZAIMetrics'.
+src/services/ai/zai-optimized-client.ts(872,7): error TS2353: Object literal may only specify known properties, and 'averageLatency' does not exist in type 'ZAIMetrics'.
+src/services/analytics/analytics.service.ts(49,9): error TS2353: Object literal may only specify known properties, and 'projectedGrowth' does not exist in type '{ dailyGrowthRate: number; weeklyGrowthRate: number; monthlyGrowthRate: number; totalGrowthThisPeriod: number; }'.
+src/services/analytics/analytics.service.ts(83,9): error TS2353: Object literal may only specify known properties, and 'pagerank' does not exist in type '{ betweenness: Record<string, number>; closeness: Record<string, number>; eigenvector: Record<string, number>; }'.
+src/services/analytics/analytics.service.ts(116,9): error TS2353: Object literal may only specify known properties, and 'slowQueries' does not exist in type '{ averageResponseTime: number; p95ResponseTime: number; p99ResponseTime: number; throughput: number; errorRate: number; }'.
+src/services/analytics/analytics.service.ts(153,9): error TS2353: Object literal may only specify known properties, and 'averageQueryLength' does not exist in type '{ commonQueries: { query: string; frequency: number; }[]; queryComplexity: { simple: number; medium: number; complex: number; }; filtersUsage: Record<string, number>; }'.
+src/services/analytics/analytics.service.ts(192,11): error TS2353: Object literal may only specify known properties, and 'confidence' does not exist in type '{ entities: number; relations: number; observations: number; }'.
+src/services/analytics/analytics.service.ts(198,11): error TS2353: Object literal may only specify known properties, and 'confidence' does not exist in type '{ entities: number; relations: number; observations: number; }'.
+src/services/analytics/analytics.service.ts(204,11): error TS2353: Object literal may only specify known properties, and 'confidence' does not exist in type '{ entities: number; relations: number; observations: number; }'.
+src/services/analytics/analytics.service.ts(254,9): error TS2353: Object literal may only specify known properties, and 'averageReadTime' does not exist in type 'StoragePerformance'.
+src/services/analytics/analytics.service.ts(262,9): error TS2353: Object literal may only specify known properties, and 'totalCost' does not exist in type 'StorageCostAnalysis'.
+src/services/analytics/analytics.service.ts(288,55): error TS2551: Property 'filter' does not exist on type 'AnalyticsQuery'. Did you mean 'filters'?
+src/services/analytics/analytics.service.ts(291,58): error TS2551: Property 'filter' does not exist on type 'AnalyticsQuery'. Did you mean 'filters'?
+src/services/analytics/analytics.service.ts(294,57): error TS2551: Property 'filter' does not exist on type 'AnalyticsQuery'. Did you mean 'filters'?
+src/services/analytics/analytics.service.ts(297,58): error TS2551: Property 'filter' does not exist on type 'AnalyticsQuery'. Did you mean 'filters'?
+src/services/analytics/analytics.service.ts(300,56): error TS2551: Property 'filter' does not exist on type 'AnalyticsQuery'. Did you mean 'filters'?
+src/services/analytics/analytics.service.ts(315,9): error TS2353: Object literal may only specify known properties, and 'recordCount' does not exist in type '{ totalDataPoints: number; processingTimeMs: number; cacheHit: boolean; }'.
+src/services/analytics/analytics.service.ts(350,26): error TS2339: Property 'timeRange' does not exist on type 'AnalyticsFilter'.
+src/services/analytics/analytics.service.ts(360,9): error TS2353: Object literal may only specify known properties, and 'recordCount' does not exist in type '{ totalDataPoints: number; processingTimeMs: number; cacheHit: boolean; }'.
+src/services/api.service.ts(51,7): error TS2353: Object literal may only specify known properties, and 'successfulRequests' does not exist in type 'ApiMetrics'.
+src/services/api.service.ts(128,61): error TS2345: Argument of type 'import("D:/WORKSPACE/tools-node/mcp-cortex/src/types/api-interfaces").AuthenticationMethod[]' is not assignable to parameter of type 'import("D:/WORKSPACE/tools-node/mcp-cortex/src/services/api.service").AuthenticationMethod[]'.
+  Type 'import("D:/WORKSPACE/tools-node/mcp-cortex/src/types/api-interfaces").AuthenticationMethod' is not assignable to type 'import("D:/WORKSPACE/tools-node/mcp-cortex/src/services/api.service").AuthenticationMethod'.
+src/services/api.service.ts(201,7): error TS2353: Object literal may only specify known properties, and 'successfulRequests' does not exist in type 'ApiMetrics'.
+src/services/api.service.ts(325,5): error TS2532: Object is possibly 'undefined'.
+src/services/api.service.ts(328,20): error TS2339: Property 'successfulRequests' does not exist on type 'ApiMetrics'.
+src/services/api.service.ts(330,20): error TS2339: Property 'failedRequests' does not exist on type 'ApiMetrics'.
+src/services/api.service.ts(335,8): error TS2532: Object is possibly 'undefined'.
+src/services/api.service.ts(335,44): error TS2532: Object is possibly 'undefined'.
+src/services/api.service.ts(336,7): error TS2532: Object is possibly 'undefined'.
+src/services/api.service.ts(340,23): error TS2339: Property 'endpointMetrics' does not exist on type 'ApiMetrics'.
+src/services/api.service.ts(341,20): error TS2339: Property 'endpointMetrics' does not exist on type 'ApiMetrics'.
+src/services/api.service.ts(348,41): error TS2339: Property 'endpointMetrics' does not exist on type 'ApiMetrics'.
+src/services/auto-purge.ts(12,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/canary/canary-health-monitor.ts(20,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/canary/canary-health-monitor.ts(21,45): error TS2307: Cannot find module '../types/unified-health-interfaces.js' or its corresponding type declarations.
+src/services/canary/canary-health-monitor.ts(22,46): error TS2307: Cannot find module '../monitoring/health-check-service.js' or its corresponding type declarations.
+src/services/canary/canary-health-monitor.ts(1157,23): error TS2304: Cannot find name 'snapshot'.
+src/services/canary/canary-orchestrator.ts(19,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/canary/canary-orchestrator.ts(20,45): error TS2307: Cannot find module '../types/unified-health-interfaces.js' or its corresponding type declarations.
+src/services/canary/canary-orchestrator.ts(684,48): error TS2345: Argument of type '{ name: string; description: string; status: FlagStatus.ENABLED; strategy: any; rolloutPercentage: number; killSwitchEnabled: true; }' is not assignable to parameter of type 'Omit<FeatureFlag, "id" | "createdAt" | "updatedAt">'.
+src/services/canary/config-validator.ts(1278,62): error TS2352: Conversion of type '{ severity: ValidationSeverity; category: ValidationCategory.BEST_PRACTICE; id: string; code: string; message: string; field?: string; value?: any; recommendedValue?: any; actionable: boolean; actionSuggestion?: string; }' to type 'ValidationError' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/services/canary/index.ts(32,3): error TS2300: Duplicate identifier 'TargetingStrategy'.
+src/services/canary/index.ts(33,3): error TS2300: Duplicate identifier 'FlagStatus'.
+src/services/canary/index.ts(40,3): error TS2300: Duplicate identifier 'KillSwitchStatus'.
+src/services/canary/index.ts(41,3): error TS2300: Duplicate identifier 'KillSwitchTrigger'.
+src/services/canary/index.ts(42,3): error TS2300: Duplicate identifier 'KillSwitchScope'.
+src/services/canary/index.ts(57,3): error TS2300: Duplicate identifier 'CanaryStatus'.
+src/services/canary/index.ts(58,3): error TS2300: Duplicate identifier 'TrafficShiftStrategy'.
+src/services/canary/index.ts(64,3): error TS2300: Duplicate identifier 'RoutingStrategy'.
+src/services/canary/index.ts(84,3): error TS2300: Duplicate identifier 'HealthMetricType'.
+src/services/canary/index.ts(87,3): error TS2305: Module '"./canary-health-monitor.js"' has no exported member 'ValidationCriteria'.
+src/services/canary/index.ts(96,3): error TS2300: Duplicate identifier 'RollbackStatus'.
+src/services/canary/index.ts(97,3): error TS2300: Duplicate identifier 'RollbackStrategy'.
+src/services/canary/index.ts(98,3): error TS2300: Duplicate identifier 'RollbackTrigger'.
+src/services/canary/index.ts(115,3): error TS2300: Duplicate identifier 'ValidationCategory'.
+src/services/canary/index.ts(116,3): error TS2300: Duplicate identifier 'ValidationSeverity'.
+src/services/canary/index.ts(120,10): error TS2300: Duplicate identifier 'TargetingStrategy'.
+src/services/canary/index.ts(120,29): error TS2300: Duplicate identifier 'FlagStatus'.
+src/services/canary/index.ts(121,10): error TS2300: Duplicate identifier 'KillSwitchTrigger'.
+src/services/canary/index.ts(121,29): error TS2300: Duplicate identifier 'KillSwitchScope'.
+src/services/canary/index.ts(121,46): error TS2300: Duplicate identifier 'KillSwitchStatus'.
+src/services/canary/index.ts(122,10): error TS2300: Duplicate identifier 'CanaryStatus'.
+src/services/canary/index.ts(122,24): error TS2300: Duplicate identifier 'TrafficShiftStrategy'.
+src/services/canary/index.ts(123,10): error TS2300: Duplicate identifier 'RoutingStrategy'.
+src/services/canary/index.ts(124,10): error TS2300: Duplicate identifier 'HealthMetricType'.
+src/services/canary/index.ts(124,28): error TS2459: Module '"./canary-health-monitor.js"' declares 'AlertSeverity' locally, but it is not exported.
+src/services/canary/index.ts(125,10): error TS2300: Duplicate identifier 'RollbackTrigger'.
+src/services/canary/index.ts(125,27): error TS2300: Duplicate identifier 'RollbackStrategy'.
+src/services/canary/index.ts(125,45): error TS2300: Duplicate identifier 'RollbackStatus'.
+src/services/canary/index.ts(126,10): error TS2300: Duplicate identifier 'ValidationSeverity'.
+src/services/canary/index.ts(126,30): error TS2300: Duplicate identifier 'ValidationCategory'.
+src/services/canary/index.ts(171,21): error TS2304: Cannot find name 'featureFlagService'.
+src/services/canary/index.ts(172,21): error TS2304: Cannot find name 'killSwitchService'.
+src/services/canary/index.ts(173,20): error TS2304: Cannot find name 'canaryOrchestrator'.
+src/services/canary/index.ts(174,23): error TS2304: Cannot find name 'trafficSplitterService'.
+src/services/canary/index.ts(175,25): error TS2304: Cannot find name 'canaryHealthMonitor'.
+src/services/canary/index.ts(176,18): error TS2304: Cannot find name 'rollbackService'.
+src/services/canary/index.ts(196,11): error TS2304: Cannot find name 'ValidationRequest'.
+src/services/canary/index.ts(198,15): error TS2304: Cannot find name 'ValidationContext'.
+src/services/canary/index.ts(199,6): error TS2304: Cannot find name 'ValidationResult'.
+src/services/canary/index.ts(200,12): error TS2304: Cannot find name 'canaryConfigValidator'.
+src/services/canary/index.ts(220,31): error TS2304: Cannot find name 'canaryOrchestrator'.
+src/services/canary/index.ts(221,29): error TS2304: Cannot find name 'rollbackService'.
+src/services/canary/index.ts(222,33): error TS2304: Cannot find name 'killSwitchService'.
+src/services/canary/index.ts(262,49): error TS2304: Cannot find name 'CanaryDeploymentConfig'.
+src/services/canary/index.ts(262,80): error TS2304: Cannot find name 'CanaryDeploymentConfig'.
+src/services/canary/index.ts(273,29): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(337,49): error TS2304: Cannot find name 'CanaryHealthConfig'.
+src/services/canary/index.ts(337,76): error TS2304: Cannot find name 'CanaryHealthConfig'.
+src/services/canary/index.ts(349,19): error TS2304: Cannot find name 'HealthMetricType'.
+src/services/canary/index.ts(357,19): error TS2304: Cannot find name 'HealthMetricType'.
+src/services/canary/index.ts(365,19): error TS2304: Cannot find name 'HealthMetricType'.
+src/services/canary/index.ts(383,23): error TS2304: Cannot find name 'AlertSeverity'.
+src/services/canary/index.ts(388,23): error TS2304: Cannot find name 'AlertSeverity'.
+src/services/canary/index.ts(398,21): error TS2304: Cannot find name 'HealthMetricType'.
+src/services/canary/index.ts(417,51): error TS2304: Cannot find name 'RollbackConfig'.
+src/services/canary/index.ts(417,74): error TS2304: Cannot find name 'RollbackConfig'.
+src/services/canary/index.ts(424,17): error TS2304: Cannot find name 'RollbackStrategy'.
+src/services/canary/index.ts(425,18): error TS2304: Cannot find name 'RollbackTrigger'.
+src/services/canary/index.ts(425,45): error TS2304: Cannot find name 'RollbackTrigger'.
+src/services/canary/index.ts(454,17): error TS2304: Cannot find name 'Action'.
+src/services/canary/index.ts(462,17): error TS2304: Cannot find name 'Action'.
+src/services/canary/index.ts(470,17): error TS2304: Cannot find name 'Action'.
+src/services/canary/index.ts(501,59): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(501,82): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(505,12): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(511,12): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(520,16): error TS2532: Object is possibly 'undefined'.
+src/services/canary/index.ts(520,57): error TS2304: Cannot find name 'TrafficShiftStrategy'.
+src/services/canary/index.ts(529,40): error TS2304: Cannot find name 'CanaryDeploymentConfig'.
+src/services/canary/index.ts(546,37): error TS2304: Cannot find name 'CanaryDeploymentConfig'.
+src/services/canary/kill-switch-service.ts(19,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/canary/kill-switch-service.ts(20,45): error TS2307: Cannot find module '../types/unified-health-interfaces.js' or its corresponding type declarations.
+src/services/canary/kill-switch-service.ts(21,41): error TS2307: Cannot find module '../monitoring/graceful-shutdown.js' or its corresponding type declarations.
+src/services/canary/kill-switch-service.ts(474,41): error TS7006: Parameter 'component' implicitly has an 'any' type.
+src/services/canary/kill-switch-service.ts(542,32): error TS2339: Property 'CUSTOM' does not exist on type 'typeof KillSwitchTrigger'.
+src/services/canary/rollback-service.ts(20,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/canary/rollback-service.ts(21,45): error TS2307: Cannot find module '../types/unified-health-interfaces.js' or its corresponding type declarations.
+src/services/canary/rollback-service.ts(391,3): error TS2393: Duplicate function implementation.
+src/services/canary/rollback-service.ts(1039,17): error TS2393: Duplicate function implementation.
+src/services/canary/traffic-splitter.ts(20,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/canary/traffic-splitter.ts(913,29): error TS2339: Property 'keyExtractor' does not exist on type 'RateLimiter'.
+src/services/canary/traffic-splitter.ts(914,29): error TS2339: Property 'keyExtractor' does not exist on type 'RateLimiter'.
+src/services/circuit-breaker.service.ts(21,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/circuit-breaker.service.ts(260,24): error TS2345: Argument of type '"info" | "error" | "warning" | "critical"' is not assignable to parameter of type '"info" | "error" | "warn"'.
+src/services/circuit-breaker.service.ts(482,5): error TS2740: Type '{ state: "closed" | "open" | "half-open"; failures: number; totalCalls: number; successRate: number; failureRate: number; averageResponseTime: number; timeSinceLastFailure: number; timeSinceStateChange: number; isOpen: boolean; failureTypes: { ...; }; isHalfOpen: boolean; successes: number; }' is missing the following properties from type 'CircuitBreakerStats': sloCompliance, sloViolationRate, performanceScore, degradationScore, and 5 more.
+src/services/circuit-breaker.service.ts(725,64): error TS2345: Argument of type 'Partial<CircuitBreakerConfig> | undefined' is not assignable to parameter of type 'string'.
+src/services/cleanup-worker.service.ts(11,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/contradiction/contradiction-scoring.service.ts(150,14): error TS2323: Cannot redeclare exported variable 'ContradictionScoringService'.
+src/services/contradiction/contradiction-scoring.service.ts(635,76): error TS2339: Property 'weighted_scores' does not exist on type 'ScoringFactors'.
+src/services/contradiction/contradiction-scoring.service.ts(654,62): error TS2339: Property 'weighted_scores' does not exist on type 'ScoringFactors'.
+src/services/contradiction/contradiction-scoring.service.ts(655,5): error TS2322: Type 'unknown' is not assignable to type 'number'.
+src/services/contradiction/contradiction-scoring.service.ts(655,65): error TS18046: 'sum' is of type 'unknown'.
+src/services/contradiction/contradiction-scoring.service.ts(655,71): error TS18046: 'score' is of type 'unknown'.
+src/services/contradiction/contradiction-scoring.service.ts(675,36): error TS2339: Property 'weighted_scores' does not exist on type 'ScoringFactors'.
+src/services/contradiction/contradiction-scoring.service.ts(875,34): error TS2339: Property 'items' does not exist on type 'ScoreBreakdown'.
+src/services/contradiction/contradiction-scoring.service.ts(875,46): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/contradiction/contradiction-scoring.service.ts(923,13): error TS2339: Property 'items' does not exist on type 'ScoreBreakdown'.
+src/services/contradiction/contradiction-scoring.service.ts(923,28): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/contradiction/contradiction-scoring.service.ts(993,10): error TS2323: Cannot redeclare exported variable 'ContradictionScoringService'.
+src/services/contradiction/contradiction-scoring.service.ts(993,10): error TS2484: Export declaration conflicts with exported declaration of 'ContradictionScoringService'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(153,14): error TS2323: Cannot redeclare exported variable 'FactualVerificationStrategy'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(917,9): error TS2322: Type '{ evidence_type: "factual_discrepancy" | "measurement_conflict" | "spec_mismatch" | "reference_conflict"; item_id: string | undefined; type: "factual_discrepancy" | "measurement_conflict" | "spec_mismatch" | "reference_conflict"; content: string; confidence: number; source_item: number; fact_data: any; }[]' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(960,9): error TS2322: Type '{ evidence_type: "factual_discrepancy" | "measurement_conflict" | "spec_mismatch" | "reference_conflict"; item_id: string | undefined; type: "factual_discrepancy" | "measurement_conflict" | "spec_mismatch" | "reference_conflict"; content: string; confidence: number; source_item: number; fact_data: any; }[]' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(1104,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(1162,10): error TS2323: Cannot redeclare exported variable 'FactualVerificationStrategy'.
+src/services/contradiction/detection-strategies/factual-verification.strategy.ts(1162,10): error TS2484: Export declaration conflicts with exported declaration of 'FactualVerificationStrategy'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(126,14): error TS2323: Cannot redeclare exported variable 'LogicalContradictionStrategy'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(899,9): error TS2322: Type '{ evidence_type: "mutual_exclusion" | "conditional_contradiction" | "logical_conflict" | "implication_violation"; item_id: string | undefined; type: "mutual_exclusion" | "conditional_contradiction" | "logical_conflict" | "implication_violation"; content: string; confidence: number; source_item: number; logical_form:...' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(941,9): error TS2322: Type '{ evidence_type: "mutual_exclusion" | "conditional_contradiction" | "logical_conflict" | "implication_violation"; item_id: string | undefined; type: "mutual_exclusion" | "conditional_contradiction" | "logical_conflict" | "implication_violation"; content: string; confidence: number; source_item: number; logical_form:...' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(1061,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(1119,10): error TS2323: Cannot redeclare exported variable 'LogicalContradictionStrategy'.
+src/services/contradiction/detection-strategies/logical-contradiction.strategy.ts(1119,10): error TS2484: Export declaration conflicts with exported declaration of 'LogicalContradictionStrategy'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(157,14): error TS2323: Cannot redeclare exported variable 'ProceduralContradictionStrategy'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(1070,9): error TS2322: Type '{ evidence_type: "policy_conflict" | "procedural_conflict" | "step_contradiction" | "workflow_inconsistency"; item_id: string | undefined; type: "policy_conflict" | "procedural_conflict" | "step_contradiction" | "workflow_inconsistency"; content: string; confidence: number; source_item: number; procedural_element: a...' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(1113,9): error TS2322: Type '{ evidence_type: "policy_conflict" | "procedural_conflict" | "step_contradiction" | "workflow_inconsistency"; item_id: string | undefined; type: "policy_conflict" | "procedural_conflict" | "step_contradiction" | "workflow_inconsistency"; content: string; confidence: number; source_item: number; procedural_element: a...' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(1247,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(1307,10): error TS2323: Cannot redeclare exported variable 'ProceduralContradictionStrategy'.
+src/services/contradiction/detection-strategies/procedural-contradiction.strategy.ts(1307,10): error TS2484: Export declaration conflicts with exported declaration of 'ProceduralContradictionStrategy'.
+src/services/contradiction/detection-strategies/semantic-contradiction.strategy.ts(85,14): error TS2323: Cannot redeclare exported variable 'SemanticContradictionStrategy'.
+src/services/contradiction/detection-strategies/semantic-contradiction.strategy.ts(297,9): error TS2322: Type '{ evidence_type: "negation" | "semantic_opposition" | "sentiment_conflict" | "context_mismatch"; item_id: string | undefined; type: "negation" | "semantic_opposition" | "sentiment_conflict" | "context_mismatch"; content: string; confidence: number; source_item: number; }[]' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/semantic-contradiction.strategy.ts(419,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/detection-strategies/semantic-contradiction.strategy.ts(495,10): error TS2323: Cannot redeclare exported variable 'SemanticContradictionStrategy'.
+src/services/contradiction/detection-strategies/semantic-contradiction.strategy.ts(495,10): error TS2484: Export declaration conflicts with exported declaration of 'SemanticContradictionStrategy'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(122,14): error TS2323: Cannot redeclare exported variable 'TemporalContradictionStrategy'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(748,9): error TS2322: Type '{ evidence_type: "sequence_violation" | "timeline_conflict" | "duration_mismatch" | "deadline_impossibility"; item_id: string | undefined; type: "sequence_violation" | "timeline_conflict" | "duration_mismatch" | "deadline_impossibility"; content: string; confidence: number; source_item: number; temporal_data: any; }[]' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(790,9): error TS2322: Type '{ evidence_type: "sequence_violation" | "timeline_conflict" | "duration_mismatch" | "deadline_impossibility"; item_id: string | undefined; type: "sequence_violation" | "timeline_conflict" | "duration_mismatch" | "deadline_impossibility"; content: string; confidence: number; source_item: number; temporal_data: any; }[]' is not assignable to type '{ item_id: string; evidence_type: string; content: string; confidence: number; }[]'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(904,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(962,10): error TS2323: Cannot redeclare exported variable 'TemporalContradictionStrategy'.
+src/services/contradiction/detection-strategies/temporal-contradiction.strategy.ts(962,10): error TS2484: Export declaration conflicts with exported declaration of 'TemporalContradictionStrategy'.
+src/services/contradiction/resolution-suggestion.service.ts(160,14): error TS2323: Cannot redeclare exported variable 'ContradictionResolutionSuggestionService'.
+src/services/contradiction/resolution-suggestion.service.ts(745,10): error TS2323: Cannot redeclare exported variable 'ContradictionResolutionSuggestionService'.
+src/services/contradiction/resolution-suggestion.service.ts(745,10): error TS2484: Export declaration conflicts with exported declaration of 'ContradictionResolutionSuggestionService'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(98,14): error TS2323: Cannot redeclare exported variable 'ZAIEnhancedContradictionDetector'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(190,59): error TS2352: Conversion of type 'string' to type 'ContradictionStrategy' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(205,13): error TS2352: Conversion of type 'string' to type 'ContradictionStrategy' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(228,12): error TS2678: Type 'string' is not comparable to type 'ContradictionStrategy'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(230,12): error TS2678: Type 'string' is not comparable to type 'ContradictionStrategy'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(232,12): error TS2678: Type 'string' is not comparable to type 'ContradictionStrategy'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(234,12): error TS2678: Type 'string' is not comparable to type 'ContradictionStrategy'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(236,12): error TS2678: Type 'string' is not comparable to type 'ContradictionStrategy'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(1228,5): error TS2322: Type '{ suggestion: string; priority: string; effort: string; description: string; }[]' is not assignable to type '{ suggestion: string; priority: "low" | "medium" | "high"; effort: "low" | "medium" | "high"; description: string; }[]'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(1423,10): error TS2323: Cannot redeclare exported variable 'ZAIEnhancedContradictionDetector'.
+src/services/contradiction/zai-enhanced-contradiction-detector.ts(1423,10): error TS2484: Export declaration conflicts with exported declaration of 'ZAIEnhancedContradictionDetector'.
+src/services/core-memory-find.ts(1,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/combine-strategy.ts(15,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/deduplication-strategy-factory.ts(18,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/intelligent-strategy.ts(15,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/prefer-existing-strategy.ts(15,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/prefer-newer-strategy.ts(15,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deduplication/strategies/skip-strategy.ts(15,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/delete-operations.ts(14,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/deps-registry.ts(24,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/document-reassembly.ts(9,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/error-budget-service.ts(120,75): error TS2345: Argument of type 'TimeRange | BudgetPeriod' is not assignable to parameter of type 'BudgetPeriod'.
+src/services/error-budget-service.ts(123,79): error TS2345: Argument of type 'TimeRange | BudgetPeriod' is not assignable to parameter of type 'BudgetPeriod'.
+src/services/error-budget-service.ts(126,76): error TS2345: Argument of type 'TimeRange | BudgetPeriod' is not assignable to parameter of type 'BudgetPeriod'.
+src/services/error-budget-service.ts(129,82): error TS2554: Expected 1-2 arguments, but got 3.
+src/services/error-budget-service.ts(134,7): error TS2322: Type 'TimeRange | BudgetPeriod' is not assignable to type 'BudgetPeriod'.
+src/services/error-budget-service.ts(193,75): error TS2345: Argument of type 'TimeRange | BudgetPeriod' is not assignable to parameter of type 'BudgetPeriod'.
+src/services/error-budget-service.ts(220,7): error TS2322: Type '{ direction: BurnRateTrend; confidence: number; slope: number; }' is not assignable to type '"increasing" | "decreasing" | "stable" | "volatile"'.
+src/services/error-budget-service.ts(221,7): error TS2322: Type '{ current: number; average: number; acceleration: number; }' is not assignable to type 'number'.
+src/services/error-budget-service.ts(256,28): error TS2339: Property 'period' does not exist on type 'BurnRateAnalysis'.
+src/services/error-budget-service.ts(257,7): error TS2322: Type '{ sloId: string; sloName: any; burnRate: any; trend: "increasing" | "decreasing" | "stable" | "volatile"; health: any; }[]' is not assignable to type '{ sloId: string; sloName: string; burnRate: number; trend: { direction: BurnRateTrend; confidence: number; slope: number; }; health: { status: "warning" | "critical" | "healthy"; score: number; factors: string[]; }; }[]'.
+src/services/error-budget-service.ts(259,27): error TS2339: Property 'sloName' does not exist on type 'BurnRateAnalysis'.
+src/services/error-budget-service.ts(260,28): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(262,26): error TS2339: Property 'health' does not exist on type 'BurnRateAnalysis'.
+src/services/error-budget-service.ts(314,7): error TS2322: Type 'TimeRange | { type: "fixed"; start: Date; end: Date; }' is not assignable to type 'BudgetPeriod'.
+src/services/error-budget-service.ts(315,7): error TS2322: Type '[any, any, any]' is not assignable to type '{ optimistic: Date | null; realistic: Date | null; pessimistic: Date | null; }'.
+src/services/error-budget-service.ts(322,35): error TS2339: Property 'metadata' does not exist on type 'ErrorBudget'.
+src/services/error-budget-service.ts(338,8): error TS2339: Property 'filter' does not exist on type '{ optimistic: Date | null; realistic: Date | null; pessimistic: Date | null; }'.
+src/services/error-budget-service.ts(338,15): error TS7006: Parameter 'scenario' implicitly has an 'any' type.
+src/services/error-budget-service.ts(339,12): error TS7006: Parameter 'scenario' implicitly has an 'any' type.
+src/services/error-budget-service.ts(342,50): error TS7006: Parameter 'date' implicitly has an 'any' type.
+src/services/error-budget-service.ts(354,43): error TS2339: Property 'exhaustionProbability' does not exist on type 'BudgetProjection'.
+src/services/error-budget-service.ts(355,30): error TS2339: Property 'metadata' does not exist on type 'BudgetProjection'.
+src/services/error-budget-service.ts(427,59): error TS2339: Property 'resolved' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(443,25): error TS2339: Property 'resolved' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(466,11): error TS2339: Property 'resolved' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(467,11): error TS2339: Property 'resolvedBy' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(468,11): error TS2339: Property 'resolvedAt' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(469,11): error TS2339: Property 'resolution' does not exist on type 'BudgetAlert'.
+src/services/error-budget-service.ts(575,11): error TS2353: Object literal may only specify known properties, and 'duration' does not exist in type 'BudgetPeriod'.
+src/services/error-budget-service.ts(582,11): error TS2353: Object literal may only specify known properties, and 'duration' does not exist in type 'BudgetPeriod'.
+src/services/error-budget-service.ts(589,11): error TS2353: Object literal may only specify known properties, and 'duration' does not exist in type 'BudgetPeriod'.
+src/services/error-budget-service.ts(596,11): error TS2353: Object literal may only specify known properties, and 'duration' does not exist in type 'BudgetPeriod'.
+src/services/error-budget-service.ts(659,9): error TS2353: Object literal may only specify known properties, and 'currentRate' does not exist in type 'BudgetConsumption'.
+src/services/error-budget-service.ts(688,7): error TS2353: Object literal may only specify known properties, and 'currentRate' does not exist in type 'BudgetConsumption'.
+src/services/error-budget-service.ts(703,7): error TS2353: Object literal may only specify known properties, and 'percentage' does not exist in type 'BudgetUtilization'.
+src/services/error-budget-service.ts(738,9): error TS2353: Object literal may only specify known properties, and 'title' does not exist in type 'BudgetAlert'.
+src/services/error-budget-service.ts(749,21): error TS2339: Property 'currentRate' does not exist on type 'BudgetConsumption'.
+src/services/error-budget-service.ts(753,9): error TS2322: Type '"high_burn_rate"' is not assignable to type '"burn_rate" | "exhaustion" | "consumption" | "projection"'.
+src/services/error-budget-service.ts(754,31): error TS2339: Property 'currentRate' does not exist on type 'BudgetConsumption'.
+src/services/error-budget-service.ts(756,46): error TS2339: Property 'currentRate' does not exist on type 'BudgetConsumption'.
+src/services/error-budget-service.ts(758,35): error TS2339: Property 'currentRate' does not exist on type 'BudgetConsumption'.
+src/services/error-budget-service.ts(770,9): error TS2322: Type '"depletion_warning"' is not assignable to type '"burn_rate" | "exhaustion" | "consumption" | "projection"'.
+src/services/error-budget-service.ts(957,9): error TS2322: Type '"critical_burn_rate"' is not assignable to type '"burn_rate" | "exhaustion" | "consumption" | "projection"'.
+src/services/error-budget-service.ts(971,9): error TS2322: Type '"high_burn_rate"' is not assignable to type '"burn_rate" | "exhaustion" | "consumption" | "projection"'.
+src/services/error-budget-service.ts(988,9): error TS2322: Type '"burn_rate_trend"' is not assignable to type '"burn_rate" | "exhaustion" | "consumption" | "projection"'.
+src/services/error-budget-service.ts(1042,25): error TS2339: Property 'metadata' does not exist on type 'ErrorBudget'.
+src/services/error-budget-service.ts(1045,27): error TS2339: Property 'utilization' does not exist on type 'ErrorBudget'.
+src/services/error-budget-service.ts(1062,27): error TS2339: Property 'metadata' does not exist on type 'BurnRateAnalysis'.
+src/services/error-budget-service.ts(1063,28): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(1064,27): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(1065,28): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(1066,29): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(1067,29): error TS2339: Property 'direction' does not exist on type '"increasing" | "decreasing" | "stable" | "volatile"'.
+src/services/error-budget-service.ts(1068,29): error TS2339: Property 'health' does not exist on type 'BurnRateAnalysis'.
+src/services/error-budget-service.ts(1158,7): error TS2739: Type 'never[]' is missing the following properties from type '{ optimistic: Date | null; realistic: Date | null; pessimistic: Date | null; }': optimistic, realistic, pessimistic
+src/services/error-budget-service.ts(1171,38): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/error-budget-service.ts(1171,61): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/expiry-worker.ts(17,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/feature-flag/feature-flag-service.ts(18,32): error TS2307: Cannot find module '../monitoring/metrics-service.js' or its corresponding type declarations.
+src/services/feature-flag/feature-flag-service.ts(19,30): error TS2307: Cannot find module '../types/unified-health-interfaces.js' or its corresponding type declarations.
+src/services/feature-flag/feature-flag-service.ts(662,140): error TS2554: Expected 6 arguments, but got 7.
+src/services/health-aggregation.service.ts(25,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/health-check.service.ts(25,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/insights/insight-cache.service.ts(123,26): error TS2551: Property 'semanticMatches' does not exist on type 'CacheMetrics'. Did you mean 'semanticHashes'?
+src/services/insights/insight-cache.service.ts(189,35): error TS2345: Argument of type 'InsightTypeUnion[]' is not assignable to parameter of type 'string[]'.
+src/services/insights/insight-cache.service.ts(294,37): error TS2551: Property 'semanticMatches' does not exist on type 'CacheMetrics'. Did you mean 'semanticHashes'?
+src/services/insights/insight-cache.service.ts(476,7): error TS2322: Type '({ metadata: { generated_at: string; generated_by: string; }; id: string; type: string; title: string; description: string; confidence: number; priority: number; item_ids: string[]; scope: { project?: string | undefined; branch?: string | undefined; org?: string | undefined; }; actionable: boolean; category: "custom...' is not assignable to type 'InsightTypeUnion[]'.
+src/services/insights/insight-strategies/pattern-recognition.strategy.ts(227,37): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(219,59): error TS2345: Argument of type '{ items: any[]; patterns: any[]; }' is not assignable to parameter of type 'any[]'.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(789,27): error TS2339: Property 'patterns' does not exist on type 'any[]'.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(791,27): error TS2339: Property 'patterns' does not exist on type 'any[]'.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(791,44): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(791,49): error TS7006: Parameter 'pattern' implicitly has an 'any' type.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(792,27): error TS2339: Property 'patterns' does not exist on type 'any[]'.
+src/services/insights/insight-strategies/predictive-insight.strategy.ts(869,9): error TS2322: Type '"low" | "medium" | "high" | "critical"' is not assignable to type '"low" | "medium" | "high" | undefined'.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(230,21): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(236,89): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(263,60): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(269,56): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(387,88): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/insight-strategies/relationship-analysis.strategy.ts(393,85): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/services/insights/zai-enhanced-insight-service.ts(244,31): error TS2769: No overload matches this call.
+src/services/memory-find-service.ts(23,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/memory-find.ts(1,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/memory-find.ts(271,9): error TS2322: Type 'SearchStrategyType | { primary: { name: SearchStrategyType; }; fallback?: { name: SearchStrategyType; } | undefined; }' is not assignable to type 'string'.
+src/services/memory-find.ts(273,44): error TS2339: Property 'confidence' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(278,9): error TS2322: Type 'SearchStrategyType | { primary: { name: SearchStrategyType; }; fallback?: { name: SearchStrategyType; } | undefined; }' is not assignable to type '"error" | "semantic" | "keyword" | "hybrid" | "auto" | "fast" | "deep" | "fallback"'.
+src/services/memory-find.ts(279,37): error TS2339: Property 'vectorUsed' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(280,34): error TS2339: Property 'degraded' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(282,44): error TS2339: Property 'confidence' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(286,9): error TS2322: Type 'SearchStrategyType | { primary: { name: SearchStrategyType; }; fallback?: { name: SearchStrategyType; } | undefined; }' is not assignable to type 'string'.
+src/services/memory-find.ts(287,37): error TS2339: Property 'vectorUsed' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(288,34): error TS2339: Property 'degraded' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(291,42): error TS2339: Property 'confidence' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(293,34): error TS2339: Property 'degraded' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(294,29): error TS2339: Property 'fallbackReason' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(305,36): error TS2339: Property 'vectorUsed' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(306,34): error TS2339: Property 'degraded' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(308,40): error TS2339: Property 'fallbackReason' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(309,34): error TS2339: Property 'metadata' does not exist on type 'SearchStrategyResult'.
+src/services/memory-find.ts(398,25): error TS2339: Property 'available' does not exist on type 'boolean'.
+src/services/memory-find.ts(451,55): error TS2349: This expression is not callable.
+src/services/memory-find.ts(452,29): error TS18046: 'metrics' is of type 'unknown'.
+src/services/memory-find.ts(456,60): error TS2349: This expression is not callable.
+src/services/memory-find.ts(457,29): error TS18046: 'metrics' is of type 'unknown'.
+src/services/memory-find.ts(462,5): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+src/services/memory-find.ts(462,35): error TS2349: This expression is not callable.
+src/services/memory-find.ts(463,17): error TS18046: 'b' is of type 'unknown'.
+src/services/memory-find.ts(463,40): error TS18046: 'a' is of type 'unknown'.
+src/services/memory-find.ts(468,22): error TS2339: Property 'name' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(469,29): error TS2339: Property 'description' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(470,33): error TS2339: Property 'name' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(472,32): error TS2339: Property 'currentStatus' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(474,18): error TS2339: Property 'name' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(474,54): error TS2339: Property 'name' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(476,36): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(478,20): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(479,25): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(479,69): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(482,42): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(483,40): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(484,37): error TS2339: Property 'performance' does not exist on type 'SearchStrategyType'.
+src/services/memory-find.ts(488,31): error TS2339: Property 'available' does not exist on type 'boolean'.
+src/services/memory-find.ts(489,34): error TS2339: Property 'lastChecked' does not exist on type 'boolean'.
+src/services/memory-find.ts(490,40): error TS2339: Property 'degradationReason' does not exist on type 'boolean'.
+src/services/memory-find.ts(491,42): error TS2339: Property 'consecutiveFailures' does not exist on type 'boolean'.
+src/services/memory-find.ts(492,35): error TS2339: Property 'responseTime' does not exist on type 'boolean'.
+src/services/memory-find.ts(495,7): error TS2322: Type 'unknown' is not assignable to type 'number'.
+src/services/memory-find.ts(496,29): error TS18046: 'totalSearches' is of type 'unknown'.
+src/services/memory-find.ts(496,50): error TS18046: 'successfulSearches' is of type 'unknown'.
+src/services/memory-find.ts(496,71): error TS18046: 'totalSearches' is of type 'unknown'.
+src/services/memory-store-service.ts(23,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/memory-store.ts(1,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/orchestrators/memory-find-orchestrator.ts(11,10): error TS2305: Module '"../../utils/logger.js"' has no exported member 'structuredLogger'.
+src/services/orchestrators/memory-find-orchestrator.ts(11,28): error TS2305: Module '"../../utils/logger.js"' has no exported member 'SearchStrategy'.
+src/services/orchestrators/memory-find-orchestrator.ts(350,15): error TS2339: Property 'parsed' does not exist on type 'ParsedQuery'.
+src/services/orchestrators/memory-find-orchestrator.ts(350,23): error TS2339: Property 'validation' does not exist on type 'ParsedQuery'.
+src/services/orchestrators/memory-find-orchestrator.ts(358,42): error TS2339: Property 'selectStrategy' does not exist on type '(query: SearchQuery) => StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(376,50): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(400,43): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(432,26): error TS2339: Property 'logError' does not exist on type 'AuditService'.
+src/services/orchestrators/memory-find-orchestrator.ts(449,66): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(464,37): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(465,48): error TS2339: Property 'name' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(494,48): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(514,58): error TS2339: Property 'name' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(567,24): error TS18048: 'parsed.terms' is possibly 'undefined'.
+src/services/orchestrators/memory-find-orchestrator.ts(767,48): error TS2339: Property 'performFallbackSearch' does not exist on type 'SearchService'.
+src/services/orchestrators/memory-find-orchestrator.ts(770,40): error TS2339: Property 'getP95QualityMetrics' does not exist on type 'SearchService'.
+src/services/orchestrators/memory-find-orchestrator.ts(805,42): error TS2339: Property 'findEntityMatches' does not exist on type 'EntityMatchingService'.
+src/services/orchestrators/memory-find-orchestrator.ts(1008,48): error TS2339: Property 'primary' does not exist on type 'StrategySelection'.
+src/services/orchestrators/memory-find-orchestrator.ts(1077,7): error TS2554: Expected 3 arguments, but got 6.
+src/services/orchestrators/memory-store-orchestrator-qdrant.ts(63,10): error TS2305: Module '"../../utils/logger.js"' has no exported member 'structuredLogger'.
+src/services/ranking/result-ranker.ts(20,20): error TS2339: Property 'text' does not exist on type 'SearchQuery'.
+src/services/search/query-parser.ts(33,28): error TS2339: Property 'text' does not exist on type 'SearchQuery'.
+src/services/search/query-parser.ts(84,15): error TS2339: Property 'filters' does not exist on type 'SearchQuery'.
+src/services/search/query-parser.ts(85,36): error TS2339: Property 'filters' does not exist on type 'SearchQuery'.
+src/services/search/search-strategy-manager.ts(111,66): error TS2339: Property 'text' does not exist on type 'SearchQuery'.
+src/services/search/search-strategy-manager.ts(121,63): error TS2339: Property 'text' does not exist on type 'SearchQuery'.
+src/services/search/search-strategy.ts(28,17): error TS7053: Element implicitly has an 'any' type because expression of type '"SEMANTIC"' can't be used to index type 'typeof SearchStrategy'.
+src/services/search/search-strategy.ts(29,17): error TS7053: Element implicitly has an 'any' type because expression of type '"EXACT"' can't be used to index type 'typeof SearchStrategy'.
+src/services/search/search-strategy.ts(30,17): error TS7053: Element implicitly has an 'any' type because expression of type '"FUZZY"' can't be used to index type 'typeof SearchStrategy'.
+src/services/security-metrics.service.ts(1,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/similarity.ts(13,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/slo-breach-detection-service.ts(20,3): error TS2440: Import declaration conflicts with local declaration of 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(21,3): error TS2395: Individual declarations in merged declaration 'BreachSeverity' must be all exported or all local.
+src/services/slo-breach-detection-service.ts(21,3): error TS2440: Import declaration conflicts with local declaration of 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(22,3): error TS2440: Import declaration conflicts with local declaration of 'NotificationChannel'.
+src/services/slo-breach-detection-service.ts(23,3): error TS2395: Individual declarations in merged declaration 'IncidentStatus' must be all exported or all local.
+src/services/slo-breach-detection-service.ts(23,3): error TS2440: Import declaration conflicts with local declaration of 'IncidentStatus'.
+src/services/slo-breach-detection-service.ts(24,3): error TS2440: Import declaration conflicts with local declaration of 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(25,3): error TS2395: Individual declarations in merged declaration 'EscalationLevel' must be all exported or all local.
+src/services/slo-breach-detection-service.ts(25,3): error TS2440: Import declaration conflicts with local declaration of 'EscalationLevel'.
+src/services/slo-breach-detection-service.ts(26,3): error TS2440: Import declaration conflicts with local declaration of 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(124,7): error TS2353: Object literal may only specify known properties, and 'sloName' does not exist in type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(170,7): error TS2353: Object literal may only specify known properties, and 'metadata' does not exist in type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(171,21): error TS2339: Property 'metadata' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(172,20): error TS2339: Property 'metadata' does not exist on type 'Partial<SLOBreachIncident>'.
+src/services/slo-breach-detection-service.ts(210,9): error TS2353: Object literal may only specify known properties, and 'reason' does not exist in type '{ timestamp: Date; actions: string[]; rootCause: string; preventiveMeasures: string[]; }'.
+src/services/slo-breach-detection-service.ts(214,41): error TS2339: Property 'detectedAt' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(217,21): error TS2339: Property 'metadata' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(313,14): error TS2339: Property 'notifications' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(353,14): error TS2551: Property 'escalations' does not exist on type 'SLOBreachIncident'. Did you mean 'escalation'?
+src/services/slo-breach-detection-service.ts(356,66): error TS2339: Property 'sloName' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(462,16): error TS2367: This comparison appears to be unintentional because the types '"minor" | "major" | "catastrophic"' and 'BreachSeverity.HIGH' have no overlap.
+src/services/slo-breach-detection-service.ts(469,14): error TS2551: Property 'responses' does not exist on type 'SLOBreachIncident'. Did you mean 'response'?
+src/services/slo-breach-detection-service.ts(479,7): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(489,20): error TS2339: Property 'sloName' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(490,20): error TS2339: Property 'sloName' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(495,11): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(504,9): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(508,20): error TS2551: Property 'evaluation' does not exist on type 'SLOBreachIncident'. Did you mean 'escalation'?
+src/services/slo-breach-detection-service.ts(513,11): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(517,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(518,16): error TS2339: Property 'completedAt' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(521,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(522,16): error TS2339: Property 'error' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(533,7): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(547,9): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(555,9): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(558,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(559,16): error TS2339: Property 'completedAt' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(562,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(563,16): error TS2339: Property 'error' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(574,7): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(588,9): error TS2322: Type '"executed"' is not assignable to type '"pending" | "in_progress" | "completed"'.
+src/services/slo-breach-detection-service.ts(591,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(592,16): error TS2339: Property 'completedAt' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(595,16): error TS2339: Property 'status' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(596,16): error TS2339: Property 'error' does not exist on type 'IncidentResponse'.
+src/services/slo-breach-detection-service.ts(709,7): error TS2322: Type 'BreachSeverity.HIGH' is not assignable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(711,7): error TS2322: Type 'BreachSeverity.MEDIUM' is not assignable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(713,7): error TS2322: Type 'BreachSeverity.LOW' is not assignable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(727,7): error TS2322: Type 'string' is not assignable to type '{ affectedSystems: string[]; degradedServices: string[]; capacityReduction: number; }'.
+src/services/slo-breach-detection-service.ts(728,7): error TS2322: Type '"low" | "medium" | "high" | "critical"' is not assignable to type '"none" | "total" | "partial" | "significant"'.
+src/services/slo-breach-detection-service.ts(774,12): error TS2678: Type 'BreachSeverity.HIGH' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(775,12): error TS2678: Type 'BreachSeverity.MEDIUM' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(787,12): error TS2678: Type 'BreachSeverity.HIGH' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(788,12): error TS2678: Type 'BreachSeverity.MEDIUM' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(800,12): error TS2678: Type 'BreachSeverity.HIGH' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(801,12): error TS2678: Type 'BreachSeverity.MEDIUM' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(838,31): error TS2339: Property 'score' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(839,12): error TS7053: Element implicitly has an 'any' type because expression of type 'BreachSeverity' can't be used to index type '{ low: number; medium: number; high: number; critical: number; }'.
+src/services/slo-breach-detection-service.ts(851,26): error TS2339: Property 'score' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(852,26): error TS2339: Property 'score' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(853,26): error TS2339: Property 'score' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(858,29): error TS2339: Property 'revenueImpact' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(859,33): error TS2339: Property 'usersAffected' does not exist on type 'ImpactAssessment'.
+src/services/slo-breach-detection-service.ts(867,54): error TS2339: Property 'sloName' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(869,24): error TS2551: Property 'evaluation' does not exist on type 'SLOBreachIncident'. Did you mean 'escalation'?
+src/services/slo-breach-detection-service.ts(870,20): error TS2551: Property 'evaluation' does not exist on type 'SLOBreachIncident'. Did you mean 'escalation'?
+src/services/slo-breach-detection-service.ts(871,36): error TS2551: Property 'evaluation' does not exist on type 'SLOBreachIncident'. Did you mean 'escalation'?
+src/services/slo-breach-detection-service.ts(872,26): error TS2339: Property 'impactAssessment' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(883,56): error TS2339: Property 'sloName' does not exist on type 'SLOBreachIncident'.
+src/services/slo-breach-detection-service.ts(884,44): error TS2339: Property 'duration' does not exist on type '{ timestamp: Date; actions: string[]; rootCause: string; preventiveMeasures: string[]; }'.
+src/services/slo-breach-detection-service.ts(885,36): error TS2339: Property 'resolvedBy' does not exist on type '{ timestamp: Date; actions: string[]; rootCause: string; preventiveMeasures: string[]; }'.
+src/services/slo-breach-detection-service.ts(886,31): error TS2339: Property 'reason' does not exist on type '{ timestamp: Date; actions: string[]; rootCause: string; preventiveMeasures: string[]; }'.
+src/services/slo-breach-detection-service.ts(983,12): error TS2678: Type 'BreachSeverity.HIGH' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(984,12): error TS2678: Type 'BreachSeverity.MEDIUM' is not comparable to type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(999,11): error TS2820: Type 'EscalationLevel.L1' is not assignable to type 'EscalationLevel'. Did you mean '"l1"'?
+src/services/slo-breach-detection-service.ts(1005,11): error TS2820: Type 'EscalationLevel.L2' is not assignable to type 'EscalationLevel'. Did you mean '"l2"'?
+src/services/slo-breach-detection-service.ts(1011,11): error TS2820: Type 'EscalationLevel.L3' is not assignable to type 'EscalationLevel'. Did you mean '"l3"'?
+src/services/slo-breach-detection-service.ts(1044,60): error TS2345: Argument of type 'BreachSeverity.HIGH' is not assignable to parameter of type 'BreachSeverity'.
+src/services/slo-breach-detection-service.ts(1121,13): error TS2395: Individual declarations in merged declaration 'BreachSeverity' must be all exported or all local.
+src/services/slo-breach-detection-service.ts(1128,13): error TS2395: Individual declarations in merged declaration 'IncidentStatus' must be all exported or all local.
+src/services/slo-breach-detection-service.ts(1184,13): error TS2395: Individual declarations in merged declaration 'EscalationLevel' must be all exported or all local.
+src/services/slo-integration-service.ts(149,21): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/services/slo-integration-service.ts(338,13): error TS7034: Variable 'cleaned' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/services/slo-integration-service.ts(352,9): error TS7005: Variable 'cleaned' implicitly has an 'any[]' type.
+src/services/slo-integration-service.ts(543,9): error TS2353: Object literal may only specify known properties, and 'autoRefresh' does not exist in type 'WidgetConfig'.
+src/services/slo-integration-service.ts(755,30): error TS2304: Cannot find name 'ErrorBudgetPolicy'.
+src/services/slo-integration-service.ts(841,26): error TS2551: Property 'currentRates' does not exist on type 'BurnRateAnalysis'. Did you mean 'currentRate'?
+src/services/slo-integration-service.ts(847,32): error TS2339: Property 'direction' does not exist on type '"increasing" | "decreasing" | "stable" | "volatile"'.
+src/services/slo-integration-service.ts(847,85): error TS2339: Property 'confidence' does not exist on type '"increasing" | "decreasing" | "stable" | "volatile"'.
+src/services/slo-reporting-service.ts(127,68): error TS2345: Argument of type 'TimeRange | { start: Date; end: Date; }' is not assignable to parameter of type '{ start: Date; end: Date; }'.
+src/services/slo-reporting-service.ts(156,7): error TS2322: Type 'TimeRange | { start: Date; end: Date; }' is not assignable to type '{ start: Date; end: Date; }'.
+src/services/slo-reporting-service.ts(656,32): error TS2345: Argument of type '{ probability: number; impact: number; score: number; }' is not assignable to parameter of type 'number'.
+src/services/smart-find.ts(1,24): error TS2307: Cannot find module '../../utils/logger.js' or its corresponding type declarations.
+src/services/tenant/tenant-governance-service.ts(767,9): error TS2322: Type '("GDPR" | "HIPAA" | "CCPA" | "SOX" | "PCI-DSS")[]' is not assignable to type '("GDPR" | "HIPAA" | "CCPA" | "SOX")[]'.
+src/services/tenant/tenant-governance-service.ts(844,5): error TS2322: Type '"rejected" | "approved"' is not assignable to type '"failed" | "pending" | "in_progress" | "completed" | "approved" | "under_review"'.
+src/services/tenant/tenant-governance-service.ts(891,28): error TS18048: 'request.offboarding_plan' is possibly 'undefined'.
+src/services/tenant/tenant-governance-service.ts(1498,11): error TS2741: Property 'tool_limits' is missing in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; }' but required in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; tool_limits: Record<string, { requests_per_second: number; burst_capacity: number; }>; }'.
+src/services/tenant/tenant-governance-service.ts(1527,11): error TS2741: Property 'tool_limits' is missing in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; }' but required in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; tool_limits: Record<string, { requests_per_second: number; burst_capacity: number; }>; }'.
+src/services/tenant/tenant-governance-service.ts(1556,11): error TS2741: Property 'tool_limits' is missing in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; }' but required in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; tool_limits: Record<string, { requests_per_second: number; burst_capacity: number; }>; }'.
+src/services/tenant/tenant-governance-service.ts(1585,11): error TS2741: Property 'tool_limits' is missing in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; }' but required in type '{ requests_per_second: number; burst_capacity: number; window_ms: number; tool_limits: Record<string, { requests_per_second: number; burst_capacity: number; }>; }'.

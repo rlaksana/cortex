@@ -15,7 +15,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { Alert, AlertSeverity, EscalationPolicy, EscalationRule } from './alert-management-service.js';
 
 // ============================================================================
@@ -298,7 +298,10 @@ export class OnCallManagementService extends EventEmitter {
 
       // If no specific user, find appropriate on-call user
       if (!targetUserId) {
-        targetUserId = await this.findBestOnCallUser(options);
+        const best = await this.findBestOnCallUser(options);
+        if (best) {
+          targetUserId = best;
+        }
       }
 
       if (!targetUserId) {
@@ -314,8 +317,10 @@ export class OnCallManagementService extends EventEmitter {
       const currentWorkload = this.getUserWorkload(targetUserId);
       if (currentWorkload.activeAlerts >= user.maxConcurrentAlerts) {
         // Escalate or find alternative user
-        targetUserId = await this.findEscalationUser(targetUserId, options);
-        if (!targetUserId) {
+        const alt = await this.findEscalationUser(targetUserId, options);
+        if (alt) {
+          targetUserId = alt;
+        } else {
           throw new Error('All on-call users are at capacity');
         }
       }

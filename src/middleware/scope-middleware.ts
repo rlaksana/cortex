@@ -6,7 +6,7 @@
  * what their API keys are authorized for
  */
 
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { authService } from '../services/auth/auth-service.js';
 import {
   AuthScope,

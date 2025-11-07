@@ -44,58 +44,58 @@ This document defines the Service Level Agreements (SLAs) and performance benchm
 
 #### Memory Store Operations
 
-| Operation | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
-|-----------|--------------|--------------|--------------|-------------|
-| Single Item Store | <50ms | <200ms | <500ms | 2s |
-| Batch Store (N=10) | <200ms | <800ms | <2s | 5s |
-| Large Batch Store (N=100) | <1s | <3s | <5s | 10s |
-| Deduplication Check | <100ms | <300ms | <800ms | 2s |
-| TTL Processing | <50ms | <200ms | <500ms | 2s |
+| Operation                 | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
+| ------------------------- | ------------ | ------------ | ------------ | ----------- |
+| Single Item Store         | <50ms        | <200ms       | <500ms       | 2s          |
+| Batch Store (N=10)        | <200ms       | <800ms       | <2s          | 5s          |
+| Large Batch Store (N=100) | <1s          | <3s          | <5s          | 10s         |
+| Deduplication Check       | <100ms       | <300ms       | <800ms       | 2s          |
+| TTL Processing            | <50ms        | <200ms       | <500ms       | 2s          |
 
 #### Memory Find Operations
 
-| Operation | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
-|-----------|--------------|--------------|--------------|-------------|
-| Simple Search (N=100) | <100ms | <400ms | <1s | 3s |
-| Complex Search (N=1000) | <300ms | <1s | <2s | 5s |
-| Graph Expansion (depth=2) | <200ms | <800ms | <2s | 5s |
-| Graph Expansion (depth=3) | <500ms | <2s | <4s | 8s |
-| Semantic Search | <150ms | <600ms | <1.5s | 4s |
+| Operation                 | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
+| ------------------------- | ------------ | ------------ | ------------ | ----------- |
+| Simple Search (N=100)     | <100ms       | <400ms       | <1s          | 3s          |
+| Complex Search (N=1000)   | <300ms       | <1s          | <2s          | 5s          |
+| Graph Expansion (depth=2) | <200ms       | <800ms       | <2s          | 5s          |
+| Graph Expansion (depth=3) | <500ms       | <2s          | <4s          | 8s          |
+| Semantic Search           | <150ms       | <600ms       | <1.5s        | 4s          |
 
 #### System Status Operations
 
-| Operation | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
-|-----------|--------------|--------------|--------------|-------------|
-| Health Check | <20ms | <100ms | <300ms | 1s |
-| Metrics Collection | <50ms | <200ms | <500ms | 2s |
-| Diagnostics | <200ms | <1s | <2s | 5s |
+| Operation          | Target (p50) | Target (p95) | Target (p99) | Max Timeout |
+| ------------------ | ------------ | ------------ | ------------ | ----------- |
+| Health Check       | <20ms        | <100ms       | <300ms       | 1s          |
+| Metrics Collection | <50ms        | <200ms       | <500ms       | 2s          |
+| Diagnostics        | <200ms       | <1s          | <2s          | 5s          |
 
 ### Throughput SLAs
 
-| Load Condition | Store Ops/sec | Find Ops/sec | Combined Ops/sec |
-|----------------|---------------|--------------|------------------|
-| Light Load (N=10 concurrent) | >100 | >200 | >300 |
-| Moderate Load (N=50 concurrent) | >50 | >100 | >150 |
-| Heavy Load (N=100 concurrent) | >25 | >50 | >75 |
-| Peak Load (N=500 concurrent) | >10 | >20 | >30 |
+| Load Condition                  | Store Ops/sec | Find Ops/sec | Combined Ops/sec |
+| ------------------------------- | ------------- | ------------ | ---------------- |
+| Light Load (N=10 concurrent)    | >100          | >200         | >300             |
+| Moderate Load (N=50 concurrent) | >50           | >100         | >150             |
+| Heavy Load (N=100 concurrent)   | >25           | >50          | >75              |
+| Peak Load (N=500 concurrent)    | >10           | >20          | >30              |
 
 ### Availability SLAs
 
-| Service | Target Uptime | Downtime/Month | Downtime/Year |
-|---------|---------------|----------------|---------------|
-| Core Memory Services | 99.9% | <43.2 minutes | <8.76 hours |
-| Search Operations | 99.5% | <216 minutes | <43.8 hours |
-| System Status | 99.9% | <43.2 minutes | <8.76 hours |
-| Full System | 99.9% | <43.2 minutes | <8.76 hours |
+| Service              | Target Uptime | Downtime/Month | Downtime/Year |
+| -------------------- | ------------- | -------------- | ------------- |
+| Core Memory Services | 99.9%         | <43.2 minutes  | <8.76 hours   |
+| Search Operations    | 99.5%         | <216 minutes   | <43.8 hours   |
+| System Status        | 99.9%         | <43.2 minutes  | <8.76 hours   |
+| Full System          | 99.9%         | <43.2 minutes  | <8.76 hours   |
 
 ### Error Rate SLAs
 
-| Operation | Max Error Rate | Critical Error Rate |
-|-----------|----------------|---------------------|
-| Memory Store | <1% | <0.1% |
-| Memory Find | <2% | <0.2% |
-| System Status | <0.5% | <0.05% |
-| Database Operations | <1% | <0.1% |
+| Operation           | Max Error Rate | Critical Error Rate |
+| ------------------- | -------------- | ------------------- |
+| Memory Store        | <1%            | <0.1%               |
+| Memory Find         | <2%            | <0.2%               |
+| System Status       | <0.5%          | <0.05%              |
+| Database Operations | <1%            | <0.1%               |
 
 ## Data Consistency Requirements
 
@@ -117,33 +117,35 @@ This document defines the Service Level Agreements (SLAs) and performance benchm
 
 ### Resource Limits
 
-| Resource | Default Limit | Maximum Limit |
-|----------|---------------|---------------|
-| Item Size | 1MB | 10MB |
-| Batch Size | 100 items | 1000 items |
-| Search Results | 100 items | 1000 items |
-| Concurrent Connections | 100 | 1000 |
-| Storage per Tenant | 10GB | 1TB |
+| Resource               | Default Limit | Maximum Limit |
+| ---------------------- | ------------- | ------------- |
+| Item Size              | 1MB           | 10MB          |
+| Batch Size             | 100 items     | 1000 items    |
+| Search Results         | 100 items     | 1000 items    |
+| Concurrent Connections | 100           | 1000          |
+| Storage per Tenant     | 10GB          | 1TB           |
 
 ### Rate Limits
 
-| Operation | Default Rate | Burst Rate |
-|-----------|-------------|------------|
-| Store Operations | 1000/min | 2000/min |
-| Search Operations | 5000/min | 10000/min |
-| Status Checks | 10000/min | 20000/min |
+| Operation         | Default Rate | Burst Rate |
+| ----------------- | ------------ | ---------- |
+| Store Operations  | 1000/min     | 2000/min   |
+| Search Operations | 5000/min     | 10000/min  |
+| Status Checks     | 10000/min    | 20000/min  |
 
 ## Performance Benchmarks
 
 ### Baseline Performance Metrics
 
 #### Hardware Specifications
+
 - **CPU:** 4 cores @ 2.5GHz
 - **Memory:** 8GB RAM
 - **Storage:** SSD 100GB
 - **Network:** 1Gbps
 
 #### Reference Dataset
+
 - **Items:** 100,000 knowledge items
 - **Avg Item Size:** 2KB
 - **Embedding Dimensions:** 1536
@@ -168,18 +170,21 @@ Graph Expansion (depth=2):
 ### Load Testing Scenarios
 
 #### Scenario 1: Normal Load
+
 - **Concurrent Users:** 10
 - **Operations:** 70% search, 20% store, 10% status
 - **Duration:** 1 hour
 - **Target:** <5% performance degradation
 
 #### Scenario 2: Peak Load
+
 - **Concurrent Users:** 100
 - **Operations:** 60% search, 30% store, 10% status
 - **Duration:** 15 minutes
 - **Target:** <20% performance degradation
 
 #### Scenario 3: Stress Test
+
 - **Concurrent Users:** 500
 - **Operations:** 50% search, 40% store, 10% status
 - **Duration:** 5 minutes
@@ -212,29 +217,32 @@ Graph Expansion (depth=2):
 
 ### Alert Thresholds
 
-| Metric | Warning | Critical | Action |
-|--------|---------|----------|--------|
-| Response Time (p95) | >800ms | >2s | Investigate |
-| Error Rate | >2% | >5% | Escalate |
-| CPU Usage | >80% | >95% | Scale |
-| Memory Usage | >85% | >95% | Scale |
-| Disk Space | >90% | >95% | Cleanup |
+| Metric              | Warning | Critical | Action      |
+| ------------------- | ------- | -------- | ----------- |
+| Response Time (p95) | >800ms  | >2s      | Investigate |
+| Error Rate          | >2%     | >5%      | Escalate    |
+| CPU Usage           | >80%    | >95%     | Scale       |
+| Memory Usage        | >85%    | >95%     | Scale       |
+| Disk Space          | >90%    | >95%     | Cleanup     |
 
 ## Performance Degradation Handling
 
 ### Degradation Levels
 
 #### Level 1: Minor Degradation (10-20%)
+
 - **Symptoms:** Slight increase in response times
 - **Actions:** Monitor, log warnings
 - **SLA Impact:** Within tolerance
 
 #### Level 2: Moderate Degradation (20-50%)
+
 - **Symptoms:** Noticeable slowdown
 - **Actions:** Investigate root cause, consider scaling
 - **SLA Impact:** May affect p95 targets
 
 #### Level 3: Severe Degradation (>50%)
+
 - **Symptoms:** Significant performance issues
 - **Actions:** Immediate escalation, emergency procedures
 - **SLA Impact:** Breach likely
@@ -261,6 +269,7 @@ Graph Expansion (depth=2):
 ### SLA Reporting
 
 **Monthly Reports Include:**
+
 - Availability metrics
 - Performance benchmarks
 - Error rate analysis
@@ -268,6 +277,7 @@ Graph Expansion (depth=2):
 - Incident summaries
 
 **Quarterly Reviews Include:**
+
 - SLA compliance trends
 - Performance improvement recommendations
 - Capacity planning updates
@@ -276,12 +286,14 @@ Graph Expansion (depth=2):
 ### Benchmark Execution
 
 **Automated Benchmarks:**
+
 - Daily smoke tests
 - Weekly load tests
 - Monthly comprehensive benchmarks
 - Quarterly stress tests
 
 **Manual Benchmarks:**
+
 - On-demand performance validation
 - Pre-deployment impact assessment
 - Incident post-mortem analysis
@@ -316,12 +328,12 @@ Graph Expansion (depth=2):
 
 ### SLA Credits
 
-| SLA Breach | Credit Percentage |
-|------------|-------------------|
-| 99.5%-99.9% uptime | 10% |
-| 99.0%-99.5% uptime | 25% |
-| 95.0%-99.0% uptime | 50% |
-| <95.0% uptime | 100% |
+| SLA Breach         | Credit Percentage |
+| ------------------ | ----------------- |
+| 99.5%-99.9% uptime | 10%               |
+| 99.0%-99.5% uptime | 25%               |
+| 95.0%-99.0% uptime | 50%               |
+| <95.0% uptime      | 100%              |
 
 ### Measurement Period
 
@@ -340,11 +352,13 @@ Graph Expansion (depth=2):
 ## Contact and Support
 
 ### Performance Issues
+
 - **Email:** performance@cortex-memory.ai
 - **Slack:** #performance-alerts
 - **Response Time:** 1 hour (P1), 4 hours (P2), 24 hours (P3)
 
 ### SLA Questions
+
 - **Email:** sla@cortex-memory.ai
 - **Documentation:** https://docs.cortex-memory.ai/slas
 - **Support Portal:** https://support.cortex-memory.ai
@@ -352,6 +366,7 @@ Graph Expansion (depth=2):
 ---
 
 **Document History:**
+
 - 2025-11-04: Initial version 2.0.0 created
 - Performance targets based on production benchmarks
 - SLAs aligned with enterprise requirements

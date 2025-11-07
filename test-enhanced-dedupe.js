@@ -22,10 +22,10 @@ const testItems = [
     data: {
       title: 'Authentication Service',
       content: 'Implement OAuth 2.0 authentication with JWT tokens',
-      description: 'Service for handling user authentication and authorization'
+      description: 'Service for handling user authentication and authorization',
     },
     metadata: { tags: ['auth', 'security'], priority: 'high' },
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
   },
   {
     kind: 'entity',
@@ -34,10 +34,11 @@ const testItems = [
     data: {
       title: 'Authentication Service',
       content: 'Implement OAuth 2.0 authentication with JWT tokens and refresh tokens',
-      description: 'Service for handling user authentication and authorization with enhanced security'
+      description:
+        'Service for handling user authentication and authorization with enhanced security',
     },
     metadata: { tags: ['auth', 'security'], priority: 'critical' },
-    created_at: new Date(Date.now() + 1000000).toISOString() // Newer timestamp
+    created_at: new Date(Date.now() + 1000000).toISOString(), // Newer timestamp
   },
   {
     kind: 'entity',
@@ -46,11 +47,11 @@ const testItems = [
     data: {
       title: 'Payment Gateway',
       content: 'Integration with Stripe payment processing',
-      description: 'Service for handling online payments'
+      description: 'Service for handling online payments',
     },
     metadata: { tags: ['payment', 'finance'] },
-    created_at: new Date().toISOString()
-  }
+    created_at: new Date().toISOString(),
+  },
 ];
 
 async function testMergeStrategy(strategy, config = {}) {
@@ -67,7 +68,7 @@ async function testMergeStrategy(strategy, config = {}) {
     checkWithinScopeOnly: true,
     prioritizeSameScope: true,
     respectUpdateTimestamps: true,
-    ...config
+    ...config,
   };
 
   const dedupeService = new EnhancedDeduplicationService(enhancedConfig);
@@ -98,7 +99,9 @@ async function testMergeStrategy(strategy, config = {}) {
         console.log(`   Merge Details:`);
         console.log(`     - Strategy: ${entry.mergeDetails.strategy}`);
         console.log(`     - Fields Merged: ${entry.mergeDetails.fieldsMerged.join(', ')}`);
-        console.log(`     - Conflicts Resolved: ${entry.mergeDetails.conflictsResolved.join(', ')}`);
+        console.log(
+          `     - Conflicts Resolved: ${entry.mergeDetails.conflictsResolved.join(', ')}`
+        );
         console.log(`     - Duration: ${entry.mergeDetails.mergeDuration}ms`);
       }
       console.log('');
@@ -119,12 +122,14 @@ async function testSimilarityThresholds() {
   for (const threshold of thresholds) {
     console.log(`\n--- Threshold: ${(threshold * 100).toFixed(0)}% ---`);
     const result = await testMergeStrategy('intelligent', {
-      contentSimilarityThreshold: threshold
+      contentSimilarityThreshold: threshold,
     });
 
     if (result) {
       const duplicatesFound = result.summary.similarity.duplicatesFound;
-      console.log(`Duplicates Found: ${duplicatesFound} with ${(threshold * 100).toFixed(0)}% threshold`);
+      console.log(
+        `Duplicates Found: ${duplicatesFound} with ${(threshold * 100).toFixed(0)}% threshold`
+      );
     }
   }
 }
@@ -136,14 +141,14 @@ async function testScopeFiltering() {
   console.log('\n--- Cross-Scope Deduplication: DISABLED ---');
   await testMergeStrategy('intelligent', {
     crossScopeDeduplication: false,
-    checkWithinScopeOnly: true
+    checkWithinScopeOnly: true,
   });
 
   // Test with cross-scope deduplication enabled
   console.log('\n--- Cross-Scope Deduplication: ENABLED ---');
   await testMergeStrategy('intelligent', {
     crossScopeDeduplication: true,
-    checkWithinScopeOnly: false
+    checkWithinScopeOnly: false,
   });
 }
 
@@ -157,7 +162,7 @@ async function testTimeWindows() {
     await testMergeStrategy('prefer_newer', {
       dedupeWindowDays: days,
       maxAgeForDedupeDays: days,
-      timeBasedDeduplication: true
+      timeBasedDeduplication: true,
     });
   }
 }
@@ -188,7 +193,6 @@ async function main() {
     await testTimeWindows();
 
     console.log('\n✅ All tests completed successfully!');
-
   } catch (error) {
     console.error('\n❌ Test suite failed:', error);
     process.exit(1);

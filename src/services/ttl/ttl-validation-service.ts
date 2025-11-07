@@ -18,13 +18,12 @@
  */
 
 import { EventEmitter } from 'events';
-import { logger } from '../../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import { TTLManagementService } from './ttl-management-service.js';
 import { TTLPolicyService, type TTLPolicy, type TTLCalculationResult } from './ttl-policy-service.js';
 import { QdrantAdapter } from '../../db/adapters/qdrant-adapter.js';
 import type {
   KnowledgeItem,
-  ExpiryTimeLabel,
 } from '../../types/core-interfaces.js';
 
 /**
@@ -222,17 +221,17 @@ export interface TTLValidationOptions {
   /** Enable dry-run mode */
   dryRun: boolean;
   /** Include detailed impact analysis */
-  includeImpactAnalysis: boolean;
+  includeImpactAnalysis?: boolean;
   /** Include compliance checking */
-  includeComplianceCheck: boolean;
+  includeComplianceCheck?: boolean;
   /** Include cost analysis */
-  includeCostAnalysis: boolean;
+  includeCostAnalysis?: boolean;
   /** Sample size for predictions (for large datasets) */
   sampleSize?: number;
   /** Confidence level for predictions */
   confidenceLevel?: number;
   /** Safety checks mode */
-  safetyMode: 'conservative' | 'balanced' | 'aggressive';
+  safetyMode: 'conservative' | 'normal' | 'aggressive';
   /** Validation scope */
   scope?: {
     kinds?: string[];
@@ -275,7 +274,7 @@ export class TTLValidationService extends EventEmitter {
       includeImpactAnalysis: true,
       includeComplianceCheck: true,
       includeCostAnalysis: true,
-      safetyMode: 'balanced',
+      safetyMode: 'normal',
     }
   ): Promise<TTLValidationResult> {
     const startTime = Date.now();
@@ -428,8 +427,8 @@ export class TTLValidationService extends EventEmitter {
         const batch = items.slice(i, i + batchSize);
         const batchResults = await this.validateItemsBatch(
           batch,
-          policy,
-          correlationId
+          correlationId,
+          policy
         );
 
         errors.push(...batchResults.errors);
@@ -747,8 +746,8 @@ export class TTLValidationService extends EventEmitter {
       const items = await this.getAffectedItems(policy, options);
 
       // Generate expiration predictions
-      const expirations = items.map(item => ({
-        itemId: item.id,
+      const expirations: ItemExpirationPrediction[] = items.map(item => ({
+        itemId: item.id || 'unknown',
         kind: item.kind,
         currentPolicy: this.getCurrentPolicy(item),
         newPolicy: policy.name,
@@ -828,8 +827,8 @@ export class TTLValidationService extends EventEmitter {
 
   private async validateItemsBatch(
     items: KnowledgeItem[],
-    policy?: TTLPolicy,
-    correlationId: string
+    correlationId: string,
+    policy?: TTLPolicy
   ): Promise<{
     errors: ValidationError[];
     warnings: ValidationWarning[];

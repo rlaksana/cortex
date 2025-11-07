@@ -248,7 +248,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
     return res.sendStatus(401);
   }
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err, user) => {
+  jwt.verify(token, process.env['ACCESS_TOKEN_SECRET']!, (err, user) => {
     if (err) return res.sendStatus(403);
     req.user = user;
     next();
@@ -362,7 +362,7 @@ This technical guide demonstrates proper chunking behavior for documents contain
       'Quality Assurance for Large Documents',
       'Testing Strategies for Document Scale',
       'Monitoring and Observability',
-      'Conclusion and Best Practices'
+      'Conclusion and Best Practices',
     ];
 
     let content = '# Large Document Processing Guide\n\n';
@@ -403,7 +403,9 @@ class GoldenFileManager {
     if (!existsSync(GOLDEN_DIR)) {
       // Note: In a real implementation, we'd create the directory
       // For now, we'll work without the golden files
-      console.warn(`Golden directory ${GOLDEN_DIR} does not exist. Tests will verify without golden files.`);
+      console.warn(
+        `Golden directory ${GOLDEN_DIR} does not exist. Tests will verify without golden files.`
+      );
     }
   }
 
@@ -421,8 +423,8 @@ class GoldenFileManager {
         environment: {
           nodeVersion: process.version,
           platform: process.platform,
-          testFramework: 'vitest'
-        }
+          testFramework: 'vitest',
+        },
       };
 
       writeFileSync(CHUNKING_RESULTS_FILE, JSON.stringify(allResults, null, 2));
@@ -447,8 +449,8 @@ class GoldenFileManager {
         stats: {
           originalLength: original.length,
           reassembledLength: reassembled.length,
-          chunksGenerated: this.estimateChunkCount(original)
-        }
+          chunksGenerated: this.estimateChunkCount(original),
+        },
       };
 
       writeFileSync(REASSEMBLY_RESULTS_FILE, JSON.stringify(allResults, null, 2));
@@ -475,15 +477,17 @@ describe('Chunking Round-Trip Golden Tests', () => {
     chunkingService = new ChunkingService(
       // Mock database manager
       {
-        store: async (items: any[]) => items.map(item => ({ ...item, id: testUtils.generateRandomId() })),
+        store: async (items: any[]) =>
+          items.map((item) => ({ ...item, id: testUtils.generateRandomId() })),
         search: async (query: any) => ({ results: [] }),
-        healthCheck: async () => true
+        healthCheck: async () => true,
       } as any,
       // Mock embedding service
       {
-        generateEmbedding: async (text: string) => Array.from({ length: 1536 }, () => Math.random()),
+        generateEmbedding: async (text: string) =>
+          Array.from({ length: 1536 }, () => Math.random()),
         batchGenerateEmbeddings: async (texts: string[]) =>
-          texts.map(() => Array.from({ length: 1536 }, () => Math.random()))
+          texts.map(() => Array.from({ length: 1536 }, () => Math.random())),
       } as any
     );
 
@@ -497,18 +501,20 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const originalContent = TestDocumentGenerator.generateSimpleDocument();
 
       // Store and chunk the document
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        data: {
-          content: originalContent
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          data: {
+            content: originalContent,
+          },
+          scope: { project: 'round-trip-test' },
+          metadata: {
+            title: 'Simple Test Document',
+            category: 'testing',
+            test_type: 'round_trip',
+          },
         },
-        scope: { project: 'round-trip-test' },
-        metadata: {
-          title: 'Simple Test Document',
-          category: 'testing',
-          test_type: 'round_trip'
-        }
-      }]);
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -518,13 +524,13 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const findResult = await memoryFind({
         query: 'simple test document introduction content conclusion',
         scope: { project: 'round-trip-test' },
-        limit: 20
+        limit: 20,
       });
 
       expect(findResult.results.length).toBeGreaterThan(0);
 
       // Look for reconstructed document
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       expect(reconstructed).toBeDefined();
 
       if (reconstructed) {
@@ -533,16 +539,16 @@ describe('Chunking Round-Trip Golden Tests', () => {
         expect(reconstructed.content.length).toBe(originalContent.length);
 
         // Verify reassembly metadata
-        expect(reconstructed.data.total_chunks).toBeGreaterThan(1);
-        expect(reconstructed.data.found_chunks).toBe(reconstructed.data.total_chunks);
-        expect(reconstructed.data.completeness_ratio).toBe(1.0);
+        expect(reconstructed['data.total_chunks']).toBeGreaterThan(1);
+        expect(reconstructed['data.found_chunks']).toBe(reconstructed['data.total_chunks']);
+        expect(reconstructed['data.completeness_ratio']).toBe(1.0);
 
         // Save results for golden file comparison
         GoldenFileManager.saveChunkingResults(testName, {
           originalLength: originalContent.length,
           chunkCount: storeResult.items.length,
           reassembledLength: reconstructed.content.length,
-          isPerfectMatch: originalContent === reconstructed.content
+          isPerfectMatch: originalContent === reconstructed.content,
         });
 
         GoldenFileManager.saveReassemblyResults(testName, originalContent, reconstructed.content);
@@ -556,23 +562,25 @@ describe('Chunking Round-Trip Golden Tests', () => {
       let currentContent = originalContent;
 
       for (let i = 1; i <= 3; i++) {
-        const storeResult = await memoryStore([{
-          kind: 'section',
-          content: currentContent,
-          scope: { project: 'multi-round-trip-test' },
-          metadata: {
-            title: `Multi Round-Trip Test ${i}`,
-            iteration: i
-          }
-        }]);
+        const storeResult = await memoryStore([
+          {
+            kind: 'section',
+            content: currentContent,
+            scope: { project: 'multi-round-trip-test' },
+            metadata: {
+              title: `Multi Round-Trip Test ${i}`,
+              iteration: i,
+            },
+          },
+        ]);
 
         const findResult = await memoryFind({
           query: `multi round-trip test iteration ${i}`,
           scope: { project: 'multi-round-trip-test' },
-          limit: 20
+          limit: 20,
         });
 
-        const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+        const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
         expect(reconstructed).toBeDefined();
 
         if (reconstructed) {
@@ -592,19 +600,23 @@ describe('Chunking Round-Trip Golden Tests', () => {
     it('should handle complex technical documents perfectly', async () => {
       const originalContent = TestDocumentGenerator.generateTechnicalDocument();
 
-      const { result: storeResult, time: storeTime } = await performanceUtils.monitorMemoryUsage(async () => {
-        return await memoryStore([{
-          kind: 'section',
-          content: originalContent,
-          scope: { project: 'technical-round-trip' },
-          metadata: {
-            title: 'Technical Documentation Round-Trip Test',
-            category: 'architecture',
-            complexity: 'high',
-            test_type: 'round_trip'
-          }
-        }]);
-      });
+      const { result: storeResult, time: storeTime } = await performanceUtils.monitorMemoryUsage(
+        async () => {
+          return await memoryStore([
+            {
+              kind: 'section',
+              content: originalContent,
+              scope: { project: 'technical-round-trip' },
+              metadata: {
+                title: 'Technical Documentation Round-Trip Test',
+                category: 'architecture',
+                complexity: 'high',
+                test_type: 'round_trip',
+              },
+            },
+          ]);
+        }
+      );
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -619,14 +631,14 @@ describe('Chunking Round-Trip Golden Tests', () => {
         return await memoryFind({
           query: 'technical architecture microservices kubernetes docker',
           scope: { project: 'technical-round-trip' },
-          limit: 30
+          limit: 30,
         });
       });
 
       performanceUtils.assertPerformance(findTime, 'technical document search');
       expect(findResult.results.length).toBeGreaterThan(0);
 
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       expect(reconstructed).toBeDefined();
 
       if (reconstructed) {
@@ -649,8 +661,8 @@ describe('Chunking Round-Trip Golden Tests', () => {
           isPerfectMatch: originalContent === reconstructed.content,
           performanceMetrics: {
             storeTime: findTime,
-            memoryUsage: storeTime.delta
-          }
+            memoryUsage: storeTime.delta,
+          },
         });
 
         GoldenFileManager.saveReassemblyResults(testName, originalContent, reconstructed.content);
@@ -664,17 +676,19 @@ describe('Chunking Round-Trip Golden Tests', () => {
     it('should preserve special characters and encoding perfectly', async () => {
       const originalContent = TestDocumentGenerator.generateSpecialCharsDocument();
 
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        content: originalContent,
-        scope: { project: 'special-chars-round-trip' },
-        metadata: {
-          title: 'Special Characters Round-Trip Test',
-          category: 'testing',
-          character_sets: ['unicode', 'emoji', 'special_symbols'],
-          test_type: 'round_trip'
-        }
-      }]);
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          content: originalContent,
+          scope: { project: 'special-chars-round-trip' },
+          metadata: {
+            title: 'Special Characters Round-Trip Test',
+            category: 'testing',
+            character_sets: ['unicode', 'emoji', 'special_symbols'],
+            test_type: 'round_trip',
+          },
+        },
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -682,12 +696,12 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const findResult = await memoryFind({
         query: 'unicode special characters café résumé emoji 🚀',
         scope: { project: 'special-chars-round-trip' },
-        limit: 20
+        limit: 20,
       });
 
       expect(findResult.results.length).toBeGreaterThan(0);
 
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       expect(reconstructed).toBeDefined();
 
       if (reconstructed) {
@@ -720,17 +734,19 @@ describe('Chunking Round-Trip Golden Tests', () => {
     it('should handle code blocks and technical formatting perfectly', async () => {
       const originalContent = TestDocumentGenerator.generateCodeHeavyDocument();
 
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        content: originalContent,
-        scope: { project: 'code-heavy-round-trip' },
-        metadata: {
-          title: 'Code-Heavy Document Round-Trip Test',
-          category: 'technical',
-          content_types: ['code', 'configuration', 'documentation'],
-          test_type: 'round_trip'
-        }
-      }]);
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          content: originalContent,
+          scope: { project: 'code-heavy-round-trip' },
+          metadata: {
+            title: 'Code-Heavy Document Round-Trip Test',
+            category: 'technical',
+            content_types: ['code', 'configuration', 'documentation'],
+            test_type: 'round_trip',
+          },
+        },
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -738,12 +754,12 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const findResult = await memoryFind({
         query: 'typescript javascript sql docker kubernetes api',
         scope: { project: 'code-heavy-round-trip' },
-        limit: 30
+        limit: 30,
       });
 
       expect(findResult.results.length).toBeGreaterThan(0);
 
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       expect(reconstructed).toBeDefined();
 
       if (reconstructed) {
@@ -779,9 +795,15 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const originalContent = TestDocumentGenerator.generateLargeDocument();
 
       // Performance measurement
-      const { result: storeResult, time: storeTime, memoryBefore, memoryAfter, delta } =
-        await performanceUtils.monitorMemoryUsage(async () => {
-          return await memoryStore([{
+      const {
+        result: storeResult,
+        time: storeTime,
+        memoryBefore,
+        memoryAfter,
+        delta,
+      } = await performanceUtils.monitorMemoryUsage(async () => {
+        return await memoryStore([
+          {
             kind: 'section',
             content: originalContent,
             scope: { project: 'large-document-round-trip' },
@@ -789,10 +811,11 @@ describe('Chunking Round-Trip Golden Tests', () => {
               title: 'Large Document Performance Test',
               category: 'performance',
               size_category: 'large',
-              test_type: 'round_trip'
-            }
-          }]);
-        });
+              test_type: 'round_trip',
+            },
+          },
+        ]);
+      });
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -811,14 +834,14 @@ describe('Chunking Round-Trip Golden Tests', () => {
         return await memoryFind({
           query: 'large document processing chunking performance',
           scope: { project: 'large-document-round-trip' },
-          limit: 50
+          limit: 50,
         });
       });
 
       performanceUtils.assertPerformance(findTime, 'large document search');
       expect(findResult.results.length).toBeGreaterThan(0);
 
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       expect(reconstructed).toBeDefined();
 
       if (reconstructed) {
@@ -827,8 +850,8 @@ describe('Chunking Round-Trip Golden Tests', () => {
         expect(reconstructed.content.length).toBe(originalContent.length);
 
         // Verify substantial chunking occurred
-        expect(reconstructed.data.total_chunks).toBeGreaterThan(10);
-        expect(reconstructed.data.completeness_ratio).toBe(1.0);
+        expect(reconstructed['data.total_chunks']).toBeGreaterThan(10);
+        expect(reconstructed['data.completeness_ratio']).toBe(1.0);
 
         // Verify content structure is preserved
         expect(reconstructed.content).toContain('Large Document Processing Guide');
@@ -845,8 +868,8 @@ describe('Chunking Round-Trip Golden Tests', () => {
             findTime,
             memoryDelta: delta,
             memoryBefore,
-            memoryAfter
-          }
+            memoryAfter,
+          },
         });
 
         GoldenFileManager.saveReassemblyResults(testName, originalContent, reconstructed.content);
@@ -859,31 +882,33 @@ describe('Chunking Round-Trip Golden Tests', () => {
       );
 
       const concurrentPromises = largeDocuments.map(async (content, index) => {
-        const storeResult = await memoryStore([{
-          kind: 'section',
-          content,
-          scope: { project: 'concurrent-large-test' },
-          metadata: {
-            title: `Concurrent Large Document ${index + 1}`,
-            index,
-            test_type: 'concurrent_round_trip'
-          }
-        }]);
+        const storeResult = await memoryStore([
+          {
+            kind: 'section',
+            content,
+            scope: { project: 'concurrent-large-test' },
+            metadata: {
+              title: `Concurrent Large Document ${index + 1}`,
+              index,
+              test_type: 'concurrent_round_trip',
+            },
+          },
+        ]);
 
         const findResult = await memoryFind({
           query: `concurrent large document ${index + 1}`,
           scope: { project: 'concurrent-large-test' },
-          limit: 50
+          limit: 50,
         });
 
-        const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+        const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
 
         return {
           index,
           original: content,
           reconstructed: reconstructed?.content,
           isPerfectMatch: content === reconstructed?.content,
-          chunkCount: storeResult.items.length
+          chunkCount: storeResult.items.length,
         };
       });
 
@@ -906,15 +931,17 @@ describe('Chunking Round-Trip Golden Tests', () => {
     it('should handle empty documents gracefully', async () => {
       const emptyContent = '';
 
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        content: emptyContent,
-        scope: { project: 'edge-case-test' },
-        metadata: {
-          title: 'Empty Document Test',
-          test_type: 'edge_case'
-        }
-      }]);
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          content: emptyContent,
+          scope: { project: 'edge-case-test' },
+          metadata: {
+            title: 'Empty Document Test',
+            test_type: 'edge_case',
+          },
+        },
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -922,7 +949,7 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const findResult = await memoryFind({
         query: 'empty document',
         scope: { project: 'edge-case-test' },
-        limit: 10
+        limit: 10,
       });
 
       expect(findResult.results.length).toBeGreaterThanOrEqual(0);
@@ -932,15 +959,17 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const longWord = 'a'.repeat(1000);
       const content = `Test with extremely long word: ${longWord} and normal text.`;
 
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        content,
-        scope: { project: 'edge-case-test' },
-        metadata: {
-          title: 'Long Word Test',
-          test_type: 'edge_case'
-        }
-      }]);
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          content,
+          scope: { project: 'edge-case-test' },
+          metadata: {
+            title: 'Long Word Test',
+            test_type: 'edge_case',
+          },
+        },
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);
@@ -948,10 +977,10 @@ describe('Chunking Round-Trip Golden Tests', () => {
       const findResult = await memoryFind({
         query: 'extremely long word',
         scope: { project: 'edge-case-test' },
-        limit: 10
+        limit: 10,
       });
 
-      const reconstructed = findResult.results.find(r => r.data?.reconstructed);
+      const reconstructed = findResult.results.find((r) => r.data?.reconstructed);
       if (reconstructed) {
         expect(reconstructed.content).toBe(content);
         expect(reconstructed.content).toContain(longWord);
@@ -961,15 +990,17 @@ describe('Chunking Round-Trip Golden Tests', () => {
     it('should handle documents with only whitespace', async () => {
       const whitespaceContent = '\n\n   \t\t\n\n   \n\n';
 
-      const storeResult = await memoryStore([{
-        kind: 'section',
-        content: whitespaceContent,
-        scope: { project: 'edge-case-test' },
-        metadata: {
-          title: 'Whitespace Only Test',
-          test_type: 'edge_case'
-        }
-      }]);
+      const storeResult = await memoryStore([
+        {
+          kind: 'section',
+          content: whitespaceContent,
+          scope: { project: 'edge-case-test' },
+          metadata: {
+            title: 'Whitespace Only Test',
+            test_type: 'edge_case',
+          },
+        },
+      ]);
 
       expect(storeResult.items.length).toBeGreaterThan(0);
       expect(storeResult.errors.length).toBe(0);

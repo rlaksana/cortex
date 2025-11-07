@@ -21,8 +21,8 @@
  */
 
 import { EventEmitter } from 'node:events';
-import { createHash } from 'node:crypto';
-import { logger } from '../utils/logger.js';
+import { createHash } from 'crypto';
+import { logger } from '@/utils/logger.js';
 import {
   DependencyRegistry,
   DependencyStatus,

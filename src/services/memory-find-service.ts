@@ -20,7 +20,7 @@
  */
 
 import { memoryFind } from './memory-find.js';
-import { logger } from '../utils/logger.js';
+import { logger } from '@/utils/logger.js';
 import type { MemoryFindResponse, SearchQuery } from '../types/core-interfaces.js';
 
 /**

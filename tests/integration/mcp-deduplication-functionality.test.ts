@@ -9,9 +9,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock environment for testing
-process.env.OPENAI_API_KEY = 'test-key';
-process.env.QDRANT_URL = 'http://localhost:6333';
-process.env.NODE_ENV = 'test';
+process.env['OPENAI_API_KEY'] = 'test-key';
+process.env['QDRANT_URL'] = 'http://localhost:6333';
+process.env['NODE_ENV'] = 'test';
 
 describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
   describe('Basic Deduplication Configuration via MCP', () => {
@@ -23,24 +23,26 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'user',
-                name: 'john_doe',
-                data: { email: 'john@example.com', role: 'developer' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'user',
+                  name: 'john_doe',
+                  data: { email: 'john@example.com', role: 'developer' },
+                },
+                scope: { project: 'user-management', branch: 'main' },
+                deduplication_key: 'user_john_doe',
               },
-              scope: { project: 'user-management', branch: 'main' },
-              deduplication_key: 'user_john_doe'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'skip',
               similarity_threshold: 0.85,
-              check_within_scope_only: true
-            }
-          }
-        }
+              check_within_scope_only: true,
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -58,27 +60,29 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'decision',
-              data: {
-                title: 'Use PostgreSQL Database',
-                rationale: 'Strong ACID compliance and reliability',
-                alternatives: ['MongoDB', 'MySQL'],
-                status: 'accepted',
-                impact: 'high'
+            items: [
+              {
+                kind: 'decision',
+                data: {
+                  title: 'Use PostgreSQL Database',
+                  rationale: 'Strong ACID compliance and reliability',
+                  alternatives: ['MongoDB', 'MySQL'],
+                  status: 'accepted',
+                  impact: 'high',
+                },
+                scope: { project: 'architecture', branch: 'main' },
+                deduplication_key: 'database_choice_postgres',
               },
-              scope: { project: 'architecture', branch: 'main' },
-              deduplication_key: 'database_choice_postgres'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'prefer_existing',
               similarity_threshold: 0.9,
               check_within_scope_only: false,
-              enable_audit_logging: true
-            }
-          }
-        }
+              enable_audit_logging: true,
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -96,26 +100,28 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'todo',
-              data: {
-                title: 'Update API documentation',
-                priority: 'high',
-                status: 'in_progress',
-                assignee: 'tech_writer',
-                due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+            items: [
+              {
+                kind: 'todo',
+                data: {
+                  title: 'Update API documentation',
+                  priority: 'high',
+                  status: 'in_progress',
+                  assignee: 'tech_writer',
+                  due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                },
+                scope: { project: 'documentation', branch: 'main' },
+                deduplication_key: 'api_docs_update_task',
               },
-              scope: { project: 'documentation', branch: 'main' },
-              deduplication_key: 'api_docs_update_task'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'prefer_newer',
               similarity_threshold: 0.8,
-              enable_intelligent_merging: false
-            }
-          }
-        }
+              enable_intelligent_merging: false,
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -132,27 +138,29 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'observation',
-              data: {
-                title: 'User feedback on performance',
-                content: 'Users report slow response times during peak hours',
-                source: 'customer_support',
-                confidence: 0.9,
-                tags: ['performance', 'user_feedback', 'optimization']
+            items: [
+              {
+                kind: 'observation',
+                data: {
+                  title: 'User feedback on performance',
+                  content: 'Users report slow response times during peak hours',
+                  source: 'customer_support',
+                  confidence: 0.9,
+                  tags: ['performance', 'user_feedback', 'optimization'],
+                },
+                scope: { project: 'performance', branch: 'main' },
+                deduplication_key: 'performance_feedback_2024',
               },
-              scope: { project: 'performance', branch: 'main' },
-              deduplication_key: 'performance_feedback_2024'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'combine',
               similarity_threshold: 0.85,
               enable_audit_logging: true,
-              enable_intelligent_merging: true
-            }
-          }
-        }
+              enable_intelligent_merging: true,
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -169,27 +177,45 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'incident',
-              data: {
-                title: 'Database Connection Pool Exhaustion',
-                severity: 'high',
-                status: 'resolved',
-                impact: {
-                  affected_services: ['api', 'web', 'mobile'],
-                  user_impact: 'high',
-                  business_impact: 'medium'
+            items: [
+              {
+                kind: 'incident',
+                data: {
+                  title: 'Database Connection Pool Exhaustion',
+                  severity: 'high',
+                  status: 'resolved',
+                  impact: {
+                    affected_services: ['api', 'web', 'mobile'],
+                    user_impact: 'high',
+                    business_impact: 'medium',
+                  },
+                  timeline: [
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Alert triggered',
+                      source: 'monitoring',
+                    },
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Investigation started',
+                      source: 'on-call',
+                    },
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Pool size increased',
+                      source: 'engineering',
+                    },
+                    {
+                      timestamp: new Date().toISOString(),
+                      event: 'Issue resolved',
+                      source: 'engineering',
+                    },
+                  ],
                 },
-                timeline: [
-                  { timestamp: new Date().toISOString(), event: 'Alert triggered', source: 'monitoring' },
-                  { timestamp: new Date().toISOString(), event: 'Investigation started', source: 'on-call' },
-                  { timestamp: new Date().toISOString(), event: 'Pool size increased', source: 'engineering' },
-                  { timestamp: new Date().toISOString(), event: 'Issue resolved', source: 'engineering' }
-                ]
+                scope: { project: 'incidents', branch: 'production' },
+                deduplication_key: 'database_pool_incident',
               },
-              scope: { project: 'incidents', branch: 'production' },
-              deduplication_key: 'database_pool_incident'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -197,10 +223,10 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               check_within_scope_only: true,
               enable_audit_logging: true,
               enable_intelligent_merging: true,
-              max_dedupe_candidates: 10
-            }
-          }
-        }
+              max_dedupe_candidates: 10,
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -218,7 +244,7 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         { threshold: 0.85, description: 'Standard similarity' },
         { threshold: 0.9, description: 'High similarity' },
         { threshold: 0.95, description: 'Very high similarity' },
-        { threshold: 1.0, description: 'Exact match only' }
+        { threshold: 1.0, description: 'Exact match only' },
       ];
 
       similarityTests.forEach((test, index) => {
@@ -229,28 +255,36 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
           params: {
             name: 'memory_store',
             arguments: {
-              items: [{
-                kind: 'entity',
-                data: {
-                  entity_type: 'test_entity',
-                  name: `similarity_test_${test.threshold}`,
-                  data: { threshold: test.threshold, description: test.description }
+              items: [
+                {
+                  kind: 'entity',
+                  data: {
+                    entity_type: 'test_entity',
+                    name: `similarity_test_${test.threshold}`,
+                    data: { threshold: test.threshold, description: test.description },
+                  },
+                  scope: { project: 'similarity-tests', branch: 'main' },
                 },
-                scope: { project: 'similarity-tests', branch: 'main' }
-              }],
+              ],
               deduplication_config: {
                 enabled: true,
                 merge_strategy: 'intelligent',
                 similarity_threshold: test.threshold,
-                check_within_scope_only: true
-              }
-            }
-          }
+                check_within_scope_only: true,
+              },
+            },
+          },
         };
 
-        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBe(test.threshold);
-        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBeGreaterThanOrEqual(0);
-        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBeLessThanOrEqual(1);
+        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBe(
+          test.threshold
+        );
+        expect(
+          memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold
+        ).toBeGreaterThanOrEqual(0);
+        expect(
+          memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold
+        ).toBeLessThanOrEqual(1);
       });
     });
 
@@ -268,10 +302,10 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 data: {
                   entity_type: 'user',
                   name: 'alice_smith',
-                  data: { email: 'alice@example.com', department: 'engineering' }
+                  data: { email: 'alice@example.com', department: 'engineering' },
                 },
                 scope: { project: 'users', branch: 'main' },
-                deduplication_key: 'user_alice_smith'
+                deduplication_key: 'user_alice_smith',
               },
               {
                 kind: 'decision',
@@ -279,10 +313,10 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                   title: 'Implement microservices architecture',
                   rationale: 'Better scalability and maintainability',
                   alternatives: ['Monolith', 'Modular monolith'],
-                  status: 'accepted'
+                  status: 'accepted',
                 },
                 scope: { project: 'architecture', branch: 'main' },
-                deduplication_key: 'microservices_decision'
+                deduplication_key: 'microservices_decision',
               },
               {
                 kind: 'risk',
@@ -295,13 +329,13 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                     {
                       strategy: 'Implement database clustering',
                       status: 'planned',
-                      owner: 'dba_team'
-                    }
-                  ]
+                      owner: 'dba_team',
+                    },
+                  ],
                 },
                 scope: { project: 'risks', branch: 'main' },
-                deduplication_key: 'database_spof_risk'
-              }
+                deduplication_key: 'database_spof_risk',
+              },
             ],
             deduplication_config: {
               enabled: true,
@@ -313,11 +347,11 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               batch_deduplication: {
                 enabled: true,
                 max_batch_size: 50,
-                parallel_processing: true
-              }
-            }
-          }
-        }
+                parallel_processing: true,
+              },
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
@@ -335,19 +369,21 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'config_setting',
-                name: 'database_url',
+            items: [
+              {
+                kind: 'entity',
                 data: {
-                  value: 'postgresql://localhost:5432/app',
-                  environment: 'development'
-                }
+                  entity_type: 'config_setting',
+                  name: 'database_url',
+                  data: {
+                    value: 'postgresql://localhost:5432/app',
+                    environment: 'development',
+                  },
+                },
+                scope: { project: 'config', branch: 'development' },
+                deduplication_key: 'config_database_url',
               },
-              scope: { project: 'config', branch: 'development' },
-              deduplication_key: 'config_database_url'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'prefer_existing',
@@ -356,17 +392,23 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               scope_aware_deduplication: {
                 enabled: true,
                 scope_hierarchy: ['organization', 'project', 'branch'],
-                cross_scope_strategy: 'allow_if_different_scope'
-              }
-            }
-          }
-        }
+                cross_scope_strategy: 'allow_if_different_scope',
+              },
+            },
+          },
+        },
       };
 
       const dedupConfig = memoryStoreRequest.params.arguments.deduplication_config;
       expect(dedupConfig.scope_aware_deduplication.enabled).toBe(true);
-      expect(dedupConfig.scope_aware_deduplication.scope_hierarchy).toEqual(['organization', 'project', 'branch']);
-      expect(dedupConfig.scope_aware_deduplication.cross_scope_strategy).toBe('allow_if_different_scope');
+      expect(dedupConfig.scope_aware_deduplication.scope_hierarchy).toEqual([
+        'organization',
+        'project',
+        'branch',
+      ]);
+      expect(dedupConfig.scope_aware_deduplication.cross_scope_strategy).toBe(
+        'allow_if_different_scope'
+      );
     });
   });
 
@@ -379,26 +421,28 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'runbook',
-              data: {
-                title: 'Production Deployment Procedure',
-                description: 'Step-by-step guide for production deployments',
-                steps: [
-                  { step: 1, action: 'Run health checks', owner: 'devops', timeout_minutes: 5 },
-                  { step: 2, action: 'Backup database', owner: 'dba', timeout_minutes: 30 },
-                  { step: 3, action: 'Deploy application', owner: 'devops', timeout_minutes: 15 }
-                ],
-                triggers: ['deployment_request', 'emergency_fix'],
-                rollback_procedure: {
-                  enabled: true,
-                  max_rollback_time_minutes: 30,
-                  approval_required: true
-                }
+            items: [
+              {
+                kind: 'runbook',
+                data: {
+                  title: 'Production Deployment Procedure',
+                  description: 'Step-by-step guide for production deployments',
+                  steps: [
+                    { step: 1, action: 'Run health checks', owner: 'devops', timeout_minutes: 5 },
+                    { step: 2, action: 'Backup database', owner: 'dba', timeout_minutes: 30 },
+                    { step: 3, action: 'Deploy application', owner: 'devops', timeout_minutes: 15 },
+                  ],
+                  triggers: ['deployment_request', 'emergency_fix'],
+                  rollback_procedure: {
+                    enabled: true,
+                    max_rollback_time_minutes: 30,
+                    approval_required: true,
+                  },
+                },
+                scope: { project: 'operations', branch: 'main' },
+                deduplication_key: 'production_deployment_runbook',
               },
-              scope: { project: 'operations', branch: 'main' },
-              deduplication_key: 'production_deployment_runbook'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -410,19 +454,20 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                   objects: 'merge_deep',
                   strings: 'prefer_newer',
                   numbers: 'prefer_higher',
-                  booleans: 'logical_or'
+                  booleans: 'logical_or',
                 },
                 conflict_resolution: {
                   manual_review_threshold: 0.7,
-                  auto_merge_confidence_threshold: 0.9
-                }
-              }
-            }
-          }
-        }
+                  auto_merge_confidence_threshold: 0.9,
+                },
+              },
+            },
+          },
+        },
       };
 
-      const mergeConfig = memoryStoreRequest.params.arguments.deduplication_config.intelligent_merge_config;
+      const mergeConfig =
+        memoryStoreRequest.params.arguments.deduplication_config.intelligent_merge_config;
       expect(mergeConfig.field_merging_strategies.arrays).toBe('append_unique');
       expect(mergeConfig.field_merging_strategies.objects).toBe('merge_deep');
       expect(mergeConfig.conflict_resolution.auto_merge_confidence_threshold).toBe(0.9);
@@ -439,23 +484,25 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'observation',
-              data: {
-                title: 'System performance metrics',
-                content: 'CPU usage at 75%, memory usage at 60%',
-                source: 'monitoring_system',
-                confidence: 0.95,
-                timestamp: currentTime.toISOString(),
-                metadata: {
-                  cpu_usage: 75,
-                  memory_usage: 60,
-                  disk_usage: 45
-                }
+            items: [
+              {
+                kind: 'observation',
+                data: {
+                  title: 'System performance metrics',
+                  content: 'CPU usage at 75%, memory usage at 60%',
+                  source: 'monitoring_system',
+                  confidence: 0.95,
+                  timestamp: currentTime.toISOString(),
+                  metadata: {
+                    cpu_usage: 75,
+                    memory_usage: 60,
+                    disk_usage: 45,
+                  },
+                },
+                scope: { project: 'monitoring', branch: 'production' },
+                deduplication_key: 'performance_metrics_latest',
               },
-              scope: { project: 'monitoring', branch: 'production' },
-              deduplication_key: 'performance_metrics_latest'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -466,14 +513,15 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 time_sensitivity: 'high',
                 staleness_threshold_hours: 24,
                 merge_strategy: 'prefer_newer_significant_changes',
-                significance_threshold: 0.1 // 10% change threshold
-              }
-            }
-          }
-        }
+                significance_threshold: 0.1, // 10% change threshold
+              },
+            },
+          },
+        },
       };
 
-      const temporalConfig = memoryStoreRequest.params.arguments.deduplication_config.temporal_deduplication;
+      const temporalConfig =
+        memoryStoreRequest.params.arguments.deduplication_config.temporal_deduplication;
       expect(temporalConfig.enabled).toBe(true);
       expect(temporalConfig.time_sensitivity).toBe('high');
       expect(temporalConfig.staleness_threshold_hours).toBe(24);
@@ -497,12 +545,12 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               find_duplicates: true,
               similarity_threshold: 0.85,
               include_similar_items: true,
-              max_candidates_per_item: 5
+              max_candidates_per_item: 5,
             },
             search_strategy: 'deep',
-            limit: 50
-          }
-        }
+            limit: 50,
+          },
+        },
       };
 
       const dedupFilters = memoryFindRequest.params.arguments.deduplication_filters;
@@ -527,12 +575,12 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               find_merge_candidates: true,
               merge_strategies: ['intelligent', 'combine'],
               similarity_threshold: 0.7,
-              include_merge_suggestions: true
+              include_merge_suggestions: true,
             },
             search_strategy: 'auto',
-            limit: 25
-          }
-        }
+            limit: 25,
+          },
+        },
       };
 
       const dedupFilters = memoryFindRequest.params.arguments.deduplication_filters;
@@ -554,14 +602,14 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
             operation: 'health',
             include_detailed_metrics: true,
             filters: {
-              components: ['deduplication_engine', 'similarity_calculator', 'merge_processor']
+              components: ['deduplication_engine', 'similarity_calculator', 'merge_processor'],
             },
             response_formatting: {
               verbose: true,
-              include_timestamps: true
-            }
-          }
-        }
+              include_timestamps: true,
+            },
+          },
+        },
       };
 
       const filters = systemStatusRequest.params.arguments.filters;
@@ -585,12 +633,12 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 'merge_strategy_distribution',
                 'similarity_score_distribution',
                 'intelligent_merge_success_rate',
-                'duplicate_detection_latency'
+                'duplicate_detection_latency',
               ],
-              time_range_hours: 24
-            }
-          }
-        }
+              time_range_hours: 24,
+            },
+          },
+        },
       };
 
       const filters = systemStatusRequest.params.arguments.filters;
@@ -615,13 +663,13 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 scope: { project: 'all', branch: 'all' },
                 similarity_threshold_range: [0.7, 1.0],
                 include_manual_review_required: true,
-                generate_report: true
+                generate_report: true,
               },
               dry_run: true,
-              require_confirmation: false
-            }
-          }
-        }
+              require_confirmation: false,
+            },
+          },
+        },
       };
 
       const cleanupConfig = systemStatusRequest.params.arguments.cleanup_config;
@@ -640,25 +688,29 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'test',
-                name: 'invalid_strategy_test',
-                data: { value: 'test' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'test',
+                  name: 'invalid_strategy_test',
+                  data: { value: 'test' },
+                },
+                scope: { project: 'test', branch: 'main' },
               },
-              scope: { project: 'test', branch: 'main' }
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'invalid_strategy' as any,
-              similarity_threshold: 0.85
-            }
-          }
-        }
+              similarity_threshold: 0.85,
+            },
+          },
+        },
       };
 
-      expect(memoryStoreRequest.params.arguments.deduplication_config.merge_strategy).toBe('invalid_strategy');
+      expect(memoryStoreRequest.params.arguments.deduplication_config.merge_strategy).toBe(
+        'invalid_strategy'
+      );
     });
 
     it('should handle similarity threshold out of range', async () => {
@@ -672,25 +724,29 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
           params: {
             name: 'memory_store',
             arguments: {
-              items: [{
-                kind: 'entity',
-                data: {
-                  entity_type: 'test',
-                  name: `invalid_threshold_${threshold}`,
-                  data: { threshold }
+              items: [
+                {
+                  kind: 'entity',
+                  data: {
+                    entity_type: 'test',
+                    name: `invalid_threshold_${threshold}`,
+                    data: { threshold },
+                  },
+                  scope: { project: 'test', branch: 'main' },
                 },
-                scope: { project: 'test', branch: 'main' }
-              }],
+              ],
               deduplication_config: {
                 enabled: true,
                 merge_strategy: 'intelligent',
-                similarity_threshold: threshold
-              }
-            }
-          }
+                similarity_threshold: threshold,
+              },
+            },
+          },
         };
 
-        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBe(threshold);
+        expect(memoryStoreRequest.params.arguments.deduplication_config.similarity_threshold).toBe(
+          threshold
+        );
         expect(threshold < 0 || threshold > 1).toBe(true); // This should fail validation
       });
     });
@@ -703,24 +759,26 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'entity',
-              data: {
-                entity_type: 'user',
-                name: 'no_key_user',
-                data: { email: 'nokey@example.com' }
+            items: [
+              {
+                kind: 'entity',
+                data: {
+                  entity_type: 'user',
+                  name: 'no_key_user',
+                  data: { email: 'nokey@example.com' },
+                },
+                scope: { project: 'test', branch: 'main' },
+                // Note: No deduplication_key provided
               },
-              scope: { project: 'test', branch: 'main' }
-              // Note: No deduplication_key provided
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
               similarity_threshold: 0.85,
-              auto_generate_key: true
-            }
-          }
-        }
+              auto_generate_key: true,
+            },
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items[0].deduplication_key).toBeUndefined();
@@ -735,17 +793,19 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'decision',
-              data: {
-                title: 'Conflicting Decision',
-                rationale: 'This conflicts with existing decision',
-                alternatives: ['Option A', 'Option B'],
-                status: 'conflicted'
+            items: [
+              {
+                kind: 'decision',
+                data: {
+                  title: 'Conflicting Decision',
+                  rationale: 'This conflicts with existing decision',
+                  alternatives: ['Option A', 'Option B'],
+                  status: 'conflicted',
+                },
+                scope: { project: 'test', branch: 'main' },
+                deduplication_key: 'conflicting_decision',
               },
-              scope: { project: 'test', branch: 'main' },
-              deduplication_key: 'conflicting_decision'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -753,14 +813,15 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               conflict_resolution: {
                 strategy: 'manual_review',
                 notify_stakeholders: ['architecture_team', 'product_manager'],
-                escalation_timeout_hours: 24
-              }
-            }
-          }
-        }
+                escalation_timeout_hours: 24,
+              },
+            },
+          },
+        },
       };
 
-      const conflictConfig = memoryStoreRequest.params.arguments.deduplication_config.conflict_resolution;
+      const conflictConfig =
+        memoryStoreRequest.params.arguments.deduplication_config.conflict_resolution;
       expect(conflictConfig.strategy).toBe('manual_review');
       expect(conflictConfig.notify_stakeholders).toContain('architecture_team');
       expect(conflictConfig.escalation_timeout_hours).toBe(24);
@@ -776,10 +837,10 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
           data: {
             entity_type: 'large_scale_item',
             name: `item_${i}`,
-            data: { batch_id: 'large_test', index: i }
+            data: { batch_id: 'large_test', index: i },
           },
           scope: { project: 'scale-test', branch: 'main' },
-          deduplication_key: `scale_item_${i}`
+          deduplication_key: `scale_item_${i}`,
         });
       }
 
@@ -799,20 +860,21 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 enabled: true,
                 max_batch_size: 50,
                 parallel_processing: true,
-                max_concurrent_batches: 4
+                max_concurrent_batches: 4,
               },
               performance_config: {
                 enable_caching: true,
                 cache_ttl_minutes: 30,
-                max_similarity_calculations_per_second: 100
-              }
-            }
-          }
-        }
+                max_similarity_calculations_per_second: 100,
+              },
+            },
+          },
+        },
       };
 
       expect(memoryStoreRequest.params.arguments.items).toHaveLength(200);
-      const perfConfig = memoryStoreRequest.params.arguments.deduplication_config.performance_config;
+      const perfConfig =
+        memoryStoreRequest.params.arguments.deduplication_config.performance_config;
       expect(perfConfig.enable_caching).toBe(true);
       expect(perfConfig.max_similarity_calculations_per_second).toBe(100);
     });
@@ -827,20 +889,22 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'section',
-              data: {
-                title: 'Large Documentation Section',
-                content: largeContent,
-                section_type: 'documentation',
-                metadata: {
-                  word_count: largeContent.split(' ').length,
-                  size_bytes: largeContent.length
-                }
+            items: [
+              {
+                kind: 'section',
+                data: {
+                  title: 'Large Documentation Section',
+                  content: largeContent,
+                  section_type: 'documentation',
+                  metadata: {
+                    word_count: largeContent.split(' ').length,
+                    size_bytes: largeContent.length,
+                  },
+                },
+                scope: { project: 'docs', branch: 'main' },
+                deduplication_key: 'large_doc_section',
               },
-              scope: { project: 'docs', branch: 'main' },
-              deduplication_key: 'large_doc_section'
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -849,14 +913,15 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
                 enable_content_hashing: true,
                 chunk_large_content: true,
                 chunk_size_bytes: 10240, // 10KB chunks
-                compare_sample_percentage: 0.1 // Compare 10% sample first
-              }
-            }
-          }
-        }
+                compare_sample_percentage: 0.1, // Compare 10% sample first
+              },
+            },
+          },
+        },
       };
 
-      const memOptConfig = memoryStoreRequest.params.arguments.deduplication_config.memory_optimization;
+      const memOptConfig =
+        memoryStoreRequest.params.arguments.deduplication_config.memory_optimization;
       expect(memOptConfig.enable_content_hashing).toBe(true);
       expect(memOptConfig.chunk_large_content).toBe(true);
       expect(memOptConfig.chunk_size_bytes).toBe(10240);
@@ -872,29 +937,31 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
         params: {
           name: 'memory_store',
           arguments: {
-            items: [{
-              kind: 'risk',
-              data: {
-                title: 'Security Risk with Deduplication',
-                probability: 'medium',
-                impact: 'high',
-                risk_score: 12,
-                mitigations: [
-                  {
-                    strategy: 'Regular security audits',
-                    status: 'planned',
-                    owner: 'security_team'
-                  }
-                ]
+            items: [
+              {
+                kind: 'risk',
+                data: {
+                  title: 'Security Risk with Deduplication',
+                  probability: 'medium',
+                  impact: 'high',
+                  risk_score: 12,
+                  mitigations: [
+                    {
+                      strategy: 'Regular security audits',
+                      status: 'planned',
+                      owner: 'security_team',
+                    },
+                  ],
+                },
+                scope: { project: 'security', branch: 'main' },
+                deduplication_key: 'security_risk_with_ttl',
+                ttl: {
+                  policy: 'long',
+                  auto_extend: true,
+                  extend_threshold_days: 90,
+                },
               },
-              scope: { project: 'security', branch: 'main' },
-              deduplication_key: 'security_risk_with_ttl',
-              ttl: {
-                policy: 'long',
-                auto_extend: true,
-                extend_threshold_days: 90
-              }
-            }],
+            ],
             deduplication_config: {
               enabled: true,
               merge_strategy: 'intelligent',
@@ -903,11 +970,11 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               ttl_aware_deduplication: {
                 enabled: true,
                 prioritize_active_items: true,
-                expire_duplicates_sooner: true
-              }
-            }
-          }
-        }
+                expire_duplicates_sooner: true,
+              },
+            },
+          },
+        },
       };
 
       const item = memoryStoreRequest.params.arguments.items[0];
@@ -933,7 +1000,7 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
             deduplication_filters: {
               find_duplicates: true,
               similarity_threshold: 0.8,
-              include_related_items: true
+              include_related_items: true,
             },
             graph_expansion: {
               enabled: true,
@@ -942,13 +1009,13 @@ describe('MCP Semantic Deduplication Functionality Integration Tests', () => {
               max_nodes: 100,
               filters: {
                 deduplication_aware: true,
-                include_duplicate_relations: true
-              }
+                include_duplicate_relations: true,
+              },
             },
             search_strategy: 'deep',
-            limit: 50
-          }
-        }
+            limit: 50,
+          },
+        },
       };
 
       const request = memoryFindRequest.params.arguments;

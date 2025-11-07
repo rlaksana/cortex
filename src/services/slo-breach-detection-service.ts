@@ -16,15 +16,12 @@ import {
   SLOAlert,
   SLOAlertType,
   SLOEvaluationStatus,
-  AlertSeverity,
   SLOBreachIncident,
-  BreachSeverity,
   NotificationChannel,
-  IncidentStatus,
   IncidentResponse,
-  EscalationLevel,
   ImpactAssessment,
 } from '../types/slo-interfaces.js';
+import { AlertSeverity, BreachSeverity, IncidentStatus, EscalationLevel } from '../types/slo-types.js';
 import { SLOService } from './slo-service.js';
 
 /**

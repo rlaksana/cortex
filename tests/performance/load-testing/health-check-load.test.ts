@@ -457,8 +457,8 @@ describe('Health Check Load Tests', () => {
 
       expect(result.validation.passed).toBe(true);
       expect(result.results.metrics.latencies.p95).toBeLessThan(600);
-      expect(result.metadata.systemMetrics.peakMemoryUsage).toBeLessThan(64 * 1024 * 1024);
-      expect(result.metadata.systemMetrics.memoryLeakDetected).toBe(false);
+      expect(result.metadata['systemMetrics'].peakMemoryUsage).toBeLessThan(64 * 1024 * 1024);
+      expect(result.metadata['systemMetrics'].memoryLeakDetected).toBe(false);
     }, 60000);
   });
 

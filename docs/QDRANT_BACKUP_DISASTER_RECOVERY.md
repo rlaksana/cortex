@@ -69,6 +69,7 @@ The system consists of eight core components that work together to provide compl
 ### Backup and Restore
 
 #### Backup Strategies
+
 - **Full Backups**: Complete database snapshots with all collections and metadata
 - **Incremental Backups**: Change-based backups reducing storage requirements
 - **Automated Scheduling**: Configurable cadence based on environment requirements
@@ -76,6 +77,7 @@ The system consists of eight core components that work together to provide compl
 - **Compression and Encryption**: Optimize storage and ensure data security
 
 #### Restore Testing
+
 - **Automated Testing**: Regular validation of backup integrity
 - **Multiple Scenarios**: Full restore, incremental restore, point-in-time recovery
 - **Performance Benchmarking**: Measure and track RTO compliance
@@ -85,6 +87,7 @@ The system consists of eight core components that work together to provide compl
 ### Retention and Compliance
 
 #### Retention Policies
+
 - **Configurable Retention**: Environment-specific retention periods
 - **Archive Management**: Automated tiered storage and archival
 - **Legal Hold**: Preserve data for legal and regulatory requirements
@@ -92,6 +95,7 @@ The system consists of eight core components that work together to provide compl
 - **Data Classification**: Apply different policies based on data sensitivity
 
 #### RPO/RTO Management
+
 - **Target Definition**: Configure Recovery Point and Time Objectives
 - **Real-time Measurement**: Track actual RPO/RTO against targets
 - **SLA Monitoring**: Ensure compliance with service level agreements
@@ -101,6 +105,7 @@ The system consists of eight core components that work together to provide compl
 ### Data Consistency
 
 #### Validation Types
+
 - **Cross-Replica Consistency**: Verify data consistency across replicas
 - **Vector Embedding Integrity**: Validate vector embeddings and dimensions
 - **Metadata Consistency**: Ensure schema and metadata integrity
@@ -108,6 +113,7 @@ The system consists of eight core components that work together to provide compl
 - **Semantic Consistency**: Verify content-embedding alignment
 
 #### Automated Repair
+
 - **Issue Detection**: Automatically identify data integrity issues
 - **Repair Procedures**: Fix common consistency problems
 - **Backup Before Repair**: Ensure data safety during repairs
@@ -116,12 +122,14 @@ The system consists of eight core components that work together to provide compl
 ### Disaster Recovery
 
 #### Incident Management
+
 - **Automated Detection**: Trigger incident declaration based on system health
 - **Severity Classification**: Classify incidents by impact and urgency
 - **Escalation Procedures**: Automatic escalation based on incident severity
 - **Communication Templates**: Pre-defined messages for different scenarios
 
 #### Recovery Procedures
+
 - **Multi-Phase Recovery**: Structured recovery process with clear phases
 - **Resource Management**: Coordinate personnel and resources during recovery
 - **Progress Tracking**: Monitor recovery progress and status
@@ -130,12 +138,14 @@ The system consists of eight core components that work together to provide compl
 ### Monitoring and Alerting
 
 #### Real-time Monitoring
+
 - **Performance Metrics**: Track backup/restore performance and throughput
 - **Health Monitoring**: Continuous health checks for all components
 - **Capacity Planning**: Monitor storage, memory, and network utilization
 - **Anomaly Detection**: Identify unusual patterns and potential issues
 
 #### Alert Management
+
 - **Multi-Channel Notifications**: Email, Slack, PagerDuty, SMS, Teams
 - **Escalation Policies**: Automatic escalation based on severity and time
 - **Suppression Rules**: Reduce alert noise during maintenance
@@ -148,6 +158,7 @@ The system consists of eight core components that work together to provide compl
 The system provides pre-configured presets for different environments:
 
 #### Development
+
 - Full backups: Daily at 2 AM
 - Incremental backups: Every 4 hours
 - Restore tests: Daily at 6 AM
@@ -155,6 +166,7 @@ The system provides pre-configured presets for different environments:
 - RPO: 4 hours, RTO: 30 minutes
 
 #### Staging
+
 - Full backups: Daily at 1 AM
 - Incremental backups: Every 2 hours
 - Restore tests: Weekly on Monday at 5 AM
@@ -162,6 +174,7 @@ The system provides pre-configured presets for different environments:
 - RPO: 2 hours, RTO: 15 minutes
 
 #### Production
+
 - Full backups: Weekly on Sunday at midnight
 - Incremental backups: Every hour
 - Restore tests: Daily at 3 AM
@@ -171,7 +184,10 @@ The system provides pre-configured presets for different environments:
 ### Configuration Example
 
 ```typescript
-import { QdrantBackupIntegrationService, BackupConfigurationManager } from './src/db/qdrant-backup-integration';
+import {
+  QdrantBackupIntegrationService,
+  BackupConfigurationManager,
+} from './src/db/qdrant-backup-integration';
 
 // Load environment-specific configuration
 const configManager = new BackupConfigurationManager('production');
@@ -185,20 +201,20 @@ await backupService.initialize();
 const backup = await backupService.createBackup({
   type: 'full',
   description: 'Scheduled full backup',
-  priority: 'high'
+  priority: 'high',
 });
 
 // Perform restore test
 const test = await backupService.performRestoreTest({
   scenarioId: 'weekly-comprehensive-test',
-  validationLevel: 'comprehensive'
+  validationLevel: 'comprehensive',
 });
 
 // Generate compliance report
 const report = await backupService.generateComplianceReport({
   startDate: '2025-01-01',
   endDate: '2025-01-31',
-  includeTrends: true
+  includeTrends: true,
 });
 ```
 
@@ -255,18 +271,21 @@ interface DisasterRecoveryRequest {
 ### Key Metrics
 
 #### Backup Metrics
+
 - Backup duration and frequency
 - Backup size and storage utilization
 - Success/failure rates
 - Throughput (items per second)
 
 #### Recovery Metrics
+
 - Restore time (RTO)
 - Data recovery point (RPO)
 - Success rates and failure patterns
 - Validation results
 
 #### System Health Metrics
+
 - Component availability
 - Resource utilization
 - Error rates and response times
@@ -275,6 +294,7 @@ interface DisasterRecoveryRequest {
 ### Dashboard Integration
 
 The system provides comprehensive dashboard data including:
+
 - Real-time system status
 - Performance trends and analytics
 - Active alerts and incidents
@@ -306,6 +326,7 @@ The system provides comprehensive dashboard data including:
 ## Best Practices
 
 ### Backup Configuration
+
 1. **Schedule Regular Backups**: Configure automated backup schedules based on RPO requirements
 2. **Use Incremental Backups**: Reduce storage overhead and backup windows
 3. **Test Backups Regularly**: Ensure restore capability through automated testing
@@ -313,6 +334,7 @@ The system provides comprehensive dashboard data including:
 5. **Validate Data Integrity**: Perform consistency checks on restored data
 
 ### Disaster Recovery
+
 1. **Document Procedures**: Maintain up-to-date recovery runbooks
 2. **Test Recovery Plans**: Regular drills and scenario testing
 3. **Monitor RPO/RTO**: Track compliance and investigate violations
@@ -320,6 +342,7 @@ The system provides comprehensive dashboard data including:
 5. **Review and Update**: Regularly assess and improve recovery capabilities
 
 ### Monitoring and Alerting
+
 1. **Configure Appropriate Thresholds**: Set realistic alert thresholds based on baselines
 2. **Use Escalation Policies**: Ensure timely response to critical issues
 3. **Suppress Noise**: Reduce alert fatigue during maintenance periods
@@ -331,18 +354,21 @@ The system provides comprehensive dashboard data including:
 ### Common Issues
 
 #### Backup Failures
+
 - **Storage Space**: Ensure adequate storage for backup operations
 - **Network Connectivity**: Verify connection to backup storage systems
 - **Resource Constraints**: Monitor CPU, memory, and I/O during backups
 - **Permissions**: Verify proper access rights for backup operations
 
 #### Restore Test Failures
+
 - **Backup Integrity**: Validate backup checksums and metadata
 - **Environment Issues**: Ensure test environment is properly configured
 - **Resource Availability**: Verify sufficient resources for restore operations
 - **Validation Logic**: Review data integrity validation procedures
 
 #### Performance Issues
+
 - **Throughput Bottlenecks**: Identify I/O or network constraints
 - **Resource Contention**: Monitor resource usage during operations
 - **Configuration Tuning**: Adjust batch sizes and concurrency settings
@@ -368,18 +394,21 @@ console.log('Dashboard Data:', dashboard);
 ## Security Considerations
 
 ### Data Protection
+
 - **Encryption**: Encrypt backups both in transit and at rest
 - **Access Control**: Implement proper authentication and authorization
 - **Key Management**: Use secure key rotation practices
 - **Audit Logging**: Track all backup and restore operations
 
 ### Network Security
+
 - **Firewall Rules**: Restrict network access to backup systems
 - **VPN Access**: Use secure connections for remote management
 - **Certificate Validation**: Verify SSL/TLS certificates
 - **Network Segmentation**: Isolate backup networks when possible
 
 ### Operational Security
+
 - **Principle of Least Privilege**: Grant minimal necessary permissions
 - **Regular Audits**: Review access logs and permissions
 - **Secure Disposal**: Properly decommission old backups
@@ -388,18 +417,21 @@ console.log('Dashboard Data:', dashboard);
 ## Performance Optimization
 
 ### Backup Optimization
+
 - **Parallel Processing**: Use concurrent backup operations where possible
 - **Compression**: Balance compression ratio with CPU overhead
 - **Batch Sizes**: Optimize batch sizes for your data characteristics
 - **Storage Tiering**: Use appropriate storage classes for different data
 
 ### Recovery Optimization
+
 - **Incremental Recovery**: Reduce recovery time using incremental changes
 - **Pre-stage Data**: Stage frequently accessed data for faster recovery
 - **Resource Allocation**: Reserve resources for recovery operations
 - **Network Optimization**: Optimize data transfer for recovery operations
 
 ### Monitoring Optimization
+
 - **Efficient Metrics**: Collect only necessary metrics to reduce overhead
 - **Sampling**: Use sampling for high-frequency metrics
 - **Aggregation**: Pre-aggregate metrics for dashboard display
@@ -408,6 +440,7 @@ console.log('Dashboard Data:', dashboard);
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Multi-Region Replication**: Support for geographic redundancy
 2. **Cloud Integration**: Enhanced support for cloud storage providers
 3. **Machine Learning**: Predictive failure detection and optimization
@@ -415,7 +448,9 @@ console.log('Dashboard Data:', dashboard);
 5. **Container Orchestration**: Kubernetes-native deployment and management
 
 ### Extensibility
+
 The system is designed to be extensible:
+
 - **Plugin Architecture**: Add custom backup and validation plugins
 - **Custom Metrics**: Implement domain-specific metrics and alerts
 - **Integration APIs**: Connect with external monitoring and ticketing systems
@@ -424,6 +459,7 @@ The system is designed to be extensible:
 ## Support and Maintenance
 
 ### Regular Maintenance Tasks
+
 - Review and update backup configurations
 - Test disaster recovery procedures
 - Monitor and update retention policies
@@ -431,12 +467,14 @@ The system is designed to be extensible:
 - Update contact information and escalation procedures
 
 ### Support Channels
+
 - **Documentation**: Comprehensive documentation and runbooks
 - **Monitoring**: Built-in monitoring and alerting
 - **Logging**: Detailed logs for troubleshooting
 - **Health Checks**: Automated system health validation
 
 ### Version Updates
+
 - **Backward Compatibility**: Maintain compatibility with previous versions
 - **Migration Support**: Tools for upgrading configurations and data
 - **Release Notes**: Detailed documentation of changes and improvements
