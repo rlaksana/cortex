@@ -42,7 +42,7 @@
     "start:prod": "NODE_OPTIONS=\"--max-old-space-size=8192 --max-heap-size=8192 --expose-gc\" node scripts/start-production.js",
     "dev": "NODE_OPTIONS=\"--max-old-space-size=4096 --expose-gc\" node dist/index.js",
     "prebuild": "tsc --noEmit",
-    "build": "tsc && chmod +x dist/index.js dist/silent-mcp-entry.js",
+    "build": "tsc && node -e \"if (process.platform !== 'win32') { require('child_process').execSync('chmod +x dist/index.js dist/silent-mcp-entry.js'); }\"",
     "build:esm": "tsc --project tsconfig.build.json",
     "dev:esm": "tsx watch src/index.ts",
     "build:index": "tsc src/index.ts --outDir dist --target es2022 --module esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck",
@@ -260,8 +260,7 @@
     "clean:build": "node scripts/clean-build-artifacts.cjs",
     "clean:all": "node scripts/clean-build-artifacts.cjs && rm -rf node_modules",
     "postinstall": "node scripts/clean-build-artifacts.cjs && echo '🧠 Cortex Memory MCP Server v2.0.0 installed successfully!' && echo '📚 Quick start: npm run quickstart' && echo '📖 Documentation: npm run docs:new-engineer'",
-    "preuninstall": "echo '👋 Thank you for using Cortex Memory MCP Server!' && echo '💾 Remember to backup your data before uninstalling'",
-    "prepare": "husky install"
+    "preuninstall": "echo '👋 Thank you for using Cortex Memory MCP Server!' && echo '💾 Remember to backup your data before uninstalling'"
   },
   "keywords": [
     "mcp",
@@ -310,6 +309,7 @@
     "ajv-formats": "^2.1.1",
     "bcryptjs": "^3.0.2",
     "commander": "^12.0.0",
+    "comment-json": "^4.4.1",
     "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
     "express": "^4.19.2",
