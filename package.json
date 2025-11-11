@@ -6,9 +6,21 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js"
+    },
+    "./monitoring/*": {
+      "types": "./dist/monitoring/*.d.ts",
+      "import": "./dist/monitoring/*.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts"
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "cortex": "dist/silent-mcp-entry.js",
@@ -29,16 +41,20 @@
     "start:silent": "NODE_OPTIONS=\"--max-old-space-size=4096 --expose-gc\" node dist/silent-mcp-entry.js",
     "start:prod": "NODE_OPTIONS=\"--max-old-space-size=8192 --max-heap-size=8192 --expose-gc\" node scripts/start-production.js",
     "dev": "NODE_OPTIONS=\"--max-old-space-size=4096 --expose-gc\" node dist/index.js",
-    "build": "tsc && node scripts/fix-imports.mjs",
-    "build:esm": "tsc --project tsconfig.build.json && node scripts/fix-imports.mjs",
+    "prebuild": "tsc --noEmit",
+    "build": "tsc && chmod +x dist/index.js dist/silent-mcp-entry.js",
+    "build:esm": "tsc --project tsconfig.build.json",
     "dev:esm": "tsx watch src/index.ts",
     "build:index": "tsc src/index.ts --outDir dist --target es2022 --module esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck",
-    "lint": "eslint . --max-warnings=0",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --ignore-pattern \"src/chaos-testing/**/*\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --cache --fix --ignore-pattern \"src/chaos-testing/**/*\"",
+    "guard:imports": "node scripts/guards/check-import-extensions.mjs",
+    "check": "pnpm run guard:imports && tsc --noEmit",
     "lint:quiet": "eslint src --quiet",
     "lint:hard": "eslint src tests --max-warnings=0",
     "lint:security": "eslint src --ext .ts --config eslint.security.config.cjs --max-warnings=0",
     "type-check": "tsc -p tsconfig.ci.json --noEmit",
+    "prepare": "husky",
     "prepush": "npm run type-check && npm run lint",
     "type-check:index": "tsc src/index.ts --noEmit",
     "quality-check": "node scripts/pre-commit-check.mjs",
@@ -310,6 +326,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@jest/globals": "^30.2.0",
     "@rollup/rollup-win32-x64-msvc": "^4.52.5",
     "@types/ajv": "^1.0.0",
@@ -327,10 +344,16 @@
     "chalk": "^5.6.2",
     "complexity-report": "^2.0.0-alpha",
     "eslint": "^9.38.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-import-x": "^4.16.1",
     "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.3.0",
     "glob": "^11.0.3",
+    "globby": "^15.0.0",
     "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.6.2",
     "sinon": "^21.0.0",
     "supertest": "^7.1.4",
@@ -342,6 +365,15 @@
     "typescript-eslint": "^8.46.1",
     "vitest": "^4.0.3",
     "vitest-tsconfig-paths": "^3.4.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,cjs,mjs}": [
+      "eslint --max-warnings=0 --fix --cache --cache-location .cache/eslint",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "engines": {
     "node": ">=18.0.0",

@@ -1,0 +1,82 @@
+name: Quality Gates
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check import extensions
+        run: pnpm run guard:imports
+
+      - name: TypeScript check
+        run: pnpm run tsc --noEmit
+
+      - name: Build project
+        run: pnpm run build
+
+      - name: ESLint check (zero warnings)
+        run: pnpm run lint --max-warnings=0
+
+      - name: Runtime smoke test
+        run: node -e "await import('./dist/index.js')"
+
+  # Full-repo ESLint report (non-blocking)
+  eslint-full-report:
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Non-blocking - reports debt without failing PR
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run full ESLint with SARIF
+        run: |
+          pnpm run lint --format json --output-file eslint-report.json || true
+          echo "## ESLint Full Report" >> $GITHUB_STEP_SUMMARY
+          echo "Total issues: $(cat eslint-report.json | jq '.length' || echo 'N/A')" >> $GITHUB_STEP_SUMMARY
+          echo "Top issues by rule:" >> $GITHUB_STEP_SUMMARY
+          cat eslint-report.json | jq -r 'group_by(.[]; .ruleId) | to_entries[] | {rule: .key, count: (.value | length)} | sort_by(.count) | reverse | .[:10] | "- \(.rule): \(.count)"' >> $GITHUB_STEP_SUMMARY || echo "  Unable to generate summary" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload ESLint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-full-report
+          path: eslint-report.json
+          retention-days: 30
