@@ -1,0 +1,22 @@
+{
+  "scripts_rekomendasi": {
+    "build:watch": "tsc --watch --preserveWatchOutput",
+    "dev:hot": "npm run build:watch & npm run dev:esm",
+    "dev:clean": "npm run clean && npm run dev:esm",
+    "format:all": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "lint:incremental": "eslint . --max-warnings=0 --cache",
+    "quality:quick": "npm run type-check && npm run lint:incremental",
+    "quality:full": "npm run type-check && npm run lint:hard && npm run format:check",
+    "precommit:fix": "npm run lint:fix && npm run format:all && npm run quality:quick"
+  },
+  "alasan": {
+    "build:watch": "Untuk development dengan hot reload TypeScript compilation",
+    "dev:hot": "Kombinasi watch compilation dengan nodemon hot reload",
+    "format:all": "Extend Prettier untuk cover lebih banyak file types",
+    "lint:incremental": "Gunakan cache ESLint untuk performance lebih baik",
+    "quality:quick": "Quick check untuk development, focus pada critical issues",
+    "quality:full": "Comprehensive check untuk CI/CD atau pre-release",
+    "precommit:fix": "Auto-fix common issues sebelum commit"
+  }
+}

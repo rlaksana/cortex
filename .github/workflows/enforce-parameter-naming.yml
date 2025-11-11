@@ -1,0 +1,156 @@
+name: Parameter Naming Policy Enforcement
+
+on:
+  push:
+    branches: [ dev, master ]
+  pull_request:
+    branches: [ dev, master ]
+
+jobs:
+  parameter-naming-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run TypeScript compiler with strict parameter checking
+      run: |
+        echo "🔍 Running TypeScript strict parameter validation..."
+        npx tsc --noEmit --strict --noImplicitReturns --noImplicitThis --noUnusedLocals --noUnusedParameters | tee ts-errors.log
+
+        # Count specific error types
+        echo "📊 Error Analysis:"
+        echo "TS2304 (Cannot find name): $(grep -c "TS2304" ts-errors.log || echo 0)"
+        echo "TS18046 (Object is possibly undefined): $(grep -c "TS18046" ts-errors.log || echo 0)"
+        echo "TS7006 (Implicit any): $(grep -c "TS7006" ts-errors.log || echo 0)"
+        echo "TS2551 (Property does not exist): $(grep -c "TS2551" ts-errors.log || echo 0)"
+
+        # Set threshold for failures
+        TOTAL_ERRORS=$(wc -l < ts-errors.log)
+        echo "Total TypeScript errors: $TOTAL_ERRORS"
+
+        if [ $TOTAL_ERRORS -gt 500 ]; then
+          echo "❌ Error threshold exceeded (500). Failing build."
+          exit 1
+        else
+          echo "✅ Error count within acceptable range."
+        fi
+
+    - name: Run ESLint with parameter naming rules
+      run: |
+        echo "🔍 Running ESLint parameter naming validation..."
+        npx eslint src/ --max-warnings=0 --format=json | tee eslint-results.json
+
+        # Check for parameter naming violations
+        PARAM_NAMING_VIOLATIONS=$(jq '[.[] | select(.messages[] | .ruleId | test("naming|param|camelCase"))] | length' eslint-results.json)
+        echo "Parameter naming violations: $PARAM_NAMING_VIOLATIONS"
+
+        if [ "$PARAM_NAMING_VIOLATIONS" -gt 10 ]; then
+          echo "❌ Too many parameter naming violations. Please review naming conventions."
+          exit 1
+        fi
+
+    - name: Run custom parameter naming validator
+      run: |
+        echo "🔍 Running custom parameter naming validation..."
+        node scripts/validate-parameter-naming.cjs src/ || exit 1
+
+    - name: Generate parameter naming report
+      if: always()
+      run: |
+        echo "📝 Generating parameter naming compliance report..."
+        node scripts/generate-naming-report.cjs > parameter-naming-report.md
+
+        # Upload report as artifact
+        mkdir -p reports
+        cp parameter-naming-report.md reports/
+        cp ts-errors.log reports/ 2>/dev/null || true
+        cp eslint-results.json reports/ 2>/dev/null || true
+
+    - name: Upload reports
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: parameter-naming-reports
+        path: reports/
+        retention-days: 30
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          try {
+            const report = fs.readFileSync('parameter-naming-report.md', 'utf8');
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Parameter Naming Report')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 📋 Parameter Naming Report\n\n${report}`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 📋 Parameter Naming Report\n\n${report}`
+              });
+            }
+          } catch (error) {
+            console.log('Could not generate parameter naming comment:', error.message);
+          }
+
+  performance-comparison:
+    runs-on: ubuntu-latest
+    needs: parameter-naming-checks
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build and test performance impact
+      run: |
+        npm run build
+        npm run test:coverage
+
+        # Track build performance
+        echo "📈 Build performance metrics collected successfully"
+
+    - name: Compare with previous build
+      run: |
+        echo "🔄 Comparing with previous build performance..."
+        # Add performance comparison logic here

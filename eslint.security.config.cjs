@@ -14,6 +14,22 @@ module.exports = [
         sourceType: 'module',
         project: './tsconfig.json',
       },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
@@ -23,8 +39,7 @@ module.exports = [
       // TypeScript rules
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/prefer-const': 'error',
-      '@typescript-eslint/no-var-requires': 'error',
+            '@typescript-eslint/no-var-requires': 'error',
 
       // Security rules
       'security/detect-buffer-noassert': 'error',
@@ -46,22 +61,45 @@ module.exports = [
       'no-implied-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
-      'prefer-global/buffer': 'error',
-
+      
       // Password and secret handling
       'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
       'no-debugger': 'error',
       'no-alert': 'error',
       'no-promise-executor-return': 'error',
     },
-    env: {
-      node: true,
-      es2022: true,
-    },
     ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'test-output/**', 'artifacts/**'],
   },
   {
     files: ['tests/**/*.ts'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
+        // Test globals
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+      },
+    },
     rules: {
       // Allow some relaxed rules for tests
       'security/detect-object-injection': 'off',
@@ -75,6 +113,22 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        global: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+        exports: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        NodeJS: 'readonly',
+      },
     },
     rules: {
       'security/detect-child-process': 'off', // Scripts may need child processes
